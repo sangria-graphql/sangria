@@ -13,14 +13,13 @@ trait Tokens extends StringBuilding { this: Parser with Ignored =>
 
   def Punctuator = rule { PunctuatorChar | Ellipsis }
 
-  def Ellipsis = rule { '…' | 3 times '.' }
+  def Ellipsis = rule { 3 times '.' }
 
   val NameFirstChar = CharPredicate.Alpha ++ '_'
 
   val NameChar = NameFirstChar ++ CharPredicate.Digit
 
   def Name = rule { capture(NameFirstChar ~ NameChar.*) ~ Ignored.* }
-
 
   def IntValue = rule { capture(Sign.? ~ IntegerPart) ~ Ignored.* ~> (i => ast.IntValue(i.toInt))}
 
@@ -35,7 +34,6 @@ trait Tokens extends StringBuilding { this: Parser with Ignored =>
   val NonZeroDigit = Digit19
 
   def Digit = rule { ch('0') | NonZeroDigit }
-
 
   def StringValue = rule { '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ Ignored.* ~> (ast.StringValue(_))}
 
@@ -135,7 +133,7 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 
   def FragmentSpread = rule { Ellipsis ~ Ignored.* ~ FragmentName ~ (Directives.? ~> (_ getOrElse Nil)) ~> (ast.FragmentSpread(_, _)) }
 
-  def InlineFragment = rule {Ellipsis ~ Ignored.* ~ On ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
+  def InlineFragment = rule { Ellipsis ~ Ignored.* ~ On ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
       (ast.InlineFragment(_, _, _)) }
 
   def On = Keyword("on")
@@ -153,9 +151,9 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 
 trait Values { this: Parser with Tokens with Ignored with Operations =>
 
-  def ValueConst: Rule1[ast.Value] = rule { IntValue | FloatValue | StringValue | BooleanValue | EnumValue | ArrayValueConst | ObjectValueConst }
+  def ValueConst: Rule1[ast.Value] = rule { FloatValue | IntValue | StringValue | BooleanValue | EnumValue | ArrayValueConst | ObjectValueConst }
 
-  def Value: Rule1[ast.Value] = rule { Variable ~> (ast.VariableValue(_)) | IntValue | FloatValue | StringValue | BooleanValue | EnumValue | ArrayValue | ObjectValue }
+  def Value: Rule1[ast.Value] = rule { Variable ~> (ast.VariableValue(_)) | FloatValue | IntValue | StringValue | BooleanValue | EnumValue | ArrayValue | ObjectValue }
 
   def BooleanValue = rule { True ~ push(ast.BooleanValue(true)) | False ~ push(ast.BooleanValue(false)) }
 
