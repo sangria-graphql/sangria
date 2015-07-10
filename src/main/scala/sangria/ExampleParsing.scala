@@ -11,7 +11,7 @@ object ExampleParsing extends App {
     """
       query FetchLukeAndLeiaAliased {
         luke: human(id: "1000") {
-          name
+          friends(sort: NAME)
         }
         leia: human(id: "10103") {
           name
@@ -23,7 +23,7 @@ object ExampleParsing extends App {
     case Success(ast) =>
       println("SUCCESS")
       println(ast)
-    case Failure(error: SyntaxError)  =>
+    case Failure(error: SyntaxError) =>
       println(error.message)
     case Failure(error) =>
       error.printStackTrace()
