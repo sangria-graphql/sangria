@@ -70,7 +70,7 @@ trait Ignored extends PositionTracking { this: Parser =>
 
   val LineTerminator = CharPredicate("\u000A\u000D\u2028\u2029")
 
-  def Ignored = rule { WhiteSpace | (CRLF ~ trackNewLine | LineTerminator ~ trackNewLine) | Comment | ',' }
+  def Ignored = rule { WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',' }
 
 
   def Comment = rule { "#" ~ CommentChar.* }
