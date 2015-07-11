@@ -4,8 +4,8 @@ import java.util.Locale
 
 import sangria.ast._
 
-object Renderer {
-  val Pretty = RenderConfig(
+object QueryRenderer {
+  val Pretty = QueryRendererConfig(
     indentLevel = "  ",
     lineBreak = "\n",
     separator = " ",
@@ -13,7 +13,7 @@ object Renderer {
     mandatoryLineBreak = "\n",
     definitionSeparator = "\n\n")
 
-  val Compact = RenderConfig(
+  val Compact = QueryRendererConfig(
     indentLevel = "",
     lineBreak = "",
     separator = "",
@@ -21,19 +21,19 @@ object Renderer {
     mandatoryLineBreak = " ",
     definitionSeparator = "")
   
-  def renderSelections(sels: List[Selection], indent: String, indentLevel: Int, config: RenderConfig) =
+  def renderSelections(sels: List[Selection], indent: String, indentLevel: Int, config: QueryRendererConfig) =
     if (sels.nonEmpty)
       "{" + config.lineBreak +
         (sels map (render(_, config, indentLevel + 1)) mkString config.mandatoryLineBreak) +
         config.lineBreak + indent + "}"
     else ""
 
-  def renderDirs(dirs: List[Directive], config: RenderConfig, frontSep: Boolean = false, withSep: Boolean = true) =
+  def renderDirs(dirs: List[Directive], config: QueryRendererConfig, frontSep: Boolean = false, withSep: Boolean = true) =
     (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
       (dirs map (render(_, config)) mkString config.separator) +
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
-  def renderArgs(args: List[Argument], config: RenderConfig, withSep: Boolean = true) =
+  def renderArgs(args: List[Argument], config: QueryRendererConfig, withSep: Boolean = true) =
     (if (args.nonEmpty) "(" + (args map (render(_, config)) mkString ("," + config.separator)) + ")" + (if (withSep) config.separator else "") else "")
 
   def renderOpType(operationType: OperationType) = operationType match {
@@ -41,7 +41,7 @@ object Renderer {
     case OperationType.Mutation => "mutation"
   }
 
-  def render(node: AstNode, config: RenderConfig = Pretty, indentLevel: Int = 0): String = {
+  def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0): String = {
     lazy val indent = config.indentLevel * indentLevel
     
     node match {
@@ -130,7 +130,7 @@ object Renderer {
     Integer.toHexString(ch).toUpperCase(Locale.ENGLISH)
 }
 
-case class RenderConfig(
+case class QueryRendererConfig(
   indentLevel: String,
   lineBreak: String,
   mandatorySeparator: String,

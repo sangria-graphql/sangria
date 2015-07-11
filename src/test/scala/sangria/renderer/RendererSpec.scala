@@ -12,8 +12,8 @@ class RendererSpec extends WordSpec with Matchers {
     "render kitchen sink" in {
       val Success(ast) = QueryParser.parse(FileUtil loadQuery "kitchen-sink.graphql")
 
-      val prettyRendered = Renderer.render(ast, Renderer.Pretty)
-      val compactRendered = Renderer.render(ast, Renderer.Compact)
+      val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
+      val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
 
       val Success(prettyParsed) = QueryParser.parse(prettyRendered)
       val Success(compactParsed) = QueryParser.parse(compactRendered)
@@ -64,7 +64,7 @@ class RendererSpec extends WordSpec with Matchers {
     "render partial AST" in {
       val ast = Field(Some("al"), "field1", Nil, List(Directive("foo", Nil)), Nil)
 
-      Renderer.render(ast) should be ("al: field1 @foo")
+      QueryRenderer.render(ast) should be ("al: field1 @foo")
     }
   }
 }
