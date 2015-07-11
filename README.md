@@ -13,6 +13,7 @@ Examples below demonstrate some of the features, that are implemented so far. Mo
 Example usage:
 
 ```scala
+import sangria.ast.Document
 import sangria.parser.QueryParser
 import sangria.renderer.QueryRenderer
 
@@ -44,7 +45,7 @@ val query =
   """
 
 // Parse GraphQl query
-val Success(document: ast.Document) = QueryParser.parse(query)
+val Success(document: Document) = QueryParser.parse(query)
 
 // Pretty rendering of GraphQl query as a `String`
 println(QueryRenderer.render(document))
