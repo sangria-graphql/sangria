@@ -2,7 +2,7 @@ package sangria
 
 import org.parboiled2.ParserInput
 import sangria.parser.{SyntaxError, QueryParser}
-import sangria.renderer.Renderer
+import sangria.renderer.QueryRenderer
 
 import scala.util.{Success, Failure}
 
@@ -39,8 +39,8 @@ object ExampleParsing extends App {
       println("SUCCESS")
       println(ast)
 
-      println(Renderer.render(ast))
-      println(Renderer.render(ast, Renderer.Compact))
+      println(QueryRenderer.render(ast))
+      println(QueryRenderer.render(ast, QueryRenderer.Compact))
     case Failure(error: SyntaxError) =>
       println(error.message)
     case Failure(error) =>
