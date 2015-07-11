@@ -84,14 +84,14 @@ class QueryParserSpec extends WordSpec with Matchers {
               List(
                 VariableDefinition(
                   "foo",
-                  Type("ComplexType", false, false, Some(Position(317, 8, 23))),
+                  Type("ComplexType", false, false, Some(Position(310, 8, 23))),
                   None,
-                  Some(Position(311, 8, 17))),
+                  Some(Position(304, 8, 17))),
                 VariableDefinition(
                   "site",
-                  Type("Site", false, false, Some(Position(337, 8, 43))),
-                  Some(EnumValue("MOBILE", Some(Position(344, 8, 50)))),
-                  Some(Position(330, 8, 36)))),
+                  Type("Site", false, false, Some(Position(330, 8, 43))),
+                  Some(EnumValue("MOBILE", Some(Position(337, 8, 50)))),
+                  Some(Position(323, 8, 36)))),
               Nil,
               List(
                 Field(
@@ -100,14 +100,21 @@ class QueryParserSpec extends WordSpec with Matchers {
                   List(
                     Argument(
                       "id",
-                      ArrayValue(List(IntValue(123, Some(Position(381, 9, 27))), IntValue(456, Some(Position(386, 9, 32)))), Some(Position(380, 9, 26))),
-                      Some(Position(376, 9, 22)))),
+                      ArrayValue(List(IntValue(123, Some(Position(373, 9, 27))), IntValue(456, Some(Position(378, 9, 32)))), Some(Position(372, 9, 26))),
+                      Some(Position(368, 9, 22)))),
                   Nil,
                   List(
-                    Field(None, "id", Nil, Nil, Nil, Some(Position(399, 10, 5))),
+                    Field(
+                      None,
+                      "id",
+                      Nil,
+                      Nil,
+                      Nil,
+                      Some(Position(390, 10, 5))),
                     InlineFragment(
                       "User",
-                      List(Directive("defer", Nil, Some(Position(421, 11, 17)))),
+                      List(
+                        Directive("defer", Nil, Some(Position(411, 11, 17)))),
                       List(
                         Field(
                           None,
@@ -115,30 +122,26 @@ class QueryParserSpec extends WordSpec with Matchers {
                           Nil,
                           Nil,
                           List(
-                            Field(None, "id", Nil, Nil, Nil, Some(Position(455, 13, 9))),
+                            Field(None, "id", Nil, Nil, Nil, Some(Position(443, 13, 9))),
                             Field(
                               Some("alias"),
                               "field1",
                               List(
-                                Argument(
-                                  "first",
-                                  IntValue(10, Some(Position(489, 14, 29))),
-                                  Some(Position(483, 14, 23))),
-                                Argument(
-                                  "after",
-                                  VariableValue("foo", Some(Position(499, 14, 39))),
-                                  Some(Position(493, 14, 33)))),
+                                Argument("first", IntValue(10, Some(Position(476, 14, 29))), Some(Position(470, 14, 23))),
+                                Argument("after", VariableValue("foo", Some(Position(486, 14, 39))), Some(Position(480, 14, 33)))),
                               List(
                                 Directive(
                                   "include",
-                                  List(Argument("if", VariableValue("foo", Some(Position(519, 14, 59))), Some(Position(515, 14, 55)))),
-                                  Some(Position(506, 14, 46)))),
-                              List(Field(None, "id", Nil, Nil, Nil, Some(Position(538, 15, 11))),  FragmentSpread("frag", Nil, Some(Position(553, 16, 11)))),
-                              Some(Position(469, 14, 9)))),
-                          Some(Position(437, 12, 7)))),
-                      Some(Position(409, 11, 5)))),
-                  Some(Position(357, 9, 3)))),
-              Some(Position(295, 8, 1))),
+                                  List(Argument("if", VariableValue("foo", Some(Position(506, 14, 59))), Some(Position(502, 14, 55)))),
+                                  Some(Position(493, 14, 46)))),
+                              List(
+                                Field(None, "id", Nil, Nil, Nil, Some(Position(524, 15, 11))),
+                                FragmentSpread("frag", Nil, Some(Position(538, 16, 11)))),
+                              Some(Position(456, 14, 9)))),
+                          Some(Position(426, 12, 7)))),
+                      Some(Position(399, 11, 5)))),
+                  Some(Position(349, 9, 3)))),
+              Some(Position(288, 8, 1))),
             OperationDefinition(
               OperationType.Mutation,
               Some("likeStory"),
@@ -148,11 +151,13 @@ class QueryParserSpec extends WordSpec with Matchers {
                 Field(
                   None,
                   "like",
-                  List(Argument("story", IntValue(123, Some(Position(635, 24, 15))), Some(Position(628, 24, 8)))),
-                  List(Directive("defer", Nil, Some(Position(640, 24, 20)))),
-                  List(Field(None, "story", Nil, Nil, List(Field(None, "id", Nil, Nil, Nil, Some(Position(669, 26, 7)))), Some(Position(654, 25, 5)))),
-                  Some(Position(623, 24, 3)))),
-              Some(Position(599, 23, 1))),
+                  List(Argument("story", IntValue(123, Some(Position(612, 24, 15))), Some(Position(605, 24, 8)))),
+                  List(Directive("defer", Nil, Some(Position(617, 24, 20)))),
+                  List(
+                    Field(None, "story", Nil, Nil, List(
+                      Field(None, "id", Nil, Nil, Nil, Some(Position(644, 26, 7)))), Some(Position(630, 25, 5)))),
+                  Some(Position(600, 24, 3)))),
+              Some(Position(577, 23, 1))),
             FragmentDefinition(
               "frag",
               "Friend",
@@ -162,13 +167,13 @@ class QueryParserSpec extends WordSpec with Matchers {
                   None,
                   "foo",
                   List(
-                    Argument("size", VariableValue("size", Some(Position(729, 32, 13))), Some(Position(723, 32, 7))),
-                    Argument("bar", VariableValue("b", Some(Position(741, 32, 25))), Some(Position(736, 32, 20))),
-                    Argument("obj", ObjectValue(List(ObjectField("key", StringValue("value", Some(Position(756, 32, 40))), Some(Position(751, 32, 35)))), Some(Position(750, 32, 34))), Some(Position(745, 32, 29)))),
+                    Argument("size", VariableValue("size", Some(Position(698, 32, 13))), Some(Position(692, 32, 7))),
+                    Argument("bar", VariableValue("b", Some(Position(710, 32, 25))), Some(Position(705, 32, 20))),
+                    Argument("obj", ObjectValue(List(ObjectField("key", StringValue("value", Some(Position(725, 32, 40))), Some(Position(720, 32, 35)))), Some(Position(719, 32, 34))), Some(Position(714, 32, 29)))),
                   Nil,
                   Nil,
-                  Some(Position(719, 32, 3)))),
-              Some(Position(690, 31, 1))),
+                  Some(Position(688, 32, 3)))),
+              Some(Position(660, 31, 1))),
             OperationDefinition(
               OperationType.Query,
               None,
@@ -179,14 +184,14 @@ class QueryParserSpec extends WordSpec with Matchers {
                   None,
                   "unnamed",
                   List(
-                    Argument("truthy", BooleanValue(true, Some(Position(793, 36, 19))), Some(Position(785, 36, 11))),
-                    Argument("falsey", BooleanValue(false, Some(Position(807, 36, 33))), Some(Position(799, 36, 25)))),
+                    Argument("truthy", BooleanValue(true, Some(Position(758, 36, 19))), Some(Position(750, 36, 11))),
+                    Argument("falsey", BooleanValue(false, Some(Position(772, 36, 33))), Some(Position(764, 36, 25)))),
                   Nil,
                   Nil,
-                  Some(Position(777, 36, 3))),
-                Field(None, "query", Nil, Nil, Nil, Some(Position(818, 37, 3)))),
-              Some(Position(772, 35, 1)))),
-          Some(Position(295, 8, 1)))
+                  Some(Position(742, 36, 3))),
+                Field(None, "query", Nil, Nil, Nil, Some(Position(782, 37, 3)))),
+              Some(Position(738, 35, 1)))),
+          Some(Position(288, 8, 1)))
       
       QueryParser.parse(query) should be (Success(expectedAst))
     }
