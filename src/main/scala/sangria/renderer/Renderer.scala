@@ -26,7 +26,6 @@ object Renderer {
         config.lineBreak + indent + "}"
     else ""
 
-
   def renderDirs(dirs: List[Directive], config: RenderConfig, frontSep: Boolean = false) =
     (if (dirs.nonEmpty && frontSep) config.separator else "") +
       (dirs map (render(_, config)) mkString config.separator) +

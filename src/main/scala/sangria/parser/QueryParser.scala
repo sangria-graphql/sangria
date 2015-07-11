@@ -68,7 +68,7 @@ trait Ignored extends PositionTracking { this: Parser =>
 
   val LineTerminator = CharPredicate("\u000A\u000D\u2028\u2029")
 
-  def Ignored = rule { WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',' }
+  def Ignored = rule { quiet(WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',') }
 
 
   def Comment = rule { "#" ~ CommentChar.* }
@@ -101,9 +101,9 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def OperationType = rule { Query ~ push(ast.OperationType.Query) | Mutation ~ push(ast.OperationType.Mutation) }
 
-  def Query = Keyword("query")
+  def Query = rule { Keyword("query") }
 
-  def Mutation = Keyword("mutation")
+  def Mutation = rule { Keyword("mutation") }
 
   def VariableDefinitions = rule { ws('(') ~ VariableDefinition.+ ~ ws(')') ~> (_.toList)}
 
@@ -140,9 +140,9 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
   def InlineFragment = rule { trackPos ~ Ellipsis ~ Ignored.* ~ On ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
       ((pos, typeCondition, dirs, sels) => ast.InlineFragment(typeCondition, dirs, sels, Some(pos))) }
 
-  def On = Keyword("on")
+  def On = rule { Keyword("on") }
 
-  def Fragment = Keyword("fragment")
+  def Fragment = rule { Keyword("fragment") }
 
   def FragmentDefinition = rule { trackPos ~ Fragment ~ FragmentName ~ On ~ TypeCondition ~ (Directives.?  ~> (_ getOrElse Nil)) ~ SelectionSet ~>
       ((pos, name, typeCondition, dirs, sels) => ast.FragmentDefinition(name, typeCondition, dirs, sels, Some(pos))) }
@@ -174,9 +174,9 @@ trait Values { this: Parser with Tokens with Ignored with Operations =>
     trackPos ~ False ~> (pos => ast.BooleanValue(false, Some(pos)))
   }
 
-  def True = Keyword("true")
+  def True = rule { Keyword("true") }
 
-  def False = Keyword("false")
+  def False = rule { Keyword("false") }
 
   def EnumValue = rule { trackPos ~ Name ~> ((pos, name) => ast.EnumValue(name, Some(pos))) }
 
@@ -224,6 +224,9 @@ class QueryParser private (val input: ParserInput)
     extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types
 
 object QueryParser {
+  def parse(input: String): Try[sangria.ast.Document] =
+    parse(ParserInput(input))
+
   def parse(input: ParserInput): Try[sangria.ast.Document] = {
     val parser = new QueryParser(input)
 
