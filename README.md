@@ -1,10 +1,14 @@
+## Sangria
+
 **Sangria** is a scala [GraphQL](http://facebook.github.io/graphql/) client and server library.
 
 The initial version is WIP. More information about the project will come soon.
 
 [![Build Status](https://travis-ci.org/OlegIlyenko/sangria.svg)](https://travis-ci.org/OlegIlyenko/sangria)
 
-## Parser and Renderer
+Examples below demonstrate some of the features, that are implemented so far. More features will come very soon!
+
+### Parser and Renderer
 
 Example usage:
 
