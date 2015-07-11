@@ -1,10 +1,10 @@
-package sangria.parser.ast
+package sangria.ast
 
 import org.parboiled2.Position
 
-case class Document(definitions: List[Definition], position: Option[Position] = None) extends Positional
+case class Document(definitions: List[Definition], position: Option[Position] = None) extends AstNode
 
-sealed trait Definition extends Positional
+sealed trait Definition extends AstNode
 
 case class OperationDefinition(
   operationType: OperationType = OperationType.Query,
@@ -32,15 +32,15 @@ case class VariableDefinition(
   name: String,
   tpe: Type,
   defaultValue: Option[Value],
-  position: Option[Position] = None) extends Positional
+  position: Option[Position] = None) extends AstNode
 
 case class Type(
   name: String,
   isList: Boolean,
   isNotNull: Boolean,
-  position: Option[Position] = None) extends Positional
+  position: Option[Position] = None) extends AstNode
 
-sealed trait Selection extends Positional
+sealed trait Selection extends AstNode
 
 case class Field(
   alias: Option[String],
@@ -59,15 +59,15 @@ case class InlineFragment(
   selections: List[Selection],
   position: Option[Position] = None) extends Selection
 
-sealed trait NameValue extends Positional {
+sealed trait NameValue extends AstNode {
   def name: String
   def value: Value
 }
 
-case class Directive(name: String, arguments: List[Argument], position: Option[Position] = None) extends Positional
+case class Directive(name: String, arguments: List[Argument], position: Option[Position] = None) extends AstNode
 case class Argument(name: String, value: Value, position: Option[Position] = None) extends NameValue
 
-sealed trait Value extends Positional
+sealed trait Value extends AstNode
 
 case class IntValue(value: Int, position: Option[Position] = None) extends Value
 case class FloatValue(value: Double, position: Option[Position] = None) extends Value
@@ -80,6 +80,6 @@ case class VariableValue(name: String, position: Option[Position] = None) extend
 
 case class ObjectField(name: String, value: Value, position: Option[Position] = None) extends NameValue
 
-trait Positional {
+sealed trait AstNode {
   def position: Option[Position]
 }

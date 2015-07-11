@@ -4,10 +4,11 @@ import org.parboiled2._
 import CharPredicate.{HexDigit, Digit19}
 
 import scala.util.{Success, Failure, Try}
+import sangria.ast
 
 trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
 
-  def Token =  rule { Punctuator | Name | IntValue | FloatValue | StringValue }
+  def Token =  rule { Punctuator | Name | NumberValue | StringValue }
 
   val PunctuatorChar = CharPredicate("!$():=@[]{|}")
 
@@ -21,12 +22,12 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Name = rule { capture(NameFirstChar ~ NameChar.*) ~ Ignored.* }
 
-  def IntValue = rule { trackPos ~ capture(Sign.? ~ IntegerPart) ~ Ignored.* ~> ((pos, i) => ast.IntValue(i.toInt, Some(pos)))}
+  def NumberValue = rule { trackPos ~ capture(Sign.? ~ IntegerPart) ~ capture('.' ~ Digit.+ ~ ExponentPart.?).? ~ Ignored.* ~>
+      ((pos, intPart, floatPart) =>
+        floatPart map (f => ast.FloatValue((intPart + f).toDouble, Some(pos))) getOrElse
+          ast.IntValue(intPart.toInt, Some(pos))) }
 
-  def FloatValue = rule { trackPos ~ capture(Sign.?  ~ IntegerPart ~ '.' ~ Digit.+ ~ ExponentPart.?) ~ Ignored.* ~>
-      ((pos, f) => ast.FloatValue(f.toDouble, Some(pos))) }
-
-  def IntegerPart = rule { ch('0') | NonZeroDigit | NonZeroDigit ~ Digit.+ }
+  def IntegerPart = rule { ch('0') | NonZeroDigit ~ Digit.* }
 
   def ExponentPart = rule { 'e' ~ Sign.? ~ Digit.+ }
 
@@ -42,13 +43,10 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   val QuoteBackslash = CharPredicate("\"\\")
 
-  val QuoteSlashBackSlash = QuoteBackslash ++ "/"
-
   def NormalChar = rule { !(QuoteBackslash | LineTerminator) ~ ANY ~ appendSB() }
 
-
   def EscapedChar = rule {
-    QuoteSlashBackSlash ~ appendSB() |
+    QuoteBackslash ~ appendSB() |
     'b' ~ appendSB('\b') |
     'f' ~ appendSB('\f') |
     'n' ~ appendSB('\n') |
@@ -116,7 +114,7 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def DefaultValue = rule { ws('=') ~ ValueConst }
 
-  def SelectionSet: Rule1[List[ast.Selection]] = rule { ws('{') ~ Selection.+ ~ ws('}') ~> ((x: Seq[ast.Selection]) => x.toList) }
+  def SelectionSet: Rule1[List[sangria.ast.Selection]] = rule { ws('{') ~ Selection.+ ~ ws('}') ~> ((x: Seq[sangria.ast.Selection]) => x.toList) }
 
   def Selection = rule { Field | FragmentSpread | InlineFragment }
 
@@ -157,20 +155,13 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 
 trait Values { this: Parser with Tokens with Ignored with Operations =>
 
-  def ValueConst: Rule1[ast.Value] = rule {
-    FloatValue |
-    IntValue |
-    StringValue |
-    BooleanValue |
-    EnumValue |
-    ArrayValueConst |
-    ObjectValueConst
+  def ValueConst: Rule1[sangria.ast.Value] = rule {
+    NumberValue | StringValue | BooleanValue | EnumValue | ArrayValueConst | ObjectValueConst
   }
 
-  def Value: Rule1[ast.Value] = rule {
+  def Value: Rule1[sangria.ast.Value] = rule {
     trackPos ~ Variable ~> ((pos, name) => ast.VariableValue(name, Some(pos))) |
-    FloatValue |
-    IntValue |
+    NumberValue |
     StringValue |
     BooleanValue |
     EnumValue |
@@ -213,7 +204,7 @@ trait Directives { this: Parser with Tokens with Operations =>
 }
 
 trait Types { this: Parser with Tokens with Ignored =>
-  def Type: Rule1[ast.Type] = rule {
+  def Type: Rule1[sangria.ast.Type] = rule {
     trackPos ~ TypeName ~> ((pos, name) => ast.Type(name, isList = false, isNotNull = false, position = Some(pos))) |
     ListType |
     NonNullType
@@ -233,7 +224,7 @@ class QueryParser private (val input: ParserInput)
     extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types
 
 object QueryParser {
-  def parse(input: ParserInput): Try[ast.Document] = {
+  def parse(input: ParserInput): Try[sangria.ast.Document] = {
     val parser = new QueryParser(input)
 
     parser.Document.run().transform(Success(_), {
