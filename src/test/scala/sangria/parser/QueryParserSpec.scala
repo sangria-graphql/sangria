@@ -233,13 +233,28 @@ class QueryParserSpec extends WordSpec with Matchers {
     }
 
     "provide useful error message (ellipsis)" in {
-      val Failure(error4: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = QueryParser.parse(
         "...")
 
-      error4.formattedError should be (
+      error.formattedError should be (
         """Invalid input '.', expected OperationDefinition or FragmentDefinition (line 1, column 1):
           |...
           |^""".stripMargin
+      )
+    }
+
+    "parses constant default values" in {
+      QueryParser.parse("{ field(complex: { a: { b: [ $var ] } }) }").isSuccess should be (true)
+    }
+
+    "parses variable inline values" in {
+      val Failure(error: SyntaxError) = QueryParser.parse(
+        "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }")
+
+      error.formattedError should be (
+        """Invalid input '$', expected ValueConst or ws (line 1, column 37):
+          |query Foo($x: Complex = { a: { b: [ $var ] } }) { field }
+          |                                    ^""".stripMargin
       )
     }
   }
