@@ -1,0 +1,20 @@
+# test query
+query FetchLukeAndLeiaAliased($someVar: Int = 1.23,$anotherVar: Int = 123)@include(if: true) @include(if: false){
+  luke: human(id: "1000")@include(if: true){
+    friends(sort: NAME)
+  }
+  leia: human(id , : , "10103\n \u00F6 ö") {
+    name # some name
+  }
+
+  ... on User {
+    birth{day}
+  }
+
+  ...Foo
+}
+
+fragment Foo on User @foo(bar: 1){
+  baz # field in fragment!
+}
+      
