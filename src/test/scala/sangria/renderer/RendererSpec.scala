@@ -1,7 +1,7 @@
 package sangria.renderer
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.ast.AstNode
+import sangria.ast.{Directive, Field, AstNode}
 import sangria.parser.QueryParser
 import sangria.util.FileUtil
 
@@ -14,8 +14,6 @@ class RendererSpec extends WordSpec with Matchers {
 
       val prettyRendered = Renderer.render(ast, Renderer.Pretty)
       val compactRendered = Renderer.render(ast, Renderer.Compact)
-
-      println(prettyRendered)
 
       val Success(prettyParsed) = QueryParser.parse(prettyRendered)
       val Success(compactParsed) = QueryParser.parse(compactRendered)
@@ -61,6 +59,12 @@ class RendererSpec extends WordSpec with Matchers {
           |  unnamed(truthy: true, falsey: false)
           |  query
           |}""".stripMargin)
+    }
+
+    "render partial AST" in {
+      val ast = Field(Some("al"), "field1", Nil, List(Directive("foo", Nil)), Nil)
+
+      Renderer.render(ast) should be ("al: field1 @foo")
     }
   }
 }

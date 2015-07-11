@@ -28,10 +28,10 @@ object Renderer {
         config.lineBreak + indent + "}"
     else ""
 
-  def renderDirs(dirs: List[Directive], config: RenderConfig, frontSep: Boolean = false) =
-    (if (dirs.nonEmpty && frontSep) config.separator else "") +
+  def renderDirs(dirs: List[Directive], config: RenderConfig, frontSep: Boolean = false, withSep: Boolean = true) =
+    (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
       (dirs map (render(_, config)) mkString config.separator) +
-      (if (dirs.nonEmpty && !frontSep) config.separator else "")
+      (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
   def renderArgs(args: List[Argument], config: RenderConfig, withSep: Boolean = true) =
     (if (args.nonEmpty) "(" + (args map (render(_, config)) mkString ("," + config.separator)) + ")" + (if (withSep) config.separator else "") else "")
@@ -75,7 +75,7 @@ object Renderer {
         indent + (alias map (_ + ":" + config.separator) getOrElse "") + name +
           renderArgs(args, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
-          renderDirs(dirs, config) +
+          renderDirs(dirs, config, withSep = sels.nonEmpty) +
           renderSelections(sels, indent, indentLevel, config)
 
       case FragmentSpread(name, dirs, _) =>
