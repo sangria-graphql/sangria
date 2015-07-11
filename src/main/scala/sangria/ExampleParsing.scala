@@ -6,6 +6,8 @@ import sangria.renderer.Renderer
 
 import scala.util.{Success, Failure}
 
+// TODO: Duplicates detection in object value + test
+
 object ExampleParsing extends App {
 
   val query =

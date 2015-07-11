@@ -10,6 +10,7 @@ object Renderer {
     lineBreak = "\n",
     separator = " ",
     mandatorySeparator = " ",
+    mandatoryLineBreak = "\n",
     definitionSeparator = "\n\n")
 
   val Compact = RenderConfig(
@@ -17,12 +18,13 @@ object Renderer {
     lineBreak = "",
     separator = "",
     mandatorySeparator = " ",
+    mandatoryLineBreak = " ",
     definitionSeparator = "")
   
   def renderSelections(sels: List[Selection], indent: String, indentLevel: Int, config: RenderConfig) =
     if (sels.nonEmpty)
       "{" + config.lineBreak +
-        (sels map (render(_, config, indentLevel + 1)) mkString config.lineBreak) +
+        (sels map (render(_, config, indentLevel + 1)) mkString config.mandatoryLineBreak) +
         config.lineBreak + indent + "}"
     else ""
 
@@ -72,7 +74,7 @@ object Renderer {
       case Field(alias, name, args, dirs, sels, _) =>
         indent + (alias map (_ + ":" + config.separator) getOrElse "") + name +
           renderArgs(args, config, withSep = false) +
-          config.separator +
+          (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
@@ -132,5 +134,6 @@ case class RenderConfig(
   indentLevel: String,
   lineBreak: String,
   mandatorySeparator: String,
+  mandatoryLineBreak: String,
   separator: String,
   definitionSeparator: String)

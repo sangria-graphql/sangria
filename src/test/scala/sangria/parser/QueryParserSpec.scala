@@ -72,7 +72,7 @@ class QueryParserSpec extends WordSpec with Matchers {
       QueryParser.parse(query) should be (Success(expectedAst))
     }
 
-    "parse kitchen-sink" in {
+    "parse kitchen sink" in {
       val query = FileUtil loadQuery "kitchen-sink.graphql"
 
       val expectedAst =

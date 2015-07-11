@@ -74,12 +74,67 @@ case class FloatValue(value: Double, position: Option[Position] = None) extends 
 case class StringValue(value: String, position: Option[Position] = None) extends Value
 case class BooleanValue(value: Boolean, position: Option[Position] = None) extends Value
 case class EnumValue(value: String, position: Option[Position] = None) extends Value
-case class ArrayValue(value: List[Value], position: Option[Position] = None) extends Value
-case class ObjectValue(value: List[ObjectField], position: Option[Position] = None) extends Value
+case class ArrayValue(values: List[Value], position: Option[Position] = None) extends Value
+case class ObjectValue(fields: List[ObjectField], position: Option[Position] = None) extends Value
 case class VariableValue(name: String, position: Option[Position] = None) extends Value
 
 case class ObjectField(name: String, value: Value, position: Option[Position] = None) extends NameValue
 
 sealed trait AstNode {
   def position: Option[Position]
+}
+
+object AstNode {
+  def withoutPosition[T <: AstNode](node: T): T = node match {
+    case n: Document => n.copy(definitions = n.definitions map withoutPosition, position = None).asInstanceOf[T]
+    case n: OperationDefinition =>
+      n.copy(
+        variables = n.variables map withoutPosition,
+        directives = n.directives map withoutPosition,
+        selections = n.selections map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: FragmentDefinition =>
+      n.copy(
+        directives = n.directives map withoutPosition,
+        selections = n.selections map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: VariableDefinition =>
+      n.copy(
+        tpe = withoutPosition(n.tpe),
+        defaultValue = n.defaultValue map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: Type => n.copy(position = None).asInstanceOf[T]
+    case n: Field => 
+      n.copy(
+        arguments = n.arguments map withoutPosition,
+        directives = n.directives map withoutPosition,
+        selections = n.selections map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: FragmentSpread => 
+      n.copy(
+        directives = n.directives map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: InlineFragment => 
+      n.copy(
+        directives = n.directives map withoutPosition,
+        selections = n.selections map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: Directive => 
+      n.copy(
+        arguments = n.arguments map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: Argument => n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
+    case n: IntValue => n.copy(position = None).asInstanceOf[T]
+    case n: FloatValue => n.copy(position = None).asInstanceOf[T]
+    case n: StringValue => n.copy(position = None).asInstanceOf[T]
+    case n: BooleanValue => n.copy(position = None).asInstanceOf[T]
+    case n: EnumValue => n.copy(position = None).asInstanceOf[T]
+    case n: ArrayValue => 
+      n.copy(
+        values = n.values map withoutPosition,
+        position = None).asInstanceOf[T]
+    case n: ObjectValue => n.copy(fields = n.fields map withoutPosition, position = None).asInstanceOf[T]
+    case n: ObjectField => n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
+    case n: VariableValue => n.copy(position = None).asInstanceOf[T]
+  }
 }
