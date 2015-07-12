@@ -3,8 +3,9 @@ package sangria.parser
 import org.parboiled2._
 import CharPredicate.{HexDigit, Digit19}
 
-import scala.util.{Success, Failure, Try}
-import sangria.ast
+import sangria.{DeliveryScheme, ast}
+
+import scala.util.{Success, Failure}
 
 trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
 
@@ -224,15 +225,16 @@ class QueryParser private (val input: ParserInput)
     extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types
 
 object QueryParser {
-  def parse(input: String): Try[sangria.ast.Document] =
-    parse(ParserInput(input))
+  def parse(input: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
+    parse(ParserInput(input))(scheme)
 
-  def parse(input: ParserInput): Try[sangria.ast.Document] = {
+  def parse(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
     val parser = new QueryParser(input)
 
-    parser.Document.run().transform(Success(_), {
-      case e: ParseError => Failure(SyntaxError(parser, input, e))
-      case otherError => Failure(otherError)
-    })
+    parser.Document.run() match {
+      case Success(res) => scheme.success(res)
+      case Failure(e: ParseError) => scheme.failure(SyntaxError(parser, input, e))
+      case Failure(e) => scheme.failure(e)
+    }
   }
 }
