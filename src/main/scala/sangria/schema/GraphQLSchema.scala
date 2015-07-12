@@ -3,16 +3,16 @@ package sangria.schema
 import sangria.ast
 import sangria.validation.Violation
 
-case class Schema(
-  query: ObjectType,
-  mutation: Option[ObjectType] = None,
+case class Schema[Ctx, Res](
+  query: ObjectType[Ctx, Res],
+  mutation: Option[ObjectType[Ctx, Res]] = None,
   directives: List[Directive] = IncludeDirective :: SkipDirective :: Nil)
 
 sealed trait Type
 
-sealed trait InputType[T] extends Type
+sealed trait InputType[+T] extends Type
 
-sealed trait OutputType extends Type
+sealed trait OutputType[+T] extends Type
 
 sealed trait LeafType extends Type
 sealed trait CompositeType extends Type
@@ -24,62 +24,71 @@ case class ScalarType[T](
   name: String,
   description: Option[String] = None,
   coerceOutput: T => ast.ScalarValue,
-  coerceInput: ast.ScalarValue => Either[Violation, T]) extends InputType[T] with OutputType with LeafType with NullableType with UnmodifiedType
+  coerceInput: ast.ScalarValue => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType
 
-case class ObjectType private (
+case class ObjectType[Ctx, Val] private (
   name: String,
   description: Option[String],
-  fieldsFn: () => List[Field],
-  interfaces: List[InterfaceType]
-) extends OutputType with CompositeType with NullableType with UnmodifiedType {
+  fieldsFn: () => List[Field[Ctx, Val, _]],
+  interfaces: List[InterfaceType[Ctx, _]]
+) extends OutputType[Val] with CompositeType with NullableType with UnmodifiedType {
   lazy val fields = fieldsFn()
 }
 
 object ObjectType {
-  def apply(name: String, fields: List[Field]): ObjectType = ObjectType(name, None, fieldsFn = () => fields, Nil)
-  def apply(name: String, description: String, fields: List[Field]): ObjectType = ObjectType(name, Some(description), fieldsFn = () => fields, Nil)
-  def apply(name: String, fields: List[Field], interfaces: List[InterfaceType]): ObjectType = ObjectType(name, None, fieldsFn = () => fields, interfaces)
-  def apply(name: String, description: String, fields: List[Field], interfaces: List[InterfaceType]): ObjectType = ObjectType(name, None, fieldsFn = () => fields, interfaces)
+  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val, _]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, fieldsFn = () => fields, Nil)
+  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val, _]]): ObjectType[Ctx, Val] =
+    ObjectType(name, Some(description), fieldsFn = () => fields, Nil)
+  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, fieldsFn = () => fields, interfaces)
+  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, fieldsFn = () => fields, interfaces)
 
-  def apply(name: String, fieldsFn: () => List[Field]): ObjectType = ObjectType(name, None, fieldsFn, Nil)
-  def apply(name: String, description: String, fieldsFn: () => List[Field]): ObjectType = ObjectType(name, Some(description), fieldsFn, Nil)
-  def apply(name: String, fieldsFn: () => List[Field], interfaces: List[InterfaceType]): ObjectType = ObjectType(name, None, fieldsFn, interfaces)
-  def apply(name: String, description: String, fieldsFn: () => List[Field], interfaces: List[InterfaceType]): ObjectType = ObjectType(name, None, fieldsFn, interfaces)
+  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val, _]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, fieldsFn, Nil)
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val, _]]): ObjectType[Ctx, Val] =
+    ObjectType(name, Some(description), fieldsFn, Nil)
+  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, fieldsFn, interfaces)
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, fieldsFn, interfaces)
 }
 
 // todo implementations
-case class InterfaceType private (
+case class InterfaceType[Ctx, Val] private (
   name: String,
   description: Option[String] = None,
-  fieldsFn: () => List[Field],
-  interfaces: List[InterfaceType] = Nil
-) extends OutputType with CompositeType with AbstractType with NullableType with UnmodifiedType {
+  fieldsFn: () => List[Field[Ctx, Val, _]],
+  interfaces: List[InterfaceType[Ctx, Val]] = Nil
+) extends OutputType[Val] with CompositeType with AbstractType with NullableType with UnmodifiedType {
   lazy val fields = fieldsFn()
 }
 
 object InterfaceType {
-  def apply(name: String, fields: List[Field]): InterfaceType = InterfaceType(name, None, fieldsFn = () => fields, Nil)
-  def apply(name: String, description: String, fields: List[Field]): InterfaceType = InterfaceType(name, Some(description), fieldsFn = () => fields, Nil)
-  def apply(name: String, fields: List[Field], interfaces: List[InterfaceType]): InterfaceType = InterfaceType(name, None, fieldsFn = () => fields, interfaces)
-  def apply(name: String, description: String, fields: List[Field], interfaces: List[InterfaceType]): InterfaceType = InterfaceType(name, None, fieldsFn = () => fields, interfaces)
+  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val, _]]): InterfaceType[Ctx, Val] = InterfaceType(name, None, fieldsFn = () => fields, Nil)
+  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val, _]]): InterfaceType[Ctx, Val] = InterfaceType(name, Some(description), fieldsFn = () => fields, Nil)
+  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] = InterfaceType(name, None, fieldsFn = () => fields, interfaces)
+  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] = InterfaceType(name, None, fieldsFn = () => fields, interfaces)
 
-  def apply(name: String, fieldsFn: () => List[Field]): InterfaceType = InterfaceType(name, None, fieldsFn, Nil)
-  def apply(name: String, description: String, fieldsFn: () => List[Field]): InterfaceType = InterfaceType(name, Some(description), fieldsFn, Nil)
-  def apply(name: String, fieldsFn: () => List[Field], interfaces: List[InterfaceType]): InterfaceType = InterfaceType(name, None, fieldsFn, interfaces)
-  def apply(name: String, description: String, fieldsFn: () => List[Field], interfaces: List[InterfaceType]): InterfaceType = InterfaceType(name, None, fieldsFn, interfaces)
+  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val, _]]): InterfaceType[Ctx, Val] = InterfaceType(name, None, fieldsFn, Nil)
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val, _]]): InterfaceType[Ctx, Val] = InterfaceType(name, Some(description), fieldsFn, Nil)
+  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] = InterfaceType(name, None, fieldsFn, interfaces)
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val, _]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] = InterfaceType(name, None, fieldsFn, interfaces)
 }
 
 case class UnionType(
   name: String,
   description: Option[String] = None,
-  types: List[ObjectType]) extends OutputType with CompositeType with AbstractType with NullableType with UnmodifiedType
+  types: List[ObjectType[TODO_UNION, TODO_UNION]]) extends OutputType[TODO_UNION] with CompositeType with AbstractType with NullableType with UnmodifiedType
 
 // todo resolve
-case class Field(
+case class Field[Ctx, Val, Res](
   name: String,
-  fieldType: OutputType,
+  fieldType: OutputType[Res],
   description: Option[String] = None,
   arguments: List[Argument[_]] = Nil,
+  resolve: Context[Ctx, Val] => Deferred[Res],
   deprecationReason: Option[String] = None)
 
 case class Argument[T](
@@ -91,7 +100,7 @@ case class Argument[T](
 case class EnumType[T](
   name: String,
   description: Option[String] = None,
-  values: List[EnumValue[T]]) extends InputType[T] with OutputType with LeafType with NullableType with UnmodifiedType
+  values: List[EnumValue[T]]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType
 
 case class EnumValue[+T](
   name: String,
@@ -121,11 +130,11 @@ case class InputObjectField[T](
   description: Option[String] = None,
   defaultValue: Option[T] = None)
 
-case class ListType(ofType: OutputType) extends OutputType with NullableType
-case class ListInputType[T](ofType: InputType[T]) extends InputType[T] with NullableType
+case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType
+case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with NullableType
 
-case class NonNullType(ofType: OutputType) extends OutputType
-case class NonNullInputType[T](ofType: InputType[T]) extends InputType[T] with OutputType
+case class OptionType[T](ofType: OutputType[T]) extends OutputType[Option[T]]
+case class OptionInputType[T](ofType: InputType[T]) extends InputType[Option[T]]
 
 case class Directive(
   name: String,

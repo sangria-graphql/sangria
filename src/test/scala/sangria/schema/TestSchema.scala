@@ -1,38 +1,41 @@
 package sangria.schema
 
+import sangria.TestData
+import sangria.TestData.{CharacterRepo, Droid, Human}
+
 object TestSchema {
   val EposideEnum = EnumType("Episode", Some("One of the films in the Star Wars Trilogy"), List(
-    EnumValue("NEWHOPE", value = 4, description = Some("Released in 1977.")),
-    EnumValue("EMPIRE", value = 5, description = Some("Released in 1980.")),
-    EnumValue("JEDI", value = 6, description = Some("Released in 1983."))))
+    EnumValue("NEWHOPE", value = TestData.Eposide.NEWHOPE, description = Some("Released in 1977.")),
+    EnumValue("EMPIRE", value = TestData.Eposide.EMPIRE, description = Some("Released in 1980.")),
+    EnumValue("JEDI", value = TestData.Eposide.JEDI, description = Some("Released in 1983."))))
 
-  val Character: InterfaceType = InterfaceType("Character", "A character in the Star Wars Trilogy", () => List(
-    Field("id", NonNullType(StringType), Some("The id of the character.")),
-    Field("name", StringType, Some("The name of the character.")),
-    Field("friends", ListType(Character), Some("The friends of the character, or an empty list if they have none.")),
-    Field("appearsIn", ListType(EposideEnum), Some("Which movies they appear in."))
+  val Character: InterfaceType[Unit, TestData.Character] = InterfaceType("Character", "A character in the Star Wars Trilogy", () => List[Field[Unit, TestData.Character, _]](
+    Field("id", StringType, Some("The id of the character."), resolve = _.value.id),
+    Field("name", OptionType(StringType), Some("The name of the character."), resolve = _.value.name),
+    Field("friends", ListType(Character), Some("The friends of the character, or an empty list if they have none."), resolve = _.value.friends),
+    Field("appearsIn", ListType(EposideEnum), Some("Which movies they appear in."), resolve = _.value.appearsIn)
   ))
 
-  val Human = ObjectType("Human", "A humanoid creature in the Star Wars universe.", List(
-    Field("id", NonNullType(StringType), Some("The id of the human.")),
-    Field("name", StringType, Some("The name of the human.")),
-    Field("friends", ListType(Character), Some("The friends of the human, or an empty list if they have none.")),
-    Field("homePlanet", StringType, Some("The home planet of the human, or null if unknown."))
+  val Human = ObjectType[Unit, Human]("Human", "A humanoid creature in the Star Wars universe.", List[Field[Unit, Human, _]](
+    Field("id", StringType, Some("The id of the human."), resolve = _.value.id),
+    Field("name", OptionType(StringType), Some("The name of the human."), resolve = _.value.name),
+    Field("friends", ListType(Character), Some("The friends of the human, or an empty list if they have none."), resolve = _.value.friends),
+    Field("homePlanet", OptionType(StringType), Some("The home planet of the human, or null if unknown."), resolve = _.value.homePlanet)
   ), Character :: Nil)
 
-  val Droid = ObjectType("Droid", "A mechanical creature in the Star Wars universe.", List(
-    Field("id", NonNullType(StringType), Some("The id of the droid.")),
-    Field("name", StringType, Some("The name of the droid.")),
-    Field("friends", ListType(Character), Some("The friends of the droid, or an empty list if they have none.")),
-    Field("primaryFunction", StringType, Some("The primary function of the droid."))
+  val Droid = ObjectType[Unit, Droid]("Droid", "A mechanical creature in the Star Wars universe.", List[Field[Unit, Droid, _]](
+    Field("id", StringType, Some("The id of the droid."), resolve = _.value.id),
+    Field("name", OptionType(StringType), Some("The name of the droid."), resolve = _.value.name),
+    Field("friends", ListType(Character), Some("The friends of the droid, or an empty list if they have none."), resolve = _.value.friends),
+    Field("primaryFunction", OptionType(StringType), Some("The primary function of the droid."), resolve = _.value.primaryFunction)
   ), Character :: Nil)
 
-  val ID = Argument("id", NonNullInputType(StringType))
+  val ID = Argument("id", StringType)
 
-  val Query = ObjectType("Query", List(
-    Field("hero", Character),
-    Field("human", Human, arguments = ID :: Nil),
-    Field("droid", Droid, arguments = ID :: Nil)
+  val Query = ObjectType[CharacterRepo, Unit]("Query", List[Field[CharacterRepo, Unit, _]](
+    Field("hero", Character, resolve = (ctx) => ctx.ctx.getHero),
+    Field("human", Human, arguments = ID :: Nil, resolve = (ctx) => ctx.ctx.getHuman(ctx arg ID)),
+    Field("droid", Droid, arguments = ID :: Nil, resolve = (ctx) => ctx.ctx.getDroid(ctx arg ID))
   ))
 
   val StarWarsSchema = Schema(Query)
