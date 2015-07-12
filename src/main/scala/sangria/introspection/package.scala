@@ -1,4 +1,6 @@
-package sangria.schema
+package sangria
+
+import sangria.schema._
 
 package object introspection {
   val __Type = ???
