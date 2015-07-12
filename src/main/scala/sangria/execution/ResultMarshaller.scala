@@ -40,6 +40,8 @@ trait InputUnmarshaller[Node] {
 
   def isScalarNode(node: LeafNode): Boolean
   def getScalarValue(node: LeafNode): Any
+
+  def render(node: LeafNode): String
 }
 
 object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
@@ -57,4 +59,6 @@ object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
 
   def isScalarNode(node: Any) = !(isMapNode(node) && isArrayNode(node))
   def getScalarValue(node: Any) = node
+
+  def render(node: LeafNode) = node.toString
 }
