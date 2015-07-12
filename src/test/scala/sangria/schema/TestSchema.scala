@@ -2,6 +2,11 @@ package sangria.schema
 
 import sangria.TestData
 import sangria.TestData.{DeferFriends, CharacterRepo, Droid, Human}
+import sangria.execution.Executor
+import sangria.parser.QueryParser
+import sangria.util.FileUtil
+
+import scala.util.Success
 
 object TestSchema {
   val EposideEnum = EnumType("Episode", Some("One of the films in the Star Wars Trilogy"), List(
@@ -39,4 +44,8 @@ object TestSchema {
   ))
 
   val StarWarsSchema = Schema(Query)
+
+  // todo remove
+  val Success(ast) = QueryParser.parse(FileUtil.loadQuery("kitchen-sink.graphql"))
+  Executor.execute(StarWarsSchema, ast, userContext = new CharacterRepo)
 }

@@ -2,22 +2,36 @@ package sangria.schema
 
 import language.implicitConversions
 
-trait Op[+Ctx, +T]
+import sangria.ast
+
+import scala.concurrent.Future
+
+sealed trait Op[+Ctx, +T]
 
 object Op {
-  implicit def defaultOp[Ctx, T](value: T): Op[Ctx, T] = Value(value)
+  implicit def defaultFutureOp[Ctx, T](value: => Future[T]): Op[Ctx, T] = FutureValue(() => value)
+  implicit def defaultDeferredOp[Ctx, T](value: => Deferred[T]): Op[Ctx, T] = DeferredValue(() => value)
+  implicit def defaultOp[Ctx, T](value: => T): Op[Ctx, T] = Value(() => value)
 }
 
-case class Value[Ctx, Val](value: Val) extends Op[Ctx, Val]
-case class UpdateCtx[Ctx, Val](newCtx: Ctx, value: Val) extends Op[Ctx, Val]
+case class Value[Ctx, Val](value: () => Val) extends Op[Ctx, Val]
+case class FutureValue[Ctx, Val](value: () => Future[Val]) extends Op[Ctx, Val]
+case class DeferredValue[Ctx, T](value: () => Deferred[T]) extends Op[Ctx, T]
+case class UpdateCtx[Ctx, Val](newCtx: Ctx, op: Op[Ctx, Val]) extends Op[Ctx, Val]
 
-trait Deferred[Ctx, +T] extends Op[Ctx, T]
+trait Deferred[+T]
 
-case class Context[Ctx, Val](value: Val, ctx: Ctx, args: Map[String, Any], schema: Schema[Ctx, Val]) {
+case class Context[Ctx, Val](
+      value: Val,
+      ctx: Ctx,
+      args: Map[String, Any],
+      schema: Schema[Ctx, Val],
+      field: Field[Ctx, Val],
+      fieldAst: ast.Field) {
   def arg[T](arg: Argument[T]) = args(arg.name).asInstanceOf[T]
   def argOpt[T](arg: Argument[T]) = args.get(arg.name).asInstanceOf[T]
 }
 
 trait DeferredResolver {
-  def resolve(deferred: List[Deferred[_, _]]): List[Any]
+  def resolve(deferred: List[Deferred[_]]): List[Any]
 }
