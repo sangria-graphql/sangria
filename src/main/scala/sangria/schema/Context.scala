@@ -5,6 +5,7 @@ import language.implicitConversions
 import sangria.ast
 
 import scala.concurrent.Future
+import scala.util.{Failure, Try}
 
 sealed trait Op[+Ctx, +T]
 
@@ -33,5 +34,11 @@ case class Context[Ctx, Val](
 }
 
 trait DeferredResolver {
-  def resolve(deferred: List[Deferred[_]]): List[Any]
+  def resolve(deferred: List[Deferred[_]]): List[Try[Any]]
 }
+
+object NilDeferredResolver extends DeferredResolver {
+  override def resolve(deferred: List[Deferred[_]]) = deferred map (_ => Failure(UnsupportedDeferError))
+}
+
+case object UnsupportedDeferError extends Exception

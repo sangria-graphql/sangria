@@ -1,10 +1,14 @@
 package sangria
 
-import sangria.validation.{IDCoercionViolation, StringCoercionViolation, FloatCoercionViolation, IntCoercionViolation}
+import sangria.validation._
 
 package object schema {
   val IntType = ScalarType[Int]("Int",
     coerceOutput = ast.IntValue(_),
+    coerceUserInput = {
+      case i: Int => Right(i)
+      case _ => Left(IntCoercionViolation)
+    },
     coerceInput = {
       case ast.IntValue(i, _) => Right(i)
       case _ => Left(IntCoercionViolation)
@@ -12,6 +16,12 @@ package object schema {
 
   val FloatType = ScalarType[Double]("Float",
     coerceOutput = ast.FloatValue(_),
+    coerceUserInput = {
+      case i: Int => Right(i.toDouble)
+      case f: Float => Right(f.toDouble)
+      case d: Double => Right(d)
+      case _ => Left(FloatCoercionViolation)
+    },
     coerceInput = {
       case ast.FloatValue(d, _) => Right(d)
       case ast.IntValue(i, _) => Right(i)
@@ -19,21 +29,34 @@ package object schema {
     })
 
   val BooleanType = ScalarType[Boolean]("Boolean",
-    coerceOutput = (b) => ast.BooleanValue(b),
+    coerceOutput = b => ast.BooleanValue(b),
+    coerceUserInput = {
+      case b: Boolean => Right(b)
+      case _ => Left(BooleanCoercionViolation)
+    },
     coerceInput = {
       case ast.BooleanValue(b, _) => Right(b)
-      case _ => Left(IntCoercionViolation)
+      case _ => Left(BooleanCoercionViolation)
     })
 
   val StringType = ScalarType[String]("String",
-    coerceOutput = (s) => ast.StringValue(s),
+    coerceOutput = s => ast.StringValue(s),
+    coerceUserInput = {
+      case s: String => Right(s)
+      case _ => Left(StringCoercionViolation)
+    },
     coerceInput = {
       case ast.StringValue(s, _) => Right(s)
       case _ => Left(StringCoercionViolation)
     })
 
   val IDType = ScalarType[String]("ID",
-    coerceOutput = (s) => ast.StringValue(s),
+    coerceOutput = s => ast.StringValue(s),
+    coerceUserInput = {
+      case s: String => Right(s)
+      case i: Int => Right(i.toString)
+      case _ => Left(IDCoercionViolation)
+    },
     coerceInput = {
       case ast.StringValue(id, _) => Right(id)
       case ast.IntValue(id, _) => Right(id.toString)

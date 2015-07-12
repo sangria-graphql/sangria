@@ -1,7 +1,9 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.validation.Violation
+import sangria.validation.{EnumValueCoercionViolation, EnumCoercionViolation, Violation}
+
+import scala.util.Success
 
 sealed trait Type
 
@@ -23,6 +25,7 @@ sealed trait Named {
 case class ScalarType[T](
   name: String,
   description: Option[String] = None,
+  coerceUserInput: Any => Either[Violation, T],
   coerceOutput: T => ast.ScalarValue,
   coerceInput: ast.ScalarValue => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
@@ -121,9 +124,24 @@ case class Argument[T](
   defaultValue: Option[T] = None) extends Named
 
 case class EnumType[T](
-  name: String,
-  description: Option[String] = None,
-  values: List[EnumValue[T]]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+    name: String,
+    description: Option[String] = None,
+    values: List[EnumValue[T]]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
+  lazy val byName = values groupBy (_.name) mapValues (_.head.value)
+  lazy val byValue = values groupBy (_.value) mapValues (_.head.name)
+
+  def coerceUserInput(value: Any): Either[Violation, T] = value match {
+    case name: String => byName get name map (Right(_)) getOrElse Left(EnumValueCoercionViolation(name))
+    case v if byValue exists (_ == v) => Right(v.asInstanceOf[T])
+    case _ => Left(EnumCoercionViolation)
+  }
+
+  def coerceInput(value: ast.EnumValue): Either[Violation, T] =
+    byName get name map (Right(_)) getOrElse Left(EnumValueCoercionViolation(name))
+
+  def coerceOutput(value: T) = ast.EnumValue(byValue(value))
+
+}
 
 case class EnumValue[+T](
   name: String,
@@ -182,7 +200,7 @@ case class Schema[Ctx, Res](
         case ListType(ofType) => collectTypes(ofType, result)
         case ListInputType(ofType) => collectTypes(ofType, result)
 
-        case t @ ScalarType(name, _, _, _) => updated(name, t, result)
+        case t @ ScalarType(name, _, _, _, _) => updated(name, t, result)
         case t @ EnumType(name, _, _) => updated(name, t, result)
         case t @ InputObjectType(name, _, _) =>
           t.fields.foldLeft(updated(name, t, result)) {case (acc, field) => collectTypes(field.fieldType, acc)}

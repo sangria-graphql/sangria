@@ -2,6 +2,8 @@ package sangria
 
 import sangria.schema.{Deferred, DeferredResolver}
 
+import scala.util.Success
+
 object TestData {
   object Eposide extends Enumeration {
     val NEWHOPE, EMPIRE, JEDI = Value
@@ -73,7 +75,7 @@ object TestData {
     def getDroid(id: String): Droid = characters.find(c => c.isInstanceOf[Human] && c.id == id).asInstanceOf[Droid]
 
     override def resolve(deferred: List[Deferred[_]]) = deferred map {
-      case DeferFriends(friendIds) => friendIds map (id => characters.find(_.id == id).get)
+      case DeferFriends(friendIds) => Success(friendIds map (id => characters.find(_.id == id).get))
     }
   }
 }
