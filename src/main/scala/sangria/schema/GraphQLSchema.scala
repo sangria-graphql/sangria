@@ -3,7 +3,10 @@ package sangria.schema
 import sangria.ast
 import sangria.validation.Violation
 
-case class Schema(query: ObjectType, mutation: Option[ObjectType] = None)
+case class Schema(
+  query: ObjectType,
+  mutation: Option[ObjectType] = None,
+  directives: List[Directive] = IncludeDirective :: SkipDirective :: Nil)
 
 sealed trait Type
 
@@ -123,3 +126,11 @@ case class ListInputType[T](ofType: InputType[T]) extends InputType[T] with Null
 
 case class NonNullType(ofType: OutputType) extends OutputType
 case class NonNullInputType[T](ofType: InputType[T]) extends InputType[T] with OutputType
+
+case class Directive(
+  name: String,
+  description: Option[String] = None,
+  arguments: List[Argument[_]] = Nil,
+  onOperation: Boolean,
+  onFragment: Boolean,
+  onField: Boolean)

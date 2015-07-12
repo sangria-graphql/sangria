@@ -39,4 +39,18 @@ package object schema {
       case ast.IntValue(id, _) => Right(id.toString)
       case _ => Left(IDCoercionViolation)
     })
+
+  val IncludeDirective = Directive("include",
+    description = Some("Directs the executor to include this field or fragment only when the `if` argument is true."),
+    arguments = Argument("if", NonNullInputType(BooleanType), Some("Included when true.")) :: Nil,
+    onOperation = false,
+    onFragment = true,
+    onField = true)
+
+  val SkipDirective = Directive("skip",
+    description = Some("Directs the executor to skip this field or fragment when the `if` argument is true."),
+    arguments = Argument("if", NonNullInputType(BooleanType), Some("Skipped when true.")) :: Nil,
+    onOperation = false,
+    onFragment = true,
+    onField = true)
 }
