@@ -3,11 +3,6 @@ package sangria.schema
 import sangria.ast
 import sangria.validation.Violation
 
-case class Schema[Ctx, Res](
-  query: ObjectType[Ctx, Res],
-  mutation: Option[ObjectType[Ctx, Res]] = None,
-  directives: List[Directive] = IncludeDirective :: SkipDirective :: Nil)
-
 sealed trait Type
 
 sealed trait InputType[+T] extends Type
@@ -20,18 +15,28 @@ sealed trait AbstractType extends Type
 sealed trait NullableType
 sealed trait UnmodifiedType
 
+sealed trait Named {
+  def name: String
+  def description: Option[String]
+}
+
 case class ScalarType[T](
   name: String,
   description: Option[String] = None,
   coerceOutput: T => ast.ScalarValue,
-  coerceInput: ast.ScalarValue => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType
+  coerceInput: ast.ScalarValue => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+
+sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType with NullableType with UnmodifiedType with Named {
+  def interfaces: List[InterfaceType[Ctx, _]]
+  def fields: List[Field[Ctx, Val]]
+}
 
 case class ObjectType[Ctx, Val] private (
   name: String,
   description: Option[String],
   fieldsFn: () => List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
-) extends OutputType[Val] with CompositeType with NullableType with UnmodifiedType {
+) extends ObjectLikeType[Ctx, Val] {
   lazy val fields = fieldsFn()
 }
 
@@ -60,8 +65,8 @@ case class InterfaceType[Ctx, Val] private (
   name: String,
   description: Option[String] = None,
   fieldsFn: () => List[Field[Ctx, Val]],
-  interfaces: List[InterfaceType[Ctx, Val]] = Nil
-) extends OutputType[Val] with CompositeType with AbstractType with NullableType with UnmodifiedType {
+  interfaces: List[InterfaceType[Ctx, _]]
+) extends ObjectLikeType[Ctx, Val] with AbstractType {
   lazy val fields = fieldsFn()
 }
 
@@ -85,10 +90,10 @@ object InterfaceType {
     InterfaceType(name, None, fieldsFn, interfaces)
 }
 
-case class UnionType(
+case class UnionType[Ctx](
   name: String,
   description: Option[String] = None,
-  types: List[ObjectType[TODO_UNION, TODO_UNION]]) extends OutputType[TODO_UNION] with CompositeType with AbstractType with NullableType with UnmodifiedType
+  types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType with Named
 
 case class Field[Ctx, Val] private (
   name: String,
@@ -96,7 +101,7 @@ case class Field[Ctx, Val] private (
   description: Option[String],
   arguments: List[Argument[_]],
   resolve: Context[Ctx, Val] => Op[_, _],
-  deprecationReason: Option[String])
+  deprecationReason: Option[String]) extends Named
 
 object Field {
   def apply[Ctx, Val, Res, Out](
@@ -113,24 +118,24 @@ case class Argument[T](
   name: String,
   argumentType: InputType[T],
   description: Option[String] = None,
-  defaultValue: Option[T] = None)
+  defaultValue: Option[T] = None) extends Named
 
 case class EnumType[T](
   name: String,
   description: Option[String] = None,
-  values: List[EnumValue[T]]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType
+  values: List[EnumValue[T]]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
 case class EnumValue[+T](
   name: String,
   description: Option[String] = None,
   value: T,
-  deprecationReason: Option[String] = None)
+  deprecationReason: Option[String] = None) extends Named
 
 case class InputObjectType[T] private (
   name: String,
   description: Option[String] = None,
   fieldsFn: () => List[InputObjectField[_]]
-) extends InputType[T] with NullableType with UnmodifiedType {
+) extends InputType[T] with NullableType with UnmodifiedType with Named {
   lazy val fields = fieldsFn()
 }
 
@@ -146,7 +151,7 @@ case class InputObjectField[T](
   name: String,
   fieldType: InputType[T],
   description: Option[String] = None,
-  defaultValue: Option[T] = None)
+  defaultValue: Option[T] = None) extends Named
 
 case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType
 case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with NullableType
@@ -161,3 +166,45 @@ case class Directive(
   onOperation: Boolean,
   onFragment: Boolean,
   onField: Boolean)
+
+case class Schema[Ctx, Res](
+    query: ObjectType[Ctx, Res],
+    mutation: Option[ObjectType[Ctx, Res]] = None,
+    directives: List[Directive] = IncludeDirective :: SkipDirective :: Nil) {
+  lazy val types: Map[String, Type with Named] = {
+    def updated(name: String, tpe: Type with Named, result: Map[String, Type with Named]) =
+      if (result contains name) result else result.updated(name, tpe)
+
+    def collectTypes(tpe: Type, result: Map[String, Type with Named]): Map[String, Type with Named] = {
+      tpe match {
+        case OptionType(ofType) => collectTypes(ofType, result)
+        case OptionInputType(ofType) => collectTypes(ofType, result)
+        case ListType(ofType) => collectTypes(ofType, result)
+        case ListInputType(ofType) => collectTypes(ofType, result)
+
+        case t @ ScalarType(name, _, _, _) => updated(name, t, result)
+        case t @ EnumType(name, _, _) => updated(name, t, result)
+        case t @ InputObjectType(name, _, _) =>
+          t.fields.foldLeft(updated(name, t, result)) {case (acc, field) => collectTypes(field.fieldType, acc)}
+        case t: ObjectLikeType[_, _] =>
+          val own = t.fields.foldLeft(updated(t.name, t, result)) {
+            case (acc, field) =>
+              field.arguments.foldLeft(collectTypes(field.fieldType, acc)) {
+                case (aacc, arg) => collectTypes(arg.argumentType, aacc)
+              }
+          }
+
+          t.interfaces.foldLeft(own) {case (acc, interface) => collectTypes(interface, acc)}
+        case t @ UnionType(name, _, types) =>
+          types.foldLeft(updated(name, t, result)) {case (acc, tpe) => collectTypes(tpe, acc)}
+      }
+    }
+
+    val queryTypes = collectTypes(query, Map.empty)
+    mutation map (collectTypes(_, queryTypes)) getOrElse queryTypes
+  }
+
+  lazy val inputTypes = types collect {case (name, tpe: InputType[_]) => name -> tpe}
+  lazy val outputTypes = types collect {case (name, tpe: OutputType[_]) => name -> tpe}
+  lazy val scalarTypes = types collect {case (name, tpe: ScalarType[_]) => name -> tpe}
+}

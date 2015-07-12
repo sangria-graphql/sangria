@@ -2,7 +2,10 @@ package sangria.ast
 
 import org.parboiled2.Position
 
-case class Document(definitions: List[Definition], position: Option[Position] = None) extends AstNode
+case class Document(definitions: List[Definition], position: Option[Position] = None) extends AstNode {
+  lazy val operations = Map(definitions collect {case op: OperationDefinition => op.name -> op}: _*)
+  lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition => fragment.name -> fragment}: _*)
+}
 
 sealed trait Definition extends AstNode
 

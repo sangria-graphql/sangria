@@ -3,9 +3,6 @@ package sangria
 import sangria.validation.{IDCoercionViolation, StringCoercionViolation, FloatCoercionViolation, IntCoercionViolation}
 
 package object schema {
-  type TODO = Nothing
-  type TODO_UNION = Nothing
-
   val IntType = ScalarType[Int]("Int",
     coerceOutput = ast.IntValue(_),
     coerceInput = {
