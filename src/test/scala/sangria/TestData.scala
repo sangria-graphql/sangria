@@ -17,7 +17,7 @@ object TestData {
   case class Human(id: String, name: Option[String], friends: List[String], appearsIn: List[Eposide.Value], homePlanet: Option[String]) extends Character
   case class Droid(id: String, name: Option[String], friends: List[String], appearsIn: List[Eposide.Value], primaryFunction: Option[String]) extends Character
 
-  case class DeferFriends(friends: List[String]) extends Deferred[List[Character]]
+  case class DeferFriends[Ctx](friends: List[String]) extends Deferred[Ctx, List[Character]]
 
   class CharacterRepo extends DeferredResolver {
     val characters = List[Character]()
@@ -28,7 +28,7 @@ object TestData {
 
     def getDroid(id: String): Droid = characters.find(c => c.isInstanceOf[Human] && c.id == id).asInstanceOf[Droid]
 
-    override def resolve(deferred: List[Deferred[_]]) = deferred map {
+    override def resolve(deferred: List[Deferred[_, _]]) = deferred map {
       case DeferFriends(friendIds) => friendIds map (id => characters.find(_.id == id).get)
     }
   }
