@@ -68,11 +68,12 @@ case class Directive(name: String, arguments: List[Argument], position: Option[P
 case class Argument(name: String, value: Value, position: Option[Position] = None) extends NameValue
 
 sealed trait Value extends AstNode
+sealed trait ScalarValue extends Value
 
-case class IntValue(value: Int, position: Option[Position] = None) extends Value
-case class FloatValue(value: Double, position: Option[Position] = None) extends Value
-case class StringValue(value: String, position: Option[Position] = None) extends Value
-case class BooleanValue(value: Boolean, position: Option[Position] = None) extends Value
+case class IntValue(value: Int, position: Option[Position] = None) extends ScalarValue
+case class FloatValue(value: Double, position: Option[Position] = None) extends ScalarValue
+case class StringValue(value: String, position: Option[Position] = None) extends ScalarValue
+case class BooleanValue(value: Boolean, position: Option[Position] = None) extends ScalarValue
 case class EnumValue(value: String, position: Option[Position] = None) extends Value
 case class ArrayValue(values: List[Value], position: Option[Position] = None) extends Value
 case class ObjectValue(fields: List[ObjectField], position: Option[Position] = None) extends Value
