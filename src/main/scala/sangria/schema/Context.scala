@@ -20,6 +20,10 @@ case class FutureValue[Ctx, Val](value: () => Future[Val]) extends Op[Ctx, Val]
 case class DeferredValue[Ctx, T](value: () => Deferred[T]) extends Op[Ctx, T]
 case class UpdateCtx[Ctx, Val](newCtx: Ctx, op: Op[Ctx, Val]) extends Op[Ctx, Val]
 
+// TODO
+//case class FieldMagnet[Ctx, Val]...
+//case class FieldLookup[Ctx, Val]...
+
 trait Deferred[+T]
 
 case class Context[Ctx, Val](
