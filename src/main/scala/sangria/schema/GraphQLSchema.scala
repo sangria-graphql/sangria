@@ -26,8 +26,8 @@ case class ScalarType[T](
   name: String,
   description: Option[String] = None,
   coerceUserInput: Any => Either[Violation, T],
-  coerceOutput: T => ast.ScalarValue,
-  coerceInput: ast.ScalarValue => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+  coerceOutput: T => ast.Value,
+  coerceInput: ast.Value => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
@@ -136,8 +136,11 @@ case class EnumType[T](
     case _ => Left(EnumCoercionViolation)
   }
 
-  def coerceInput(value: ast.EnumValue): Either[Violation, T] =
-    byName get name map (Right(_)) getOrElse Left(EnumValueCoercionViolation(name))
+  def coerceInput(value: ast.Value): Either[Violation, T] = value match {
+    case ast.EnumValue(name, _) => byName get name map (Right(_)) getOrElse Left(EnumValueCoercionViolation(name))
+    case _ => Left(EnumCoercionViolation)
+  }
+
 
   def coerceOutput(value: T) = ast.EnumValue(byValue(value))
 

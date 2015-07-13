@@ -38,6 +38,7 @@ trait InputUnmarshaller[Node] {
 
   // Scalar values are Scala String, Int, Double, Boolean and Enum values defined in the schema
 
+  def isDefined(node: LeafNode): Boolean
   def isScalarNode(node: LeafNode): Boolean
   def getScalarValue(node: LeafNode): Any
 
@@ -57,6 +58,7 @@ object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
   def isArrayNode(node: Any) = node.isInstanceOf[Seq[_]]
   def getArrayValue(node: Any) = node.asInstanceOf[Seq[_]]
 
+  def isDefined(node: Any) = true
   def isScalarNode(node: Any) = !(isMapNode(node) && isArrayNode(node))
   def getScalarValue(node: Any) = node
 
