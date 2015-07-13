@@ -20,12 +20,11 @@ object Executor {
       arguments: Option[Input] = None,
       marshaller: ResultMarshaller = ScalaResultMarshaller,
       unmarshaller: InputUnmarshaller[Input] = ScalaInputUnmarshaller,
-      deferredResolver: DeferredResolver = NilDeferredResolver,
-      sourceMapper: Option[SourceMapper] = None)(implicit scheme: DeliveryScheme[ExecutionResult[marshaller.Node]]): scheme.Result = {
+      deferredResolver: DeferredResolver = NilDeferredResolver)(implicit scheme: DeliveryScheme[ExecutionResult[marshaller.Node]]): scheme.Result = {
 
     val foo = for {
       operation <- getOperation(queryAst, operationName)
-      variables <- getVariableValues[Input](schema, operation.variables, arguments getOrElse unmarshaller.emptyNode, unmarshaller, sourceMapper)
+      variables <- getVariableValues[Input](schema, operation.variables, arguments getOrElse unmarshaller.emptyNode, unmarshaller, queryAst.sourceMapper)
     } yield ExecutionResult(marshaller.booleanNode(true), Nil, marshaller.booleanNode(true))
 
     foo match {

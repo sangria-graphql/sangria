@@ -1,8 +1,9 @@
 package sangria.ast
 
 import org.parboiled2.Position
+import sangria.parser.SourceMapper
 
-case class Document(definitions: List[Definition], position: Option[Position] = None) extends AstNode {
+case class Document(definitions: List[Definition], position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode {
   lazy val operations = Map(definitions collect {case op: OperationDefinition => op.name -> op}: _*)
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition => fragment.name -> fragment}: _*)
 }
