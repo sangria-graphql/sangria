@@ -45,7 +45,7 @@ object QueryRenderer {
     lazy val indent = config.indentLevel * indentLevel
     
     node match {
-      case Document(defs, _) => defs map (render(_, config, indentLevel)) mkString config.definitionSeparator
+      case Document(defs, _, _) => defs map (render(_, config, indentLevel)) mkString config.definitionSeparator
 
       case OperationDefinition(OperationType.Query, None, Nil, Nil, sels, _) =>
         indent + renderSelections(sels, indent, indentLevel, config)
