@@ -20,14 +20,14 @@ case class OperationDefinition(
   variables: List[VariableDefinition] = Nil,
   directives: List[Directive] = Nil,
   selections: List[Selection],
-  position: Option[Position] = None) extends Definition
+  position: Option[Position] = None) extends Definition with WithDirectives
 
 case class FragmentDefinition(
   name: String,
   typeCondition: String,
   directives: List[Directive],
   selections: List[Selection],
-  position: Option[Position] = None) extends Definition with ConditionalFragment
+  position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives
 
 sealed trait OperationType
 
@@ -48,7 +48,7 @@ case class ConcreteType(name: String, position: Option[Position] = None) extends
 case class NotNullType(ofType: Type, position: Option[Position] = None) extends Type
 case class ListType(ofType: Type, position: Option[Position] = None) extends Type
 
-sealed trait Selection extends AstNode
+sealed trait Selection extends AstNode with WithDirectives
 
 case class Field(
   alias: Option[String],
@@ -70,6 +70,10 @@ case class InlineFragment(
 sealed trait NameValue extends AstNode {
   def name: String
   def value: Value
+}
+
+sealed trait WithDirectives {
+  def directives: List[Directive]
 }
 
 case class Directive(name: String, arguments: List[Argument], position: Option[Position] = None) extends AstNode

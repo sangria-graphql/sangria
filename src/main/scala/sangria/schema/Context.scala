@@ -40,7 +40,7 @@ case class Context[Ctx, Val](
       field: Field[Ctx, Val],
       fieldAst: ast.Field) extends WithArguments
 
-case class DirectiveContext(selection: ast.Selection, directive: Directive, args: Map[String, Any]) extends WithArguments
+case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 
 trait DeferredResolver {
   def resolve(deferred: List[Deferred[_]]): List[Try[Any]]

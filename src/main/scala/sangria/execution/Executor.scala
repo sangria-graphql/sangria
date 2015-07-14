@@ -22,7 +22,7 @@ case class Executor[Ctx, Root](
     val foo = for {
       operation <- getOperation(queryAst, operationName)
       variables <- valueExecutor.getVariableValues(operation.variables)
-      fieldExecutor = new FieldExecutor[Ctx, Root](schema, variables, queryAst.sourceMapper, valueExecutor)
+      fieldExecutor = new FieldExecutor[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueExecutor)
       res <- executeOperation(operation, queryAst.sourceMapper, fieldExecutor)
     } yield ExecutionResult(marshaller.booleanNode(true), Nil, marshaller.booleanNode(true), res)
 
