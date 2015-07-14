@@ -6,6 +6,18 @@ The initial version is WIP. More information about the project will come soon.
 
 [![Build Status](https://travis-ci.org/OlegIlyenko/sangria.svg)](https://travis-ci.org/OlegIlyenko/sangria)
 
+SBT Configuration:
+
+    libraryDependencies += "com.github.olegilyenko" %% "sangria" % "0.0.0"
+
+The version number speaks for itself, don't use it in production just yet :)
+
+SBT Configuration (snapshot):
+
+    resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+    libraryDependencies += "com.github.olegilyenko" %% "sangria" % "0.0.1-SNAPSHOT"
+
+
 Examples below demonstrate some of the features, that are implemented so far. More features will come very soon!
 
 ### Parser and Renderer
