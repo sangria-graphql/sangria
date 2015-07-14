@@ -38,11 +38,11 @@ class FieldExecutor[Ctx, Val](
               fragmentConditionMatch <- doesFragmentConditionMatch(tpe, fragment)
               fragmentFields <-
                 if (shouldInclude && fragmentConditionMatch)
-                  collectFields(tpe, fragmentSelections, visitedFragments)
+                  collectFields(tpe, fragmentSelections, visitedFragments) map (acc ++ _)
                 else s
             } yield fragmentFields
           case ast.FragmentSpread(name, _, _) if visitedFragments contains name => s
-          case ast.FragmentSpread(name, dirs, position) if visitedFragments contains name =>
+          case ast.FragmentSpread(name, dirs, position) =>
             shouldIncludeNode(dirs, selection) flatMap { shouldInclude =>
 
               if (shouldInclude) {
@@ -55,7 +55,7 @@ class FieldExecutor[Ctx, Val](
                       fragmentConditionMatch <- doesFragmentConditionMatch(tpe, fragment)
                       fragmentFields <-
                       if (shouldInclude && fragmentConditionMatch)
-                        collectFields(tpe, fragment.selections, visitedFragments)
+                        collectFields(tpe, fragment.selections, visitedFragments) map (acc ++ _)
                       else s
                     } yield fragmentFields
                   case None =>

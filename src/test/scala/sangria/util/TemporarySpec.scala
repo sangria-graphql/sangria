@@ -17,7 +17,14 @@ class TemporarySpec extends WordSpec with Matchers {
       val ast = QueryParser.parse(
         """
            query testQ ($xx: Boolean!) {
-             sdsds
+             ... on Query {
+               getDroid
+             }
+
+             ...Foo
+           }
+
+           fragment Foo on Query {
              getHuman @include(if: $xx)
            }
         """
