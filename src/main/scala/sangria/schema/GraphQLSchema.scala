@@ -96,7 +96,7 @@ object InterfaceType {
 case class UnionType[Ctx](
   name: String,
   description: Option[String] = None,
-  types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType with Named
+  types: List[ObjectType[Ctx, Any]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType with Named
 
 case class Field[Ctx, Val] private (
   name: String,
@@ -232,6 +232,9 @@ case class Schema[Ctx, Val](
   lazy val inputTypes = types collect {case (name, tpe: InputType[_]) => name -> tpe}
   lazy val outputTypes = types collect {case (name, tpe: OutputType[_]) => name -> tpe}
   lazy val scalarTypes = types collect {case (name, tpe: ScalarType[_]) => name -> tpe}
+  lazy val unionTypes: Map[String, UnionType[_]] =
+    types.filter(_.isInstanceOf[UnionType[_]]).mapValues(_.asInstanceOf[UnionType[_]])
+
   lazy val directivesByName = directives groupBy (_.name) mapValues (_.head)
 
   def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
@@ -245,4 +248,29 @@ case class Schema[Ctx, Val](
     case ast.NotNullType(ofType, _) => getOutputType(ofType) collect {case OptionType(ot) => ot}
     case ast.ListType(ofType, _) => getOutputType(ofType) map (ListType(_))
   }
+
+  lazy val directImplementations: Map[String, List[ObjectLikeType[_, _]]] = {
+    types.values.toList
+      .collect{case objectLike: ObjectLikeType[_, _] => objectLike}
+      .flatMap(objectLike => objectLike.interfaces map (_.name -> objectLike))
+      .groupBy(_._1)
+      .mapValues(_ map (_._2))
+  }
+
+  lazy val implementations: Map[String, List[ObjectType[_, _]]] = {
+    def findConcreteTypes(tpe: ObjectLikeType[_, _]): List[ObjectType[_, _]] = tpe match {
+      case obj: ObjectType[_, _] => obj :: Nil
+      case interface: InterfaceType[_, _] => directImplementations(interface.name) flatMap findConcreteTypes
+    }
+
+    directImplementations map {
+      case (name, directImpls) => name -> directImpls.flatMap(findConcreteTypes).groupBy(_.name).map(_._2.head).toList
+    }
+  }
+
+  lazy val possibleTypes: Map[String, List[ObjectType[_, _]]] =
+    implementations ++ unionTypes.values.map(ut => ut.name -> ut.types)
+
+  def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
+    possibleTypes get baseTypeName exists (_ exists (_.name == tpe.name))
 }

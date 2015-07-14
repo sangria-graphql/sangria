@@ -59,28 +59,32 @@ case class Executor[Ctx, Root](
         Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position))
   }
 
-  def collectFields(tpe: ObjectType[Ctx, Root], selections: List[ast.Selection], variables: Map[String, Any], sourceMapper: Option[SourceMapper], valueExecutor: ValueExecutor[_]) =
-    selections.foldLeft(Map.empty[String, Try[List[ast.Field]]]) {
-      case (acc, selection) =>
+  def collectFields(tpe: ObjectType[Ctx, Root], selections: List[ast.Selection], variables: Map[String, Any], sourceMapper: Option[SourceMapper], valueExecutor: ValueExecutor[_]): Try[Map[String, Try[List[ast.Field]]]] =
+    selections.foldLeft(Success(Map.empty) : Try[Map[String, Try[List[ast.Field]]]]) {
+      case (f @ Failure(_), selection) => f
+      case (s @ Success(acc), selection) =>
         selection match {
           case field @ ast.Field(_, _, _, dirs, _, _) =>
             val name = resultName(field)
 
             shouldIncludeNode(dirs, selection, variables, sourceMapper, valueExecutor) match {
               case Success(true) => acc.get(name) match {
-                case Some(Success(list)) => acc.updated(name, Success(list :+ field))
-                case Some(Failure(_)) => acc
-                case None => acc.updated(name, Success(field :: Nil))
+                case Some(Success(list)) => Success(acc.updated(name, Success(list :+ field)))
+                case Some(Failure(_)) => s
+                case None => Success(acc.updated(name, Success(field :: Nil)))
               }
-              case Success(false) => acc
-              case Failure(error) => acc.updated(name, Failure(error))
+              case Success(false) => s
+              case Failure(error) => Success(acc.updated(name, Failure(error)))
             }
-//          case fragment @ ast.InlineFragment(_, dirs, _, _) =>
-//            for {
-//              shouldInclude <- shouldIncludeNode(dirs, selection, variables, sourceMapper, valueExecutor)
-//            }
-
-            // todo fragments
+          case fragment @ ast.InlineFragment(typeCondition, dirs, fragmentSelections, _) =>
+            for {
+              shouldInclude <- shouldIncludeNode(dirs, selection, variables, sourceMapper, valueExecutor)
+              fragmentConditionMatch <- doesFragmentConditionMatch(tpe, fragment, sourceMapper)
+              fragmentFields <-
+                if (shouldInclude && fragmentConditionMatch)
+                  collectFields(tpe, fragmentSelections, variables, sourceMapper, valueExecutor)
+                else s
+            } yield fragmentFields
         }
     }
 
@@ -107,7 +111,10 @@ case class Executor[Ctx, Root](
     }
   }
 
-  def doesFragmentConditionMatch(tpe: ObjectType[_, _], conditional: ast.ConditionalFragment) = ???
+  def doesFragmentConditionMatch(tpe: ObjectType[_, _], conditional: ast.ConditionalFragment, sourceMapper: Option[SourceMapper]): Try[Boolean] =
+    schema.outputTypes.get(conditional.typeCondition)
+      .map(condTpe => Success(condTpe.name == tpe.name || (condTpe.isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
+      .getOrElse(Failure(new ExecutionError(s"Unknown type '${conditional.typeCondition}'.", sourceMapper, conditional.position)))
 }
 
 case class ExecutionResult[T](data: T, errors: List[T], result: T, foo: Any)
