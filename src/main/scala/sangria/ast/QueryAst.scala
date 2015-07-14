@@ -8,6 +8,10 @@ case class Document(definitions: List[Definition], position: Option[Position] = 
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition => fragment.name -> fragment}: _*)
 }
 
+sealed trait ConditionalFragment extends AstNode {
+  def typeCondition: String
+}
+
 sealed trait Definition extends AstNode
 
 case class OperationDefinition(
@@ -23,7 +27,7 @@ case class FragmentDefinition(
   typeCondition: String,
   directives: List[Directive],
   selections: List[Selection],
-  position: Option[Position] = None) extends Definition
+  position: Option[Position] = None) extends Definition with ConditionalFragment
 
 sealed trait OperationType
 
@@ -38,11 +42,11 @@ case class VariableDefinition(
   defaultValue: Option[Value],
   position: Option[Position] = None) extends AstNode
 
-case class Type(
-  name: String,
-  isList: Boolean,
-  isNotNull: Boolean,
-  position: Option[Position] = None) extends AstNode
+sealed trait Type extends AstNode
+
+case class ConcreteType(name: String, position: Option[Position] = None) extends Type
+case class NotNullType(ofType: Type, position: Option[Position] = None) extends Type
+case class ListType(ofType: Type, position: Option[Position] = None) extends Type
 
 sealed trait Selection extends AstNode
 
@@ -61,7 +65,7 @@ case class InlineFragment(
   typeCondition: String,
   directives: List[Directive],
   selections: List[Selection],
-  position: Option[Position] = None) extends Selection
+  position: Option[Position] = None) extends Selection with ConditionalFragment
 
 sealed trait NameValue extends AstNode {
   def name: String
@@ -108,8 +112,10 @@ object AstNode {
         tpe = withoutPosition(n.tpe),
         defaultValue = n.defaultValue map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: Type => n.copy(position = None).asInstanceOf[T]
-    case n: Field => 
+    case n: ConcreteType => n.copy(position = None).asInstanceOf[T]
+    case n: NotNullType => n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
+    case n: ListType => n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
+    case n: Field =>
       n.copy(
         arguments = n.arguments map withoutPosition,
         directives = n.directives map withoutPosition,

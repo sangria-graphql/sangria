@@ -23,10 +23,10 @@ trait InputUnmarshaller[Node] {
 }
 
 object InputUnmarshaller {
-  implicit val scalaInputUnmarshaller = new ScalaInputUnmarshaller
+  implicit def scalaInputUnmarshaller[T] = ScalaInputUnmarshaller.asInstanceOf[InputUnmarshaller[Map[String, T]]]
 }
 
-class ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
+object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
   type LeafNode = Any
 
   def emptyNode = Map.empty

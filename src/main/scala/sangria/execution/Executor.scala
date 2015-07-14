@@ -1,36 +1,40 @@
 package sangria.execution
 
-import org.parboiled2.Position
-import sangria.DeliveryScheme
 import sangria.ast
 import sangria.parser.SourceMapper
-import sangria.renderer.{SchemaRenderer, QueryRenderer}
 import sangria.schema._
-import sangria.validation._
 
+import scala.concurrent.Future
 import scala.util.{Success, Failure, Try}
 
 case class Executor[Ctx, Root](
     schema: Schema[Ctx, Root],
     root: Root = (),
     userContext: Ctx = (),
-    deferredResolver: DeferredResolver = NilDeferredResolver)(implicit marshaller: ResultMarshaller, sangriaScheduler: SangriaScheduler) {
+    deferredResolver: DeferredResolver = NilDeferredResolver,
+    exceptionHandler: PartialFunction[Throwable, String] = PartialFunction.empty)(implicit scheduler: SangriaScheduler) {
 
   def execute[Input](
-       queryAst: ast.Document,
-       operationName: Option[String] = None,
-       arguments: Option[Input] = None)(implicit um: InputUnmarshaller[Input], scheme: DeliveryScheme[ExecutionResult[marshaller.Node]]): scheme.Result = {
+      queryAst: ast.Document,
+      operationName: Option[String] = None,
+      arguments: Option[Input] = None)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[ExecutionResult[marshaller.Node]] = {
     val valueExecutor = new ValueExecutor[Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper)(um)
 
     val foo = for {
       operation <- getOperation(queryAst, operationName)
       variables <- valueExecutor.getVariableValues(operation.variables)
-    } yield ExecutionResult(marshaller.booleanNode(true), Nil, marshaller.booleanNode(true))
+      res <- executeOperation(operation, variables, queryAst.sourceMapper, valueExecutor)
+    } yield ExecutionResult(marshaller.booleanNode(true), Nil, marshaller.booleanNode(true), res)
 
-    foo match {
-      case Success(res) => scheme success res
-      case Failure(error) => scheme failure error
-    }
+    Future.fromTry(foo)
+  }
+
+  def handleException(exception: Throwable) = exception match {
+    case e: UserFacingError => e.getMessage
+    case e if exceptionHandler isDefinedAt e => exceptionHandler(e)
+    case e =>
+      e.printStackTrace() // todo proper logging?
+      "Internal server error"
   }
 
   def getOperation(document: ast.Document, operationName: Option[String]): Try[ast.OperationDefinition] =
@@ -41,6 +45,69 @@ case class Executor[Ctx, Root](
 
       operation map (Success(_)) getOrElse Failure(new ExecutionError(s"Unknown operation name: ${operationName.get}"))
     }
+
+  def executeOperation(operation: ast.OperationDefinition, variables: Map[String, Any], sourceMapper: Option[SourceMapper], valueExecutor: ValueExecutor[_]) = {
+    for {
+      tpe <- getOperationRootType(operation, sourceMapper)
+      fields = collectFields(tpe, operation.selections, variables, sourceMapper, valueExecutor)
+    } yield fields
+  }
+
+  def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
+    case ast.OperationType.Query => Success(schema.query)
+    case ast.OperationType.Mutation => schema.mutation map (Success(_)) getOrElse
+        Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position))
+  }
+
+  def collectFields(tpe: ObjectType[Ctx, Root], selections: List[ast.Selection], variables: Map[String, Any], sourceMapper: Option[SourceMapper], valueExecutor: ValueExecutor[_]) =
+    selections.foldLeft(Map.empty[String, Try[List[ast.Field]]]) {
+      case (acc, selection) =>
+        selection match {
+          case field @ ast.Field(_, _, _, dirs, _, _) =>
+            val name = resultName(field)
+
+            shouldIncludeNode(dirs, selection, variables, sourceMapper, valueExecutor) match {
+              case Success(true) => acc.get(name) match {
+                case Some(Success(list)) => acc.updated(name, Success(list :+ field))
+                case Some(Failure(_)) => acc
+                case None => acc.updated(name, Success(field :: Nil))
+              }
+              case Success(false) => acc
+              case Failure(error) => acc.updated(name, Failure(error))
+            }
+//          case fragment @ ast.InlineFragment(_, dirs, _, _) =>
+//            for {
+//              shouldInclude <- shouldIncludeNode(dirs, selection, variables, sourceMapper, valueExecutor)
+//            }
+
+            // todo fragments
+        }
+    }
+
+  def resultName(field: ast.Field) = field.alias getOrElse field.name
+
+  def shouldIncludeNode(directives: List[ast.Directive], selection: ast.Selection, variables: Map[String, Any], sourceMapper: Option[SourceMapper], valueExecutor: ValueExecutor[_]): Try[Boolean] = {
+    val possibleDirs = directives
+        .map(d => schema.directivesByName
+          .get(d.name)
+          .map(dd => selection match {
+            case _: ast.Field if !dd.onField => Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", sourceMapper, d.position))
+            case _: ast.InlineFragment | _: ast.FragmentSpread if !dd.onFragment =>
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", sourceMapper, d.position))
+            case _ => Success(d -> dd)
+          })
+          .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", sourceMapper, d.position))))
+        .map(_.flatMap{case (astDir, dir) => valueExecutor.getAttributeValues(dir.arguments, astDir.arguments, variables) map (dir -> _)})
+
+    possibleDirs.collect{case Failure(error) => error}.headOption map (Failure(_)) getOrElse {
+      val validDirs = possibleDirs collect {case Success(v) => v}
+      val should = validDirs.forall { case (dir, args) => dir.shouldInclude(DirectiveContext(selection, dir, args)) }
+
+      Success(should)
+    }
+  }
+
+  def doesFragmentConditionMatch(tpe: ObjectType[_, _], conditional: ast.ConditionalFragment) = ???
 }
 
-case class ExecutionResult[T](data: T, errors: List[T], result: T)
+case class ExecutionResult[T](data: T, errors: List[T], result: T, foo: Any)

@@ -44,8 +44,4 @@ object TestSchema {
   ))
 
   val StarWarsSchema = Schema(Query)
-
-  // todo remove
-  val Success(ast) = QueryParser.parse(FileUtil.loadQuery("kitchen-sink.graphql"))
-  Executor(StarWarsSchema, userContext = new CharacterRepo).execute(ast)
 }

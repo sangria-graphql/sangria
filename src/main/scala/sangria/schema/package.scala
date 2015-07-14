@@ -63,17 +63,25 @@ package object schema {
       case _ => Left(IDCoercionViolation)
     })
 
+  val BuiltinScalars = IntType :: FloatType :: BooleanType :: StringType :: IDType :: Nil
+
+  val IfArg = Argument("if", BooleanType, Some("Included when true."))
+
   val IncludeDirective = Directive("include",
     description = Some("Directs the executor to include this field or fragment only when the `if` argument is true."),
-    arguments = Argument("if", OptionInputType(BooleanType), Some("Included when true.")) :: Nil,
+    arguments = IfArg :: Nil,
     onOperation = false,
     onFragment = true,
-    onField = true)
+    onField = true,
+    shouldInclude = ctx => ctx.arg[Boolean](IfArg))
 
   val SkipDirective = Directive("skip",
     description = Some("Directs the executor to skip this field or fragment when the `if` argument is true."),
-    arguments = Argument("if", OptionInputType(BooleanType), Some("Skipped when true.")) :: Nil,
+    arguments = IfArg :: Nil,
     onOperation = false,
     onFragment = true,
-    onField = true)
+    onField = true,
+    shouldInclude = ctx => !ctx.arg[Boolean](IfArg))
+
+  val BuiltinDirectives = IncludeDirective :: SkipDirective :: Nil
 }

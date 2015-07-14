@@ -22,11 +22,11 @@ class QueryParserSpec extends WordSpec with Matchers {
               List(
                 VariableDefinition(
                   "someVar",
-                  Type("Int", false, false, Some(Position(53, 2, 41))),
+                  ConcreteType("Int", Some(Position(53, 2, 41))),
                   Some(FloatValue(1.23, Some(Position(59, 2, 47)))), Some(Position(43, 2, 31))),
                 VariableDefinition(
                   "anotherVar",
-                  Type("Int", false, false, Some(Position(77, 2, 65))),
+                  ConcreteType("Int", Some(Position(77, 2, 65))),
                   Some(IntValue(123, Some(Position(83, 2, 71)))), Some(Position(64, 2, 52)))),
               List(
                 Directive(
@@ -84,12 +84,12 @@ class QueryParserSpec extends WordSpec with Matchers {
               List(
                 VariableDefinition(
                   "foo",
-                  Type("ComplexType", false, false, Some(Position(310, 8, 23))),
+                  ConcreteType("ComplexType", Some(Position(310, 8, 23))),
                   None,
                   Some(Position(304, 8, 17))),
                 VariableDefinition(
                   "site",
-                  Type("Site", false, false, Some(Position(330, 8, 43))),
+                  ConcreteType("Site", Some(Position(330, 8, 43))),
                   Some(EnumValue("MOBILE", Some(Position(337, 8, 50)))),
                   Some(Position(323, 8, 36)))),
               Nil,

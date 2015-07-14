@@ -143,7 +143,6 @@ case class EnumType[T](
 
 
   def coerceOutput(value: T) = ast.EnumValue(byValue(value))
-
 }
 
 case class EnumValue[+T](
@@ -184,20 +183,22 @@ case class Directive(
   name: String,
   description: Option[String] = None,
   arguments: List[Argument[_]] = Nil,
+  shouldInclude: DirectiveContext => Boolean,
   onOperation: Boolean,
   onFragment: Boolean,
   onField: Boolean)
 
-case class Schema[Ctx, Res](
-    query: ObjectType[Ctx, Res],
-    mutation: Option[ObjectType[Ctx, Res]] = None,
-    directives: List[Directive] = IncludeDirective :: SkipDirective :: Nil) {
+case class Schema[Ctx, Val](
+    query: ObjectType[Ctx, Val],
+    mutation: Option[ObjectType[Ctx, Val]] = None,
+    directives: List[Directive] = BuiltinDirectives) {
   lazy val types: Map[String, Type with Named] = {
     def updated(name: String, tpe: Type with Named, result: Map[String, Type with Named]) =
       if (result contains name) result else result.updated(name, tpe)
 
     def collectTypes(tpe: Type, result: Map[String, Type with Named]): Map[String, Type with Named] = {
       tpe match {
+        case t: Named if result contains t.name => result
         case OptionType(ofType) => collectTypes(ofType, result)
         case OptionInputType(ofType) => collectTypes(ofType, result)
         case ListType(ofType) => collectTypes(ofType, result)
@@ -222,10 +223,26 @@ case class Schema[Ctx, Res](
     }
 
     val queryTypes = collectTypes(query, Map.empty)
-    mutation map (collectTypes(_, queryTypes)) getOrElse queryTypes
+    val queryAndMutTypes = mutation map (collectTypes(_, queryTypes)) getOrElse queryTypes
+
+
+    queryAndMutTypes ++ (BuiltinScalars map (s => s.name -> s))
   }
 
   lazy val inputTypes = types collect {case (name, tpe: InputType[_]) => name -> tpe}
   lazy val outputTypes = types collect {case (name, tpe: OutputType[_]) => name -> tpe}
   lazy val scalarTypes = types collect {case (name, tpe: ScalarType[_]) => name -> tpe}
+  lazy val directivesByName = directives groupBy (_.name) mapValues (_.head)
+
+  def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
+    case ast.ConcreteType(name, _) => inputTypes get name map (OptionInputType(_))
+    case ast.NotNullType(ofType, _) => getInputType(ofType) collect {case OptionInputType(ot) => ot}
+    case ast.ListType(ofType, _) => getInputType(ofType) map (ListInputType(_))
+  }
+
+  def getOutputType(tpe: ast.Type): Option[OutputType[_]] = tpe match {
+    case ast.ConcreteType(name, _) => outputTypes get name map (OptionType(_))
+    case ast.NotNullType(ofType, _) => getOutputType(ofType) collect {case OptionType(ot) => ot}
+    case ast.ListType(ofType, _) => getOutputType(ofType) map (ListType(_))
+  }
 }

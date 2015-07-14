@@ -3,7 +3,6 @@ package sangria.renderer
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.{Directive, Field, AstNode}
 import sangria.parser.QueryParser
-import sangria.schema.TestSchema
 import sangria.util.FileUtil
 
 import scala.util.Success

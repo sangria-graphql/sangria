@@ -205,19 +205,17 @@ trait Directives { this: Parser with Tokens with Operations =>
 }
 
 trait Types { this: Parser with Tokens with Ignored =>
-  def Type: Rule1[sangria.ast.Type] = rule {
-    trackPos ~ TypeName ~> ((pos, name) => ast.Type(name, isList = false, isNotNull = false, position = Some(pos))) |
-    ListType |
-    NonNullType
-  }
+  def Type: Rule1[sangria.ast.Type] = rule { NonNullType | ListType | ConcreteType }
 
   def TypeName = rule { Name }
 
-  def ListType = rule { ws('[') ~ Type ~ ws(']') ~> (_.copy(isList = true)) }
+  def ConcreteType = rule { trackPos ~ TypeName ~> ((pos, name) => ast.ConcreteType(name, Some(pos)))}
+
+  def ListType = rule { trackPos ~ ws('[') ~ Type ~ ws(']') ~> ((pos, tpe) => ast.ListType(tpe, Some(pos))) }
 
   def NonNullType = rule {
-    trackPos ~ TypeName ~ ws('!')  ~> ((pos, name) => ast.Type(name, isList = false, isNotNull = true, position = Some(pos))) |
-    trackPos ~ ListType ~ ws('!') ~> ((pos, tpe) => tpe.copy(isNotNull = true, position = Some(pos)))
+    trackPos ~ TypeName ~ ws('!')  ~> ((pos, name) => ast.NotNullType(ast.ConcreteType(name, Some(pos)), Some(pos))) |
+    trackPos ~ ListType ~ ws('!') ~> ((pos, tpe) => ast.NotNullType(tpe, Some(pos)))
   }
 }
 

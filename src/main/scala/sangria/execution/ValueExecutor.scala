@@ -13,12 +13,12 @@ class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper:
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] = {
     val res = definitions.foldLeft(List[(String, Either[List[Violation], Any])]()) {
       case (acc, varDef) =>
-        val value = schema.inputTypes.get(varDef.tpe.name)
+        val value = schema.getInputType(varDef.tpe)
           .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
           .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe)) :: Nil))
 
         value match {
-          case s @ Right(Some(v)) => acc :+ (varDef.name, s)
+          case Right(Some(v)) => acc :+ (varDef.name, Right(v))
           case Right(None) => acc
           case l: Left[_, _] => acc :+ (varDef.name, l)
         }
@@ -28,6 +28,24 @@ class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper:
 
     if (errors.nonEmpty) Failure(VariableCoercionError(errors.collect{case (name, Left(errors)) => errors}.flatten))
     else Success(Map(values.collect {case (name, Right(v)) => name -> v}: _*))
+  }
+
+  def getAttributeValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
+    val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
+
+    val res = argumentDefs.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
+      case (acc, argDef) =>
+        val argPath = argDef.name :: Nil
+        val astValue = astArgMap get argDef.name map (_.value)
+
+        resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, acc,
+          astValue map (coerceAstValue(argDef.argumentType, argPath, _, variables)) getOrElse Right(None))
+    }
+
+    val errors = res.collect{case (_, Left(errors)) => errors}.toList.flatten
+
+    if (errors.nonEmpty) Failure(AttributeCoercionError(errors))
+    else Success(res mapValues (_.right.get))
   }
 
   def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[um.LeafNode]): Either[List[Violation], Option[Any]] =
@@ -66,9 +84,10 @@ class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper:
     case l @ Left(_) => l
   }
 
-  def resolveMapValue(ofType: InputType[_], fieldPath: List[String], fieldName: String, acc: Map[String, Either[List[Violation], Any]], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) = value match {
+  def resolveMapValue(ofType: InputType[_], fieldPath: List[String], default: Option[Any], fieldName: String, acc: Map[String, Either[List[Violation], Any]], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) = value match {
     case r @ Right(v) if ofType.isInstanceOf[OptionInputType[_]] => acc
     case Right(Some(v)) => acc.updated(fieldName, Right(v))
+    case Right(None) if default.isDefined => acc.updated(fieldName, Right(default))
     case Right(None) => acc.updated(fieldName, Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil))
     case l @ Left(_) => acc.updated(fieldName, l)
   }
@@ -94,9 +113,9 @@ class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper:
       val res = objTpe.fields.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
         case (acc, field) => um.getMapValue(valueMap, field.name) match {
           case Some(defined) if um.isDefined(defined) =>
-            resolveMapValue(field.fieldType, fieldPath, field.name, acc,
+            resolveMapValue(field.fieldType, fieldPath, field.defaultValue, field.name, acc,
               coerceInputValue(field.fieldType, fieldPath :+ field.name, defined))
-          case _ => resolveMapValue(field.fieldType, fieldPath, field.name, acc, Right(None))
+          case _ => resolveMapValue(field.fieldType, fieldPath, field.defaultValue, field.name, acc, Right(None))
         }
       }
 
@@ -134,9 +153,9 @@ class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper:
       val res = objTpe.fields.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
         case (acc, field) => astFields get field.name match {
           case Some(defined) =>
-            resolveMapValue(field.fieldType, fieldPath, field.name, acc,
+            resolveMapValue(field.fieldType, fieldPath, field.defaultValue, field.name, acc,
               coerceAstValue(field.fieldType, fieldPath :+ field.name, defined.value, variables), defined.value.position)
-          case _ => resolveMapValue(field.fieldType, fieldPath, field.name, acc, Right(None), objPos)
+          case _ => resolveMapValue(field.fieldType, fieldPath, field.defaultValue, field.name, acc, Right(None), objPos)
         }
       }
 

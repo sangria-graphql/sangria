@@ -68,8 +68,14 @@ object QueryRenderer {
           render(tpe, config) +
           (defaultValue map (v => config.separator + "=" + config.separator + render(v, config)) getOrElse "")
 
-      case Type(name, isList, isNotNull, _) =>
-        indent + (if (isList) "[" else "") + name + (if (isList) "]" else "") + (if (isNotNull) "!" else "")
+      case NotNullType(ofType, _) =>
+        render(ofType) + "!"
+
+      case ListType(ofType, _) =>
+        "[" + render(ofType) + "]"
+
+      case ConcreteType(name, _) =>
+        name
 
       case Field(alias, name, args, dirs, sels, _) =>
         indent + (alias map (_ + ":" + config.separator) getOrElse "") + name +

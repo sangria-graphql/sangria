@@ -9,12 +9,14 @@ trait Violation {
 
 abstract class BaseViolation(val errorMessage: String) extends Violation
 
-trait AstNodeViolation extends Violation {
+trait AstNodeLocation {
   def sourceMapper: Option[SourceMapper]
   def position: Option[Position]
 
-  def astLocation = sourceMapper flatMap (sm => position map (p => s" (line ${p.line}, column ${p.column}}):\n" + sm.renderPosition(p))) getOrElse ""
+  lazy val astLocation = sourceMapper flatMap (sm => position map (p => s" (line ${p.line}, column ${p.column}}):\n" + sm.renderPosition(p))) getOrElse ""
 }
+
+trait AstNodeViolation extends Violation with AstNodeLocation
 
 abstract class ValueCoercionViolation(errorMessage: String) extends BaseViolation(errorMessage)
 
@@ -32,7 +34,7 @@ case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Viola
 }
 
 case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String]) extends BaseViolation(
-  s"Variable $$$definitionName expected value of type $expectedType but got: ${input getOrElse "<UNDEFINED>"}.")
+  s"Variable $$$definitionName expected value of type $expectedType but ${input map ("got: " + _) getOrElse "value is undefined"}.")
 
 case class UnknownVariableTypeViolation(definitionName: String, varType: String) extends BaseViolation(
   s"Type '$varType' of variable $$$definitionName not found.")
