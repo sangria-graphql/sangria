@@ -12,7 +12,7 @@ case class Executor[Ctx, Root](
     root: Root = (),
     userContext: Ctx = (),
     deferredResolver: DeferredResolver = NilDeferredResolver,
-    exceptionHandler: PartialFunction[Throwable, String] = PartialFunction.empty)(implicit scheduler: SangriaScheduler) {
+    exceptionHandler: PartialFunction[Throwable, String] = PartialFunction.empty) {
 
   def execute[Input](
       queryAst: ast.Document,
