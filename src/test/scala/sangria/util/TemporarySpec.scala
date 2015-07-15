@@ -6,6 +6,7 @@ import sangria.execution.Executor
 import sangria.parser.{SyntaxError, QueryParser}
 import sangria.schema.TestSchema
 
+import scala.collection.immutable.RedBlackTree
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
@@ -15,8 +16,10 @@ class TemporarySpec extends WordSpec with Matchers {
   "Foo" should {
     "foo" in {
       val ast = QueryParser.parse(
-        """
-           query testQ ($xx: Boolean!) {
+        s"""
+           query testQ ($$xx: Boolean!) {
+             #${(1 to 1000) map ("field" + _) mkString " "}
+
              ... on Query {
                getDroid
              }
@@ -25,7 +28,7 @@ class TemporarySpec extends WordSpec with Matchers {
            }
 
            fragment Foo on Query {
-             getHuman @include(if: $xx)
+             getHuman @include(if: $$xx)
            }
         """
       ) match {

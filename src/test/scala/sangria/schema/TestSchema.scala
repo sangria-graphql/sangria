@@ -6,6 +6,7 @@ import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.util.FileUtil
 
+import scala.concurrent.Future
 import scala.util.Success
 
 object TestSchema {
@@ -29,8 +30,8 @@ object TestSchema {
   ), Character :: Nil)
 
   val Droid = ObjectType[Unit, Droid]("Droid", "A mechanical creature in the Star Wars universe.", List[Field[Unit, Droid]](
-    Field("id", StringType, Some("The id of the droid."), resolve = _.value.id),
-    Field("name", OptionType(StringType), Some("The name of the droid."), resolve = _.value.name),
+    Field("id", StringType, Some("The id of the droid."), resolve = Projection("_id", _.value.id)),
+    Field("name", OptionType(StringType), Some("The name of the droid."), resolve = ctx => Future.successful(ctx.value.name)),
     Field("friends", ListType(Character), Some("The friends of the droid, or an empty list if they have none."), resolve = ctx => DeferFriends(ctx.value.friends)),
     Field("primaryFunction", OptionType(StringType), Some("The primary function of the droid."), resolve = _.value.primaryFunction)
   ), Character :: Nil)
@@ -40,7 +41,8 @@ object TestSchema {
   val Query = ObjectType[CharacterRepo, Unit]("Query", List[Field[CharacterRepo, Unit]](
     Field("hero", Character, resolve = (ctx) => ctx.ctx.getHero),
     Field("human", Human, arguments = ID :: Nil, resolve = ctx => ctx.ctx.getHuman(ctx arg ID)),
-    Field("droid", Droid, arguments = ID :: Nil, resolve = ctx => ctx.ctx.getDroid(ctx arg ID))
+    Field("droid", Droid, arguments = ID :: Nil, resolve = Projector((ctx, f)=> ctx.ctx.getDroid(ctx arg ID))),
+    Field("test", Droid, resolve = ctx => UpdateCtx(Future.successful(ctx.ctx.getDroid("111")))(droid => ctx.ctx))
   ))
 
   val StarWarsSchema = Schema(Query)

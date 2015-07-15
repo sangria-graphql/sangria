@@ -7,22 +7,48 @@ import sangria.ast
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
-sealed trait Op[+Ctx, +T]
+sealed trait Action[+Ctx, +T]
 
-object Op {
-  implicit def defaultFutureOp[Ctx, T](value: => Future[T]): Op[Ctx, T] = FutureValue(() => value)
-  implicit def defaultDeferredOp[Ctx, T](value: => Deferred[T]): Op[Ctx, T] = DeferredValue(() => value)
-  implicit def defaultOp[Ctx, T](value: => T): Op[Ctx, T] = Value(() => value)
+object Action {
+  implicit def futureAction[Ctx, T](value: Future[T]): Action[Ctx, T] = FutureValue(value)
+  implicit def deferredAction[Ctx, T](value: Deferred[T]): Action[Ctx, T] = DeferredValue(value)
+  implicit def defaultAction[Ctx, T](value: T): Action[Ctx, T] = Value(value)
 }
 
-case class Value[Ctx, Val](value: () => Val) extends Op[Ctx, Val]
-case class FutureValue[Ctx, Val](value: () => Future[Val]) extends Op[Ctx, Val]
-case class DeferredValue[Ctx, T](value: () => Deferred[T]) extends Op[Ctx, T]
-case class UpdateCtx[Ctx, Val](newCtx: Ctx, op: Op[Ctx, Val]) extends Op[Ctx, Val]
+case class Value[Ctx, Val](value: Val) extends Action[Ctx, Val]
+case class FutureValue[Ctx, Val](value: Future[Val]) extends Action[Ctx, Val]
+case class DeferredValue[Ctx, T](value: Deferred[T]) extends Action[Ctx, T]
+class UpdateCtx[Ctx, Val](action: Action[Ctx, Val], neCtx: Val => Ctx) extends Action[Ctx, Val]
 
-// TODO
-//case class FieldMagnet[Ctx, Val]...
-//case class FieldLookup[Ctx, Val]...
+object UpdateCtx {
+  def apply[Ctx, Val](action: Action[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
+}
+
+abstract class Projection[Ctx, Val, Res](projectedName: Option[String]) extends (Context[Ctx, Val] => Action[Ctx, Res])
+
+object Projection {
+  def apply[Ctx, Val, Res](fn: Context[Ctx, Val] => Action[Ctx, Res]) =
+    new Projection[Ctx, Val, Res](None) {
+      override def apply(ctx: Context[Ctx, Val]) = fn(ctx)
+    }
+
+  def apply[Ctx, Val, Res](projectedName: String, fn: Context[Ctx, Val] => Action[Ctx, Res]) =
+    new Projection[Ctx, Val, Res](Some(projectedName)) {
+      override def apply(ctx: Context[Ctx, Val]) = fn(ctx)
+    }
+}
+
+trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res])
+
+object Projector {
+  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], ProjectedName) => Action[Ctx, Res]) =
+    new Projector[Ctx, Val, Res] {
+      def apply(ctx: Context[Ctx, Val], projected: ProjectedName) = fn(ctx, projected)
+      override def apply(ctx: Context[Ctx, Val]) = ??? // it should not be called
+    }
+}
+
+case class ProjectedName(name: String, children: List[ProjectedName] = Nil)
 
 trait Deferred[+T]
 

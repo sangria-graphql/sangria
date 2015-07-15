@@ -49,7 +49,7 @@ case class Executor[Ctx, Root](
   def executeOperation(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper], fieldExecutor: FieldExecutor[Ctx, Root]) = {
     for {
       tpe <- getOperationRootType(operation, sourceMapper)
-      fields = fieldExecutor.collectFields(tpe, operation.selections)
+      fields <- fieldExecutor.collectFields(tpe, operation.selections)
     } yield fields
   }
 

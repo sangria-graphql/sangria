@@ -103,7 +103,7 @@ case class Field[Ctx, Val] private (
   fieldType: OutputType[_],
   description: Option[String],
   arguments: List[Argument[_]],
-  resolve: Context[Ctx, Val] => Op[_, _],
+  resolve: Context[Ctx, Val] => Action[_, _],
   deprecationReason: Option[String]) extends Named
 
 object Field {
@@ -112,7 +112,7 @@ object Field {
       fieldType: OutputType[Out],
       description: Option[String] = None,
       arguments: List[Argument[_]] = Nil,
-      resolve: Context[Ctx, Val] => Op[Ctx, Res],
+      resolve: Context[Ctx, Val] => Action[Ctx, Res],
       deprecationReason: Option[String] = None)(implicit ev: Res <:< Out) =
     Field[Ctx, Val](name, fieldType, description, arguments, resolve, deprecationReason)
 }
