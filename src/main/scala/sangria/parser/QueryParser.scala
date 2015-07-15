@@ -115,7 +115,7 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def DefaultValue = rule { ws('=') ~ ValueConst }
 
-  def SelectionSet: Rule1[List[sangria.ast.Selection]] = rule { ws('{') ~ Selection.+ ~ ws('}') ~> ((x: Seq[sangria.ast.Selection]) => x.toList) }
+  def SelectionSet: Rule1[List[ast.Selection]] = rule { ws('{') ~ Selection.+ ~ ws('}') ~> ((x: Seq[ast.Selection]) => x.toList) }
 
   def Selection = rule { Field | FragmentSpread | InlineFragment }
 
@@ -156,11 +156,11 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 
 trait Values { this: Parser with Tokens with Ignored with Operations =>
 
-  def ValueConst: Rule1[sangria.ast.Value] = rule {
+  def ValueConst: Rule1[ast.Value] = rule {
     NumberValue | StringValue | BooleanValue | EnumValue | ArrayValueConst | ObjectValueConst
   }
 
-  def Value: Rule1[sangria.ast.Value] = rule {
+  def Value: Rule1[ast.Value] = rule {
     trackPos ~ Variable ~> ((pos, name) => ast.VariableValue(name, Some(pos))) |
     NumberValue |
     StringValue |
@@ -205,7 +205,7 @@ trait Directives { this: Parser with Tokens with Operations =>
 }
 
 trait Types { this: Parser with Tokens with Ignored =>
-  def Type: Rule1[sangria.ast.Type] = rule { NonNullType | ListType | ConcreteType }
+  def Type: Rule1[ast.Type] = rule { NonNullType | ListType | ConcreteType }
 
   def TypeName = rule { Name }
 
