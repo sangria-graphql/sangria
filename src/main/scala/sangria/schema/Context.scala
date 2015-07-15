@@ -10,14 +10,16 @@ import scala.util.{Failure, Try}
 sealed trait Action[+Ctx, +T]
 
 object Action {
-  implicit def futureAction[Ctx, T](value: Future[T]): Action[Ctx, T] = FutureValue(value)
-  implicit def deferredAction[Ctx, T](value: Deferred[T]): Action[Ctx, T] = DeferredValue(value)
-  implicit def defaultAction[Ctx, T](value: T): Action[Ctx, T] = Value(value)
+  implicit def futureAction[Ctx, Val](value: Future[Val]): Action[Ctx, Val] = FutureValue(value)
+  implicit def deferredAction[Ctx, Val](value: Deferred[Val]): Action[Ctx, Val] = DeferredValue(value)
+  implicit def deferredFutureAction[Ctx, Val](value: Future[Deferred[Val]]): Action[Ctx, Val] = DeferredFutureValue(value)
+  implicit def defaultAction[Ctx, Val](value: Val): Action[Ctx, Val] = Value(value)
 }
 
 case class Value[Ctx, Val](value: Val) extends Action[Ctx, Val]
 case class FutureValue[Ctx, Val](value: Future[Val]) extends Action[Ctx, Val]
-case class DeferredValue[Ctx, T](value: Deferred[T]) extends Action[Ctx, T]
+case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends Action[Ctx, Val]
+case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends Action[Ctx, Val]
 class UpdateCtx[Ctx, Val](action: Action[Ctx, Val], neCtx: Val => Ctx) extends Action[Ctx, Val]
 
 object UpdateCtx {
