@@ -15,7 +15,18 @@ class FieldExecutor[Ctx, Val](
     sourceMapper: Option[SourceMapper],
     valueExecutor: ValueExecutor[_]) {
 
-  def collectFields(tpe: ObjectType[Ctx, Val], selections: List[ast.Selection], visitedFragments: MutableSet[String] = MutableSet.empty): Try[Map[String, Try[List[ast.Field]]]] =
+  @volatile private var resultCache = Map.empty[List[String], Try[Map[String, Try[List[ast.Field]]]]]
+
+  def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.Selection]): Try[Map[String, Try[List[ast.Field]]]] = {
+    if (resultCache contains path) resultCache(path)
+    else {
+      val res = collectFieldsInternal(tpe, selections, MutableSet.empty)
+      resultCache = resultCache.updated(path, res)
+      res
+    }
+  }
+
+  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String]): Try[Map[String, Try[List[ast.Field]]]] =
     selections.foldLeft(Success(Map.empty) : Try[Map[String, Try[List[ast.Field]]]]) {
       case (f @ Failure(_), selection) => f
       case (s @ Success(acc), selection) =>
@@ -38,7 +49,7 @@ class FieldExecutor[Ctx, Val](
               fragmentConditionMatch <- doesFragmentConditionMatch(tpe, fragment)
               fragmentFields <-
                 if (shouldInclude && fragmentConditionMatch)
-                  collectFields(tpe, fragmentSelections, visitedFragments) map (acc ++ _)
+                  collectFieldsInternal(tpe, fragmentSelections, visitedFragments) map (acc ++ _)
                 else s
             } yield fragmentFields
           case ast.FragmentSpread(name, _, _) if visitedFragments contains name => s
@@ -55,7 +66,7 @@ class FieldExecutor[Ctx, Val](
                       fragmentConditionMatch <- doesFragmentConditionMatch(tpe, fragment)
                       fragmentFields <-
                       if (shouldInclude && fragmentConditionMatch)
-                        collectFields(tpe, fragment.selections, visitedFragments) map (acc ++ _)
+                        collectFieldsInternal(tpe, fragment.selections, visitedFragments) map (acc ++ _)
                       else s
                     } yield fragmentFields
                   case None =>

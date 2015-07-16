@@ -2,8 +2,8 @@ package sangria.execution
 
 trait ResultMarshaller {
   type Node
-  
-  def mapNode(keyValues: Map[String, Node]): Node
+
+  def mapNode(keyValues: Seq[(String, Node)]): Node
   def arrayNode(values: Seq[Node]): Node
   
   def stringNode(value: String): Node
@@ -21,7 +21,7 @@ class ScalaResultMarshaller extends ResultMarshaller {
 
   override def booleanNode(value: Boolean) = value
   override def arrayNode(values: Seq[Node]) = values
-  override def mapNode(keyValues: Map[String, Node]) = keyValues
+  override def mapNode(keyValues: Seq[(String, Node)]) = Map(keyValues: _*)
   override def floatNode(value: Double) = value
   override def stringNode(value: String) = value
   override def intNode(value: Int) = value

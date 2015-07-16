@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.parser.SourceMapper
 import sangria.schema._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Failure, Try}
 
 case class Executor[Ctx, Root](
@@ -12,7 +12,7 @@ case class Executor[Ctx, Root](
     root: Root = (),
     userContext: Ctx = (),
     deferredResolver: DeferredResolver = NilDeferredResolver,
-    exceptionHandler: PartialFunction[Throwable, String] = PartialFunction.empty) {
+    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = PartialFunction.empty)(implicit executionContext: ExecutionContext) {
 
   def execute[Input](
       queryAst: ast.Document,
@@ -23,18 +23,10 @@ case class Executor[Ctx, Root](
       operation <- getOperation(queryAst, operationName)
       variables <- valueExecutor.getVariableValues(operation.variables)
       fieldExecutor = new FieldExecutor[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueExecutor)
-      res <- executeOperation(operation, queryAst.sourceMapper, fieldExecutor)
+      res <- executeOperation(operation, queryAst.sourceMapper, fieldExecutor, marshaller)
     } yield ExecutionResult(marshaller.booleanNode(true), Nil, marshaller.booleanNode(true), res)
 
     Future.fromTry(foo)
-  }
-
-  def handleException(exception: Throwable) = exception match {
-    case e: UserFacingError => e.getMessage
-    case e if exceptionHandler isDefinedAt e => exceptionHandler(e)
-    case e =>
-      e.printStackTrace() // todo proper logging?
-      "Internal server error"
   }
 
   def getOperation(document: ast.Document, operationName: Option[String]): Try[ast.OperationDefinition] =
@@ -46,11 +38,12 @@ case class Executor[Ctx, Root](
       operation map (Success(_)) getOrElse Failure(new ExecutionError(s"Unknown operation name: ${operationName.get}"))
     }
 
-  def executeOperation(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper], fieldExecutor: FieldExecutor[Ctx, Root]) = {
+  def executeOperation(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper], fieldExecutor: FieldExecutor[Ctx, Root], marshaller: ResultMarshaller) = {
     for {
       tpe <- getOperationRootType(operation, sourceMapper)
-      fields <- fieldExecutor.collectFields(tpe, operation.selections)
-    } yield fields
+      fields <- fieldExecutor.collectFields(Nil, tpe, operation.selections)
+      resolver = new Resolver[Ctx](marshaller, schema, fieldExecutor, exceptionHandler, sourceMapper)
+    } yield "foo"//resolver.executeFields(Nil, tpe, root, fields)
   }
 
   def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
@@ -59,5 +52,8 @@ case class Executor[Ctx, Root](
         Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position))
   }
 }
+
+
+
 
 case class ExecutionResult[T](data: T, errors: List[T], result: T, foo: Any)

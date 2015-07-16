@@ -3,7 +3,7 @@ package sangria.schema
 import sangria.ast
 import sangria.validation.{EnumValueCoercionViolation, EnumCoercionViolation, Violation}
 
-import scala.util.Success
+import scala.reflect.ClassTag
 
 sealed trait Type
 
@@ -13,7 +13,12 @@ sealed trait OutputType[+T] extends Type
 
 sealed trait LeafType extends Type
 sealed trait CompositeType extends Type
-sealed trait AbstractType extends Type
+sealed trait AbstractType extends Type with Named {
+  def name: String
+
+  def typeOf[Ctx](value: Any, schema: Schema[Ctx, _]): Option[ObjectType[Ctx, _]] = ???
+}
+
 sealed trait NullableType
 sealed trait UnmodifiedType
 
@@ -31,47 +36,50 @@ case class ScalarType[T](
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
-  def fields: List[Field[Ctx, Val]]
+
+  def fieldsFn: () => List[Field[Ctx, Val]]
+
+  private lazy val ownFields = fieldsFn()
+
+  lazy val fields: List[Field[Ctx, _]] = (ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[List[Field[Ctx, _]]])).groupBy(_.name).map(_._2.head).toList
+  lazy val fieldsByName = fields groupBy (_.name) mapValues (_.head)
 }
 
-case class ObjectType[Ctx, Val] private (
+case class ObjectType[Ctx, Val: ClassTag] private (
   name: String,
   description: Option[String],
   fieldsFn: () => List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
 ) extends ObjectLikeType[Ctx, Val] {
-  lazy val fields = fieldsFn()
+  def isInstanceOf(value: Any) = implicitly[ClassTag[Val]].runtimeClass.isAssignableFrom(value.getClass)
 }
 
 object ObjectType {
-  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, None, fieldsFn = () => fields, Nil)
-  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, Some(description), fieldsFn = () => fields, Nil)
-  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, None, fieldsFn = () => fields, interfaces)
-  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, None, fieldsFn = () => fields, interfaces)
 
-  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, None, fieldsFn, Nil)
-  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, Some(description), fieldsFn, Nil)
-  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, None, fieldsFn, interfaces)
-  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, None, fieldsFn, interfaces)
 }
 
-// todo implementations
 case class InterfaceType[Ctx, Val] private (
   name: String,
   description: Option[String] = None,
   fieldsFn: () => List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
-) extends ObjectLikeType[Ctx, Val] with AbstractType {
-  lazy val fields = fieldsFn()
-}
+) extends ObjectLikeType[Ctx, Val] with AbstractType
 
 object InterfaceType {
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
@@ -96,7 +104,7 @@ object InterfaceType {
 case class UnionType[Ctx](
   name: String,
   description: Option[String] = None,
-  types: List[ObjectType[Ctx, Any]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType with Named
+  types: List[ObjectType[Ctx, Any]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType
 
 case class Field[Ctx, Val] private (
   name: String,

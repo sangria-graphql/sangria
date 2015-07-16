@@ -11,6 +11,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 class TemporarySpec extends WordSpec with Matchers {
 
   "Foo" should {
