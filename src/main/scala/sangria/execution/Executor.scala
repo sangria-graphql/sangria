@@ -53,7 +53,4 @@ case class Executor[Ctx, Root](
   }
 }
 
-
-
-
 case class ExecutionResult[T](data: T, errors: List[T], result: T, foo: Any)

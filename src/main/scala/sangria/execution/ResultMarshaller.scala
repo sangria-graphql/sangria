@@ -5,7 +5,9 @@ trait ResultMarshaller {
 
   def mapNode(keyValues: Seq[(String, Node)]): Node
   def arrayNode(values: Seq[Node]): Node
-  
+  def emptyArrayNode: Node
+  def addArrayNodeElem(array: Node, elem: Node): Node
+
   def stringNode(value: String): Node
   def intNode(value: Int): Node
   def floatNode(value: Double): Node
@@ -21,6 +23,8 @@ class ScalaResultMarshaller extends ResultMarshaller {
 
   override def booleanNode(value: Boolean) = value
   override def arrayNode(values: Seq[Node]) = values
+  override def emptyArrayNode = Nil
+  override def addArrayNodeElem(array: Node, elem: Node) = array.asInstanceOf[List[_]] :+ elem
   override def mapNode(keyValues: Seq[(String, Node)]) = Map(keyValues: _*)
   override def floatNode(value: Double) = value
   override def stringNode(value: String) = value
