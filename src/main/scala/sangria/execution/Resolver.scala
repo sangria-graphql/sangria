@@ -13,13 +13,17 @@ class Resolver[Ctx](
     schema: Schema[Ctx, _],
     fieldExecutor: FieldExecutor[Ctx, _],
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node],
+    deferredResolver: DeferredResolver,
     sourceMapper: Option[SourceMapper])(implicit executionContext: ExecutionContext) {
 
   trait Foo
 
-  case class ExtractionResult(deferred: List[Future[Def]], futureValue: Future[Res]) extends Foo
+  case class ExtractionResult(deferred: List[Future[List[Def]]], futureValue: Future[Res]) extends Foo
   case class Def(promise: Promise[Any], deferred: Deferred[Any])
-  case class Res(errors: ErrorRegistry, value: Option[marshaller.Node]) extends Foo
+  case class Res(errors: ErrorRegistry, value: Option[marshaller.Node]) extends Foo {
+    def addToMap(other: Res, key: String, optional: Boolean) = copy(errors = errors add other.errors, value =
+      if (optional && other.value.isEmpty) value else for {myVal <- value; otherVal <- other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal))
+  }
 
   def handleException(exception: Throwable): marshaller.Node = exception match {
     case e: UserFacingError => marshaller.stringNode(e.getMessage)
@@ -33,18 +37,18 @@ class Resolver[Ctx](
        path: List[String],
        tpe: ObjectType[Ctx, _],
        value: Any,
-       fields: Map[String, Try[List[ast.Field]]],
+       fields: Map[String, (ast.Field, Try[List[ast.Field]])],
        errorReg: ErrorRegistry = ErrorRegistry.empty): Foo = {
 
     val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(ast.Field, Field[Ctx, _], Action[Ctx, _])]])) {
       case (acc @ (_, None), _) => acc
-      case (acc, (name, _)) if !tpe.fieldsByName.contains(name) => acc
-      case ((errors, s @ Some(acc)), (name, Failure(error))) =>
-        errors.add(path :+ name, error) -> (if (isOptional(tpe, name)) s else None)
-      case ((errors, s @ Some(acc)), (name, Success(fields))) =>
+      case (acc, (name, (origField, _))) if !tpe.fieldsByName.contains(origField.name) => acc
+      case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) =>
+        errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) s else None)
+      case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
         resolveField(errors, name, fields) match {
-          case (updatedErrors, Some(result)) => updatedErrors -> Some(acc :+ (fields(0), tpe.fieldsByName(name), result))
-          case (updatedErrors, None) if isOptional(tpe, name) => updatedErrors -> s
+          case (updatedErrors, Some(result)) => updatedErrors -> Some(acc :+ (fields(0), tpe.fieldsByName(origField.name), result))
+          case (updatedErrors, None) if isOptional(tpe, origField.name) => updatedErrors -> s
           case (updatedErrors, None) => updatedErrors -> None
         }
     }
@@ -52,15 +56,78 @@ class Resolver[Ctx](
     res match {
       case None => Res(errors, None)
       case Some(results) =>
-        results.foldLeft((errors, List[Action[Ctx, _]](), List[Future[Any]](), Map.empty[String, marshaller.Node])) {
-          case ((err, deferred, futures, acc), (astField, field, Value(value))) =>
-            val fieldPath = path :+ field.name
-            resolveValue(fieldPath, astField, field.fieldType, field, value)
-            ???
+        val resolvedValues = results.map {
+          // todo updatectx
+          case (astField, field, Value(value)) =>
+            astField -> resolveValue(path :+ field.name, astField, field.fieldType, field, value)
+          case (astField, field, DeferredValue(deferred)) =>
+            val promise = Promise[Any]()
+
+            astField -> ExtractionResult(Future.successful(Def(promise, deferred) :: Nil):: Nil,
+              promise.future
+                .flatMap{ v =>
+                  resolveValue(path :+ field.name, astField, field.fieldType, field, v) match {
+                    case r: Res => Future.successful(r)
+                    case er: ExtractionResult => resolveDeferred(er)
+                  }
+                }
+                .recover{
+                  case e => Res(ErrorRegistry.empty.add(path :+ field.name, e), None)
+                })
+          case (astField, field, FutureValue(future)) =>
+            val resolved = future.map(v => resolveValue(path :+ field.name, astField, field.fieldType, field, v))
+            val deferred = resolved flatMap {
+              case r: Res => Future.successful(Nil)
+              case r: ExtractionResult => Future.sequence(r.deferred) map (_.flatten)
+            }
+            val value = resolved flatMap {
+              case r: Res => Future.successful(r)
+              case er: ExtractionResult => er.futureValue
+            }
+
+            astField -> ExtractionResult(deferred :: Nil, value)
+          case (astField, field, DeferredFutureValue(deferredValue)) =>
+            val promise = Promise[Any]()
+
+            astField -> ExtractionResult(deferredValue.map(d => Def(promise, d) :: Nil) :: Nil,
+              promise.future
+                .flatMap{ v =>
+                resolveValue(path :+ field.name, astField, field.fieldType, field, v) match {
+                  case r: Res => Future.successful(r)
+                  case er: ExtractionResult => resolveDeferred(er)
+                }
+              }
+              .recover{
+                case e => Res(ErrorRegistry.empty.add(path :+ field.name, e), None)
+              })
         }
-        //        val f = Future.sequence(fields)
-        ???
+
+        val simpleRes = resolvedValues.collect {case (af, r: Res) => af -> r}
+
+        val resSoFar = simpleRes.foldLeft(Res(ErrorRegistry.empty, Some(marshaller.emptyMapNode))) {
+          case (res, (astField, other)) => res addToMap (other, astField.outputName, isOptional(tpe, astField.name))
+        }
+
+        val complexRes = resolvedValues.collect{case (af, r: ExtractionResult) => af -> r}
+
+        if (complexRes.isEmpty) resSoFar
+        else {
+          val allDeferred = complexRes.flatMap(_._2.deferred)
+          val finalValue = Future.sequence(complexRes.map {case (astField, ExtractionResult(_, future)) =>  future map (astField -> _)}) map { results =>
+            results.foldLeft(resSoFar) {
+              case (res, (astField, other)) => res addToMap (other, astField.outputName, isOptional(tpe, astField.name))
+            }
+          }
+
+          ExtractionResult(allDeferred, finalValue)
+        }
     }
+  }
+
+  def resolveDeferred(res: ExtractionResult) = {
+    val foo = Future.sequence(res.deferred).map(listOfDef => ???)
+
+    res.futureValue
   }
 
   def resolveValue(
@@ -100,22 +167,6 @@ class Resolver[Ctx](
             case (acc, ExtractionResult(deferred, futureValue)) => acc.copy(deferred = acc.deferred ++ deferred, futureValue =
                 for {accRes <- acc.futureValue; res <- futureValue} yield Res(accRes.errors add res.errors, for {v1 <- accRes.value; v2 <- res.value} yield marshaller.addArrayNodeElem(v1, v2)))
           }
-//
-//
-//          res.foldLeft(ErrorRegistry.empty) {
-//            case (errors, Res(resErrors, value)) => errors
-//          }
-//
-//        maybeFutures match {
-//          case Some(futures) => (errors, deferred, Some(Future.sequence(futures).map { results =>
-//            val (errors, res) = results.foldLeft((ErrorRegistry.empty, Nil: List[marshaller.Node])) {
-//              case ((accErrors, accValues), (errors, value)) => accErrors.add(errors) -> (accValues :+ value)
-//            }
-//
-//            errors -> marshaller.arrayNode(res)
-//          }))
-//          case None => (errors, Nil, None)
-//        }
       case scalar: ScalarType[Any @unchecked] =>
         try {
           Res(ErrorRegistry.empty, Some(marshalValue(scalar.coerceOutput(value))))
@@ -174,8 +225,3 @@ class Resolver[Ctx](
 
   case class ErrorPath(path: List[String], error: marshaller.Node)
 }
-
-//sealed trait ResolveResult
-//case class EagerResolve(value: Any) extends ResolveResult
-//case class FutureResolve(value: Future[Any]) extends ResolveResult
-//case class  DeferResolve(value: Deferred[Any], promise: Promise[Any]) extends ResolveResult

@@ -51,12 +51,14 @@ case class ListType(ofType: Type, position: Option[Position] = None) extends Typ
 sealed trait Selection extends AstNode with WithDirectives
 
 case class Field(
-  alias: Option[String],
-  name: String,
-  arguments: List[Argument],
-  directives: List[Directive],
-  selections: List[Selection],
-  position: Option[Position] = None) extends Selection
+    alias: Option[String],
+    name: String,
+    arguments: List[Argument],
+    directives: List[Directive],
+    selections: List[Selection],
+    position: Option[Position] = None) extends Selection {
+  lazy val outputName = alias getOrElse name
+}
 case class FragmentSpread(
   name: String,
   directives: List[Directive],

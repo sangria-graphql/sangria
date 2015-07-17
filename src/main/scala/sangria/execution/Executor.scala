@@ -42,8 +42,8 @@ case class Executor[Ctx, Root](
     for {
       tpe <- getOperationRootType(operation, sourceMapper)
       fields <- fieldExecutor.collectFields(Nil, tpe, operation.selections)
-      resolver = new Resolver[Ctx](marshaller, schema, fieldExecutor, exceptionHandler, sourceMapper)
-    } yield "foo"//resolver.executeFields(Nil, tpe, root, fields)
+      resolver = new Resolver[Ctx](marshaller, schema, fieldExecutor, exceptionHandler, deferredResolver, sourceMapper)
+    } yield resolver.executeFields(Nil, tpe, root, fields)
   }
 
   def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {

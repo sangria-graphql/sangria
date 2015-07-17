@@ -15,9 +15,9 @@ class FieldExecutor[Ctx, Val](
     sourceMapper: Option[SourceMapper],
     valueExecutor: ValueExecutor[_]) {
 
-  @volatile private var resultCache = Map.empty[List[String], Try[Map[String, Try[List[ast.Field]]]]]
+  @volatile private var resultCache = Map.empty[List[String], Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]
 
-  def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.Selection]): Try[Map[String, Try[List[ast.Field]]]] = {
+  def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.Selection]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] = {
     if (resultCache contains path) resultCache(path)
     else {
       val res = collectFieldsInternal(tpe, selections, MutableSet.empty)
@@ -26,22 +26,22 @@ class FieldExecutor[Ctx, Val](
     }
   }
 
-  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String]): Try[Map[String, Try[List[ast.Field]]]] =
-    selections.foldLeft(Success(Map.empty) : Try[Map[String, Try[List[ast.Field]]]]) {
+  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] =
+    selections.foldLeft(Success(Map.empty) : Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
       case (f @ Failure(_), selection) => f
       case (s @ Success(acc), selection) =>
         selection match {
           case field @ ast.Field(_, _, _, dirs, _, _) =>
-            val name = resultName(field)
+            val name = field.outputName
 
             shouldIncludeNode(dirs, selection) match {
               case Success(true) => acc.get(name) match {
-                case Some(Success(list)) => Success(acc.updated(name, Success(list :+ field)))
-                case Some(Failure(_)) => s
-                case None => Success(acc.updated(name, Success(field :: Nil)))
+                case Some((f, Success(list))) => Success(acc.updated(name, f -> Success(list :+ field)))
+                case Some((_, Failure(_))) => s
+                case None => Success(acc.updated(name, field -> Success(field :: Nil)))
               }
               case Success(false) => s
-              case Failure(error) => Success(acc.updated(name, Failure(error)))
+              case Failure(error) => Success(acc.updated(name, field -> Failure(error)))
             }
           case fragment @ ast.InlineFragment(typeCondition, dirs, fragmentSelections, _) =>
             for {
@@ -76,8 +76,6 @@ class FieldExecutor[Ctx, Val](
             }
         }
     }
-
-  def resultName(field: ast.Field) = field.alias getOrElse field.name
 
   def shouldIncludeNode(directives: List[ast.Directive], selection: ast.WithDirectives): Try[Boolean] = {
     val possibleDirs = directives
