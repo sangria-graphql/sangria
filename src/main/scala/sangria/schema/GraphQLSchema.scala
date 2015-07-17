@@ -111,7 +111,7 @@ case class Field[Ctx, Val] private (
   fieldType: OutputType[_],
   description: Option[String],
   arguments: List[Argument[_]],
-  resolve: Context[Ctx, Val] => Action[_, _],
+  resolve: Context[Ctx, Val] => Action[Ctx, _],
   deprecationReason: Option[String]) extends Named
 
 object Field {

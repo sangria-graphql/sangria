@@ -23,7 +23,7 @@ case class Executor[Ctx, Root](
       operation <- getOperation(queryAst, operationName)
       variables <- valueExecutor.getVariableValues(operation.variables)
       fieldExecutor = new FieldExecutor[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueExecutor)
-      res <- executeOperation(operation, queryAst.sourceMapper, fieldExecutor, marshaller)
+      res <- executeOperation(operation, queryAst.sourceMapper, valueExecutor, fieldExecutor, marshaller, variables)
     } yield ExecutionResult(marshaller.booleanNode(true), Nil, marshaller.booleanNode(true), res)
 
     Future.fromTry(foo)
@@ -38,11 +38,17 @@ case class Executor[Ctx, Root](
       operation map (Success(_)) getOrElse Failure(new ExecutionError(s"Unknown operation name: ${operationName.get}"))
     }
 
-  def executeOperation(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper], fieldExecutor: FieldExecutor[Ctx, Root], marshaller: ResultMarshaller) = {
+  def executeOperation(
+      operation: ast.OperationDefinition,
+      sourceMapper: Option[SourceMapper],
+      valueExecutor: ValueExecutor[_],
+      fieldExecutor: FieldExecutor[Ctx, Root],
+      marshaller: ResultMarshaller,
+      variables: Map[String, Any]) = {
     for {
       tpe <- getOperationRootType(operation, sourceMapper)
       fields <- fieldExecutor.collectFields(Nil, tpe, operation.selections)
-      resolver = new Resolver[Ctx](marshaller, schema, fieldExecutor, exceptionHandler, deferredResolver, sourceMapper)
+      resolver = new Resolver[Ctx](marshaller, schema, valueExecutor, variables, fieldExecutor, userContext, exceptionHandler, deferredResolver, sourceMapper)
     } yield resolver.executeFields(Nil, tpe, root, fields)
   }
 

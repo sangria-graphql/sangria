@@ -30,7 +30,7 @@ class TemporarySpec extends WordSpec with Matchers {
            }
 
            fragment Foo on Query {
-             getHuman @include(if: $$xx)
+             human(id: "1003") @include(if: $$xx)
            }
         """
       ) match {

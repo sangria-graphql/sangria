@@ -11,7 +11,10 @@ import scala.util.{Success, Failure, Try}
 class Resolver[Ctx](
     val marshaller: ResultMarshaller,
     schema: Schema[Ctx, _],
+    valueExecutor: ValueExecutor[_],
+    variables: Map[String, Any],
     fieldExecutor: FieldExecutor[Ctx, _],
+    userContext: Ctx,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node],
     deferredResolver: DeferredResolver,
     sourceMapper: Option[SourceMapper])(implicit executionContext: ExecutionContext) {
@@ -46,7 +49,7 @@ class Resolver[Ctx](
       case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) =>
         errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) s else None)
       case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
-        resolveField(errors, name, fields) match {
+        resolveField(tpe, path :+ name, value, errors, name, fields) match {
           case (updatedErrors, Some(result)) => updatedErrors -> Some(acc :+ (fields(0), tpe.fieldsByName(origField.name), result))
           case (updatedErrors, None) if isOptional(tpe, origField.name) => updatedErrors -> s
           case (updatedErrors, None) => updatedErrors -> None
@@ -58,8 +61,9 @@ class Resolver[Ctx](
       case Some(results) =>
         val resolvedValues = results.map {
           // todo updatectx
-          case (astField, field, Value(value)) =>
-            astField -> resolveValue(path :+ field.name, astField, field.fieldType, field, value)
+          case (astField, field, Value(v)) =>
+            println("AAAAA", v)
+            astField -> resolveValue(path :+ field.name, astField, field.fieldType, field, v)
           case (astField, field, DeferredValue(deferred)) =>
             val promise = Promise[Any]()
 
@@ -137,7 +141,7 @@ class Resolver[Ctx](
       field: Field[Ctx, _],
       value: Any): Foo  =
 
-    field.fieldType match {
+    tpe match {
       case OptionType(optTpe) =>
         val actualValue = value.asInstanceOf[Option[_]]
 
@@ -208,7 +212,22 @@ class Resolver[Ctx](
     case ast.VariableValue(_, _) => throw new IllegalStateException("Can't marshall variable values!")
   }
 
-  def resolveField(errors: ErrorRegistry, name: String, fields: List[ast.Field]): (ErrorRegistry, Option[Action[Ctx, _]]) = ???
+  def resolveField(tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, fields: List[ast.Field]): (ErrorRegistry, Option[Action[Ctx, Any]]) = {
+    val astField = fields.head
+    val field = tpe.fieldsByName(astField.name).asInstanceOf[Field[Ctx, Any]]
+
+    valueExecutor.getAttributeValues(field.arguments, astField.arguments, variables) match {
+      case Success(args) =>
+        val ctx = Context[Ctx, Any](value, userContext, args, schema.asInstanceOf[Schema[Ctx, Any]], field, fields)
+        try {
+
+          errors -> Some(field.resolve(ctx))
+        } catch {
+          case NonFatal(e) => errors.add(path, e) -> None
+        }
+      case Failure(error) => errors.add(path, error) -> None
+    }
+  }
 
   def isOptional(tpe: ObjectType[_, _], fieldName: String) =
     tpe.fieldsByName(fieldName).fieldType.isInstanceOf[OptionType[_]]

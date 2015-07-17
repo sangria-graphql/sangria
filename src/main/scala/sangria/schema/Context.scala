@@ -66,7 +66,7 @@ case class Context[Ctx, Val](
       args: Map[String, Any],
       schema: Schema[Ctx, Val],
       field: Field[Ctx, Val],
-      fieldAst: ast.Field) extends WithArguments
+      astFields: List[ast.Field]) extends WithArguments
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 

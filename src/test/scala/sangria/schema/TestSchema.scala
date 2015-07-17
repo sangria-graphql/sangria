@@ -40,7 +40,7 @@ object TestSchema {
 
   val Query = ObjectType[CharacterRepo, Unit]("Query", List[Field[CharacterRepo, Unit]](
     Field("hero", Character, resolve = (ctx) => ctx.ctx.getHero),
-    Field("human", Human, arguments = ID :: Nil, resolve = ctx => ctx.ctx.getHuman(ctx arg ID)),
+    Field("human", OptionType(Human), arguments = ID :: Nil, resolve = ctx => ctx.ctx.getHuman(ctx arg ID)),
     Field("droid", Droid, arguments = ID :: Nil, resolve = Projector((ctx, f)=> ctx.ctx.getDroid(ctx arg ID))),
     Field("test", Droid, resolve = ctx => UpdateCtx(Future.successful(ctx.ctx.getDroid("111")))(droid => ctx.ctx))
   ))
