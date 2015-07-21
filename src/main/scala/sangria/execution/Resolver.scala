@@ -3,6 +3,7 @@ package sangria.execution
 import sangria.ast
 import sangria.parser.SourceMapper
 import sangria.schema._
+import sangria.validation.AstNodeLocation
 
 import scala.concurrent.{ExecutionContext, Promise, Future}
 import scala.util.control.NonFatal
@@ -19,6 +20,10 @@ class Resolver[Ctx](
     deferredResolver: DeferredResolver,
     sourceMapper: Option[SourceMapper])(implicit executionContext: ExecutionContext) {
 
+  val resultResolver = new ResultResolver(marshaller, exceptionHandler)
+
+  import resultResolver._
+
   trait Foo
 
   case class ExtractionResult(deferred: List[Future[List[Def]]], futureValue: Future[Res]) extends Foo
@@ -28,20 +33,24 @@ class Resolver[Ctx](
       if (optional && other.value.isEmpty) value else for {myVal <- value; otherVal <- other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal))
   }
 
-  def handleException(exception: Throwable): marshaller.Node = exception match {
-    case e: UserFacingError => marshaller.stringNode(e.getMessage)
-    case e if exceptionHandler isDefinedAt (marshaller -> e) => exceptionHandler(marshaller -> e).asInstanceOf[marshaller.Node]
-    case e =>
-      e.printStackTrace() // todo proper logging?
-      marshaller.stringNode("Internal server error")
+  def resolveFields(
+       tpe: ObjectType[Ctx, _],
+       value: Any,
+       fields: Map[String, (ast.Field, Try[List[ast.Field]])]): Future[marshaller.Node] = {
+    resolveFields(Nil, tpe, value, fields, ErrorRegistry.empty) match {
+      case Res(errors, data) =>
+        Future.successful(marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]], marshalErrors(errors)).asInstanceOf[marshaller.Node])
+
+      // todo: big one
+    }
   }
 
-  def executeFields(
+  def resolveFields(
        path: List[String],
        tpe: ObjectType[Ctx, _],
        value: Any,
        fields: Map[String, (ast.Field, Try[List[ast.Field]])],
-       errorReg: ErrorRegistry = ErrorRegistry.empty): Foo = {
+       errorReg: ErrorRegistry): Foo = {
 
     val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(ast.Field, Field[Ctx, _], Action[Ctx, _])]])) {
       case (acc @ (_, None), _) => acc
@@ -62,21 +71,20 @@ class Resolver[Ctx](
         val resolvedValues = results.map {
           // todo updatectx
           case (astField, field, Value(v)) =>
-            println("AAAAA", v)
             astField -> resolveValue(path :+ field.name, astField, field.fieldType, field, v)
           case (astField, field, DeferredValue(deferred)) =>
             val promise = Promise[Any]()
 
             astField -> ExtractionResult(Future.successful(Def(promise, deferred) :: Nil):: Nil,
               promise.future
-                .flatMap{ v =>
+                .flatMap { v =>
                   resolveValue(path :+ field.name, astField, field.fieldType, field, v) match {
                     case r: Res => Future.successful(r)
                     case er: ExtractionResult => resolveDeferred(er)
                   }
                 }
-                .recover{
-                  case e => Res(ErrorRegistry.empty.add(path :+ field.name, e), None)
+                .recover {
+                  case e => Res(ErrorRegistry(path :+ field.name, e), None)
                 })
           case (astField, field, FutureValue(future)) =>
             val resolved = future.map(v => resolveValue(path :+ field.name, astField, field.fieldType, field, v))
@@ -102,7 +110,7 @@ class Resolver[Ctx](
                 }
               }
               .recover{
-                case e => Res(ErrorRegistry.empty.add(path :+ field.name, e), None)
+                case e => Res(ErrorRegistry(path :+ field.name, e), None)
               })
         }
 
@@ -175,27 +183,27 @@ class Resolver[Ctx](
         try {
           Res(ErrorRegistry.empty, Some(marshalValue(scalar.coerceOutput(value))))
         } catch {
-          case NonFatal(e) => Res(ErrorRegistry.empty.add(path, e), None)
+          case NonFatal(e) => Res(ErrorRegistry(path, e), None)
         }
       case enum: EnumType[Any @unchecked] =>
         try {
           Res(ErrorRegistry.empty, Some(marshalValue(enum.coerceOutput(value))))
         } catch {
-          case NonFatal(e) => Res(ErrorRegistry.empty.add(path, e), None)
+          case NonFatal(e) => Res(ErrorRegistry(path, e), None)
         }
       case obj: ObjectType[Ctx, _] =>
         fieldExecutor.collectFields(path, obj, astField.selections) match {
-          case Success(fields) => executeFields(path, obj, value, fields)
-          case Failure(error) => Res(ErrorRegistry.empty.add(path, error), None)
+          case Success(fields) => resolveFields(path, obj, value, fields, ErrorRegistry.empty)
+          case Failure(error) => Res(ErrorRegistry(path, error), None)
         }
       case abst: AbstractType =>
         abst.typeOf(value, schema) match {
           case Some(obj) =>
             fieldExecutor.collectFields(path, obj, astField.selections) match {
-              case Success(fields) => executeFields(path, obj, value, fields)
-              case Failure(error) => Res(ErrorRegistry.empty.add(path, error), None)
+              case Success(fields) => resolveFields(path, obj, value, fields, ErrorRegistry.empty)
+              case Failure(error) => Res(ErrorRegistry(path, error), None)
             }
-          case None => Res(ErrorRegistry.empty.add(path,
+          case None => Res(ErrorRegistry(path,
             new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astField.position)), None)
         }
 
@@ -231,16 +239,4 @@ class Resolver[Ctx](
 
   def isOptional(tpe: ObjectType[_, _], fieldName: String) =
     tpe.fieldsByName(fieldName).fieldType.isInstanceOf[OptionType[_]]
-
-  case class ErrorRegistry(errorList: List[ErrorPath]) {
-    def add(path: List[String], error: String) = copy(errorList:+ ErrorPath(path, marshaller.stringNode(error)))
-    def add(path: List[String], error: Throwable) = copy(errorList :+ ErrorPath(path, handleException(error)))
-    def add(other: ErrorRegistry) = ErrorRegistry(errorList ++ other.errorList)
-  }
-
-  object ErrorRegistry {
-    val empty = ErrorRegistry(Nil)
-  }
-
-  case class ErrorPath(path: List[String], error: marshaller.Node)
 }

@@ -17,16 +17,20 @@ case class Executor[Ctx, Root](
   def execute[Input](
       queryAst: ast.Document,
       operationName: Option[String] = None,
-      arguments: Option[Input] = None)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[ExecutionResult[marshaller.Node]] = {
+      arguments: Option[Input] = None)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] = {
     val valueExecutor = new ValueExecutor[Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper)(um)
-    val foo = for {
+
+    val executionResult = for {
       operation <- getOperation(queryAst, operationName)
       variables <- valueExecutor.getVariableValues(operation.variables)
       fieldExecutor = new FieldExecutor[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueExecutor)
       res <- executeOperation(operation, queryAst.sourceMapper, valueExecutor, fieldExecutor, marshaller, variables)
-    } yield ExecutionResult(marshaller.booleanNode(true), Nil, marshaller.booleanNode(true), res)
+    } yield res
 
-    Future.fromTry(foo)
+    executionResult match {
+      case Success(future) => future.asInstanceOf[Future[marshaller.Node]]
+      case Failure(error) => Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])
+    }
   }
 
   def getOperation(document: ast.Document, operationName: Option[String]): Try[ast.OperationDefinition] =
@@ -49,7 +53,7 @@ case class Executor[Ctx, Root](
       tpe <- getOperationRootType(operation, sourceMapper)
       fields <- fieldExecutor.collectFields(Nil, tpe, operation.selections)
       resolver = new Resolver[Ctx](marshaller, schema, valueExecutor, variables, fieldExecutor, userContext, exceptionHandler, deferredResolver, sourceMapper)
-    } yield resolver.executeFields(Nil, tpe, root, fields)
+    } yield resolver.resolveFields(tpe, root, fields)
   }
 
   def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
@@ -58,5 +62,3 @@ case class Executor[Ctx, Root](
         Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position))
   }
 }
-
-case class ExecutionResult[T](data: T, errors: List[T], result: T, foo: Any)

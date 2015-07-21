@@ -30,7 +30,7 @@ class TemporarySpec extends WordSpec with Matchers {
            }
 
            fragment Foo on Query {
-             human(id: "1003") @include(if: $$xx)
+             human(id: "1003") @include(if: $$xx) {id, name}
            }
         """
       ) match {
@@ -43,7 +43,7 @@ class TemporarySpec extends WordSpec with Matchers {
 
       val vars = Map("xx" -> true)
 
-      println(Await.result(Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo).execute(ast, arguments = Some(vars)), Duration.Inf).foo)
+      println(Await.result(Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo).execute(ast, arguments = Some(vars)), Duration.Inf))
     }
   }
 

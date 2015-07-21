@@ -9,6 +9,7 @@ trait ResultMarshaller {
   def arrayNode(values: Seq[Node]): Node
   def emptyArrayNode: Node
   def addArrayNodeElem(array: Node, elem: Node): Node
+  def isEmptyArrayNode(array: Node): Boolean
 
   def stringNode(value: String): Node
   def intNode(value: Int): Node
@@ -31,6 +32,7 @@ class ScalaResultMarshaller extends ResultMarshaller {
   override def arrayNode(values: Seq[Node]) = values
   override def emptyArrayNode = Nil
   override def addArrayNodeElem(array: Node, elem: Node) = array.asInstanceOf[List[_]] :+ elem
+  override def isEmptyArrayNode(array: Node) = array.asInstanceOf[List[_]].isEmpty
 
   override def mapNode(keyValues: Seq[(String, Node)]) = Map(keyValues: _*)
   override def emptyMapNode = Map.empty[String, Any]
