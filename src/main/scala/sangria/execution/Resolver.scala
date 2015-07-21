@@ -56,16 +56,16 @@ class Resolver[Ctx](
        fields: Map[String, (ast.Field, Try[List[ast.Field]])],
        errorReg: ErrorRegistry): Resolve = {
 
-    val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(ast.Field, Field[Ctx, _], Action[Ctx, _])]])) {
+    val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(ast.Field, Field[Ctx, _], LeafAction[Ctx, _])]])) {
       case (acc @ (_, None), _) => acc
       case (acc, (name, (origField, _))) if !tpe.fieldsByName.contains(origField.name) => acc
       case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) =>
         errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) s else None)
       case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
-        resolveField(tpe, path :+ name, value, errors, name, fields) match {
-          case (updatedErrors, Some(result)) => updatedErrors -> Some(acc :+ (fields(0), tpe.fieldsByName(origField.name), result))
-          case (updatedErrors, None) if isOptional(tpe, origField.name) => updatedErrors -> s
-          case (updatedErrors, None) => updatedErrors -> None
+        resolveField(userContext, tpe, path :+ name, value, errors, name, fields) match {
+          case (updatedErrors, Some(result), _) => updatedErrors -> Some(acc :+ (fields(0), tpe.fieldsByName(origField.name), result))
+          case (updatedErrors, None, _) if isOptional(tpe, origField.name) => updatedErrors -> s
+          case (updatedErrors, None, _) => updatedErrors -> None
         }
     }
 
@@ -73,7 +73,6 @@ class Resolver[Ctx](
       case None => Result(errors, None)
       case Some(results) =>
         val resolvedValues = results.map {
-          // todo updatectx
           case (astField, field, Value(v)) =>
             astField -> resolveValue(path :+ field.name, astField, field.fieldType, field, v)
           case (astField, field, DeferredValue(deferred)) =>
@@ -230,20 +229,23 @@ class Resolver[Ctx](
     case ast.VariableValue(_, _) => throw new IllegalStateException("Can't marshall variable values!")
   }
 
-  def resolveField(tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, fields: List[ast.Field]): (ErrorRegistry, Option[Action[Ctx, Any]]) = {
+  def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, fields: List[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[Any => Ctx]) = {
     val astField = fields.head
     val field = tpe.fieldsByName(astField.name).asInstanceOf[Field[Ctx, Any]]
 
     valueExecutor.getAttributeValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>
-        val ctx = Context[Ctx, Any](value, userContext, args, schema.asInstanceOf[Schema[Ctx, Any]], field, fields)
-        try {
+        val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, fields)
 
-          errors -> Some(field.resolve(ctx))
+        try {
+          field.resolve(ctx) match {
+            case resolved: LeafAction[Ctx, Any] => (errors, Some(resolved), None)
+            case res: UpdateCtx[Ctx, Any @unchecked] => (errors, Some(res.action), Some(res.nextCtx))
+          }
         } catch {
-          case NonFatal(e) => errors.add(path, e) -> None
+          case NonFatal(e) => (errors.add(path, e), None, None)
         }
-      case Failure(error) => errors.add(path, error) -> None
+      case Failure(error) => (errors.add(path, error), None, None)
     }
   }
 
