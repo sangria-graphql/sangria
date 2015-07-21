@@ -56,7 +56,7 @@ class ExecutorSpec extends WordSpec with Matchers {
   val schema = Schema(DataType)
 
   "Execute: Handles basic execution tasks" should {
-    "executes arbitrary code" in {
+    "execute arbitrary code" in {
       val Success(doc) = QueryParser.parse("""
         query Example($size: Int) {
           a,
@@ -112,5 +112,10 @@ class ExecutorSpec extends WordSpec with Matchers {
 
       Await.result(Executor(schema, new TestSubject).execute(doc, arguments = Some(Map("size" -> 100))), 5 seconds) should be (expected)
     }
+
+
+//    "merge parallel fragments" in {
+//      val Type = ObjectType("Type", List[])
+//    }
   }
 }

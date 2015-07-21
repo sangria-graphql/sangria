@@ -30,7 +30,7 @@ class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper:
     else Success(Map(values.collect {case (name, Right(v)) => name -> v}: _*))
   }
 
-  def getAttributeValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
+  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
     val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
 
     val res = argumentDefs.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
@@ -78,19 +78,20 @@ class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper:
   }
 
   def resolveListValue(ofType: InputType[_], fieldPath: List[String], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) = value match {
-    case r @ Right(v) if ofType.isInstanceOf[OptionInputType[_]] => r
+    case r @ Right(None) if ofType.isInstanceOf[OptionInputType[_]] => r
     case Right(Some(v)) => Right(v)
     case Right(None) => Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil)
     case l @ Left(_) => l
   }
 
-  def resolveMapValue(ofType: InputType[_], fieldPath: List[String], default: Option[Any], fieldName: String, acc: Map[String, Either[List[Violation], Any]], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) = value match {
-    case r @ Right(v) if ofType.isInstanceOf[OptionInputType[_]] => acc
-    case Right(Some(v)) => acc.updated(fieldName, Right(v))
-    case Right(None) if default.isDefined => acc.updated(fieldName, Right(default))
-    case Right(None) => acc.updated(fieldName, Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil))
-    case l @ Left(_) => acc.updated(fieldName, l)
-  }
+  def resolveMapValue(ofType: InputType[_], fieldPath: List[String], default: Option[Any], fieldName: String, acc: Map[String, Either[List[Violation], Any]], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) =
+    value match {
+      case r @ Right(None) if ofType.isInstanceOf[OptionInputType[_]] => acc
+      case Right(Some(v)) => acc.updated(fieldName, Right(v))
+      case Right(None) if default.isDefined => acc.updated(fieldName, Right(default))
+      case Right(None) => acc.updated(fieldName, Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil))
+      case l @ Left(_) => acc.updated(fieldName, l)
+    }
 
   def coerceInputValue(tpe: InputType[_], fieldPath: List[String], input: um.LeafNode): Either[List[Violation], Option[Any]] = (tpe, input) match {
     case (OptionInputType(ofType), value) => coerceInputValue(ofType, fieldPath, value)
