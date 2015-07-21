@@ -136,6 +136,7 @@ object ValidOutType {
   implicit def validSubclass[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Out]]
   implicit def validNothing[Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
   implicit def validOption[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Option[Out]]]
+  implicit def validSeq[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Seq[Out]]]
 }
 
 case class Argument[T](
@@ -199,10 +200,6 @@ case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with
 
 case class OptionType[T](ofType: OutputType[T]) extends OutputType[Option[T]]
 case class OptionInputType[T](ofType: InputType[T]) extends InputType[Option[T]]
-
-//object OptionType {
-//  implicit
-//}
 
 case class Directive(
   name: String,

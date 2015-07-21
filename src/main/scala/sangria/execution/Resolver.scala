@@ -30,6 +30,11 @@ class Resolver[Ctx](
   case class Result(errors: ErrorRegistry, value: Option[marshaller.Node]) extends Resolve {
     def addToMap(other: Result, key: String, optional: Boolean) = copy(errors = errors add other.errors, value =
       if (optional && other.value.isEmpty) value else for {myVal <- value; otherVal <- other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal))
+    def addToList(other: Result, optional: Boolean) = copy(errors = errors add other.errors, value =
+        if (optional && other.value.isEmpty)
+          value map (marshaller.addArrayNodeElem(_, marshaller.nullNode))
+        else
+          for {myVal <- value; otherVal <- other.value} yield marshaller.addArrayNodeElem(myVal, otherVal))
   }
 
   def resolveFields(
@@ -163,7 +168,7 @@ class Resolver[Ctx](
       case OptionType(optTpe) =>
         val actualValue = value match {
           case v: Option[_] => v
-          case v => Some(v)
+          case v => Option(v)
         }
 
         actualValue match {
@@ -171,18 +176,17 @@ class Resolver[Ctx](
           case None => Result(ErrorRegistry.empty, None)
         }
       case ListType(listTpe) =>
-        val actualValue = value.asInstanceOf[Seq[_]]
+        val actualValue = value match {
+          case seq: Seq[_] => seq
+          case other => Seq(other)
+        }
 
         val res = actualValue map (resolveValue(path, astField, listTpe, field, _))
-
         val simpleRes = res.collect{case r: Result => r}
 
         if (simpleRes.size == res.size)
-          simpleRes.collect{case r @ Result(errors, None) => r}.headOption match {
-            case Some(r) => r
-            case None => simpleRes.foldLeft(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))) {
-              case (acc, Result(errors, Some(value))) => acc.copy(errors = acc.errors.add(errors), value = acc.value map (marshaller.addArrayNodeElem(_, value)))
-            }
+          simpleRes.foldLeft(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))) {
+            case (acc, res) => acc.addToList(res, isOptional(listTpe))
           }
         else
           res.foldLeft(DeferredResult(Nil, Future.successful(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))))) {
@@ -232,7 +236,7 @@ class Resolver[Ctx](
     val astField = fields.head
     val field = tpe.fieldsByName(astField.name).asInstanceOf[Field[Ctx, Any]]
 
-    valueExecutor.getAttributeValues(field.arguments, astField.arguments, variables) match {
+    valueExecutor.getArgumentValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>
         val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, fields)
 
@@ -282,6 +286,9 @@ class Resolver[Ctx](
     loop(path, field.fieldType, astField)
   }
 
-  def isOptional(tpe: ObjectType[_, _], fieldName: String) =
-    tpe.fieldsByName(fieldName).fieldType.isInstanceOf[OptionType[_]]
+  def isOptional(tpe: ObjectType[_, _], fieldName: String): Boolean =
+    isOptional(tpe.fieldsByName(fieldName).fieldType)
+
+  def isOptional(tpe: OutputType[_]): Boolean =
+    tpe.isInstanceOf[OptionType[_]]
 }

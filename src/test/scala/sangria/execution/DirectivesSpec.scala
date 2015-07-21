@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class DirectivesSpec extends WordSpec with Matchers {
 
-  case class TestSubject(a: Option[String] = None, b: Option[String] = None)
+  case class TestSubject(a: Option[String], b: Option[String])
 
   val schema = Schema(ObjectType("TestType", List[Field[Unit, TestSubject]](
     Field("a", OptionType(StringType), resolve = _.value.a),
@@ -28,7 +28,7 @@ class DirectivesSpec extends WordSpec with Matchers {
     Await.result(Executor(schema, data).execute(doc), 5 seconds)
   }
 
-  "Execution" when {
+  "Execute: handles directives" when {
     "directives are not used" should {
       "execute basic query" in {
         executeTestQuery("{ a, b }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))

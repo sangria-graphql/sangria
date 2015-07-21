@@ -29,6 +29,8 @@ object Json4sSupport {
     override def stringNode(value: String) = JString(value)
 
     override def intNode(value: Int) = JInt(value)
+
+    override def nullNode = JNull
   }
 
 }

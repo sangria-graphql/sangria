@@ -66,7 +66,9 @@ trait Deferred[+T]
 trait WithArguments {
   def args: Map[String, Any]
   def arg[T](arg: Argument[T]) = args(arg.name).asInstanceOf[T]
-  def argOpt[T](arg: Argument[T]) = args.get(arg.name).asInstanceOf[T]
+  def arg[T](name: String) = args(name).asInstanceOf[T]
+  def argOpt[T](arg: Argument[T]) = args.get(arg.name).asInstanceOf[Option[T]]
+  def argOpt[T](name: String) = args.get(name).asInstanceOf[Option[T]]
 }
 
 case class Context[Ctx, Val](

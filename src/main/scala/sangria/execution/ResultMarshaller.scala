@@ -15,6 +15,7 @@ trait ResultMarshaller {
   def intNode(value: Int): Node
   def floatNode(value: Double): Node
   def booleanNode(value: Boolean): Node
+  def nullNode: Node
 }
 
 object ResultMarshaller {
@@ -38,4 +39,6 @@ class ScalaResultMarshaller extends ResultMarshaller {
   override def emptyMapNode = Map.empty[String, Any]
   override def addMapNodeElem(node: Node, key: String, value: Node) =
     node.asInstanceOf[Map[String, Any]] + (key -> value)
+
+  override def nullNode = null
 }
