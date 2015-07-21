@@ -79,6 +79,6 @@ object TestData {
 
     def getHuman(id: String): Option[Human] = characters.find(c => c.isInstanceOf[Human] && c.id == id).asInstanceOf[Option[Human]]
 
-    def getDroid(id: String): Droid = characters.find(c => c.isInstanceOf[Droid] && c.id == id).get.asInstanceOf[Droid]
+    def getDroid(id: String): Option[Droid] = characters.find(c => c.isInstanceOf[Droid] && c.id == id).asInstanceOf[Option[Droid]]
   }
 }

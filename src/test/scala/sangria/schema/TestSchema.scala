@@ -41,8 +41,8 @@ object TestSchema {
   val Query = ObjectType[CharacterRepo, Unit]("Query", List[Field[CharacterRepo, Unit]](
     Field("hero", Character, resolve = (ctx) => ctx.ctx.getHero),
     Field("human", OptionType(Human), arguments = ID :: Nil, resolve = ctx => ctx.ctx.getHuman(ctx arg ID)),
-    Field("droid", Droid, arguments = ID :: Nil, resolve = Projector((ctx, f)=> ctx.ctx.getDroid(ctx arg ID))),
-    Field("test", OptionType(Droid), resolve = ctx => UpdateCtx(Future.successful(ctx.ctx.getDroid("2001")))(droid => ctx.ctx)),
+    Field("droid", Droid, arguments = ID :: Nil, resolve = Projector((ctx, f)=> ctx.ctx.getDroid(ctx arg ID).get)),
+    Field("test", OptionType(Droid), resolve = ctx => UpdateCtx(Future.successful(ctx.ctx.getDroid("2001").get))(droid => ctx.ctx)),
     Field("project", OptionType(Droid), resolve = Projector((ctx, projections) => {println("Projected fields: " + projections.flatMap(_.asVector)); ctx.ctx.getDroid("2001")}))
   ))
 
