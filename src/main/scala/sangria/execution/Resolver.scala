@@ -211,15 +211,10 @@ class Resolver[Ctx](
         }
       case abst: AbstractType =>
         abst.typeOf(value, schema) match {
-          case Some(obj) =>
-            fieldExecutor.collectFields(path, obj, astField.selections) match {
-              case Success(fields) => resolveFields(path, obj, value, fields, ErrorRegistry.empty)
-              case Failure(error) => Result(ErrorRegistry(path, error), None)
-            }
+          case Some(obj) => resolveValue(path, astField, obj, field, value)
           case None => Result(ErrorRegistry(path,
             new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astField.position)), None)
         }
-
     }
 
   def marshalValue(value: ast.Value): marshaller.Node = value match {
@@ -242,7 +237,12 @@ class Resolver[Ctx](
         val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, fields)
 
         try {
-          field.resolve(ctx) match {
+          val res = field.resolve match {
+            case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astField))
+            case fn => fn(ctx)
+          }
+
+          res match {
             case resolved: LeafAction[Ctx, Any] => (errors, Some(resolved), None)
             case res: UpdateCtx[Ctx, Any @unchecked] => (errors, Some(res.action), Some(res.nextCtx))
           }
@@ -251,6 +251,35 @@ class Resolver[Ctx](
         }
       case Failure(error) => (errors.add(path, error), None, None)
     }
+  }
+
+  def collectProjections(path: List[String], field: Field[Ctx, _], astField: ast.Field): Vector[ProjectedName] = {
+    def loop(path: List[String], tpe: OutputType[_], astField: ast.Field): Vector[ProjectedName] = tpe match {
+      case OptionType(ofType) => loop(path, ofType, astField)
+      case ListType(ofType) => loop(path, ofType, astField)
+      case objTpe: ObjectType[Ctx, _] =>
+        fieldExecutor.collectFields(path, objTpe, astField.selections) match {
+          case Success(ff) =>
+            ff.values.toVector collect {
+              case (_, Success(fields)) if objTpe.fieldsByName.contains(fields.head.name) && objTpe.fieldsByName(fields.head.name).resolve.isInstanceOf[Projection[_, _, _]] =>
+                val astField = fields.head
+                val field = objTpe.fieldsByName(astField.name)
+                val projection = field.resolve.asInstanceOf[Projection[_, _, _]]
+                val projectedName = projection.projectedName getOrElse field.name
+
+                ProjectedName(projectedName, loop(path :+ projectedName, field.fieldType, astField))
+            }
+          case Failure(_) => Vector.empty
+        }
+      case abst: AbstractType =>
+        schema.possibleTypes
+          .get (abst.name)
+          .map (_.flatMap(loop(path, _, astField)).groupBy(_.name).map(_._2.head).toVector)
+          .getOrElse (Vector.empty)
+      case _ => Vector.empty
+    }
+
+    loop(path, field.fieldType, astField)
   }
 
   def isOptional(tpe: ObjectType[_, _], fieldName: String) =

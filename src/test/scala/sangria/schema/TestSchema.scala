@@ -33,7 +33,7 @@ object TestSchema {
     Field("id", StringType, Some("The id of the droid."), resolve = Projection("_id", _.value.id)),
     Field("name", OptionType(StringType), Some("The name of the droid."), resolve = ctx => Future.successful(ctx.value.name)),
     Field("friends", ListType(Character), Some("The friends of the droid, or an empty list if they have none."), resolve = ctx => DeferFriends(ctx.value.friends)),
-    Field("primaryFunction", OptionType(StringType), Some("The primary function of the droid."), resolve = _.value.primaryFunction)
+    Field("primaryFunction", OptionType(StringType), Some("The primary function of the droid."), resolve = Projection(_.value.primaryFunction))
   ), Character :: Nil)
 
   val ID = Argument("id", StringType)
@@ -42,7 +42,8 @@ object TestSchema {
     Field("hero", Character, resolve = (ctx) => ctx.ctx.getHero),
     Field("human", OptionType(Human), arguments = ID :: Nil, resolve = ctx => ctx.ctx.getHuman(ctx arg ID)),
     Field("droid", Droid, arguments = ID :: Nil, resolve = Projector((ctx, f)=> ctx.ctx.getDroid(ctx arg ID))),
-    Field("test", OptionType(Droid), resolve = ctx => UpdateCtx(Future.successful(ctx.ctx.getDroid("2001")))(droid => ctx.ctx))
+    Field("test", OptionType(Droid), resolve = ctx => UpdateCtx(Future.successful(ctx.ctx.getDroid("2001")))(droid => ctx.ctx)),
+    Field("project", OptionType(Droid), resolve = Projector((ctx, projections) => {println("Projected fields: " + projections.flatMap(_.asVector)); ctx.ctx.getDroid("2001")}))
   ))
 
   val StarWarsSchema = Schema(Query)

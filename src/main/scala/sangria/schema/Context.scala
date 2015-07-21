@@ -26,7 +26,7 @@ object UpdateCtx {
   def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
 }
 
-abstract class Projection[Ctx, Val, Res](projectedName: Option[String]) extends (Context[Ctx, Val] => Action[Ctx, Res])
+abstract class Projection[Ctx, Val, Res](val projectedName: Option[String]) extends (Context[Ctx, Val] => Action[Ctx, Res])
 
 object Projection {
   def apply[Ctx, Val, Res](fn: Context[Ctx, Val] => Action[Ctx, Res]) =
@@ -40,17 +40,26 @@ object Projection {
     }
 }
 
-trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res])
+trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
+  def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res]
+}
 
 object Projector {
-  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], ProjectedName) => Action[Ctx, Res]) =
+  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
-      def apply(ctx: Context[Ctx, Val], projected: ProjectedName) = fn(ctx, projected)
+      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
       override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException("Default apply should not be called on projector!")
     }
 }
 
-case class ProjectedName(name: String, children: List[ProjectedName] = Nil)
+case class ProjectedName(name: String, children: Vector[ProjectedName] = Vector.empty) {
+  lazy val asVector = {
+    def loop(name: ProjectedName): Vector[Vector[String]] =
+      Vector(name.name) +: (children flatMap loop map (name.name +: _))
+
+    loop(this)
+  }
+}
 
 trait Deferred[+T]
 
