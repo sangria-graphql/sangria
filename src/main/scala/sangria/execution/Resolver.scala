@@ -3,7 +3,6 @@ package sangria.execution
 import sangria.ast
 import sangria.parser.SourceMapper
 import sangria.schema._
-import sangria.validation.AstNodeLocation
 
 import scala.concurrent.{ExecutionContext, Promise, Future}
 import scala.util.control.NonFatal
@@ -39,9 +38,14 @@ class Resolver[Ctx](
        fields: Map[String, (ast.Field, Try[List[ast.Field]])]): Future[marshaller.Node] = {
     resolveFields(Nil, tpe, value, fields, ErrorRegistry.empty) match {
       case Result(errors, data) =>
-        Future.successful(marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]], marshalErrors(errors)).asInstanceOf[marshaller.Node])
+        Future.successful(
+          marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]],
+            marshalErrors(errors)).asInstanceOf[marshaller.Node])
 
-      // todo: big one
+      case dr: DeferredResult =>
+        resolveDeferred(dr).map { case (Result(errors, data)) =>
+          marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]], marshalErrors(errors)).asInstanceOf[marshaller.Node]
+        }
     }
   }
 
@@ -137,7 +141,13 @@ class Resolver[Ctx](
   }
 
   def resolveDeferred(res: DeferredResult) = {
-    val foo = Future.sequence(res.deferred).map(listOfDef => ???)
+    Future.sequence(res.deferred).map { listOfDef =>
+      val toResolve = listOfDef.flatten
+      deferredResolver.resolve(listOfDef.flatten map (_.deferred)).onComplete {
+        case Success(resolved) => toResolve zip resolved foreach {case (d, r) => d.promise.success(r)}
+        case Failure(error) => toResolve foreach(_.promise.failure(error))
+      }
+    }
 
     res.futureValue
   }

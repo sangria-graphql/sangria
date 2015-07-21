@@ -16,7 +16,8 @@ sealed trait CompositeType extends Type
 sealed trait AbstractType extends Type with Named {
   def name: String
 
-  def typeOf[Ctx](value: Any, schema: Schema[Ctx, _]): Option[ObjectType[Ctx, _]] = ???
+  def typeOf[Ctx](value: Any, schema: Schema[Ctx, _]): Option[ObjectType[Ctx, _]] =
+    schema.possibleTypes get name flatMap (_.find(_ isInstanceOf value).asInstanceOf[Option[ObjectType[Ctx, _]]])
 }
 
 sealed trait NullableType

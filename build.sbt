@@ -11,6 +11,8 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 
 libraryDependencies ++= Seq(
   "org.parboiled" %% "parboiled" % "2.1.0",
+  "io.spray" %%  "spray-json" % "1.3.2" % "optional", // todo extract in different library
+  "org.json4s" %% "json4s-native" % "3.2.11" % "optional", // todo extract in different library
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 

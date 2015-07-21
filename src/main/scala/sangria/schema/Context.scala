@@ -71,11 +71,11 @@ case class Context[Ctx, Val](
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 
 trait DeferredResolver {
-  def resolve(deferred: List[Deferred[_]]): List[Try[Any]]
+  def resolve(deferred: List[Deferred[Any]]): Future[List[Any]]
 }
 
 object NilDeferredResolver extends DeferredResolver {
-  override def resolve(deferred: List[Deferred[_]]) = deferred map (_ => Failure(UnsupportedDeferError))
+  override def resolve(deferred: List[Deferred[Any]]) = Future.failed(UnsupportedDeferError)
 }
 
 case object UnsupportedDeferError extends Exception

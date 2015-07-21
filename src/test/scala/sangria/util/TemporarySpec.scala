@@ -1,7 +1,7 @@
 package sangria.util
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.TestData.CharacterRepo
+import sangria.TestData.{FriendsResolver, CharacterRepo}
 import sangria.execution.Executor
 import sangria.parser.{SyntaxError, QueryParser}
 import sangria.schema.TestSchema
@@ -30,7 +30,7 @@ class TemporarySpec extends WordSpec with Matchers {
            }
 
            fragment Foo on Query {
-             human(id: "1003") @include(if: $$xx) {id, name}
+             human(id: "1003") @include(if: $$xx) {id, name, friends{name}}
            }
         """
       ) match {
@@ -43,7 +43,9 @@ class TemporarySpec extends WordSpec with Matchers {
 
       val vars = Map("xx" -> true)
 
-      println(Await.result(Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo).execute(ast, arguments = Some(vars)), Duration.Inf))
+      println(Await.result(
+        Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+            .execute(ast, arguments = Some(vars)), Duration.Inf))
     }
   }
 

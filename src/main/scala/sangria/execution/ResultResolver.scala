@@ -73,6 +73,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
                 "message" -> marshaller.stringNode(v.errorMessage))))
             case (acc, _) => acc
           }
+        case _ => astNodeLocations
       }
 
       if (marshaller.isEmptyArrayNode(violatoinErrors)) None else Some(violatoinErrors)
