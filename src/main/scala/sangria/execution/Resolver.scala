@@ -55,7 +55,6 @@ class Resolver[Ctx](
        value: Any,
        fields: Map[String, (ast.Field, Try[List[ast.Field]])],
        errorReg: ErrorRegistry): Resolve = {
-
     val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(ast.Field, Field[Ctx, _], LeafAction[Ctx, _])]])) {
       case (acc @ (_, None), _) => acc
       case (acc, (name, (origField, _))) if !tpe.fieldsByName.contains(origField.name) => acc
@@ -90,14 +89,16 @@ class Resolver[Ctx](
                   case e => Result(ErrorRegistry(path :+ field.name, e), None)
                 })
           case (astField, field, FutureValue(future)) =>
-            val resolved = future.map(v => resolveValue(path :+ field.name, astField, field.fieldType, field, v))
+            val resolved = future.map(v => resolveValue(path :+ field.name, astField, field.fieldType, field, v)).recover {
+              case e => Result(ErrorRegistry(path :+ field.name, e), None)
+            }
             val deferred = resolved flatMap {
               case r: Result => Future.successful(Nil)
               case r: DeferredResult => Future.sequence(r.deferred) map (_.flatten)
             }
             val value = resolved flatMap {
               case r: Result => Future.successful(r)
-              case er: DeferredResult => er.futureValue
+              case dr: DeferredResult => dr.futureValue
             }
 
             astField -> DeferredResult(deferred :: Nil, value)
@@ -119,7 +120,7 @@ class Resolver[Ctx](
 
         val simpleRes = resolvedValues.collect {case (af, r: Result) => af -> r}
 
-        val resSoFar = simpleRes.foldLeft(Result(ErrorRegistry.empty, Some(marshaller.emptyMapNode))) {
+        val resSoFar = simpleRes.foldLeft(Result(errors, Some(marshaller.emptyMapNode))) {
           case (res, (astField, other)) => res addToMap (other, astField.outputName, isOptional(tpe, astField.name))
         }
 
@@ -160,7 +161,10 @@ class Resolver[Ctx](
 
     tpe match {
       case OptionType(optTpe) =>
-        val actualValue = value.asInstanceOf[Option[_]]
+        val actualValue = value match {
+          case v: Option[_] => v
+          case v => Some(v)
+        }
 
         actualValue match {
           case Some(someValue) => resolveValue(path, astField, optTpe, field, someValue)

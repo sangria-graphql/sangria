@@ -3,6 +3,7 @@ package sangria.schema
 import sangria.ast
 import sangria.validation.{EnumValueCoercionViolation, EnumCoercionViolation, Violation}
 
+import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 
 sealed trait Type
@@ -122,8 +123,19 @@ object Field {
       description: Option[String] = None,
       arguments: List[Argument[_]] = Nil,
       resolve: Context[Ctx, Val] => Action[Ctx, Res],
-      deprecationReason: Option[String] = None)(implicit ev: Res <:< Out) =
+      deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
     Field[Ctx, Val](name, fieldType, description, arguments, resolve, deprecationReason)
+}
+
+@implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
+trait ValidOutType[-Res, +Out]
+
+object ValidOutType {
+  val valid = new ValidOutType[Any, Any] {}
+
+  implicit def validSubclass[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Out]]
+  implicit def validNothing[Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
+  implicit def validOption[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Option[Out]]]
 }
 
 case class Argument[T](
@@ -187,6 +199,10 @@ case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with
 
 case class OptionType[T](ofType: OutputType[T]) extends OutputType[Option[T]]
 case class OptionInputType[T](ofType: InputType[T]) extends InputType[Option[T]]
+
+//object OptionType {
+//  implicit
+//}
 
 case class Directive(
   name: String,
