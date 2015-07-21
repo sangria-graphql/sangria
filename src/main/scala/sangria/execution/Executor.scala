@@ -18,13 +18,13 @@ case class Executor[Ctx, Root](
       queryAst: ast.Document,
       operationName: Option[String] = None,
       arguments: Option[Input] = None)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] = {
-    val valueExecutor = new ValueExecutor[Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper)(um)
+    val valueCollector = new ValueCollector[Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper)(um)
 
     val executionResult = for {
       operation <- getOperation(queryAst, operationName)
-      variables <- valueExecutor.getVariableValues(operation.variables)
-      fieldExecutor = new FieldExecutor[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueExecutor)
-      res <- executeOperation(operation, queryAst.sourceMapper, valueExecutor, fieldExecutor, marshaller, variables)
+      variables <- valueCollector.getVariableValues(operation.variables)
+      fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueCollector)
+      res <- executeOperation(operation, queryAst.sourceMapper, valueCollector, fieldCollector, marshaller, variables)
     } yield res
 
     executionResult match {
@@ -45,14 +45,14 @@ case class Executor[Ctx, Root](
   def executeOperation(
       operation: ast.OperationDefinition,
       sourceMapper: Option[SourceMapper],
-      valueExecutor: ValueExecutor[_],
-      fieldExecutor: FieldExecutor[Ctx, Root],
+      valueCollector: ValueCollector[_],
+      fieldCollector: FieldCollector[Ctx, Root],
       marshaller: ResultMarshaller,
       variables: Map[String, Any]) = {
     for {
       tpe <- getOperationRootType(operation, sourceMapper)
-      fields <- fieldExecutor.collectFields(Nil, tpe, operation.selections)
-      resolver = new Resolver[Ctx](marshaller, schema, valueExecutor, variables, fieldExecutor, userContext, exceptionHandler, deferredResolver, sourceMapper)
+      fields <- fieldCollector.collectFields(Nil, tpe, operation :: Nil)
+      resolver = new Resolver[Ctx](marshaller, schema, valueCollector, variables, fieldCollector, userContext, exceptionHandler, deferredResolver, sourceMapper)
     } yield resolver.resolveFields(tpe, root, fields)
   }
 

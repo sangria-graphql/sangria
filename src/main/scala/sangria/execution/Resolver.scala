@@ -11,9 +11,9 @@ import scala.util.{Success, Failure, Try}
 class Resolver[Ctx](
     val marshaller: ResultMarshaller,
     schema: Schema[Ctx, _],
-    valueExecutor: ValueExecutor[_],
+    valueCollector: ValueCollector[_],
     variables: Map[String, Any],
-    fieldExecutor: FieldExecutor[Ctx, _],
+    fieldCollector: FieldCollector[Ctx, _],
     userContext: Ctx,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node],
     deferredResolver: DeferredResolver,
@@ -60,14 +60,14 @@ class Resolver[Ctx](
        value: Any,
        fields: Map[String, (ast.Field, Try[List[ast.Field]])],
        errorReg: ErrorRegistry): Resolve = {
-    val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(ast.Field, Field[Ctx, _], LeafAction[Ctx, _])]])) {
+    val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(List[ast.Field], Field[Ctx, _], LeafAction[Ctx, _])]])) {
       case (acc @ (_, None), _) => acc
       case (acc, (name, (origField, _))) if !tpe.fieldsByName.contains(origField.name) => acc
       case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) =>
         errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) s else None)
       case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
         resolveField(userContext, tpe, path :+ name, value, errors, name, fields) match {
-          case (updatedErrors, Some(result), _) => updatedErrors -> Some(acc :+ (fields(0), tpe.fieldsByName(origField.name), result))
+          case (updatedErrors, Some(result), _) => updatedErrors -> Some(acc :+ (fields, tpe.fieldsByName(origField.name), result))
           case (updatedErrors, None, _) if isOptional(tpe, origField.name) => updatedErrors -> s
           case (updatedErrors, None, _) => updatedErrors -> None
         }
@@ -77,15 +77,15 @@ class Resolver[Ctx](
       case None => Result(errors, None)
       case Some(results) =>
         val resolvedValues = results.map {
-          case (astField, field, Value(v)) =>
-            astField -> resolveValue(path :+ field.name, astField, field.fieldType, field, v)
-          case (astField, field, DeferredValue(deferred)) =>
+          case (astFields, field, Value(v)) =>
+            astFields.head -> resolveValue(path :+ field.name, astFields, field.fieldType, field, v)
+          case (astFields, field, DeferredValue(deferred)) =>
             val promise = Promise[Any]()
 
-            astField -> DeferredResult(Future.successful(Defer(promise, deferred) :: Nil):: Nil,
+            astFields.head -> DeferredResult(Future.successful(Defer(promise, deferred) :: Nil):: Nil,
               promise.future
                 .flatMap { v =>
-                  resolveValue(path :+ field.name, astField, field.fieldType, field, v) match {
+                  resolveValue(path :+ field.name, astFields, field.fieldType, field, v) match {
                     case r: Result => Future.successful(r)
                     case er: DeferredResult => resolveDeferred(er)
                   }
@@ -93,8 +93,8 @@ class Resolver[Ctx](
                 .recover {
                   case e => Result(ErrorRegistry(path :+ field.name, e), None)
                 })
-          case (astField, field, FutureValue(future)) =>
-            val resolved = future.map(v => resolveValue(path :+ field.name, astField, field.fieldType, field, v)).recover {
+          case (astFields, field, FutureValue(future)) =>
+            val resolved = future.map(v => resolveValue(path :+ field.name, astFields, field.fieldType, field, v)).recover {
               case e => Result(ErrorRegistry(path :+ field.name, e), None)
             }
             val deferred = resolved flatMap {
@@ -106,14 +106,14 @@ class Resolver[Ctx](
               case dr: DeferredResult => dr.futureValue
             }
 
-            astField -> DeferredResult(deferred :: Nil, value)
-          case (astField, field, DeferredFutureValue(deferredValue)) =>
+            astFields.head -> DeferredResult(deferred :: Nil, value)
+          case (astFields, field, DeferredFutureValue(deferredValue)) =>
             val promise = Promise[Any]()
 
-            astField -> DeferredResult(deferredValue.map(d => Defer(promise, d) :: Nil) :: Nil,
+            astFields.head -> DeferredResult(deferredValue.map(d => Defer(promise, d) :: Nil) :: Nil,
               promise.future
                 .flatMap{ v =>
-                resolveValue(path :+ field.name, astField, field.fieldType, field, v) match {
+                resolveValue(path :+ field.name, astFields, field.fieldType, field, v) match {
                   case r: Result => Future.successful(r)
                   case er: DeferredResult => resolveDeferred(er)
                 }
@@ -159,7 +159,7 @@ class Resolver[Ctx](
 
   def resolveValue(
       path: List[String],
-      astField: ast.Field,
+      astFields: List[ast.Field],
       tpe: OutputType[_],
       field: Field[Ctx, _],
       value: Any): Resolve  =
@@ -172,7 +172,7 @@ class Resolver[Ctx](
         }
 
         actualValue match {
-          case Some(someValue) => resolveValue(path, astField, optTpe, field, someValue)
+          case Some(someValue) => resolveValue(path, astFields, optTpe, field, someValue)
           case None => Result(ErrorRegistry.empty, None)
         }
       case ListType(listTpe) =>
@@ -181,7 +181,7 @@ class Resolver[Ctx](
           case other => Seq(other)
         }
 
-        val res = actualValue map (resolveValue(path, astField, listTpe, field, _))
+        val res = actualValue map (resolveValue(path, astFields, listTpe, field, _))
         val simpleRes = res.collect{case r: Result => r}
 
         if (simpleRes.size == res.size)
@@ -209,15 +209,15 @@ class Resolver[Ctx](
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
       case obj: ObjectType[Ctx, _] =>
-        fieldExecutor.collectFields(path, obj, astField.selections) match {
+        fieldCollector.collectFields(path, obj, astFields) match {
           case Success(fields) => resolveFields(path, obj, value, fields, ErrorRegistry.empty)
           case Failure(error) => Result(ErrorRegistry(path, error), None)
         }
       case abst: AbstractType =>
         abst.typeOf(value, schema) match {
-          case Some(obj) => resolveValue(path, astField, obj, field, value)
+          case Some(obj) => resolveValue(path, astFields, obj, field, value)
           case None => Result(ErrorRegistry(path,
-            new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astField.position)), None)
+            new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astFields.head.position)), None)
         }
     }
 
@@ -232,17 +232,17 @@ class Resolver[Ctx](
     case ast.VariableValue(_, _) => throw new IllegalStateException("Can't marshall variable values!")
   }
 
-  def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, fields: List[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[Any => Ctx]) = {
-    val astField = fields.head
+  def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, astFields: List[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[Any => Ctx]) = {
+    val astField = astFields.head
     val field = tpe.fieldsByName(astField.name).asInstanceOf[Field[Ctx, Any]]
 
-    valueExecutor.getArgumentValues(field.arguments, astField.arguments, variables) match {
+    valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>
-        val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, fields)
+        val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, astFields)
 
         try {
           val res = field.resolve match {
-            case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astField))
+            case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields))
             case fn => fn(ctx)
           }
 
@@ -257,12 +257,12 @@ class Resolver[Ctx](
     }
   }
 
-  def collectProjections(path: List[String], field: Field[Ctx, _], astField: ast.Field): Vector[ProjectedName] = {
-    def loop(path: List[String], tpe: OutputType[_], astField: ast.Field): Vector[ProjectedName] = tpe match {
-      case OptionType(ofType) => loop(path, ofType, astField)
-      case ListType(ofType) => loop(path, ofType, astField)
+  def collectProjections(path: List[String], field: Field[Ctx, _], astFields: List[ast.Field]): Vector[ProjectedName] = {
+    def loop(path: List[String], tpe: OutputType[_], astFields: List[ast.Field]): Vector[ProjectedName] = tpe match {
+      case OptionType(ofType) => loop(path, ofType, astFields)
+      case ListType(ofType) => loop(path, ofType, astFields)
       case objTpe: ObjectType[Ctx, _] =>
-        fieldExecutor.collectFields(path, objTpe, astField.selections) match {
+        fieldCollector.collectFields(path, objTpe, astFields) match {
           case Success(ff) =>
             ff.values.toVector collect {
               case (_, Success(fields)) if objTpe.fieldsByName.contains(fields.head.name) && objTpe.fieldsByName(fields.head.name).resolve.isInstanceOf[Projection[_, _, _]] =>
@@ -271,19 +271,19 @@ class Resolver[Ctx](
                 val projection = field.resolve.asInstanceOf[Projection[_, _, _]]
                 val projectedName = projection.projectedName getOrElse field.name
 
-                ProjectedName(projectedName, loop(path :+ projectedName, field.fieldType, astField))
+                ProjectedName(projectedName, loop(path :+ projectedName, field.fieldType, fields))
             }
           case Failure(_) => Vector.empty
         }
       case abst: AbstractType =>
         schema.possibleTypes
           .get (abst.name)
-          .map (_.flatMap(loop(path, _, astField)).groupBy(_.name).map(_._2.head).toVector)
+          .map (_.flatMap(loop(path, _, astFields)).groupBy(_.name).map(_._2.head).toVector)
           .getOrElse (Vector.empty)
       case _ => Vector.empty
     }
 
-    loop(path, field.fieldType, astField)
+    loop(path, field.fieldType, astFields)
   }
 
   def isOptional(tpe: ObjectType[_, _], fieldName: String): Boolean =

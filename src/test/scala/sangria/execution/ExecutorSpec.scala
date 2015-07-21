@@ -53,7 +53,12 @@ class ExecutorSpec extends WordSpec with Matchers {
     Field("future", OptionType(DataType), resolve = _.value.future)
   ))
 
-  val schema = Schema(DataType)
+  val ParallelFragmentType: ObjectType[Unit, Unit] = ObjectType("Type", () => List[Field[Unit, Unit]](
+    Field("a", OptionType(StringType), resolve = _ => "Apple"),
+    Field("b", OptionType(StringType), resolve = _ => "Banana"),
+    Field("c", OptionType(StringType), resolve = _ => "Cherry"),
+    Field("deep", OptionType(ParallelFragmentType), resolve = _ => ())
+  ))
 
   "Execute: Handles basic execution tasks" should {
     "execute arbitrary code" in {
@@ -110,12 +115,43 @@ class ExecutorSpec extends WordSpec with Matchers {
         )
       )
 
+      val schema = Schema(DataType)
+
       Await.result(Executor(schema, new TestSubject).execute(doc, arguments = Some(Map("size" -> 100))), 5 seconds) should be (expected)
     }
 
 
-//    "merge parallel fragments" in {
-//      val Type = ObjectType("Type", List[])
-//    }
+    "merge parallel fragments" in {
+      val schema = Schema(ParallelFragmentType)
+
+      val Success(doc) = QueryParser.parse("""
+        { a, ...FragOne, ...FragTwo }
+
+        fragment FragOne on Type {
+          b
+          deep { b, deeper: deep { b } }
+        }
+
+        fragment FragTwo on Type {
+          c
+          deep { c, deeper: deep { c } }
+        }
+      """)
+
+      val expected = Map(
+        "data" -> Map(
+          "a" -> "Apple",
+          "b" -> "Banana",
+          "c" -> "Cherry",
+            "deep" -> Map(
+            "b" -> "Banana",
+            "c" -> "Cherry",
+              "deeper" -> Map(
+              "b" -> "Banana",
+              "c" -> "Cherry")))
+      )
+
+      Await.result(Executor(schema).execute(doc), 5 seconds) should be (expected)
+    }
   }
 }

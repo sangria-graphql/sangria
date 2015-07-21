@@ -12,6 +12,10 @@ sealed trait ConditionalFragment extends AstNode {
   def typeCondition: String
 }
 
+sealed trait SelectionContainer {
+  def selections: List[Selection]
+}
+
 sealed trait Definition extends AstNode
 
 case class OperationDefinition(
@@ -20,7 +24,7 @@ case class OperationDefinition(
   variables: List[VariableDefinition] = Nil,
   directives: List[Directive] = Nil,
   selections: List[Selection],
-  position: Option[Position] = None) extends Definition with WithDirectives
+  position: Option[Position] = None) extends Definition with WithDirectives with SelectionContainer
 
 case class FragmentDefinition(
   name: String,
@@ -56,7 +60,7 @@ case class Field(
     arguments: List[Argument],
     directives: List[Directive],
     selections: List[Selection],
-    position: Option[Position] = None) extends Selection {
+    position: Option[Position] = None) extends Selection with SelectionContainer {
   lazy val outputName = alias getOrElse name
 }
 case class FragmentSpread(

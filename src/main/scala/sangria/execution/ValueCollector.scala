@@ -9,7 +9,7 @@ import sangria.validation._
 
 import scala.util.{Success, Failure, Try}
 
-class ValueExecutor[Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper] = None)(implicit um: InputUnmarshaller[Input]) {
+class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper] = None)(implicit um: InputUnmarshaller[Input]) {
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] = {
     val res = definitions.foldLeft(List[(String, Either[List[Violation], Any])]()) {
       case (acc, varDef) =>
