@@ -106,7 +106,7 @@ object InterfaceType {
 case class UnionType[Ctx](
   name: String,
   description: Option[String] = None,
-  types: List[ObjectType[Ctx, Any]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType
+  types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType
 
 case class Field[Ctx, Val] private (
   name: String,
