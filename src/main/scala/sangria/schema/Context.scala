@@ -1,5 +1,7 @@
 package sangria.schema
 
+import sangria.execution.{Resolver, ResultMarshaller}
+
 import language.implicitConversions
 
 import sangria.ast
@@ -72,17 +74,49 @@ trait WithArguments {
 }
 
 trait WithInputTypeRendering {
-  def renderInputValue[T](value: T, tpe: InputType[T]) = value.toString // todo implement input value rendering
+  def marshaller: ResultMarshaller
+
+  def renderInputValueCompact[T](value: T, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
+    m.renderCompact(renderInputValue(value, tpe, m))
+
+  def renderInputValuePretty[T](value: T, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
+    m.renderPretty(renderInputValue(value, tpe, m))
+
+  def renderInputValue[T](value: T, tpe: InputType[T], m: ResultMarshaller = marshaller): m.Node = {
+    def loop(t: InputType[_], v: Any): m.Node = t match {
+      case _ if value == null => m.nullNode
+      case s: ScalarType[Any @unchecked] => Resolver.marshalValue(s.coerceOutput(v), m)
+      case e: EnumType[Any @unchecked] => Resolver.marshalValue(e.coerceOutput(v), m)
+      case io: InputObjectType[_] =>
+        val mapValue = value.asInstanceOf[Map[String, Any]]
+
+        io.fields.foldLeft(m.emptyMapNode) {
+          case (acc, field) if mapValue contains field.name =>
+            m.addMapNodeElem(acc, field.name, loop(field.fieldType, mapValue(field.name)))
+          case (acc, _) => acc
+        }
+      case l: ListInputType[_] =>
+        val listValue = value.asInstanceOf[List[Any]]
+
+        listValue.foldLeft(m.emptyArrayNode) {
+          case (acc, value) => m.addArrayNodeElem(acc, loop(l.ofType, value))
+        }
+      case o: OptionInputType[_] => loop(o.ofType, v)
+    }
+
+    loop(tpe, value)
+  }
 }
 
 case class Context[Ctx, Val](
-      value: Val,
-      ctx: Ctx,
-      args: Map[String, Any],
-      schema: Schema[Ctx, Val],
-      field: Field[Ctx, Val],
-      parentType: ObjectType[Ctx, Any],
-      astFields: List[ast.Field]) extends WithArguments with WithInputTypeRendering
+  value: Val,
+  ctx: Ctx,
+  args: Map[String, Any],
+  schema: Schema[Ctx, Val],
+  field: Field[Ctx, Val],
+  parentType: ObjectType[Ctx, Any],
+  marshaller: ResultMarshaller,
+  astFields: List[ast.Field]) extends WithArguments with WithInputTypeRendering
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 

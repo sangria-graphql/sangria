@@ -16,6 +16,9 @@ trait ResultMarshaller {
   def floatNode(value: Double): Node
   def booleanNode(value: Boolean): Node
   def nullNode: Node
+
+  def renderCompact(node: Node): String
+  def renderPretty(node: Node): String
 }
 
 object ResultMarshaller {
@@ -41,4 +44,7 @@ class ScalaResultMarshaller extends ResultMarshaller {
     node.asInstanceOf[Map[String, Any]] + (key -> value)
 
   override def nullNode = null
+
+  def renderCompact(node: Any) = "" + node
+  def renderPretty(node: Any) = "" + node
 }

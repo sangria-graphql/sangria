@@ -117,7 +117,7 @@ package object introspection {
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field("type", __Type, resolve = false -> _.value.inputValueType),
       Field("defaultValue", OptionType(StringType),
-        resolve = ctx => ctx.value.defaultValue.map(ctx.renderInputValue(_, ctx.value.inputValueType)))
+        resolve = ctx => ctx.value.defaultValue.map(ctx.renderInputValueCompact(_, ctx.value.inputValueType)))
     ))
 
   val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(

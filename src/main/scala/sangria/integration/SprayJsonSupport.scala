@@ -32,6 +32,10 @@ object SprayJsonSupport {
     override def intNode(value: Int) = JsNumber(value)
 
     override def nullNode = JsNull
+
+    override def renderCompact(node: JsValue) = node.compactPrint
+
+    override def renderPretty(node: JsValue) = node.prettyPrint
   }
 
 }

@@ -23,6 +23,7 @@ class Resolver[Ctx](
   val resultResolver = new ResultResolver(marshaller, exceptionHandler)
 
   import resultResolver._
+  import Resolver._
 
   trait Resolve
 
@@ -220,13 +221,13 @@ class Resolver[Ctx](
         }
       case scalar: ScalarType[Any @unchecked] =>
         try {
-          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(scalar.coerceOutput(value))))
+          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(scalar.coerceOutput(value), marshaller)))
         } catch {
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
       case enum: EnumType[Any @unchecked] =>
         try {
-          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(enum.coerceOutput(value))))
+          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(enum.coerceOutput(value), marshaller)))
         } catch {
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
@@ -243,24 +244,21 @@ class Resolver[Ctx](
         }
     }
 
-  def marshalValue(value: ast.Value): marshaller.Node = value match {
-    case ast.StringValue(str, _) => marshaller.stringNode(str)
-    case ast.IntValue(i, _) => marshaller.intNode(i)
-    case ast.FloatValue(f, _) => marshaller.floatNode(f)
-    case ast.BooleanValue(b, _) => marshaller.booleanNode(b)
-    case ast.EnumValue(enum, _) => marshaller.stringNode(enum)
-    case ast.ArrayValue(values, _) => marshaller.arrayNode(values map (marshalValue(_)))
-    case ast.ObjectValue(values, _) => marshaller.mapNode(values map (v => v.name -> marshalValue(v.value)))
-    case ast.VariableValue(_, _) => throw new IllegalStateException("Can't marshall variable values!")
-  }
-
   def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, astFields: List[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[Any => Ctx]) = {
     val astField = astFields.head
     val field = tpe.getField(schema, astField.name).get.asInstanceOf[Field[Ctx, Any]]
 
     valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>
-        val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, tpe.asInstanceOf[ObjectType[Ctx, Any]], astFields)
+        val ctx = Context[Ctx, Any](
+          value,
+          userCtx,
+          args,
+          schema.asInstanceOf[Schema[Ctx, Any]],
+          field,
+          tpe.asInstanceOf[ObjectType[Ctx, Any]],
+          marshaller,
+          astFields)
 
         try {
           val res = field.resolve match {
@@ -313,4 +311,17 @@ class Resolver[Ctx](
 
   def isOptional(tpe: OutputType[_]): Boolean =
     tpe.isInstanceOf[OptionType[_]]
+}
+
+object Resolver {
+  def marshalValue(value: ast.Value, marshaller: ResultMarshaller): marshaller.Node = value match {
+    case ast.StringValue(str, _) => marshaller.stringNode(str)
+    case ast.IntValue(i, _) => marshaller.intNode(i)
+    case ast.FloatValue(f, _) => marshaller.floatNode(f)
+    case ast.BooleanValue(b, _) => marshaller.booleanNode(b)
+    case ast.EnumValue(enum, _) => marshaller.stringNode(enum)
+    case ast.ArrayValue(values, _) => marshaller.arrayNode(values map (marshalValue(_, marshaller)))
+    case ast.ObjectValue(values, _) => marshaller.mapNode(values map (v => v.name -> marshalValue(v.value, marshaller)))
+    case ast.VariableValue(_, _) => throw new IllegalStateException("Can't marshall variable values!")
+  }
 }

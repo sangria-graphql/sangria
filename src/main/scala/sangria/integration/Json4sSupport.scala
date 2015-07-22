@@ -3,6 +3,8 @@ package sangria.integration
 import org.json4s.JsonAST._
 import sangria.execution.ResultMarshaller
 
+import org.json4s.native.JsonMethods._
+
 object Json4sSupport {
   
   implicit object Json4sResultMarshaller extends ResultMarshaller {
@@ -31,6 +33,10 @@ object Json4sSupport {
     override def intNode(value: Int) = JInt(value)
 
     override def nullNode = JNull
+
+    override def renderCompact(node: JValue) = compact(render(node))
+
+    override def renderPretty(node: JValue) = pretty(render(node))
   }
 
 }

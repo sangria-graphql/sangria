@@ -236,6 +236,7 @@ case class InputObjectType[T] private (
   fieldsFn: () => List[InputField[_]]
 ) extends InputType[T] with NullableType with UnmodifiedType with Named {
   lazy val fields = fieldsFn()
+  lazy val fieldsByName = fields groupBy(_.name) mapValues(_.head)
 }
 
 object InputObjectType {
