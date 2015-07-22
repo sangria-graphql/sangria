@@ -35,9 +35,21 @@ package object introspection {
       "`ofType` is a valid field."))
   ))
 
-  val __Type = ObjectType("__Type", List[Field[Unit, (Boolean, Type)]](
+  val __Field = ObjectType("__Field", () => List[Field[Unit, Field[_, _]]](
+    Field("name", StringType, resolve = _.value.name),
+    Field("description", OptionType(StringType), resolve = _.value.description),
+    Field("args", ListType(__InputValue), resolve = _.value.arguments),
+    Field("type", __Type, resolve = false -> _.value.fieldType),
+    Field("isDeprecated", BooleanType, resolve = _.value.deprecationReason.isDefined),
+    Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason)
+  ))
+
+  // todo should be `Boolean`
+  val includeDeprecated = Argument[Option[Boolean]]("includeDeprecated", OptionInputType(BooleanType), defaultValue = Some(Some(false)))
+
+  val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType("__Type", () => List[Field[Unit, (Boolean, Type)]](
     Field("kind", __TypeKind, resolve = ctx => {
-      def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {
+      def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {   // todo: something is not quite working here yet...
         case OptionType(ofType) => identifyKind(ofType, true)
         case OptionInputType(ofType) => identifyKind(ofType, true)
         case _ if !optional => TypeKind.NonNull
@@ -54,24 +66,68 @@ package object introspection {
 
       identifyKind(tpe, fromTypeList)
     }),
-    Field("name", OptionType(StringType), resolve = _.value._2 match {
+    Field("name", OptionType(StringType), resolve = x => x.value._2 match {
       case named: Named => Some(named.name)
       case _ => None
     }),
     Field("description", OptionType(StringType), resolve = _.value._2 match {
       case named: Named => named.description
       case _ => None
+    }),
+    Field("fields", OptionType(ListType(__Field)),
+      arguments = includeDeprecated :: Nil,
+      resolve = ctx => {
+        val incDep = ctx.arg(includeDeprecated)
+        val (_, tpe) = ctx.value
+
+        tpe match {
+          case t: ObjectLikeType[_, _] if incDep.get => Some(t.fields.asInstanceOf[List[Field[_, _]]])
+          case t: ObjectLikeType[_, _] => Some(t.fields.asInstanceOf[List[Field[_, _]]].filter(_.deprecationReason.isEmpty))
+          case _ => None
+        }
+      }),
+    Field("interfaces", OptionType(ListType(__Type)), resolve = _.value._2 match {
+      case t: ObjectLikeType[_, _] => Some(t.interfaces.asInstanceOf[List[Type]] map (true -> _))
+      case _ => None
+    }),
+    Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
+      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map (_ map (true -> _))
+      case _ => None
+    }),
+    Field("enumValues", OptionType(ListType(__EnumValue)),
+      arguments = includeDeprecated :: Nil,
+      resolve = ctx => {
+        val incDep = ctx.arg(includeDeprecated)
+
+        ctx.value._2 match {
+          case enum: EnumType[_] if incDep.get => Some(enum.values)
+          case enum: EnumType[_] => Some(enum.values.filter(_.deprecationReason.isEmpty))
+          case _ => None
+        }
+      }),
+    Field("inputFields", OptionType(ListType(__InputValue)), resolve = _.value._2 match {
+      case io: InputObjectType[_] => Some(io.fields)
+      case _ => None
     })
   ))
 
-  val __InputValue = ObjectType(
+  val __InputValue: ObjectType[Unit, InputValue[_]] = ObjectType(
     name = "__InputValue",
-    fields = List[Field[Unit, Argument[_]]](
+    fields = List[Field[Unit, InputValue[_]]](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
-      Field("type", __Type, resolve = false -> _.value.argumentType),
+      Field("type", __Type, resolve = false -> _.value.inputValueType),
       Field("defaultValue", OptionType(StringType),
-        resolve = ctx => ctx.value.defaultValue.map(ctx.renderInputValue(_, ctx.value.argumentType)))
+        resolve = ctx => ctx.value.defaultValue.map(ctx.renderInputValue(_, ctx.value.inputValueType)))
+    ))
+
+  val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(
+    name = "__EnumValue",
+    fields = List[Field[Unit, EnumValue[_]]](
+      Field("name", StringType, resolve = _.value.name),
+      Field("description", OptionType(StringType), resolve = _.value.description),
+      Field("isDeprecated", BooleanType, resolve = _.value.deprecationReason.isDefined),
+      Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason)
     ))
 
   val __Directive = ObjectType(

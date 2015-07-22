@@ -72,7 +72,7 @@ trait WithArguments {
 }
 
 trait WithInputTypeRendering {
-  def renderInputValue[T](value: T, tpe: InputType[T]) = ??? // todo implement input value rendering
+  def renderInputValue[T](value: T, tpe: InputType[T]) = value.toString // todo implement input value rendering
 }
 
 case class Context[Ctx, Val](

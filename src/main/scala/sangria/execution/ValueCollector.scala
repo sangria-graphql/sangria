@@ -86,9 +86,9 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
 
   def resolveMapValue(ofType: InputType[_], fieldPath: List[String], default: Option[Any], fieldName: String, acc: Map[String, Either[List[Violation], Any]], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) =
     value match {
+      case Right(None) if default.isDefined => acc.updated(fieldName, Right(default.get))
       case r @ Right(None) if ofType.isInstanceOf[OptionInputType[_]] => acc
       case Right(Some(v)) => acc.updated(fieldName, Right(v))
-      case Right(None) if default.isDefined => acc.updated(fieldName, Right(default))
       case Right(None) => acc.updated(fieldName, Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil))
       case l @ Left(_) => acc.updated(fieldName, l)
     }

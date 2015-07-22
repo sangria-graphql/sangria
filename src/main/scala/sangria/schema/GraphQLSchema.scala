@@ -146,11 +146,20 @@ object ValidOutType {
   implicit def validSeq[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Seq[Out]]]
 }
 
+trait InputValue[T] {
+  def name: String
+  def inputValueType: InputType[T]
+  def description: Option[String]
+  def defaultValue: Option[T]
+}
+
 case class Argument[T](
-  name: String,
-  argumentType: InputType[T],
-  description: Option[String] = None,
-  defaultValue: Option[T] = None) extends Named
+    name: String,
+    argumentType: InputType[T],
+    description: Option[String] = None,
+    defaultValue: Option[T] = None) extends InputValue[T] with Named {
+  def inputValueType = argumentType
+}
 
 case class EnumType[T](
     name: String,
@@ -196,10 +205,12 @@ object InputObjectType {
 }
 
 case class InputObjectField[T](
-  name: String,
-  fieldType: InputType[T],
-  description: Option[String] = None,
-  defaultValue: Option[T] = None) extends Named
+    name: String,
+    fieldType: InputType[T],
+    description: Option[String] = None,
+    defaultValue: Option[T] = None) extends InputValue[T] with Named {
+  def inputValueType = fieldType
+}
 
 case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType
 case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with NullableType

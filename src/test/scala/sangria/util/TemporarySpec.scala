@@ -30,7 +30,7 @@ class TemporarySpec extends WordSpec with Matchers {
            }
 
            fragment Foo on Query {
-             human(id: "1003") @include(if: $$xx) {id, name, friends{name}}
+             human(id: "1003") @include(if: $$xx) {id, __typename, name, friends{name}}
              test {name}
              project {name id primaryFunction}
            }
@@ -45,24 +45,24 @@ class TemporarySpec extends WordSpec with Matchers {
 
       val vars = Map("xx" -> true)
 
-      {
-        import sangria.integration.Json4sSupport._
-        import org.json4s.native.JsonMethods._
-
-        println("Json4s marshalling:\n")
-        println(pretty(render(Await.result(
-          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-              .execute(ast, arguments = Some(vars)), Duration.Inf))))
-      }
-
-      {
-        import sangria.integration.SprayJsonSupport._
-
-        println("\nSprayJson marshalling:\n")
-        println(Await.result(
-          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-              .execute(ast, arguments = Some(vars)), Duration.Inf).prettyPrint)
-      }
+//      {
+//        import sangria.integration.Json4sSupport._
+//        import org.json4s.native.JsonMethods._
+//
+//        println("Json4s marshalling:\n")
+//        println(pretty(render(Await.result(
+//          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+//              .execute(ast, arguments = Some(vars)), Duration.Inf))))
+//      }
+//
+//      {
+//        import sangria.integration.SprayJsonSupport._
+//
+//        println("\nSprayJson marshalling:\n")
+//        println(Await.result(
+//          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+//              .execute(ast, arguments = Some(vars)), Duration.Inf).prettyPrint)
+//      }
 
       {
         import sangria.integration.SprayJsonSupport._
