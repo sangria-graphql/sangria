@@ -12,7 +12,7 @@ sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val]
 object Action {
   implicit def futureAction[Ctx, Val](value: Future[Val]): LeafAction[Ctx, Val] = FutureValue(value)
   implicit def deferredAction[Ctx, Val](value: Deferred[Val]): LeafAction[Ctx, Val] = DeferredValue(value)
-  implicit def deferredFutureAction[Ctx, Val](value: Future[Deferred[Val]]): LeafAction[Ctx, Val] = DeferredFutureValue(value)
+  implicit def deferredFutureAction[Ctx, Val, D <: Deferred[Val]](value: Future[D])(implicit ev: D <:< Deferred[Val]): LeafAction[Ctx, Val] = DeferredFutureValue(value)
   implicit def defaultAction[Ctx, Val](value: Val): LeafAction[Ctx, Val] = Value(value)
 }
 

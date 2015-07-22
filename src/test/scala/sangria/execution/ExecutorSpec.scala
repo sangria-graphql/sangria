@@ -153,5 +153,112 @@ class ExecutorSpec extends WordSpec with Matchers {
 
       Await.result(Executor(schema).execute(doc), 5 seconds) should be (expected)
     }
+
+    "threads context correctly" in {
+      case class Thing(a: Option[String])
+
+      var resolvedCtx: Option[String] = None
+
+      val schema = Schema(ObjectType("Type", List[Field[Unit, Thing]](
+        Field("a", OptionType(StringType), resolve = ctx => {resolvedCtx = ctx.value.a; ctx.value.a}))))
+
+      val Success(doc) = QueryParser.parse("query Example { a }")
+      Await.result(Executor(schema, Thing(Some("thing"))).execute(doc), 5 seconds) should be (Map("data" -> Map("a" -> "thing")))
+      resolvedCtx should be (Some("thing"))
+    }
+
+    "correctly threads arguments" in {
+      var resolvedArgs: Map[String, Any] = Map.empty
+
+      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+        Field("b", OptionType(StringType),
+          arguments = Argument("numArg", OptionInputType(IntType)) :: Argument("stringArg", OptionInputType(StringType)) :: Nil,
+          resolve = ctx => {resolvedArgs = ctx.args; None}))))
+
+      val Success(doc) = QueryParser.parse("""
+        query Example {
+          b(numArg: 123, stringArg: "foo")
+        }
+      """)
+
+      Await.result(Executor(schema).execute(doc), 5 seconds)
+      resolvedArgs should be (Map("numArg" -> 123, "stringArg" -> "foo"))
+    }
+
+    "null out error subtrees" in {
+      class Data {
+        def sync = "sync"
+        def syncError = throw new IllegalStateException("Error getting syncError")
+        def async = Future.successful("async")
+        def asyncReject: Future[String] = Future.failed(new IllegalStateException("Error getting asyncReject"))
+        def asyncError: Future[String] = Future {
+          throw new IllegalStateException("Error getting asyncError")
+        }
+      }
+
+      val schema = Schema(ObjectType("Type", List[Field[Unit, Data]](
+        Field("sync", OptionType(StringType), resolve = _.value.sync),
+        Field("syncError", OptionType(StringType), resolve = _.value.syncError),
+        Field("async", OptionType(StringType), resolve = _.value.async),
+        Field("asyncReject", OptionType(StringType), resolve = ctx => ctx.value.asyncReject),
+        Field("asyncError", OptionType(StringType), resolve = _.value.asyncError),
+        Field("syncDeferError", OptionType(StringType),
+          resolve = ctx => DeferredValue(throw new IllegalStateException("Error getting syncDeferError"))),
+        Field("asyncDeferError", OptionType(StringType),
+          resolve = _ => DeferredFutureValue(Future.failed(throw new IllegalStateException("Error getting asyncDeferError"))))
+      )))
+
+      val Success(doc) = QueryParser.parse("""
+        {
+          sync,
+             syncError,
+           async,
+          asyncReject,
+           asyncDeferError
+              asyncError
+              syncDeferError
+        }""")
+
+      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
+        case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
+      }
+
+      val result = Await.result(Executor(schema, new Data, exceptionHandler = exceptionHandler).execute(doc), 5 seconds).asInstanceOf[Map[String, Any]]
+
+      val data = result("data")
+      val errors = result("errors").asInstanceOf[List[_]]
+
+      data should be (Map(
+        "sync" -> "sync",
+        "syncError" -> null,
+        "async" -> "async",
+        "asyncReject" -> null,
+        "asyncError" -> null,
+        "asyncDeferError" -> null,
+        "syncDeferError" -> null
+      ))
+
+      errors should (have(size(5)) and
+          contain(Map(
+            "field" -> "syncError",
+            "locations" -> List(Map("line" -> 4, "column" -> 14)),
+            "message" -> "Error getting syncError")) and
+          contain(Map(
+            "field" -> "asyncReject",
+            "locations" -> List(Map("line" -> 6, "column" -> 11)),
+            "message" -> "Error getting asyncReject")) and
+          contain(Map(
+            "message" -> "Error getting asyncDeferError",
+            "field" -> "asyncDeferError",
+            "locations" -> List(Map("line" -> 7, "column" -> 12)))) and
+          contain(Map(
+            "message" -> "Error getting syncDeferError",
+            "field" -> "syncDeferError",
+            "locations" -> List(Map("line" -> 9, "column" -> 15)))) and
+          contain(Map(
+            "field" -> "asyncError",
+            "locations" -> List(Map("line" -> 8, "column" -> 15)),
+            "message" -> "Error getting asyncError")))
+    }
   }
 }

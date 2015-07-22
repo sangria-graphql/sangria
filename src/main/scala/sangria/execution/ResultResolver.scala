@@ -1,5 +1,7 @@
 package sangria.execution
 
+import org.parboiled2.Position
+import sangria.ast.AstNode
 import sangria.validation.AstNodeLocation
 
 class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node]) {
@@ -52,14 +54,13 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
   case class ErrorRegistry(errorList: List[ErrorPath]) {
     def add(path: List[String], error: String) = copy(errorList:+ ErrorPath(path, marshaller.mapNode(Seq("message" -> marshaller.stringNode(error))), None))
     def add(path: List[String], error: Throwable) = copy(errorList :+ ErrorPath(path, handleException(error), getLocations(error)))
+    def add(path: List[String], error: Throwable, position: Option[Position]) = copy(errorList :+ ErrorPath(path, handleException(error), position map singleLocation))
     def add(other: ErrorRegistry) = ErrorRegistry(errorList ++ other.errorList)
 
     def getLocations(error: Throwable) = {
       val astNodeLocations = error match {
         case error: AstNodeLocation if error.position.isDefined =>
-          marshaller.addArrayNodeElem(marshaller.emptyArrayNode, marshaller.mapNode(Seq(
-            "line" -> marshaller.intNode(error.position.get.line),
-            "column" -> marshaller.intNode(error.position.get.column))))
+          marshaller.addArrayNodeElem(marshaller.emptyArrayNode, createLocation(error.position.get))
         case _ => marshaller.emptyArrayNode
       }
 
@@ -78,11 +79,18 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
 
       if (marshaller.isEmptyArrayNode(violatoinErrors)) None else Some(violatoinErrors)
     }
+
+    def createLocation(pos: Position) = marshaller.mapNode(Seq(
+      "line" -> marshaller.intNode(pos.line),
+      "column" -> marshaller.intNode(pos.column)))
+
+    def singleLocation(pos: Position) = marshaller.arrayNode(Seq(createLocation(pos)))
   }
 
   object ErrorRegistry {
     val empty = ErrorRegistry(Nil)
     def apply(path: List[String], error: Throwable): ErrorRegistry = empty.add(path, error)
+    def apply(path: List[String], error: Throwable, pos: Option[Position]): ErrorRegistry = empty.add(path, error, pos)
   }
 
   case class ErrorPath(path: List[String], error: marshaller.Node, location: Option[marshaller.Node])
