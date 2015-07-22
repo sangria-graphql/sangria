@@ -92,7 +92,7 @@ package object introspection {
         "the server, as well as the entry points for query and " +
         "mutation operations.",
     fields = List[Field[Unit, Schema[Any, Any]]](
-      Field("types", ListType(__Type), Some("A list of all types supported by this server."), resolve = _.value.types.values.toSeq),
+      Field("types", ListType(__Type), Some("A list of all types supported by this server."), resolve = _.value.typeList),
       Field("queryType", __Type, Some("The type that query operations will be rooted at."), resolve = _.value.query),
       Field("mutationType", OptionType(__Type),
         Some("If this server supports mutation, the type that mutation operations will be rooted at."), resolve = _.value.mutation),
@@ -110,7 +110,7 @@ package object introspection {
     fieldType = OptionType(__Type),
     description = Some("Request the type information of a single type."),
     arguments = Argument("name", StringType) :: Nil,
-    resolve = ctx => ctx.schema.types get ctx.arg[String]("name"))
+    resolve = ctx => ctx.schema.types get ctx.arg[String]("name") map (_._2))
 
   val TypeNameMetaField: Field[Unit, Unit] = Field(
     name = "__typename",

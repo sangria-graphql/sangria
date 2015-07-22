@@ -221,48 +221,50 @@ case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],
     mutation: Option[ObjectType[Ctx, Val]] = None,
     directives: List[Directive] = BuiltinDirectives) {
-  lazy val types: Map[String, Type with Named] = {
-    def updated(name: String, tpe: Type with Named, result: Map[String, Type with Named]) =
-      if (result contains name) result else result.updated(name, tpe)
+  lazy val types: Map[String, (Int, Type with Named)] = {
+    def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)]) =
+      if (result contains name) result else result.updated(name, priority -> tpe)
 
-    def collectTypes(tpe: Type, result: Map[String, Type with Named]): Map[String, Type with Named] = {
+    def collectTypes(priority: Int, tpe: Type, result: Map[String, (Int, Type with Named)]): Map[String, (Int, Type with Named)] = {
       tpe match {
         case t: Named if result contains t.name => result
-        case OptionType(ofType) => collectTypes(ofType, result)
-        case OptionInputType(ofType) => collectTypes(ofType, result)
-        case ListType(ofType) => collectTypes(ofType, result)
-        case ListInputType(ofType) => collectTypes(ofType, result)
+        case OptionType(ofType) => collectTypes(priority, ofType, result)
+        case OptionInputType(ofType) => collectTypes(priority, ofType, result)
+        case ListType(ofType) => collectTypes(priority, ofType, result)
+        case ListInputType(ofType) => collectTypes(priority, ofType, result)
 
-        case t @ ScalarType(name, _, _, _, _) => updated(name, t, result)
-        case t @ EnumType(name, _, _) => updated(name, t, result)
+        case t @ ScalarType(name, _, _, _, _) => updated(priority, name, t, result)
+        case t @ EnumType(name, _, _) => updated(priority, name, t, result)
         case t @ InputObjectType(name, _, _) =>
-          t.fields.foldLeft(updated(name, t, result)) {case (acc, field) => collectTypes(field.fieldType, acc)}
+          t.fields.foldLeft(updated(priority, name, t, result)) {case (acc, field) => collectTypes(priority, field.fieldType, acc)}
         case t: ObjectLikeType[_, _] =>
-          val own = t.fields.foldLeft(updated(t.name, t, result)) {
+          val own = t.fields.foldLeft(updated(priority, t.name, t, result)) {
             case (acc, field) =>
-              field.arguments.foldLeft(collectTypes(field.fieldType, acc)) {
-                case (aacc, arg) => collectTypes(arg.argumentType, aacc)
+              field.arguments.foldLeft(collectTypes(priority, field.fieldType, acc)) {
+                case (aacc, arg) => collectTypes(priority, arg.argumentType, aacc)
               }
           }
 
-          t.interfaces.foldLeft(own) {case (acc, interface) => collectTypes(interface, acc)}
+          t.interfaces.foldLeft(own) {case (acc, interface) => collectTypes(priority, interface, acc)}
         case t @ UnionType(name, _, types) =>
-          types.foldLeft(updated(name, t, result)) {case (acc, tpe) => collectTypes(tpe, acc)}
+          types.foldLeft(updated(priority, name, t, result)) {case (acc, tpe) => collectTypes(priority, tpe, acc)}
       }
     }
 
-    val queryTypes = collectTypes(query, Map.empty)
-    val queryAndMutTypes = mutation map (collectTypes(_, queryTypes)) getOrElse queryTypes
-    val queryAndMutAndSchemaTypes = collectTypes(introspection.__Schema, queryAndMutTypes)
+    val schemaTypes = collectTypes(3, introspection.__Schema, Map(BuiltinScalars map (s => s.name -> (4, s)): _*))
+    val queryTypes = collectTypes(2, query, schemaTypes)
+    val queryAndMutTypes = mutation map (collectTypes(1, _, queryTypes)) getOrElse queryTypes
 
-    queryAndMutAndSchemaTypes ++ (BuiltinScalars map (s => s.name -> s))
+    queryAndMutTypes
   }
 
-  lazy val inputTypes = types collect {case (name, tpe: InputType[_]) => name -> tpe}
-  lazy val outputTypes = types collect {case (name, tpe: OutputType[_]) => name -> tpe}
-  lazy val scalarTypes = types collect {case (name, tpe: ScalarType[_]) => name -> tpe}
+  lazy val typeList = types.values.toList.sortBy(t => t._1 + t._2.name).map(_._2)
+
+  lazy val inputTypes = types collect {case (name, (_, tpe: InputType[_])) => name -> tpe}
+  lazy val outputTypes = types collect {case (name, (_, tpe: OutputType[_])) => name -> tpe}
+  lazy val scalarTypes = types collect {case (name, (_, tpe: ScalarType[_])) => name -> tpe}
   lazy val unionTypes: Map[String, UnionType[_]] =
-    types.filter(_.isInstanceOf[UnionType[_]]).mapValues(_.asInstanceOf[UnionType[_]])
+    types.filter(_._2.isInstanceOf[UnionType[_]]).mapValues(_.asInstanceOf[UnionType[_]])
 
   lazy val directivesByName = directives groupBy (_.name) mapValues (_.head)
 
