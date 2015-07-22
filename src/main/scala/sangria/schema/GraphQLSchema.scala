@@ -274,7 +274,7 @@ case class Schema[Ctx, Val](
   lazy val outputTypes = types collect {case (name, (_, tpe: OutputType[_])) => name -> tpe}
   lazy val scalarTypes = types collect {case (name, (_, tpe: ScalarType[_])) => name -> tpe}
   lazy val unionTypes: Map[String, UnionType[_]] =
-    types.filter(_._2.isInstanceOf[UnionType[_]]).mapValues(_.asInstanceOf[UnionType[_]])
+    types.filter(_._2._2.isInstanceOf[UnionType[_]]).mapValues(_._2.asInstanceOf[UnionType[_]])
 
   lazy val directivesByName = directives groupBy (_.name) mapValues (_.head)
 
@@ -314,4 +314,5 @@ case class Schema[Ctx, Val](
 
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
     possibleTypes get baseTypeName exists (_ exists (_.name == tpe.name))
+
 }

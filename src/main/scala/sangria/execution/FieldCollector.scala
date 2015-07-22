@@ -15,15 +15,17 @@ class FieldCollector[Ctx, Val](
     sourceMapper: Option[SourceMapper],
     valueCollector: ValueCollector[_]) {
 
-  @volatile private var resultCache = Map.empty[List[String], Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]
+  @volatile private var resultCache = Map.empty[(List[String], String), Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]
 
   def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.SelectionContainer]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] = {
-    if (resultCache contains path) resultCache(path)
+    val cacheKey = path -> tpe.name
+
+    if (resultCache contains cacheKey) resultCache(cacheKey)
     else {
       val res = selections.foldLeft(Success(Map.empty): Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
         case (acc, s) => collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
       }
-      resultCache = resultCache.updated(path, res)
+      resultCache = resultCache.updated(cacheKey, res)
       res
     }
   }

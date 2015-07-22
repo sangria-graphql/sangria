@@ -87,11 +87,11 @@ package object introspection {
         }
       }),
     Field("interfaces", OptionType(ListType(__Type)), resolve = _.value._2 match {
-      case t: ObjectLikeType[_, _] => Some(t.interfaces.asInstanceOf[List[Type]] map (true -> _))
+      case t: ObjectLikeType[_, _] if t.interfaces.nonEmpty => Some(t.interfaces.asInstanceOf[List[Type]] map (true -> _))
       case _ => None
     }),
     Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
-      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map (_ map (true -> _))
+      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map (_ sortBy (_.name) map (true -> _))
       case _ => None
     }),
     Field("enumValues", OptionType(ListType(__EnumValue)),

@@ -1,15 +1,12 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.{GraphQlSupport, AwaitSupport}
 
 import scala.concurrent.Future
-import scala.util.Success
-import scala.concurrent.ExecutionContext.Implicits.global
 
-class NotNullSpec extends WordSpec with Matchers with AwaitSupport {
+class NotNullSpec extends WordSpec with Matchers with AwaitSupport with GraphQlSupport {
   trait TestSubject {
     def sync: Option[String]
     def nonNullSync: String
@@ -53,35 +50,7 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport {
     Field("promiseNest", OptionType(DataType), resolve = _.value.promiseNest),
     Field("nonNullPromiseNest", DataType, resolve = _.value.nonNullPromiseNest)))
 
-  val TestSchema = Schema(DataType)
-
-  def check(data: TestSubject, query: String, expected: Any) = {
-    val Success(doc) = QueryParser.parse(query)
-
-    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
-      case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
-    }
-
-    Executor(TestSchema, data, exceptionHandler = exceptionHandler).execute(doc).await should be (expected)
-  }
-
-  def check(data: TestSubject, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]]) = {
-    val Success(doc) = QueryParser.parse(query)
-
-    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
-      case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
-    }
-
-    val result = Executor(TestSchema, data, exceptionHandler = exceptionHandler).execute(doc).await.asInstanceOf[Map[String, Any]]
-
-    result("data") should be (expectedData)
-
-    val errors = result.get("errors").getOrElse(Nil).asInstanceOf[List[Any]]
-
-    errors should have size(expectedErrors.size)
-
-    expectedErrors foreach (expected => errors should contain (expected))
-  }
+  val schema = Schema(DataType)
 
   "Execute: handles non-nullable types" should {
     "nulls a nullable field that throws synchronously" in check(
