@@ -260,5 +260,68 @@ class ExecutorSpec extends WordSpec with Matchers {
             "locations" -> List(Map("line" -> 8, "column" -> 15)),
             "message" -> "Error getting asyncError")))
     }
+
+    "use the inline operation if no operation is provided" in {
+      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
+      val Success(doc) = QueryParser.parse("{ a }")
+
+      Await.result(Executor(schema).execute(doc), 5 seconds) should be (Map("data" -> Map("a" -> "b")))
+    }
+
+    "use the only operation if no operation is provided" in {
+      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
+      val Success(doc) = QueryParser.parse("query Example { a }")
+
+      Await.result(Executor(schema).execute(doc), 5 seconds) should be (Map("data" -> Map("a" -> "b")))
+    }
+
+    "throw if no operation is provided with multiple operations" in {
+      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
+      val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
+
+      Await.result(Executor(schema).execute(doc), 5 seconds) should be (
+        Map("errors" -> List(Map("message" -> "Must provide operation name if query contains multiple operations"))))
+    }
+
+    "use the query schema for queries" in {
+      val schema = Schema(
+        ObjectType("Q", List[Field[Unit, Unit]](Field("a", OptionType(StringType), resolve = _ => "b"))),
+        Some(ObjectType("M", List[Field[Unit, Unit]](Field("c", OptionType(StringType), resolve = _ => "d")))))
+      val Success(doc) = QueryParser.parse("query Q { a } mutation M { c }")
+
+      Await.result(Executor(schema).execute(doc, Some("Q")), 5 seconds) should be  (Map("data" -> Map("a" -> "b")))
+    }
+
+    "avoid recursion" in {
+      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
+
+      val Success(doc) = QueryParser.parse("""
+        query Q {
+          a
+          ...Frag
+          ...Frag
+        }
+
+        fragment Frag on Type {
+          a,
+          ...Frag
+        }
+      """)
+
+      Await.result(Executor(schema).execute(doc, Some("Q")), 5 seconds) should be  (Map("data" -> Map("a" -> "b")))
+    }
+
+    "not include illegal fields in output" in {
+      val schema = Schema(
+        ObjectType("Q", List[Field[Unit, Unit]](Field("a", OptionType(StringType), resolve = _ => "b"))),
+        Some(ObjectType("M", List[Field[Unit, Unit]](Field("c", OptionType(StringType), resolve = _ => "d")))))
+      val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
+
+      Await.result(Executor(schema).execute(doc), 5 seconds) should be  (Map("data" -> Map()))
+    }
   }
 }
