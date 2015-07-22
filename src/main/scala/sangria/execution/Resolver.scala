@@ -97,24 +97,24 @@ class Resolver[Ctx](
         val resolvedValues = results.map {
           case (astFields, None) => astFields.head -> Result(ErrorRegistry.empty, None)
           case (astFields, Some((field, Value(v)))) =>
-            astFields.head -> resolveValue(path :+ field.name, astFields, field.fieldType, field, v)
+            astFields.head -> resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v)
           case (astFields, Some((field, DeferredValue(deferred)))) =>
             val promise = Promise[Any]()
 
             astFields.head -> DeferredResult(Future.successful(Defer(promise, deferred) :: Nil):: Nil,
               promise.future
                 .flatMap { v =>
-                  resolveValue(path :+ field.name, astFields, field.fieldType, field, v) match {
+                  resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v) match {
                     case r: Result => Future.successful(r)
                     case er: DeferredResult => resolveDeferred(er)
                   }
                 }
                 .recover {
-                  case e => Result(ErrorRegistry(path :+ field.name, e), None)
+                  case e => Result(ErrorRegistry(path :+ astFields.head.outputName, e), None)
                 })
           case (astFields, Some((field, FutureValue(future)))) =>
-            val resolved = future.map(v => resolveValue(path :+ field.name, astFields, field.fieldType, field, v)).recover {
-              case e => Result(ErrorRegistry(path :+ field.name, e, astFields.head.position), None)
+            val resolved = future.map(v => resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v)).recover {
+              case e => Result(ErrorRegistry(path :+ astFields.head.outputName, e, astFields.head.position), None)
             }
             val deferred = resolved flatMap {
               case r: Result => Future.successful(Nil)
