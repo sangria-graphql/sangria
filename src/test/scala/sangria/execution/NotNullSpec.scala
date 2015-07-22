@@ -76,7 +76,7 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport {
 
     result("data") should be (expectedData)
 
-    val errors = result("errors").asInstanceOf[List[Any]]
+    val errors = result.get("errors").getOrElse(Nil).asInstanceOf[List[Any]]
 
     errors should have size(expectedErrors.size)
 
@@ -300,6 +300,221 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport {
           "locations" -> List(Map("line" -> 30, "column" -> 21))),
         Map(
           "message" -> "nonNullPromise",
+          "field" -> "anotherPromiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
+          "locations" -> List(Map("line" -> 41, "column" -> 21)))
+      ))
+
+    "nulls a nullable field that synchronously returns null" in check(
+      new NullingSubject,
+      """
+        query Q {
+          sync
+        }
+      """,
+      Map("data" -> Map("sync" -> null)))
+
+    "nulls a nullable field that returns null in a promise" in check(
+      new NullingSubject,
+      """
+        query Q {
+          promise
+        }
+      """,
+      Map("data" -> Map("promise" -> null)))
+
+    "nulls a synchronously returned object that contains a non-nullable field that returns null synchronously" in check(
+      new NullingSubject,
+      """
+        query Q {
+          nest {
+            nonNullSync
+          }
+        }
+      """,
+      Map(
+        "data" -> Map("nest" -> null),
+        "errors" -> List(Map(
+          "message" -> "Cannot return null for non-nullable type",
+          "field" -> "nest.nonNullSync",
+          "locations" -> List(Map("line" -> 4, "column" -> 13))))))
+
+    "nulls a synchronously returned object that contains a non-nullable field that returns null in a promise" in check(
+      new NullingSubject,
+      """
+        query Q {
+          nest {
+            nonNullPromise,
+          }
+        }
+      """,
+      Map(
+        "data" -> Map("nest" -> null),
+        "errors" -> List(Map(
+          "message" -> "Cannot return null for non-nullable type",
+          "field" -> "nest.nonNullPromise",
+          "locations" -> List(Map("line" -> 4, "column" -> 13))))))
+
+    "nulls an object returned in a promise that contains a non-nullable field that returns null synchronously" in check(
+      new NullingSubject,
+      """
+        query Q {
+          promiseNest {
+            nonNullSync,
+          }
+        }
+      """,
+      Map(
+        "data" -> Map("promiseNest" -> null),
+        "errors" -> List(Map(
+          "message" -> "Cannot return null for non-nullable type",
+          "field" -> "promiseNest.nonNullSync",
+          "locations" -> List(Map("line" -> 4, "column" -> 13))))))
+
+    "nulls an object returned in a promise that contains a non-nullable field that returns null ina a promise" in check(
+      new NullingSubject,
+      """
+        query Q {
+          promiseNest {
+            nonNullPromise,
+          }
+        }
+      """,
+      Map(
+        "data" -> Map("promiseNest" -> null),
+        "errors" -> List(Map(
+          "message" -> "Cannot return null for non-nullable type",
+          "field" -> "promiseNest.nonNullPromise",
+          "locations" -> List(Map("line" -> 4, "column" -> 13))))))
+
+    "nulls a complex tree of nullable fields that return null" in check(
+      new NullingSubject,
+      """
+        query Q {
+          nest {
+            sync
+            promise
+            nest {
+              sync
+              promise
+            }
+            promiseNest {
+              sync
+              promise
+            }
+          }
+          promiseNest {
+            sync
+            promise
+            nest {
+              sync
+              promise
+            }
+            promiseNest {
+              sync
+              promise
+            }
+          }
+        }
+      """,
+      Map(
+        "nest" -> Map(
+          "sync" -> null,
+          "promise" -> null,
+          "nest" -> Map(
+            "sync" -> null,
+            "promise" -> null
+          ),
+          "promiseNest" -> Map(
+            "sync" -> null,
+            "promise" -> null
+          )
+        ),
+        "promiseNest" -> Map(
+          "sync" -> null,
+          "promise" -> null,
+          "nest" -> Map(
+            "sync" -> null,
+            "promise" -> null
+          ),
+          "promiseNest" -> Map(
+            "sync" -> null,
+            "promise" -> null
+          )
+        )
+      ),
+      Nil)
+
+    "nulls the first nullable object after a field returns null in a long chain of fields that are non-null" in check(
+      new NullingSubject,
+      """
+        query Q {
+          nest {
+            nonNullNest {
+              nonNullPromiseNest {
+                nonNullNest {
+                  nonNullPromiseNest {
+                    nonNullSync
+                  }
+                }
+              }
+            }
+          }
+          promiseNest {
+            nonNullNest {
+              nonNullPromiseNest {
+                nonNullNest {
+                  nonNullPromiseNest {
+                    nonNullSync
+                  }
+                }
+              }
+            }
+          }
+          anotherNest: nest {
+            nonNullNest {
+              nonNullPromiseNest {
+                nonNullNest {
+                  nonNullPromiseNest {
+                    nonNullPromise
+                  }
+                }
+              }
+            }
+          }
+          anotherPromiseNest: promiseNest {
+            nonNullNest {
+              nonNullPromiseNest {
+                nonNullNest {
+                  nonNullPromiseNest {
+                    nonNullPromise
+                  }
+                }
+              }
+            }
+          }
+        }
+      """,
+      Map(
+        "nest" -> null,
+        "promiseNest" -> null,
+        "anotherNest" -> null,
+        "anotherPromiseNest" -> null
+      ),
+      List(
+        Map(
+          "message" -> "Cannot return null for non-nullable type",
+          "field" -> "nest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullSync",
+          "locations" -> List(Map("line" -> 8, "column" -> 21))),
+        Map(
+          "message" -> "Cannot return null for non-nullable type",
+          "field" -> "promiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullSync",
+          "locations" -> List(Map("line" -> 19, "column" -> 21))),
+        Map(
+          "message" -> "Cannot return null for non-nullable type",
+          "field" -> "anotherNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
+          "locations" -> List(Map("line" -> 30, "column" -> 21))),
+        Map(
+          "message" -> "Cannot return null for non-nullable type",
           "field" -> "anotherPromiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
           "locations" -> List(Map("line" -> 41, "column" -> 21)))
       ))
