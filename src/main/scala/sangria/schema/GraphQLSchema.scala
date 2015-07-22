@@ -170,7 +170,6 @@ case class EnumType[T](
     case _ => Left(EnumCoercionViolation)
   }
 
-
   def coerceOutput(value: T) = ast.EnumValue(byValue(value))
 }
 
@@ -281,7 +280,7 @@ case class Schema[Ctx, Val](
   }
 
   lazy val directImplementations: Map[String, List[ObjectLikeType[_, _]]] = {
-    types.values.toList
+    typeList
       .collect{case objectLike: ObjectLikeType[_, _] => objectLike}
       .flatMap(objectLike => objectLike.interfaces map (_.name -> objectLike))
       .groupBy(_._1)

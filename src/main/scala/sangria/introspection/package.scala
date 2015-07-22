@@ -15,7 +15,7 @@ package object introspection {
     EnumValue("OBJECT", value = TypeKind.Object, description = Some(
       "Indicates this type is an object. " +
       "`fields` and `interfaces` are valid fields.")),
-    EnumValue("INTERFACE", value = TypeKind.Object, description = Some(
+    EnumValue("INTERFACE", value = TypeKind.Interface, description = Some(
       "Indicates this type is an interface. " +
       "`fields` and `possibleTypes` are valid fields.")),
     EnumValue("UNION", value = TypeKind.Union, description = Some(
@@ -35,7 +35,7 @@ package object introspection {
       "`ofType` is a valid field."))
   ))
 
-  val __Type = ObjectType("__Type", List[Field[Unit, Type]](
+  val __Type = ObjectType("__Type", List[Field[Unit, (Boolean, Type)]](
     Field("kind", __TypeKind, resolve = ctx => {
       def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {
         case OptionType(ofType) => identifyKind(ofType, true)
@@ -50,13 +50,15 @@ package object introspection {
         case _: ListType[_] | _: ListInputType[_] => TypeKind.List
       }
 
-      identifyKind(ctx.value, false)
+      val (fromTypeList, tpe) = ctx.value
+
+      identifyKind(tpe, fromTypeList)
     }),
-    Field("name", OptionType(StringType), resolve = _.value match {
+    Field("name", OptionType(StringType), resolve = _.value._2 match {
       case named: Named => Some(named.name)
       case _ => None
     }),
-    Field("description", OptionType(StringType), resolve = _.value match {
+    Field("description", OptionType(StringType), resolve = _.value._2 match {
       case named: Named => named.description
       case _ => None
     })
@@ -67,7 +69,7 @@ package object introspection {
     fields = List[Field[Unit, Argument[_]]](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
-      Field("type", __Type, resolve = _.value.argumentType),
+      Field("type", __Type, resolve = false -> _.value.argumentType),
       Field("defaultValue", OptionType(StringType),
         resolve = ctx => ctx.value.defaultValue.map(ctx.renderInputValue(_, ctx.value.argumentType)))
     ))
@@ -92,10 +94,10 @@ package object introspection {
         "the server, as well as the entry points for query and " +
         "mutation operations.",
     fields = List[Field[Unit, Schema[Any, Any]]](
-      Field("types", ListType(__Type), Some("A list of all types supported by this server."), resolve = _.value.typeList),
-      Field("queryType", __Type, Some("The type that query operations will be rooted at."), resolve = _.value.query),
+      Field("types", ListType(__Type), Some("A list of all types supported by this server."), resolve = _.value.typeList map (true -> _)),
+      Field("queryType", __Type, Some("The type that query operations will be rooted at."), resolve = true -> _.value.query),
       Field("mutationType", OptionType(__Type),
-        Some("If this server supports mutation, the type that mutation operations will be rooted at."), resolve = _.value.mutation),
+        Some("If this server supports mutation, the type that mutation operations will be rooted at."), resolve = _.value.mutation map (true -> _)),
       Field("directives", ListType(__Directive),
         Some("A list of all directives supported by this server."), resolve = _.value.directives)))
 
@@ -110,7 +112,7 @@ package object introspection {
     fieldType = OptionType(__Type),
     description = Some("Request the type information of a single type."),
     arguments = Argument("name", StringType) :: Nil,
-    resolve = ctx => ctx.schema.types get ctx.arg[String]("name") map (_._2))
+    resolve = ctx => ctx.schema.types get ctx.arg[String]("name") map (true -> _._2))
 
   val TypeNameMetaField: Field[Unit, Unit] = Field(
     name = "__typename",
