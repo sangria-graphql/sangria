@@ -71,13 +71,18 @@ trait WithArguments {
   def argOpt[T](name: String) = args.get(name).asInstanceOf[Option[T]]
 }
 
+trait WithInputTypeRendering {
+  def renderInputValue[T](value: T, tpe: InputType[T]) = ??? // todo implement input value rendering
+}
+
 case class Context[Ctx, Val](
       value: Val,
       ctx: Ctx,
       args: Map[String, Any],
       schema: Schema[Ctx, Val],
       field: Field[Ctx, Val],
-      astFields: List[ast.Field]) extends WithArguments
+      parentType: ObjectType[Ctx, Any],
+      astFields: List[ast.Field]) extends WithArguments with WithInputTypeRendering
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 

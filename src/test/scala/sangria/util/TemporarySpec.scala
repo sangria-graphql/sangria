@@ -5,6 +5,7 @@ import sangria.TestData.{FriendsResolver, CharacterRepo}
 import sangria.execution.Executor
 import sangria.parser.{SyntaxError, QueryParser}
 import sangria.schema.TestSchema
+import sangria.introspection.introspectionQuery
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -61,6 +62,15 @@ class TemporarySpec extends WordSpec with Matchers {
         println(Await.result(
           Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
               .execute(ast, arguments = Some(vars)), Duration.Inf).prettyPrint)
+      }
+
+      {
+        import sangria.integration.SprayJsonSupport._
+
+        println("\nIntrospection:\n")
+        println(Await.result(
+          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+              .execute(introspectionQuery, arguments = Some(vars)), Duration.Inf).prettyPrint)
       }
     }
   }

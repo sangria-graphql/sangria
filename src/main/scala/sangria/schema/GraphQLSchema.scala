@@ -1,7 +1,8 @@
 package sangria.schema
 
-import sangria.ast
+import sangria.{introspection, ast}
 import sangria.validation.{EnumValueCoercionViolation, EnumCoercionViolation, Violation}
+import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -44,7 +45,13 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
   private lazy val ownFields = fieldsFn()
 
   lazy val fields: List[Field[Ctx, _]] = (ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[List[Field[Ctx, _]]])).groupBy(_.name).map(_._2.head).toList
-  lazy val fieldsByName = fields groupBy (_.name) mapValues (_.head)
+  private lazy val fieldsByName = fields groupBy (_.name) mapValues (_.head)
+
+  def getField(schema: Schema[_, _], fieldName: String): Option[Field[Ctx, _]] =
+    if (fieldName == SchemaMetaField.name && name == schema.query.name) Some(SchemaMetaField.asInstanceOf[Field[Ctx, _]])
+    else if (fieldName == TypeMetaField.name && name == schema.query.name) Some(TypeMetaField.asInstanceOf[Field[Ctx, _]])
+    else if (fieldName == TypeNameMetaField.name) Some(TypeNameMetaField.asInstanceOf[Field[Ctx, _]])
+    else fieldsByName get fieldName
 }
 
 case class ObjectType[Ctx, Val: ClassTag] private (
@@ -246,9 +253,9 @@ case class Schema[Ctx, Val](
 
     val queryTypes = collectTypes(query, Map.empty)
     val queryAndMutTypes = mutation map (collectTypes(_, queryTypes)) getOrElse queryTypes
+    val queryAndMutAndSchemaTypes = collectTypes(introspection.__Schema, queryAndMutTypes)
 
-
-    queryAndMutTypes ++ (BuiltinScalars map (s => s.name -> s))
+    queryAndMutAndSchemaTypes ++ (BuiltinScalars map (s => s.name -> s))
   }
 
   lazy val inputTypes = types collect {case (name, tpe: InputType[_]) => name -> tpe}

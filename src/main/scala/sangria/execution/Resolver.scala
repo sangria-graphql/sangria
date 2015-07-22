@@ -80,12 +80,12 @@ class Resolver[Ctx](
        errorReg: ErrorRegistry): Resolve = {
     val (errors, res) = fields.foldLeft((errorReg, Some(Nil): Option[List[(List[ast.Field], Option[(Field[Ctx, _], LeafAction[Ctx, _])])]])) {
       case (acc @ (_, None), _) => acc
-      case (acc, (name, (origField, _))) if !tpe.fieldsByName.contains(origField.name) => acc
+      case (acc, (name, (origField, _))) if tpe.getField(schema, origField.name).isEmpty => acc
       case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) =>
         errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) Some(acc :+ (origField :: Nil, None)) else None)
       case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
         resolveField(userContext, tpe, path :+ name, value, errors, name, fields) match {
-          case (updatedErrors, Some(result), _) => updatedErrors -> Some(acc :+ (fields, Some(tpe.fieldsByName(origField.name) -> result)))
+          case (updatedErrors, Some(result), _) => updatedErrors -> Some(acc :+ (fields, Some(tpe.getField(schema, origField.name).get -> result)))
           case (updatedErrors, None, _) if isOptional(tpe, origField.name) => updatedErrors -> Some(acc :+ (origField :: Nil, None))
           case (updatedErrors, None, _) => updatedErrors -> None
         }
@@ -256,11 +256,11 @@ class Resolver[Ctx](
 
   def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, astFields: List[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[Any => Ctx]) = {
     val astField = astFields.head
-    val field = tpe.fieldsByName(astField.name).asInstanceOf[Field[Ctx, Any]]
+    val field = tpe.getField(schema, astField.name).get.asInstanceOf[Field[Ctx, Any]]
 
     valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>
-        val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, astFields)
+        val ctx = Context[Ctx, Any](value, userCtx, args, schema.asInstanceOf[Schema[Ctx, Any]], field, tpe.asInstanceOf[ObjectType[Ctx, Any]], astFields)
 
         try {
           val res = field.resolve match {
@@ -287,9 +287,9 @@ class Resolver[Ctx](
         fieldCollector.collectFields(path, objTpe, astFields) match {
           case Success(ff) =>
             ff.values.toVector collect {
-              case (_, Success(fields)) if objTpe.fieldsByName.contains(fields.head.name) && objTpe.fieldsByName(fields.head.name).resolve.isInstanceOf[Projection[_, _, _]] =>
+              case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).isDefined && objTpe.getField(schema, fields.head.name).get.resolve.isInstanceOf[Projection[_, _, _]] =>
                 val astField = fields.head
-                val field = objTpe.fieldsByName(astField.name)
+                val field = objTpe.getField(schema, astField.name).get
                 val projection = field.resolve.asInstanceOf[Projection[_, _, _]]
                 val projectedName = projection.projectedName getOrElse field.name
 
@@ -309,7 +309,7 @@ class Resolver[Ctx](
   }
 
   def isOptional(tpe: ObjectType[_, _], fieldName: String): Boolean =
-    isOptional(tpe.fieldsByName(fieldName).fieldType)
+    isOptional(tpe.getField(schema, fieldName).get.fieldType)
 
   def isOptional(tpe: OutputType[_]): Boolean =
     tpe.isInstanceOf[OptionType[_]]
