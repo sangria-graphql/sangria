@@ -1,18 +1,17 @@
 package sangria.execution
 
-import language.postfixOps
+import sangria.util.AwaitSupport
 
 import org.scalatest.{Matchers, WordSpec}
 
 import sangria.parser.QueryParser
 import sangria.schema._
 
-import scala.concurrent.{Future, Await}
+import scala.concurrent.Future
 import scala.util.Success
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ListsSpec extends WordSpec with Matchers {
+class ListsSpec extends WordSpec with Matchers with AwaitSupport {
   case class Data(test: Action[Unit, Any])
 
   def check(testType: OutputType[Any], testData: Action[Unit, Any], expected: Any) = {
@@ -32,7 +31,7 @@ class ListsSpec extends WordSpec with Matchers {
       case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
     }
 
-    Await.result(Executor(schema, data, exceptionHandler = exceptionHandler).execute(doc), 5 seconds) should be (expected)
+    Executor(schema, data, exceptionHandler = exceptionHandler).execute(doc).await should be (expected)
   }
 
   def success[T](t: T) = Future.successful(t)

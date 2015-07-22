@@ -1,17 +1,15 @@
 package sangria.execution
 
-import language.postfixOps
+import sangria.util.AwaitSupport
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 
-import scala.concurrent.Await
 import scala.util.Success
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DirectivesSpec extends WordSpec with Matchers {
+class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
 
   case class TestSubject(a: Option[String], b: Option[String])
 
@@ -25,7 +23,7 @@ class DirectivesSpec extends WordSpec with Matchers {
   def executeTestQuery(query: String) = {
     val Success(doc) = QueryParser.parse(query)
 
-    Await.result(Executor(schema, data).execute(doc), 5 seconds)
+    Executor(schema, data).execute(doc).await
   }
 
   "Execute: handles directives" when {

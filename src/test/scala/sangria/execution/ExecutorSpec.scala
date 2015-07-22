@@ -1,18 +1,15 @@
 package sangria.execution
 
-import language.postfixOps
-
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
+import sangria.util.AwaitSupport
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.util.Success
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ExecutorSpec extends WordSpec with Matchers {
-
+class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
   class TestSubject {
     def a: Option[String] = Some("Apple")
     def b: Option[String] = Some("Banana")
@@ -117,7 +114,7 @@ class ExecutorSpec extends WordSpec with Matchers {
 
       val schema = Schema(DataType)
 
-      Await.result(Executor(schema, new TestSubject).execute(doc, arguments = Some(Map("size" -> 100))), 5 seconds) should be (expected)
+      Executor(schema, new TestSubject).execute(doc, arguments = Some(Map("size" -> 100))).await should be (expected)
     }
 
 
@@ -151,7 +148,7 @@ class ExecutorSpec extends WordSpec with Matchers {
               "c" -> "Cherry")))
       )
 
-      Await.result(Executor(schema).execute(doc), 5 seconds) should be (expected)
+      Executor(schema).execute(doc).await should be (expected)
     }
 
     "threads context correctly" in {
@@ -163,7 +160,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         Field("a", OptionType(StringType), resolve = ctx => {resolvedCtx = ctx.value.a; ctx.value.a}))))
 
       val Success(doc) = QueryParser.parse("query Example { a }")
-      Await.result(Executor(schema, Thing(Some("thing"))).execute(doc), 5 seconds) should be (Map("data" -> Map("a" -> "thing")))
+      Executor(schema, Thing(Some("thing"))).execute(doc).await should be (Map("data" -> Map("a" -> "thing")))
       resolvedCtx should be (Some("thing"))
     }
 
@@ -181,7 +178,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         }
       """)
 
-      Await.result(Executor(schema).execute(doc), 5 seconds)
+      Executor(schema).execute(doc).await
       resolvedArgs should be (Map("numArg" -> 123, "stringArg" -> "foo"))
     }
 
@@ -223,7 +220,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
       }
 
-      val result = Await.result(Executor(schema, new Data, exceptionHandler = exceptionHandler).execute(doc), 5 seconds).asInstanceOf[Map[String, Any]]
+      val result = Executor(schema, new Data, exceptionHandler = exceptionHandler).execute(doc).await.asInstanceOf[Map[String, Any]]
 
       val data = result("data")
       val errors = result("errors").asInstanceOf[List[_]]
@@ -266,7 +263,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("{ a }")
 
-      Await.result(Executor(schema).execute(doc), 5 seconds) should be (Map("data" -> Map("a" -> "b")))
+      Executor(schema).execute(doc).await should be (Map("data" -> Map("a" -> "b")))
     }
 
     "use the only operation if no operation is provided" in {
@@ -274,7 +271,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("query Example { a }")
 
-      Await.result(Executor(schema).execute(doc), 5 seconds) should be (Map("data" -> Map("a" -> "b")))
+      Executor(schema).execute(doc).await should be (Map("data" -> Map("a" -> "b")))
     }
 
     "throw if no operation is provided with multiple operations" in {
@@ -282,7 +279,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
 
-      Await.result(Executor(schema).execute(doc), 5 seconds) should be (
+      Executor(schema).execute(doc).await should be (
         Map("errors" -> List(Map("message" -> "Must provide operation name if query contains multiple operations"))))
     }
 
@@ -292,7 +289,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         Some(ObjectType("M", List[Field[Unit, Unit]](Field("c", OptionType(StringType), resolve = _ => "d")))))
       val Success(doc) = QueryParser.parse("query Q { a } mutation M { c }")
 
-      Await.result(Executor(schema).execute(doc, Some("Q")), 5 seconds) should be  (Map("data" -> Map("a" -> "b")))
+      Executor(schema).execute(doc, Some("Q")).await should be  (Map("data" -> Map("a" -> "b")))
     }
 
     "avoid recursion" in {
@@ -312,7 +309,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         }
       """)
 
-      Await.result(Executor(schema).execute(doc, Some("Q")), 5 seconds) should be  (Map("data" -> Map("a" -> "b")))
+      Executor(schema).execute(doc, Some("Q")).await should be  (Map("data" -> Map("a" -> "b")))
     }
 
     "not include illegal fields in output" in {
@@ -321,7 +318,7 @@ class ExecutorSpec extends WordSpec with Matchers {
         Some(ObjectType("M", List[Field[Unit, Unit]](Field("c", OptionType(StringType), resolve = _ => "d")))))
       val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
 
-      Await.result(Executor(schema).execute(doc), 5 seconds) should be  (Map("data" -> Map()))
+      Executor(schema).execute(doc).await should be  (Map("data" -> Map()))
     }
   }
 }
