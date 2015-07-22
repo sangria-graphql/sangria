@@ -65,7 +65,7 @@ package object schema {
 
   val BuiltinScalars = IntType :: FloatType :: BooleanType :: StringType :: IDType :: Nil
 
-  val IfArg = Argument("if", BooleanType, Some("Included when true."))
+  val IfArg = Argument("if", BooleanType, "Included when true.")
 
   val IncludeDirective = Directive("include",
     description = Some("Directs the executor to include this field or fragment only when the `if` argument is true."),

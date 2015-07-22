@@ -148,17 +148,59 @@ object ValidOutType {
 
 trait InputValue[T] {
   def name: String
-  def inputValueType: InputType[T]
+  def inputValueType: InputType[_]
   def description: Option[String]
-  def defaultValue: Option[T]
+  def defaultValue: Option[_]
 }
 
-case class Argument[T](
+case class Argument[T] private (
     name: String,
-    argumentType: InputType[T],
-    description: Option[String] = None,
-    defaultValue: Option[T] = None) extends InputValue[T] with Named {
+    argumentType: InputType[_],
+    description: Option[String],
+    defaultValue: Option[_]) extends InputValue[T] with Named {
   def inputValueType = argumentType
+}
+
+object Argument {
+  def apply[T, Default](
+      name: String,
+      argumentType: InputType[T],
+      description: String,
+      defaultValue: Default)(implicit ev: ValidOutType[Default, T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(name, argumentType, Some(description), Some(defaultValue))
+
+  def apply[T, Default](
+      name: String,
+      argumentType: InputType[T],
+      defaultValue: Default)(implicit ev: ValidOutType[Default, T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(name, argumentType, None, Some(defaultValue))
+
+  def apply[T](
+      name: String,
+      argumentType: InputType[T],
+      description: String)(implicit res: ArgumentType[T]): Argument[res.Res] =
+    Argument(name, argumentType, Some(description), None)
+
+  def apply[T](
+      name: String,
+      argumentType: InputType[T])(implicit res: ArgumentType[T]): Argument[res.Res] =
+    Argument(name, argumentType, None, None)
+}
+
+trait ArgumentType[T] {
+  type Res
+}
+
+object ArgumentType extends ArgumentTypeLowPrio {
+  implicit def optionArgTpe[T] = new ArgumentType[Option[T]] {
+    type Res = T
+  }
+}
+
+trait ArgumentTypeLowPrio {
+  implicit def defaultArgTpe[T] = new ArgumentType[T] {
+    type Res = T
+  }
 }
 
 case class EnumType[T](
@@ -191,20 +233,20 @@ case class EnumValue[+T](
 case class InputObjectType[T] private (
   name: String,
   description: Option[String] = None,
-  fieldsFn: () => List[InputObjectField[_]]
+  fieldsFn: () => List[InputField[_]]
 ) extends InputType[T] with NullableType with UnmodifiedType with Named {
   lazy val fields = fieldsFn()
 }
 
 object InputObjectType {
-  def apply[T](name: String, fields: List[InputObjectField[_]]): InputObjectType[T] = InputObjectType(name, None, fieldsFn = () => fields)
-  def apply[T](name: String, description: String, fields: List[InputObjectField[_]]): InputObjectType[T] = InputObjectType(name, Some(description), fieldsFn = () => fields)
+  def apply[T](name: String, fields: List[InputField[_]]): InputObjectType[T] = InputObjectType(name, None, fieldsFn = () => fields)
+  def apply[T](name: String, description: String, fields: List[InputField[_]]): InputObjectType[T] = InputObjectType(name, Some(description), fieldsFn = () => fields)
 
-  def apply[T](name: String, fieldsFn: () => List[InputObjectField[_]]): InputObjectType[T] = InputObjectType(name, None, fieldsFn)
-  def apply[T](name: String, description: String, fieldsFn: () => List[InputObjectField[_]]): InputObjectType[T] = InputObjectType(name, Some(description), fieldsFn)
+  def apply[T](name: String, fieldsFn: () => List[InputField[_]]): InputObjectType[T] = InputObjectType(name, None, fieldsFn)
+  def apply[T](name: String, description: String, fieldsFn: () => List[InputField[_]]): InputObjectType[T] = InputObjectType(name, Some(description), fieldsFn)
 }
 
-case class InputObjectField[T](
+case class InputField[T](
     name: String,
     fieldType: InputType[T],
     description: Option[String] = None,

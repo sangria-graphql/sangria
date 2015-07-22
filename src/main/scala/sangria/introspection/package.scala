@@ -44,8 +44,7 @@ package object introspection {
     Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason)
   ))
 
-  // todo should be `Boolean`
-  val includeDeprecated = Argument[Option[Boolean]]("includeDeprecated", OptionInputType(BooleanType), defaultValue = Some(Some(false)))
+  val includeDeprecated = Argument("includeDeprecated", OptionInputType(BooleanType), false)
 
   val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType("__Type", () => List[Field[Unit, (Boolean, Type)]](
     Field("kind", __TypeKind, resolve = ctx => {
@@ -81,7 +80,7 @@ package object introspection {
         val (_, tpe) = ctx.value
 
         tpe match {
-          case t: ObjectLikeType[_, _] if incDep.get => Some(t.fields.asInstanceOf[List[Field[_, _]]])
+          case t: ObjectLikeType[_, _] if incDep => Some(t.fields.asInstanceOf[List[Field[_, _]]])
           case t: ObjectLikeType[_, _] => Some(t.fields.asInstanceOf[List[Field[_, _]]].filter(_.deprecationReason.isEmpty))
           case _ => None
         }
@@ -100,7 +99,7 @@ package object introspection {
         val incDep = ctx.arg(includeDeprecated)
 
         ctx.value._2 match {
-          case enum: EnumType[_] if incDep.get => Some(enum.values)
+          case enum: EnumType[_] if incDep => Some(enum.values)
           case enum: EnumType[_] => Some(enum.values.filter(_.deprecationReason.isEmpty))
           case _ => None
         }
