@@ -1,5 +1,6 @@
 package sangria.execution
 
+import org.parboiled2.Position
 import sangria.ast
 import sangria.parser.SourceMapper
 import sangria.schema._
@@ -28,13 +29,26 @@ class Resolver[Ctx](
   case class DeferredResult(deferred: List[Future[List[Defer]]], futureValue: Future[Result]) extends Resolve
   case class Defer(promise: Promise[Any], deferred: Deferred[Any])
   case class Result(errors: ErrorRegistry, value: Option[marshaller.Node]) extends Resolve {
-    def addToMap(other: Result, key: String, optional: Boolean) = copy(errors = errors add other.errors, value =
-      if (optional && other.value.isEmpty)
-        value map (marshaller.addMapNodeElem(_, key, marshaller.nullNode))
-      else
-        for {myVal <- value; otherVal <- other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal))
+    def addToMap(other: Result, key: String, optional: Boolean, path: List[String], position: Option[Position]) =
+      copy(
+        errors =
+          if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
+            errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position))
+          else
+            errors.add(other.errors),
+        value =
+          if (optional && other.value.isEmpty)
+            value map (marshaller.addMapNodeElem(_, key, marshaller.nullNode))
+          else
+            for {myVal <- value; otherVal <- other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal))
 
-    def addToList(other: Result, optional: Boolean) = copy(errors = errors add other.errors, value =
+    def addToList(other: Result, optional: Boolean, path: List[String], position: Option[Position]) = copy(
+      errors =
+          if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
+            errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position))
+          else
+            errors.add(other.errors),
+      value =
         if (optional && other.value.isEmpty)
           value map (marshaller.addArrayNodeElem(_, marshaller.nullNode))
         else
@@ -131,7 +145,7 @@ class Resolver[Ctx](
         val simpleRes = resolvedValues.collect {case (af, r: Result) => af -> r}
 
         val resSoFar = simpleRes.foldLeft(Result(errors, Some(marshaller.emptyMapNode))) {
-          case (res, (astField, other)) => res addToMap (other, astField.outputName, isOptional(tpe, astField.name))
+          case (res, (astField, other)) => res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path :+ astField.outputName, astField.position)
         }
 
         val complexRes = resolvedValues.collect{case (af, r: DeferredResult) => af -> r}
@@ -141,7 +155,7 @@ class Resolver[Ctx](
           val allDeferred = complexRes.flatMap(_._2.deferred)
           val finalValue = Future.sequence(complexRes.map {case (astField, DeferredResult(_, future)) =>  future map (astField -> _)}) map { results =>
             results.foldLeft(resSoFar) {
-              case (res, (astField, other)) => res addToMap (other, astField.outputName, isOptional(tpe, astField.name))
+              case (res, (astField, other)) => res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path :+ astField.outputName, astField.position)
             }
           }
 
@@ -181,35 +195,38 @@ class Resolver[Ctx](
           case None => Result(ErrorRegistry.empty, None)
         }
       case ListType(listTpe) =>
-        val actualValue = value match {
-          case seq: Seq[_] => seq
-          case other => Seq(other)
+        if (value == null)
+          return Result(ErrorRegistry.empty, None)
+        else {
+          val actualValue = value match {
+            case seq: Seq[_] => seq
+            case other => Seq(other)
+          }
+
+          val res = actualValue map (resolveValue(path, astFields, listTpe, field, _))
+          val simpleRes = res.collect { case r: Result => r}
+
+          if (simpleRes.size == res.size)
+            simpleRes.foldLeft(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))) {
+              case (acc, res) => acc.addToList(res, isOptional(listTpe), path, astFields.head.position)
+            }
+          else
+            res.foldLeft(DeferredResult(Nil, Future.successful(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))))) {
+              case (acc, res: Result) => acc.copy(futureValue = acc.futureValue map (r => r.addToList(res, isOptional(listTpe), path, astFields.head.position)))
+
+              case (acc, DeferredResult(deferred, futureValue)) => acc.copy(deferred = acc.deferred ++ deferred, futureValue =
+                  for {accRes <- acc.futureValue; res <- futureValue} yield accRes.addToList(res, isOptional(listTpe), path, astFields.head.position))
+            }
         }
-
-        val res = actualValue map (resolveValue(path, astFields, listTpe, field, _))
-        val simpleRes = res.collect{case r: Result => r}
-
-        if (simpleRes.size == res.size)
-          simpleRes.foldLeft(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))) {
-            case (acc, res) => acc.addToList(res, isOptional(listTpe))
-          }
-        else
-          res.foldLeft(DeferredResult(Nil, Future.successful(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))))) {
-            case (acc, Result(errors, value)) => acc.copy(futureValue =
-                acc.futureValue map (r => r.copy(errors = r.errors.add(errors), value = for {v1 <- r.value; v2 <- value} yield marshaller.addArrayNodeElem(v1, v2))))
-
-            case (acc, DeferredResult(deferred, futureValue)) => acc.copy(deferred = acc.deferred ++ deferred, futureValue =
-                for {accRes <- acc.futureValue; res <- futureValue} yield Result(accRes.errors add res.errors, for {v1 <- accRes.value; v2 <- res.value} yield marshaller.addArrayNodeElem(v1, v2)))
-          }
       case scalar: ScalarType[Any @unchecked] =>
         try {
-          Result(ErrorRegistry.empty, Some(marshalValue(scalar.coerceOutput(value))))
+          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(scalar.coerceOutput(value))))
         } catch {
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
       case enum: EnumType[Any @unchecked] =>
         try {
-          Result(ErrorRegistry.empty, Some(marshalValue(enum.coerceOutput(value))))
+          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(enum.coerceOutput(value))))
         } catch {
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
