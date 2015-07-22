@@ -280,7 +280,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
       val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
 
       Executor(schema).execute(doc).await should be (
-        Map("errors" -> List(Map("message" -> "Must provide operation name if query contains multiple operations"))))
+        Map("data" -> null, "errors" -> List(Map("message" -> "Must provide operation name if query contains multiple operations"))))
     }
 
     "use the query schema for queries" in {
