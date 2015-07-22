@@ -31,7 +31,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
 
     val withData = data match {
       case Some(d) => marshaller.addMapNodeElem(empty, "data", d)
-      case None => empty
+      case None => marshaller.addMapNodeElem(empty, "data", marshaller.nullNode)
     }
 
     errors match {

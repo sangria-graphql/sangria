@@ -518,5 +518,33 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport {
           "field" -> "anotherPromiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
           "locations" -> List(Map("line" -> 41, "column" -> 21)))
       ))
+
+    "nulls the top level if sync non-nullable field throws" in check(
+      new ThrowingSubject,
+      "query Q { nonNullSync }",
+      Map(
+        "data" -> null,
+        "errors" -> List(Map("message" -> "nonNullSync", "field" -> "nonNullSync", "locations" -> List(Map("line" -> 1, "column" -> 11))))))
+
+    "nulls the top level if async non-nullable field errors" in check(
+      new ThrowingSubject,
+      "query Q { nonNullPromise }",
+      Map(
+        "data" -> null,
+        "errors" -> List(Map("message" -> "nonNullPromise", "field" -> "nonNullPromise", "locations" -> List(Map("line" -> 1, "column" -> 11))))))
+
+    "nulls the top level if sync non-nullable field returns null" in check(
+      new NullingSubject,
+      "query Q { nonNullSync }",
+      Map(
+        "data" -> null,
+        "errors" -> List(Map("message" -> "Cannot return null for non-nullable type", "field" -> "nonNullSync", "locations" -> List(Map("line" -> 1, "column" -> 11))))))
+
+    "nulls the top level if async non-nullable field resolves null" in check(
+      new NullingSubject,
+      "query Q { nonNullPromise }",
+      Map(
+        "data" -> null,
+        "errors" -> List(Map("message" -> "Cannot return null for non-nullable type", "field" -> "nonNullPromise", "locations" -> List(Map("line" -> 1, "column" -> 11))))))
   }
 }
