@@ -1,9 +1,9 @@
 package sangria.integration
 
 import org.json4s.JsonAST._
-import sangria.execution.ResultMarshaller
+import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 
-import org.json4s.native.JsonMethods._
+import org.json4s.native.JsonMethods.{render => jsonRender, _}
 
 object Json4sSupport {
   
@@ -34,9 +34,42 @@ object Json4sSupport {
 
     override def nullNode = JNull
 
-    override def renderCompact(node: JValue) = compact(render(node))
+    override def renderCompact(node: JValue) = compact(jsonRender(node))
 
-    override def renderPretty(node: JValue) = pretty(render(node))
+    override def renderPretty(node: JValue) = pretty(jsonRender(node))
   }
 
+  implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JObject] {
+    override type LeafNode = JValue
+
+    override def isDefined(node: JValue) = node != JNull && node != JNothing
+
+    override def getScalarValue(node: JValue) = node match {
+      case JBool(b) => b
+      case JInt(i) => i.intValue()
+      case JDouble(d) => d
+      case JString(s) => s
+      case _ => throw new IllegalStateException(s"$node is not a scalar value")
+    }
+
+    override def isScalarNode(node: JValue) = node match {
+      case _: JBool | _: JNumber | _: JString => true
+      case _ => false
+    }
+
+    override def isMapNode(node: JValue) = node.isInstanceOf[JObject]
+
+    override def getArrayValue(node: JValue) = node.asInstanceOf[JArray].arr
+
+    override def render(node: JValue) = compact(jsonRender(node))
+
+    override def isArrayNode(node: JValue) = node.isInstanceOf[JArray]
+
+    override def getMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
+
+    override def emptyNode = JObject()
+
+    override def getRootMapValue(node: JObject, key: String) = node.obj.find(_._1 == key).map(_._2)
+  }
+  
 }

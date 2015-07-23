@@ -44,5 +44,5 @@ case class NullValueForNotNullTypeViolation(fieldPath: List[String], typeName: S
 }
 
 case class InputObjectTypeMismatchViolation(fieldPath: List[String], typeName: String, value: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Value '${value}' of wring type was provided to the field of type '${typeName}' at path '${fieldPath mkString "."}'.${astLocation}"
+  lazy val errorMessage = s"Value '${value}' of wrong type was provided to the field of type '${typeName}' at path '${fieldPath mkString "."}'.${astLocation}"
 }

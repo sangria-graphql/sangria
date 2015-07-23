@@ -88,7 +88,7 @@ trait WithInputTypeRendering {
       case s: ScalarType[Any @unchecked] => Resolver.marshalValue(s.coerceOutput(v), m)
       case e: EnumType[Any @unchecked] => Resolver.marshalValue(e.coerceOutput(v), m)
       case io: InputObjectType[_] =>
-        val mapValue = value.asInstanceOf[Map[String, Any]]
+        val mapValue = v.asInstanceOf[Map[String, Any]]
 
         io.fields.foldLeft(m.emptyMapNode) {
           case (acc, field) if mapValue contains field.name =>
@@ -96,7 +96,7 @@ trait WithInputTypeRendering {
           case (acc, _) => acc
         }
       case l: ListInputType[_] =>
-        val listValue = value.asInstanceOf[List[Any]]
+        val listValue = v.asInstanceOf[Seq[Any]]
 
         listValue.foldLeft(m.emptyArrayNode) {
           case (acc, value) => m.addArrayNodeElem(acc, loop(l.ofType, value))

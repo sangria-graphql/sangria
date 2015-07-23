@@ -1,6 +1,6 @@
 package sangria.integration
 
-import sangria.execution.ResultMarshaller
+import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 import spray.json._
 
 
@@ -38,4 +38,35 @@ object SprayJsonSupport {
     override def renderPretty(node: JsValue) = node.prettyPrint
   }
 
+  implicit object SprayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
+    override type LeafNode = JsValue
+
+    override def isDefined(node: JsValue) = node != JsNull
+
+    override def getScalarValue(node: JsValue) = node match {
+      case JsBoolean(b) => b
+      case JsNumber(d) => d.doubleValue()
+      case JsString(s) => s
+      case _ => throw new IllegalStateException(s"$node is not a scalar value")
+    }
+
+    override def isScalarNode(node: JsValue) = node match {
+      case _: JsBoolean | _: JsNumber | _: JsString => true
+      case _ => false
+    }
+
+    override def isMapNode(node: JsValue) = node.isInstanceOf[JsObject]
+
+    override def getArrayValue(node: JsValue) = node.asInstanceOf[JsArray].elements
+
+    override def render(node: JsValue) = node.compactPrint
+
+    override def isArrayNode(node: JsValue) = node.isInstanceOf[JsArray]
+
+    override def getMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].fields get key
+
+    override def emptyNode = JsObject.empty
+
+    override def getRootMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].fields get key
+  }
 }
