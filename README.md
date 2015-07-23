@@ -185,7 +185,7 @@ you need to implement a `DeferredResolver`, that will get a list of deferred val
 ```scala
 class FriendsResolver extends DeferredResolver {
   override def resolve(deferred: List[Deferred[Any]]): Future[List[List[Character]]] =
-    // your balk friends retrieving logic
+    // your bulk friends retrieving logic
 }
 ```
 
