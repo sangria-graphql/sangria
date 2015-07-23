@@ -276,7 +276,7 @@ In order to use one of these, just import it and the result of execution will be
 
 If you would like to discuss something about sangria or have some questions, please feel free to join our mailing list:
 
-https://groups.google.com/forum/#!forum/sangria-graphql](https://groups.google.com/forum/#!forum/sangria-graphql)
+[https://groups.google.com/forum/#!forum/sangria-graphql](https://groups.google.com/forum/#!forum/sangria-graphql)
 
 ## License
 
