@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "com.github.olegilyenko"
-version := "0.0.1-SNAPSHOT"
+version := "0.0.1"
 
 description := "Scala GraphQL server and client library"
 homepage := Some(url("https://github.com/OlegIlyenko/sangria"))
