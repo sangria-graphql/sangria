@@ -7,8 +7,8 @@ import sangria.util.FileUtil
 
 import scala.util.Success
 
-class RendererSpec extends WordSpec with Matchers {
-  "Renderer" should {
+class QueryRendererSpec extends WordSpec with Matchers {
+  "QueryRenderer" should {
     "render kitchen sink" in {
       val Success(ast) = QueryParser.parse(FileUtil loadQuery "kitchen-sink.graphql")
 

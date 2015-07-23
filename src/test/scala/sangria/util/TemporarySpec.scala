@@ -45,34 +45,34 @@ class TemporarySpec extends WordSpec with Matchers {
 
       val vars = Map("xx" -> true)
 
-      {
-        import sangria.integration.Json4sSupport._
-        import org.json4s.native.JsonMethods._
-
-        println("Json4s marshalling:\n")
-        println(pretty(render(Await.result(
-          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-              .execute(ast, arguments = Some(vars)), Duration.Inf))))
-      }
-
-      {
-        import sangria.integration.SprayJsonSupport._
-
-        println("\nSprayJson marshalling:\n")
-        println(Await.result(
-          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-              .execute(ast, arguments = Some(vars)), Duration.Inf).prettyPrint)
-      }
-
-      {
-        import sangria.integration.PlayJsonSupport._
-        import play.api.libs.json._
-
-        println("\nPlayJson marshalling:\n")
-        println(Json.prettyPrint(Await.result(
-          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-              .execute(ast, arguments = Some(vars)), Duration.Inf)))
-      }
+//      {
+//        import sangria.integration.Json4sSupport._
+//        import org.json4s.native.JsonMethods._
+//
+//        println("Json4s marshalling:\n")
+//        println(pretty(render(Await.result(
+//          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+//              .execute(ast, arguments = Some(vars)), Duration.Inf))))
+//      }
+//
+//      {
+//        import sangria.integration.SprayJsonSupport._
+//
+//        println("\nSprayJson marshalling:\n")
+//        println(Await.result(
+//          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+//              .execute(ast, arguments = Some(vars)), Duration.Inf).prettyPrint)
+//      }
+//
+//      {
+//        import sangria.integration.PlayJsonSupport._
+//        import play.api.libs.json._
+//
+//        println("\nPlayJson marshalling:\n")
+//        println(Json.prettyPrint(Await.result(
+//          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+//              .execute(ast, arguments = Some(vars)), Duration.Inf)))
+//      }
 
       {
         import sangria.integration.SprayJsonSupport._

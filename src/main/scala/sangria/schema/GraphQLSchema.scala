@@ -44,7 +44,16 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
 
   private lazy val ownFields = fieldsFn()
 
-  lazy val fields: List[Field[Ctx, _]] = (ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[List[Field[Ctx, _]]])).groupBy(_.name).map(_._2.head).toList
+  def removeDuplicates[T, E](list: List[T], valueFn: T => E) =
+    list.foldLeft((Nil, Nil): (List[E], List[T])) {
+      case (a @ (visited, acc), e) if visited contains valueFn(e) => a
+      case ((visited, acc), e) => (visited :+ valueFn(e), acc :+ e)
+    }._2
+
+  lazy val fields: List[Field[Ctx, _]] = removeDuplicates(
+    ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[List[Field[Ctx, _]]]),
+    (e: Field[Ctx, _]) => e.name)
+
   private lazy val fieldsByName = fields groupBy (_.name) mapValues (_.head)
 
   def getField(schema: Schema[_, _], fieldName: String): Option[Field[Ctx, _]] =
@@ -240,11 +249,12 @@ case class InputObjectType[T] private (
 }
 
 object InputObjectType {
-  def apply[T](name: String, fields: List[InputField[_]]): InputObjectType[T] = InputObjectType(name, None, fieldsFn = () => fields)
-  def apply[T](name: String, description: String, fields: List[InputField[_]]): InputObjectType[T] = InputObjectType(name, Some(description), fieldsFn = () => fields)
+  type InputObjectRes = Map[String, Any]
+  def apply(name: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, None, fieldsFn = () => fields)
+  def apply(name: String, description: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, Some(description), fieldsFn = () => fields)
 
-  def apply[T](name: String, fieldsFn: () => List[InputField[_]]): InputObjectType[T] = InputObjectType(name, None, fieldsFn)
-  def apply[T](name: String, description: String, fieldsFn: () => List[InputField[_]]): InputObjectType[T] = InputObjectType(name, Some(description), fieldsFn)
+  def apply(name: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, None, fieldsFn)
+  def apply(name: String, description: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, Some(description), fieldsFn)
 }
 
 case class InputField[T](

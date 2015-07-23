@@ -46,32 +46,51 @@ package object introspection {
 
   val includeDeprecated = Argument("includeDeprecated", OptionInputType(BooleanType), false)
 
+  private def getKind(value: (Boolean, Type)) = {
+    def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {
+      case OptionType(ofType) => identifyKind(ofType, true)
+      case OptionInputType(ofType) => identifyKind(ofType, true)
+      case _ if !optional => TypeKind.NonNull
+      case _: ScalarType[_] => TypeKind.Scalar
+      case _: ObjectType[_, _] => TypeKind.Object
+      case _: InterfaceType[_, _] => TypeKind.Interface
+      case _: UnionType[_] => TypeKind.Union
+      case _: EnumType[_] => TypeKind.Enum
+      case _: InputObjectType[_] => TypeKind.InputObject
+      case _: ListType[_] | _: ListInputType[_] => TypeKind.List
+    }
+
+    val (fromTypeList, tpe) = value
+
+    identifyKind(tpe, fromTypeList)
+  }
+
+  private def findNamed(tpe: Type): Option[Type with Named] = tpe match {
+    case o: OptionType[_] => findNamed(o.ofType)
+    case o: OptionInputType[_] => findNamed(o.ofType)
+    case l: ListType[_] => findNamed(l.ofType)
+    case l: ListInputType[_] => findNamed(l.ofType)
+    case n: Type with Named => Some(n)
+    case _ => None
+  }
+
+  private def findListType(tpe: Type): Option[Type] = tpe match {
+    case o: OptionType[_] => findListType(o.ofType)
+    case o: OptionInputType[_] => findListType(o.ofType)
+    case l: ListType[_] => Some(l.ofType)
+    case l: ListInputType[_] => Some(l.ofType)
+    case _ => None
+  }
+
   val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType("__Type", () => List[Field[Unit, (Boolean, Type)]](
-    Field("kind", __TypeKind, resolve = ctx => {
-      def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {   // todo: something is not quite working here yet...
-        case OptionType(ofType) => identifyKind(ofType, true)
-        case OptionInputType(ofType) => identifyKind(ofType, true)
-        case _ if !optional => TypeKind.NonNull
-        case _: ScalarType[_] => TypeKind.Scalar
-        case _: ObjectType[_, _] => TypeKind.Object
-        case _: InterfaceType[_, _] => TypeKind.Interface
-        case _: UnionType[_] => TypeKind.Union
-        case _: EnumType[_] => TypeKind.Enum
-        case _: InputObjectType[_] => TypeKind.InputObject
-        case _: ListType[_] | _: ListInputType[_] => TypeKind.List
-      }
-
-      val (fromTypeList, tpe) = ctx.value
-
-      identifyKind(tpe, fromTypeList)
+    Field("kind", __TypeKind, resolve = ctx => getKind(ctx.value)),
+    Field("name", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
+      case TypeKind.NonNull | TypeKind.List => None
+      case _ => findNamed(ctx.value._2) map (_.name)
     }),
-    Field("name", OptionType(StringType), resolve = x => x.value._2 match {
-      case named: Named => Some(named.name)
-      case _ => None
-    }),
-    Field("description", OptionType(StringType), resolve = _.value._2 match {
-      case named: Named => named.description
-      case _ => None
+    Field("description", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
+      case TypeKind.NonNull | TypeKind.List => None
+      case _ => findNamed(ctx.value._2) flatMap (_.description)
     }),
     Field("fields", OptionType(ListType(__Field)),
       arguments = includeDeprecated :: Nil,
@@ -90,7 +109,7 @@ package object introspection {
       case _ => None
     }),
     Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
-      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map (_ sortBy (_.name) map (true -> _))
+      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map (_ /*sortBy (_.name)*/ map (true -> _))
       case _ => None
     }),
     Field("enumValues", OptionType(ListType(__EnumValue)),
@@ -106,6 +125,11 @@ package object introspection {
       }),
     Field("inputFields", OptionType(ListType(__InputValue)), resolve = _.value._2 match {
       case io: InputObjectType[_] => Some(io.fields)
+      case _ => None
+    }),
+    Field("ofType", OptionType(__Type), resolve = ctx => getKind(ctx.value) match {
+      case TypeKind.NonNull => Some(true -> ctx.value._2)
+      case TypeKind.List => findListType(ctx.value._2) map (false -> _)
       case _ => None
     })
   ))
