@@ -39,7 +39,7 @@ object Json4sSupport {
     override def renderPretty(node: JValue) = pretty(jsonRender(node))
   }
 
-  implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JObject] {
+  implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JValue] {
     override type LeafNode = JValue
 
     override def isDefined(node: JValue) = node != JNull && node != JNothing
@@ -69,7 +69,9 @@ object Json4sSupport {
 
     override def emptyNode = JObject()
 
-    override def getRootMapValue(node: JObject, key: String) = node.obj.find(_._1 == key).map(_._2)
+    override def getRootMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
+
+    override def getMapKeys(node: JValue) = node.asInstanceOf[JObject].values.keySet
   }
   
 }

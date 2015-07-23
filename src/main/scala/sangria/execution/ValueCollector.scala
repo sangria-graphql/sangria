@@ -15,7 +15,7 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
       case (acc, varDef) =>
         val value = schema.getInputType(varDef.tpe)
           .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
-          .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe)) :: Nil))
+          .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position) :: Nil))
 
         value match {
           case Right(Some(v)) => acc :+ (varDef.name, Right(v))
@@ -39,7 +39,7 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
         val astValue = astArgMap get argDef.name map (_.value)
 
         resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, acc,
-          astValue map (coerceAstValue(argDef.argumentType, argPath, _, variables)) getOrElse Right(None))
+          astValue map (coerceAstValue(argDef.argumentType, argPath, _, variables)) getOrElse Right(None), allowErrorsOnDefault = true)
     }
 
     val errors = res.collect{case (_, Left(errors)) => errors}.toList.flatten
@@ -55,7 +55,7 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
       if (input.isEmpty || !um.isDefined(input.get))
         definition.defaultValue map (coerceAstValue(tpe, fieldPath, _, Map.empty)) getOrElse Right(None)
       else coerceInputValue(tpe, fieldPath, input.get)
-    } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render) :: Nil)
+    } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position) :: Nil)
 
   def isValidValue(tpe: InputType[_], input: Option[um.LeafNode]): Boolean = (tpe, input) match {
     case (OptionInputType(ofType), Some(value)) if um.isDefined(value) => isValidValue(ofType, Some(value))
@@ -71,7 +71,8 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
         case other => Option(other)
       })
     case (objTpe: InputObjectType[_], Some(valueMap)) if um.isMapNode(valueMap) =>
-      objTpe.fields.forall(f => isValidValue(f.fieldType, um.getMapValue(valueMap, f.name)))
+      objTpe.fields.forall(f => isValidValue(f.fieldType, um.getMapValue(valueMap, f.name))) &&
+        um.getMapKeys(valueMap).forall(objTpe.fieldsByName contains _)
     case (scalar: ScalarType[_], Some(value)) if um.isScalarNode(value) => scalar.coerceUserInput(um.getScalarValue(value)).isRight
     case (enum: EnumType[_], Some(value)) if um.isScalarNode(value) => enum.coerceUserInput(um.getScalarValue(value)).isRight
     case _ => false
@@ -84,12 +85,13 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
     case l @ Left(_) => l
   }
 
-  def resolveMapValue(ofType: InputType[_], fieldPath: List[String], default: Option[Any], fieldName: String, acc: Map[String, Either[List[Violation], Any]], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) =
+  def resolveMapValue(ofType: InputType[_], fieldPath: List[String], default: Option[Any], fieldName: String, acc: Map[String, Either[List[Violation], Any]], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None, allowErrorsOnDefault: Boolean = false) =
     value match {
       case Right(None) if default.isDefined => acc.updated(fieldName, Right(default.get))
       case r @ Right(None) if ofType.isInstanceOf[OptionInputType[_]] => acc
       case Right(Some(v)) => acc.updated(fieldName, Right(v))
       case Right(None) => acc.updated(fieldName, Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil))
+      case l @ Left(_) if allowErrorsOnDefault && default.isDefined => acc.updated(fieldName, Right(default.get))
       case l @ Left(_) => acc.updated(fieldName, l)
     }
 

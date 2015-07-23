@@ -127,7 +127,7 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport with GraphQlS
         "data" -> Map("promiseNest" -> null),
         "errors" -> List(Map("message" -> "nonNullPromise", "field" -> "promiseNest.nonNullPromise", "locations" -> List(Map("line" -> 4, "column" -> 13))))))
     
-    "nulls a complex tree of nullable fields that throw" in check(
+    "nulls a complex tree of nullable fields that throw" in checkErrors(
       new ThrowingSubject,
       """
         query Q {
@@ -198,7 +198,7 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport with GraphQlS
         Map("message" -> "promise", "field" -> "promiseNest.promiseNest.promise", "locations" -> List(Map("line" -> 24, "column" -> 15)))
       ))
 
-    "nulls the first nullable object after a field throws in a long chain of fields that are non-null" in check(
+    "nulls the first nullable object after a field throws in a long chain of fields that are non-null" in checkErrors(
       new ThrowingSubject,
       """
         query Q {
@@ -355,7 +355,7 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport with GraphQlS
           "field" -> "promiseNest.nonNullPromise",
           "locations" -> List(Map("line" -> 4, "column" -> 13))))))
 
-    "nulls a complex tree of nullable fields that return null" in check(
+    "nulls a complex tree of nullable fields that return null" in checkErrors(
       new NullingSubject,
       """
         query Q {
@@ -413,7 +413,7 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport with GraphQlS
       ),
       Nil)
 
-    "nulls the first nullable object after a field returns null in a long chain of fields that are non-null" in check(
+    "nulls the first nullable object after a field returns null in a long chain of fields that are non-null" in checkErrors(
       new NullingSubject,
       """
         query Q {

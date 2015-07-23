@@ -9,6 +9,7 @@ trait InputUnmarshaller[Node] {
 
   def isMapNode(node: LeafNode): Boolean
   def getMapValue(node: LeafNode, key: String): Option[LeafNode]
+  def getMapKeys(node: LeafNode): Traversable[String]
 
   def isArrayNode(node: LeafNode): Boolean
   def getArrayValue(node: LeafNode): Seq[LeafNode]
@@ -35,11 +36,12 @@ object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
 
   def isMapNode(node: Any) = node.isInstanceOf[Map[_, _]]
   def getMapValue(node: Any, key: String) = node.asInstanceOf[Map[String, _]] get key
+  def getMapKeys(node: Any) = node.asInstanceOf[Map[String, _]].keySet
 
   def isArrayNode(node: Any) = node.isInstanceOf[Seq[_]]
   def getArrayValue(node: Any) = node.asInstanceOf[Seq[_]]
 
-  def isDefined(node: Any) = true
+  def isDefined(node: Any) = node != null
   def isScalarNode(node: Any) = !(isMapNode(node) && isArrayNode(node))
   def getScalarValue(node: Any) = node
 

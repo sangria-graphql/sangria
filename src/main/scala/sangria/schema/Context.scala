@@ -101,7 +101,11 @@ trait WithInputTypeRendering {
         listValue.foldLeft(m.emptyArrayNode) {
           case (acc, value) => m.addArrayNodeElem(acc, loop(l.ofType, value))
         }
-      case o: OptionInputType[_] => loop(o.ofType, v)
+      case o: OptionInputType[_] => v match {
+        case Some(optVal) => loop(o.ofType, optVal)
+        case None => m.nullNode
+        case other => loop(o.ofType, other)
+      }
     }
 
     loop(tpe, value)

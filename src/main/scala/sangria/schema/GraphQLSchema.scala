@@ -324,7 +324,7 @@ case class Schema[Ctx, Val](
   def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
     case ast.ConcreteType(name, _) => inputTypes get name map (OptionInputType(_))
     case ast.NotNullType(ofType, _) => getInputType(ofType) collect {case OptionInputType(ot) => ot}
-    case ast.ListType(ofType, _) => getInputType(ofType) map (ListInputType(_))
+    case ast.ListType(ofType, _) => getInputType(ofType) map (t => OptionInputType(ListInputType(t)))
   }
 
   def getOutputType(tpe: ast.Type): Option[OutputType[_]] = tpe match {

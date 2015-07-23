@@ -33,11 +33,13 @@ case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Viola
   lazy val errorMessage = s"Field '${fieldPath mkString "."}' has wrong value: ${valueViolation.errorMessage}.${astLocation}"
 }
 
-case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String]) extends BaseViolation(
-  s"Variable $$$definitionName expected value of type $expectedType but ${input map ("got: " + _) getOrElse "value is undefined"}.")
+case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable $$$definitionName expected value of type $expectedType but ${input map ("got: " + _) getOrElse "value is undefined"}.${astLocation}"
+}
 
-case class UnknownVariableTypeViolation(definitionName: String, varType: String) extends BaseViolation(
-  s"Type '$varType' of variable $$$definitionName not found.")
+case class UnknownVariableTypeViolation(definitionName: String, varType: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable '$varType' expected value of type '$$$definitionName' which cannot be used as an input type.${astLocation}"
+}
 
 case class NullValueForNotNullTypeViolation(fieldPath: List[String], typeName: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"Null value was provided for the NotNull Type '$typeName' at path '${fieldPath mkString "."}'.${astLocation}"

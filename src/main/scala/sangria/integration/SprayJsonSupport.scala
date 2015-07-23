@@ -68,5 +68,7 @@ object SprayJsonSupport {
     override def emptyNode = JsObject.empty
 
     override def getRootMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].fields get key
+
+    override def getMapKeys(node: JsValue) = node.asInstanceOf[JsObject].fields.keySet
   }
 }
