@@ -4,7 +4,7 @@
 
 The initial version is WIP. More information about the project will come soon.
 
-[![Build Status](https://travis-ci.org/OlegIlyenko/sangria.svg)](https://travis-ci.org/OlegIlyenko/sangria) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11) [![License](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
+[![Build Status](https://travis-ci.org/OlegIlyenko/sangria.svg)](https://travis-ci.org/OlegIlyenko/sangria) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11) [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 SBT Configuration:
 
