@@ -109,7 +109,12 @@ package object introspection {
       case _ => None
     }),
     Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
-      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map (_ /*sortBy (_.name)*/ map (true -> _))
+      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map { tpe =>
+        t match {
+          case _: UnionType[_] => tpe map (true -> _)
+          case _ => tpe sortBy (_.name) map (true -> _)
+        }
+      }
       case _ => None
     }),
     Field("enumValues", OptionType(ListType(__EnumValue)),

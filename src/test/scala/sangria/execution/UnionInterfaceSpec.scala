@@ -4,6 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
 import sangria.util.{GraphQlSupport, AwaitSupport}
 
+
 class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with GraphQlSupport {
   trait Named {
     def name: Option[String]
@@ -85,8 +86,8 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
             "fields" -> null,
             "interfaces" -> null,
             "possibleTypes" -> List(
-              Map("name" -> "Cat"),
-              Map("name" -> "Dog")
+              Map("name" -> "Dog"),
+              Map("name" -> "Cat")
             ),
             "enumValues" -> null,
             "inputFields" -> null
