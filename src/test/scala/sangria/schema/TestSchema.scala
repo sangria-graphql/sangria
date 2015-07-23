@@ -6,18 +6,18 @@ import sangria.TestData.{DeferFriends, CharacterRepo, Droid, Human}
 import scala.concurrent.Future
 
 object TestSchema {
-  val EposideEnum = EnumType(
+  val EpisodeEnum = EnumType(
     "Episode",
     Some("One of the films in the Star Wars Trilogy"),
     List(
       EnumValue("NEWHOPE",
-        value = TestData.Eposide.NEWHOPE,
+        value = TestData.Episode.NEWHOPE,
         description = Some("Released in 1977.")),
       EnumValue("EMPIRE",
-        value = TestData.Eposide.EMPIRE,
+        value = TestData.Episode.EMPIRE,
         description = Some("Released in 1980.")),
       EnumValue("JEDI",
-        value = TestData.Eposide.JEDI,
+        value = TestData.Episode.JEDI,
         description = Some("Released in 1983."))))
 
   val Character: InterfaceType[Unit, TestData.Character] =
@@ -34,7 +34,7 @@ object TestSchema {
         Field("friends", ListType(Character),
           Some("The friends of the character, or an empty list if they have none."),
           resolve = ctx => DeferFriends(ctx.value.friends)),
-        Field("appearsIn", ListType(EposideEnum),
+        Field("appearsIn", ListType(EpisodeEnum),
           Some("Which movies they appear in."),
           resolve = _.value.appearsIn)
       ))
