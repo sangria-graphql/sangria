@@ -355,10 +355,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "Print Introspection Schema" in {
-
-      val root = ObjectType[Unit, Unit]("Root", Nil)
-
-      val schema = Schema(root)
+      val schema = Schema(ObjectType[Unit, Unit]("Root", Nil))
 
       SchemaRenderer
         .renderIntrospectionSchema(Executor(schema).execute(introspectionQuery).await)

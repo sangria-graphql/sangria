@@ -105,7 +105,7 @@ package object introspection {
         }
       }),
     Field("interfaces", OptionType(ListType(__Type)), resolve = _.value._2 match {
-      case t: ObjectLikeType[_, _] if t.interfaces.nonEmpty => Some(t.interfaces.asInstanceOf[List[Type]] map (true -> _))
+      case t: ObjectType[_, _] => Some(t.interfaces.asInstanceOf[List[Type]] map (true -> _))
       case _ => None
     }),
     Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
