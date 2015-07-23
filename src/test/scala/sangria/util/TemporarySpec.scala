@@ -65,6 +65,16 @@ class TemporarySpec extends WordSpec with Matchers {
       }
 
       {
+        import sangria.integration.PlayJsonSupport._
+        import play.api.libs.json._
+
+        println("\nPlayJson marshalling:\n")
+        println(Json.prettyPrint(Await.result(
+          Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+              .execute(ast, arguments = Some(vars)), Duration.Inf)))
+      }
+
+      {
         import sangria.integration.SprayJsonSupport._
 
         println("\nIntrospection:\n")
