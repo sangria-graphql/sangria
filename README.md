@@ -208,7 +208,7 @@ Many schema elements, like `ObjectType`, `Field` or `Schema` itself, take two ty
   in order to help fulfill the GraphQL query. A typical example of such context object is as service or repository object that is able to access
   a Database. In example schema some of the fields, like `droid` or `human` make use of it in order to access the character repository.
 
-### Schema Execution
+### Query Execution
 
 Here is an example of how you can execute example schema:
 
@@ -269,6 +269,25 @@ In order to use one of these, just import it and the result of execution will be
   println(Json.prettyPrint(Await.result(
     Executor(TestSchema.StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
         .execute(ast, arguments = Some(vars)), Duration.Inf)))
+}
+```
+
+### Built-in Scalars
+
+Sangria support all standard GraphQL scalars like `String`, `Int`, `ID`, etc. In addition, sangria introduces following built-in scalar types:
+
+* `BigInt` - similar to `Int` scalar value, but allows you to transfer big integer values and represents them in code as scala's `BigInt` class
+* `BigDecimal` - similar to `Float` scalar value, but allows you to transfer big decimal values and represents them in code as scala's `BigDecimal` class
+
+### Deprecation Tracking
+
+GraphQL schema allows you to declare fields and enum values as deprecated. When you execute a query, you can provide your custom implementation of
+`DeprecationTracker` trait to the `Executor` in order to track deprecated fields and enum values (you can, for instance, log all usages or send metrics to graphite):
+
+```scala
+trait DeprecationTracker {
+  def deprecatedFieldUsed[Ctx](path: List[String], field: Field[Ctx, _], userContext: Ctx): Unit
+  def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx): Unit
 }
 ```
 
