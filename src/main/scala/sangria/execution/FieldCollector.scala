@@ -14,7 +14,7 @@ class FieldCollector[Ctx, Val](
     document: ast.Document,
     variables: Map[String, Any],
     sourceMapper: Option[SourceMapper],
-    valueCollector: ValueCollector[_]) {
+    valueCollector: ValueCollector[Ctx, _]) {
 
   @volatile private var resultCache = Map.empty[(List[String], String), Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]
 

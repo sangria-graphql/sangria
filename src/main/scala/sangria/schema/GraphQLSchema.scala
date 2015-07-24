@@ -216,21 +216,21 @@ case class EnumType[T](
     name: String,
     description: Option[String] = None,
     values: List[EnumValue[T]]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
-  lazy val byName = values groupBy (_.name) mapValues (_.head.value)
-  lazy val byValue = values groupBy (_.value) mapValues (_.head.name)
+  lazy val byName = values groupBy (_.name) mapValues (_.head)
+  lazy val byValue = values groupBy (_.value) mapValues (_.head)
 
-  def coerceUserInput(value: Any): Either[Violation, T] = value match {
-    case name: String => byName get name map (Right(_)) getOrElse Left(EnumValueCoercionViolation(name))
-    case v if byValue exists (_ == v) => Right(v.asInstanceOf[T])
+  def coerceUserInput(value: Any): Either[Violation, (T, Boolean)] = value match {
+    case name: String => byName get name map (v => Right(v.value -> v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
+    case v if byValue exists (_._1 == v) => Right(v.asInstanceOf[T] -> byValue(v.asInstanceOf[T]).deprecationReason.isDefined)
     case _ => Left(EnumCoercionViolation)
   }
 
-  def coerceInput(value: ast.Value): Either[Violation, T] = value match {
-    case ast.EnumValue(name, _) => byName get name map (Right(_)) getOrElse Left(EnumValueCoercionViolation(name))
+  def coerceInput(value: ast.Value): Either[Violation, (T, Boolean)] = value match {
+    case ast.EnumValue(name, _) => byName get name map (v => Right(v.value -> v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
     case _ => Left(EnumCoercionViolation)
   }
 
-  def coerceOutput(value: T) = ast.EnumValue(byValue(value))
+  def coerceOutput(value: T) = ast.EnumValue(byValue(value).name)
 }
 
 case class EnumValue[+T](

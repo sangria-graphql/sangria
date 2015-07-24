@@ -107,7 +107,7 @@ sealed trait AstNode {
 
 object AstNode {
   def withoutPosition[T <: AstNode](node: T): T = node match {
-    case n: Document => n.copy(definitions = n.definitions map withoutPosition, position = None).asInstanceOf[T]
+    case n: Document => n.copy(definitions = n.definitions map withoutPosition, position = None, sourceMapper = None).asInstanceOf[T]
     case n: OperationDefinition =>
       n.copy(
         variables = n.variables map withoutPosition,

@@ -12,13 +12,14 @@ import scala.util.{Success, Failure, Try}
 class Resolver[Ctx](
     val marshaller: ResultMarshaller,
     schema: Schema[Ctx, _],
-    valueCollector: ValueCollector[_],
+    valueCollector: ValueCollector[Ctx, _],
     variables: Map[String, Any],
     fieldCollector: FieldCollector[Ctx, _],
     userContext: Ctx,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node],
     deferredResolver: DeferredResolver,
-    sourceMapper: Option[SourceMapper])(implicit executionContext: ExecutionContext) {
+    sourceMapper: Option[SourceMapper],
+    deprecationTracker: DeprecationTracker)(implicit executionContext: ExecutionContext) {
 
   val resultResolver = new ResultResolver(marshaller, exceptionHandler)
 
@@ -302,6 +303,8 @@ class Resolver[Ctx](
   def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, astFields: List[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[Any => Ctx]) = {
     val astField = astFields.head
     val field = tpe.getField(schema, astField.name).get.asInstanceOf[Field[Ctx, Any]]
+
+    field.deprecationReason foreach (_ => deprecationTracker.deprecatedFieldUsed(path, field, userCtx))
 
     valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>

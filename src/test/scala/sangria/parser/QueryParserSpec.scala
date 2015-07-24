@@ -72,7 +72,7 @@ class QueryParserSpec extends WordSpec with Matchers {
               Some(Position(319, 17, 1)))),
           Some(Position(13, 2, 1)))
 
-      QueryParser.parse(query) should be (Success(expectedAst))
+      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
     "parse kitchen sink" in {
@@ -196,7 +196,7 @@ class QueryParserSpec extends WordSpec with Matchers {
               Some(Position(738, 35, 1)))),
           Some(Position(288, 8, 1)))
       
-      QueryParser.parse(query) should be (Success(expectedAst))
+      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
     "provide useful error message (fragement `on`)" in {

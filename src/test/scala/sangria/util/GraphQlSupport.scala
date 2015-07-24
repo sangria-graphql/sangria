@@ -21,7 +21,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
       case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
     }
 
-    Executor(schema.asInstanceOf[Schema[Any, T]], data, exceptionHandler = exceptionHandler, userContext = userContext).execute(doc, arguments = args).await
+    Executor(schema.asInstanceOf[Schema[Any, T]], data, exceptionHandler = exceptionHandler, userContext = userContext).execute(doc.copy(sourceMapper = None), arguments = args).await
   }
 
   def check[T](data: T, query: String, expected: Any, args: Option[JsValue] = None, userContext: Any = ()) = {

@@ -12,13 +12,14 @@ case class Executor[Ctx, Root](
     root: Root = (),
     userContext: Ctx = (),
     deferredResolver: DeferredResolver = NilDeferredResolver,
-    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = PartialFunction.empty)(implicit executionContext: ExecutionContext) {
+    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = PartialFunction.empty,
+    deprecationTracker: DeprecationTracker = NilDeprecationTracker)(implicit executionContext: ExecutionContext) {
 
   def execute[Input](
       queryAst: ast.Document,
       operationName: Option[String] = None,
       arguments: Option[Input] = None)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] = {
-    val valueCollector = new ValueCollector[Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper)(um)
+    val valueCollector = new ValueCollector[Ctx, Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper, deprecationTracker, userContext)(um)
 
     val executionResult = for {
       operation <- getOperation(queryAst, operationName)
@@ -45,14 +46,14 @@ case class Executor[Ctx, Root](
   def executeOperation(
       operation: ast.OperationDefinition,
       sourceMapper: Option[SourceMapper],
-      valueCollector: ValueCollector[_],
+      valueCollector: ValueCollector[Ctx, _],
       fieldCollector: FieldCollector[Ctx, Root],
       marshaller: ResultMarshaller,
       variables: Map[String, Any]) = {
     for {
       tpe <- getOperationRootType(operation, sourceMapper)
       fields <- fieldCollector.collectFields(Nil, tpe, operation :: Nil)
-      resolver = new Resolver[Ctx](marshaller, schema, valueCollector, variables, fieldCollector, userContext, exceptionHandler, deferredResolver, sourceMapper)
+      resolver = new Resolver[Ctx](marshaller, schema, valueCollector, variables, fieldCollector, userContext, exceptionHandler, deferredResolver, sourceMapper, deprecationTracker)
     } yield operation.operationType match {
       case ast.OperationType.Query => resolver.resolveFieldsPar(tpe, root, fields)
       case ast.OperationType.Mutation => resolver.resolveFieldsSeq(tpe, root, fields)

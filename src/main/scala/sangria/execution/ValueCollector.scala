@@ -9,7 +9,7 @@ import sangria.validation._
 
 import scala.util.{Success, Failure, Try}
 
-class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper] = None)(implicit um: InputUnmarshaller[Input]) {
+class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx)(implicit um: InputUnmarshaller[Input]) {
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] = {
     val res = definitions.foldLeft(List[(String, Either[List[Violation], Any])]()) {
       case (acc, varDef) =>
@@ -74,7 +74,8 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
       objTpe.fields.forall(f => isValidValue(f.fieldType, um.getMapValue(valueMap, f.name))) &&
         um.getMapKeys(valueMap).forall(objTpe.fieldsByName contains _)
     case (scalar: ScalarType[_], Some(value)) if um.isScalarNode(value) => scalar.coerceUserInput(um.getScalarValue(value)).isRight
-    case (enum: EnumType[_], Some(value)) if um.isScalarNode(value) => enum.coerceUserInput(um.getScalarValue(value)).isRight
+    case (enum: EnumType[_], Some(value)) if um.isScalarNode(value) =>
+      enum.coerceUserInput(um.getScalarValue(value)).isRight
     case _ => false
   }
 
@@ -131,7 +132,12 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
           .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, None, None) :: Nil), v => Right(Some(v)))
     case (enum: EnumType[_], value) if um.isScalarNode(value) =>
       enum.coerceUserInput(um.getScalarValue(value))
-          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, None, None) :: Nil), v => Right(Some(v)))
+          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, None, None) :: Nil), {
+        case (v, deprecated) =>
+          if (deprecated) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext)
+
+          Right(Some(v))
+      })
   }
 
   def coerceAstValue(tpe: InputType[_], fieldPath: List[String], input: ast.Value, variables: Map[String, Any]): Either[List[Violation], Option[Any]] = (tpe, input) match {
@@ -172,7 +178,12 @@ class ValueCollector[Input](schema: Schema[_, _], inputVars: Input, sourceMapper
       scalar.coerceInput(value)
           .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position) :: Nil), v => Right(Some(v)))
     case (enum: EnumType[_], value) =>
-      enum.coerceUserInput(value)
-          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position) :: Nil), v => Right(Some(v)))
+      enum.coerceInput(value)
+          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position) :: Nil), {
+        case (v, deprecated) =>
+          if (deprecated) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext)
+
+          Right(Some(v))
+      })
   }
 }

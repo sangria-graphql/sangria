@@ -13,7 +13,10 @@ trait AstNodeLocation {
   def sourceMapper: Option[SourceMapper]
   def position: Option[Position]
 
-  lazy val astLocation = position.map(p => s" (line ${p.line}, column ${p.column})" + sourceMapper.map(sm => ":\n" + sm.renderPosition(p)).getOrElse("")) getOrElse ""
+  lazy val astLocation = (for {
+    p <- position
+    sm <- sourceMapper
+  } yield s" ${sm.renderLocation(p)}:\n${sm.renderLinePosition(p)}") getOrElse ""
 }
 
 trait AstNodeViolation extends Violation with AstNodeLocation
