@@ -332,13 +332,13 @@ case class Schema[Ctx, Val](
   lazy val directivesByName = directives groupBy (_.name) mapValues (_.head)
 
   def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
-    case ast.ConcreteType(name, _) => inputTypes get name map (OptionInputType(_))
+    case ast.NamedType(name, _) => inputTypes get name map (OptionInputType(_))
     case ast.NotNullType(ofType, _) => getInputType(ofType) collect {case OptionInputType(ot) => ot}
     case ast.ListType(ofType, _) => getInputType(ofType) map (t => OptionInputType(ListInputType(t)))
   }
 
   def getOutputType(tpe: ast.Type): Option[OutputType[_]] = tpe match {
-    case ast.ConcreteType(name, _) => outputTypes get name map (OptionType(_))
+    case ast.NamedType(name, _) => outputTypes get name map (OptionType(_))
     case ast.NotNullType(ofType, _) => getOutputType(ofType) collect {case OptionType(ot) => ot}
     case ast.ListType(ofType, _) => getOutputType(ofType) map (ListType(_))
   }

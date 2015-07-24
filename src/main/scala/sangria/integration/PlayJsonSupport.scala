@@ -34,6 +34,10 @@ object PlayJsonSupport {
     override def renderCompact(node: JsValue) = Json.stringify(node)
 
     override def renderPretty(node: JsValue) = Json.prettyPrint(node)
+
+    override def bigIntNode(value: BigInt) = JsNumber(BigDecimal(value))
+
+    override def bigDecimalNode(value: BigDecimal) = JsNumber(value)
   }
 
   implicit object PlayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {

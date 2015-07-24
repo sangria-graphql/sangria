@@ -48,7 +48,7 @@ case class VariableDefinition(
 
 sealed trait Type extends AstNode
 
-case class ConcreteType(name: String, position: Option[Position] = None) extends Type
+case class NamedType(name: String, position: Option[Position] = None) extends Type
 case class NotNullType(ofType: Type, position: Option[Position] = None) extends Type
 case class ListType(ofType: Type, position: Option[Position] = None) extends Type
 
@@ -89,7 +89,9 @@ sealed trait Value extends AstNode
 sealed trait ScalarValue extends Value
 
 case class IntValue(value: Int, position: Option[Position] = None) extends ScalarValue
+case class BigIntValue(value: BigInt, position: Option[Position] = None) extends ScalarValue
 case class FloatValue(value: Double, position: Option[Position] = None) extends ScalarValue
+case class BigDecimalValue(value: BigDecimal, position: Option[Position] = None) extends ScalarValue
 case class StringValue(value: String, position: Option[Position] = None) extends ScalarValue
 case class BooleanValue(value: Boolean, position: Option[Position] = None) extends ScalarValue
 case class EnumValue(value: String, position: Option[Position] = None) extends Value
@@ -122,7 +124,7 @@ object AstNode {
         tpe = withoutPosition(n.tpe),
         defaultValue = n.defaultValue map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: ConcreteType => n.copy(position = None).asInstanceOf[T]
+    case n: NamedType => n.copy(position = None).asInstanceOf[T]
     case n: NotNullType => n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
     case n: ListType => n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
     case n: Field =>
@@ -146,7 +148,9 @@ object AstNode {
         position = None).asInstanceOf[T]
     case n: Argument => n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
     case n: IntValue => n.copy(position = None).asInstanceOf[T]
+    case n: BigIntValue => n.copy(position = None).asInstanceOf[T]
     case n: FloatValue => n.copy(position = None).asInstanceOf[T]
+    case n: BigDecimalValue => n.copy(position = None).asInstanceOf[T]
     case n: StringValue => n.copy(position = None).asInstanceOf[T]
     case n: BooleanValue => n.copy(position = None).asInstanceOf[T]
     case n: EnumValue => n.copy(position = None).asInstanceOf[T]

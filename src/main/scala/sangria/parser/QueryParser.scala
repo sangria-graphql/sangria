@@ -1,7 +1,7 @@
 package sangria.parser
 
 import org.parboiled2._
-import CharPredicate.{HexDigit, Digit19}
+import CharPredicate.{HexDigit, Digit19, AlphaNum}
 
 import sangria.{DeliveryScheme, ast}
 
@@ -23,16 +23,26 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Name = rule { capture(NameFirstChar ~ NameChar.*) ~ Ignored.* }
 
-  def NumberValue = rule { trackPos ~ capture(Sign.? ~ IntegerPart) ~ capture('.' ~ Digit.+ ~ ExponentPart.?).? ~ Ignored.* ~>
+  def NumberValue = rule { trackPos ~ IntegerValuePart ~ FloatValuePart.? ~ Ignored.* ~>
       ((pos, intPart, floatPart) =>
-        floatPart map (f => ast.FloatValue((intPart + f).toDouble, Some(pos))) getOrElse
-          ast.IntValue(intPart.toInt, Some(pos))) }
+        floatPart map (f => ast.BigDecimalValue(BigDecimal(intPart + f), Some(pos))) getOrElse
+          ast.BigIntValue(BigInt(intPart), Some(pos))) }
+
+  def FloatValuePart = rule { capture(FractionalPart ~ ExponentPart.? | ExponentPart) }
+
+  def FractionalPart = rule { '.' ~ Digit.+ }
+
+  def IntegerValuePart = rule { capture(NegativeSign.? ~ IntegerPart) }
 
   def IntegerPart = rule { ch('0') | NonZeroDigit ~ Digit.* }
 
-  def ExponentPart = rule { 'e' ~ Sign.? ~ Digit.+ }
+  def ExponentPart = rule { ExponentIndicator ~ Sign.? ~ Digit.+ }
 
-  val Sign = '-'
+  def ExponentIndicator = rule { ch('e') | ch('E') }
+
+  def Sign = rule { ch('-') | '+' }
+
+  val NegativeSign  = '-'
 
   val NonZeroDigit = Digit19
 
@@ -58,7 +68,7 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Unicode = rule { 'u' ~ capture(4 times HexDigit) ~> (Integer.parseInt(_, 16)) }
 
-  def Keyword(s: String) = rule { s ~ Ignored.* }
+  def Keyword(s: String) = rule { s ~ !NameChar ~ Ignored.* }
 }
 
 trait Ignored extends PositionTracking { this: Parser =>
@@ -179,7 +189,9 @@ trait Values { this: Parser with Tokens with Ignored with Operations =>
 
   def False = rule { Keyword("false") }
 
-  def EnumValue = rule { trackPos ~ Name ~> ((pos, name) => ast.EnumValue(name, Some(pos))) }
+  def Null = rule { Keyword("null") }
+
+  def EnumValue = rule { !True ~ !False ~ !Null ~ trackPos ~ Name ~> ((pos, name) => ast.EnumValue(name, Some(pos))) }
 
   def ArrayValueConst = rule { trackPos ~ ws('[') ~ ValueConst.* ~ ws(']')  ~> ((pos, v) => ast.ArrayValue(v.toList, Some(pos))) }
 
@@ -205,16 +217,16 @@ trait Directives { this: Parser with Tokens with Operations =>
 }
 
 trait Types { this: Parser with Tokens with Ignored =>
-  def Type: Rule1[ast.Type] = rule { NonNullType | ListType | ConcreteType }
+  def Type: Rule1[ast.Type] = rule { NonNullType | ListType | NamedType }
 
   def TypeName = rule { Name }
 
-  def ConcreteType = rule { trackPos ~ TypeName ~> ((pos, name) => ast.ConcreteType(name, Some(pos)))}
+  def NamedType = rule { trackPos ~ TypeName ~> ((pos, name) => ast.NamedType(name, Some(pos)))}
 
   def ListType = rule { trackPos ~ ws('[') ~ Type ~ ws(']') ~> ((pos, tpe) => ast.ListType(tpe, Some(pos))) }
 
   def NonNullType = rule {
-    trackPos ~ TypeName ~ ws('!')  ~> ((pos, name) => ast.NotNullType(ast.ConcreteType(name, Some(pos)), Some(pos))) |
+    trackPos ~ TypeName ~ ws('!')  ~> ((pos, name) => ast.NotNullType(ast.NamedType(name, Some(pos)), Some(pos))) |
     trackPos ~ ListType ~ ws('!') ~> ((pos, tpe) => ast.NotNullType(tpe, Some(pos)))
   }
 }

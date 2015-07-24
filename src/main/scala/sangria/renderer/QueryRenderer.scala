@@ -74,7 +74,7 @@ object QueryRenderer {
       case ListType(ofType, _) =>
         "[" + render(ofType) + "]"
 
-      case ConcreteType(name, _) =>
+      case NamedType(name, _) =>
         name
 
       case Field(alias, name, args, dirs, sels, _) =>
@@ -99,7 +99,9 @@ object QueryRenderer {
         indent + name + ":" + config.separator + render(value, config)
 
       case IntValue(value, _) => indent + value
+      case BigIntValue(value, _) => indent + value.toString
       case FloatValue(value, _) => indent + value.toString
+      case BigDecimalValue(value, _) => indent + value.toString
       case StringValue(value, _) => indent + '"' + escapeString(value) + '"'
       case BooleanValue(value, _) => indent + value.toString
       case EnumValue(value, _) => indent + value

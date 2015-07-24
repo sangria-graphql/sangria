@@ -307,10 +307,12 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         coerceOutput = ast.IntValue(_),
         coerceUserInput = {
           case i: Int if i % 2 != 0 => Right(i)
+          case i: BigInt if i.isValidInt && i % 2 != BigInt(0) => Right(i.intValue)
           case _ => Left(IntCoercionViolation)
         },
         coerceInput = {
           case ast.IntValue(i, _) if i % 2 != 0 => Right(i)
+          case ast.BigIntValue(i, _) if i.isValidInt && i % 2 != BigInt(0) => Right(i.intValue)
           case _ => Left(IntCoercionViolation)
         })
 

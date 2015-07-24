@@ -13,7 +13,9 @@ trait ResultMarshaller {
 
   def stringNode(value: String): Node
   def intNode(value: Int): Node
+  def bigIntNode(value: BigInt): Node
   def floatNode(value: Double): Node
+  def bigDecimalNode(value: BigDecimal): Node
   def booleanNode(value: Boolean): Node
   def nullNode: Node
 
@@ -32,6 +34,8 @@ class ScalaResultMarshaller extends ResultMarshaller {
   override def floatNode(value: Double) = value
   override def stringNode(value: String) = value
   override def intNode(value: Int) = value
+  override def bigIntNode(value: BigInt) = value
+  override def bigDecimalNode(value: BigDecimal) = value
 
   override def arrayNode(values: Seq[Node]) = values
   override def emptyArrayNode = Nil

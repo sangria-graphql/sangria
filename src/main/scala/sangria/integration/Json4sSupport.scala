@@ -37,6 +37,10 @@ object Json4sSupport {
     override def renderCompact(node: JValue) = compact(jsonRender(node))
 
     override def renderPretty(node: JValue) = pretty(jsonRender(node))
+
+    override def bigIntNode(value: BigInt) = JInt(value)
+
+    override def bigDecimalNode(value: BigDecimal) = JDecimal(value)
   }
 
   implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JValue] {

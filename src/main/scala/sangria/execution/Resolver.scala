@@ -249,7 +249,7 @@ class Resolver[Ctx](
         }
       case ListType(listTpe) =>
         if (value == null)
-          return Result(ErrorRegistry.empty, None)
+          Result(ErrorRegistry.empty, None)
         else {
           val actualValue = value match {
             case seq: Seq[_] => seq
@@ -403,7 +403,9 @@ object Resolver {
   def marshalValue(value: ast.Value, marshaller: ResultMarshaller): marshaller.Node = value match {
     case ast.StringValue(str, _) => marshaller.stringNode(str)
     case ast.IntValue(i, _) => marshaller.intNode(i)
+    case ast.BigIntValue(i, _) => marshaller.bigIntNode(i)
     case ast.FloatValue(f, _) => marshaller.floatNode(f)
+    case ast.BigDecimalValue(f, _) => marshaller.bigDecimalNode(f)
     case ast.BooleanValue(b, _) => marshaller.booleanNode(b)
     case ast.EnumValue(enum, _) => marshaller.stringNode(enum)
     case ast.ArrayValue(values, _) => marshaller.arrayNode(values map (marshalValue(_, marshaller)))

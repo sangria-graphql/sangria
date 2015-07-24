@@ -36,6 +36,10 @@ object SprayJsonSupport {
     override def renderCompact(node: JsValue) = node.compactPrint
 
     override def renderPretty(node: JsValue) = node.prettyPrint
+
+    override def bigIntNode(value: BigInt) = JsNumber(value)
+
+    override def bigDecimalNode(value: BigDecimal) = JsNumber(value)
   }
 
   implicit object SprayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
