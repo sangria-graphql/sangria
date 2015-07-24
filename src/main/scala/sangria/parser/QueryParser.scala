@@ -242,7 +242,8 @@ object QueryParser {
     val parser = new QueryParser(input)
 
     parser.Document.run() match {
-      case Success(res) => scheme.success(res)
+      case Success(res) =>
+        scheme.success(res.copy(sourceMapper = Some(new Parboiled2SourceMapper(input))))
       case Failure(e: ParseError) => scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) => scheme.failure(e)
     }

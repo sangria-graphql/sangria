@@ -45,5 +45,5 @@ object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
   def isScalarNode(node: Any) = !(isMapNode(node) && isArrayNode(node))
   def getScalarValue(node: Any) = node
 
-  def render(node: LeafNode) = node.toString
+  def render(node: LeafNode) = if (node == null) "null" else node.toString
 }
