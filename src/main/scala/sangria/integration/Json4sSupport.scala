@@ -50,8 +50,9 @@ object Json4sSupport {
 
     override def getScalarValue(node: JValue) = node match {
       case JBool(b) => b
-      case JInt(i) => i.intValue()
+      case JInt(i) => i
       case JDouble(d) => d
+      case JDecimal(d) => d
       case JString(s) => s
       case _ => throw new IllegalStateException(s"$node is not a scalar value")
     }

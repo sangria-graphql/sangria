@@ -47,7 +47,7 @@ object PlayJsonSupport {
 
     override def getScalarValue(node: JsValue) = node match {
       case JsBoolean(b) => b
-      case JsNumber(d) => d.doubleValue()
+      case JsNumber(d) => d.toBigIntExact getOrElse d
       case JsString(s) => s
       case _ => throw new IllegalStateException(s"$node is not a scalar value")
     }

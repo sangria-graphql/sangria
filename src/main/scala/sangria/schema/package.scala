@@ -18,13 +18,25 @@ package object schema {
       case _ => Left(IntCoercionViolation)
     })
 
+  val BigIntType = ScalarType[BigInt]("BigInt",
+    coerceOutput = ast.BigIntValue(_),
+    coerceUserInput = {
+      case i: Int => Right(BigInt(i))
+      case i: BigInt => Right(i)
+      case _ => Left(IntCoercionViolation)
+    },
+    coerceInput = {
+      case ast.IntValue(i, _) => Right(i)
+      case ast.BigIntValue(i, _) => Right(i)
+      case _ => Left(IntCoercionViolation)
+    })
+
   val FloatType = ScalarType[Double]("Float",
     coerceOutput = ast.FloatValue(_),
     coerceUserInput = {
       case i: Int => Right(i.toDouble)
       case i: BigInt if !i.isValidDouble => Left(BigDecimalCoercionViolation)
       case i: BigInt => Right(i.doubleValue())
-      case f: Float => Right(f.toDouble)
       case d: Double => Right(d)
       case d: BigDecimal if !d.isDecimalDouble => Left(BigDecimalCoercionViolation)
       case d: BigDecimal => Right(d.doubleValue())
@@ -37,6 +49,23 @@ package object schema {
       case ast.IntValue(i, _) => Right(i)
       case ast.BigIntValue(i, _) if !i.isValidDouble => Left(BigDecimalCoercionViolation)
       case ast.BigIntValue(i, _) => Right(i.doubleValue)
+      case _ => Left(FloatCoercionViolation)
+    })
+
+  val BigDecimalType = ScalarType[BigDecimal]("BigDecimal",
+    coerceOutput = ast.BigDecimalValue(_),
+    coerceUserInput = {
+      case i: Int => Right(BigDecimal(i))
+      case i: BigInt => Right(BigDecimal(i))
+      case d: Double => Right(BigDecimal(d))
+      case d: BigDecimal => Right(d)
+      case _ => Left(FloatCoercionViolation)
+    },
+    coerceInput = {
+      case ast.BigDecimalValue(d, _) => Right(d)
+      case ast.FloatValue(d, _) => Right(BigDecimal(d))
+      case ast.IntValue(i, _) => Right(BigDecimal(i))
+      case ast.BigIntValue(i, _) => Right(BigDecimal(i))
       case _ => Left(FloatCoercionViolation)
     })
 
@@ -75,7 +104,7 @@ package object schema {
       case _ => Left(IDCoercionViolation)
     })
 
-  val BuiltinScalars = IntType :: FloatType :: BooleanType :: StringType :: IDType :: Nil
+  val BuiltinScalars = IntType :: BigIntType :: FloatType :: BigDecimalType :: BooleanType :: StringType :: IDType :: Nil
 
   val IfArg = Argument("if", BooleanType, "Included when true.")
 
