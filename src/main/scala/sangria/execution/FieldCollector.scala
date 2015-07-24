@@ -4,6 +4,7 @@ import sangria.parser.SourceMapper
 import sangria.schema.{AbstractType, DirectiveContext, Schema, ObjectType}
 import sangria.ast
 
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.{Set => MutableSet}
 
 import scala.util.{Try, Failure, Success}
@@ -22,7 +23,7 @@ class FieldCollector[Ctx, Val](
 
     if (resultCache contains cacheKey) resultCache(cacheKey)
     else {
-      val res = selections.foldLeft(Success(Map.empty): Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
+      val res = selections.foldLeft(Success(ListMap.empty): Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
         case (acc, s) => collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
       }
       resultCache = resultCache.updated(cacheKey, res)

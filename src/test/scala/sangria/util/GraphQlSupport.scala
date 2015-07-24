@@ -14,22 +14,22 @@ import sangria.integration.SprayJsonSupport.SprayJsonInputUnmarshaller
 trait GraphQlSupport extends AwaitSupport with Matchers {
   def schema: Schema[_, _]
 
-  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: Option[A]) = {
+  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: Option[A], userContext: Any = ()) = {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
       case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
     }
 
-    Executor(schema.asInstanceOf[Schema[Unit, T]], data, exceptionHandler = exceptionHandler).execute(doc, arguments = args).await
+    Executor(schema.asInstanceOf[Schema[Any, T]], data, exceptionHandler = exceptionHandler, userContext = userContext).execute(doc, arguments = args).await
   }
 
-  def check[T](data: T, query: String, expected: Any, args: Option[JsValue] = None) = {
-    executeTestQuery(data, query, args) should be (expected)
+  def check[T](data: T, query: String, expected: Any, args: Option[JsValue] = None, userContext: Any = ()) = {
+    executeTestQuery(data, query, args, userContext) should be (expected)
   }
 
-  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: Option[JsValue] = None) = {
-    val result = executeTestQuery(data, query, args).asInstanceOf[Map[String, Any]]
+  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: Option[JsValue] = None, userContext: Any = ()) = {
+    val result = executeTestQuery(data, query, args, userContext).asInstanceOf[Map[String, Any]]
 
     result("data") should be (expectedData)
 
