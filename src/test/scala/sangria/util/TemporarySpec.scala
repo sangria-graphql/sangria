@@ -2,10 +2,10 @@ package sangria.util
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.TestData.{FriendsResolver, CharacterRepo}
+import sangria.TestSchema
 import sangria.execution.Executor
 import sangria.parser.{SyntaxError, QueryParser}
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
-import sangria.schema.TestSchema
 import sangria.introspection.introspectionQuery
 
 import scala.concurrent.Await

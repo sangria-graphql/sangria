@@ -1,7 +1,7 @@
-package sangria.schema
+package sangria
 
-import sangria.TestData
-import sangria.TestData.{DeferFriends, CharacterRepo, Droid, Human}
+import sangria.TestData.{CharacterRepo, DeferFriends, Droid, Human}
+import sangria.schema._
 
 import scala.concurrent.Future
 
