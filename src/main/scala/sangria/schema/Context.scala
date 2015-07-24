@@ -128,8 +128,10 @@ trait DeferredResolver {
   def resolve(deferred: List[Deferred[Any]]): Future[List[Any]]
 }
 
-object NilDeferredResolver extends DeferredResolver {
-  override def resolve(deferred: List[Deferred[Any]]) = Future.failed(UnsupportedDeferError)
+object DeferredResolver {
+  val empty = new DeferredResolver {
+    override def resolve(deferred: List[Deferred[Any]]) = Future.failed(UnsupportedDeferError)
+  }
 }
 
 case object UnsupportedDeferError extends Exception

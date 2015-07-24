@@ -1,9 +1,13 @@
 package sangria.validation
 
-import org.scalatest.events.TestFailed
+import org.scalatest.Matchers
+import sangria.parser.QueryParser
 import sangria.schema._
+import sangria.util.Pos
 
-class RuleSupport {
+import scala.util.Success
+
+class ValidationSupport extends Matchers {
   type TestField = Field[Unit, Unit]
 
   val Being = InterfaceType("Being", List[TestField](
@@ -140,4 +144,45 @@ class RuleSupport {
   ))
 
   val schema = Schema(QueryRoot)
+
+  def expectValid(s: Schema[_, _], rules: List[ValidationRule], query: String) = {
+    val Success(doc) = QueryParser.parse(query)
+
+    withClue("Should validate") {
+      validator(rules).validateQuery(s, doc) should have size 0
+    }
+  }
+
+  def expectInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, Option[Pos])]) = {
+    val Success(doc) = QueryParser.parse(query)
+
+    withClue("Should not validate") {
+      val errors = validator(rules).validateQuery(s, doc)
+
+      errors should have size expectedErrors.size
+
+      expectedErrors foreach { case(expected, pos) =>
+        withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n$errors") {
+          errors exists { error =>
+            error.errorMessage.contains(expected) && {
+              pos map { p =>
+                val Some(errorPos) = error.asInstanceOf[AstNodeViolation].position
+
+                errorPos.line == p.line && errorPos.column == p.col
+              } getOrElse true
+            }
+          } should be (true)
+        }
+      }
+      
+    }
+  }
+
+  def expectPassesRule(rule: ValidationRule, query: String) =
+    expectValid(schema, rule :: Nil, query)
+
+  def expectFailsRule(rule: ValidationRule, query: String, expectedErrors: List[(String, Option[Pos])]) =
+    expectInvalid(schema, rule :: Nil, query, expectedErrors)
+
+  def validator(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
 }

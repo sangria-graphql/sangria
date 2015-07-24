@@ -11,9 +11,9 @@ case class Executor[Ctx, Root](
     schema: Schema[Ctx, Root],
     root: Root = (),
     userContext: Ctx = (),
-    deferredResolver: DeferredResolver = NilDeferredResolver,
+    deferredResolver: DeferredResolver = DeferredResolver.empty,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = PartialFunction.empty,
-    deprecationTracker: DeprecationTracker = NilDeprecationTracker)(implicit executionContext: ExecutionContext) {
+    deprecationTracker: DeprecationTracker = DeprecationTracker.empty)(implicit executionContext: ExecutionContext) {
 
   def execute[Input](
       queryAst: ast.Document,

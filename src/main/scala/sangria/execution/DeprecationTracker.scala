@@ -7,6 +7,10 @@ trait DeprecationTracker {
   def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx): Unit
 }
 
+object DeprecationTracker {
+  val empty = NilDeprecationTracker
+}
+
 object NilDeprecationTracker extends DeprecationTracker {
   def deprecatedFieldUsed[Ctx](path: List[String], field: Field[Ctx, _], userContext: Ctx) = ()
   def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx) = ()

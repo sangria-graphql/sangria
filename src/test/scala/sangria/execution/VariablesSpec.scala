@@ -3,7 +3,7 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{GraphQlSupport, AwaitSupport}
+import sangria.util.{Pos, GraphQlSupport, AwaitSupport}
 import sangria.integration.SprayJsonSupport.{SprayJsonInputUnmarshaller}
 import spray.json._
 import DefaultJsonProtocol._

@@ -40,8 +40,6 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
     expectedErrors foreach (expected => errors should contain (expected))
   }
 
-  case class Pos(line: Int, col: Int)
-
   def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, Option[Pos])], args: Option[JsValue] = None) = {
     val result = executeTestQuery(data, query, args).asInstanceOf[Map[String, Any]]
 
@@ -52,7 +50,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
     errors should have size expectedErrorStrings.size
 
     expectedErrorStrings foreach { case(expected, pos) =>
-      withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual: $errors") {
+      withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n$errors") {
         errors exists { error =>
           val message = error("message").asInstanceOf[String]
 
@@ -68,3 +66,5 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
     }
   }
 }
+
+case class Pos(line: Int, col: Int)
