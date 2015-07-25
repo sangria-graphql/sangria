@@ -92,3 +92,7 @@ case class MisplacedDirectiveViolation(name: String, placement: String, sourceMa
   lazy val errorMessage = s"Directive $name may not be used on $placement.$astLocation"
 }
 
+case class UnknownFragmentViolation(name: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Unknown fragment $name.$astLocation"
+}
+
