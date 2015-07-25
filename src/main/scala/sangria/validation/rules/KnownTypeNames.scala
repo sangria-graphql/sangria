@@ -13,13 +13,13 @@ import scala.language.postfixOps
  * variable definitions and fragment conditions) are defined by the type schema.
  */
 class KnownTypeNames extends ValidationRule {
-   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-     override val onEnter: ValidationVisit = {
-       case ast.NamedType(name, pos) =>
-         if (!ctx.schema.allTypes.contains(name))
-           Left(Vector(UnknownTypeViolation(name, ctx.sourceMapper, pos.toList)))
-         else
-           Right(Continue)
-     }
-   }
- }
+  override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnter: ValidationVisit = {
+      case ast.NamedType(name, pos) =>
+        if (!ctx.schema.allTypes.contains(name))
+          Left(Vector(UnknownTypeViolation(name, ctx.sourceMapper, pos.toList)))
+        else
+          Right(Continue)
+    }
+  }
+}

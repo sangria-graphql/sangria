@@ -175,6 +175,8 @@ trait ValidationSupport extends Matchers {
             error.errorMessage.contains(expected) && {
               val errorPositions = error.asInstanceOf[AstNodeViolation].positions
 
+              errorPositions should have size pos.size
+
               errorPositions zip pos forall { case (actualPos, expectedPos) =>
                 expectedPos.line == actualPos.line && expectedPos.col == actualPos.column
               }

@@ -103,3 +103,11 @@ case class CycleErrorViolation(fragmentName: String, spreadNames: List[String], 
   lazy val errorMessage = s"Cannot spread fragment $fragmentName within itself${if (spreadNames.nonEmpty) s" via ${spreadNames mkString ", " }" else ""}.$astLocation"
 }
 
+case class UndefinedVarByOpViolation(varName: String, operationName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable $$$varName is not defined by operation $operationName.$astLocation"
+}
+
+case class UndefinedVarViolation(varName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable $$$varName is not defined.$astLocation"
+}
+

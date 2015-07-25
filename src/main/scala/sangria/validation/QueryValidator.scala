@@ -1,11 +1,11 @@
 package sangria.validation
 
 import sangria.ast
-import sangria.ast.{AstVisitor, FragmentDefinition}
+import sangria.ast.{AstVisitorCommand, AstVisitor, FragmentDefinition}
 import sangria.ast.AstVisitorCommand._
 import sangria.schema._
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
-import scala.collection.mutable.{Stack => MutableStack, ListBuffer}
+import scala.collection.mutable.{Stack => MutableStack, Set => MutableSet, Map => MutableMap, ListBuffer}
 
 trait QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): List[Violation]
@@ -25,36 +25,43 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): List[Violation] = {
     val ctx = new ValidationContext(schema, queryAst, new TypeInfo(schema))
 
-    validateUsingRules(queryAst, ctx, rules map (_ visitor ctx))
+    validateUsingRules(queryAst, ctx, rules map (_ visitor ctx), true)
 
     ctx.violations
   }
 
-  def validateUsingRules(queryAst: ast.Document, ctx: ValidationContext, visitors: List[ValidationRule#AstValidatingVisitor]) = AstVisitor.visitAst(
+  def validateUsingRules(queryAst: ast.AstNode, ctx: ValidationContext, visitors: List[ValidationRule#AstValidatingVisitor], topLevel: Boolean): Unit = AstVisitor.visitAst(
     doc = queryAst,
     onEnter = node => {
       ctx.typeInfo.enter(node)
       visitors foreach { visitor =>
-        if (visitor.onEnter.isDefinedAt(node)) {
-          visitor.onEnter(node) match {
-            case Left(violation) =>
-              ctx.addViolations(violation)
-            case _ => // todo
-          }
+        if (ctx.validVisitor(visitor)) {
+          if (visitor.visitSpreadFragments && node.isInstanceOf[ast.FragmentDefinition] && topLevel)
+            handleResult(ctx, node, visitor, Right(Skip))
+          else if (visitor.onEnter.isDefinedAt(node))
+            handleResult(ctx, node, visitor, visitor.onEnter(node))
         }
+      }
+
+      node match {
+        case spread: ast.FragmentSpread if ctx.fragments contains spread.name =>
+          val interested = visitors.filter(v => v.visitSpreadFragments && ctx.validVisitor(v))
+
+          if (interested.nonEmpty)
+            validateUsingRules(ctx.fragments(spread.name), ctx, interested, false)
+        case _ => // do nothing
       }
 
       Continue
     },
     onLeave = node => {
       visitors foreach { visitor =>
-        if (visitor.onLeave.isDefinedAt(node)) {
-          visitor.onLeave(node) match {
-            case Left(violation) =>
-              ctx.addViolations(violation)
-            case _ => // todo
-          }
+        if (visitor.onLeave.isDefinedAt(node) && ctx.validVisitor(visitor)) {
+          handleResult(ctx, node, visitor, visitor.onLeave(node))
         }
+
+        if (ctx.skips.get(visitor).exists(_ eq node))
+          ctx.skips.remove(visitor)
       }
 
       ctx.typeInfo.leave(node)
@@ -62,15 +69,33 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     }
   )
 
+  def handleResult(ctx: ValidationContext, node: ast.AstNode, visitor: ValidationRule#AstValidatingVisitor, visitRes: Either[Vector[Violation], AstVisitorCommand.Value]) =
+    visitRes match {
+      case Left(violation) =>
+        ctx.addViolations(violation)
+      case Right(Skip) =>
+        ctx.skips(visitor) = node
+      case Right(Break) =>
+        ctx.ignoredVisitors += visitor
+      case _ => // do nothing
+    }
 }
 
 class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typeInfo: TypeInfo) {
+  // Using mutable data-structures and mutability to minimize validation footprint
+
   private val errors = ListBuffer[Violation]()
+
+  val ignoredVisitors = MutableSet[ValidationRule#AstValidatingVisitor]()
+  val skips = MutableMap[ValidationRule#AstValidatingVisitor, ast.AstNode]()
 
   lazy val fragments = doc.definitions
     .collect{case frDef: FragmentDefinition => frDef}
     .groupBy(_.name)
     .mapValues(_.head)
+
+  def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
+    !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
 
   def sourceMapper = doc.sourceMapper
 
