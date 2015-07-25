@@ -96,11 +96,13 @@ package object schema {
     coerceUserInput = {
       case s: String => Right(s)
       case i: Int => Right(i.toString)
+      case i: BigInt => Right(i.toString)
       case _ => Left(IDCoercionViolation)
     },
     coerceInput = {
       case ast.StringValue(id, _) => Right(id)
       case ast.IntValue(id, _) => Right(id.toString)
+      case ast.BigIntValue(id, _) => Right(id.toString)
       case _ => Left(IDCoercionViolation)
     })
 

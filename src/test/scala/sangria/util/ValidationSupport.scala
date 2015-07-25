@@ -1,13 +1,13 @@
-package sangria.validation
+package sangria.util
 
 import org.scalatest.Matchers
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.Pos
+import sangria.validation.{AstNodeViolation, RuleBasedQueryValidator, ValidationRule}
 
 import scala.util.Success
 
-class ValidationSupport extends Matchers {
+trait ValidationSupport extends Matchers {
   type TestField = Field[Unit, Unit]
 
   val Being = InterfaceType("Being", List[TestField](
@@ -89,6 +89,9 @@ class ValidationSupport extends Matchers {
     Field("intArgField", OptionType(StringType),
       arguments = Argument("intArg", OptionInputType(IntType)) :: Nil,
       resolve = _ => None),
+    Field("bigIntArgField", OptionType(StringType),
+      arguments = Argument("bigIntArg", OptionInputType(BigIntType)) :: Nil,
+      resolve = _ => None),
     Field("nonNullIntArgField", OptionType(StringType),
       arguments = Argument("nonNullIntArg", IntType) :: Nil,
       resolve = _ => None),
@@ -103,6 +106,9 @@ class ValidationSupport extends Matchers {
       resolve = _ => None),
     Field("floatArgField", OptionType(StringType),
       arguments = Argument("floatArg", OptionInputType(FloatType)) :: Nil,
+      resolve = _ => None),
+    Field("bigDecimalArgField", OptionType(StringType),
+      arguments = Argument("bigDecimalArg", OptionInputType(BigDecimalType)) :: Nil,
       resolve = _ => None),
     Field("idArgField", OptionType(StringType),
       arguments = Argument("idArg", OptionInputType(IDType)) :: Nil,
@@ -145,6 +151,8 @@ class ValidationSupport extends Matchers {
 
   val schema = Schema(QueryRoot)
 
+  def defaultRule: Option[ValidationRule] = None
+
   def expectValid(s: Schema[_, _], rules: List[ValidationRule], query: String) = {
     val Success(doc) = QueryParser.parse(query)
 
@@ -162,7 +170,7 @@ class ValidationSupport extends Matchers {
       errors should have size expectedErrors.size
 
       expectedErrors foreach { case(expected, pos) =>
-        withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n$errors") {
+        withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n${errors map (_.errorMessage) mkString "\n"}") {
           errors exists { error =>
             error.errorMessage.contains(expected) && {
               pos map { p =>
@@ -181,8 +189,14 @@ class ValidationSupport extends Matchers {
   def expectPassesRule(rule: ValidationRule, query: String) =
     expectValid(schema, rule :: Nil, query)
 
+  def expectPasses(query: String) =
+    expectValid(schema, defaultRule.get :: Nil, query)
+
   def expectFailsRule(rule: ValidationRule, query: String, expectedErrors: List[(String, Option[Pos])]) =
     expectInvalid(schema, rule :: Nil, query, expectedErrors)
+
+  def expectFails(query: String, expectedErrors: List[(String, Option[Pos])]) =
+    expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors)
 
   def validator(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
 }

@@ -1,5 +1,15 @@
 package sangria.validation
 
-trait ValidationRule {
+import sangria.ast.{AstNode, AstVisitorCommand}
 
+trait ValidationRule {
+  type ValidationVisit = PartialFunction[AstNode, Either[Violation, AstVisitorCommand.Value]]
+
+  trait AstValidatingVisitor {
+    def onEnter: ValidationVisit = PartialFunction.empty
+    def onLeave: ValidationVisit = PartialFunction.empty
+  }
+
+  def visitor(ctx: ValidationContext): AstValidatingVisitor
 }
+

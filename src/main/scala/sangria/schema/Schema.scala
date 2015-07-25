@@ -14,7 +14,7 @@ sealed trait InputType[+T] extends Type
 sealed trait OutputType[+T] extends Type
 
 sealed trait LeafType extends Type
-sealed trait CompositeType extends Type
+sealed trait CompositeType[T] extends Type with Named with OutputType[T]
 sealed trait AbstractType extends Type with Named {
   def name: String
 
@@ -37,7 +37,7 @@ case class ScalarType[T](
   coerceOutput: T => ast.Value,
   coerceInput: ast.Value => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
-sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType with NullableType with UnmodifiedType with Named {
+sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
 
   def fieldsFn: () => List[Field[Ctx, Val]]
@@ -122,7 +122,7 @@ object InterfaceType {
 case class UnionType[Ctx](
   name: String,
   description: Option[String] = None,
-  types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType with AbstractType with NullableType with UnmodifiedType
+  types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType
 
 case class Field[Ctx, Val] private (
   name: String,
@@ -130,7 +130,7 @@ case class Field[Ctx, Val] private (
   description: Option[String],
   arguments: List[Argument[_]],
   resolve: Context[Ctx, Val] => Action[Ctx, _],
-  deprecationReason: Option[String]) extends Named
+  deprecationReason: Option[String]) extends Named with HasArguments
 
 object Field {
   def apply[Ctx, Val, Res, Out](
@@ -271,6 +271,10 @@ case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with
 case class OptionType[T](ofType: OutputType[T]) extends OutputType[Option[T]]
 case class OptionInputType[T](ofType: InputType[T]) extends InputType[Option[T]]
 
+sealed trait HasArguments {
+  def arguments: List[Argument[_]]
+}
+
 case class Directive(
   name: String,
   description: Option[String] = None,
@@ -278,7 +282,7 @@ case class Directive(
   shouldInclude: DirectiveContext => Boolean,
   onOperation: Boolean,
   onFragment: Boolean,
-  onField: Boolean)
+  onField: Boolean) extends HasArguments
 
 case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],

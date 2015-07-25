@@ -3,6 +3,7 @@ package sangria.execution
 import sangria.ast
 import sangria.parser.SourceMapper
 import sangria.schema._
+import sangria.validation.QueryValidator
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Failure, Try}
@@ -11,6 +12,7 @@ case class Executor[Ctx, Root](
     schema: Schema[Ctx, Root],
     root: Root = (),
     userContext: Ctx = (),
+    queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver = DeferredResolver.empty,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty)(implicit executionContext: ExecutionContext) {
@@ -19,18 +21,24 @@ case class Executor[Ctx, Root](
       queryAst: ast.Document,
       operationName: Option[String] = None,
       arguments: Option[Input] = None)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] = {
-    val valueCollector = new ValueCollector[Ctx, Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper, deprecationTracker, userContext)(um)
+    val violations = queryValidator.validateQuery(schema, queryAst)
 
-    val executionResult = for {
-      operation <- getOperation(queryAst, operationName)
-      variables <- valueCollector.getVariableValues(operation.variables)
-      fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueCollector)
-      res <- executeOperation(operation, queryAst.sourceMapper, valueCollector, fieldCollector, marshaller, variables)
-    } yield res
+    if (violations.nonEmpty)
+      Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(ValidationError(violations)).asInstanceOf[marshaller.Node])
+    else {
+      val valueCollector = new ValueCollector[Ctx, Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper, deprecationTracker, userContext)(um)
 
-    executionResult match {
-      case Success(future) => future.asInstanceOf[Future[marshaller.Node]]
-      case Failure(error) => Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])
+      val executionResult = for {
+        operation <- getOperation(queryAst, operationName)
+        variables <- valueCollector.getVariableValues(operation.variables)
+        fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, variables, queryAst.sourceMapper, valueCollector)
+        res <- executeOperation(operation, queryAst.sourceMapper, valueCollector, fieldCollector, marshaller, variables)
+      } yield res
+
+      executionResult match {
+        case Success(future) => future.asInstanceOf[Future[marshaller.Node]]
+        case Failure(error) => Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])
+      }
     }
   }
 
