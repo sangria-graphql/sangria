@@ -55,14 +55,14 @@ class QueryParserSpec extends WordSpec with Matchers {
                   List(Field(None, "name", Nil, Nil, Nil, Some(Position(249, 7, 5)))),
                   Some(Position(202, 6, 3))),
                 InlineFragment(
-                  "User",
+                  NamedType("User", Some(Position(280, 10, 10))),
                   Nil,
                   List(Field(None, "birth", Nil, Nil, List(Field(None, "day", Nil, Nil, Nil, Some(Position(297, 11, 11)))), Some(Position(291, 11, 5)))),
                   Some(Position(273, 10, 3))),
                 FragmentSpread("Foo", Nil, Some(Position(309, 14, 3)))), Some(Position(13, 2, 1))),
             FragmentDefinition(
               "Foo",
-              "User",
+              NamedType("User", Some(Position(335, 17, 17))),
               List(
                 Directive(
                   "foo",
@@ -115,7 +115,7 @@ class QueryParserSpec extends WordSpec with Matchers {
                       Nil,
                       Some(Position(390, 10, 5))),
                     InlineFragment(
-                      "User",
+                      NamedType("User", Some(Position(406, 11, 12))),
                       List(
                         Directive("defer", Nil, Some(Position(411, 11, 17)))),
                       List(
@@ -163,7 +163,7 @@ class QueryParserSpec extends WordSpec with Matchers {
               Some(Position(577, 23, 1))),
             FragmentDefinition(
               "frag",
-              "Friend",
+              NamedType("Friend", Some(Position(677, 31, 18))),
               Nil,
               List(
                 Field(

@@ -96,3 +96,7 @@ case class UnknownFragmentViolation(name: String, sourceMapper: Option[SourceMap
   lazy val errorMessage = s"Unknown fragment $name.$astLocation"
 }
 
+case class UnknownTypeViolation(name: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Unknown type $name.$astLocation"
+}
+

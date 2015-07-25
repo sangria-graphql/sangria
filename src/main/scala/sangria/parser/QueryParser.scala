@@ -160,7 +160,7 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 
   def FragmentName = rule { !On ~ Name }
 
-  def TypeCondition = rule { TypeName }
+  def TypeCondition = rule { NamedType }
 
 }
 

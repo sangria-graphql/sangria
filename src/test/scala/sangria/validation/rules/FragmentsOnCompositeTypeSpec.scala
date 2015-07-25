@@ -45,7 +45,7 @@ class FragmentsOnCompositeTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment \"scalarFragment\" cannot condition on non composite type \"Boolean\"." -> Some(Pos(2, 9))
+        "Fragment \"scalarFragment\" cannot condition on non composite type \"Boolean\"." -> Some(Pos(2, 36))
       ))
 
     "enum is invalid fragment type" in expectFails(
@@ -55,7 +55,7 @@ class FragmentsOnCompositeTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment \"scalarFragment\" cannot condition on non composite type \"FurColor\"." -> Some(Pos(2, 9))
+        "Fragment \"scalarFragment\" cannot condition on non composite type \"FurColor\"." -> Some(Pos(2, 36))
       ))
 
     "input object is invalid fragment type" in expectFails(
@@ -65,7 +65,7 @@ class FragmentsOnCompositeTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment \"inputFragment\" cannot condition on non composite type \"ComplexInput\"." -> Some(Pos(2, 9))
+        "Fragment \"inputFragment\" cannot condition on non composite type \"ComplexInput\"." -> Some(Pos(2, 35))
       ))
 
     "scalar is invalid inline fragment type" in expectFails(
@@ -77,7 +77,7 @@ class FragmentsOnCompositeTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment cannot condition on non composite type \"String\"." -> Some(Pos(3, 11))
+        "Fragment cannot condition on non composite type \"String\"." -> Some(Pos(3, 18))
       ))
   }
 }

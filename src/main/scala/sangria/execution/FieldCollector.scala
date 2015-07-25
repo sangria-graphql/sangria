@@ -48,7 +48,7 @@ class FieldCollector[Ctx, Val](
               case Success(false) => s
               case Failure(error) => Success(acc.updated(name, field -> Failure(error)))
             }
-          case fragment @ ast.InlineFragment(typeCondition, dirs, fragmentSelections, _) =>
+          case fragment @ ast.InlineFragment(_, dirs, fragmentSelections, _) =>
             for {
               shouldInclude <- shouldIncludeNode(dirs, selection)
               fragmentConditionMatch <- doesFragmentConditionMatch(tpe, fragment)
@@ -106,7 +106,7 @@ class FieldCollector[Ctx, Val](
   }
 
   def doesFragmentConditionMatch(tpe: ObjectType[_, _], conditional: ast.ConditionalFragment): Try[Boolean] =
-    schema.outputTypes.get(conditional.typeCondition)
+    schema.outputTypes.get(conditional.typeCondition.name)
       .map(condTpe => Success(condTpe.name == tpe.name || (condTpe.isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
-      .getOrElse(Failure(new ExecutionError(s"Unknown type '${conditional.typeCondition}'.", sourceMapper, conditional.position)))
+      .getOrElse(Failure(new ExecutionError(s"Unknown type '${conditional.typeCondition.name}'.", sourceMapper, conditional.position)))
 }

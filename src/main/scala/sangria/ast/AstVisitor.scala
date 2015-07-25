@@ -24,8 +24,9 @@ object AstVisitor {
             defs.foreach(d => loop(d))
             breakOrSkip(onLeave(n))
           }
-        case n @ FragmentDefinition(_, _, dirs, sels, _) =>
+        case n @ FragmentDefinition(_, cond, dirs, sels, _) =>
           if (breakOrSkip(onEnter(n))) {
+            loop(cond)
             dirs.foreach(d => loop(d))
             sels.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
@@ -43,8 +44,9 @@ object AstVisitor {
             default.foreach(d => loop(d))
             breakOrSkip(onLeave(n))
           }
-        case n @ InlineFragment(_, dirs, sels, _) =>
+        case n @ InlineFragment(cond, dirs, sels, _) =>
           if (breakOrSkip(onEnter(n))) {
+            loop((cond))
             dirs.foreach(d => loop(d))
             sels.foreach(s => loop(s))
             breakOrSkip(onLeave(n))

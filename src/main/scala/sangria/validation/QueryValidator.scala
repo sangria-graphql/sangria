@@ -150,10 +150,10 @@ class TypeInfo(schema: Schema[_, _]) {
         typeStack push schema.mutation
         pushParent()
       case fd: ast.FragmentDefinition =>
-        typeStack.push(schema.allTypes get fd.typeCondition)
+        typeStack.push(schema.allTypes get fd.typeCondition.name)
         pushParent()
       case ifd: ast.InlineFragment =>
-        typeStack.push(schema.allTypes get ifd.typeCondition)
+        typeStack.push(schema.allTypes get ifd.typeCondition.name)
         pushParent()
       case vd: ast.VariableDefinition =>
         inputTypeStack push schema.getInputType(vd.tpe)

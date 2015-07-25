@@ -9,7 +9,7 @@ case class Document(definitions: List[Definition], position: Option[Position] = 
 }
 
 sealed trait ConditionalFragment extends AstNode {
-  def typeCondition: String
+  def typeCondition: NamedType
 }
 
 sealed trait SelectionContainer {
@@ -28,7 +28,7 @@ case class OperationDefinition(
 
 case class FragmentDefinition(
   name: String,
-  typeCondition: String,
+  typeCondition: NamedType,
   directives: List[Directive],
   selections: List[Selection],
   position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives
@@ -68,7 +68,7 @@ case class FragmentSpread(
   directives: List[Directive],
   position: Option[Position] = None) extends Selection
 case class InlineFragment(
-  typeCondition: String,
+  typeCondition: NamedType,
   directives: List[Directive],
   selections: List[Selection],
   position: Option[Position] = None) extends Selection with ConditionalFragment
@@ -116,6 +116,7 @@ object AstNode {
         position = None).asInstanceOf[T]
     case n: FragmentDefinition =>
       n.copy(
+        typeCondition = withoutPosition(n.typeCondition),
         directives = n.directives map withoutPosition,
         selections = n.selections map withoutPosition,
         position = None).asInstanceOf[T]
@@ -139,6 +140,7 @@ object AstNode {
         position = None).asInstanceOf[T]
     case n: InlineFragment => 
       n.copy(
+        typeCondition = withoutPosition(n.typeCondition),
         directives = n.directives map withoutPosition,
         selections = n.selections map withoutPosition,
         position = None).asInstanceOf[T]
