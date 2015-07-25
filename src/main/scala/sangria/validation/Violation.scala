@@ -111,3 +111,7 @@ case class UndefinedVarViolation(varName: String, sourceMapper: Option[SourceMap
   lazy val errorMessage = s"Variable $$$varName is not defined.$astLocation"
 }
 
+case class UnusedFragmentViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Fragment $name is not used.$astLocation"
+}
+
