@@ -72,3 +72,11 @@ case class UndefinedFieldViolation(fieldName: String, typeName: String, sourceMa
   lazy val errorMessage = s"Cannot query field $fieldName on $typeName.$astLocation"
 }
 
+case class InlineFragmentOnNonCompositeErrorViolation(typeName: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = "Fragment cannot condition on non composite type \"" + typeName + "\"." + astLocation
+}
+
+case class FragmentOnNonCompositeErrorViolation(fragName: String, typeName: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = "Fragment \"" + fragName + "\" cannot condition on non composite type \"" + typeName + "\"." + astLocation
+}
+

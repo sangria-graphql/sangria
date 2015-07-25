@@ -14,19 +14,19 @@ import sangria.validation._
  * parent type, or are an allowed meta field such as __typenamme
  */
 class FieldsOnCorrectType extends ValidationRule {
-   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-     override val onEnter: ValidationVisit = {
-       case ast.Field(_, name, _, _, _, pos) =>
-         (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
-           case (Some(parent), None) =>
-             Left(UndefinedFieldViolation(
-               name,
-               SchemaRenderer.renderTypeName(parent, topLevel = true),
-               ctx.sourceMapper,
-               pos))
-           case _ =>
-             Right(Continue)
-         }
-     }
-   }
- }
+  override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnter: ValidationVisit = {
+      case ast.Field(_, name, _, _, _, pos) =>
+        (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
+          case (Some(parent), None) =>
+            Left(UndefinedFieldViolation(
+              name,
+              SchemaRenderer.renderTypeName(parent, topLevel = true),
+              ctx.sourceMapper,
+              pos))
+          case _ =>
+            Right(Continue)
+        }
+    }
+  }
+}

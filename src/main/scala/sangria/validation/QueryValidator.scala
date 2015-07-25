@@ -112,7 +112,7 @@ object ValidationContext {
 class TypeInfo(schema: Schema[_, _]) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
-  private val typeStack: MutableStack[Option[OutputType[_]]] = MutableStack()
+  private val typeStack: MutableStack[Option[Type]] = MutableStack()
   private val parentTypeStack: MutableStack[Option[CompositeType[_]]] = MutableStack()
   private val inputTypeStack: MutableStack[Option[InputType[_]]] = MutableStack()
   private val fieldDefStack: MutableStack[Option[Field[_, _]]] = MutableStack()
@@ -145,10 +145,10 @@ class TypeInfo(schema: Schema[_, _]) {
       typeStack push schema.mutation
       pushParent()
     case fd: ast.FragmentDefinition =>
-      typeStack.push(schema.outputTypes get fd.typeCondition)
+      typeStack.push(schema.allTypes get fd.typeCondition)
       pushParent()
     case ifd: ast.InlineFragment =>
-      typeStack.push(schema.outputTypes get ifd.typeCondition)
+      typeStack.push(schema.allTypes get ifd.typeCondition)
       pushParent()
     case vd: ast.VariableDefinition =>
       inputTypeStack push schema.getInputType(vd.tpe)
