@@ -19,14 +19,14 @@ class DefaultValuesOfCorrectType extends ValidationRule {
       case ast.VariableDefinition(name, _, default, _) =>
         (ctx.typeInfo.inputType, default) match {
           case (Some(it), Some(d)) if !it.isInstanceOf[OptionInputType[_]] =>
-            Left(DefaultForNonNullArgMessageViolation(
+            Left(DefaultForNonNullArgViolation(
               name,
               SchemaRenderer.renderTypeName(it),
               SchemaRenderer.renderTypeName(OptionInputType(it)),
               ctx.sourceMapper,
               d.position))
           case (Some(it), Some(defaultValue)) if !isValidLiteralValue(it, defaultValue) =>
-            Left(BadValueForDefaultArgMessageViolation(
+            Left(BadValueForDefaultArgViolation(
               name,
               SchemaRenderer.renderTypeName(it),
               QueryRenderer.render(defaultValue),

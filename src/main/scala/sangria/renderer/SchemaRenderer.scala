@@ -4,7 +4,7 @@ import sangria.execution.InputUnmarshaller
 import sangria.schema._
 
 object SchemaRenderer {
-  def renderTypeName(tpe: Type) = {
+  def renderTypeName(tpe: Type, topLevel: Boolean = false) = {
     def loop(t: Type, suffix: String): String = t match {
       case OptionType(ofType) => loop(ofType, "")
       case OptionInputType(ofType) => loop(ofType, "")
@@ -13,7 +13,7 @@ object SchemaRenderer {
       case named: Named => named.name + suffix
     }
 
-    loop(tpe, "!")
+    loop(tpe, if (topLevel) "" else "!")
   }
 
   val TypeSeparator = "\n\n"

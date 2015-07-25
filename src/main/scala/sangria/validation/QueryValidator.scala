@@ -121,6 +121,7 @@ class TypeInfo(schema: Schema[_, _]) {
   var argument: Option[Argument[_]] = None
 
   def tpe = typeStack.headOption.flatten
+  def previousParentType = parentTypeStack.drop(1).headOption.flatten
   def parentType = parentTypeStack.headOption.flatten
   def inputType = inputTypeStack.headOption.flatten
   def fieldDef = fieldDefStack.headOption.flatten
@@ -145,6 +146,9 @@ class TypeInfo(schema: Schema[_, _]) {
       pushParent()
     case fd: ast.FragmentDefinition =>
       typeStack.push(schema.outputTypes get fd.typeCondition)
+      pushParent()
+    case ifd: ast.InlineFragment =>
+      typeStack.push(schema.outputTypes get ifd.typeCondition)
       pushParent()
     case vd: ast.VariableDefinition =>
       inputTypeStack push schema.getInputType(vd.tpe)
@@ -195,6 +199,9 @@ class TypeInfo(schema: Schema[_, _]) {
       typeStack.pop()
       parentTypeStack.pop()
     case fd: ast.FragmentDefinition =>
+      typeStack.pop()
+      parentTypeStack.pop()
+    case fd: ast.InlineFragment =>
       typeStack.pop()
       parentTypeStack.pop()
     case vd: ast.VariableDefinition =>
