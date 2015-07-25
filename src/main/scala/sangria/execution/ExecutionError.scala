@@ -19,5 +19,8 @@ class ExecutionError(message: String, val sourceMapper: Option[SourceMapper] = N
 case class VariableCoercionError(violations: List[Violation]) extends ExecutionError(
   s"Error during variable coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}") with WithViolations
 
+case class ValidationError(violations: List[Violation]) extends ExecutionError(
+  s"Query does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}") with WithViolations
+
 case class AttributeCoercionError(violations: List[Violation]) extends ExecutionError(
   s"Error during attribute coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}") with WithViolations
