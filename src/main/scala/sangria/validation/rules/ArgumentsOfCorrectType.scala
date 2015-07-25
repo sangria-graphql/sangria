@@ -18,12 +18,12 @@ class ArgumentsOfCorrectType extends ValidationRule {
       case ast.Argument(name, value, _) =>
         ctx.typeInfo.argument.map { arg =>
           if (!isValidLiteralValue(arg.inputValueType, value))
-            Left(BadValueViolation(
+            Left(Vector(BadValueViolation(
               arg.name,
               SchemaRenderer.renderTypeName(arg.inputValueType),
               QueryRenderer.render(value),
               ctx.sourceMapper,
-              value.position))
+              value.position.toList)))
           else
             Right(Continue)
         } getOrElse Right(Continue)

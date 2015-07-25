@@ -19,11 +19,11 @@ class FieldsOnCorrectType extends ValidationRule {
       case ast.Field(_, name, _, _, _, pos) =>
         (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
           case (Some(parent), None) =>
-            Left(UndefinedFieldViolation(
+            Left(Vector(UndefinedFieldViolation(
               name,
               SchemaRenderer.renderTypeName(parent, topLevel = true),
               ctx.sourceMapper,
-              pos))
+              pos.toList)))
           case _ =>
             Right(Continue)
         }

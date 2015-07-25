@@ -7,7 +7,7 @@ object AstVisitor {
   import ast.AstVisitorCommand._
 
   def visitAst(
-      doc: Document,
+      doc: AstNode,
       onEnter: AstNode => AstVisitorCommand.Value = _ => Continue,
       onLeave: AstNode => AstVisitorCommand.Value = _ => Continue): Unit = {
 

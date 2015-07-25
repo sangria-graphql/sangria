@@ -4,15 +4,15 @@ import org.parboiled2.Position
 import sangria.parser.SourceMapper
 import sangria.validation.{AstNodeLocation, Violation}
 
-trait WithViolations {
-  def violations: List[Violation]
-}
-
 trait UserFacingError {
   def getMessage: String
 }
 
-class ExecutionError(message: String, val sourceMapper: Option[SourceMapper] = None, val position: Option[Position] = None) extends Exception(message) with AstNodeLocation with UserFacingError {
+trait WithViolations extends UserFacingError{
+  def violations: List[Violation]
+}
+
+class ExecutionError(message: String, val sourceMapper: Option[SourceMapper] = None, val positions: List[Position] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError {
   override def getMessage = super.getMessage + astLocation
 }
 

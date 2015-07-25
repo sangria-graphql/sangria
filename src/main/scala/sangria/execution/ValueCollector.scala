@@ -15,7 +15,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       case (acc, varDef) =>
         val value = schema.getInputType(varDef.tpe)
           .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
-          .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position) :: Nil))
+          .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position.toList) :: Nil))
 
         value match {
           case Right(Some(v)) => acc :+ (varDef.name, Right(v))
@@ -55,7 +55,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       if (input.isEmpty || !um.isDefined(input.get))
         definition.defaultValue map (coerceAstValue(tpe, fieldPath, _, Map.empty)) getOrElse Right(None)
       else coerceInputValue(tpe, fieldPath, input.get)
-    } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position) :: Nil)
+    } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position.toList) :: Nil)
 
   def isValidValue(tpe: InputType[_], input: Option[um.LeafNode]): Boolean = (tpe, input) match {
     case (OptionInputType(ofType), Some(value)) if um.isDefined(value) => isValidValue(ofType, Some(value))
@@ -82,7 +82,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
   def resolveListValue(ofType: InputType[_], fieldPath: List[String], value: Either[List[Violation], Option[Any]], pos: Option[Position] = None) = value match {
     case r @ Right(None) if ofType.isInstanceOf[OptionInputType[_]] => r
     case Right(Some(v)) => Right(v)
-    case Right(None) => Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil)
+    case Right(None) => Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos.toList) :: Nil)
     case l @ Left(_) => l
   }
 
@@ -91,7 +91,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       case Right(None) if default.isDefined => acc.updated(fieldName, Right(default.get))
       case r @ Right(None) if ofType.isInstanceOf[OptionInputType[_]] => acc
       case Right(Some(v)) => acc.updated(fieldName, Right(v))
-      case Right(None) => acc.updated(fieldName, Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos) :: Nil))
+      case Right(None) => acc.updated(fieldName, Left(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos.toList) :: Nil))
       case l @ Left(_) if allowErrorsOnDefault && default.isDefined => acc.updated(fieldName, Right(default.get))
       case l @ Left(_) => acc.updated(fieldName, l)
     }
@@ -129,10 +129,10 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else Right(Some(res mapValues (_.right.get)))
     case (scalar: ScalarType[_], value) if um.isScalarNode(value) =>
       scalar.coerceUserInput(um.getScalarValue(value))
-          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, None, None) :: Nil), v => Right(Some(v)))
+          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, None, Nil) :: Nil), v => Right(Some(v)))
     case (enum: EnumType[_], value) if um.isScalarNode(value) =>
       enum.coerceUserInput(um.getScalarValue(value))
-          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, None, None) :: Nil), {
+          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, None, Nil) :: Nil), {
         case (v, deprecated) =>
           if (deprecated) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext)
 
@@ -173,13 +173,13 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       if (errors.nonEmpty) Left(errors)
       else Right(Some(res mapValues (_.right.get)))
     case (objTpe: InputObjectType[_], value) =>
-      Left(InputObjectTypeMismatchViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), QueryRenderer.render(value), sourceMapper, value.position) :: Nil)
+      Left(InputObjectTypeMismatchViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), QueryRenderer.render(value), sourceMapper, value.position.toList) :: Nil)
     case (scalar: ScalarType[_], value) =>
       scalar.coerceInput(value)
-          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position) :: Nil), v => Right(Some(v)))
+          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position.toList) :: Nil), v => Right(Some(v)))
     case (enum: EnumType[_], value) =>
       enum.coerceInput(value)
-          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position) :: Nil), {
+          .fold(violation => Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position.toList) :: Nil), {
         case (v, deprecated) =>
           if (deprecated) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext)
 

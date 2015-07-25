@@ -174,7 +174,7 @@ trait ValidationSupport extends Matchers {
           errors exists { error =>
             error.errorMessage.contains(expected) && {
               pos map { p =>
-                val Some(errorPos) = error.asInstanceOf[AstNodeViolation].position
+                val List(errorPos) = error.asInstanceOf[AstNodeViolation].positions
 
                 errorPos.line == p.line && errorPos.column == p.col
               } getOrElse true

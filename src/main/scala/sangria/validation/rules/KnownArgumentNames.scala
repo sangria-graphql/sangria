@@ -17,12 +17,12 @@ class KnownArgumentNames extends ValidationRule {
       case ast.Argument(name, _, pos) =>
         ctx.typeInfo.fieldDef match {
           case Some(field) if !field.arguments.exists(_.name == name) =>
-            Left(UnknownArgViolation(
+            Left(Vector(UnknownArgViolation(
               name,
               field.name,
               ctx.typeInfo.previousParentType.fold("")(SchemaRenderer.renderTypeName(_, topLevel = true)),
               ctx.sourceMapper,
-              pos))
+              pos.toList)))
           case _ =>
             Right(Continue)
         }

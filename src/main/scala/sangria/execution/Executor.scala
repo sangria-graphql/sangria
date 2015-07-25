@@ -71,6 +71,6 @@ case class Executor[Ctx, Root](
   def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
     case ast.OperationType.Query => Success(schema.query)
     case ast.OperationType.Mutation => schema.mutation map (Success(_)) getOrElse
-        Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position))
+        Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position.toList))
   }
 }

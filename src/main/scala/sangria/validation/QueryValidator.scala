@@ -38,7 +38,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
         if (visitor.onEnter.isDefinedAt(node)) {
           visitor.onEnter(node) match {
             case Left(violation) =>
-              ctx.addViolation(violation)
+              ctx.addViolations(violation)
             case _ => // todo
           }
         }
@@ -51,7 +51,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
         if (visitor.onLeave.isDefinedAt(node)) {
           visitor.onLeave(node) match {
             case Left(violation) =>
-              ctx.addViolation(violation)
+              ctx.addViolations(violation)
             case _ => // todo
           }
         }
@@ -75,6 +75,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
   def sourceMapper = doc.sourceMapper
 
   def addViolation(v: Violation) = errors += v
+  def addViolations(vs: Vector[Violation]) = errors ++= vs
 
   def violations = errors.toList
 }

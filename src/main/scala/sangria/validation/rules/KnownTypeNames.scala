@@ -17,7 +17,7 @@ class KnownTypeNames extends ValidationRule {
      override val onEnter: ValidationVisit = {
        case ast.NamedType(name, pos) =>
          if (!ctx.schema.allTypes.contains(name))
-           Left(UnknownTypeViolation(name, ctx.sourceMapper, pos))
+           Left(Vector(UnknownTypeViolation(name, ctx.sourceMapper, pos.toList)))
          else
            Right(Continue)
      }

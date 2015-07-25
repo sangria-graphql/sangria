@@ -19,19 +19,19 @@ class KnownDirectives extends ValidationRule {
        case ast.Directive(name, _, pos) =>
          ctx.schema.directivesByName.get(name) match {
            case None =>
-             Left(UnknownDirectiveViolation(name, ctx.sourceMapper, pos))
+             Left(Vector(UnknownDirectiveViolation(name, ctx.sourceMapper, pos.toList)))
            case Some(dir) =>
              (ctx.typeInfo.ancestors drop 1 head) match {
                case _: ast.OperationDefinition if !dir.onOperation =>
-                 Left(MisplacedDirectiveViolation(name, "operation", ctx.sourceMapper, pos))
+                 Left(Vector(MisplacedDirectiveViolation(name, "operation", ctx.sourceMapper, pos.toList)))
                case _: ast.Field if !dir.onField =>
-                 Left(MisplacedDirectiveViolation(name, "field", ctx.sourceMapper, pos))
+                 Left(Vector(MisplacedDirectiveViolation(name, "field", ctx.sourceMapper, pos.toList)))
                case _: ast.FragmentDefinition if !dir.onFragment =>
-                 Left(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos))
+                 Left(Vector(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos.toList)))
                case _: ast.FragmentSpread if !dir.onFragment =>
-                 Left(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos))
+                 Left(Vector(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos.toList)))
                case _: ast.InlineFragment if !dir.onFragment =>
-                 Left(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos))
+                 Left(Vector(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos.toList)))
                case _ =>
                  Right(Continue)
              }

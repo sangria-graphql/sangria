@@ -296,7 +296,7 @@ class Resolver[Ctx](
         abst.typeOf(value, schema) match {
           case Some(obj) => resolveValue(path, astFields, obj, field, value, userCtx)
           case None => Result(ErrorRegistry(path,
-            new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astFields.head.position)), None)
+            new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astFields.head.position.toList)), None)
         }
     }
 
@@ -379,7 +379,7 @@ class Resolver[Ctx](
       copy(
         errors =
             if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
-              errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position))
+              errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position.toList))
             else
               errors.add(other.errors),
         value =
@@ -391,7 +391,7 @@ class Resolver[Ctx](
     def addToList(other: Result, optional: Boolean, path: List[String], position: Option[Position]) = copy(
       errors =
           if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
-            errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position))
+            errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position.toList))
           else
             errors.add(other.errors),
       value =
