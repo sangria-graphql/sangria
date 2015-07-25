@@ -59,3 +59,12 @@ case class InputObjectTypeMismatchViolation(fieldPath: List[String], typeName: S
 case class BadValueViolation(argName: String, typeName: String, value: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"Argument $argName expected type $typeName but got: $value.$astLocation"
 }
+
+case class BadValueForDefaultArgMessageViolation(varName: String, typeName: String, value: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable $$$varName of type $typeName has invalid default value: $value.$astLocation"
+}
+
+case class DefaultForNonNullArgMessageViolation(varName: String, typeName: String, guessTypeName: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable $$$varName of type $typeName is required and will never use the default value. Perhaps you meant to use type $guessTypeName.$astLocation"
+}
+
