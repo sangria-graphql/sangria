@@ -119,3 +119,11 @@ case class UnusedVariableViolation(name: String, sourceMapper: Option[SourceMapp
   lazy val errorMessage = s"Variable $$$name is not used.$astLocation"
 }
 
+case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Field '$fieldName' of type $typeName must not have a sub selection.$astLocation"
+}
+
+case class RequiredSubselectionViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Field '$fieldName' of type $typeName must have a sub selection.$astLocation"
+}
+
