@@ -99,3 +99,7 @@ case class UnknownTypeViolation(name: String, sourceMapper: Option[SourceMapper]
   lazy val errorMessage = s"Unknown type $name.$astLocation"
 }
 
+case class CycleErrorViolation(fragmentName: String, spreadNames: List[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Cannot spread fragment $fragmentName within itself${if (spreadNames.nonEmpty) s" via ${spreadNames mkString ", " }" else ""}.$astLocation"
+}
+

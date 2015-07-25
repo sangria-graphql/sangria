@@ -161,7 +161,7 @@ trait ValidationSupport extends Matchers {
     }
   }
 
-  def expectInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, Option[Pos])]) = {
+  def expectInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, List[Pos])]) = {
     val Success(doc) = QueryParser.parse(query)
 
     withClue("Should not validate") {
@@ -170,14 +170,14 @@ trait ValidationSupport extends Matchers {
       errors should have size expectedErrors.size
 
       expectedErrors foreach { case(expected, pos) =>
-        withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n${errors map (_.errorMessage) mkString "\n"}") {
+        withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") mkString "; "}. Actual:\n${errors map (_.errorMessage) mkString "\n"}") {
           errors exists { error =>
             error.errorMessage.contains(expected) && {
-              pos map { p =>
-                val List(errorPos) = error.asInstanceOf[AstNodeViolation].positions
+              val errorPositions = error.asInstanceOf[AstNodeViolation].positions
 
-                errorPos.line == p.line && errorPos.column == p.col
-              } getOrElse true
+              errorPositions zip pos forall { case (actualPos, expectedPos) =>
+                expectedPos.line == actualPos.line && expectedPos.col == actualPos.column
+              }
             }
           } should be (true)
         }
@@ -193,9 +193,12 @@ trait ValidationSupport extends Matchers {
     expectValid(schema, defaultRule.get :: Nil, query)
 
   def expectFailsRule(rule: ValidationRule, query: String, expectedErrors: List[(String, Option[Pos])]) =
-    expectInvalid(schema, rule :: Nil, query, expectedErrors)
+    expectInvalid(schema, rule :: Nil, query, expectedErrors.map{case (msg, pos) => msg -> pos.toList})
 
   def expectFails(query: String, expectedErrors: List[(String, Option[Pos])]) =
+    expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors.map{case (msg, pos) => msg -> pos.toList})
+
+  def expectFailsPosList(query: String, expectedErrors: List[(String, List[Pos])]) =
     expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors)
 
   def validator(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
