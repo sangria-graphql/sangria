@@ -116,6 +116,7 @@ class TypeInfo(schema: Schema[_, _]) {
   private val parentTypeStack: MutableStack[Option[CompositeType[_]]] = MutableStack()
   private val inputTypeStack: MutableStack[Option[InputType[_]]] = MutableStack()
   private val fieldDefStack: MutableStack[Option[Field[_, _]]] = MutableStack()
+  private val ancestorStack: MutableStack[ast.AstNode] = MutableStack()
 
   var directive: Option[Directive] = None
   var argument: Option[Argument[_]] = None
@@ -125,54 +126,59 @@ class TypeInfo(schema: Schema[_, _]) {
   def parentType = parentTypeStack.headOption.flatten
   def inputType = inputTypeStack.headOption.flatten
   def fieldDef = fieldDefStack.headOption.flatten
+  def ancestors: Seq[ast.AstNode] = ancestorStack
 
-  def enter(node: ast.AstNode) = node match {
-    case f: ast.Field =>
-      val parent = parentType
-      val fieldDef = parent flatMap (getFieldDef(_, f))
-      val fieldType = fieldDef map (_.fieldType)
+  def enter(node: ast.AstNode) = {
+    ancestorStack push node
 
-      fieldDefStack push fieldDef
-      typeStack push fieldType
+    node match {
+      case f: ast.Field =>
+        val parent = parentType
+        val fieldDef = parent flatMap (getFieldDef(_, f))
+        val fieldType = fieldDef map (_.fieldType)
 
-      pushParent()
-    case ast.Directive(name, _, _) =>
-      directive = schema.directivesByName get name
-    case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) =>
-      typeStack push Some(schema.query)
-      pushParent()
-    case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) =>
-      typeStack push schema.mutation
-      pushParent()
-    case fd: ast.FragmentDefinition =>
-      typeStack.push(schema.allTypes get fd.typeCondition)
-      pushParent()
-    case ifd: ast.InlineFragment =>
-      typeStack.push(schema.allTypes get ifd.typeCondition)
-      pushParent()
-    case vd: ast.VariableDefinition =>
-      inputTypeStack push schema.getInputType(vd.tpe)
-    case a: ast.Argument =>
-      argument = directive orElse fieldDef flatMap { withArgs =>
-        withArgs.arguments find (_.name == a.name)
-      }
-      inputTypeStack push argument.map(_.inputValueType)
-    case ast.ArrayValue(values, _) =>
-      inputType match {
-        case Some(it) => getNotNullType(it) match {
-          case it: ListInputType[_] => inputTypeStack push Some(it.ofType)
-          case _ => inputTypeStack push None
+        fieldDefStack push fieldDef
+        typeStack push fieldType
+
+        pushParent()
+      case ast.Directive(name, _, _) =>
+        directive = schema.directivesByName get name
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) =>
+        typeStack push Some(schema.query)
+        pushParent()
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) =>
+        typeStack push schema.mutation
+        pushParent()
+      case fd: ast.FragmentDefinition =>
+        typeStack.push(schema.allTypes get fd.typeCondition)
+        pushParent()
+      case ifd: ast.InlineFragment =>
+        typeStack.push(schema.allTypes get ifd.typeCondition)
+        pushParent()
+      case vd: ast.VariableDefinition =>
+        inputTypeStack push schema.getInputType(vd.tpe)
+      case a: ast.Argument =>
+        argument = directive orElse fieldDef flatMap { withArgs =>
+          withArgs.arguments find (_.name == a.name)
         }
-        case None => inputTypeStack push None
-      }
-    case ast.ObjectField(name, value, _) =>
-      val fieldType = inputType flatMap (it => getNamedType(it) match {
-        case obj: InputObjectType[_] => obj.fieldsByName.get(name) map (_.inputValueType)
-        case _ => None
-      })
+        inputTypeStack push argument.map(_.inputValueType)
+      case ast.ArrayValue(values, _) =>
+        inputType match {
+          case Some(it) => getNotNullType(it) match {
+            case it: ListInputType[_] => inputTypeStack push Some(it.ofType)
+            case _ => inputTypeStack push None
+          }
+          case None => inputTypeStack push None
+        }
+      case ast.ObjectField(name, value, _) =>
+        val fieldType = inputType flatMap (it => getNamedType(it) match {
+          case obj: InputObjectType[_] => obj.fieldsByName.get(name) map (_.inputValueType)
+          case _ => None
+        })
 
-      inputTypeStack push fieldType
-    case _ => // ignore
+        inputTypeStack push fieldType
+      case _ => // ignore
+    }
   }
 
   def pushParent(): Unit = {
@@ -185,35 +191,39 @@ class TypeInfo(schema: Schema[_, _]) {
     }
   }
 
-  def leave(node: ast.AstNode) = node match {
-    case f: ast.Field =>
-      fieldDefStack.pop()
-      typeStack.pop()
-      parentTypeStack.pop()
-    case ast.Directive(name, _, _) =>
-      directive = None
-    case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) =>
-      typeStack.pop()
-      parentTypeStack.pop()
-    case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) =>
-      typeStack.pop()
-      parentTypeStack.pop()
-    case fd: ast.FragmentDefinition =>
-      typeStack.pop()
-      parentTypeStack.pop()
-    case fd: ast.InlineFragment =>
-      typeStack.pop()
-      parentTypeStack.pop()
-    case vd: ast.VariableDefinition =>
-      inputTypeStack.pop()
-    case a: ast.Argument =>
-      argument = None
-      inputTypeStack.pop()
-    case ast.ArrayValue(values, _) =>
-      inputTypeStack.pop()
-    case ast.ObjectField(name, value, _) =>
-      inputTypeStack.pop()
-    case _ => // ignore
+  def leave(node: ast.AstNode) = {
+    node match {
+      case f: ast.Field =>
+        fieldDefStack.pop()
+        typeStack.pop()
+        parentTypeStack.pop()
+      case ast.Directive(name, _, _) =>
+        directive = None
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) =>
+        typeStack.pop()
+        parentTypeStack.pop()
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) =>
+        typeStack.pop()
+        parentTypeStack.pop()
+      case fd: ast.FragmentDefinition =>
+        typeStack.pop()
+        parentTypeStack.pop()
+      case fd: ast.InlineFragment =>
+        typeStack.pop()
+        parentTypeStack.pop()
+      case vd: ast.VariableDefinition =>
+        inputTypeStack.pop()
+      case a: ast.Argument =>
+        argument = None
+        inputTypeStack.pop()
+      case ast.ArrayValue(values, _) =>
+        inputTypeStack.pop()
+      case ast.ObjectField(name, value, _) =>
+        inputTypeStack.pop()
+      case _ => // ignore
+    }
+
+    ancestorStack.pop()
   }
 
   def getNamedType(it: Type): Type with Named = it match {

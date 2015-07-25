@@ -84,3 +84,11 @@ case class UnknownArgViolation(argName: String, fieldName: String, typeName: Str
   lazy val errorMessage = s"Unknown argument $argName on field $fieldName of type $typeName.$astLocation"
 }
 
+case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Unknown directive $name.$astLocation"
+}
+
+case class MisplacedDirectiveViolation(name: String, placement: String, sourceMapper: Option[SourceMapper], position: Option[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Directive $name may not be used on $placement.$astLocation"
+}
+
