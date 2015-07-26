@@ -43,6 +43,8 @@ object Json4sSupport {
     override def bigDecimalNode(value: BigDecimal) = JDecimal(value)
   }
 
+  implicit val Json4sInputUnmarshallerJObject = Json4sInputUnmarshaller.asInstanceOf[InputUnmarshaller[JObject]]
+
   implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JValue] {
     override type LeafNode = JValue
 

@@ -42,6 +42,8 @@ object SprayJsonSupport {
     override def bigDecimalNode(value: BigDecimal) = JsNumber(value)
   }
 
+  implicit val SprayJsonInputUnmarshallerJObject = SprayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
+
   implicit object SprayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
     override type LeafNode = JsValue
 
