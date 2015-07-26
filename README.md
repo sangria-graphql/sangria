@@ -6,7 +6,7 @@
 
 SBT Configuration:
 
-    libraryDependencies += "com.github.olegilyenko" %% "sangria" % "0.0.2"
+    libraryDependencies += "com.github.olegilyenko" %% "sangria" % "0.1.0"
 
 Examples below demonstrate some of the features, that are implemented so far. More features will come very soon!
 
