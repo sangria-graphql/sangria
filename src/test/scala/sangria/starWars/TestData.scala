@@ -1,9 +1,9 @@
-package sangria
+package sangria.starWars
 
 import sangria.schema.{Deferred, DeferredResolver}
 
 import scala.concurrent.Future
-import scala.util.{Try, Success}
+import scala.util.Try
 
 object TestData {
   object Episode extends Enumeration {
@@ -75,7 +75,8 @@ object TestData {
   }
 
   class CharacterRepo {
-    def getHero() = characters(0)
+    def getHero(episode: Option[Episode.Value]) =
+      episode flatMap (_ => getHuman("1000")) getOrElse characters.last
 
     def getHuman(id: String): Option[Human] = characters.find(c => c.isInstanceOf[Human] && c.id == id).asInstanceOf[Option[Human]]
 

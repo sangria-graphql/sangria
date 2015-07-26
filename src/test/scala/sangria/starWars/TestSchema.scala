@@ -1,7 +1,7 @@
-package sangria
+package sangria.starWars
 
-import sangria.TestData.{CharacterRepo, DeferFriends, Droid, Human}
 import sangria.schema._
+import sangria.starWars.TestData._
 
 import scala.concurrent.Future
 
@@ -79,10 +79,14 @@ object TestSchema {
     Character :: Nil)
 
   val ID = Argument("id", StringType)
+  val EpisodeArg = Argument("episode", OptionInputType(EpisodeEnum),
+    description = "If omitted, returns the hero of the whole saga. If provided, returns the hero of that particular episode.")
 
   val Query = ObjectType[CharacterRepo, Unit](
     "Query", List[Field[CharacterRepo, Unit]](
-      Field("hero", Character, resolve = (ctx) => ctx.ctx.getHero),
+      Field("hero", Character,
+        arguments = EpisodeArg :: Nil,
+        resolve = (ctx) => ctx.ctx.getHero(ctx.argOpt(EpisodeArg))),
       Field("human", OptionType(Human),
         arguments = ID :: Nil,
         resolve = ctx => ctx.ctx.getHuman(ctx arg ID)),

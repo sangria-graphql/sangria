@@ -1,8 +1,8 @@
 package sangria.util
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.TestData.{FriendsResolver, CharacterRepo}
-import sangria.TestSchema
+import sangria.starWars.{TestSchema, TestData}
+import TestData.{FriendsResolver, CharacterRepo}
 import sangria.execution.Executor
 import sangria.parser.{SyntaxError, QueryParser}
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
