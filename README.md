@@ -1,4 +1,4 @@
-## Sangria
+![Scagria Logo](https://raw.githubusercontent.com/OlegIlyenko/sangria/master/logo/sangria-logo.png)
 
 **Sangria** is a scala [GraphQL](http://facebook.github.io/graphql/) client and server library.
 
