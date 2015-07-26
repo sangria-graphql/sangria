@@ -127,3 +127,11 @@ case class RequiredSubselectionViolation(fieldName: String, typeName: String, so
   lazy val errorMessage = s"Field '$fieldName' of type $typeName must have a sub selection.$astLocation"
 }
 
+case class TypeIncompatibleAnonSpreadViolation(parentTypeName: String, fragTypeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Fragment cannot be spread here as objects of type '$parentTypeName' can never be of type '$fragTypeName'.$astLocation"
+}
+
+case class TypeIncompatibleSpreadViolation(fragName: String, parentTypeName: String, fragTypeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Fragment '$fragName' cannot be spread here as objects of type '$parentTypeName' can never be of type '$fragTypeName'.$astLocation"
+}
+
