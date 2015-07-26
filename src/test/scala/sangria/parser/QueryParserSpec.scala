@@ -254,7 +254,7 @@ class QueryParserSpec extends WordSpec with Matchers {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }")
 
-      error.message should be (
+      error.getMessage should be (
         """Syntax error while parsing GraphQL query. Invalid input '$', expected ValueConst or ws (line 1, column 37):
           |query Foo($x: Complex = { a: { b: [ $var ] } }) { field }
           |                                    ^""".stripMargin
