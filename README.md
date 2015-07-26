@@ -1,8 +1,6 @@
 ![Scagria Logo](https://raw.githubusercontent.com/OlegIlyenko/sangria/master/logo/sangria-logo.png)
 
-**Sangria** is a scala [GraphQL](http://facebook.github.io/graphql/) client and server library.
-
-The initial version is WIP. More information about the project will come soon.
+**Sangria** is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
 [![Build Status](https://travis-ci.org/OlegIlyenko/sangria.svg)](https://travis-ci.org/OlegIlyenko/sangria) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11) [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
