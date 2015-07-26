@@ -4,7 +4,7 @@ import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 import spray.json._
 
 
-object SprayJsonSupport {
+object SprayJsonSupport extends SprayJsonSupportLowPrioImplicits {
 
   implicit object SprayJsonResultMarshaller extends ResultMarshaller {
     override type Node = JsValue
@@ -42,8 +42,6 @@ object SprayJsonSupport {
     override def bigDecimalNode(value: BigDecimal) = JsNumber(value)
   }
 
-  implicit val SprayJsonInputUnmarshallerJObject = SprayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
-
   implicit object SprayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
     override type LeafNode = JsValue
 
@@ -77,4 +75,9 @@ object SprayJsonSupport {
 
     override def getMapKeys(node: JsValue) = node.asInstanceOf[JsObject].fields.keySet
   }
+}
+
+trait SprayJsonSupportLowPrioImplicits {
+  implicit val SprayJsonInputUnmarshallerJObject =
+    SprayJsonSupport.SprayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
 }

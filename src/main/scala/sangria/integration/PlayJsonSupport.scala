@@ -3,7 +3,7 @@ package sangria.integration
 import play.api.libs.json._
 import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 
-object PlayJsonSupport {
+object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
   implicit object PlayJsonResultMarshaller extends ResultMarshaller {
     override type Node = JsValue
 
@@ -40,8 +40,6 @@ object PlayJsonSupport {
     override def bigDecimalNode(value: BigDecimal) = JsNumber(value)
   }
 
-  implicit val SprayJsonInputUnmarshallerJObject = PlayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
-
   implicit object PlayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
     override type LeafNode = JsValue
 
@@ -75,4 +73,9 @@ object PlayJsonSupport {
 
     override def getMapKeys(node: JsValue) = node.asInstanceOf[JsObject].keys
   }
+}
+
+trait PlayJsonSupportLowPrioImplicits {
+  implicit val SprayJsonInputUnmarshallerJObject =
+    PlayJsonSupport.PlayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
 }

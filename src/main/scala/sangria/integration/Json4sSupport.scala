@@ -5,7 +5,7 @@ import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 
 import org.json4s.native.JsonMethods.{render => jsonRender, _}
 
-object Json4sSupport {
+object Json4sSupport extends Json4sSupportLowPrioImplicits {
   
   implicit object Json4sResultMarshaller extends ResultMarshaller {
     override type Node = JValue
@@ -43,8 +43,6 @@ object Json4sSupport {
     override def bigDecimalNode(value: BigDecimal) = JDecimal(value)
   }
 
-  implicit val Json4sInputUnmarshallerJObject = Json4sInputUnmarshaller.asInstanceOf[InputUnmarshaller[JObject]]
-
   implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JValue] {
     override type LeafNode = JValue
 
@@ -80,5 +78,9 @@ object Json4sSupport {
 
     override def getMapKeys(node: JValue) = node.asInstanceOf[JObject].values.keySet
   }
-  
+}
+
+trait Json4sSupportLowPrioImplicits {
+  implicit val Json4sInputUnmarshallerJObject =
+    Json4sSupport.Json4sInputUnmarshaller.asInstanceOf[InputUnmarshaller[JObject]]
 }
