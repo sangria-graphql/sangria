@@ -2,7 +2,7 @@
 
 **Sangria** is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
-[![Build Status](https://travis-ci.org/OlegIlyenko/sangria.svg)](https://travis-ci.org/OlegIlyenko/sangria) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11) [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
+[![Build Status](https://travis-ci.org/OlegIlyenko/sangria.svg)](https://travis-ci.org/OlegIlyenko/sangria) [![Coverage Status](http://coveralls.io/repos/OlegIlyenko/sangria/badge.svg?branch=master&service=github)](http://coveralls.io/github/OlegIlyenko/sangria?branch=master) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.olegilyenko/sangria_2.11) [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 SBT Configuration:
 
