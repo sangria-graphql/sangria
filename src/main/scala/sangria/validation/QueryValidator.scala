@@ -5,6 +5,7 @@ import sangria.ast.{AstVisitorCommand, AstVisitor, FragmentDefinition}
 import sangria.ast.AstVisitorCommand._
 import sangria.schema._
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
+import sangria.validation.rules._
 import scala.collection.mutable.{Stack => MutableStack, Set => MutableSet, Map => MutableMap, ListBuffer}
 
 trait QueryValidator {
@@ -12,7 +13,22 @@ trait QueryValidator {
 }
 
 object QueryValidator {
-  val allRules: List[ValidationRule] = Nil
+  val allRules: List[ValidationRule] = List(
+    new ArgumentsOfCorrectType,
+    new DefaultValuesOfCorrectType,
+    new FieldsOnCorrectType,
+    new FragmentsOnCompositeType,
+    new KnownArgumentNames,
+    new KnownDirectives,
+    new KnownFragmentNames,
+    new KnownTypeNames,
+    new NoFragmentCycles,
+    new NoUndefinedVariables,
+    new NoUnusedFragments,
+    new NoUnusedVariables,
+    new PossibleFragmentSpreads,
+    new ScalarLeafs
+  )
 
   val empty = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): List[Violation] = Nil

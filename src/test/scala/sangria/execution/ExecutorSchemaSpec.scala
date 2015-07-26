@@ -4,6 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.AwaitSupport
+import sangria.validation.QueryValidator
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -147,7 +148,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
         })
       }
 
-      Executor(BlogSchema, deferredResolver = resolver).execute(doc).await should be (expected)
+      Executor(BlogSchema, deferredResolver = resolver, queryValidator = QueryValidator.empty).execute(doc).await should be (expected)
     }
   }
 }

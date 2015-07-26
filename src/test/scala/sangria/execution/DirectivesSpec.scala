@@ -5,6 +5,7 @@ import sangria.util.AwaitSupport
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
+import sangria.validation.QueryValidator
 
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,7 +24,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
   def executeTestQuery(query: String) = {
     val Success(doc) = QueryParser.parse(query)
 
-    Executor(schema, data).execute(doc).await
+    Executor(schema, data, queryValidator = QueryValidator.empty).execute(doc).await
   }
 
   "Execute: handles directives" when {

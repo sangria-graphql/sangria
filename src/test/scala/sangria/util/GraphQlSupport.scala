@@ -4,6 +4,7 @@ import org.scalatest.Matchers
 import sangria.execution.{InputUnmarshaller, Executor, ResultMarshaller}
 import sangria.parser.QueryParser
 import sangria.schema.Schema
+import sangria.validation.QueryValidator
 import spray.json.{JsValue, JsObject}
 
 import scala.util.Success
@@ -21,7 +22,12 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
       case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
     }
 
-    Executor(schema.asInstanceOf[Schema[Any, T]], data, exceptionHandler = exceptionHandler, userContext = userContext).execute(doc.copy(sourceMapper = None), arguments = args).await
+    Executor(
+      schema.asInstanceOf[Schema[Any, T]],
+      data,
+      exceptionHandler = exceptionHandler,
+      userContext = userContext,
+      queryValidator = QueryValidator.empty).execute(doc.copy(sourceMapper = None), arguments = args).await
   }
 
   def check[T](data: T, query: String, expected: Any, args: Option[JsValue] = None, userContext: Any = ()) = {

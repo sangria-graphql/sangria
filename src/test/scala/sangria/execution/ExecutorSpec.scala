@@ -4,6 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.AwaitSupport
+import sangria.validation.QueryValidator
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -309,7 +310,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
         }
       """)
 
-      Executor(schema).execute(doc, Some("Q")).await should be  (Map("data" -> Map("a" -> "b")))
+      Executor(schema, queryValidator = QueryValidator.empty).execute(doc, Some("Q")).await should be  (Map("data" -> Map("a" -> "b")))
     }
 
     "not include illegal fields in output" in {
@@ -318,7 +319,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
         Some(ObjectType("M", List[Field[Unit, Unit]](Field("c", OptionType(StringType), resolve = _ => "d")))))
       val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
 
-      Executor(schema).execute(doc).await should be  (Map("data" -> Map()))
+      Executor(schema, queryValidator = QueryValidator.empty).execute(doc).await should be  (Map("data" -> Map()))
     }
   }
 }
