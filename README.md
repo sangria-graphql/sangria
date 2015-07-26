@@ -8,7 +8,7 @@ SBT Configuration:
 
     libraryDependencies += "com.github.olegilyenko" %% "sangria" % "0.1.0"
 
-Examples below demonstrate some of the features, that are implemented so far. More features will come very soon!
+Examples below demonstrate some of the features. More documentation will come very soon!
 
 ### Query Parser and Renderer
 
