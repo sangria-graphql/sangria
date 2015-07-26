@@ -31,12 +31,12 @@ object TestSchema {
         Field("name", OptionType(StringType),
           Some("The name of the character."),
           resolve = _.value.name),
-        Field("friends", ListType(Character),
+        Field("friends", OptionType(ListType(OptionType(Character))),
           Some("The friends of the character, or an empty list if they have none."),
           resolve = ctx => DeferFriends(ctx.value.friends)),
-        Field("appearsIn", ListType(EpisodeEnum),
+        Field("appearsIn", OptionType(ListType(OptionType(EpisodeEnum))),
           Some("Which movies they appear in."),
-          resolve = _.value.appearsIn)
+          resolve = _.value.appearsIn map (e => Some(e)))
       ))
 
   val Human =
@@ -50,9 +50,12 @@ object TestSchema {
         Field("name", OptionType(StringType),
           Some("The name of the human."),
           resolve = _.value.name),
-        Field("friends", ListType(Character),
+        Field("friends", OptionType(ListType(OptionType(Character))),
           Some("The friends of the human, or an empty list if they have none."),
           resolve = (ctx) => DeferFriends(ctx.value.friends)),
+        Field("appearsIn", OptionType(ListType(OptionType(EpisodeEnum))),
+          Some("Which movies they appear in."),
+          resolve = _.value.appearsIn map (e => Some(e))),
         Field("homePlanet", OptionType(StringType),
           Some("The home planet of the human, or null if unknown."),
           resolve = _.value.homePlanet)
@@ -69,16 +72,20 @@ object TestSchema {
       Field("name", OptionType(StringType),
         Some("The name of the droid."),
         resolve = ctx => Future.successful(ctx.value.name)),
-      Field("friends", ListType(Character),
+      Field("friends", OptionType(ListType(OptionType(Character))),
         Some("The friends of the droid, or an empty list if they have none."),
         resolve = ctx => DeferFriends(ctx.value.friends)),
+      Field("appearsIn", OptionType(ListType(OptionType(EpisodeEnum))),
+        Some("Which movies they appear in."),
+        resolve = _.value.appearsIn map (e => Some(e))),
       Field("primaryFunction", OptionType(StringType),
         Some("The primary function of the droid."),
         resolve = Projection(_.value.primaryFunction))
     ),
     Character :: Nil)
 
-  val ID = Argument("id", StringType)
+  val ID = Argument("id", StringType, description = "id of the character")
+
   val EpisodeArg = Argument("episode", OptionInputType(EpisodeEnum),
     description = "If omitted, returns the hero of the whole saga. If provided, returns the hero of that particular episode.")
 
@@ -92,14 +99,7 @@ object TestSchema {
         resolve = ctx => ctx.ctx.getHuman(ctx arg ID)),
       Field("droid", Droid,
         arguments = ID :: Nil,
-        resolve = Projector((ctx, f)=> ctx.ctx.getDroid(ctx arg ID).get)),
-      Field("test", OptionType(Droid),
-        resolve = ctx => UpdateCtx(Future.successful(ctx.ctx.getDroid("2001").get))(droid => ctx.ctx)),
-      Field("project", OptionType(Droid), resolve =
-          Projector((ctx, projections) => {
-            println("Projected fields: " + projections.flatMap(_.asVector))
-            ctx.ctx.getDroid("2001")
-          }))
+        resolve = Projector((ctx, f)=> ctx.ctx.getDroid(ctx arg ID).get))
     ))
 
   val StarWarsSchema = Schema(Query)

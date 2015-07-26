@@ -20,7 +20,7 @@ object TestData {
   case class Human(id: String, name: Option[String], friends: List[String], appearsIn: List[Episode.Value], homePlanet: Option[String]) extends Character
   case class Droid(id: String, name: Option[String], friends: List[String], appearsIn: List[Episode.Value], primaryFunction: Option[String]) extends Character
 
-  case class DeferFriends(friends: List[String]) extends Deferred[List[Character]]
+  case class DeferFriends(friends: List[String]) extends Deferred[List[Option[Character]]]
 
   val characters = List[Character](
     Human(
@@ -70,7 +70,7 @@ object TestData {
 
   class FriendsResolver extends DeferredResolver {
     override def resolve(deferred: List[Deferred[Any]]) = Future.fromTry(Try(deferred map {
-      case DeferFriends(friendIds) => friendIds map (id => characters.find(_.id == id).get)
+      case DeferFriends(friendIds) => friendIds map (id => characters.find(_.id == id))
     }))
   }
 
