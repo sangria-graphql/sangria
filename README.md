@@ -8,6 +8,10 @@ SBT Configuration:
 
     libraryDependencies += "com.github.olegilyenko" %% "sangria" % "0.1.0"
 
+You can find an example application that uses akka-http with _sangria_ here:
+
+https://github.com/sangria-graphql/sangria-akka-http-example
+
 Examples below demonstrate some of the features. More documentation will come very soon!
 
 ### Query Parser and Renderer
