@@ -135,3 +135,7 @@ case class TypeIncompatibleSpreadViolation(fragName: String, parentTypeName: Str
   lazy val errorMessage = s"Fragment '$fragName' cannot be spread here as objects of type '$parentTypeName' can never be of type '$fragTypeName'.$astLocation"
 }
 
+case class NonInputTypeOnVarViolation(varName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable $$$varName cannot be non input type $typeName.$astLocation"
+}
+
