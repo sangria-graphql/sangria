@@ -266,7 +266,7 @@ class QueryParserSpec extends WordSpec with Matchers {
         "query Foo($x: Complex = null) { field }")
 
       error.formattedError should be (
-        """Invalid input "null", expected StringValue, BooleanValue, ObjectValueConst, ArrayValueConst, EnumValue or NumberValue (line 1, column 25):
+        """Invalid input "null", expected StringValue, BooleanValue, ObjectValueConst, ListValueConst, EnumValue or NumberValue (line 1, column 25):
           |query Foo($x: Complex = null) { field }
           |                        ^""".stripMargin
       )
@@ -288,7 +288,7 @@ class QueryParserSpec extends WordSpec with Matchers {
         "query Foo($x: Complex = .123) { field }")
 
       error.formattedError should be (
-        """Invalid input '.', expected StringValue, BooleanValue, ObjectValueConst, ArrayValueConst, EnumValue or NumberValue (line 1, column 25):
+        """Invalid input '.', expected StringValue, BooleanValue, ObjectValueConst, ListValueConst, EnumValue or NumberValue (line 1, column 25):
           |query Foo($x: Complex = .123) { field }
           |                        ^""".stripMargin
       )
@@ -321,7 +321,7 @@ class QueryParserSpec extends WordSpec with Matchers {
         "query Foo($x: Complex = +1) { field }")
 
       error.formattedError should be (
-        """Invalid input '+', expected StringValue, BooleanValue, ObjectValueConst, ArrayValueConst, EnumValue or NumberValue (line 1, column 25):
+        """Invalid input '+', expected StringValue, BooleanValue, ObjectValueConst, ListValueConst, EnumValue or NumberValue (line 1, column 25):
           |query Foo($x: Complex = +1) { field }
           |                        ^""".stripMargin
       )
