@@ -1,9 +1,9 @@
 name := "sangria"
-organization := "com.github.olegilyenko"
+organization := "org.sangria-graphql"
 version := "0.1.1-SNAPSHOT"
 
-description := "Scala GraphQL server and client library"
-homepage := Some(url("https://github.com/OlegIlyenko/sangria"))
+description := "Scala GraphQL implementation"
+homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq("Apache License, ASL Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 scalaVersion := "2.11.7"
@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
-git.remoteRepo := "git@github.com:OlegIlyenko/sangria.git"
+git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 
 // Publishing
 
@@ -50,10 +50,10 @@ shellPrompt in ThisBuild := { state =>
 // Additional meta-info
 
 startYear := Some(2015)
-organizationHomepage := Some(url("https://github.com/OlegIlyenko/sangria"))
+organizationHomepage := Some(url("https://github.com/sangria-graphql"))
 scmInfo := Some(ScmInfo(
-  browseUrl = url("https://github.com/OlegIlyenko/sangria.git"),
-  connection = "scm:git:git@github.com:OlegIlyenko/sangria.git"
+  browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
+  connection = "scm:git:git@github.com:sangria-graphql/sangria.git"
 ))
 pomExtra := <xml:group>
   <developers>
