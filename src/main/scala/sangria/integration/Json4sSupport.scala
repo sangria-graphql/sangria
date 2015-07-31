@@ -64,7 +64,7 @@ object Json4sSupport extends Json4sSupportLowPrioImplicits {
 
     override def isMapNode(node: JValue) = node.isInstanceOf[JObject]
 
-    override def getArrayValue(node: JValue) = node.asInstanceOf[JArray].arr
+    override def getListValue(node: JValue) = node.asInstanceOf[JArray].arr
 
     override def render(node: JValue) = compact(jsonRender(node))
 

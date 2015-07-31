@@ -96,7 +96,7 @@ object SchemaRenderer {
       data <- u.getRootMapValue(introspectionResult, "data")
       schema <- u.getMapValue(data, "__schema")
       types <- u.getMapValue(schema, "types")
-      typeList = u.getArrayValue(types) filter (!isBuiltIn(u)(_)) sortBy (stringField(u)(_, "name"))
+      typeList = u.getListValue(types) filter (!isBuiltIn(u)(_)) sortBy (stringField(u)(_, "name"))
     } yield typeList map renderType(u) mkString TypeSeparator
   }
 
@@ -107,7 +107,7 @@ object SchemaRenderer {
       data <- u.getRootMapValue(introspectionResult, "data")
       schema <- u.getMapValue(data, "__schema")
       types <- u.getMapValue(schema, "types")
-      typeList = u.getArrayValue(types) filter (isIntrospectionType(u)(_)) sortBy (stringField(u)(_, "name"))
+      typeList = u.getListValue(types) filter (isIntrospectionType(u)(_)) sortBy (stringField(u)(_, "name"))
     } yield typeList map renderType(u) mkString TypeSeparator
   }
 
@@ -130,7 +130,7 @@ object SchemaRenderer {
     u.getMapValue(map, name) getOrElse error(s"Field '$name' is undefined!")
 
   def nonEmptyList(u: InputUnmarshaller[_])(map: u.LeafNode, name: String) =
-    u.getMapValue(map, name) filter u.isDefined map (u.getArrayValue(_)) filter (_.nonEmpty)
+    u.getMapValue(map, name) filter u.isDefined map (u.getListValue(_)) filter (_.nonEmpty)
 
   private def um[T: InputUnmarshaller] = implicitly[InputUnmarshaller[T]]
 

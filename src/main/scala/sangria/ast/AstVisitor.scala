@@ -88,7 +88,7 @@ object AstVisitor {
             args.foreach(d => loop(d))
             breakOrSkip(onLeave(n))
           }
-        case n @ ArrayValue(vals, _) =>
+        case n @ ListValue(vals, _) =>
           if (breakOrSkip(onEnter(n))) {
             vals.foreach(v => loop(v))
             breakOrSkip(onLeave(n))

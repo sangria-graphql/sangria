@@ -103,7 +103,7 @@ class QueryParserSpec extends WordSpec with Matchers {
                   List(
                     Argument(
                       "id",
-                      ArrayValue(List(BigIntValue(BigInt(123), Some(Position(373, 9, 27))), BigIntValue(BigInt(456), Some(Position(378, 9, 32)))), Some(Position(372, 9, 26))),
+                      ListValue(List(BigIntValue(BigInt(123), Some(Position(373, 9, 27))), BigIntValue(BigInt(456), Some(Position(378, 9, 32)))), Some(Position(372, 9, 26))),
                       Some(Position(368, 9, 22)))),
                   Nil,
                   List(

@@ -95,7 +95,7 @@ case class BigDecimalValue(value: BigDecimal, position: Option[Position] = None)
 case class StringValue(value: String, position: Option[Position] = None) extends ScalarValue
 case class BooleanValue(value: Boolean, position: Option[Position] = None) extends ScalarValue
 case class EnumValue(value: String, position: Option[Position] = None) extends Value
-case class ArrayValue(values: List[Value], position: Option[Position] = None) extends Value
+case class ListValue(values: List[Value], position: Option[Position] = None) extends Value
 case class ObjectValue(fields: List[ObjectField], position: Option[Position] = None) extends Value
 case class VariableValue(name: String, position: Option[Position] = None) extends Value
 
@@ -156,7 +156,7 @@ object AstNode {
     case n: StringValue => n.copy(position = None).asInstanceOf[T]
     case n: BooleanValue => n.copy(position = None).asInstanceOf[T]
     case n: EnumValue => n.copy(position = None).asInstanceOf[T]
-    case n: ArrayValue => 
+    case n: ListValue =>
       n.copy(
         values = n.values map withoutPosition,
         position = None).asInstanceOf[T]

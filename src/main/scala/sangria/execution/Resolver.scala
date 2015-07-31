@@ -411,7 +411,7 @@ object Resolver {
     case ast.BigDecimalValue(f, _) => marshaller.bigDecimalNode(f)
     case ast.BooleanValue(b, _) => marshaller.booleanNode(b)
     case ast.EnumValue(enum, _) => marshaller.stringNode(enum)
-    case ast.ArrayValue(values, _) => marshaller.arrayNode(values map (marshalValue(_, marshaller)))
+    case ast.ListValue(values, _) => marshaller.arrayNode(values map (marshalValue(_, marshaller)))
     case ast.ObjectValue(values, _) => marshaller.mapNode(values map (v => v.name -> marshalValue(v.value, marshaller)))
     case ast.VariableValue(_, _) => throw new IllegalStateException("Can't marshall variable values!")
   }

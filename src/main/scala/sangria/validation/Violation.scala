@@ -139,3 +139,7 @@ case class NonInputTypeOnVarViolation(varName: String, typeName: String, sourceM
   lazy val errorMessage = s"Variable $$$varName cannot be non input type $typeName.$astLocation"
 }
 
+case class BadVarPositionViolation(varName: String, varType: String, expectedType: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Variable $$$varName of type $varType used in position expecting type $expectedType.$astLocation"
+}
+

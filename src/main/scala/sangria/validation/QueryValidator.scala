@@ -126,7 +126,7 @@ object ValidationContext {
     case (_, _: ast.VariableValue) => true
     case (OptionInputType(ofType), v) =>
       isValidLiteralValue(ofType, v)
-    case (ListInputType(ofType), ast.ArrayValue(values, _)) =>
+    case (ListInputType(ofType), ast.ListValue(values, _)) =>
       values.forall(isValidLiteralValue(ofType, _))
     case (ListInputType(ofType), v) =>
       isValidLiteralValue(ofType, v)
@@ -204,7 +204,7 @@ class TypeInfo(schema: Schema[_, _]) {
           withArgs.arguments find (_.name == a.name)
         }
         inputTypeStack push argument.map(_.inputValueType)
-      case ast.ArrayValue(values, _) =>
+      case ast.ListValue(values, _) =>
         inputType match {
           case Some(it) => getNotNullType(it) match {
             case it: ListInputType[_] => inputTypeStack push Some(it.ofType)
@@ -258,7 +258,7 @@ class TypeInfo(schema: Schema[_, _]) {
       case a: ast.Argument =>
         argument = None
         inputTypeStack.pop()
-      case ast.ArrayValue(values, _) =>
+      case ast.ListValue(values, _) =>
         inputTypeStack.pop()
       case ast.ObjectField(name, value, _) =>
         inputTypeStack.pop()

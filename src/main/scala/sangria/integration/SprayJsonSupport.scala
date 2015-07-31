@@ -61,7 +61,7 @@ object SprayJsonSupport extends SprayJsonSupportLowPrioImplicits {
 
     override def isMapNode(node: JsValue) = node.isInstanceOf[JsObject]
 
-    override def getArrayValue(node: JsValue) = node.asInstanceOf[JsArray].elements
+    override def getListValue(node: JsValue) = node.asInstanceOf[JsArray].elements
 
     override def render(node: JsValue) = node.compactPrint
 

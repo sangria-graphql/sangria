@@ -61,7 +61,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     case (OptionInputType(ofType), Some(value)) if um.isDefined(value) => isValidValue(ofType, Some(value))
     case (OptionInputType(_), _) => true
     case (ListInputType(ofType), Some(values)) if um.isArrayNode(values) =>
-      um.getArrayValue(values).forall(v => isValidValue(ofType, v match {
+      um.getListValue(values).forall(v => isValidValue(ofType, v match {
         case opt: Option[um.LeafNode @unchecked] => opt
         case other => Option(other)
       }))
@@ -99,7 +99,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
   def coerceInputValue(tpe: InputType[_], fieldPath: List[String], input: um.LeafNode): Either[List[Violation], Option[Any]] = (tpe, input) match {
     case (OptionInputType(ofType), value) => coerceInputValue(ofType, fieldPath, value)
     case (ListInputType(ofType), values) if um.isArrayNode(values) =>
-      val res = um.getArrayValue(values).map {
+      val res = um.getListValue(values).map {
         case defined if um.isDefined(defined) => resolveListValue(ofType, fieldPath, coerceInputValue(ofType, fieldPath, defined))
         case _ => resolveListValue(ofType, fieldPath, Right(None))
       }
@@ -146,7 +146,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     // is of the correct type.
     case (_, ast.VariableValue(name, _)) => Right(variables get name)
     case (OptionInputType(ofType), value) => coerceAstValue(ofType, fieldPath, value, variables)
-    case (ListInputType(ofType), ast.ArrayValue(values, _)) =>
+    case (ListInputType(ofType), ast.ListValue(values, _)) =>
       val res = values.map {v => resolveListValue(ofType, fieldPath, coerceAstValue(ofType, fieldPath, v, variables), v.position)}
       val (errors, successes) = res.partition(_.isLeft)
 

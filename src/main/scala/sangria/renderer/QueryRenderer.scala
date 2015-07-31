@@ -105,7 +105,7 @@ object QueryRenderer {
       case StringValue(value, _) => indent + '"' + escapeString(value) + '"'
       case BooleanValue(value, _) => indent + value.toString
       case EnumValue(value, _) => indent + value
-      case ArrayValue(value, _) =>
+      case ListValue(value, _) =>
         indent + "[" + (value map (render(_, config)) mkString ("," + config.separator)) + "]"
       case ObjectValue(value, _) =>
         indent + "{" + (value map (render(_, config)) mkString ("," + config.separator)) + "}"

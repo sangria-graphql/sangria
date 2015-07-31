@@ -59,7 +59,7 @@ object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
 
     override def isMapNode(node: JsValue) = node.isInstanceOf[JsObject]
 
-    override def getArrayValue(node: JsValue) = node.asInstanceOf[JsArray].value
+    override def getListValue(node: JsValue) = node.asInstanceOf[JsArray].value
 
     override def render(node: JsValue) = Json.stringify(node)
 

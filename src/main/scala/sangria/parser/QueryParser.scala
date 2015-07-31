@@ -167,7 +167,7 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 trait Values { this: Parser with Tokens with Ignored with Operations =>
 
   def ValueConst: Rule1[ast.Value] = rule {
-    NumberValue | StringValue | BooleanValue | EnumValue | ArrayValueConst | ObjectValueConst
+    NumberValue | StringValue | BooleanValue | EnumValue | ListValueConst | ObjectValueConst
   }
 
   def Value: Rule1[ast.Value] = rule {
@@ -176,7 +176,7 @@ trait Values { this: Parser with Tokens with Ignored with Operations =>
     StringValue |
     BooleanValue |
     EnumValue |
-    ArrayValue |
+    ListValue |
     ObjectValue
   }
 
@@ -193,9 +193,9 @@ trait Values { this: Parser with Tokens with Ignored with Operations =>
 
   def EnumValue = rule { !True ~ !False ~ !Null ~ trackPos ~ Name ~> ((pos, name) => ast.EnumValue(name, Some(pos))) }
 
-  def ArrayValueConst = rule { trackPos ~ ws('[') ~ ValueConst.* ~ ws(']')  ~> ((pos, v) => ast.ArrayValue(v.toList, Some(pos))) }
+  def ListValueConst = rule { trackPos ~ ws('[') ~ ValueConst.* ~ ws(']')  ~> ((pos, v) => ast.ListValue(v.toList, Some(pos))) }
 
-  def ArrayValue = rule { trackPos ~ ws('[') ~ Value.* ~ ws(']') ~> ((pos, v) => ast.ArrayValue(v.toList, Some(pos))) }
+  def ListValue = rule { trackPos ~ ws('[') ~ Value.* ~ ws(']') ~> ((pos, v) => ast.ListValue(v.toList, Some(pos))) }
 
   def ObjectValueConst = rule { trackPos ~ ws('{') ~ ObjectFieldConst.* ~ ws('}') ~> ((pos, f) => ast.ObjectValue(f.toList, Some(pos))) }
 
