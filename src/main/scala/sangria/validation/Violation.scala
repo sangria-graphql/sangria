@@ -143,3 +143,7 @@ case class BadVarPositionViolation(varName: String, varType: String, expectedTyp
   lazy val errorMessage = s"Variable $$$varName of type $varType used in position expecting type $expectedType.$astLocation"
 }
 
+case class MissingFieldArgViolation(fieldName: String, argName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Field $fieldName argument $argName of type $typeName is required but not provided.$astLocation"
+}
+
