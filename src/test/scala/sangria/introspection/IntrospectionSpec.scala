@@ -5,6 +5,7 @@ import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.AwaitSupport
+import sangria.validation.QueryValidator
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
@@ -1202,7 +1203,8 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         """
       )
 
-      val result = Executor(schema).execute(query).await.asInstanceOf[Map[String, Any]]
+      val result = Executor(schema, queryValidator = QueryValidator.empty).execute(query).await.asInstanceOf[Map[String, Any]]
+      println(result)
 
       result("data") should be (Map("__type" -> null))
       result("errors").asInstanceOf[List[Map[String, Any]]](0)("message").asInstanceOf[String] should include (

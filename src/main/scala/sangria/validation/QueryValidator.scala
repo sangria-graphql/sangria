@@ -27,7 +27,10 @@ object QueryValidator {
     new NoUnusedFragments,
     new NoUnusedVariables,
     new PossibleFragmentSpreads,
-    new ScalarLeafs
+    new ProvidedNonNullArguments,
+    new ScalarLeafs,
+    new VariablesAreInputTypes,
+    new VariablesInAllowedPosition
   )
 
   val empty = new QueryValidator {

@@ -45,7 +45,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     Field("e", OptionType(StringType), resolve = _.value.e),
     Field("f", OptionType(StringType), resolve = _.value.f),
     Field("pic", OptionType(StringType),
-      arguments = Argument("size", OptionInputType(StringType)) :: Nil,
+      arguments = Argument("size", OptionInputType(IntType)) :: Nil,
       resolve = ctx => ctx.value.pic(ctx.argOpt[Int]("size"))),
     Field("deep", OptionType(DeepDataType), resolve = _.value.deep),
     Field("future", OptionType(DataType), resolve = _.value.future)
