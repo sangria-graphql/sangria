@@ -20,6 +20,8 @@ More info and the documentation can be found in the project home page:
 
 ## Mailing List
 
+[![Join the chat at https://gitter.im/sangria-graphql/sangria](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/sangria-graphql/sangria?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 If you would like to discuss something about sangria or have some questions, please feel free to join our mailing list:
 
 [https://groups.google.com/forum/#!forum/sangria-graphql](https://groups.google.com/forum/#!forum/sangria-graphql)
