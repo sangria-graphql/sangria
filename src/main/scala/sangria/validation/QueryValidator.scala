@@ -26,6 +26,7 @@ object QueryValidator {
     new NoUndefinedVariables,
     new NoUnusedFragments,
     new NoUnusedVariables,
+    new OverlappingFieldsCanBeMerged,
     new PossibleFragmentSpreads,
     new ProvidedNonNullArguments,
     new ScalarLeafs,
