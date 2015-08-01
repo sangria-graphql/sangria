@@ -2,6 +2,7 @@ package sangria.validation
 
 import org.parboiled2.Position
 import sangria.parser.SourceMapper
+import sangria.validation.rules.ConflictReason
 
 trait Violation {
   def errorMessage: String
@@ -145,5 +146,14 @@ case class BadVarPositionViolation(varName: String, varType: String, expectedTyp
 
 case class MissingFieldArgViolation(fieldName: String, argName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"Field $fieldName argument $argName of type $typeName is required but not provided.$astLocation"
+}
+
+case class FieldsConflictViolation(outputName: String, reason: Either[String, Vector[ConflictReason]], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Field $outputName conflict because ${reasonMessage(reason)}.$astLocation"
+
+  private def reasonMessage(reason: Either[String, Vector[ConflictReason]]): String = reason match {
+    case Left(message) => message
+    case Right(subReasons) => subReasons map (sr => s"subfields ${sr.fieldName} conflict because ${reasonMessage(sr.reason)}") mkString " and "
+  }
 }
 

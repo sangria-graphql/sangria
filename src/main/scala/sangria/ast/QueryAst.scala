@@ -14,6 +14,7 @@ sealed trait ConditionalFragment extends AstNode {
 
 sealed trait SelectionContainer {
   def selections: List[Selection]
+  def position: Option[Position]
 }
 
 sealed trait Definition extends AstNode
@@ -31,7 +32,7 @@ case class FragmentDefinition(
   typeCondition: NamedType,
   directives: List[Directive],
   selections: List[Selection],
-  position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives
+  position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer
 
 sealed trait OperationType
 
@@ -71,7 +72,7 @@ case class InlineFragment(
   typeCondition: NamedType,
   directives: List[Directive],
   selections: List[Selection],
-  position: Option[Position] = None) extends Selection with ConditionalFragment
+  position: Option[Position] = None) extends Selection with ConditionalFragment with SelectionContainer
 
 sealed trait NameValue extends AstNode {
   def name: String

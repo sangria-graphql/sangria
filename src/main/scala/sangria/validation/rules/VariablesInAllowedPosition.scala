@@ -1,8 +1,8 @@
 package sangria.validation.rules
 
-import sangria.schema.{Named, ListInputType, OptionInputType, InputType}
-
 import scala.language.postfixOps
+
+import sangria.schema.{Named, ListInputType, OptionInputType, InputType}
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand._
