@@ -1,4 +1,4 @@
-package sangria
+package sangria.parser
 
 import scala.util.{Failure, Success, Try}
 

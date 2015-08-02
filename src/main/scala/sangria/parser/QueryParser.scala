@@ -3,7 +3,7 @@ package sangria.parser
 import org.parboiled2._
 import CharPredicate.{HexDigit, Digit19, AlphaNum}
 
-import sangria.{DeliveryScheme, ast}
+import sangria.ast
 
 import scala.util.{Success, Failure}
 
