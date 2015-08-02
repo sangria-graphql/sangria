@@ -320,7 +320,12 @@ class Resolver[Ctx](
 
         try {
           val res = field.resolve match {
-            case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields))
+            case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields, pfn.maxLevel))
+            case pfn: Projection[Ctx, _, _] =>
+              pfn.fn match {
+                case projectorFn: Projector[Ctx, _, _] => projectorFn(ctx, collectProjections(path, field, astFields, projectorFn.maxLevel))
+                case _ => pfn(ctx)
+              }
             case fn => fn(ctx)
           }
 
@@ -335,33 +340,37 @@ class Resolver[Ctx](
     }
   }
 
-  def collectProjections(path: List[String], field: Field[Ctx, _], astFields: List[ast.Field]): Vector[ProjectedName] = {
-    def loop(path: List[String], tpe: OutputType[_], astFields: List[ast.Field]): Vector[ProjectedName] = tpe match {
-      case OptionType(ofType) => loop(path, ofType, astFields)
-      case ListType(ofType) => loop(path, ofType, astFields)
-      case objTpe: ObjectType[Ctx, _] =>
-        fieldCollector.collectFields(path, objTpe, astFields) match {
-          case Success(ff) =>
-            ff.values.toVector collect {
-              case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).isDefined && objTpe.getField(schema, fields.head.name).get.resolve.isInstanceOf[Projection[_, _, _]] =>
-                val astField = fields.head
-                val field = objTpe.getField(schema, astField.name).get
-                val projection = field.resolve.asInstanceOf[Projection[_, _, _]]
-                val projectedName = projection.projectedName getOrElse field.name
+  def collectProjections(path: List[String], field: Field[Ctx, _], astFields: List[ast.Field], maxLevel: Int): Vector[ProjectedName] = {
+    def loop(path: List[String], tpe: OutputType[_], astFields: List[ast.Field], currLevel: Int): Vector[ProjectedName] =
+      if (currLevel > maxLevel) Vector.empty
+      else tpe match {
+        case OptionType(ofType) => loop(path, ofType, astFields, currLevel)
+        case ListType(ofType) => loop(path, ofType, astFields, currLevel)
+        case objTpe: ObjectType[Ctx, _] =>
+          fieldCollector.collectFields(path, objTpe, astFields) match {
+            case Success(ff) =>
+              ff.values.toVector collect {
+                case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).isDefined && !objTpe.getField(schema, fields.head.name).get.resolve.isInstanceOf[NoProjection[_, _, _]] =>
+                  val astField = fields.head
+                  val field = objTpe.getField(schema, astField.name).get
+                  val projectedName = field.resolve match {
+                    case proj: Projection[_, _, _] => proj.projectedName
+                    case _ => field.name
+                  }
 
-                ProjectedName(projectedName, loop(path :+ projectedName, field.fieldType, fields))
-            }
-          case Failure(_) => Vector.empty
-        }
-      case abst: AbstractType =>
-        schema.possibleTypes
-          .get (abst.name)
-          .map (_.flatMap(loop(path, _, astFields)).groupBy(_.name).map(_._2.head).toVector)
-          .getOrElse (Vector.empty)
-      case _ => Vector.empty
-    }
+                  ProjectedName(projectedName, loop(path :+ projectedName, field.fieldType, fields, currLevel + 1))
+              }
+            case Failure(_) => Vector.empty
+          }
+        case abst: AbstractType =>
+          schema.possibleTypes
+            .get (abst.name)
+            .map (_.flatMap(loop(path, _, astFields, currLevel + 1)).groupBy(_.name).map(_._2.head).toVector)
+            .getOrElse (Vector.empty)
+        case _ => Vector.empty
+      }
 
-    loop(path, field.fieldType, astFields)
+    loop(path, field.fieldType, astFields, 1)
   }
 
   def isOptional(tpe: ObjectType[_, _], fieldName: String): Boolean =

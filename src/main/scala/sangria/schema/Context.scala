@@ -28,27 +28,39 @@ object UpdateCtx {
   def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
 }
 
-abstract class Projection[Ctx, Val, Res](val projectedName: Option[String]) extends (Context[Ctx, Val] => Action[Ctx, Res])
+abstract class NoProjection[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res])
 
-object Projection {
+object NoProjection {
   def apply[Ctx, Val, Res](fn: Context[Ctx, Val] => Action[Ctx, Res]) =
-    new Projection[Ctx, Val, Res](None) {
+    new NoProjection[Ctx, Val, Res] {
       override def apply(ctx: Context[Ctx, Val]) = fn(ctx)
     }
+}
 
+abstract class Projection[Ctx, Val, Res](val projectedName: String, val fn: Context[Ctx, Val] => Action[Ctx, Res]) extends (Context[Ctx, Val] => Action[Ctx, Res])
+
+object Projection {
   def apply[Ctx, Val, Res](projectedName: String, fn: Context[Ctx, Val] => Action[Ctx, Res]) =
-    new Projection[Ctx, Val, Res](Some(projectedName)) {
+    new Projection[Ctx, Val, Res](projectedName, fn) {
       override def apply(ctx: Context[Ctx, Val]) = fn(ctx)
     }
 }
 
 trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
+  val maxLevel: Int = Integer.MAX_VALUE
   def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res]
 }
 
 object Projector {
   def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
+      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
+      override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException("Default apply should not be called on projector!")
+    }
+
+  def apply[Ctx, Val, Res](levels: Int, fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
+    new Projector[Ctx, Val, Res] {
+      override val maxLevel = levels
       def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
       override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException("Default apply should not be called on projector!")
     }

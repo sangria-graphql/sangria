@@ -80,7 +80,7 @@ object TestSchema {
         resolve = _.value.appearsIn map (e => Some(e))),
       Field("primaryFunction", OptionType(StringType),
         Some("The primary function of the droid."),
-        resolve = Projection(_.value.primaryFunction))
+        resolve = _.value.primaryFunction)
     ),
     Character :: Nil)
 
