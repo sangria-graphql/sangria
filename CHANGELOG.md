@@ -1,5 +1,6 @@
 ## v0.2.0 (2015-08-02)
 
+* groupId is changed to **org.sangria-graphql**
 * Added missing query validation rules (#30 #29 #28 #27 #26 #25 #24 #23)
 * #36 - Change semantics of `Projector` feature
   * `Projector` now gets all of the fields, not only fields marked with `Projection`
