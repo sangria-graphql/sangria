@@ -161,3 +161,6 @@ case class FieldsConflictViolation(outputName: String, reason: Either[String, Ve
   }
 }
 
+case class AnonOperationNotAloneViolation(sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"This anonymous operation must be the only defined operation.$astLocation"
+}
