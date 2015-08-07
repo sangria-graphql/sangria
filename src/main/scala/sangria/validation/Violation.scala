@@ -172,3 +172,7 @@ case class DuplicateFragmentNameViolation(fragName: String, sourceMapper: Option
 case class DuplicateOperationNameViolation(opName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"There can only be one operation named '$opName'.$astLocation"
 }
+
+case class DuplicateArgNameViolation(argName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"There can be only one argument named '$argName'.$astLocation"
+}
