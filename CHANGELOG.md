@@ -1,3 +1,11 @@
+## v0.2.1 (2015-08-07)
+
+* Spec changes - sew validation rules:
+  * `LoneAnonymousOperation`
+  * `UniqueArgumentNames`
+  * `UniqueFragmentNames`
+  * `UniqueOperationNames`
+
 ## v0.2.0 (2015-08-02)
 
 * groupId is changed to **org.sangria-graphql**
