@@ -59,6 +59,23 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """)
 
+    "directive args are known" in expectPasses(
+      """
+        {
+          dog @skip(if: true)
+        }
+      """)
+
+    "undirective args are invalid" in expectFails(
+      """
+        {
+          dog @skip(unless: true)
+        }
+      """,
+      List(
+        "Unknown argument 'unless' on directive 'skip'." -> Some(Pos(3, 21))
+      ))
+
     "invalid arg name" in expectFails(
       """
         fragment invalidArgName on Dog {

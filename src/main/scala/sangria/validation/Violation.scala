@@ -84,6 +84,10 @@ case class UnknownArgViolation(argName: String, fieldName: String, typeName: Str
   lazy val errorMessage = s"Unknown argument '$argName' on field '$fieldName' of type '$typeName'.$astLocation"
 }
 
+case class UnknownDirectiveArgViolation(argName: String, dirName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"Unknown argument '$argName' on directive '$dirName'.$astLocation"
+}
+
 case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"Unknown directive '$name'.$astLocation"
 }

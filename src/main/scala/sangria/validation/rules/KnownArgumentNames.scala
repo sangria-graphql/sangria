@@ -15,14 +15,32 @@ class KnownArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
       case ast.Argument(name, _, pos) =>
-        ctx.typeInfo.fieldDef match {
-          case Some(field) if !field.arguments.exists(_.name == name) =>
-            Left(Vector(UnknownArgViolation(
-              name,
-              field.name,
-              ctx.typeInfo.previousParentType.fold("")(SchemaRenderer.renderTypeName(_, topLevel = true)),
-              ctx.sourceMapper,
-              pos.toList)))
+        ctx.typeInfo.ancestors.drop(1).head match {
+          case _: ast.Field =>
+            ctx.typeInfo.fieldDef match {
+              case Some(field) if !field.arguments.exists(_.name == name) =>
+                Left(Vector(UnknownArgViolation(
+                  name,
+                  field.name,
+                  ctx.typeInfo.previousParentType.fold("")(SchemaRenderer.renderTypeName(_, topLevel = true)),
+                  ctx.sourceMapper,
+                  pos.toList)))
+              case _ =>
+                Right(Continue)
+            }
+
+          case _: ast.Directive =>
+            ctx.typeInfo.directive match {
+              case Some(dir) if !dir.arguments.exists(_.name == name) =>
+                Left(Vector(UnknownDirectiveArgViolation(
+                  name,
+                  dir.name,
+                  ctx.sourceMapper,
+                  pos.toList)))
+              case _ =>
+                Right(Continue)
+            }
+
           case _ =>
             Right(Continue)
         }
