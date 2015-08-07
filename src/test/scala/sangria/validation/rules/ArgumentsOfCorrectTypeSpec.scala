@@ -111,7 +111,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument stringArg expected type String but got: 1." -> Some(Pos(4, 41))))
+          "Argument 'stringArg' expected type 'String' but got: 1." -> Some(Pos(4, 41))))
 
       "Float into String" in expectFails(
         """
@@ -122,7 +122,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument stringArg expected type String but got: 1.0." -> Some(Pos(4, 41))))
+          "Argument 'stringArg' expected type 'String' but got: 1.0." -> Some(Pos(4, 41))))
 
       "Boolean into String" in expectFails(
         """
@@ -133,7 +133,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument stringArg expected type String but got: true." -> Some(Pos(4, 41))))
+          "Argument 'stringArg' expected type 'String' but got: true." -> Some(Pos(4, 41))))
 
       "Unquoted String into String" in expectFails(
         """
@@ -144,7 +144,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument stringArg expected type String but got: BAR." -> Some(Pos(4, 41))))
+          "Argument 'stringArg' expected type 'String' but got: BAR." -> Some(Pos(4, 41))))
     }
 
     "Invalid Int values" should {
@@ -157,7 +157,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument intArg expected type Int but got: \"3\"." -> Some(Pos(4, 35))))
+          "Argument 'intArg' expected type 'Int' but got: \"3\"." -> Some(Pos(4, 35))))
 
       "Big Int into Int" in expectFails(
         """
@@ -168,7 +168,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument intArg expected type Int but got: 829384293849283498239482938." -> Some(Pos(4, 35))))
+          "Argument 'intArg' expected type 'Int' but got: 829384293849283498239482938." -> Some(Pos(4, 35))))
 
       "Unquoted String into Int" in expectFails(
         """
@@ -179,7 +179,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument intArg expected type Int but got: FOO." -> Some(Pos(4, 35))))
+          "Argument 'intArg' expected type 'Int' but got: FOO." -> Some(Pos(4, 35))))
 
       "Simple Float into Int" in expectFails(
         """
@@ -190,7 +190,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument intArg expected type Int but got: 3.0." -> Some(Pos(4, 35))))
+          "Argument 'intArg' expected type 'Int' but got: 3.0." -> Some(Pos(4, 35))))
 
       "Float into Int" in expectFails(
         """
@@ -201,7 +201,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument intArg expected type Int but got: 3.333." -> Some(Pos(4, 35))))
+          "Argument 'intArg' expected type 'Int' but got: 3.333." -> Some(Pos(4, 35))))
     }
 
     "Invalid Float values" should {
@@ -214,7 +214,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument floatArg expected type Float but got: \"3.333\"." -> Some(Pos(4, 39))))
+          "Argument 'floatArg' expected type 'Float' but got: \"3.333\"." -> Some(Pos(4, 39))))
 
       "Boolean into Float" in expectFails(
         """
@@ -225,7 +225,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument floatArg expected type Float but got: true." -> Some(Pos(4, 39))))
+          "Argument 'floatArg' expected type 'Float' but got: true." -> Some(Pos(4, 39))))
 
       "Unquoted into Float" in expectFails(
         """
@@ -236,7 +236,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument floatArg expected type Float but got: FOO." -> Some(Pos(4, 39))))
+          "Argument 'floatArg' expected type 'Float' but got: FOO." -> Some(Pos(4, 39))))
     }
 
     "Invalid Boolean value" should {
@@ -249,7 +249,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument booleanArg expected type Boolean but got: 2." -> Some(Pos(4, 43))))
+          "Argument 'booleanArg' expected type 'Boolean' but got: 2." -> Some(Pos(4, 43))))
 
       "Float into Boolean" in expectFails(
         """
@@ -260,7 +260,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument booleanArg expected type Boolean but got: 2.0." -> Some(Pos(4, 43))))
+          "Argument 'booleanArg' expected type 'Boolean' but got: 2.0." -> Some(Pos(4, 43))))
 
       "String into Boolean" in expectFails(
         """
@@ -271,7 +271,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument booleanArg expected type Boolean but got: \"true\"." -> Some(Pos(4, 43))))
+          "Argument 'booleanArg' expected type 'Boolean' but got: \"true\"." -> Some(Pos(4, 43))))
 
       "Unquoted into Boolean" in expectFails(
         """
@@ -282,7 +282,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument booleanArg expected type Boolean but got: TRUE." -> Some(Pos(4, 43))))
+          "Argument 'booleanArg' expected type 'Boolean' but got: TRUE." -> Some(Pos(4, 43))))
     }
 
     "Invalid ID value" should {
@@ -295,7 +295,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument idArg expected type ID but got: 1.0." -> Some(Pos(4, 33))))
+          "Argument 'idArg' expected type 'ID' but got: 1.0." -> Some(Pos(4, 33))))
 
       "Boolean into ID" in expectFails(
         """
@@ -306,7 +306,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument idArg expected type ID but got: true." -> Some(Pos(4, 33))))
+          "Argument 'idArg' expected type 'ID' but got: true." -> Some(Pos(4, 33))))
 
       "Unquoted into ID" in expectFails(
         """
@@ -317,7 +317,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument idArg expected type ID but got: SOMETHING." -> Some(Pos(4, 33))))
+          "Argument 'idArg' expected type 'ID' but got: SOMETHING." -> Some(Pos(4, 33))))
     }
 
     "Invalid Enum value" should {
@@ -330,7 +330,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument dogCommand expected type DogCommand but got: 2." -> Some(Pos(4, 43))))
+          "Argument 'dogCommand' expected type 'DogCommand' but got: 2." -> Some(Pos(4, 43))))
 
       "Float into Enum" in expectFails(
         """
@@ -341,7 +341,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument dogCommand expected type DogCommand but got: 1.0." -> Some(Pos(4, 43))))
+          "Argument 'dogCommand' expected type 'DogCommand' but got: 1.0." -> Some(Pos(4, 43))))
 
       "String into Enum" in expectFails(
         """
@@ -352,7 +352,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument dogCommand expected type DogCommand but got: \"SIT\"." -> Some(Pos(4, 43))))
+          "Argument 'dogCommand' expected type 'DogCommand' but got: \"SIT\"." -> Some(Pos(4, 43))))
 
       "Boolean into Enum" in expectFails(
         """
@@ -363,7 +363,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument dogCommand expected type DogCommand but got: true." -> Some(Pos(4, 43))))
+          "Argument 'dogCommand' expected type 'DogCommand' but got: true." -> Some(Pos(4, 43))))
 
       "Unknown Enum Value into Enum" in expectFails(
         """
@@ -374,7 +374,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument dogCommand expected type DogCommand but got: JUGGLE." -> Some(Pos(4, 43))))
+          "Argument 'dogCommand' expected type 'DogCommand' but got: JUGGLE." -> Some(Pos(4, 43))))
 
       "Different case Enum Value into Enum" in expectFails(
         """
@@ -385,7 +385,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument dogCommand expected type DogCommand but got: sit." -> Some(Pos(4, 43))))
+          "Argument 'dogCommand' expected type 'DogCommand' but got: sit." -> Some(Pos(4, 43))))
     }
 
     "Valid List value" should {
@@ -427,7 +427,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument stringListArg expected type [String] but got: [\"one\", 2]." -> Some(Pos(4, 49))))
+          "Argument 'stringListArg' expected type '[String]' but got: [\"one\", 2]." -> Some(Pos(4, 49))))
 
       "Single value of incorrect type" in expectFails(
         """
@@ -438,7 +438,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument stringListArg expected type [String] but got: 1." -> Some(Pos(4, 49))))
+          "Argument 'stringListArg' expected type '[String]' but got: 1." -> Some(Pos(4, 49))))
     }
 
     "Valid non-nullable value" should {
@@ -534,8 +534,8 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument req1 expected type Int! but got: \"one\"." -> Some(Pos(4, 47)),
-          "Argument req2 expected type Int! but got: \"two\"." -> Some(Pos(4, 34))))
+          "Argument 'req1' expected type 'Int!' but got: \"one\"." -> Some(Pos(4, 47)),
+          "Argument 'req2' expected type 'Int!' but got: \"two\"." -> Some(Pos(4, 34))))
 
       "Incorrect value and missing argument" in expectFails(
         """
@@ -546,7 +546,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument req1 expected type Int! but got: \"one\"." -> Some(Pos(4, 34))))
+          "Argument 'req1' expected type 'Int!' but got: \"one\"." -> Some(Pos(4, 34))))
     }
 
     "Valid input object value" should {
@@ -627,7 +627,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument complexArg expected type ComplexInput but got: {intField: 4}" -> Some(Pos(4, 43))))
+          "Argument 'complexArg' expected type 'ComplexInput' but got: {intField: 4}" -> Some(Pos(4, 43))))
 
       "Partial object, invalid field type" in expectFails(
         """
@@ -641,7 +641,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument complexArg expected type ComplexInput but got: {stringListField: [\"one\", 2], requiredField: true}" -> Some(Pos(4, 43))))
+          "Argument 'complexArg' expected type 'ComplexInput' but got: {stringListField: [\"one\", 2], requiredField: true}" -> Some(Pos(4, 43))))
 
       "Partial object, unknown field arg" in expectFails(
         """
@@ -655,7 +655,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument complexArg expected type ComplexInput but got: {requiredField: true, unknownField: \"value\"}" -> Some(Pos(4, 43))))
+          "Argument 'complexArg' expected type 'ComplexInput' but got: {requiredField: true, unknownField: \"value\"}" -> Some(Pos(4, 43))))
     }
 
     "Directive arguments" should {
@@ -680,8 +680,8 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument if expected type Boolean! but got: \"yes\"." -> Some(Pos(3, 30)),
-          "Argument if expected type Boolean! but got: ENUM." -> Some(Pos(4, 30))))
+          "Argument 'if' expected type 'Boolean!' but got: \"yes\"." -> Some(Pos(3, 30)),
+          "Argument 'if' expected type 'Boolean!' but got: ENUM." -> Some(Pos(4, 30))))
     }
   }
 }

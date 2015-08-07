@@ -84,8 +84,8 @@ class NoUnusedFragmentsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment Unused1 is not used." -> Some(Pos(22, 9)),
-        "Fragment Unused2 is not used." -> Some(Pos(25, 9))
+        "Fragment 'Unused1' is not used." -> Some(Pos(22, 9)),
+        "Fragment 'Unused2' is not used." -> Some(Pos(25, 9))
       ))
 
     "contains unknown fragments with ref cycle" in expectFails(
@@ -120,8 +120,8 @@ class NoUnusedFragmentsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment Unused1 is not used." -> Some(Pos(22, 9)),
-        "Fragment Unused2 is not used." -> Some(Pos(26, 9))
+        "Fragment 'Unused1' is not used." -> Some(Pos(22, 9)),
+        "Fragment 'Unused2' is not used." -> Some(Pos(26, 9))
       ))
   }
 }

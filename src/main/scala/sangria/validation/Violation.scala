@@ -35,11 +35,11 @@ case class EnumValueCoercionViolation(name: String) extends ValueCoercionViolati
 case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
 case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Field '${fieldPath mkString "."}' has wrong value: ${valueViolation.errorMessage}.$astLocation"
+  lazy val errorMessage = s"Field '${fieldPath mkString "."}' has wrong value: '${valueViolation.errorMessage}'.$astLocation"
 }
 
 case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$definitionName expected value of type $expectedType but ${input map ("got: " + _) getOrElse "value is undefined"}.$astLocation"
+  lazy val errorMessage = s"Variable '$$$definitionName' expected value of type '$expectedType' but ${input map ("got: " + _) getOrElse "value is undefined"}.$astLocation"
 }
 
 case class UnknownVariableTypeViolation(definitionName: String, varType: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
@@ -57,75 +57,75 @@ case class InputObjectTypeMismatchViolation(fieldPath: List[String], typeName: S
 // validation
 
 case class BadValueViolation(argName: String, typeName: String, value: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Argument $argName expected type $typeName but got: $value.$astLocation"
+  lazy val errorMessage = s"Argument '$argName' expected type '$typeName' but got: $value.$astLocation"
 }
 
 case class BadValueForDefaultArgViolation(varName: String, typeName: String, value: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$varName of type $typeName has invalid default value: $value.$astLocation"
+  lazy val errorMessage = s"Variable '$$$varName' of type '$typeName' has invalid default value: $value.$astLocation"
 }
 
 case class DefaultForNonNullArgViolation(varName: String, typeName: String, guessTypeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$varName of type $typeName is required and will never use the default value. Perhaps you meant to use type $guessTypeName.$astLocation"
+  lazy val errorMessage = s"Variable '$$$varName' of type '$typeName' is required and will never use the default value. Perhaps you meant to use type '$guessTypeName'.$astLocation"
 }
 
 case class UndefinedFieldViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Cannot query field $fieldName on $typeName.$astLocation"
+  lazy val errorMessage = s"Cannot query field '$fieldName' on '$typeName'.$astLocation"
 }
 
 case class InlineFragmentOnNonCompositeErrorViolation(typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = "Fragment cannot condition on non composite type \"" + typeName + "\"." + astLocation
+  lazy val errorMessage = s"Fragment cannot condition on non composite type '$typeName'.$astLocation"
 }
 
 case class FragmentOnNonCompositeErrorViolation(fragName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = "Fragment \"" + fragName + "\" cannot condition on non composite type \"" + typeName + "\"." + astLocation
+  lazy val errorMessage = s"Fragment '$fragName' cannot condition on non composite type '$typeName'.$astLocation"
 }
 
 case class UnknownArgViolation(argName: String, fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Unknown argument $argName on field $fieldName of type $typeName.$astLocation"
+  lazy val errorMessage = s"Unknown argument '$argName' on field '$fieldName' of type '$typeName'.$astLocation"
 }
 
 case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Unknown directive $name.$astLocation"
+  lazy val errorMessage = s"Unknown directive '$name'.$astLocation"
 }
 
 case class MisplacedDirectiveViolation(name: String, placement: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Directive $name may not be used on $placement.$astLocation"
+  lazy val errorMessage = s"Directive '$name' may not be used on $placement.$astLocation"
 }
 
 case class UnknownFragmentViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Unknown fragment $name.$astLocation"
+  lazy val errorMessage = s"Unknown fragment '$name'.$astLocation"
 }
 
 case class UnknownTypeViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Unknown type $name.$astLocation"
+  lazy val errorMessage = s"Unknown type '$name'.$astLocation"
 }
 
 case class CycleErrorViolation(fragmentName: String, spreadNames: List[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Cannot spread fragment $fragmentName within itself${if (spreadNames.nonEmpty) s" via ${spreadNames mkString ", " }" else ""}.$astLocation"
+  lazy val errorMessage = s"Cannot spread fragment '$fragmentName' within itself${if (spreadNames.nonEmpty) s" via ${spreadNames map ("'" + _ + "'") mkString ", " }" else ""}.$astLocation"
 }
 
 case class UndefinedVarByOpViolation(varName: String, operationName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$varName is not defined by operation $operationName.$astLocation"
+  lazy val errorMessage = s"Variable '$$$varName' is not defined by operation '$operationName'.$astLocation"
 }
 
 case class UndefinedVarViolation(varName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$varName is not defined.$astLocation"
+  lazy val errorMessage = s"Variable '$$$varName' is not defined.$astLocation"
 }
 
 case class UnusedFragmentViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Fragment $name is not used.$astLocation"
+  lazy val errorMessage = s"Fragment '$name' is not used.$astLocation"
 }
 
 case class UnusedVariableViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$name is not used.$astLocation"
+  lazy val errorMessage = s"Variable '$$$name' is not used.$astLocation"
 }
 
 case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Field '$fieldName' of type $typeName must not have a sub selection.$astLocation"
+  lazy val errorMessage = s"Field '$fieldName' of type '$typeName' must not have a sub selection.$astLocation"
 }
 
 case class RequiredSubselectionViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Field '$fieldName' of type $typeName must have a sub selection.$astLocation"
+  lazy val errorMessage = s"Field '$fieldName' of type '$typeName' must have a sub selection.$astLocation"
 }
 
 case class TypeIncompatibleAnonSpreadViolation(parentTypeName: String, fragTypeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
@@ -137,23 +137,23 @@ case class TypeIncompatibleSpreadViolation(fragName: String, parentTypeName: Str
 }
 
 case class NonInputTypeOnVarViolation(varName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$varName cannot be non input type $typeName.$astLocation"
+  lazy val errorMessage = s"Variable '$$$varName' cannot be non input type '$typeName'.$astLocation"
 }
 
 case class BadVarPositionViolation(varName: String, varType: String, expectedType: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Variable $$$varName of type $varType used in position expecting type $expectedType.$astLocation"
+  lazy val errorMessage = s"Variable '$$$varName' of type '$varType' used in position expecting type '$expectedType'.$astLocation"
 }
 
 case class MissingFieldArgViolation(fieldName: String, argName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Field $fieldName argument $argName of type $typeName is required but not provided.$astLocation"
+  lazy val errorMessage = s"Field '$fieldName' argument '$argName' of type '$typeName' is required but not provided.$astLocation"
 }
 
 case class FieldsConflictViolation(outputName: String, reason: Either[String, Vector[ConflictReason]], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Field $outputName conflict because ${reasonMessage(reason)}.$astLocation"
+  lazy val errorMessage = s"Field '$outputName' conflict because ${reasonMessage(reason)}.$astLocation"
 
   private def reasonMessage(reason: Either[String, Vector[ConflictReason]]): String = reason match {
     case Left(message) => message
-    case Right(subReasons) => subReasons map (sr => s"subfields ${sr.fieldName} conflict because ${reasonMessage(sr.reason)}") mkString " and "
+    case Right(subReasons) => subReasons map (sr => s"subfields '${sr.fieldName}' conflict because ${reasonMessage(sr.reason)}") mkString " and "
   }
 }
 

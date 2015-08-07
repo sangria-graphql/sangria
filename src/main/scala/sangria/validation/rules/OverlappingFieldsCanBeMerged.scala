@@ -61,7 +61,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
         comparedSet.add(ast1, ast2)
 
         if (ast1.name != ast2.name) {
-          Some(Conflict(ConflictReason(outputName, Left(s"${ast1.name} and ${ast2.name} are different fields")), ast1 :: ast2 :: Nil))
+          Some(Conflict(ConflictReason(outputName, Left(s"'${ast1.name}' and '${ast2.name}' are different fields")), ast1 :: ast2 :: Nil))
         } else {
           val typeRes = for {
             field1 <- def1
@@ -69,7 +69,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
             type1 = SchemaRenderer.renderTypeName(field1.fieldType)
             type2 = SchemaRenderer.renderTypeName(field2.fieldType)
           } yield if (!sameType(type1, type2))
-            Some(Conflict(ConflictReason(outputName, Left(s"they return differing types $type1 and $type2")), ast1 :: ast2 :: Nil))
+            Some(Conflict(ConflictReason(outputName, Left(s"they return differing types '$type1' and '$type2'")), ast1 :: ast2 :: Nil))
           else
             None
 

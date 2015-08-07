@@ -157,19 +157,19 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
 
         "errors on null for nested non-null" in assertErrorResult(
           """{"input": {"a": "foo", "b": "bar", "c": null}}""".parseJson,
-          """Variable $input expected value of type TestInputObject but got: {"a":"foo","b":"bar","c":null}""")
+          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":null}""")
 
         "errors on incorrect type" in  assertErrorResult(
           """{"input": "foo bar"}""".parseJson,
-          """Variable $input expected value of type TestInputObject but got: "foo bar"""")
+          """Variable '$input' expected value of type 'TestInputObject' but got: "foo bar"""")
 
         "errors on omission of nested non-null" in  assertErrorResult(
           """{"input": {"a": "foo", "b": "bar"}}""".parseJson,
-          """Variable $input expected value of type TestInputObject but got: {"a":"foo","b":"bar"}""")
+          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar"}""")
 
         "errors on addition of unknown input field" in  assertErrorResult(
           """{"input": {"a": "foo", "b": "bar", "c": "baz", "d": "dog"}}""".parseJson,
-          """Variable $input expected value of type TestInputObject but got: {"a":"foo","b":"bar","c":"baz","d":"dog"}""")
+          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":"baz","d":"dog"}""")
       }
     }
 
@@ -262,7 +262,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable $value expected value of type String! but value is undefined.""" -> Some(Pos(2, 33)))
+        List("""Variable '$value' expected value of type 'String!' but value is undefined.""" -> Some(Pos(2, 33)))
       )
 
       "does not allow non-nullable inputs to be set to null in a variable" in  checkContainsErrors(
@@ -273,7 +273,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable $value expected value of type String! but got: null.""" -> Some(Pos(2, 33))),
+        List("""Variable '$value' expected value of type 'String!' but got: null.""" -> Some(Pos(2, 33))),
         Some("""{"value": null}""".parseJson)
       )
 
@@ -356,7 +356,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable $input expected value of type [String]! but got: null.""" -> Some(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String]!' but got: null.""" -> Some(Pos(2, 19))),
         Some("""{"input": null}""".parseJson)
       )
 
@@ -412,7 +412,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable $input expected value of type [String!] but got: ["A",null,"B"].""" -> Some(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String!]' but got: ["A",null,"B"].""" -> Some(Pos(2, 19))),
         Some("""{"input": ["A",null,"B"]}""".parseJson)
       )
 
@@ -447,7 +447,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable $input expected value of type [String!]! but got: ["A",null,"B"].""" -> Some(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String!]!' but got: ["A",null,"B"].""" -> Some(Pos(2, 19))),
         Some("""{"input": ["A",null,"B"]}""".parseJson)
       )
 

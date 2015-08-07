@@ -66,7 +66,7 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument unknown on field doesKnowCommand of type Dog." -> Some(Pos(3, 27))
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(3, 27))
       ))
 
     "unknown args amongst known args" in expectFails(
@@ -76,8 +76,8 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument whoknows on field doesKnowCommand of type Dog." -> Some(Pos(3, 27)),
-        "Unknown argument unknown on field doesKnowCommand of type Dog." -> Some(Pos(3, 57))
+        "Unknown argument 'whoknows' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(3, 27)),
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(3, 57))
       ))
 
     "unknown args deeply" in expectFails(
@@ -96,8 +96,8 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument unknown on field doesKnowCommand of type Dog." -> Some(Pos(4, 29)),
-        "Unknown argument unknown on field doesKnowCommand of type Dog." -> Some(Pos(9, 33))
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(4, 29)),
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(9, 33))
       ))
 
     "args may be on object but not interface" in expectFails(
@@ -113,8 +113,8 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument surname on field name of type Being." -> Some(Pos(3, 16)),
-        "Unknown argument surname on field name of type Dog." -> Some(Pos(8, 18))
+        "Unknown argument 'surname' on field 'name' of type 'Being'." -> Some(Pos(3, 16)),
+        "Unknown argument 'surname' on field 'name' of type 'Dog'." -> Some(Pos(8, 18))
       ))
   }
 }

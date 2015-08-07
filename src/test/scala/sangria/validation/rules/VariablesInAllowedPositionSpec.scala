@@ -164,7 +164,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable $intArg of type Int used in position expecting type Int!." -> Some(Pos(5, 47))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> Some(Pos(5, 47))
       ))
 
     "Int => Int! within fragment" in expectFails(
@@ -181,7 +181,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable $intArg of type Int used in position expecting type Int!." -> Some(Pos(3, 45))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> Some(Pos(3, 45))
       ))
 
     "Int => Int! within nested fragment" in expectFails(
@@ -202,7 +202,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable $intArg of type Int used in position expecting type Int!." -> Some(Pos(7, 45))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> Some(Pos(7, 45))
       ))
 
     "String over Boolean" in expectFails(
@@ -215,7 +215,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable $stringVar of type String used in position expecting type Boolean." -> Some(Pos(5, 41))
+        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean'." -> Some(Pos(5, 41))
       ))
 
     "String => [String]" in expectFails(
@@ -228,7 +228,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable $stringVar of type String used in position expecting type [String]." -> Some(Pos(5, 47))
+        "Variable '$stringVar' of type 'String' used in position expecting type '[String]'." -> Some(Pos(5, 47))
       ))
 
     "Boolean => Boolean! in directive" in expectFails(
@@ -239,7 +239,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable $boolVar of type Boolean used in position expecting type Boolean!." -> Some(Pos(4, 28))
+        "Variable '$boolVar' of type 'Boolean' used in position expecting type 'Boolean!'." -> Some(Pos(4, 28))
       ))
 
     "String => Boolean! in directive" in expectFails(
@@ -250,7 +250,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable $stringVar of type String used in position expecting type Boolean!." -> Some(Pos(4, 28))
+        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean!'." -> Some(Pos(4, 28))
       ))
   }
 }
