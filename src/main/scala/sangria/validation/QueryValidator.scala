@@ -22,6 +22,7 @@ object QueryValidator {
     new KnownDirectives,
     new KnownFragmentNames,
     new KnownTypeNames,
+    new LoneAnonymousOperation,
     new NoFragmentCycles,
     new NoUndefinedVariables,
     new NoUnusedFragments,
@@ -30,6 +31,9 @@ object QueryValidator {
     new PossibleFragmentSpreads,
     new ProvidedNonNullArguments,
     new ScalarLeafs,
+    new UniqueArgumentNames,
+    new UniqueFragmentNames,
+    new UniqueOperationNames,
     new VariablesAreInputTypes,
     new VariablesInAllowedPosition
   )
