@@ -164,3 +164,11 @@ case class FieldsConflictViolation(outputName: String, reason: Either[String, Ve
 case class AnonOperationNotAloneViolation(sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"This anonymous operation must be the only defined operation.$astLocation"
 }
+
+case class DuplicateFragmentNameViolation(fragName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"There can only be one fragment named '$fragName'.$astLocation"
+}
+
+case class DuplicateOperationNameViolation(opName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"There can only be one operation named '$opName'.$astLocation"
+}
