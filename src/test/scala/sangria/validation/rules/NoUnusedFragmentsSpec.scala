@@ -123,5 +123,20 @@ class NoUnusedFragmentsSpec extends WordSpec with ValidationSupport {
         "Fragment 'Unused1' is not used." -> Some(Pos(22, 9)),
         "Fragment 'Unused2' is not used." -> Some(Pos(26, 9))
       ))
+
+    "contains unknown and undef fragments" in expectFails(
+      """
+        query Foo {
+          human(id: 4) {
+            ...bar
+          }
+        }
+        fragment foo on Human {
+          name
+        }
+      """,
+      List(
+        "Fragment 'foo' is not used." -> Some(Pos(7, 9))
+      ))
   }
 }

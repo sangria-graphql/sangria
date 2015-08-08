@@ -43,7 +43,7 @@ class NoUnusedFragments extends ValidationRule {
           spreads foreach { fragName =>
             if (!fragmentNameUsed.contains(fragName)) {
               fragmentNameUsed += fragName
-              reduceSpreadFragments(fragAdjacencies(fragName))
+              fragAdjacencies get fragName foreach reduceSpreadFragments
             }
           }
         }
