@@ -25,8 +25,13 @@ abstract class ValueCoercionViolation(errorMessage: String) extends BaseViolatio
 
 case object IntCoercionViolation extends ValueCoercionViolation("Int value expected")
 case object BigIntCoercionViolation extends ValueCoercionViolation("Value is too big to fit in Int")
+
+case object LongCoercionViolation extends ValueCoercionViolation("Long value expected")
+case object BigLongCoercionViolation extends ValueCoercionViolation("Value is too big to fit in Long")
+
 case object FloatCoercionViolation extends ValueCoercionViolation("Float or Int value expected")
 case object BigDecimalCoercionViolation extends ValueCoercionViolation("Float or Int value is too bit to fit in double")
+
 case object BooleanCoercionViolation extends ValueCoercionViolation("Boolean value expected")
 case object StringCoercionViolation extends ValueCoercionViolation("String value expected")
 case object IDCoercionViolation extends ValueCoercionViolation("String or Int value expected")

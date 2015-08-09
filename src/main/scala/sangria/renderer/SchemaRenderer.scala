@@ -119,7 +119,7 @@ object SchemaRenderer {
 
   def isBuiltInScalar(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
     stringField(u)(tpe, "name") match {
-      case "String" | "Boolean" | "Int" | "BigInt" | "BigDecimal" | "Float" | "ID" => true
+      case "String" | "Boolean" | "Int" | "Long" | "BigInt" | "BigDecimal" | "Float" | "ID" => true
       case _ => false
     }
 

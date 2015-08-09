@@ -4,9 +4,11 @@ import sangria.validation._
 
 package object schema {
   val IntType = ScalarType[Int]("Int",
+    description = Some("32-bit integer value"),
     coerceOutput = ast.IntValue(_),
     coerceUserInput = {
       case i: Int => Right(i)
+      case i: Long if i.isValidInt => Right(i.toInt)
       case i: BigInt if !i.isValidInt => Left(BigIntCoercionViolation)
       case i: BigInt => Right(i.intValue)
       case _ => Left(IntCoercionViolation)
@@ -18,10 +20,29 @@ package object schema {
       case _ => Left(IntCoercionViolation)
     })
 
+  val LongType = ScalarType[Long]("Long",
+    description = Some("64-bit integer value"),
+    coerceOutput = l => ast.BigIntValue(BigInt(l)),
+    coerceUserInput = {
+      case i: Int => Right(i: Long)
+      case i: Long => Right(i)
+      case i: BigInt if !i.isValidLong => Left(BigLongCoercionViolation)
+      case i: BigInt => Right(i.longValue)
+      case _ => Left(LongCoercionViolation)
+    },
+    coerceInput = {
+      case ast.IntValue(i, _) => Right(i: Long)
+      case ast.BigIntValue(i, _) if !i.isValidLong => Left(BigLongCoercionViolation)
+      case ast.BigIntValue(i, _) => Right(i.longValue)
+      case _ => Left(LongCoercionViolation)
+    })
+
   val BigIntType = ScalarType[BigInt]("BigInt",
+    description = Some("Arbitrary big integer value"),
     coerceOutput = ast.BigIntValue(_),
     coerceUserInput = {
       case i: Int => Right(BigInt(i))
+      case i: Long => Right(BigInt(i))
       case i: BigInt => Right(i)
       case _ => Left(IntCoercionViolation)
     },
@@ -35,6 +56,7 @@ package object schema {
     coerceOutput = ast.FloatValue(_),
     coerceUserInput = {
       case i: Int => Right(i.toDouble)
+      case i: Long => Right(i.toDouble)
       case i: BigInt if !i.isValidDouble => Left(BigDecimalCoercionViolation)
       case i: BigInt => Right(i.doubleValue())
       case d: Double => Right(d)
@@ -56,6 +78,7 @@ package object schema {
     coerceOutput = ast.BigDecimalValue(_),
     coerceUserInput = {
       case i: Int => Right(BigDecimal(i))
+      case i: Long => Right(BigDecimal(i))
       case i: BigInt => Right(BigDecimal(i))
       case d: Double => Right(BigDecimal(d))
       case d: BigDecimal => Right(d)
@@ -106,7 +129,7 @@ package object schema {
       case _ => Left(IDCoercionViolation)
     })
 
-  val BuiltinScalars = IntType :: BigIntType :: FloatType :: BigDecimalType :: BooleanType :: StringType :: IDType :: Nil
+  val BuiltinScalars = IntType :: LongType :: BigIntType :: FloatType :: BigDecimalType :: BooleanType :: StringType :: IDType :: Nil
 
   val IfArg = Argument("if", BooleanType, "Included when true.")
 

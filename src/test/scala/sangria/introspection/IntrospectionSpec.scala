@@ -717,6 +717,15 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               ),
               Map(
                 "kind" -> "SCALAR",
+                "name" -> "Long",
+                "fields" -> null,
+                "inputFields" -> null,
+                "interfaces" -> null,
+                "enumValues" -> null,
+                "possibleTypes" -> null
+              ),
+              Map(
+                "kind" -> "SCALAR",
                 "name" -> "String",
                 "fields" -> null,
                 "inputFields" -> null,
@@ -892,6 +901,11 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         Map(
           "kind" -> "SCALAR",
           "name" -> "Int",
+          "inputFields" -> null
+        ),
+        Map(
+          "kind" -> "SCALAR",
+          "name" -> "Long",
           "inputFields" -> null
         ),
         Map(

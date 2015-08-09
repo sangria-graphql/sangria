@@ -46,6 +46,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with AwaitSupport
                 Map("name" -> "Float"),
                 Map("name" -> "ID"),
                 Map("name" -> "Int"),
+                Map("name" -> "Long"),
                 Map("name" -> "String")
               )
             )
