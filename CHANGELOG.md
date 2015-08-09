@@ -1,3 +1,8 @@
+## v0.2.2 (2015-08-09)
+
+* #44 - Add ability to add types explicitly in schema, for cases when they are not referenced anywhere else
+  * `Schema` now has additional argument `additionalTypes` which can be used like this: `Schema(HeroOnlyQuery, additionalTypes = Human :: Droid :: Nil)`
+
 ## v0.2.1 (2015-08-07)
 
 * Spec changes - sew validation rules:
