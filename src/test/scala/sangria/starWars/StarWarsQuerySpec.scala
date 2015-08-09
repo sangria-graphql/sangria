@@ -3,6 +3,7 @@ package sangria.starWars
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.parser.QueryParser
+import sangria.schema._
 import sangria.starWars.TestSchema.StarWarsSchema
 import sangria.starWars.TestData.{FriendsResolver, CharacterRepo}
 import sangria.util.AwaitSupport
@@ -41,6 +42,41 @@ class StarWarsQuerySpec extends WordSpec with Matchers with AwaitSupport {
         """)
 
       Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+        Map(
+          "data" -> Map(
+            "hero" -> Map(
+              "id" -> "2001",
+              "name" -> "R2-D2",
+              "friends" -> List(
+                Map("name" -> "Luke Skywalker"),
+                Map("name" -> "Han Solo"),
+                Map("name" -> "Leia Organa")
+              )))))
+    }
+
+    "Hero query should succeed even if not all types are referenced indirectly" in {
+      val Success(query) = QueryParser.parse("""
+        query HeroNameAndFriendsQuery {
+          hero {
+            id
+            name
+            friends {
+              name
+            }
+          }
+        }
+        """)
+
+      val HeroOnlyQuery = ObjectType[CharacterRepo, Unit](
+        "HeroOnlyQuery", List[Field[CharacterRepo, Unit]](
+          Field("hero", TestSchema.Character,
+            arguments = TestSchema.EpisodeArg :: Nil,
+            resolve = (ctx) => ctx.ctx.getHero(ctx.argOpt(TestSchema.EpisodeArg)))
+        ))
+
+      val heroOnlySchema = Schema(HeroOnlyQuery, additionalTypes = TestSchema.Human :: TestSchema.Droid :: Nil)
+
+      Executor(heroOnlySchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
         Map(
           "data" -> Map(
             "hero" -> Map(

@@ -287,6 +287,7 @@ case class Directive(
 case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],
     mutation: Option[ObjectType[Ctx, Val]] = None,
+    additionalTypes: List[Type with Named] = Nil,
     directives: List[Directive] = BuiltinDirectives) {
   lazy val types: Map[String, (Int, Type with Named)] = {
     def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)]) =
@@ -320,7 +321,8 @@ case class Schema[Ctx, Val](
 
     val schemaTypes = collectTypes(3, introspection.__Schema, Map(BuiltinScalars map (s => s.name -> (4, s)): _*))
     val queryTypes = collectTypes(2, query, schemaTypes)
-    val queryAndMutTypes = mutation map (collectTypes(1, _, queryTypes)) getOrElse queryTypes
+    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t => t.name -> (1, t))
+    val queryAndMutTypes = mutation map (collectTypes(1, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
 
     queryAndMutTypes
   }
