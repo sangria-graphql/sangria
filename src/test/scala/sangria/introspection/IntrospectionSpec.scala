@@ -1204,7 +1204,6 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       val result = Executor(schema, queryValidator = QueryValidator.empty).execute(query).await.asInstanceOf[Map[String, Any]]
-      println(result)
 
       result("data") should be (Map("__type" -> null))
       result("errors").asInstanceOf[List[Map[String, Any]]](0)("message").asInstanceOf[String] should include (
