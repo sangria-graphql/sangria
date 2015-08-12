@@ -104,18 +104,18 @@ object InterfaceType {
     InterfaceType(name, None, fieldsFn = () => fields, Nil)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(name, Some(description), fieldsFn = () => fields, Nil)
-  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(name, None, fieldsFn = () => fields, interfaces)
-  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(name, Some(description), fieldsFn = () => fields, interfaces)
 
   def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(name, None, fieldsFn, Nil)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(name, Some(description), fieldsFn, Nil)
-  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(name, None, fieldsFn, interfaces)
-  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(name, Some(description), fieldsFn, interfaces)
 }
 
