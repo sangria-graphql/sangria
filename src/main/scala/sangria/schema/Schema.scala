@@ -30,6 +30,21 @@ sealed trait Named {
   def description: Option[String]
 }
 
+object Named {
+  private[schema] def checkFields[T <: Seq[Named]](fields: T): T =
+    if (fields.map(_.name).toSet.size != fields.size)
+      throw new IllegalArgumentException("All fields within a Type should have unique names!")
+    else fields
+
+  private[schema] def checkFieldsFn[T <: Seq[Named]](fields: T): () => T =
+    if (fields.map(_.name).toSet.size != fields.size)
+      throw new IllegalArgumentException("All fields within a Type should have unique names!")
+    else () => fields
+
+  private[schema] def checkFields[T <: Seq[Named]](fieldsFn: () => T): () => T =
+    () => checkFields(fieldsFn())
+}
+
 case class ScalarType[T](
   name: String,
   description: Option[String] = None,
@@ -69,27 +84,28 @@ case class ObjectType[Ctx, Val: ClassTag] private (
   fieldsFn: () => List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
 ) extends ObjectLikeType[Ctx, Val] {
+
   def isInstanceOf(value: Any) = implicitly[ClassTag[Val]].runtimeClass.isAssignableFrom(value.getClass)
 }
 
 object ObjectType {
   def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, fieldsFn = () => fields, Nil)
+    ObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), fieldsFn = () => fields, Nil)
+    ObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), Nil)
   def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, fieldsFn = () => fields, interfaces)
+    ObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), fieldsFn = () => fields, interfaces)
+    ObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces)
 
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, fieldsFn, Nil)
+    ObjectType(name, None, Named.checkFields(fieldsFn), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), fieldsFn, Nil)
+    ObjectType(name, Some(description), Named.checkFields(fieldsFn), Nil)
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, fieldsFn, interfaces)
+    ObjectType(name, None, Named.checkFields(fieldsFn), interfaces)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), fieldsFn, interfaces)
+    ObjectType(name, Some(description), Named.checkFields(fieldsFn), interfaces)
 }
 
 case class InterfaceType[Ctx, Val] private (
@@ -101,22 +117,22 @@ case class InterfaceType[Ctx, Val] private (
 
 object InterfaceType {
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = () => fields, Nil)
+    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), Nil)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = () => fields, Nil)
+    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), Nil)
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = () => fields, interfaces)
+    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = () => fields, interfaces)
+    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces)
 
   def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn, Nil)
+    InterfaceType(name, None, Named.checkFields(fieldsFn), Nil)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn, Nil)
+    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), Nil)
   def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn, interfaces)
+    InterfaceType(name, None, Named.checkFields(fieldsFn), interfaces)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn, interfaces)
+    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), interfaces)
 }
 
 case class UnionType[Ctx](
@@ -250,11 +266,15 @@ case class InputObjectType[T] private (
 
 object InputObjectType {
   type InputObjectRes = Map[String, Any]
-  def apply(name: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, None, fieldsFn = () => fields)
-  def apply(name: String, description: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, Some(description), fieldsFn = () => fields)
+  def apply(name: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
+    InputObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields))
+  def apply(name: String, description: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
+    InputObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields))
 
-  def apply(name: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, None, fieldsFn)
-  def apply(name: String, description: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] = InputObjectType(name, Some(description), fieldsFn)
+  def apply(name: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] =
+    InputObjectType(name, None, Named.checkFields(fieldsFn))
+  def apply(name: String, description: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] =
+    InputObjectType(name, Some(description), Named.checkFields(fieldsFn))
 }
 
 case class InputField[T](
