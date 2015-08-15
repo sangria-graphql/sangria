@@ -20,7 +20,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
 
   "Exception handling" should {
     "obfuscate unexpected exceptions" in {
-      stdErrContains("java.lang.IllegalStateException: Boom!") {
+      val out = captureStdErr {
         val Success(doc) = QueryParser.parse("""
         {
           error
@@ -43,6 +43,8 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
                 "field" -> "futureError",
                 "locations" -> List(Map("line" -> 4, "column" -> 11))))))
       }
+
+      out should include ("java.lang.IllegalStateException: Boom!")
     }
 
     "provide user-defined exception handling mechanism" in {

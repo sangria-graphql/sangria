@@ -9,6 +9,7 @@ trait DeprecationTracker {
 
 object DeprecationTracker {
   val empty = NilDeprecationTracker
+  val print = PrintingDeprecationTracker
 }
 
 object NilDeprecationTracker extends DeprecationTracker {

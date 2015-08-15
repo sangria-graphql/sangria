@@ -5,12 +5,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.{OutputMatchers, AwaitSupport}
 
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport {
+class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport with OutputMatchers {
   class RecordingDeprecationTracker extends DeprecationTracker {
     val times = new AtomicInteger(0)
     var path: Option[List[String]] = None
@@ -127,6 +127,68 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport {
       deprecationTracker.times.get should be (0)
       deprecationTracker.enum should be (None)
       deprecationTracker.enumValue should be (None)
+    }
+  }
+
+  "NilDeprecationTracker" should {
+    "shouldn't do anything" in  {
+      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+      ))
+
+      val schema = Schema(testType)
+      val Success(query) = QueryParser.parse("{ nonDeprecated }")
+
+      Executor(schema, deprecationTracker = DeprecationTracker.empty).execute(query).await
+    }
+  }
+
+  "PrintingDeprecationTracker" should {
+    "track deprecated enum values" in  {
+      val testEnum = EnumType[Int]("TestEnum", values = List(
+        EnumValue("NONDEPRECATED", value = 1),
+        EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
+        EnumValue("ALSONONDEPRECATED", value = 3)))
+
+      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+        Field("testEnum", OptionType(StringType),
+          arguments = Argument("foo", testEnum) :: Nil,
+          resolve = _ => None)
+      ))
+
+      val schema = Schema(testType)
+
+      val Success(query) = QueryParser.parse(
+        """
+          {
+            a: testEnum(foo: NONDEPRECATED)
+            b: testEnum(foo: DEPRECATED)
+          }
+        """)
+
+
+      val out = captureConsoleOut {
+        Executor(schema, deprecationTracker = DeprecationTracker.print).execute(query).await
+      }
+
+      out should include ("Deprecated enum value '2' used of enum 'TestEnum'.")
+    }
+
+    "track deprecated fields" in  {
+      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+      ))
+
+      val schema = Schema(testType)
+      val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
+
+      val out = captureConsoleOut {
+        Executor(schema, deprecationTracker = DeprecationTracker.print).execute(query).await
+      }
+
+      out should include ("Deprecated field 'deprecated' used at path 'deprecated'.")
     }
   }
 }

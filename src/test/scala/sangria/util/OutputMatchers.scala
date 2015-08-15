@@ -5,7 +5,7 @@ import java.io.{PrintStream, ByteArrayOutputStream}
 import org.scalatest.Matchers
 
 trait OutputMatchers extends Matchers {
-  def stdErrContains(message: String)(fn: => Unit) = {
+  def captureStdErr(fn: => Unit) = {
     val output = new ByteArrayOutputStream()
     val printStream = new PrintStream(output)
     val oldErr = System.err
@@ -19,6 +19,16 @@ trait OutputMatchers extends Matchers {
       printStream.close()
     }
 
-    output.toString("UTF-8") should include (message)
+    output.toString("UTF-8")
+  }
+
+  def captureConsoleOut(fn: => Unit) = {
+    val output = new ByteArrayOutputStream()
+
+    Console.withOut(output) {
+      fn
+    }
+
+    output.toString("UTF-8")
   }
 }
