@@ -412,20 +412,24 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
         case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
-      Executor(schema, new TestSubject, Ctx(), deferredResolver = new LightColorResolver, exceptionHandler = exceptionHandler).execute(doc).await should be  (
-        Map(
-          "data" -> Map(
-            "defFail" -> null,
-            "defFutFail" -> null),
-          "errors" -> List(
-            Map(
-              "message" -> "error in resolver",
-              "field" -> "defFail",
-              "locations" -> List(Map("line" -> 3, "column" -> 11))),
-            Map(
-              "message" -> "error in resolver",
-              "field" -> "defFutFail",
-              "locations" -> List(Map("line" -> 4, "column" -> 11))))))
+      Executor.execute(schema, doc,
+        root = new TestSubject,
+        userContext = Ctx(),
+        deferredResolver = new LightColorResolver,
+        exceptionHandler = exceptionHandler).await should be  (
+          Map(
+            "data" -> Map(
+              "defFail" -> null,
+              "defFutFail" -> null),
+            "errors" -> List(
+              Map(
+                "message" -> "error in resolver",
+                "field" -> "defFail",
+                "locations" -> List(Map("line" -> 3, "column" -> 11))),
+              Map(
+                "message" -> "error in resolver",
+                "field" -> "defFutFail",
+                "locations" -> List(Map("line" -> 4, "column" -> 11))))))
     }
   }
 }

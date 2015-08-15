@@ -75,4 +75,20 @@ case class Executor[Ctx, Root](
   }
 }
 
+object Executor {
+  def execute[Ctx, Root, Input](
+    schema: Schema[Ctx, Root],
+    queryAst: ast.Document,
+    operationName: Option[String] = None,
+    arguments: Option[Input] = None,
+    root: Root = (),
+    userContext: Ctx = (),
+    queryValidator: QueryValidator = QueryValidator.default,
+    deferredResolver: DeferredResolver = DeferredResolver.empty,
+    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
+    deprecationTracker: DeprecationTracker = DeprecationTracker.empty
+  )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] =
+    Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker).execute(queryAst, operationName, arguments)
+}
+
 case class HandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty)

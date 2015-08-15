@@ -51,15 +51,8 @@ shellPrompt in ThisBuild := { state =>
 
 startYear := Some(2015)
 organizationHomepage := Some(url("https://github.com/sangria-graphql"))
+developers := Developer("OlegIlyenko", "Oleg Ilyenko", "", url("https://github.com/OlegIlyenko")) :: Nil
 scmInfo := Some(ScmInfo(
   browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
   connection = "scm:git:git@github.com:sangria-graphql/sangria.git"
 ))
-pomExtra := <xml:group>
-  <developers>
-    <developer>
-      <id>OlegIlyenko</id>
-      <name>Oleg Ilyenko</name>
-    </developer>
-  </developers>
-</xml:group>
