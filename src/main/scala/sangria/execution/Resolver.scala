@@ -32,7 +32,7 @@ class Resolver[Ctx](
        fields: Map[String, (ast.Field, Try[List[ast.Field]])]): Future[marshaller.Node] = {
     val actions = collectActionsPar(Nil, tpe, value, fields, ErrorRegistry.empty, userContext)
 
-    processFinalResolve(resolveActions(Nil, tpe, actions, userContext))
+    processFinalResolve(resolveActionsPar(Nil, tpe, actions, userContext))
   }
 
   def resolveFieldsSeq(
@@ -56,27 +56,7 @@ class Resolver[Ctx](
       }
   }
 
-  private type Actions = (ErrorRegistry, Option[List[(List[ast.Field], Option[(Field[Ctx, _], LeafAction[Ctx, _])])]])
-
-  def collectActionsPar(
-      path: List[String],
-      tpe: ObjectType[Ctx, _],
-      value: Any,
-      fields: Map[String, (ast.Field, Try[List[ast.Field]])],
-      errorReg: ErrorRegistry,
-      userCtx: Ctx): Actions =
-    fields.foldLeft((errorReg, Some(Nil)): Actions) {
-      case (acc @ (_, None), _) => acc
-      case (acc, (name, (origField, _))) if tpe.getField(schema, origField.name).isEmpty => acc
-      case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) =>
-        errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) Some(acc :+ (origField :: Nil, None)) else None)
-      case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
-        resolveField(userCtx, tpe, path :+ name, value, errors, name, fields) match {
-          case (updatedErrors, Some(result), _) => updatedErrors -> Some(acc :+ (fields, Some(tpe.getField(schema, origField.name).get -> result)))
-          case (updatedErrors, None, _) if isOptional(tpe, origField.name) => updatedErrors -> Some(acc :+ (origField :: Nil, None))
-          case (updatedErrors, None, _) => updatedErrors -> None
-        }
-    }
+  private type Actions = (ErrorRegistry, Option[List[(List[ast.Field], Option[(Field[Ctx, _], Option[Any => Ctx], LeafAction[Ctx, _])])]])
 
   def resolveSeq(
       path: List[String],
@@ -141,23 +121,45 @@ class Resolver[Ctx](
     }.map(_._1)
   }
 
-  def resolveActions(path: List[String], tpe: ObjectType[Ctx, _], actions: Actions, userCtx: Ctx): Resolve = {
+  def collectActionsPar(
+      path: List[String],
+      tpe: ObjectType[Ctx, _],
+      value: Any,
+      fields: Map[String, (ast.Field, Try[List[ast.Field]])],
+      errorReg: ErrorRegistry,
+      userCtx: Ctx): Actions =
+    fields.foldLeft((errorReg, Some(Nil)): Actions) {
+      case (acc @ (_, None), _) => acc
+      case (acc, (name, (origField, _))) if tpe.getField(schema, origField.name).isEmpty => acc
+      case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) =>
+        errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) Some(acc :+ (origField :: Nil, None)) else None)
+      case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
+        resolveField(userCtx, tpe, path :+ name, value, errors, name, fields) match {
+          case (updatedErrors, Some(result), updateCtx) => updatedErrors -> Some(acc :+ (fields, Some((tpe.getField(schema, origField.name).get, updateCtx, result))))
+          case (updatedErrors, None, _) if isOptional(tpe, origField.name) => updatedErrors -> Some(acc :+ (origField :: Nil, None))
+          case (updatedErrors, None, _) => updatedErrors -> None
+        }
+    }
+
+  def resolveActionsPar(path: List[String], tpe: ObjectType[Ctx, _], actions: Actions, userCtx: Ctx): Resolve = {
     val (errors, res) = actions
+
+    def resolveUc(fn: Option[Any => Ctx], v: Any) = fn map (_(v)) getOrElse userCtx
 
     res match {
       case None => Result(errors, None)
       case Some(results) =>
         val resolvedValues = results.map {
           case (astFields, None) => astFields.head -> Result(ErrorRegistry.empty, None)
-          case (astFields, Some((field, Value(v)))) =>
-            astFields.head -> resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v, userCtx)
-          case (astFields, Some((field, DeferredValue(deferred)))) =>
+          case (astFields, Some((field, updateCtx, Value(v)))) =>
+            astFields.head -> resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v, resolveUc(updateCtx, v))
+          case (astFields, Some((field, updateCtx, DeferredValue(deferred)))) =>
             val promise = Promise[Any]()
 
             astFields.head -> DeferredResult(Future.successful(Defer(promise, deferred) :: Nil):: Nil,
               promise.future
                 .flatMap { v =>
-                  resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v, userCtx) match {
+                  resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v, resolveUc(updateCtx, v)) match {
                     case r: Result => Future.successful(r)
                     case er: DeferredResult => resolveDeferred(er)
                   }
@@ -165,8 +167,8 @@ class Resolver[Ctx](
                 .recover {
                   case e => Result(ErrorRegistry(path :+ astFields.head.outputName, e), None)
                 })
-          case (astFields, Some((field, FutureValue(future)))) =>
-            val resolved = future.map(v => resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v, userCtx)).recover {
+          case (astFields, Some((field, updateCtx, FutureValue(future)))) =>
+            val resolved = future.map(v => resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v, resolveUc(updateCtx, v))).recover {
               case e => Result(ErrorRegistry(path :+ astFields.head.outputName, e, astFields.head.position), None)
             }
             val deferred = resolved flatMap {
@@ -179,13 +181,13 @@ class Resolver[Ctx](
             }
 
             astFields.head -> DeferredResult(deferred :: Nil, value)
-          case (astFields, Some((field, DeferredFutureValue(deferredValue)))) =>
+          case (astFields, Some((field, updateCtx, DeferredFutureValue(deferredValue)))) =>
             val promise = Promise[Any]()
 
             astFields.head -> DeferredResult(deferredValue.map(d => Defer(promise, d) :: Nil) :: Nil,
               promise.future
                 .flatMap{ v =>
-                resolveValue(path :+ field.name, astFields, field.fieldType, field, v, userCtx) match {
+                resolveValue(path :+ field.name, astFields, field.fieldType, field, v, resolveUc(updateCtx, v)) match {
                   case r: Result => Future.successful(r)
                   case er: DeferredResult => resolveDeferred(er)
                 }
@@ -289,7 +291,7 @@ class Resolver[Ctx](
           case Success(fields) =>
             val actions = collectActionsPar(path, obj, value, fields, ErrorRegistry.empty, userCtx)
 
-            resolveActions(path, obj, actions, userCtx)
+            resolveActionsPar(path, obj, actions, userCtx)
           case Failure(error) => Result(ErrorRegistry(path, error), None)
         }
       case abst: AbstractType =>

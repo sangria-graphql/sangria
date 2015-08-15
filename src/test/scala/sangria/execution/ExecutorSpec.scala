@@ -19,31 +19,51 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     def e: Option[String] = Some("Egg")
     val f: Option[String] = Some("Fish")
     def deep: Option[DeepTestSubject] = Some(new DeepTestSubject)
+    def deepColor(c: String): DeepTestSubject = new DeepTestSubject(c)
     def pic(size: Option[Int]) = "Pic of size: " + (size getOrElse 50)
     def future: Future[Option[TestSubject]] = Future.successful(Some(new TestSubject))
   }
 
-  class DeepTestSubject {
+  class DeepTestSubject(val color: String = "none") {
     def a: Option[String] = Some("Already Been Done")
     def b: Option[String] = Some("Boring")
     def c: List[Option[String]] = Some("Contrived") :: None :: Some("Confusing") :: Nil
     def deeper: List[Option[TestSubject]] = Some(new TestSubject) :: null :: Some(new TestSubject) :: Nil
   }
 
-  val DeepDataType = ObjectType("DeepDataType", () => List[Field[Unit, DeepTestSubject]](
+  case class Ctx(color: String = "green")
+
+  case class LightColor(subj: TestSubject, color: String) extends Deferred[DeepTestSubject]
+
+  class LightColorResolver extends DeferredResolver {
+    def resolve(deferred: List[Deferred[Any]]) = Future.successful(deferred map {
+      case LightColor(v, c) => v.deepColor("light" + c)
+    })
+  }
+
+  val DeepDataType = ObjectType("DeepDataType", () => List[Field[Ctx, DeepTestSubject]](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
     Field("c", OptionType(ListType(OptionType(StringType))), resolve = _.value.c),
+    Field("ctxColor", OptionType(StringType), resolve = _.ctx.color),
     Field("deeper", OptionType(ListType(OptionType(DataType))), resolve = _.value.deeper)
   ))
 
-  val DataType: ObjectType[Unit, TestSubject] = ObjectType("DataType", () => List[Field[Unit, TestSubject]](
+  val DataType: ObjectType[Ctx, TestSubject] = ObjectType("DataType", () => List[Field[Ctx, TestSubject]](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
     Field("c", OptionType(StringType), resolve = _.value.c),
     Field("d", OptionType(StringType), resolve = _.value.d),
     Field("e", OptionType(StringType), resolve = _.value.e),
     Field("f", OptionType(StringType), resolve = _.value.f),
+    Field("ctxUpdating", DeepDataType, resolve =
+      ctx => UpdateCtx(ctx.value.deepColor("blue"))(v => ctx.ctx.copy(color = v.color))),
+    Field("ctxUpdatingFut", DeepDataType, resolve =
+      ctx => UpdateCtx(Future.successful(ctx.value.deepColor("orange")))(v => ctx.ctx.copy(color = v.color))),
+    Field("ctxUpdatingDef", DeepDataType, resolve =
+      ctx => UpdateCtx(LightColor(ctx.value, "magenta"))(v => ctx.ctx.copy(color = v.color))),
+    Field("ctxUpdatingDefFut", DeepDataType, resolve =
+      ctx => UpdateCtx(DeferredFutureValue(Future.successful(LightColor(ctx.value, "red"))))(v => ctx.ctx.copy(color = v.color))),
     Field("pic", OptionType(StringType),
       arguments = Argument("size", OptionInputType(IntType)) :: Nil,
       resolve = ctx => ctx.value.pic(ctx.argOpt[Int]("size"))),
@@ -115,7 +135,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(DataType)
 
-      Executor(schema, new TestSubject).execute(doc, arguments = Some(Map("size" -> 100))).await should be (expected)
+      Executor(schema, new TestSubject, Ctx()).execute(doc, arguments = Some(Map("size" -> 100))).await should be (expected)
     }
 
 
@@ -320,6 +340,38 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
       val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
 
       Executor(schema, queryValidator = QueryValidator.empty).execute(doc).await should be  (Map("data" -> Map()))
+    }
+
+    "update context i query operations" in {
+      val Success(doc) = QueryParser.parse("""
+        query Q {
+          ctxUpdating {
+            ctxColor
+          }
+
+          ctxUpdatingFut {
+            ctxColor
+          }
+
+          ctxUpdatingDef {
+            ctxColor
+          }
+
+          ctxUpdatingDefFut {
+            ctxColor
+          }
+        }
+        """)
+
+      val schema = Schema(DataType)
+
+      Executor(schema, new TestSubject, Ctx(), deferredResolver = new LightColorResolver).execute(doc).await should be  (
+        Map(
+          "data" -> Map(
+            "ctxUpdating" -> Map("ctxColor" -> "blue"),
+            "ctxUpdatingFut" -> Map("ctxColor" -> "orange"),
+            "ctxUpdatingDef" -> Map("ctxColor" -> "lightmagenta"),
+            "ctxUpdatingDefFut" -> Map("ctxColor" -> "lightred"))))
     }
   }
 }

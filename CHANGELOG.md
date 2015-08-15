@@ -1,3 +1,10 @@
+## ??? (???)
+
+* #45 - Added `Long` scalar type
+* #49 - `UpdateCtxAction` should also work for query types
+* Minor bigfix that make it possible now for interfaces to have a list of interfaces
+
+
 ## v0.2.2 (2015-08-09)
 
 * #44 - Add ability to add types explicitly in schema, for cases when they are not referenced anywhere else
