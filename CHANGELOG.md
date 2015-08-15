@@ -2,7 +2,9 @@
 
 * #45 - Added `Long` scalar type
 * #49 - `UpdateCtxAction` should also work for query types
-* Minor bigfix that make it possible now for interfaces to have a list of interfaces
+* #50 - Sanity check - fields should have unique name within the same type definition
+* #31, #32 - More test coverage for "projections" and "deferred" features
+* Minor bigfix that makes it possible now for interfaces to have a list of interfaces
 
 
 ## v0.2.2 (2015-08-09)

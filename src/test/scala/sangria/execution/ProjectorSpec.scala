@@ -62,9 +62,10 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
   }
 
   class ProductResolver(ctx: Ctx) extends DeferredResolver {
-    override def resolve(deferred: List[Deferred[Any]]) = Future.fromTry(Try(deferred map {
-      case ProductDefer(ids) => ids map (id => Right(ctx.products.find(_.id == id).get))
-    }))
+    override def resolve(deferred: List[Deferred[Any]]) = deferred map {
+      case ProductDefer(ids) =>
+        Future.fromTry(Try(ids map (id => Right(ctx.products.find(_.id == id).get))))
+    }
   }
 
   "Projector" should {

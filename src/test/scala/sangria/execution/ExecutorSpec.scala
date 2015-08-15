@@ -34,17 +34,20 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
   case class Ctx(color: String = "green")
 
   case class LightColor(subj: TestSubject, color: String) extends Deferred[DeepTestSubject]
+  case class FailColor(subj: TestSubject, color: String) extends Deferred[DeepTestSubject]
 
   class LightColorResolver extends DeferredResolver {
-    def resolve(deferred: List[Deferred[Any]]) = Future.successful(deferred map {
-      case LightColor(v, c) => v.deepColor("light" + c)
-    })
+    def resolve(deferred: List[Deferred[Any]]) = deferred map {
+      case LightColor(v, c) => Future.successful(v.deepColor("light" + c))
+      case FailColor(v, c) => Future.failed(new IllegalStateException("error in resolver"))
+    }
   }
 
   val DeepDataType = ObjectType("DeepDataType", () => List[Field[Ctx, DeepTestSubject]](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
     Field("c", OptionType(ListType(OptionType(StringType))), resolve = _.value.c),
+    Field("color", StringType, resolve = _.value.color),
     Field("ctxColor", OptionType(StringType), resolve = _.ctx.color),
     Field("deeper", OptionType(ListType(OptionType(DataType))), resolve = _.value.deeper)
   ))
@@ -64,6 +67,10 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
       ctx => UpdateCtx(LightColor(ctx.value, "magenta"))(v => ctx.ctx.copy(color = v.color))),
     Field("ctxUpdatingDefFut", DeepDataType, resolve =
       ctx => UpdateCtx(DeferredFutureValue(Future.successful(LightColor(ctx.value, "red"))))(v => ctx.ctx.copy(color = v.color))),
+    Field("def", DeepDataType, resolve = ctx => LightColor(ctx.value, "magenta")),
+    Field("defFut", DeepDataType, resolve = ctx => DeferredFutureValue(Future.successful(LightColor(ctx.value, "red")))),
+    Field("defFail", OptionType(DeepDataType), resolve = ctx => FailColor(ctx.value, "magenta")),
+    Field("defFutFail", OptionType(DeepDataType), resolve = ctx => DeferredFutureValue(Future.successful(FailColor(ctx.value, "red")))),
     Field("pic", OptionType(StringType),
       arguments = Argument("size", OptionInputType(IntType)) :: Nil,
       resolve = ctx => ctx.value.pic(ctx.argOpt[Int]("size"))),
@@ -342,7 +349,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
       Executor(schema, queryValidator = QueryValidator.empty).execute(doc).await should be  (Map("data" -> Map()))
     }
 
-    "update context i query operations" in {
+    "update context in query operations" in {
       val Success(doc) = QueryParser.parse("""
         query Q {
           ctxUpdating {
@@ -372,6 +379,53 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
             "ctxUpdatingFut" -> Map("ctxColor" -> "orange"),
             "ctxUpdatingDef" -> Map("ctxColor" -> "lightmagenta"),
             "ctxUpdatingDefFut" -> Map("ctxColor" -> "lightred"))))
+    }
+
+    "resolve deferred values correctly" in {
+      val Success(doc) = QueryParser.parse("""
+        {
+          def { color }
+          defFut { color }
+        }
+        """)
+
+      val schema = Schema(DataType)
+
+      Executor(schema, new TestSubject, Ctx(), deferredResolver = new LightColorResolver).execute(doc).await should be  (
+        Map(
+          "data" -> Map(
+            "def" -> Map("color" -> "lightmagenta"),
+            "defFut" -> Map("color" -> "lightred"))))
+    }
+
+    "resolve deferred values correctly in presence of errors" in {
+      val Success(doc) = QueryParser.parse("""
+        {
+          defFail { color }
+          defFutFail { color }
+        }
+        """)
+
+      val schema = Schema(DataType)
+
+      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
+        case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
+      }
+
+      Executor(schema, new TestSubject, Ctx(), deferredResolver = new LightColorResolver, exceptionHandler = exceptionHandler).execute(doc).await should be  (
+        Map(
+          "data" -> Map(
+            "defFail" -> null,
+            "defFutFail" -> null),
+          "errors" -> List(
+            Map(
+              "message" -> "error in resolver",
+              "field" -> "defFail",
+              "locations" -> List(Map("line" -> 3, "column" -> 11))),
+            Map(
+              "message" -> "error in resolver",
+              "field" -> "defFutFail",
+              "locations" -> List(Map("line" -> 4, "column" -> 11))))))
     }
   }
 }

@@ -143,9 +143,9 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       val resolver = new DeferredResolver {
-        def resolve(deferred: List[Deferred[Any]]) = Future.successful(deferred map {
-          case ArticleDeferred(id) => article(id.toInt)
-        })
+        def resolve(deferred: List[Deferred[Any]]) = deferred map {
+          case ArticleDeferred(id) => Future.successful(article(id.toInt))
+        }
       }
 
       Executor(BlogSchema, deferredResolver = resolver, queryValidator = QueryValidator.empty).execute(doc).await should be (expected)

@@ -3,7 +3,7 @@ package sangria.util
 import org.scalatest.Matchers
 import sangria.execution.{InputUnmarshaller, Executor, ResultMarshaller}
 import sangria.parser.QueryParser
-import sangria.schema.Schema
+import sangria.schema.{DeferredResolver, Schema}
 import sangria.validation.QueryValidator
 import spray.json.{JsValue, JsObject}
 
@@ -15,7 +15,7 @@ import sangria.integration.SprayJsonSupport.SprayJsonInputUnmarshaller
 trait GraphQlSupport extends AwaitSupport with Matchers {
   def schema: Schema[_, _]
 
-  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: Option[A], userContext: Any = ()) = {
+  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: Option[A], userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
@@ -27,15 +27,16 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
       data,
       exceptionHandler = exceptionHandler,
       userContext = userContext,
-      queryValidator = QueryValidator.empty).execute(doc.copy(sourceMapper = None), arguments = args).await
+      queryValidator = QueryValidator.empty,
+      deferredResolver = resolver).execute(doc.copy(sourceMapper = None), arguments = args).await
   }
 
-  def check[T](data: T, query: String, expected: Any, args: Option[JsValue] = None, userContext: Any = ()) = {
-    executeTestQuery(data, query, args, userContext) should be (expected)
+  def check[T](data: T, query: String, expected: Any, args: Option[JsValue] = None, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+    executeTestQuery(data, query, args, userContext, resolver) should be (expected)
   }
 
-  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: Option[JsValue] = None, userContext: Any = ()) = {
-    val result = executeTestQuery(data, query, args, userContext).asInstanceOf[Map[String, Any]]
+  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: Option[JsValue] = None, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+    val result = executeTestQuery(data, query, args, userContext, resolver).asInstanceOf[Map[String, Any]]
 
     result("data") should be (expectedData)
 

@@ -86,27 +86,29 @@ class Resolver[Ctx](
                     Future.successful(resolveValue(path :+ fields.head.outputName, fields, sfield.fieldType, sfield, v, uc) -> resolveUc(v))
                   case DeferredValue(d) =>
                     val p = Promise[Any]()
+
                     resolveDeferred(DeferredResult(Future.successful(Defer(p, d) :: Nil) :: Nil, p.future.flatMap { v =>
                       resolveValue(path :+ fields.head.outputName, fields, sfield.fieldType, sfield, v, uc) match {
                         case r: Result => Future.successful(r)
                         case er: DeferredResult => resolveDeferred(er)
                       }
                     }.recover {
-                      case e => Result(ErrorRegistry(path :+ fields.head.outputName, e), None)
-                    })).flatMap(r => p.future.map(r -> resolveUc(_)))
+                      case e => Result(ErrorRegistry(path :+ fields.head.outputName, e, fields.head.position), None)
+                    })).flatMap(r => p.future map (r -> resolveUc(_)) recover {case _ => r -> uc})
                   case FutureValue(f) =>
                     f.map (v => resolveValue(path :+ fields.head.outputName, fields, sfield.fieldType, sfield, v, uc) -> resolveUc(v))
                       .recover{case e => Result(errors.add(path :+ name, e, fields.head.position), None) -> uc}
                   case DeferredFutureValue(df) =>
                     val p = Promise[Any]()
+
                     resolveDeferred(DeferredResult(df.map(Defer(p, _) :: Nil) :: Nil, p.future.flatMap { v =>
                       resolveValue(path :+ fields.head.outputName, fields, sfield.fieldType, sfield, v, uc) match {
                         case r: Result => Future.successful(r)
                         case er: DeferredResult => resolveDeferred(er)
                       }
                     }.recover {
-                      case e => Result(ErrorRegistry(path :+ fields.head.outputName, e), None)
-                    })).flatMap(r => p.future.map(r -> resolveUc(_)))
+                      case e => Result(ErrorRegistry(path :+ fields.head.outputName, e, fields.head.position), None)
+                    })).flatMap(r => p.future map (r -> resolveUc(_)) recover {case _ => r -> uc})
                 }
 
                 resolve.flatMap {
@@ -165,7 +167,7 @@ class Resolver[Ctx](
                   }
                 }
                 .recover {
-                  case e => Result(ErrorRegistry(path :+ astFields.head.outputName, e), None)
+                  case e => Result(ErrorRegistry(path :+ astFields.head.outputName, e, astFields.head.position), None)
                 })
           case (astFields, Some((field, updateCtx, FutureValue(future)))) =>
             val resolved = future.map(v => resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, v, resolveUc(updateCtx, v))).recover {
@@ -193,7 +195,7 @@ class Resolver[Ctx](
                 }
               }
               .recover{
-                case e => Result(ErrorRegistry(path :+ field.name, e), None)
+                case e => Result(ErrorRegistry(path :+ field.name, e, astFields.head.position), None)
               })
         }
 
@@ -219,17 +221,22 @@ class Resolver[Ctx](
     }
   }
 
-  def resolveDeferred(res: DeferredResult) = {
-    Future.sequence(res.deferred).map { listOfDef =>
+  def resolveDeferred(res: DeferredResult) =
+    Future.sequence(res.deferred).flatMap { listOfDef =>
       val toResolve = listOfDef.flatten
-      deferredResolver.resolve(toResolve map (_.deferred)).onComplete {
-        case Success(resolved) => toResolve zip resolved foreach {case (d, r) => d.promise.success(r)}
-        case Failure(error) => toResolve foreach(_.promise.failure(error))
-      }
-    }
 
-    res.futureValue
-  }
+      try {
+        val resolved = deferredResolver.resolve(toResolve map (_.deferred))
+
+        toResolve zip resolved foreach {
+          case (toRes, f) => toRes.promise tryCompleteWith f
+        }
+      } catch {
+        case NonFatal(error) => toResolve foreach (_.promise.failure(error))
+      }
+
+      res.futureValue
+    }
 
   def resolveValue(
       path: List[String],
@@ -238,7 +245,6 @@ class Resolver[Ctx](
       field: Field[Ctx, _],
       value: Any,
       userCtx: Ctx): Resolve  =
-
     tpe match {
       case OptionType(optTpe) =>
         val actualValue = value match {
