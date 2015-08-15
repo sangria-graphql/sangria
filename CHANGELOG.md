@@ -4,6 +4,7 @@
 * #49 - `UpdateCtxAction` should also work for query types
 * #50 - Sanity check - fields should have unique name within the same type definition
 * #31, #32 - More test coverage for "projections" and "deferred" features
+* #51 - Custom exception handler now should return `message` and list of additional filed
 * Minor bigfix that makes it possible now for interfaces to have a list of interfaces
 
 
