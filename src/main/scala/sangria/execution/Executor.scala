@@ -14,7 +14,7 @@ case class Executor[Ctx, Root](
     userContext: Ctx = (),
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver = DeferredResolver.empty,
-    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = PartialFunction.empty,
+    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty)(implicit executionContext: ExecutionContext) {
 
   def execute[Input](
@@ -74,3 +74,5 @@ case class Executor[Ctx, Root](
         Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position.toList))
   }
 }
+
+case class HandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty)

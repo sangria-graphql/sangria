@@ -27,8 +27,8 @@ class ListsSpec extends WordSpec with Matchers with AwaitSupport {
 
     val Success(doc) = QueryParser.parse("{ nest { test } }")
 
-    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
-      case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
+    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+      case (m, e: IllegalStateException) => HandledException(e.getMessage)
     }
 
     Executor(schema, data, exceptionHandler = exceptionHandler).execute(doc.copy(sourceMapper = None)).await should be (expected)

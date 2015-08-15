@@ -16,7 +16,7 @@ class Resolver[Ctx](
     variables: Map[String, Any],
     fieldCollector: FieldCollector[Ctx, _],
     userContext: Ctx,
-    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node],
+    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException],
     deferredResolver: DeferredResolver,
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker)(implicit executionContext: ExecutionContext) {

@@ -1,7 +1,7 @@
 package sangria.util
 
 import org.scalatest.Matchers
-import sangria.execution.{InputUnmarshaller, Executor, ResultMarshaller}
+import sangria.execution.{HandledException, InputUnmarshaller, Executor, ResultMarshaller}
 import sangria.parser.QueryParser
 import sangria.schema.{DeferredResolver, Schema}
 import sangria.validation.QueryValidator
@@ -18,8 +18,8 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
   def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: Option[A], userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
     val Success(doc) = QueryParser.parse(query)
 
-    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
-      case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
+    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+      case (m, e: IllegalStateException) => HandledException(e.getMessage)
     }
 
     Executor(

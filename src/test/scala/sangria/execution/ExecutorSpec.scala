@@ -244,8 +244,8 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
               syncDeferError
         }""")
 
-      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
-        case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
+      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       val result = Executor(schema, new Data, exceptionHandler = exceptionHandler).execute(doc).await.asInstanceOf[Map[String, Any]]
@@ -408,8 +408,8 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(DataType)
 
-      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), ResultMarshaller#Node] = {
-        case (m, e: IllegalStateException) => m.mapNode(Seq("message" -> m.stringNode(e.getMessage)))
+      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       Executor(schema, new TestSubject, Ctx(), deferredResolver = new LightColorResolver, exceptionHandler = exceptionHandler).execute(doc).await should be  (
