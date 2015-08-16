@@ -24,6 +24,8 @@ I would also would recommend you to check out [http://try.sangria-graphql.org](h
 It is an example of GraphQL server written with Play framework and Sangria. It also serves as a playground,
 where you can interactively execute GraphQL queries and play with some examples.
 
+If you want to use sangria with [react-relay](https://facebook.github.io/relay) framework, they you also may be interested in [sangria-relay](https://github.com/sangria-graphql/sangria-relay).
+
 ## Mailing List
 
 If you would like to discuss something about sangria or have some questions, please feel free to join our mailing list:
