@@ -1,4 +1,4 @@
-## ??? (???)
+## v0.3.0 (2015-08-16)
 
 * #45 - Added `Long` scalar type
 * #49 - `UpdateCtxAction` should also work for query types
@@ -25,7 +25,6 @@
   ```
 * `withPossibleTypes` was introduced on `InterfaceType` and `Field` in order to provide a convenient way to the list of possible implementation types of interface
 * Added convenience method `Executor.execute`
-* Minor bigfix that makes it possible now for interfaces to have a list of interfaces
 
 
 ## v0.2.2 (2015-08-09)
