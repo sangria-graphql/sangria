@@ -26,7 +26,7 @@
   ```
 * `withPossibleTypes` was introduced on `InterfaceType` and `Field` in order to provide a convenient way to the list of possible implementation types of interface
 * Added convenience method `Executor.execute`
-
+* Other minor improvements to make **sangria-relay** possible
 
 ## v0.2.2 (2015-08-09)
 

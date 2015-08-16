@@ -110,6 +110,9 @@ object ObjectType {
     ObjectType(name, None, Named.checkFields(fieldsFn), interfaces map (_.interfaceType))
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, Some(description), Named.checkFields(fieldsFn), interfaces map (_.interfaceType))
+
+  implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
+    objectType.asInstanceOf[ObjectType[Ctx, Val]]
 }
 
 case class InterfaceType[Ctx, Val] private (
@@ -314,6 +317,7 @@ case class InputObjectType[T] private (
 
 object InputObjectType {
   type InputObjectRes = Map[String, Any]
+
   def apply(name: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
     InputObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields))
   def apply(name: String, description: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
