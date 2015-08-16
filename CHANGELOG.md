@@ -18,6 +18,7 @@
   val PersonType = ObjectType[Unit, Person]("Person", interfaces = List(NamedType, BeingType), fields = ...)
   ```
 * Fields in `ObjectType` and `InterfaceType` got small convenience method fields. You now can use it like this:
+
   ```scala
   val DogType = ObjectType("Dog", fields[Unit, Dog](
     Field("name", OptionType(StringType), resolve = _.value.name),
