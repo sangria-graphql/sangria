@@ -1,4 +1,4 @@
-![Scagria Logo](https://raw.githubusercontent.com/sangria-graphql/sangria/master/logo/sangria-logo.png)
+![Scagria Logo](https://raw.githubusercontent.com/sangria-graphql/sangria-logo/master/sangria-logo.png)
 
 [Sangria](http://sangria-graphql.org/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
@@ -18,7 +18,7 @@ Examples below demonstrate some of the features. More documentation will come ve
 
 More info and the documentation can be found in the project home page:
 
-[http://sangria-graphql.org](http://sangria-graphql.org/)
+[http://sangria-graphql.org](http://sangria-graphql.org)
 
 I would also would recommend you to check out [http://try.sangria-graphql.org](http://try.sangria-graphql.org).
 It is an example of GraphQL server written with Play framework and Sangria. It also serves as a playground,
