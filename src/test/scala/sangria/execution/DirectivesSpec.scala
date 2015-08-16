@@ -14,7 +14,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
 
   case class TestSubject(a: Option[String], b: Option[String])
 
-  val schema = Schema(ObjectType("TestType", List[Field[Unit, TestSubject]](
+  val schema = Schema(ObjectType("TestType", fields[Unit, TestSubject](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b)
   )))

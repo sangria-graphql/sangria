@@ -16,7 +16,7 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
 
   case class ProductDefer(productIds: List[String]) extends Deferred[List[Right[String, Product]]]
 
-  val VariantType = ObjectType("Variant", () => List[Field[Unit, Variant]](
+  val VariantType = ObjectType("Variant", () => fields[Unit, Variant](
     Field("id", IDType, resolve = _.value.id),
     Field("typeId", StringType, resolve = NoProjection(_ => "variant")),
     Field("relatedProducts", ListType(ProductType), resolve = Projection("rp", Projector(1, (ctx, projected) => projected match {
@@ -32,7 +32,7 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
       Field("variants", ListType(VariantType), resolve = _.value.right.get.variants)
     ))
 
-  val QueryType = ObjectType("Query", List[Field[Ctx, Unit]](
+  val QueryType = ObjectType("Query", fields[Ctx, Unit](
     Field("products", ListType(ProductType), resolve = _.ctx.products map (Right(_))),
     Field("projectAll", ListType(ProductType), resolve = Projector((ctx, proj) => {
       ctx.ctx.allProjections = proj

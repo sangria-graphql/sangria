@@ -160,7 +160,7 @@ package object introspection {
 
   val __Directive = ObjectType(
     name = "__Directive",
-    fields = List[Field[Unit, Directive]](
+    fields = fields[Unit, Directive](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field("args", ListType(__InputValue), resolve = _.value.arguments),

@@ -45,7 +45,7 @@ trait ValidationSupport extends Matchers {
     Field("isAtLocation", OptionType(BooleanType),
       arguments = Argument("x", OptionInputType(IntType)) :: Argument("y", OptionInputType(IntType)) :: Nil,
       resolve = _ => None)),
-    Being :: Pet :: Nil)
+    interfaces[Unit, Unit](Being, Pet))
 
   val Cat = ObjectType("Cat", List[TestField](
     Field("name", OptionType(StringType), resolve = _ => None),
@@ -53,7 +53,7 @@ trait ValidationSupport extends Matchers {
     Field("meows", OptionType(BooleanType), resolve = _ => None),
     Field("meowVolume", OptionType(IntType), resolve = _ => None),
     Field("furColor", OptionType(FurColor), resolve = _ => None)),
-    Being :: Pet :: Nil)
+    interfaces[Unit, Unit](Being, Pet))
 
   val CatOrDog = UnionType("CatOrDog", types = Dog :: Cat :: Nil)
 
@@ -67,11 +67,11 @@ trait ValidationSupport extends Matchers {
       resolve = _ => None),
     Field("pets", OptionType(ListType(OptionType(Pet))), resolve = _ => None),
     Field("relatives", OptionType(ListType(OptionType(Human))), resolve = _ => None)),
-    Being :: Intelligent :: Nil)
+    interfaces[Unit, Unit](Being, Intelligent))
 
   val Alien = ObjectType("Alien", List[TestField](
     Field("numEyes", OptionType(IntType), resolve = _ => None)),
-    Being :: Intelligent :: Nil)
+    interfaces[Unit, Unit](Being, Intelligent))
 
   val DogOrHuman = UnionType("DogOrHuman", types = Dog :: Human :: Nil)
 

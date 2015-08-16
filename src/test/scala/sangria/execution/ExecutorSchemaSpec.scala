@@ -27,12 +27,12 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
 
   case class ArticleDeferred(id: String) extends Deferred[Option[Article]]
 
-  val BlogImageType = ObjectType("Image", List[Field[Unit, Image]](
+  val BlogImageType = ObjectType("Image", fields[Unit, Image](
     Field("url", OptionType(StringType), resolve = _.value.url),
     Field("width", OptionType(IntType), resolve = _.value.width),
     Field("height", OptionType(IntType), resolve = _.value.height)))
 
-  val BlogAuthorType = ObjectType("Author", () => List[Field[Unit, Author]](
+  val BlogAuthorType = ObjectType("Author", () => fields[Unit, Author](
     Field("id", OptionType(StringType), resolve = _.value.id),
     Field("name", OptionType(StringType), resolve = _.value.name),
     Field("pic", OptionType(BlogImageType),
@@ -41,7 +41,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
     Field("recentArticle", OptionType(BlogArticleType),
       resolve = ctx => ctx.value.recentArticle map (ra => DeferredValue(ArticleDeferred(ra))) getOrElse Value(None))))
 
-  val BlogArticleType: ObjectType[Unit, Article] = ObjectType("Article", List[Field[Unit, Article]](
+  val BlogArticleType: ObjectType[Unit, Article] = ObjectType("Article", fields[Unit, Article](
     Field("id", StringType, resolve = _.value.id),
     Field("isPublished", OptionType(BooleanType), resolve = _.value.isPublished),
     Field("author", OptionType(BlogAuthorType), resolve = _.value.author),
@@ -49,7 +49,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
     Field("body", OptionType(StringType), resolve = _.value.body),
     Field("keywords", OptionType(ListType(OptionType(StringType))), resolve = _.value.keywords)))
 
-  val BlogQueryType = ObjectType("Query", List[Field[Unit, Unit]](
+  val BlogQueryType = ObjectType("Query", fields[Unit, Unit](
     Field("article", OptionType(BlogArticleType),
       arguments = Argument("id", OptionInputType(IDType)) :: Nil,
       resolve = ctx => ctx.argOpt[String]("id") flatMap (id => article(id.toInt))),

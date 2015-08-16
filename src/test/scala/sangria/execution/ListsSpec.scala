@@ -18,7 +18,7 @@ class ListsSpec extends WordSpec with Matchers with AwaitSupport {
     implicit val validAny = new ValidOutType[Any, Any] {}
     val data = Data(testData)
 
-    lazy val Type: ObjectType[Unit, Data] = ObjectType("DataType", () => List[Field[Unit, Data]](
+    lazy val Type: ObjectType[Unit, Data] = ObjectType("DataType", () => fields[Unit, Data](
       Field("test", testType, resolve = _.value.test),
       Field("nest", OptionType(Type), resolve = _ => data)
     ))

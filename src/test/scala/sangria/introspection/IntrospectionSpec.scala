@@ -789,7 +789,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         InputField("b", OptionInputType(ListInputType(OptionInputType(StringType))))
       ))
 
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("field", OptionType(StringType),
           arguments = Argument("complex", OptionInputType(inputType)) :: Nil,
           resolve = _ => None)
@@ -957,7 +957,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "supports the __type root field" in {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testField", OptionType(StringType), resolve = _ => None)
       ))
 
@@ -983,7 +983,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "identifies deprecated fields" in {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
         Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
       ))
@@ -1027,7 +1027,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "respects the includeDeprecated parameter for fields" in {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
         Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
       ))
@@ -1086,7 +1086,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
         EnumValue("ALSONONDEPRECATED", value = 3)))
 
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(testEnum), resolve = _ => None)
       ))
 
@@ -1139,7 +1139,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
         EnumValue("ALSONONDEPRECATED", value = 3)))
 
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(testEnum), resolve = _ => None)
       ))
 
@@ -1201,7 +1201,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "fails as expected on the __type root field without an arg" in {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testField", OptionType(StringType), resolve = _ => None)
       ))
 

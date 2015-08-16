@@ -151,4 +151,12 @@ package object schema {
     shouldInclude = ctx => !ctx.arg[Boolean](IfArg))
 
   val BuiltinDirectives = IncludeDirective :: SkipDirective :: Nil
+
+  def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
+
+  def interfaces[Ctx, Concrete](interfaces: PossibleInterface[Ctx, Concrete]*): List[PossibleInterface[Ctx, Concrete]] =
+    interfaces.toList
+
+  def possibleTypes[Ctx, Abstract](objectTypes: PossibleObject[Ctx, Abstract]*): List[PossibleObject[Ctx, Abstract]] =
+    objectTypes.toList
 }

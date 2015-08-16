@@ -43,7 +43,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     }
   }
 
-  val DeepDataType = ObjectType("DeepDataType", () => List[Field[Ctx, DeepTestSubject]](
+  val DeepDataType = ObjectType("DeepDataType", () => fields[Ctx, DeepTestSubject](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
     Field("c", OptionType(ListType(OptionType(StringType))), resolve = _.value.c),
@@ -52,7 +52,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     Field("deeper", OptionType(ListType(OptionType(DataType))), resolve = _.value.deeper)
   ))
 
-  val DataType: ObjectType[Ctx, TestSubject] = ObjectType("DataType", () => List[Field[Ctx, TestSubject]](
+  val DataType: ObjectType[Ctx, TestSubject] = ObjectType("DataType", () => fields[Ctx, TestSubject](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
     Field("c", OptionType(StringType), resolve = _.value.c),
@@ -78,7 +78,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     Field("future", OptionType(DataType), resolve = _.value.future)
   ))
 
-  val ParallelFragmentType: ObjectType[Unit, Unit] = ObjectType("Type", () => List[Field[Unit, Unit]](
+  val ParallelFragmentType: ObjectType[Unit, Unit] = ObjectType("Type", () => fields[Unit, Unit](
     Field("a", OptionType(StringType), resolve = _ => "Apple"),
     Field("b", OptionType(StringType), resolve = _ => "Banana"),
     Field("c", OptionType(StringType), resolve = _ => "Cherry"),
@@ -184,7 +184,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
       var resolvedCtx: Option[String] = None
 
-      val schema = Schema(ObjectType("Type", List[Field[Unit, Thing]](
+      val schema = Schema(ObjectType("Type", fields[Unit, Thing](
         Field("a", OptionType(StringType), resolve = ctx => {resolvedCtx = ctx.value.a; ctx.value.a}))))
 
       val Success(doc) = QueryParser.parse("query Example { a }")
@@ -195,7 +195,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     "correctly threads arguments" in {
       var resolvedArgs: Map[String, Any] = Map.empty
 
-      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+      val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("b", OptionType(StringType),
           arguments = Argument("numArg", OptionInputType(IntType)) :: Argument("stringArg", OptionInputType(StringType)) :: Nil,
           resolve = ctx => {resolvedArgs = ctx.args; None}))))
@@ -221,7 +221,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
         }
       }
 
-      val schema = Schema(ObjectType("Type", List[Field[Unit, Data]](
+      val schema = Schema(ObjectType("Type", fields[Unit, Data](
         Field("sync", OptionType(StringType), resolve = _.value.sync),
         Field("syncError", OptionType(StringType), resolve = _.value.syncError),
         Field("async", OptionType(StringType), resolve = _.value.async),
@@ -287,7 +287,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "use the inline operation if no operation is provided" in {
-      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+      val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("{ a }")
 
@@ -295,7 +295,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "use the only operation if no operation is provided" in {
-      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+      val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("query Example { a }")
 
@@ -303,7 +303,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "throw if no operation is provided with multiple operations" in {
-      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+      val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
 
@@ -313,15 +313,15 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
     "use the query schema for queries" in {
       val schema = Schema(
-        ObjectType("Q", List[Field[Unit, Unit]](Field("a", OptionType(StringType), resolve = _ => "b"))),
-        Some(ObjectType("M", List[Field[Unit, Unit]](Field("c", OptionType(StringType), resolve = _ => "d")))))
+        ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))),
+        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ => "d")))))
       val Success(doc) = QueryParser.parse("query Q { a } mutation M { c }")
 
       Executor(schema).execute(doc, Some("Q")).await should be  (Map("data" -> Map("a" -> "b")))
     }
 
     "avoid recursion" in {
-      val schema = Schema(ObjectType("Type", List[Field[Unit, Unit]](
+      val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("a", OptionType(StringType), resolve = _ => "b"))))
 
       val Success(doc) = QueryParser.parse("""
@@ -342,8 +342,8 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
     "not include illegal fields in output" in {
       val schema = Schema(
-        ObjectType("Q", List[Field[Unit, Unit]](Field("a", OptionType(StringType), resolve = _ => "b"))),
-        Some(ObjectType("M", List[Field[Unit, Unit]](Field("c", OptionType(StringType), resolve = _ => "d")))))
+        ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))),
+        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ => "d")))))
       val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
 
       Executor(schema, queryValidator = QueryValidator.empty).execute(doc).await should be  (Map("data" -> Map()))

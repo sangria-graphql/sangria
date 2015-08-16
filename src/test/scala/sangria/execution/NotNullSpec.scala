@@ -40,7 +40,7 @@ class NotNullSpec extends WordSpec with Matchers with AwaitSupport with GraphQlS
     def nonNullPromiseNest = Future.successful(new NullingSubject)
   }
 
-  val DataType: ObjectType[Unit, TestSubject] = ObjectType("DataType", () => List[Field[Unit, TestSubject]](
+  val DataType: ObjectType[Unit, TestSubject] = ObjectType("DataType", () => fields[Unit, TestSubject](
     Field("sync", OptionType(StringType), resolve = _.value.sync),
     Field("nonNullSync", StringType, resolve = _.value.nonNullSync),
     Field("promise", OptionType(StringType), resolve = _.value.promise),

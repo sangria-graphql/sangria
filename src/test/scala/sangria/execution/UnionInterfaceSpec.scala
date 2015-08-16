@@ -14,18 +14,18 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
   case class Cat(name: Option[String], meows: Option[Boolean]) extends Named
   case class Person(name: Option[String], pets: Option[List[Option[AnyRef]]], friends: Option[List[Option[Named]]]) extends Named
 
-  val NamedType = InterfaceType("Named", List[Field[Unit, Named]](
+  val NamedType = InterfaceType("Named", fields[Unit, Named](
     Field("name", OptionType(StringType), resolve = _.value.name)))
 
-  val DogType = ObjectType[Unit, Dog]("Dog", interfaces = NamedType :: Nil, fields = List[Field[Unit, Dog]](
+  val DogType = ObjectType("Dog", interfaces = interfaces[Unit, Dog](NamedType), fields = fields[Unit, Dog](
     Field("barks", OptionType(BooleanType), resolve = _.value.barks)))
 
-  val CatType = ObjectType[Unit, Cat]("Cat", interfaces = NamedType :: Nil, fields = List[Field[Unit, Cat]](
+  val CatType = ObjectType("Cat", interfaces = interfaces[Unit, Cat](NamedType), fields = fields[Unit, Cat](
     Field("meows", OptionType(BooleanType), resolve = _.value.meows)))
 
   val PetType = UnionType[Unit]("Pet", types = DogType :: CatType :: Nil)
 
-  val PersonType = ObjectType[Unit, Person]("Person", interfaces = NamedType :: Nil, fields = List[Field[Unit, Person]](
+  val PersonType = ObjectType("Person", interfaces = interfaces[Unit, Person](NamedType), fields = fields[Unit, Person](
     Field("pets", OptionType(ListType(OptionType(PetType))), resolve = _.value.pets),
     Field("friends", OptionType(ListType(OptionType(NamedType))), resolve = _.value.friends)))
   

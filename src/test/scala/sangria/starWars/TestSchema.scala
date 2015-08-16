@@ -40,10 +40,10 @@ object TestSchema {
       ))
 
   val Human =
-    ObjectType[Unit, Human](
+    ObjectType(
       "Human",
       "A humanoid creature in the Star Wars universe.",
-      List[Field[Unit, Human]](
+      fields[Unit, Human](
         Field("id", StringType,
           Some("The id of the human."),
           resolve = _.value.id),
@@ -60,12 +60,12 @@ object TestSchema {
           Some("The home planet of the human, or null if unknown."),
           resolve = _.value.homePlanet)
       ),
-      Character :: Nil)
+      interfaces[Unit, Human](Character))
 
-  val Droid = ObjectType[Unit, Droid](
+  val Droid = ObjectType(
     "Droid",
     "A mechanical creature in the Star Wars universe.",
-    List[Field[Unit, Droid]](
+    fields[Unit, Droid](
       Field("id", StringType,
         Some("The id of the droid."),
         resolve = Projection("_id", _.value.id)),
@@ -82,7 +82,7 @@ object TestSchema {
         Some("The primary function of the droid."),
         resolve = _.value.primaryFunction)
     ),
-    Character :: Nil)
+    interfaces[Unit, Droid](Character))
 
   val ID = Argument("id", StringType, description = "id of the character")
 
@@ -90,7 +90,7 @@ object TestSchema {
     description = "If omitted, returns the hero of the whole saga. If provided, returns the hero of that particular episode.")
 
   val Query = ObjectType[CharacterRepo, Unit](
-    "Query", List[Field[CharacterRepo, Unit]](
+    "Query", fields[CharacterRepo, Unit](
       Field("hero", Character,
         arguments = EpisodeArg :: Nil,
         resolve = (ctx) => ctx.ctx.getHero(ctx.argOpt(EpisodeArg))),

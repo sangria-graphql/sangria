@@ -57,7 +57,7 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
 
   case class UserContext(num: Int)
 
-  val NumberHolderType = ObjectType("NumberHolder", List[Field[UserContext, NumberHolder]](
+  val NumberHolderType = ObjectType("NumberHolder", fields[UserContext, NumberHolder](
     Field("theNumber", OptionType(IntType), resolve = _.value.theNumber.get()),
     Field("userCtx", OptionType(IntType), resolve = _.ctx.num)
   ))
@@ -65,10 +65,10 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
   val NewNumberArg = Argument("newNumber", OptionInputType(IntType))
 
   val schema = Schema(
-    ObjectType("Query", List[Field[UserContext, Root]](
+    ObjectType("Query", fields[UserContext, Root](
       Field("numberHolder", OptionType(NumberHolderType), resolve = _.value.numberHolder)
     )),
-    Some(ObjectType("Mutation", List[Field[UserContext, Root]](
+    Some(ObjectType("Mutation", fields[UserContext, Root](
       Field("immediatelyChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
         resolve = ctx => UpdateCtx(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg)))(v => ctx.ctx.copy(num = 10 + v.theNumber.get()))),

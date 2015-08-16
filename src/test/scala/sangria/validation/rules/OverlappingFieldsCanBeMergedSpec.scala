@@ -258,29 +258,29 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       ))
 
     "return types must be unambiguous" should {
-      val StringBox = ObjectType("StringBox", List[Field[Unit, Unit]](
+      val StringBox = ObjectType("StringBox", fields[Unit, Unit](
         Field("scalar", OptionType(StringType), resolve = _ => None)
       ))
 
-      val IntBox = ObjectType("IntBox", List[Field[Unit, Unit]](
+      val IntBox = ObjectType("IntBox", fields[Unit, Unit](
         Field("scalar", OptionType(IntType), resolve = _ => None)
       ))
 
-      val NonNullStringBox1 = ObjectType("NonNullStringBox1", List[Field[Unit, Unit]](
+      val NonNullStringBox1 = ObjectType("NonNullStringBox1", fields[Unit, Unit](
         Field("scalar", StringType, resolve = _ => "")
       ))
 
-      val NonNullStringBox2 = ObjectType("NonNullStringBox2", List[Field[Unit, Unit]](
+      val NonNullStringBox2 = ObjectType("NonNullStringBox2", fields[Unit, Unit](
         Field("scalar", StringType, resolve = _ => "")
       ))
 
       val BoxUnion = UnionType("BoxUnion", types = StringBox :: IntBox :: NonNullStringBox1 :: NonNullStringBox2 :: Nil)
 
-      val Connection = ObjectType("NonNullStringBox2", List[Field[Unit, Unit]](
+      val Connection = ObjectType("NonNullStringBox2", fields[Unit, Unit](
         Field("edges", OptionType(ListType(OptionType(
-          ObjectType("Edge", List[Field[Unit, Unit]](
+          ObjectType("Edge", fields[Unit, Unit](
             Field("node", OptionType(
-              ObjectType("Node", List[Field[Unit, Unit]](
+              ObjectType("Node", fields[Unit, Unit](
                 Field("id", OptionType(IDType), resolve = _ => ""),
                 Field("name", OptionType(StringType), resolve = _ => "")
               ))
@@ -289,7 +289,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         ))), resolve = _ => Nil)
       ))
 
-      val schema = Schema(ObjectType("QueryRoot", List[Field[Unit, Unit]](
+      val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](
         Field("boxUnion", OptionType(BoxUnion), resolve = _ => ()),
         Field("connection", OptionType(Connection), resolve = _ => ())
       )))

@@ -20,7 +20,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
   val TestType = ObjectType("TestType", {
     import sangria.integration.SprayJsonSupport.{SprayJsonResultMarshaller => SJM}
 
-    List[Field[Unit, Unit]](
+    fields[Unit, Unit](
       Field("fieldWithObjectInput", OptionType(StringType),
         arguments = Argument("input", OptionInputType(TestInputObject)) :: Nil,
         resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, OptionInputType(TestInputObject), SJM))),

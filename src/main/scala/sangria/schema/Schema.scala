@@ -1,5 +1,7 @@
 package sangria.schema
 
+import language.{implicitConversions, existentials}
+
 import sangria.{introspection, ast}
 import sangria.validation.{EnumValueCoercionViolation, EnumCoercionViolation, Violation}
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
@@ -32,7 +34,9 @@ sealed trait Named {
 
 object Named {
   private[schema] def checkFields[T <: Seq[Named]](fields: T): T =
-    if (fields.map(_.name).toSet.size != fields.size)
+    if (fields.isEmpty)
+      throw new IllegalArgumentException("No fields provided! You need to provide at least one field to a Type.")
+    else if (fields.map(_.name).toSet.size != fields.size)
       throw new IllegalArgumentException("All fields within a Type should have unique names!")
     else fields
 
@@ -93,46 +97,85 @@ object ObjectType {
     ObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), Nil)
-  def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces)
-  def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces)
+  def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType))
+  def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType))
 
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, None, Named.checkFields(fieldsFn), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(name, Some(description), Named.checkFields(fieldsFn), Nil)
-  def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, Named.checkFields(fieldsFn), interfaces)
-  def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), Named.checkFields(fieldsFn), interfaces)
+  def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, None, Named.checkFields(fieldsFn), interfaces map (_.interfaceType))
+  def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+    ObjectType(name, Some(description), Named.checkFields(fieldsFn), interfaces map (_.interfaceType))
 }
 
 case class InterfaceType[Ctx, Val] private (
   name: String,
   description: Option[String] = None,
   fieldsFn: () => List[Field[Ctx, Val]],
-  interfaces: List[InterfaceType[Ctx, _]]
-) extends ObjectLikeType[Ctx, Val] with AbstractType
+  interfaces: List[InterfaceType[Ctx, _]],
+  manualPossibleTypes: () => List[ObjectType[_, _]]
+) extends ObjectLikeType[Ctx, Val] with AbstractType {
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () => possible.toList map (_.objectType))
+  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () => possible() map (_.objectType))
+}
 
 object InterfaceType {
+  val emptyPossibleTypes: () => List[ObjectType[_, _]] = () => Nil
+
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), Nil)
+    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), Nil, emptyPossibleTypes)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), Nil)
-  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces)
-  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces)
+    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), Nil, emptyPossibleTypes)
+  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType), emptyPossibleTypes)
+  def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType), emptyPossibleTypes)
 
   def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, Named.checkFields(fieldsFn), Nil)
+    InterfaceType(name, None, Named.checkFields(fieldsFn), Nil, emptyPossibleTypes)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), Nil)
-  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, Named.checkFields(fieldsFn), interfaces)
-  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[InterfaceType[Ctx, _ >: Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), interfaces)
+    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), Nil, emptyPossibleTypes)
+  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+    InterfaceType(name, None, Named.checkFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
+}
+
+case class PossibleInterface[Ctx, Concrete](interfaceType: InterfaceType[Ctx, _])
+
+object PossibleInterface extends PossibleInterfaceLowPrioImplicits {
+  implicit def apply[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
+    PossibleInterface[Ctx, Concrete](interface)
+}
+
+trait PossibleInterfaceLowPrioImplicits {
+  implicit def applyUnit[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit ev: PossibleType[Abstract, Concrete]): PossibleInterface[Unit, Concrete] =
+    PossibleInterface[Unit, Concrete](interface.asInstanceOf[InterfaceType[Unit, Abstract]])
+}
+
+case class PossibleObject[Ctx, Abstract](objectType: ObjectType[Ctx, _])
+
+object PossibleObject {
+  implicit def apply[Ctx, Abstract, Concrete](obj: ObjectType[Ctx, Concrete])(implicit ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract] =
+    PossibleObject[Ctx, Abstract](obj)
+
+  implicit def applyUnit[Ctx, Abstract, Concrete](obj: ObjectType[Unit, Concrete])(implicit ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract] =
+    PossibleObject[Ctx, Abstract](obj.asInstanceOf[ObjectType[Ctx, Concrete]])
+}
+
+trait PossibleType[AbstractType, ConcreteType]
+
+object PossibleType {
+  private object SingletonPossibleType extends PossibleType[AnyRef, AnyRef]
+
+  def create[AbstractType, ConcreteType] = SingletonPossibleType.asInstanceOf[PossibleType[AbstractType, ConcreteType]]
+
+  implicit def InheritanceBasedPossibleType[Abstract, Concrete](implicit ev: Concrete <:< Abstract): PossibleType[Abstract, Concrete] =
+    create[Abstract, Concrete]
 }
 
 case class UnionType[Ctx](
@@ -141,12 +184,16 @@ case class UnionType[Ctx](
   types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType
 
 case class Field[Ctx, Val] private (
-  name: String,
-  fieldType: OutputType[_],
-  description: Option[String],
-  arguments: List[Argument[_]],
-  resolve: Context[Ctx, Val] => Action[Ctx, _],
-  deprecationReason: Option[String]) extends Named with HasArguments
+    name: String,
+    fieldType: OutputType[_],
+    description: Option[String],
+    arguments: List[Argument[_]],
+    resolve: Context[Ctx, Val] => Action[Ctx, _],
+    deprecationReason: Option[String],
+    manualPossibleTypes: () => List[ObjectType[_, _]]) extends Named with HasArguments {
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () => possible.toList map (_.objectType))
+  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () => possible() map (_.objectType))
+}
 
 object Field {
   def apply[Ctx, Val, Res, Out](
@@ -155,8 +202,9 @@ object Field {
       description: Option[String] = None,
       arguments: List[Argument[_]] = Nil,
       resolve: Context[Ctx, Val] => Action[Ctx, Res],
+      possibleTypes: => List[PossibleObject[_, _]] = Nil,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
-    Field[Ctx, Val](name, fieldType, description, arguments, resolve, deprecationReason)
+    Field[Ctx, Val](name, fieldType, description, arguments, resolve, deprecationReason, () => possibleTypes map (_.objectType))
 }
 
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
@@ -328,12 +376,26 @@ case class Schema[Ctx, Val](
         case t: ObjectLikeType[_, _] =>
           val own = t.fields.foldLeft(updated(priority, t.name, t, result)) {
             case (acc, field) =>
-              field.arguments.foldLeft(collectTypes(priority, field.fieldType, acc)) {
+              val fromArgs = field.arguments.foldLeft(collectTypes(priority, field.fieldType, acc)) {
                 case (aacc, arg) => collectTypes(priority, arg.argumentType, aacc)
+              }
+
+              field.manualPossibleTypes().foldLeft(fromArgs) {
+                case (acc, objectType) => collectTypes(priority, objectType, acc)
               }
           }
 
-          t.interfaces.foldLeft(own) {case (acc, interface) => collectTypes(priority, interface, acc)}
+          val withPossible = t match {
+            case i: InterfaceType[_, _] =>
+              i.manualPossibleTypes().foldLeft(own) {
+                case (acc, objectType) => collectTypes(priority, objectType, acc)
+              }
+            case _ => own
+          }
+
+          t.interfaces.foldLeft(withPossible) {
+            case (acc, interface) => collectTypes(priority, interface, acc)
+          }
         case t @ UnionType(name, _, types) =>
           types.foldLeft(updated(priority, name, t, result)) {case (acc, tpe) => collectTypes(priority, tpe, acc)}
       }

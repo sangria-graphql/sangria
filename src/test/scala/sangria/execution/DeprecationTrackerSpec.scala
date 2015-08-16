@@ -34,7 +34,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
 
   "DeprecationTracker" should {
     "not track non-deprecated fields" in  {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
         Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
       ))
@@ -51,7 +51,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
     }
 
     "track deprecated fields" in  {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
         Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
       ))
@@ -73,7 +73,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
         EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
         EnumValue("ALSONONDEPRECATED", value = 3)))
 
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(StringType),
           arguments = Argument("foo", testEnum) :: Nil,
           resolve = _ => None)
@@ -104,7 +104,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
         EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
         EnumValue("ALSONONDEPRECATED", value = 3)))
 
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(StringType),
           arguments = Argument("foo", testEnum) :: Nil,
           resolve = _ => None)
@@ -132,7 +132,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
 
   "NilDeprecationTracker" should {
     "shouldn't do anything" in  {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
         Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
       ))
@@ -151,7 +151,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
         EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
         EnumValue("ALSONONDEPRECATED", value = 3)))
 
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(StringType),
           arguments = Argument("foo", testEnum) :: Nil,
           resolve = _ => None)
@@ -176,7 +176,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
     }
 
     "track deprecated fields" in  {
-      val testType = ObjectType("TestType", List[Field[Unit, Unit]](
+      val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
         Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
       ))

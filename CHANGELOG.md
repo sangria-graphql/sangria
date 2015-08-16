@@ -5,6 +5,25 @@
 * #50 - Sanity check - fields should have unique name within the same type definition
 * #31, #32 - More test coverage for "projections" and "deferred" features
 * #51 - Custom exception handler now should return `message` and list of additional filed
+* The `interfaces` property syntax changed. In order to ensure type safety, improve type inference and allow type-class based relations between `InterfaceType` and `ObjectType` you now need to use following syntax:
+  ```scala
+  val PersonType = ObjectType("Person", interfaces = interfaces[Unit, Person](NamedType, BeingType), fields = ...)
+  ```
+  instead of old syntax
+  ```scala
+  val PersonType = ObjectType[Unit, Person]("Person", interfaces = NamedType :: BeingType :: Nil, fields = ...)
+
+  // or
+
+  val PersonType = ObjectType[Unit, Person]("Person", interfaces = List(NamedType, BeingType), fields = ...)
+  ```
+* Fields in `ObjectType` and `InterfaceType` got small convenience method fields. You now can use it like this:
+  ```scala
+  val DogType = ObjectType("Dog", fields[Unit, Dog](
+    Field("name", OptionType(StringType), resolve = _.value.name),
+    Field("barks", OptionType(BooleanType), resolve = _.value.barks)))
+  ```
+* `withPossibleTypes` was introduced on `InterfaceType` and `Field` in order to provide a convenient way to the list of possible implementation types of interface
 * Added convenience method `Executor.execute`
 * Minor bigfix that makes it possible now for interfaces to have a list of interfaces
 

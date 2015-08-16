@@ -11,7 +11,7 @@ import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport with OutputMatchers {
-  val TestType = ObjectType("Test", List[Field[Unit, Unit]](
+  val TestType = ObjectType("Test", fields[Unit, Unit](
     Field("error", OptionType(StringType), resolve = _ => throw new IllegalStateException("Boom!")),
     Field("futureError", OptionType(StringType), resolve = _ => Future.failed[String](new IllegalStateException("Boom!")))
   ))
