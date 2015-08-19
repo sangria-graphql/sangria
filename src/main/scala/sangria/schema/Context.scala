@@ -6,10 +6,14 @@ import language.implicitConversions
 
 import sangria.ast
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-sealed trait Action[+Ctx, +Val]
-sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val]
+sealed trait Action[+Ctx, +Val] {
+  def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): Action[Ctx, NewVal]
+}
+sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val] {
+  def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
+}
 
 object Action {
   implicit def futureAction[Ctx, Val](value: Future[Val]): LeafAction[Ctx, Val] = FutureValue(value)
@@ -18,11 +22,35 @@ object Action {
   implicit def defaultAction[Ctx, Val](value: Val): LeafAction[Ctx, Val] = Value(value)
 }
 
-case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val]
-case class FutureValue[Ctx, Val](value: Future[Val]) extends LeafAction[Ctx, Val]
-case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val]
-case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends LeafAction[Ctx, Val]
-class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx) extends Action[Ctx, Val]
+case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] {
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): Value[Ctx, NewVal] =
+    Value(fn(value))
+}
+
+case class FutureValue[Ctx, Val](value: Future[Val]) extends LeafAction[Ctx, Val] {
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): FutureValue[Ctx, NewVal] =
+    FutureValue(value map fn)
+}
+
+case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val] {
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
+    DeferredValue(MappingDeferred(value, fn))
+}
+
+case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends LeafAction[Ctx, Val] {
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
+    DeferredFutureValue(value map (MappingDeferred(_, fn)))
+}
+
+class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx) extends Action[Ctx, Val] {
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewVal] =
+    new MappedUpdateCtx[Ctx, Val, NewVal](action, nextCtx, fn)
+}
+
+class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx, val mapFn: Val => NewVal) extends Action[Ctx, NewVal] {
+  override def map[NewNewVal](fn: NewVal => NewNewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
+    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v => fn(mapFn(v)))
+}
 
 object UpdateCtx {
   def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
@@ -76,6 +104,8 @@ case class ProjectedName(name: String, children: Vector[ProjectedName] = Vector.
 }
 
 trait Deferred[+T]
+
+case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A => B) extends Deferred[B]
 
 trait WithArguments {
   def args: Map[String, Any]
