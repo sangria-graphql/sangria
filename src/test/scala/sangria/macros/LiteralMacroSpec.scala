@@ -135,8 +135,6 @@ class LiteralMacroSpec extends WordSpec with Matchers {
           |  query
           |}"""
 
-      println(ast.source.get)
-
       ast.sourceMapper should not be ('empty)
 
       ast.copy(sourceMapper = None) should be {
