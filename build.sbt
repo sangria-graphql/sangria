@@ -10,20 +10,20 @@ scalaVersion := "2.11.7"
 scalacOptions ++= Seq("-deprecation", "-feature")
 
 libraryDependencies ++= Seq(
+  // macros
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+
   // parsing
   "org.parboiled" %% "parboiled" % "2.1.0",
 
-  // Json marshalling/unmarshalling
-  "io.spray" %%  "spray-json" % "1.3.2" % "optional", // todo extract in different library
-  "org.json4s" %% "json4s-native" % "3.2.11" % "optional", // todo extract in different library
-  "com.typesafe.play" % "play-json_2.11" % "2.4.2" % "optional", // todo extract in different library
+  // Json marshalling/unmarshalling. TODO: extract in different library (see #38)
+  "io.spray" %%  "spray-json" % "1.3.2" % "optional",
+  "org.json4s" %% "json4s-native" % "3.2.11" % "optional",
+  "com.typesafe.play" % "play-json_2.11" % "2.4.2" % "optional",
 
   // testing
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
-
-// macros
-libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 

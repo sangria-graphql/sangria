@@ -7,6 +7,12 @@ import sangria.macros.literal.LiteralGraphQLStringContext
 
 class LiteralMacroSpec extends WordSpec with Matchers {
   "literal graphql macro" should {
+    "fail compilation on syntax error" in {
+      """
+        val ast = graphql" query Foo { luke...on 111 Fragment} "
+      """ shouldNot compile
+    }
+
     "parse complex query" in {
       val ast = graphql"""|# test query
         |query FetchLukeAndLeiaAliased($$someVar: Int = 1.23,$$anotherVar: Int = 123)@include(if: true) @include(if: false){
