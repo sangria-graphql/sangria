@@ -6,6 +6,7 @@ import sangria.parser.SourceMapper
 case class Document(definitions: List[Definition], position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode {
   lazy val operations = Map(definitions collect {case op: OperationDefinition => op.name -> op}: _*)
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition => fragment.name -> fragment}: _*)
+  lazy val source = sourceMapper map (_.source)
 }
 
 sealed trait ConditionalFragment extends AstNode {

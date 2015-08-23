@@ -76,8 +76,7 @@ trait AstLiftable {
   }
 
   implicit def liftDocument: Liftable[Document] = Liftable {
-    // Not sure how to translate SourceMapper to ast tree, so set it to None
-    case Document(d, p, _) => q"_root_.sangria.ast.Document($d, $p, _root_.scala.None)"
+    case doc @ Document(d, p, _) => q"_root_.sangria.ast.Document($d, $p, _root_.scala.Some(new _root_.sangria.parser.Parboiled2SourceMapper(_root_.org.parboiled2.ParserInput(${doc.source.get}))))"
   }
 }
 

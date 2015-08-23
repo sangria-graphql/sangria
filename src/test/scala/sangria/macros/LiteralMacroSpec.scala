@@ -34,7 +34,9 @@ class LiteralMacroSpec extends WordSpec with Matchers {
         |  baz # field in fragment!
         |}"""
 
-      ast should be {
+      ast.sourceMapper should not be ('empty)
+
+      ast.copy(sourceMapper = None) should be {
         Document(
           List(
             OperationDefinition(
@@ -133,7 +135,11 @@ class LiteralMacroSpec extends WordSpec with Matchers {
           |  query
           |}"""
 
-      ast should be {
+      println(ast.source.get)
+
+      ast.sourceMapper should not be ('empty)
+
+      ast.copy(sourceMapper = None) should be {
         Document(
           List(
             OperationDefinition(
