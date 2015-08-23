@@ -22,6 +22,9 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
+// macros
+libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
+
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 
 // Publishing
