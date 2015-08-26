@@ -1,3 +1,22 @@
+## v0.3.1 (2015-08-27)
+
+* #58 - Implement CirceJsonSupport in order to be able to integrate with Circe
+* #53 - Add `map` in `Action`
+* #53 - Ensure Ctx proper inheritance behavior
+*	#33 - `grapql` string context macro to create parsed document and verify query at compile time (big thanks to @dlreeves for implementing this feature). Here is an example how you can use it:
+  ```scala
+  import sangria.macros._
+
+  val queryAst = graphql"""
+    query FetchSomeIDQuery {
+      human(id: "1000") {
+        name
+      }
+    }
+    """
+  ```
+  If there is a syntax error in the query, you will see it at the compile time.
+
 ## v0.3.0 (2015-08-16)
 
 * #45 - Added `Long` scalar type
