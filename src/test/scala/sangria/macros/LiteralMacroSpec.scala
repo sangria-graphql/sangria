@@ -3,7 +3,6 @@ package sangria.macros
 import org.parboiled2.Position
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
-import sangria.macros.literal.LiteralGraphQLStringContext
 
 class LiteralMacroSpec extends WordSpec with Matchers {
   "literal graphql macro" should {

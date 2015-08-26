@@ -1,13 +1,13 @@
-package sangria.macros
+package sangria
+
+import scala.language.experimental.{macros => `scalac, please just let me do it!`}
 
 import sangria.ast.Document
 import sangria.parser.{SyntaxError, QueryParser}
 
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-object literal {
-
+package object macros {
   implicit class LiteralGraphQLStringContext(val sc: StringContext) extends AnyVal {
     def graphql(): Document = macro Macro.impl
   }
@@ -36,5 +36,4 @@ object literal {
       }
     }
   }
-
 }
