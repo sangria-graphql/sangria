@@ -38,8 +38,6 @@ class CirceSupportSpec extends WordSpec with Matchers with AwaitSupport {
         userContext = new CharacterRepo,
         deferredResolver = new FriendsResolver).await
 
-      println(result.spaces2)
-
       result.spaces2 should be (
         """{
           |  "data" : {
