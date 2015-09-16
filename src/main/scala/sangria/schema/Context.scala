@@ -97,7 +97,7 @@ object Projector {
 case class ProjectedName(name: String, children: Vector[ProjectedName] = Vector.empty) {
   lazy val asVector = {
     def loop(name: ProjectedName): Vector[Vector[String]] =
-      Vector(name.name) +: (children flatMap loop map (name.name +: _))
+      Vector(name.name) +: (name.children flatMap loop map (name.name +: _))
 
     loop(this)
   }
