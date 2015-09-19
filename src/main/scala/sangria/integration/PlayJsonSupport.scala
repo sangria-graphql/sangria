@@ -30,8 +30,6 @@ object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
   }
 
   implicit object PlayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
-    type LeafNode = JsValue
-
     def emptyMapNode = JsObject(Seq.empty)
 
     def getRootMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].value get key

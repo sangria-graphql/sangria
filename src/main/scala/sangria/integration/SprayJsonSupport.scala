@@ -32,8 +32,6 @@ object SprayJsonSupport extends SprayJsonSupportLowPrioImplicits {
   }
 
   implicit object SprayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
-    type LeafNode = JsValue
-
     def emptyMapNode = JsObject.empty
 
     def getRootMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].fields get key
