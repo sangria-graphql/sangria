@@ -6,47 +6,46 @@ import io.circe._
 object CirceSupport {
 
   implicit object CirceResultMarshaller extends ResultMarshaller {
-    override type Node = Json
+    type Node = Json
 
-    override def addArrayNodeElem(array: Json, elem: Json) = array.mapArray(_ :+ elem)
+    def emptyMapNode = Json.obj()
+    def mapNode(keyValues: Seq[(String, Json)]) = Json.obj(keyValues: _*)
+    def addMapNodeElem(node: Json, key: String, value: Json) = node.mapObject(_ + (key, value))
 
-    override def booleanNode(value: Boolean) = Json.bool(value)
+    lazy val emptyArrayNode = Json.array()
+    def isEmptyArrayNode(array: Json) = array.asArray.get.isEmpty
+    def arrayNode(values: Seq[Json]) = Json.array(values.toVector: _*)
+    def addArrayNodeElem(array: Json, elem: Json) = array.mapArray(_ :+ elem)
 
-    override def emptyMapNode = Json.obj()
+    def booleanNode(value: Boolean) = Json.bool(value)
+    def floatNode(value: Double) = Json.number(value).get
+    def stringNode(value: String) = Json.string(value)
+    def intNode(value: Int) = Json.int(value)
+    def bigIntNode(value: BigInt) = Json.bigDecimal(BigDecimal(value))
+    def bigDecimalNode(value: BigDecimal) = Json.bigDecimal(value)
 
-    override def arrayNode(values: Seq[Json]) = Json.array(values.toVector: _*)
+    def nullNode = Json.empty
 
-    override def mapNode(keyValues: Seq[(String, Json)]) = Json.obj(keyValues: _*)
-
-    override def addMapNodeElem(node: Json, key: String, value: Json) = node.mapObject(_ + (key, value))
-
-    override def floatNode(value: Double) = Json.number(value).get
-
-    override def isEmptyArrayNode(array: Json) = array.asArray.get.isEmpty
-
-    override lazy val emptyArrayNode = Json.array()
-
-    override def stringNode(value: String) = Json.string(value)
-
-    override def intNode(value: Int) = Json.int(value)
-
-    override def nullNode = Json.empty
-
-    override def renderCompact(node: Json) = node.noSpaces
-
-    override def renderPretty(node: Json) = node.spaces2
-
-    override def bigIntNode(value: BigInt) = Json.bigDecimal(BigDecimal(value))
-
-    override def bigDecimalNode(value: BigDecimal) = Json.bigDecimal(value)
+    def renderCompact(node: Json) = node.noSpaces
+    def renderPretty(node: Json) = node.spaces2
   }
 
   implicit object CirceInputUnmarshaller extends InputUnmarshaller[Json] {
-    override type LeafNode = Json
+    type LeafNode = Json
 
-    override def isDefined(node: Json) = !node.isNull
+    def emptyMapNode = Json.obj()
 
-    override def getScalarValue(node: Json) =
+    def getRootMapValue(node: Json, key: String) = node.asObject.get(key)
+
+    def isMapNode(node: Json) = node.isObject
+    def getMapValue(node: Json, key: String) = node.asObject.get(key)
+    def getMapKeys(node: Json) = node.asObject.get.fields
+
+    def isArrayNode(node: Json) = node.isArray
+    def getListValue(node: Json) = node.asArray.get
+
+    def isDefined(node: Json) = !node.isNull
+    def getScalarValue(node: Json) =
       if (node.isBoolean)
         node.asBoolean.get
       else if (node.isNumber) {
@@ -58,23 +57,9 @@ object CirceSupport {
       else
         throw new IllegalStateException(s"$node is not a scalar value")
 
-    override def isScalarNode(node: Json) =
+    def isScalarNode(node: Json) =
       node.isBoolean || node.isNumber || node.isString
 
-    override def isMapNode(node: Json) = node.isObject
-
-    override def getListValue(node: Json) = node.asArray.get
-
-    override def render(node: Json) = node.noSpaces
-
-    override def isArrayNode(node: Json) = node.isArray
-
-    override def getMapValue(node: Json, key: String) = node.asObject.get(key)
-
-    override def emptyMapNode = Json.obj()
-
-    override def getRootMapValue(node: Json, key: String) = node.asObject.get(key)
-
-    override def getMapKeys(node: Json) = node.asObject.get.fields
+    def render(node: Json) = node.noSpaces
   }
 }

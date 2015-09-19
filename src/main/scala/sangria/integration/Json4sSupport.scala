@@ -8,47 +8,46 @@ import org.json4s.native.JsonMethods.{render => jsonRender, _}
 object Json4sSupport extends Json4sSupportLowPrioImplicits {
   
   implicit object Json4sResultMarshaller extends ResultMarshaller {
-    override type Node = JValue
+    type Node = JValue
 
-    override def addArrayNodeElem(array: JValue, elem: JValue) = JArray(array.asInstanceOf[JArray].arr :+ elem)
+    def emptyMapNode = JObject(Nil)
+    def mapNode(keyValues: Seq[(String, JValue)]) = JObject(keyValues.toList)
+    def addMapNodeElem(node: JValue, key: String, value: JValue) = JObject(node.asInstanceOf[JObject].obj :+ (key -> value))
 
-    override def booleanNode(value: Boolean) = JBool(value)
+    def emptyArrayNode = JArray(Nil)
+    def isEmptyArrayNode(array: JValue) = array.asInstanceOf[JArray].arr.isEmpty
+    def arrayNode(values: Seq[JValue]) = JArray(values.toList)
+    def addArrayNodeElem(array: JValue, elem: JValue) = JArray(array.asInstanceOf[JArray].arr :+ elem)
 
-    override def emptyMapNode = JObject(Nil)
+    def stringNode(value: String) = JString(value)
+    def floatNode(value: Double) = JDouble(value)
+    def booleanNode(value: Boolean) = JBool(value)
+    def intNode(value: Int) = JInt(value)
+    def bigIntNode(value: BigInt) = JInt(value)
+    def bigDecimalNode(value: BigDecimal) = JDecimal(value)
 
-    override def arrayNode(values: Seq[JValue]) = JArray(values.toList)
+    def nullNode = JNull
 
-    override def mapNode(keyValues: Seq[(String, JValue)]) = JObject(keyValues.toList)
-
-    override def addMapNodeElem(node: JValue, key: String, value: JValue) = JObject(node.asInstanceOf[JObject].obj :+ (key -> value))
-
-    override def floatNode(value: Double) = JDouble(value)
-
-    override def isEmptyArrayNode(array: JValue) = array.asInstanceOf[JArray].arr.isEmpty
-
-    override def emptyArrayNode = JArray(Nil)
-
-    override def stringNode(value: String) = JString(value)
-
-    override def intNode(value: Int) = JInt(value)
-
-    override def nullNode = JNull
-
-    override def renderCompact(node: JValue) = compact(jsonRender(node))
-
-    override def renderPretty(node: JValue) = pretty(jsonRender(node))
-
-    override def bigIntNode(value: BigInt) = JInt(value)
-
-    override def bigDecimalNode(value: BigDecimal) = JDecimal(value)
+    def renderCompact(node: JValue) = compact(jsonRender(node))
+    def renderPretty(node: JValue) = pretty(jsonRender(node))
   }
 
   implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JValue] {
-    override type LeafNode = JValue
+    type LeafNode = JValue
 
-    override def isDefined(node: JValue) = node != JNull && node != JNothing
+    def emptyMapNode = JObject()
 
-    override def getScalarValue(node: JValue) = node match {
+    def getRootMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
+
+    def isMapNode(node: JValue) = node.isInstanceOf[JObject]
+    def getMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
+    def getMapKeys(node: JValue) = node.asInstanceOf[JObject].values.keySet
+
+    def isArrayNode(node: JValue) = node.isInstanceOf[JArray]
+    def getListValue(node: JValue) = node.asInstanceOf[JArray].arr
+
+    def isDefined(node: JValue) = node != JNull && node != JNothing
+    def getScalarValue(node: JValue) = node match {
       case JBool(b) => b
       case JInt(i) => i
       case JDouble(d) => d
@@ -56,27 +55,12 @@ object Json4sSupport extends Json4sSupportLowPrioImplicits {
       case JString(s) => s
       case _ => throw new IllegalStateException(s"$node is not a scalar value")
     }
-
-    override def isScalarNode(node: JValue) = node match {
+    def isScalarNode(node: JValue) = node match {
       case _: JBool | _: JNumber | _: JString => true
       case _ => false
     }
 
-    override def isMapNode(node: JValue) = node.isInstanceOf[JObject]
-
-    override def getListValue(node: JValue) = node.asInstanceOf[JArray].arr
-
-    override def render(node: JValue) = compact(jsonRender(node))
-
-    override def isArrayNode(node: JValue) = node.isInstanceOf[JArray]
-
-    override def getMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
-
-    override def emptyMapNode = JObject()
-
-    override def getRootMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
-
-    override def getMapKeys(node: JValue) = node.asInstanceOf[JObject].values.keySet
+    def render(node: JValue) = compact(jsonRender(node))
   }
 }
 
