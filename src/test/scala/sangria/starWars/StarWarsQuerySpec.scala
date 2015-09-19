@@ -183,7 +183,8 @@ class StarWarsQuerySpec extends WordSpec with Matchers with AwaitSupport {
 
       val args = mapVars("someId" -> "1000")
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
+      Executor.execute(mySchema, query, variables = mapVars(Map("someId" -> "1000")))
+      Executor.execute(mySchema, query, variables = mapVars("someId" -> "1000"))
         .execute(query, variables = args).await should be (
           Map(
             "data" -> Map(

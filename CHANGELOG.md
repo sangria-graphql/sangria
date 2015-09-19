@@ -1,5 +1,15 @@
 ## Upcoming
 
+* Renamed execution `arguments` to `variables` in order to be consistent with the spec (breaking change: you need to rename this argument as well, if you are using named arguments)
+* Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity it now does not have dependent type. Instead it uses type tagging for scala map variables.
+  It's a minor breaking change. If you are providing execution variables as a scala map, then you need to use `mapVars` or `emptyMapVars` which are defined in `InputUnmarshaller` companion object (these functions do not wrap `Map` - they only needed to ensure type constraints):
+  ```scala
+  Executor.execute(mySchema, query, variables = mapVars(Map("someId" -> "1000")))
+
+  // or
+
+  Executor.execute(mySchema, query, variables = mapVars("someId" -> "1000"))
+  ```
 * #67 - circe integration throws NoSuchElementException during execution
 * Minor bugfixes
 
