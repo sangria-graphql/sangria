@@ -33,8 +33,6 @@ object Json4sSupport extends Json4sSupportLowPrioImplicits {
   }
 
   implicit object Json4sInputUnmarshaller extends InputUnmarshaller[JValue] {
-    def emptyMapNode = JObject()
-
     def getRootMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
 
     def isMapNode(node: JValue) = node.isInstanceOf[JObject]

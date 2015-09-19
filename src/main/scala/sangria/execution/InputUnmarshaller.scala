@@ -4,8 +4,6 @@ import sangria.util.tag._
 import sangria.util.tag
 
 trait InputUnmarshaller[Node] {
-  def emptyMapNode: Node
-
   def getRootMapValue(node: Node, key: String): Option[Node]
 
   def isMapNode(node: Node): Boolean
@@ -33,8 +31,6 @@ object InputUnmarshaller {
   def emptyMapVars = tag[ScalaVariables](Map.empty[String, Any])
 
   implicit def scalaInputUnmarshaller[T] = new InputUnmarshaller[T @@ ScalaVariables] {
-      def emptyMapNode = tag[ScalaVariables](Map.empty.asInstanceOf[T])
-
       def getRootMapValue(node: T @@ ScalaVariables, key: String) = node.asInstanceOf[Map[String, Any]] get key map (v => tag[ScalaVariables](v.asInstanceOf[T]))
 
       def isMapNode(node: T @@ ScalaVariables) = node.isInstanceOf[Map[_, _]]
@@ -50,23 +46,4 @@ object InputUnmarshaller {
 
       def render(node: T @@ ScalaVariables) = if (node == null) "null" else node.toString
   }
-}
-
-object ScalaInputUnmarshaller extends InputUnmarshaller[Any @@ ScalaVariables] {
-  def emptyMapNode = tag[ScalaVariables](Map.empty)
-
-  def getRootMapValue(node: Any @@ ScalaVariables, key: String) = node.asInstanceOf[Map[String, Any ]] get key map tag[ScalaVariables].apply
-
-  def isMapNode(node: Any @@ ScalaVariables) = node.isInstanceOf[Map[_, _]]
-  def getMapValue(node: Any @@ ScalaVariables, key: String) = node.asInstanceOf[Map[String, _]] get key map tag[ScalaVariables].apply
-  def getMapKeys(node: Any @@ ScalaVariables) = node.asInstanceOf[Map[String, _]].keySet
-
-  def isArrayNode(node: Any @@ ScalaVariables) = node.isInstanceOf[Seq[_]]
-  def getListValue(node: Any @@ ScalaVariables) = node.asInstanceOf[Seq[_]] map tag[ScalaVariables].apply
-
-  def isDefined(node: Any @@ ScalaVariables) = node != null
-  def isScalarNode(node: Any @@ ScalaVariables) = !(isMapNode(node) || isArrayNode(node))
-  def getScalarValue(node: Any @@ ScalaVariables) = node
-
-  def render(node: Any @@ ScalaVariables) = if (node == null) "null" else node.toString
 }

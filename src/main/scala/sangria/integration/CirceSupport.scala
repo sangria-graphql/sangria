@@ -31,8 +31,6 @@ object CirceSupport {
   }
 
   implicit object CirceInputUnmarshaller extends InputUnmarshaller[Json] {
-    def emptyMapNode = Json.obj()
-
     def getRootMapValue(node: Json, key: String) = node.asObject.get(key)
 
     def isMapNode(node: Json) = node.isObject
