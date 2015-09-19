@@ -14,8 +14,6 @@ You can find an example application that uses akka-http with sangria here:
 
 https://github.com/sangria-graphql/sangria-akka-http-example
 
-Examples below demonstrate some of the features. More documentation will come very soon!
-
 More info and the documentation can be found in the project home page:
 
 [http://sangria-graphql.org](http://sangria-graphql.org)
