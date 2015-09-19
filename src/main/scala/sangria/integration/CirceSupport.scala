@@ -3,7 +3,7 @@ package sangria.integration
 import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 import io.circe._
 
-object CirceSupport extends CirceSupportLowPrioImplicits {
+object CirceSupport {
 
   implicit object CirceResultMarshaller extends ResultMarshaller {
     override type Node = Json
@@ -71,15 +71,10 @@ object CirceSupport extends CirceSupportLowPrioImplicits {
 
     override def getMapValue(node: Json, key: String) = node.asObject.get(key)
 
-    override def emptyNode = Json.empty
+    override def emptyMapNode = Json.obj()
 
     override def getRootMapValue(node: Json, key: String) = node.asObject.get(key)
 
     override def getMapKeys(node: Json) = node.asObject.get.fields
   }
-}
-
-trait CirceSupportLowPrioImplicits {
-  implicit val CirceInputUnmarshallerJObject =
-    CirceSupport.CirceInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsonObject]]
 }

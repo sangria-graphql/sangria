@@ -3,7 +3,7 @@ package sangria.execution
 trait InputUnmarshaller[Node] {
   type LeafNode
 
-  def emptyNode: Node
+  def emptyMapNode: Node
 
   def getRootMapValue(node: Node, key: String): Option[LeafNode]
 
@@ -30,7 +30,7 @@ object InputUnmarshaller {
 object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
   type LeafNode = Any
 
-  def emptyNode = Map.empty
+  def emptyMapNode = Map.empty
 
   def getRootMapValue(node: Map[String, Any], key: String) = node get key
 

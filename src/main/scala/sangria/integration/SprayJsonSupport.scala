@@ -69,7 +69,7 @@ object SprayJsonSupport extends SprayJsonSupportLowPrioImplicits {
 
     override def getMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].fields get key
 
-    override def emptyNode = JsObject.empty
+    override def emptyMapNode = JsObject.empty
 
     override def getRootMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].fields get key
 

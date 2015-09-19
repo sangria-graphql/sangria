@@ -72,7 +72,7 @@ object Json4sSupport extends Json4sSupportLowPrioImplicits {
 
     override def getMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
 
-    override def emptyNode = JObject()
+    override def emptyMapNode = JObject()
 
     override def getRootMapValue(node: JValue, key: String) = node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
 

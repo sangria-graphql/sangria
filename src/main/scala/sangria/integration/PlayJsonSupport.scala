@@ -67,7 +67,7 @@ object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
 
     override def getMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].value get key
 
-    override def emptyNode = JsObject(Seq.empty)
+    override def emptyMapNode = JsObject(Seq.empty)
 
     override def getRootMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].value get key
 

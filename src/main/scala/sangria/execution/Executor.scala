@@ -26,7 +26,7 @@ case class Executor[Ctx, Root](
     if (violations.nonEmpty)
       Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(ValidationError(violations)).asInstanceOf[marshaller.Node])
     else {
-      val valueCollector = new ValueCollector[Ctx, Input](schema, arguments getOrElse um.emptyNode, queryAst.sourceMapper, deprecationTracker, userContext)(um)
+      val valueCollector = new ValueCollector[Ctx, Input](schema, arguments getOrElse um.emptyMapNode, queryAst.sourceMapper, deprecationTracker, userContext)(um)
 
       val executionResult = for {
         operation <- getOperation(queryAst, operationName)
