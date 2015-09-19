@@ -5,7 +5,7 @@ import io.circe._
 
 object CirceSupport extends CirceSupportLowPrioImplicits {
 
-  implicit object SprayJsonResultMarshaller extends ResultMarshaller {
+  implicit object CirceResultMarshaller extends ResultMarshaller {
     override type Node = Json
 
     override def addArrayNodeElem(array: Json, elem: Json) = array.mapArray(_ :+ elem)
@@ -81,5 +81,5 @@ object CirceSupport extends CirceSupportLowPrioImplicits {
 
 trait CirceSupportLowPrioImplicits {
   implicit val CirceInputUnmarshallerJObject =
-    SprayJsonSupport.SprayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsonObject]]
+    CirceSupport.CirceInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsonObject]]
 }

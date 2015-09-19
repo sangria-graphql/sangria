@@ -31,10 +31,7 @@ class CirceSupportSpec extends WordSpec with Matchers with AwaitSupport {
         }
         """)
 
-      val args = Json.obj("someId" -> Json.string("1000"))
-
       val result = Executor.execute(StarWarsSchema, query,
-        arguments = Some(args),
         userContext = new CharacterRepo,
         deferredResolver = new FriendsResolver).await
 
@@ -108,6 +105,39 @@ class CirceSupportSpec extends WordSpec with Matchers with AwaitSupport {
           |          ]
           |        }
           |      ]
+          |    }
+          |  }
+          |}""".stripMargin)
+    }
+
+    "Variable unmarshalling" in {
+      import io.circe._
+      import io.circe.jawn._
+      import cats.data.Xor
+      import sangria.integration.CirceSupport._
+
+      val Success(query) = QueryParser.parse("""
+        query NestedQuery($heroId: String!) {
+          human(id: $heroId) {
+            id
+            name
+          }
+        }
+        """)
+
+      val Xor.Right(args) = parse("""{"heroId": "1000"}""")
+
+      val result = Executor.execute(StarWarsSchema, query,
+        arguments = Some(args),
+        userContext = new CharacterRepo,
+        deferredResolver = new FriendsResolver).await
+
+      result.spaces2 should be (
+        """{
+          |  "data" : {
+          |    "human" : {
+          |      "id" : "1000",
+          |      "name" : "Luke Skywalker"
           |    }
           |  }
           |}""".stripMargin)

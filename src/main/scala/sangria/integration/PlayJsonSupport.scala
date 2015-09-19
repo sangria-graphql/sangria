@@ -76,6 +76,6 @@ object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
 }
 
 trait PlayJsonSupportLowPrioImplicits {
-  implicit val SprayJsonInputUnmarshallerJObject =
+  implicit val PlayJsonInputUnmarshallerJObject =
     PlayJsonSupport.PlayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
 }
