@@ -10,25 +10,28 @@ import sangria.validation._
 import scala.util.{Success, Failure, Try}
 
 class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx)(implicit um: InputUnmarshaller[Input]) {
-  def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] = {
-    val res = definitions.foldLeft(List[(String, Either[List[Violation], Any])]()) {
-      case (acc, varDef) =>
-        val value = schema.getInputType(varDef.tpe)
-          .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
-          .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position.toList) :: Nil))
+  def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] =
+    if (!um.isMapNode(inputVars))
+      Failure(new ExecutionError(s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}"))
+    else {
+      val res = definitions.foldLeft(List[(String, Either[List[Violation], Any])]()) {
+        case (acc, varDef) =>
+          val value = schema.getInputType(varDef.tpe)
+            .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
+            .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position.toList) :: Nil))
 
-        value match {
-          case Right(Some(v)) => acc :+ (varDef.name, Right(v))
-          case Right(None) => acc
-          case l: Left[_, _] => acc :+ (varDef.name, l)
-        }
+          value match {
+            case Right(Some(v)) => acc :+ (varDef.name, Right(v))
+            case Right(None) => acc
+            case l: Left[_, _] => acc :+ (varDef.name, l)
+          }
+      }
+
+      val (errors, values) = res.partition(_._2.isLeft)
+
+      if (errors.nonEmpty) Failure(VariableCoercionError(errors.collect{case (name, Left(errors)) => errors}.flatten))
+      else Success(Map(values.collect {case (name, Right(v)) => name -> v}: _*))
     }
-
-    val (errors, values) = res.partition(_._2.isLeft)
-
-    if (errors.nonEmpty) Failure(VariableCoercionError(errors.collect{case (name, Left(errors)) => errors}.flatten))
-    else Success(Map(values.collect {case (name, Right(v)) => name -> v}: _*))
-  }
 
   def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
     val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
@@ -48,7 +51,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     else Success(res mapValues (_.right.get))
   }
 
-  def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[um.LeafNode]): Either[List[Violation], Option[Any]] =
+  def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[Input]): Either[List[Violation], Option[Any]] =
     if (isValidValue(tpe, input)) {
       val fieldPath = s"$$${definition.name}" :: Nil
 
@@ -57,17 +60,17 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else coerceInputValue(tpe, fieldPath, input.get)
     } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position.toList) :: Nil)
 
-  def isValidValue(tpe: InputType[_], input: Option[um.LeafNode]): Boolean = (tpe, input) match {
+  def isValidValue(tpe: InputType[_], input: Option[Input]): Boolean = (tpe, input) match {
     case (OptionInputType(ofType), Some(value)) if um.isDefined(value) => isValidValue(ofType, Some(value))
     case (OptionInputType(_), _) => true
     case (ListInputType(ofType), Some(values)) if um.isArrayNode(values) =>
       um.getListValue(values).forall(v => isValidValue(ofType, v match {
-        case opt: Option[um.LeafNode @unchecked] => opt
+        case opt: Option[Input @unchecked] => opt
         case other => Option(other)
       }))
     case (ListInputType(ofType), Some(value)) if um.isDefined(value) =>
       isValidValue(ofType, value match {
-        case opt: Option[um.LeafNode @unchecked] => opt
+        case opt: Option[Input @unchecked] => opt
         case other => Option(other)
       })
     case (objTpe: InputObjectType[_], Some(valueMap)) if um.isMapNode(valueMap) =>
@@ -96,7 +99,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       case l @ Left(_) => acc.updated(fieldName, l)
     }
 
-  def coerceInputValue(tpe: InputType[_], fieldPath: List[String], input: um.LeafNode): Either[List[Violation], Option[Any]] = (tpe, input) match {
+  def coerceInputValue(tpe: InputType[_], fieldPath: List[String], input: Input): Either[List[Violation], Option[Any]] = (tpe, input) match {
     case (OptionInputType(ofType), value) => coerceInputValue(ofType, fieldPath, value)
     case (ListInputType(ofType), values) if um.isArrayNode(values) =>
       val res = um.getListValue(values).map {

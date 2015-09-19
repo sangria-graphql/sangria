@@ -1,49 +1,72 @@
 package sangria.execution
 
-trait InputUnmarshaller[Node] {
-  type LeafNode
+import sangria.util.tag._
+import sangria.util.tag
 
+trait InputUnmarshaller[Node] {
   def emptyMapNode: Node
 
-  def getRootMapValue(node: Node, key: String): Option[LeafNode]
+  def getRootMapValue(node: Node, key: String): Option[Node]
 
-  def isMapNode(node: LeafNode): Boolean
-  def getMapValue(node: LeafNode, key: String): Option[LeafNode]
-  def getMapKeys(node: LeafNode): Traversable[String]
+  def isMapNode(node: Node): Boolean
+  def getMapValue(node: Node, key: String): Option[Node]
+  def getMapKeys(node: Node): Traversable[String]
 
-  def isArrayNode(node: LeafNode): Boolean
-  def getListValue(node: LeafNode): Seq[LeafNode]
+  def isArrayNode(node: Node): Boolean
+  def getListValue(node: Node): Seq[Node]
+
+  def isDefined(node: Node): Boolean
+  def isScalarNode(node: Node): Boolean
 
   // Scalar values are Scala String, Int, Double, Boolean and Enum values defined in the schema
+  def getScalarValue(node: Node): Any
 
-  def isDefined(node: LeafNode): Boolean
-  def isScalarNode(node: LeafNode): Boolean
-  def getScalarValue(node: LeafNode): Any
-
-  def render(node: LeafNode): String
+  def render(node: Node): String
 }
+
+sealed trait ScalaVariables
 
 object InputUnmarshaller {
-  implicit def scalaInputUnmarshaller[T] = ScalaInputUnmarshaller.asInstanceOf[InputUnmarshaller[Map[String, T]]]
+  def mapVars(args: Map[String, Any]) = tag[ScalaVariables](args)
+  def mapVars(args: (String, Any)*) = tag[ScalaVariables](args.toMap)
+
+  def emptyMapVars = tag[ScalaVariables](Map.empty[String, Any])
+
+  implicit def scalaInputUnmarshaller[T] = new InputUnmarshaller[T @@ ScalaVariables] {
+      def emptyMapNode = tag[ScalaVariables](Map.empty.asInstanceOf[T])
+
+      def getRootMapValue(node: T @@ ScalaVariables, key: String) = node.asInstanceOf[Map[String, Any]] get key map (v => tag[ScalaVariables](v.asInstanceOf[T]))
+
+      def isMapNode(node: T @@ ScalaVariables) = node.isInstanceOf[Map[_, _]]
+      def getMapValue(node: T @@ ScalaVariables, key: String) = node.asInstanceOf[Map[String, _]] get key map (v => tag[ScalaVariables](v.asInstanceOf[T]))
+      def getMapKeys(node: T @@ ScalaVariables) = node.asInstanceOf[Map[String, _]].keySet
+
+      def isArrayNode(node: T @@ ScalaVariables) = node.isInstanceOf[Seq[_]]
+      def getListValue(node: T @@ ScalaVariables) = node.asInstanceOf[Seq[_]] map (v => tag[ScalaVariables](v.asInstanceOf[T]))
+
+      def isDefined(node: T @@ ScalaVariables) = node != null
+      def isScalarNode(node: T @@ ScalaVariables) = !(isMapNode(node) || isArrayNode(node))
+      def getScalarValue(node: T @@ ScalaVariables) = node
+
+      def render(node: T @@ ScalaVariables) = if (node == null) "null" else node.toString
+  }
 }
 
-object ScalaInputUnmarshaller extends InputUnmarshaller[Map[String, Any]] {
-  type LeafNode = Any
+object ScalaInputUnmarshaller extends InputUnmarshaller[Any @@ ScalaVariables] {
+  def emptyMapNode = tag[ScalaVariables](Map.empty)
 
-  def emptyMapNode = Map.empty
+  def getRootMapValue(node: Any @@ ScalaVariables, key: String) = node.asInstanceOf[Map[String, Any ]] get key map tag[ScalaVariables].apply
 
-  def getRootMapValue(node: Map[String, Any], key: String) = node get key
+  def isMapNode(node: Any @@ ScalaVariables) = node.isInstanceOf[Map[_, _]]
+  def getMapValue(node: Any @@ ScalaVariables, key: String) = node.asInstanceOf[Map[String, _]] get key map tag[ScalaVariables].apply
+  def getMapKeys(node: Any @@ ScalaVariables) = node.asInstanceOf[Map[String, _]].keySet
 
-  def isMapNode(node: Any) = node.isInstanceOf[Map[_, _]]
-  def getMapValue(node: Any, key: String) = node.asInstanceOf[Map[String, _]] get key
-  def getMapKeys(node: Any) = node.asInstanceOf[Map[String, _]].keySet
+  def isArrayNode(node: Any @@ ScalaVariables) = node.isInstanceOf[Seq[_]]
+  def getListValue(node: Any @@ ScalaVariables) = node.asInstanceOf[Seq[_]] map tag[ScalaVariables].apply
 
-  def isArrayNode(node: Any) = node.isInstanceOf[Seq[_]]
-  def getListValue(node: Any) = node.asInstanceOf[Seq[_]]
+  def isDefined(node: Any @@ ScalaVariables) = node != null
+  def isScalarNode(node: Any @@ ScalaVariables) = !(isMapNode(node) || isArrayNode(node))
+  def getScalarValue(node: Any @@ ScalaVariables) = node
 
-  def isDefined(node: Any) = node != null
-  def isScalarNode(node: Any) = !(isMapNode(node) || isArrayNode(node))
-  def getScalarValue(node: Any) = node
-
-  def render(node: LeafNode) = if (node == null) "null" else node.toString
+  def render(node: Any @@ ScalaVariables) = if (node == null) "null" else node.toString
 }

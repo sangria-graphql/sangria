@@ -29,7 +29,7 @@ class Json4sSupportSpec extends WordSpec with Matchers with AwaitSupport {
       val args = JObject("someId" -> JString("1000"))
 
       val result = Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-        .execute(query, arguments = Some(args)).await
+        .execute(query, variables = args).await
 
       pretty(render(result)) should be (
         """{

@@ -28,7 +28,7 @@ class PlayJsonSupportSpec extends WordSpec with Matchers with AwaitSupport {
       val args = JsObject(Seq("someId" -> JsString("1000")))
 
       val result = Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-        .execute(query, arguments = Some(args)).await
+        .execute(query, variables = args).await
 
       Json.prettyPrint(result).replace("\r", "") should be (
         """{

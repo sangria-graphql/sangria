@@ -29,7 +29,7 @@ class SprayJsonSupportSpec extends WordSpec with Matchers with AwaitSupport {
       val args = JsObject("someId" -> JsString("1000"))
 
       val result = Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-        .execute(query, arguments = Some(args)).await
+        .execute(query, variables = args).await
 
       result.prettyPrint should be (
         """{

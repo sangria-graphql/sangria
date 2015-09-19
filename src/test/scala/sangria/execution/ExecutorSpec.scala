@@ -5,6 +5,7 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.AwaitSupport
 import sangria.validation.QueryValidator
+import sangria.execution.InputUnmarshaller.mapVars
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -142,7 +143,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(DataType)
 
-      Executor(schema, new TestSubject, Ctx()).execute(doc, arguments = Some(Map("size" -> 100))).await should be (expected)
+      Executor(schema, new TestSubject, Ctx()).execute(doc, variables = mapVars(Map("size" -> 100))).await should be (expected)
     }
 
 

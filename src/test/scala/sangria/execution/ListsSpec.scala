@@ -31,7 +31,7 @@ class ListsSpec extends WordSpec with Matchers with AwaitSupport {
       case (m, e: IllegalStateException) => HandledException(e.getMessage)
     }
 
-    Executor(schema, data, exceptionHandler = exceptionHandler).execute(doc.copy(sourceMapper = None)).await should be (expected)
+    Executor.execute(schema, doc.copy(sourceMapper = None), root = data, exceptionHandler = exceptionHandler).await should be (expected)
   }
 
   def success[T](t: T) = Future.successful(t)

@@ -1,3 +1,8 @@
+## Upcoming
+
+* #67 - circe integration throws NoSuchElementException during execution
+* Minor bugfixes
+
 ## v0.3.1 (2015-08-27)
 
 * #58 - Implement CirceJsonSupport in order to be able to integrate with Circe

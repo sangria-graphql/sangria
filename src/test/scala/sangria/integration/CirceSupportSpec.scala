@@ -128,7 +128,7 @@ class CirceSupportSpec extends WordSpec with Matchers with AwaitSupport {
       val Xor.Right(args) = parse("""{"heroId": "1000"}""")
 
       val result = Executor.execute(StarWarsSchema, query,
-        arguments = Some(args),
+        variables = args,
         userContext = new CharacterRepo,
         deferredResolver = new FriendsResolver).await
 

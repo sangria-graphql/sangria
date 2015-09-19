@@ -19,73 +19,73 @@ object SchemaRenderer {
   val TypeSeparator = "\n\n"
   val Indention = "  "
 
-  def renderImplementedInterfaces(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    nonEmptyList(u)(tpe, "interfaces").fold("")(interfaces =>
-      interfaces map (stringField(u)(_, "name")) mkString (" implements ", ", ", ""))
+  def renderImplementedInterfaces[In : InputUnmarshaller](tpe: In) =
+    nonEmptyList(tpe, "interfaces").fold("")(interfaces =>
+      interfaces map (stringField(_, "name")) mkString (" implements ", ", ", ""))
 
-  def renderTypeDef(u: InputUnmarshaller[_])(tpe: u.LeafNode): String =
-    stringField(u)(tpe, "kind") match {
-      case "LIST" => s"[${renderTypeDef(u)(mapField(u)(tpe, "ofType"))}]"
-      case "NON_NULL" => s"${renderTypeDef(u)(mapField(u)(tpe, "ofType"))}!"
-      case _ => stringField(u)(tpe, "name")
+  def renderTypeDef[In : InputUnmarshaller](tpe: In): String =
+    stringField(tpe, "kind") match {
+      case "LIST" => s"[${renderTypeDef(mapField(tpe, "ofType"))}]"
+      case "NON_NULL" => s"${renderTypeDef(mapField(tpe, "ofType"))}!"
+      case _ => stringField(tpe, "name")
     }
 
-  def renderArg(u: InputUnmarshaller[_])(arg: u.LeafNode) = {
-    val argDef = s"${stringField(u)(arg, "name")}: ${renderTypeDef(u)(mapField(u)(arg, "type"))}"
-    val default = u.getMapValue(arg, "defaultValue").filter(u.isDefined).fold("")(d => s" = ${u.getScalarValue(d)}")
+  def renderArg[In : InputUnmarshaller](arg: In) = {
+    val argDef = s"${stringField(arg, "name")}: ${renderTypeDef(mapField(arg, "type"))}"
+    val default = um.getMapValue(arg, "defaultValue").filter(um.isDefined).fold("")(d => s" = ${um.getScalarValue(d)}")
 
     argDef + default
   }
 
-  def renderArgs(u: InputUnmarshaller[_])(field: u.LeafNode) =
-    nonEmptyList(u)(field, "args").fold("")(args =>
-      args map renderArg(u) mkString ("(", ", ", ")"))
+  def renderArgs[In : InputUnmarshaller](field: In)=
+    nonEmptyList(field, "args").fold("")(args =>
+      args map (renderArg(_)) mkString ("(", ", ", ")"))
 
-  def renderFields(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    nonEmptyList(u)(tpe, "fields").fold("")(fields =>
-      fields map (Indention + renderField(u)(_)) mkString ("\n"))
+  def renderFields[In : InputUnmarshaller](tpe: In) =
+    nonEmptyList(tpe, "fields").fold("")(fields =>
+      fields map (Indention + renderField(_)) mkString ("\n"))
 
-  def renderInputFields(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    nonEmptyList(u)(tpe, "inputFields").fold("")(fields =>
-      fields map (Indention + renderInputField(u)(_)) mkString ("\n"))
+  def renderInputFields[In : InputUnmarshaller](tpe: In) =
+    nonEmptyList(tpe, "inputFields").fold("")(fields =>
+      fields map (Indention + renderInputField(_)) mkString ("\n"))
 
-  def renderField(u: InputUnmarshaller[_])(field: u.LeafNode) =
-    s"${stringField(u)(field, "name")}${renderArgs(u)(field)}: ${renderTypeDef(u)(mapField(u)(field, "type"))}"
+  def renderField[In : InputUnmarshaller](field: In) =
+    s"${stringField(field, "name")}${renderArgs(field)}: ${renderTypeDef(mapField(field, "type"))}"
 
-  def renderInputField(u: InputUnmarshaller[_])(field: u.LeafNode) =
-    s"${stringField(u)(field, "name")}: ${renderTypeDef(u)(mapField(u)(field, "type"))}"
+  def renderInputField[In : InputUnmarshaller](field: In) =
+    s"${stringField(field, "name")}: ${renderTypeDef(mapField(field, "type"))}"
 
-  def renderObject(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    s"type ${stringField(u)(tpe, "name")}${renderImplementedInterfaces(u)(tpe)} {\n${renderFields(u)(tpe)}\n}"
+  def renderObject[In : InputUnmarshaller](tpe: In) =
+    s"type ${stringField(tpe, "name")}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe)}\n}"
 
-  def renderEnum(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    s"enum ${stringField(u)(tpe, "name")} {\n${renderEnumValues(u)(tpe)}\n}"
+  def renderEnum[In : InputUnmarshaller](tpe: In) =
+    s"enum ${stringField(tpe, "name")} {\n${renderEnumValues(tpe)}\n}"
 
-  def renderEnumValues(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    nonEmptyList(u)(tpe, "enumValues").fold("")(values =>
-      values map (Indention + stringField(u)(_, "name")) mkString ("\n"))
+  def renderEnumValues[In : InputUnmarshaller](tpe: In) =
+    nonEmptyList(tpe, "enumValues").fold("")(values =>
+      values map (Indention + stringField(_, "name")) mkString ("\n"))
 
-  def renderScalar(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    s"scalar ${stringField(u)(tpe, "name")}"
+  def renderScalar[In : InputUnmarshaller](tpe: In) =
+    s"scalar ${stringField(tpe, "name")}"
 
-  def renderInputObject(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    s"input ${stringField(u)(tpe, "name")} {\n${renderInputFields(u)(tpe)}\n}"
+  def renderInputObject[In : InputUnmarshaller](tpe: In) =
+    s"input ${stringField(tpe, "name")} {\n${renderInputFields(tpe)}\n}"
 
-  def renderInterface(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    s"interface ${stringField(u)(tpe, "name")}${renderImplementedInterfaces(u)(tpe)} {\n${renderFields(u)(tpe)}\n}"
+  def renderInterface[In : InputUnmarshaller](tpe: In) =
+    s"interface ${stringField(tpe, "name")}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe)}\n}"
 
-  def renderUnion(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    nonEmptyList(u)(tpe, "possibleTypes").fold("")(types =>
-      types map (stringField(u)(_, "name")) mkString (s"union ${stringField(u)(tpe, "name")} = ", " | ", ""))
+  def renderUnion[In : InputUnmarshaller](tpe: In) =
+    nonEmptyList(tpe, "possibleTypes").fold("")(types =>
+      types map (stringField(_, "name")) mkString (s"union ${stringField(tpe, "name")} = ", " | ", ""))
 
-  def renderType(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    stringField(u)(tpe, "kind") match {
-      case "OBJECT" => renderObject(u)(tpe)
-      case "UNION" => renderUnion(u)(tpe)
-      case "INTERFACE" => renderInterface(u)(tpe)
-      case "INPUT_OBJECT" => renderInputObject(u)(tpe)
-      case "SCALAR" => renderScalar(u)(tpe)
-      case "ENUM" => renderEnum(u)(tpe)
+  def renderType[In : InputUnmarshaller](tpe: In) =
+    stringField(tpe, "kind") match {
+      case "OBJECT" => renderObject(tpe)
+      case "UNION" => renderUnion(tpe)
+      case "INTERFACE" => renderInterface(tpe)
+      case "INPUT_OBJECT" => renderInputObject(tpe)
+      case "SCALAR" => renderScalar(tpe)
+      case "ENUM" => renderEnum(tpe)
       case kind => error(s"Unsupported kind: $kind")
     }
 
@@ -93,44 +93,44 @@ object SchemaRenderer {
     val u = um[T]
 
     for {
-      data <- u.getRootMapValue(introspectionResult, "data")
-      schema <- u.getMapValue(data, "__schema")
-      types <- u.getMapValue(schema, "types")
-      typeList = u.getListValue(types) filter (!isBuiltIn(u)(_)) sortBy (stringField(u)(_, "name"))
-    } yield typeList map renderType(u) mkString TypeSeparator
+      data <- um.getRootMapValue(introspectionResult, "data")
+      schema <- um.getMapValue(data, "__schema")
+      types <- um.getMapValue(schema, "types")
+      typeList = um.getListValue(types) filter (!isBuiltIn(_)) sortBy (stringField(_, "name"))
+    } yield typeList map (renderType(_)) mkString TypeSeparator
   }
 
   def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T) = {
     val u = um[T]
 
     for {
-      data <- u.getRootMapValue(introspectionResult, "data")
-      schema <- u.getMapValue(data, "__schema")
-      types <- u.getMapValue(schema, "types")
-      typeList = u.getListValue(types) filter (isIntrospectionType(u)(_)) sortBy (stringField(u)(_, "name"))
-    } yield typeList map renderType(u) mkString TypeSeparator
+      data <- um.getRootMapValue(introspectionResult, "data")
+      schema <- um.getMapValue(data, "__schema")
+      types <- um.getMapValue(schema, "types")
+      typeList = um.getListValue(types) filter (isIntrospectionType(_)) sortBy (stringField(_, "name"))
+    } yield typeList map (renderType(_)) mkString TypeSeparator
   }
 
-  def isBuiltIn(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    isIntrospectionType(u)(tpe) || isBuiltInScalar(u)(tpe)
+  def isBuiltIn[In : InputUnmarshaller](tpe: In) =
+    isIntrospectionType(tpe) || isBuiltInScalar(tpe)
 
-  def isIntrospectionType(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    stringField(u)(tpe, "name") startsWith "__"
+  def isIntrospectionType[In : InputUnmarshaller](tpe: In) =
+    stringField(tpe, "name") startsWith "__"
 
-  def isBuiltInScalar(u: InputUnmarshaller[_])(tpe: u.LeafNode) =
-    stringField(u)(tpe, "name") match {
+  def isBuiltInScalar[In : InputUnmarshaller](tpe: In) =
+    stringField(tpe, "name") match {
       case "String" | "Boolean" | "Int" | "Long" | "BigInt" | "BigDecimal" | "Float" | "ID" => true
       case _ => false
     }
 
-  def stringField(u: InputUnmarshaller[_])(map: u.LeafNode, name: String) =
-    u.getMapValue(map, name).map(u.getScalarValue(_).asInstanceOf[String]) getOrElse error(s"Field '$name' is undefined!")
+  def stringField[In : InputUnmarshaller](map: In, name: String) =
+    um.getMapValue(map, name).map(um.getScalarValue(_).asInstanceOf[String]) getOrElse error(s"Field '$name' is undefined!")
 
-  def mapField(u: InputUnmarshaller[_])(map: u.LeafNode, name: String) =
-    u.getMapValue(map, name) getOrElse error(s"Field '$name' is undefined!")
+  def mapField[In : InputUnmarshaller](map: In, name: String) =
+    um.getMapValue(map, name) getOrElse error(s"Field '$name' is undefined!")
 
-  def nonEmptyList(u: InputUnmarshaller[_])(map: u.LeafNode, name: String) =
-    u.getMapValue(map, name) filter u.isDefined map (u.getListValue(_)) filter (_.nonEmpty)
+  def nonEmptyList[In : InputUnmarshaller](map: In, name: String) =
+    um.getMapValue(map, name) filter um.isDefined map um.getListValue filter (_.nonEmpty)
 
   private def um[T: InputUnmarshaller] = implicitly[InputUnmarshaller[T]]
 

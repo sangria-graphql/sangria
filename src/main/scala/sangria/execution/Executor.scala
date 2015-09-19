@@ -4,6 +4,7 @@ import sangria.ast
 import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.validation.QueryValidator
+import sangria.execution.InputUnmarshaller.emptyMapVars
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Failure, Try}
@@ -20,13 +21,13 @@ case class Executor[Ctx, Root](
   def execute[Input](
       queryAst: ast.Document,
       operationName: Option[String] = None,
-      arguments: Option[Input] = None)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] = {
+      variables: Input = emptyMapVars)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] = {
     val violations = queryValidator.validateQuery(schema, queryAst)
 
     if (violations.nonEmpty)
       Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(ValidationError(violations)).asInstanceOf[marshaller.Node])
     else {
-      val valueCollector = new ValueCollector[Ctx, Input](schema, arguments getOrElse um.emptyMapNode, queryAst.sourceMapper, deprecationTracker, userContext)(um)
+      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext)(um)
 
       val executionResult = for {
         operation <- getOperation(queryAst, operationName)
@@ -80,7 +81,7 @@ object Executor {
     schema: Schema[Ctx, Root],
     queryAst: ast.Document,
     operationName: Option[String] = None,
-    arguments: Option[Input] = None,
+    variables: Input = emptyMapVars,
     root: Root = (),
     userContext: Ctx = (),
     queryValidator: QueryValidator = QueryValidator.default,
@@ -88,7 +89,7 @@ object Executor {
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty
   )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] =
-    Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker).execute(queryAst, operationName, arguments)
+    Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker).execute(queryAst, operationName, variables)
 }
 
 case class HandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty)

@@ -5,6 +5,7 @@ import sangria.execution.{HandledException, InputUnmarshaller, Executor, ResultM
 import sangria.parser.QueryParser
 import sangria.schema.{DeferredResolver, Schema}
 import sangria.validation.QueryValidator
+
 import spray.json.{JsValue, JsObject}
 
 import scala.util.Success
@@ -15,7 +16,7 @@ import sangria.integration.SprayJsonSupport.SprayJsonInputUnmarshaller
 trait GraphQlSupport extends AwaitSupport with Matchers {
   def schema: Schema[_, _]
 
-  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: Option[A], userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
@@ -28,14 +29,14 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
       exceptionHandler = exceptionHandler,
       userContext = userContext,
       queryValidator = QueryValidator.empty,
-      deferredResolver = resolver).execute(doc.copy(sourceMapper = None), arguments = args).await
+      deferredResolver = resolver).execute(doc.copy(sourceMapper = None), variables = args).await
   }
 
-  def check[T](data: T, query: String, expected: Any, args: Option[JsValue] = None, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+  def check[T](data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
     executeTestQuery(data, query, args, userContext, resolver) should be (expected)
   }
 
-  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: Option[JsValue] = None, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
     val result = executeTestQuery(data, query, args, userContext, resolver).asInstanceOf[Map[String, Any]]
 
     result("data") should be (expectedData)
@@ -47,7 +48,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
     expectedErrors foreach (expected => errors should contain (expected))
   }
 
-  def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, Option[Pos])], args: Option[JsValue] = None) = {
+  def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, Option[Pos])], args: JsValue = JsObject.empty) = {
     val result = executeTestQuery(data, query, args).asInstanceOf[Map[String, Any]]
 
     result("data") should be (expectedData)

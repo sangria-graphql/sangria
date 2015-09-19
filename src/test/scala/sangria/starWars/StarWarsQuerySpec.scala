@@ -7,6 +7,8 @@ import sangria.schema._
 import sangria.starWars.TestSchema.StarWarsSchema
 import sangria.starWars.TestData.{FriendsResolver, CharacterRepo}
 import sangria.util.AwaitSupport
+import sangria.execution.InputUnmarshaller.mapVars
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
@@ -179,10 +181,10 @@ class StarWarsQuerySpec extends WordSpec with Matchers with AwaitSupport {
         }
         """)
 
-      val args = Map("someId" -> "1000")
+      val args = mapVars("someId" -> "1000")
 
       Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-        .execute(query, arguments = Some(args)).await should be (
+        .execute(query, variables = args).await should be (
           Map(
             "data" -> Map(
               "human" -> Map(
@@ -201,10 +203,10 @@ class StarWarsQuerySpec extends WordSpec with Matchers with AwaitSupport {
         }
         """)
 
-      val args = Map("someId" -> "1002")
+      val args = mapVars("someId" -> "1002")
 
       Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-        .execute(query, arguments = Some(args)).await should be (
+        .execute(query, variables = args).await should be (
           Map(
             "data" -> Map(
               "human" -> Map(
@@ -223,10 +225,10 @@ class StarWarsQuerySpec extends WordSpec with Matchers with AwaitSupport {
         }
         """)
 
-      val args = Map("id" -> "not a valid id")
+      val args = mapVars("id" -> "not a valid id")
 
       Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-        .execute(query, arguments = Some(args)).await should be (
+        .execute(query, variables = args).await should be (
           Map(
             "data" -> Map(
               "human" -> null
