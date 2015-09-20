@@ -29,16 +29,4 @@ object ToInput {
   implicit val floatInput = new ScalarToInput[Double]
   implicit val booleanInput = new ScalarToInput[Boolean]
   implicit val stringInput = new ScalarToInput[String]
-
-//  implicit def listInput[T, C[_] <: Seq[_]]: ToInput[C[T], C[T] @@ ScalaInput] =
-//    new ToInput[C[T], C[T] @@ ScalaInput] {
-//      def toInput(value: C[T]) = (scalaInput(value), InputUnmarshaller.scalaInputUnmarshaller)
-//    }
-//
-//  implicit def mapInput[T]: ToInput[Map[String, T], Map[String, T] @@ ScalaInput] =
-//    new ToInput[Map[String, T], Map[String, T] @@ ScalaInput] {
-//      def toInput(value: Map[String, T]) = (scalaInput(value), InputUnmarshaller.scalaInputUnmarshaller)
-//    }
-
-//  def toScalaInput[T](value: T) = (value, new ScalarToInput[T])
 }
