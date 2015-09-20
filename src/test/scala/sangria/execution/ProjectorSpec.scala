@@ -46,7 +46,11 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
 
   val schema = Schema(QueryType)
 
-  class Ctx {
+  trait WithProducts {
+    def products: List[Product]
+  }
+
+  class Ctx extends WithProducts {
     val products: List[Product] = List(
       Product("1", List(
         Variant("1", Nil),
@@ -61,8 +65,8 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
     var oneLevelprojections: Vector[ProjectedName] = Vector.empty
   }
 
-  class ProductResolver(ctx: Ctx) extends DeferredResolver {
-    override def resolve(deferred: List[Deferred[Any]]) = deferred map {
+  class ProductResolver extends DeferredResolver[WithProducts] {
+    override def resolve(deferred: List[Deferred[Any]], ctx: WithProducts) = deferred map {
       case ProductDefer(ids) =>
         Future.fromTry(Try(ids map (id => Right(ctx.products.find(_.id == id).get))))
     }
@@ -100,9 +104,8 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
         """)
 
       val ctx = new Ctx
-      val resolver = new ProductResolver(ctx)
 
-      Executor(schema, userContext = ctx, deferredResolver = resolver).execute(query).await should be (
+      Executor(schema, userContext = ctx, deferredResolver = new ProductResolver).execute(query).await should be (
         Map("data" ->
           Map(
             "projectAll" ->

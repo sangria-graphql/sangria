@@ -17,7 +17,7 @@ import sangria.integration.sprayJson.SprayJsonInputUnmarshaller
 trait GraphQlSupport extends AwaitSupport with Matchers {
   def schema: Schema[_, _]
 
-  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+  def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty) = {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
@@ -33,11 +33,11 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
       deferredResolver = resolver).execute(doc.copy(sourceMapper = None), variables = args).await
   }
 
-  def check[T](data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+  def check[T](data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty) = {
     executeTestQuery(data, query, args, userContext, resolver) should be (expected)
   }
 
-  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver = DeferredResolver.empty) = {
+  def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty) = {
     val result = executeTestQuery(data, query, args, userContext, resolver).asInstanceOf[Map[String, Any]]
 
     result("data") should be (expectedData)

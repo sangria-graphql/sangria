@@ -1,5 +1,9 @@
 ## Upcoming
 
+This release contains quite a few backwards-incompatible changes, but fear not - all of them are renames and similar minor changes which should be easy to migrate.
+I collected all of them in the change list below. They were necessary in order to ensure consistent naming and improve the structure and flexibility of the library.
+
+* #69 - `DeferredResolver` now got `userContext` as an argument. (breaking change: you need to provide a type parameter and one extra argument in `resolve` for your `DeferredResolver`s. you you are not interested in `userContext`, you can just use `Any` type)
 * #68 - Better handling of default input values
 * Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
   * `sangria.integration.CirceSupport` -> `sangria.integration.circe`

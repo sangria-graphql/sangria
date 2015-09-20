@@ -15,7 +15,7 @@ case class Executor[Ctx, Root](
     root: Root = (),
     userContext: Ctx = (),
     queryValidator: QueryValidator = QueryValidator.default,
-    deferredResolver: DeferredResolver = DeferredResolver.empty,
+    deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty)(implicit executionContext: ExecutionContext) {
 
@@ -86,7 +86,7 @@ object Executor {
     root: Root = (),
     userContext: Ctx = (),
     queryValidator: QueryValidator = QueryValidator.default,
-    deferredResolver: DeferredResolver = DeferredResolver.empty,
+    deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty
   )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] =

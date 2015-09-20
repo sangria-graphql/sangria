@@ -213,13 +213,13 @@ case class Context[Ctx, Val](
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 
-trait DeferredResolver {
-  def resolve(deferred: List[Deferred[Any]]): List[Future[Any]]
+trait DeferredResolver[-Ctx] {
+  def resolve(deferred: List[Deferred[Any]], ctx: Ctx): List[Future[Any]]
 }
 
 object DeferredResolver {
-  val empty = new DeferredResolver {
-    override def resolve(deferred: List[Deferred[Any]]) = deferred map (_ => Future.failed(UnsupportedDeferError))
+  val empty = new DeferredResolver[Any] {
+    override def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map (_ => Future.failed(UnsupportedDeferError))
   }
 }
 

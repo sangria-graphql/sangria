@@ -38,8 +38,8 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
   case class LightColor(subj: TestSubject, color: String) extends Deferred[DeepTestSubject]
   case class FailColor(subj: TestSubject, color: String) extends Deferred[DeepTestSubject]
 
-  class LightColorResolver extends DeferredResolver {
-    def resolve(deferred: List[Deferred[Any]]) = deferred map {
+  class LightColorResolver extends DeferredResolver[Any] {
+    def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
       case LightColor(v, c) => Future.successful(v.deepColor("light" + c))
       case FailColor(v, c) => Future.failed(new IllegalStateException("error in resolver"))
     }

@@ -15,8 +15,8 @@ class ActionMapSpec extends WordSpec with Matchers with AwaitSupport {
 
   case class ColorDefer(num: Int) extends Deferred[String]
 
-  class ColorResolver extends DeferredResolver {
-    override def resolve(deferred: List[Deferred[Any]]) = deferred map {
+  class ColorResolver extends DeferredResolver[Any] {
+    override def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
       case ColorDefer(num) => Future.successful("[" + (num + 45) + "]")
     }
   }
