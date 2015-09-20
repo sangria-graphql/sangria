@@ -54,6 +54,12 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
 
     def render(node: JsValue) = node.compactPrint
   }
+
+  private object SprayJsonToInput extends ToInput[JsValue, JsValue] {
+    def toInput(value: JsValue) = (value, SprayJsonInputUnmarshaller)
+  }
+
+  implicit def sprayJsonToInput[T <: JsValue] = SprayJsonToInput.asInstanceOf[ToInput[T, JsValue]]
 }
 
 trait SprayJsonSupportLowPrioImplicits {
