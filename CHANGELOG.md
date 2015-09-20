@@ -1,5 +1,6 @@
 ## Upcoming
 
+* #68 - Better handling of default input values
 * Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
   * `sangria.integration.CirceSupport` -> `sangria.integration.circe`
   * `sangria.integration.Json4sSupport` -> `sangria.integration.json4s`
