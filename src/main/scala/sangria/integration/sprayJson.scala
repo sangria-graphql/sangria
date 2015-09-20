@@ -3,7 +3,7 @@ package sangria.integration
 import spray.json._
 
 
-object SprayJsonSupport extends SprayJsonSupportLowPrioImplicits {
+object sprayJson extends SprayJsonSupportLowPrioImplicits {
 
   implicit object SprayJsonResultMarshaller extends ResultMarshaller {
     type Node = JsValue
@@ -58,5 +58,5 @@ object SprayJsonSupport extends SprayJsonSupportLowPrioImplicits {
 
 trait SprayJsonSupportLowPrioImplicits {
   implicit val SprayJsonInputUnmarshallerJObject =
-    SprayJsonSupport.SprayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
+    sprayJson.SprayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
 }

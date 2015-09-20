@@ -2,7 +2,7 @@ package sangria.integration
 
 import play.api.libs.json._
 
-object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
+object playJson extends PlayJsonSupportLowPrioImplicits {
   implicit object PlayJsonResultMarshaller extends ResultMarshaller {
     type Node = JsValue
 
@@ -56,5 +56,5 @@ object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
 
 trait PlayJsonSupportLowPrioImplicits {
   implicit val PlayJsonInputUnmarshallerJObject =
-    PlayJsonSupport.PlayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
+    playJson.PlayJsonInputUnmarshaller.asInstanceOf[InputUnmarshaller[JsObject]]
 }

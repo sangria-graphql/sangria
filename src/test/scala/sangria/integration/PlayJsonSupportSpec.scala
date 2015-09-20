@@ -3,7 +3,7 @@ package sangria.integration
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json._
 import sangria.execution.Executor
-import sangria.integration.PlayJsonSupport.PlayJsonResultMarshaller
+import sangria.integration.playJson.PlayJsonResultMarshaller
 import sangria.parser.QueryParser
 import sangria.starWars.TestData.{CharacterRepo, FriendsResolver}
 import sangria.starWars.TestSchema._
@@ -15,7 +15,7 @@ import scala.util.Success
 class PlayJsonSupportSpec extends WordSpec with Matchers with AwaitSupport {
   "Json4sSupport" should {
     "Marshal and Unmarshal" in {
-      import sangria.integration.PlayJsonSupport._
+      import sangria.integration.playJson._
 
       val Success(query) = QueryParser.parse("""
         query FetchSomeIDQuery($someId: String!) {

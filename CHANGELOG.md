@@ -1,5 +1,11 @@
 ## Upcoming
 
+* Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
+  * `sangria.integration.CirceSupport` -> `sangria.integration.circe`
+  * `sangria.integration.Json4sSupport` -> `sangria.integration.json4s`
+  * `sangria.integration.PlayJsonSupport` -> `sangria.integration.playJson`
+  * `sangria.integration.SprayJsonSupport` -> `sangria.integration.sprayJson`
+* `ResultMarshaller` and `InputUnmarshaller` are moved in the `integration` package
 * Renamed execution `arguments` to `variables` in order to be consistent with the spec (breaking change: you need to rename this argument as well, if you are using named arguments)
 * Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity it now does not have dependent type. Instead it uses type tagging for scala map variables.
   It's a minor breaking change. If you are providing execution variables as a scala map, then you need to use `mapVars` or `emptyMapVars` which are defined in `InputUnmarshaller` companion object (these functions do not wrap `Map` - they only needed to ensure type constraints):

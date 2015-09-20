@@ -9,7 +9,7 @@ import sangria.util.AwaitSupport
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 import scala.concurrent.ExecutionContext.Implicits.global
-import sangria.integration.SprayJsonSupport._
+import sangria.integration.sprayJson._
 
 class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
   def renderForTest[T: InputUnmarshaller](res: T) = SchemaRenderer.renderSchema(res) map ("\n" + _ + "\n")

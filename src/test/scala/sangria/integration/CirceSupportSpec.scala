@@ -14,7 +14,7 @@ class CirceSupportSpec extends WordSpec with Matchers with AwaitSupport {
   "CircleSupport" should {
     "Marshal and Unmarshal" in {
       import io.circe._
-      import sangria.integration.CirceSupport._
+      import sangria.integration.circe._
 
       val Success(query) = QueryParser.parse("""
         query NestedQuery {
@@ -114,7 +114,7 @@ class CirceSupportSpec extends WordSpec with Matchers with AwaitSupport {
       import io.circe._
       import io.circe.jawn._
       import cats.data.Xor
-      import sangria.integration.CirceSupport._
+      import sangria.integration.circe._
 
       val Success(query) = QueryParser.parse("""
         query NestedQuery($heroId: String!) {

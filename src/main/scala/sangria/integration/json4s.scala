@@ -4,8 +4,7 @@ import org.json4s.JsonAST._
 
 import org.json4s.native.JsonMethods.{render => jsonRender, _}
 
-object Json4sSupport extends Json4sSupportLowPrioImplicits {
-  
+object json4s extends Json4sSupportLowPrioImplicits {
   implicit object Json4sResultMarshaller extends ResultMarshaller {
     type Node = JValue
 
@@ -61,5 +60,5 @@ object Json4sSupport extends Json4sSupportLowPrioImplicits {
 
 trait Json4sSupportLowPrioImplicits {
   implicit val Json4sInputUnmarshallerJObject =
-    Json4sSupport.Json4sInputUnmarshaller.asInstanceOf[InputUnmarshaller[JObject]]
+    json4s.Json4sInputUnmarshaller.asInstanceOf[InputUnmarshaller[JObject]]
 }

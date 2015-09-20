@@ -5,7 +5,7 @@ import sangria.integration.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{Pos, GraphQlSupport, AwaitSupport}
-import sangria.integration.SprayJsonSupport.SprayJsonInputUnmarshaller
+import sangria.integration.sprayJson.SprayJsonInputUnmarshaller
 import InputUnmarshaller.mapVars
 
 import spray.json._
@@ -21,7 +21,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
     InputField("c", StringType)))
 
   val TestType = ObjectType("TestType", {
-    import sangria.integration.SprayJsonSupport.{SprayJsonResultMarshaller => SJM}
+    import sangria.integration.sprayJson.{SprayJsonResultMarshaller => SJM}
 
     fields[Unit, Unit](
       Field("fieldWithObjectInput", OptionType(StringType),

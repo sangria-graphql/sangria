@@ -12,7 +12,7 @@ import spray.json.{JsValue, JsObject}
 import scala.util.Success
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import sangria.integration.SprayJsonSupport.SprayJsonInputUnmarshaller
+import sangria.integration.sprayJson.SprayJsonInputUnmarshaller
 
 trait GraphQlSupport extends AwaitSupport with Matchers {
   def schema: Schema[_, _]

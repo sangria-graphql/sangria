@@ -2,7 +2,7 @@ package sangria.integration
 
 import io.circe._
 
-object CirceSupport {
+object circe {
 
   implicit object CirceResultMarshaller extends ResultMarshaller {
     type Node = Json
