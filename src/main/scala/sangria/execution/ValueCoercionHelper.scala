@@ -55,9 +55,9 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       val res = objTpe.fields.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
         case (acc, field) => iu.getMapValue(valueMap, field.name) match {
           case Some(defined) if iu.isDefined(defined) =>
-            resolveMapValue(field.fieldType, fieldPath, field.defaultValue, field.name, acc,
+            resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, acc,
               coerceInputValue(field.fieldType, fieldPath :+ field.name, defined))
-          case _ => resolveMapValue(field.fieldType, fieldPath, field.defaultValue, field.name, acc, Right(None))
+          case _ => resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, acc, Right(None))
         }
       }
 

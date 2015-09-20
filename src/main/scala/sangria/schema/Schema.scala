@@ -1,5 +1,6 @@
 package sangria.schema
 
+import sangria.execution.ValueCoercionHelper
 import sangria.integration.ToInput
 
 import language.{implicitConversions, existentials}
@@ -384,7 +385,8 @@ case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],
     mutation: Option[ObjectType[Ctx, Val]] = None,
     additionalTypes: List[Type with Named] = Nil,
-    directives: List[Directive] = BuiltinDirectives) {
+    directives: List[Directive] = BuiltinDirectives,
+    validationRules: List[SchemaValidationRule] = DefaultValuesValidationRule :: Nil) {
   lazy val types: Map[String, (Int, Type with Named)] = {
     def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)]) =
       if (result contains name) result else result.updated(name, priority -> tpe)
@@ -485,4 +487,49 @@ case class Schema[Ctx, Val](
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
     possibleTypes get baseTypeName exists (_ exists (_.name == tpe.name))
 
+  val validationErrors = validationRules flatMap (_.validate(this))
+
+  if (validationErrors.nonEmpty) throw SchemaValidationException(validationErrors)
+}
+
+trait SchemaValidationRule {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation]
+}
+
+object DefaultValuesValidationRule extends SchemaValidationRule {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+    val coercionHelper = ValueCoercionHelper.default
+
+    def validate(prefix: => String, path: List[String], tpe: InputType[_])(defaultValue: (_, ToInput[_, _])) = {
+      val (default, toInput) = defaultValue.asInstanceOf[(Any, ToInput[Any, Any])]
+      val (inputValue, iu) = toInput.toInput(default)
+
+      coercionHelper.coerceInputValue(tpe, path, inputValue)(iu) match {
+        case Left(violations) => violations
+        case Right(violations) => Nil
+      }
+    }
+
+    val inputTypeViolations = schema.inputTypes.values.toList flatMap {
+      case it: InputObjectType[_] =>
+        it.fields flatMap (f =>
+          f.defaultValue map validate(s"Invalid default value of field '${f.name}' in input type '${it.name}'.", it.name :: f.name :: Nil, f.inputValueType) getOrElse Nil)
+      case _ => Nil
+    }
+
+    val outputTypeViolations = schema.outputTypes.values.toList flatMap {
+      case ot: ObjectLikeType[_, _] =>
+        ot.fields flatMap (f =>
+          f.arguments flatMap (a =>
+            a.defaultValue map validate(s"Invalid default value of argument '${a.name}' in field '${f.name}' defined in output type '${ot.name}'.", ot.name :: f.name :: ("[" + a.name + "]") :: Nil, a.inputValueType) getOrElse Nil))
+      case _ => Nil
+    }
+
+    inputTypeViolations ++ outputTypeViolations
+  }
+}
+
+case class SchemaValidationException(violations: List[Violation]) extends IllegalArgumentException {
+  override lazy val getMessage =
+    "Schema contains validation errors.\n" + violations.map(v => "  * " + v.errorMessage).mkString("\n")
 }

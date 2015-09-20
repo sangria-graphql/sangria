@@ -9,7 +9,6 @@ import sangria.macros._
 import sangria.util.AwaitSupport
 import sangria.integration.ScalaInput.scalaInput
 
-import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
@@ -164,10 +163,29 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
             "shares" -> Map("twitter" -> 78, "facebook" -> 1),
             "comments" -> List(Map("author" -> "anonymous", "text" -> "First! :P", "likes" -> 1.5))),
           expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
+
+      "validate scalar default values" in {
+        a [SchemaValidationException] should be thrownBy check(
+          IntType,
+          defaultValue = "Bananas!",
+          expectedResult = (),
+          expectedDefault = "")
+      }
+
+      "validate complex default values" in {
+        val BrokenInputType = complexInputType(
+          sharesDefault = scalaInput(Map("facebook" -> 78)),
+          commentsDefault = scalaInput(List(Map("text" -> "Foo"), Map("likes" -> 3.2D))))
+
+        a [SchemaValidationException] should be thrownBy check(
+          BrokenInputType,
+          defaultValue = scalaInput(Map("text" -> "Amazing!", "comments" -> List(Map("text" -> "First! :P")))),
+          expectedResult = (),
+          expectedDefault = "")
+      }
     }
 
     "used with spray JSON values" should {
-      import spray.json._
       import spray.json._
       import sangria.integration.sprayJson.sprayJsonToInput
 

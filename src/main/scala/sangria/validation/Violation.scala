@@ -40,7 +40,7 @@ case class EnumValueCoercionViolation(name: String) extends ValueCoercionViolati
 case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
 case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Field '${fieldPath mkString "."}' has wrong value: '${valueViolation.errorMessage}'.$astLocation"
+  lazy val errorMessage = s"Field '${fieldPath mkString "."}' has wrong value: ${valueViolation.errorMessage}.$astLocation"
 }
 
 case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
