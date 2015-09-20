@@ -345,6 +345,8 @@ class Resolver[Ctx](
           field,
           tpe.asInstanceOf[ObjectType[Ctx, Any]],
           marshaller,
+          sourceMapper,
+          deprecationTracker,
           astFields)
 
         try {

@@ -1,11 +1,14 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
+
 import sangria.integration.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{Pos, GraphQlSupport, AwaitSupport}
 import sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+import sangria.integration.ToInput.toScalaInput
+
 import InputUnmarshaller.mapVars
 
 import spray.json._
@@ -26,28 +29,28 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
     fields[Unit, Unit](
       Field("fieldWithObjectInput", OptionType(StringType),
         arguments = Argument("input", OptionInputType(TestInputObject)) :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, OptionInputType(TestInputObject), SJM))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(TestInputObject), SJM))),
       Field("fieldWithNullableStringInput", OptionType(StringType),
         arguments = Argument("input", OptionInputType(StringType)) :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, OptionInputType(StringType), SJM))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(StringType), SJM))),
       Field("fieldWithNonNullableStringInput", OptionType(StringType),
         arguments = Argument("input", StringType) :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, StringType, SJM))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, StringType, SJM))),
       Field("fieldWithDefaultArgumentValue", OptionType(StringType),
         arguments = Argument("input", OptionInputType(StringType), defaultValue = "Hello World") :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, OptionInputType(StringType), SJM))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(StringType), SJM))),
       Field("list", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(OptionInputType(StringType)))) :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, OptionInputType(ListInputType(OptionInputType(StringType))), SJM))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(OptionInputType(StringType))), SJM))),
       Field("nnList", OptionType(StringType),
         arguments = Argument("input", ListInputType(OptionInputType(StringType))) :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, ListInputType(OptionInputType(StringType)), SJM))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, ListInputType(OptionInputType(StringType)), SJM))),
       Field("listNN", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(StringType))) :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, OptionInputType(ListInputType(StringType)), SJM))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(StringType)), SJM))),
       Field("nnListNN", OptionType(StringType),
         arguments = Argument("input", ListInputType(StringType)) :: Nil,
-        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderInputValueCompact(_, ListInputType(StringType), SJM)))
+        resolve = ctx => ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, ListInputType(StringType), SJM)))
     )
   })
 

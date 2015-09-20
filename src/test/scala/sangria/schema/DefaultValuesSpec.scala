@@ -146,9 +146,14 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
 
       check(ScalaInputType,
         defaultValue = Map("title" -> "Post #1", "text" -> "Amazing!", "comments" -> List(Map("text" -> "First! :P"))),
-        // TODO: this is wrong - it should include default values from all input fields!
-        expectedResult = Map("title" -> "Post #1", "text" -> "Amazing!", "comments" -> List(Map("text" -> "First! :P"))),
-        expectedDefault = "{\"title\":\"Post #1\",\"text\":\"Amazing!\",\"comments\":[{\"text\":\"First! :P\"}]}")
+        expectedResult = Map(
+          "title" -> "Post #1",
+          "text" -> "Amazing!",
+          "tags" -> List("beginner", "scala"),
+          "views" -> 12,
+          "shares" -> Map("twitter" -> 78, "facebook" -> 2),
+          "comments" -> List(Map("author" -> "anonymous", "text" -> "First! :P", "likes" -> 1.5))),
+        expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":2},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
     }
   }
 }

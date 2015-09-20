@@ -4,6 +4,7 @@ import language.higherKinds
 
 import sangria.util.tag
 import sangria.util.tag._
+import sangria.integration.ScalaInput.scalaInput
 
 import scala.annotation.implicitNotFound
 
@@ -14,13 +15,13 @@ trait ToInput[Val, Raw] {
 
 object ToInput {
   class ScalarToInput[T] extends ToInput[T, T @@ ScalaInput] {
-    def toInput(value: T) = (tag[ScalaInput](value), InputUnmarshaller.scalaInputUnmarshaller)
+    def toInput(value: T) = (scalaInput(value), InputUnmarshaller.scalaInputUnmarshaller)
   }
 
   implicit def normalScalaInput[T] = new ToInput[T @@ ScalaInput, T @@ ScalaInput] {
     def toInput(value: T @@ ScalaInput) = (value, InputUnmarshaller.scalaInputUnmarshaller)
   }
-
+  
   implicit val intInput = new ScalarToInput[Int]
   implicit val bigDecimalInput = new ScalarToInput[BigDecimal]
   implicit val bigIntInput = new ScalarToInput[BigInt]
@@ -31,11 +32,13 @@ object ToInput {
 
   implicit def listInput[T, C[_] <: Seq[_]]: ToInput[C[T], C[T] @@ ScalaInput] =
     new ToInput[C[T], C[T] @@ ScalaInput] {
-      def toInput(value: C[T]) = (tag[ScalaInput](value), InputUnmarshaller.scalaInputUnmarshaller)
+      def toInput(value: C[T]) = (scalaInput(value), InputUnmarshaller.scalaInputUnmarshaller)
     }
 
   implicit def mapInput[T]: ToInput[Map[String, T], Map[String, T] @@ ScalaInput] =
     new ToInput[Map[String, T], Map[String, T] @@ ScalaInput] {
-      def toInput(value: Map[String, T]) = (tag[ScalaInput](value), InputUnmarshaller.scalaInputUnmarshaller)
+      def toInput(value: Map[String, T]) = (scalaInput(value), InputUnmarshaller.scalaInputUnmarshaller)
     }
+
+  def toScalaInput[T](value: T) = (scalaInput(value), new ScalarToInput[T])
 }

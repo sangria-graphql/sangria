@@ -1,7 +1,8 @@
 package sangria.schema
 
-import sangria.execution.Resolver
-import sangria.integration.ResultMarshaller
+import sangria.execution.{DeprecationTracker, ValueCoercionHelper, Resolver}
+import sangria.integration.{InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.parser.SourceMapper
 
 import language.implicitConversions
 
@@ -116,18 +117,23 @@ trait WithArguments {
   def argOpt[T](name: String) = args.get(name).asInstanceOf[Option[T]]
 }
 
-trait WithInputTypeRendering {
+trait WithInputTypeRendering[Ctx] {
+  def ctx: Ctx
+  def sourceMapper: Option[SourceMapper]
+  def deprecationTracker: DeprecationTracker
   def marshaller: ResultMarshaller
 
-  def renderInputValueCompact[T](value: T, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
+  private lazy val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(ctx))
+
+  def renderInputValueCompact[T](value: (_, ToInput[_, _]), tpe: InputType[T], m: ResultMarshaller = marshaller): String =
     m.renderCompact(renderInputValue(value, tpe, m))
 
-  def renderInputValuePretty[T](value: T, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
+  def renderInputValuePretty[T](value: (_, ToInput[_, _]), tpe: InputType[T], m: ResultMarshaller = marshaller): String =
     m.renderPretty(renderInputValue(value, tpe, m))
 
-  def renderInputValue[T](value: T, tpe: InputType[T], m: ResultMarshaller = marshaller): m.Node = {
+  def renderInputValue[T](value: (_, ToInput[_, _]), tpe: InputType[T], m: ResultMarshaller = marshaller): m.Node = {
     def loop(t: InputType[_], v: Any): m.Node = t match {
-      case _ if value == null => m.nullNode
+      case _ if v == null => m.nullNode
       case s: ScalarType[Any @unchecked] => Resolver.marshalValue(s.coerceOutput(v), m)
       case e: EnumType[Any @unchecked] => Resolver.marshalValue(e.coerceOutput(v), m)
       case io: InputObjectType[_] =>
@@ -151,8 +157,46 @@ trait WithInputTypeRendering {
       }
     }
 
-    loop(tpe, value)
+    val (v, toInput) = value.asInstanceOf[(Any, ToInput[Any, Any])]
+    val (inputValue, iu) = toInput.toInput(v)
+
+    coercionHelper.coerceInputValue(tpe, Nil, inputValue)(iu) match {
+      case Right(Some(coerced)) => renderCoercedInputValue(tpe, coerced, m)
+      case _ => m.nullNode
+    }
   }
+
+  def renderCoercedInputValueCompact[T](value: Any, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
+    m.renderCompact(renderCoercedInputValue(tpe, value, m))
+
+  def renderCoercedInputValuePretty[T](value: Any, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
+    m.renderPretty(renderCoercedInputValue(tpe, value, m))
+
+  def renderCoercedInputValue(t: InputType[_], v: Any, m: ResultMarshaller = marshaller): m.Node = t match {
+    case _ if v == null => m.nullNode
+    case s: ScalarType[Any @unchecked] => Resolver.marshalValue(s.coerceOutput(v), m)
+    case e: EnumType[Any @unchecked] => Resolver.marshalValue(e.coerceOutput(v), m)
+    case io: InputObjectType[_] =>
+      val mapValue = v.asInstanceOf[Map[String, Any]]
+
+      io.fields.foldLeft(m.emptyMapNode) {
+        case (acc, field) if mapValue contains field.name =>
+          m.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name), m))
+        case (acc, _) => acc
+      }
+    case l: ListInputType[_] =>
+      val listValue = v.asInstanceOf[Seq[Any]]
+
+      listValue.foldLeft(m.emptyArrayNode) {
+        case (acc, value) => m.addArrayNodeElem(acc, renderCoercedInputValue(l.ofType, value, m))
+      }
+    case o: OptionInputType[_] => v match {
+      case Some(optVal) => renderCoercedInputValue(o.ofType, optVal, m)
+      case None => m.nullNode
+      case other => renderCoercedInputValue(o.ofType, other, m)
+    }
+  }
+
 }
 
 case class Context[Ctx, Val](
@@ -163,7 +207,9 @@ case class Context[Ctx, Val](
   field: Field[Ctx, Val],
   parentType: ObjectType[Ctx, Any],
   marshaller: ResultMarshaller,
-  astFields: List[ast.Field]) extends WithArguments with WithInputTypeRendering
+  sourceMapper: Option[SourceMapper],
+  deprecationTracker: DeprecationTracker,
+  astFields: List[ast.Field]) extends WithArguments with WithInputTypeRendering[Ctx]
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 

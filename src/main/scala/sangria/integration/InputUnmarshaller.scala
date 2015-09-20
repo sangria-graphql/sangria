@@ -22,8 +22,6 @@ trait InputUnmarshaller[Node] {
   def render(node: Node): String
 }
 
-sealed trait ScalaInput
-
 object InputUnmarshaller {
   def mapVars(args: Map[String, Any]) = tag[ScalaInput](args)
   def mapVars(args: (String, Any)*) = tag[ScalaInput](args.toMap)
@@ -31,19 +29,25 @@ object InputUnmarshaller {
   def emptyMapVars = tag[ScalaInput](Map.empty[String, Any])
 
   implicit def scalaInputUnmarshaller[T] = new InputUnmarshaller[T @@ ScalaInput] {
-      def getRootMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, Any]] get key map (v => tag[ScalaInput](v.asInstanceOf[T]))
+    def getRootMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, Any]] get key map (v => tag[ScalaInput](v.asInstanceOf[T]))
 
-      def isMapNode(node: T @@ ScalaInput) = node.isInstanceOf[Map[_, _]]
-      def getMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, _]] get key map (v => tag[ScalaInput](v.asInstanceOf[T]))
-      def getMapKeys(node: T @@ ScalaInput) = node.asInstanceOf[Map[String, _]].keySet
+    def isMapNode(node: T @@ ScalaInput) = node.isInstanceOf[Map[_, _]]
+    def getMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, _]] get key map (v => tag[ScalaInput](v.asInstanceOf[T]))
+    def getMapKeys(node: T @@ ScalaInput) = node.asInstanceOf[Map[String, _]].keySet
 
-      def isArrayNode(node: T @@ ScalaInput) = node.isInstanceOf[Seq[_]]
-      def getListValue(node: T @@ ScalaInput) = node.asInstanceOf[Seq[_]] map (v => tag[ScalaInput](v.asInstanceOf[T]))
+    def isArrayNode(node: T @@ ScalaInput) = node.isInstanceOf[Seq[_]]
+    def getListValue(node: T @@ ScalaInput) = node.asInstanceOf[Seq[_]] map (v => tag[ScalaInput](v.asInstanceOf[T]))
 
-      def isDefined(node: T @@ ScalaInput) = node != null
-      def isScalarNode(node: T @@ ScalaInput) = !(isMapNode(node) || isArrayNode(node))
-      def getScalarValue(node: T @@ ScalaInput) = node
+    def isDefined(node: T @@ ScalaInput) = node != null
+    def isScalarNode(node: T @@ ScalaInput) = !(isMapNode(node) || isArrayNode(node))
+    def getScalarValue(node: T @@ ScalaInput) = node
 
-      def render(node: T @@ ScalaInput) = if (node == null) "null" else node.toString
+    def render(node: T @@ ScalaInput) = if (node == null) "null" else node.toString
   }
+}
+
+sealed trait ScalaInput
+
+object ScalaInput {
+  def scalaInput[T](value: T) = tag[ScalaInput](value)
 }

@@ -228,14 +228,14 @@ trait InputValue[T] {
   def name: String
   def inputValueType: InputType[_]
   def description: Option[String]
-  def defaultValue: Option[_]
+  def defaultValue: Option[(_, ToInput[_, _])]
 }
 
 case class Argument[T] private (
     name: String,
     argumentType: InputType[_],
     description: Option[String],
-    defaultValue: Option[_]) extends InputValue[T] with Named {
+    defaultValue: Option[(_, ToInput[_, _])]) extends InputValue[T] with Named {
 
   if (!argumentType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
     throw new IllegalArgumentException(s"Argument '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this argument nullable or remove the default value.")
@@ -248,14 +248,14 @@ object Argument {
       name: String,
       argumentType: InputType[T],
       description: String,
-      defaultValue: Default)(implicit ev: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(name, argumentType, Some(description), Some(defaultValue))
+      defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(name, argumentType, Some(description), Some(defaultValue -> toInput))
 
   def apply[T, Default](
       name: String,
       argumentType: InputType[T],
-      defaultValue: Default)(implicit ev: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(name, argumentType, None, Some(defaultValue))
+      defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(name, argumentType, None, Some(defaultValue -> toInput))
 
   def apply[T](
       name: String,
@@ -339,7 +339,7 @@ case class InputField[T] private (
     name: String,
     fieldType: InputType[T],
     description: Option[String],
-    defaultValue: Option[_]) extends InputValue[T] with Named {
+    defaultValue: Option[(_, ToInput[_, _])]) extends InputValue[T] with Named {
 
   if (!fieldType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
     throw new IllegalArgumentException(s"Input field '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this fields nullable or remove the default value.")
@@ -349,10 +349,10 @@ case class InputField[T] private (
 
 object InputField {
   def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
-    InputField(name, fieldType, Some(description), Some(defaultValue))
+    InputField(name, fieldType, Some(description), Some(defaultValue -> toInput))
 
   def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
-    InputField(name, fieldType, None, Some(defaultValue))
+    InputField(name, fieldType, None, Some(defaultValue -> toInput))
 
   def apply[T, Default](name: String, fieldType: InputType[T], description: String): InputField[T] =
     InputField(name, fieldType, Some(description), None)
