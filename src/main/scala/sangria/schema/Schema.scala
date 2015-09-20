@@ -1,5 +1,7 @@
 package sangria.schema
 
+import sangria.integration.ToInput
+
 import language.{implicitConversions, existentials}
 
 import sangria.{introspection, ast}
@@ -234,6 +236,10 @@ case class Argument[T] private (
     argumentType: InputType[_],
     description: Option[String],
     defaultValue: Option[_]) extends InputValue[T] with Named {
+
+  if (!argumentType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
+    throw new IllegalArgumentException(s"Argument '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this argument nullable or remove the default value.")
+
   def inputValueType = argumentType
 }
 
@@ -242,13 +248,13 @@ object Argument {
       name: String,
       argumentType: InputType[T],
       description: String,
-      defaultValue: Default)(implicit ev: ValidOutType[Default, T], res: ArgumentType[T]): Argument[res.Res] =
+      defaultValue: Default)(implicit ev: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
     Argument(name, argumentType, Some(description), Some(defaultValue))
 
   def apply[T, Default](
       name: String,
       argumentType: InputType[T],
-      defaultValue: Default)(implicit ev: ValidOutType[Default, T], res: ArgumentType[T]): Argument[res.Res] =
+      defaultValue: Default)(implicit ev: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
     Argument(name, argumentType, None, Some(defaultValue))
 
   def apply[T](
@@ -329,12 +335,30 @@ object InputObjectType {
     InputObjectType(name, Some(description), Named.checkFields(fieldsFn))
 }
 
-case class InputField[T](
+case class InputField[T] private (
     name: String,
     fieldType: InputType[T],
-    description: Option[String] = None,
-    defaultValue: Option[T] = None) extends InputValue[T] with Named {
+    description: Option[String],
+    defaultValue: Option[_]) extends InputValue[T] with Named {
+
+  if (!fieldType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
+    throw new IllegalArgumentException(s"Input field '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this fields nullable or remove the default value.")
+
   def inputValueType = fieldType
+}
+
+object InputField {
+  def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
+    InputField(name, fieldType, Some(description), Some(defaultValue))
+
+  def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
+    InputField(name, fieldType, None, Some(defaultValue))
+
+  def apply[T, Default](name: String, fieldType: InputType[T], description: String): InputField[T] =
+    InputField(name, fieldType, Some(description), None)
+
+  def apply[T, Default](name: String, fieldType: InputType[T]): InputField[T] =
+    InputField(name, fieldType, None, None)
 }
 
 case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType

@@ -785,7 +785,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
 
     "introspects on input object" in {
       val inputType = InputObjectType("TestInputObject", List(
-        InputField("a", OptionInputType(StringType), defaultValue = Some("foo")),
+        InputField("a", OptionInputType(StringType), defaultValue = "foo"),
         InputField("b", OptionInputType(ListInputType(OptionInputType(StringType))))
       ))
 
