@@ -59,6 +59,11 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
 
   implicit def playJsonToInput[T <: JsValue]: ToInput[T, JsValue] =
     PlayJsonToInput.asInstanceOf[ToInput[T, JsValue]]
+
+  implicit def playJsonWriterToInput[T : Writes]: ToInput[T, JsValue] =
+    new ToInput[T, JsValue] {
+      def toInput(value: T) = implicitly[Writes[T]].writes(value) -> PlayJsonInputUnmarshaller
+    }
 }
 
 trait PlayJsonSupportLowPrioImplicits {

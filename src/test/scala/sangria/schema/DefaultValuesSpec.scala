@@ -1,10 +1,15 @@
 package sangria.schema
 
+import language.higherKinds
+
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.integration.ToInput
 import sangria.macros._
 import sangria.util.AwaitSupport
+import sangria.integration.ScalaInput.scalaInput
+
+import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
@@ -76,13 +81,16 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
       InputField("title", StringType),
       InputField("text", OptionInputType(StringType), defaultValue = "Hello World!"),
       InputField("views", OptionInputType(IntType), defaultValue = 12),
-      InputField("tags", OptionInputType(ListInputType(StringType)), defaultValue = List("beginner", "scala")),
+      InputField("tags", OptionInputType(ListInputType(StringType)), defaultValue = scalaInput(List("beginner", "scala"))),
       InputField("shares", OptionInputType(SharesType), defaultValue = sharesDefault),
       InputField("comments", OptionInputType(ListInputType(CommentType)), defaultValue = commentsDefault)
     ))
 
     BlogType
   }
+
+  case class Shares(twitter: Int, facebook: Int)
+  case class Comment(author: String, text: String, likes: BigDecimal)
 
   "Default values" when {
     "used with NotNull input types" should {
@@ -132,22 +140,22 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
         expectedDefault = "true")
 
       "default scala list of Int" in check(ListInputType(IntType),
-        defaultValue = List(1, 2, 4),
+        defaultValue = scalaInput(List(1, 2, 4)),
         expectedResult = List(1, 2, 4),
         expectedDefault = "[1,2,4]")
 
       "default scala list of String" in check(ListInputType(StringType),
-        defaultValue = Vector("Hello", "World"),
+        defaultValue = scalaInput(Vector("Hello", "World")),
         expectedResult = List("Hello", "World"),
         expectedDefault = "[\"Hello\",\"World\"]")
 
       val ScalaInputType = complexInputType(
-        sharesDefault = Map("twitter" -> 78),
-        commentsDefault = List(Map("text" -> "Foo"), Map("text" -> "bar", "likes" -> 3.2D)))
+        sharesDefault = scalaInput(Map("twitter" -> 78)),
+        commentsDefault = scalaInput(List(Map("text" -> "Foo"), Map("text" -> "bar", "likes" -> 3.2D))))
 
       "default scala complex object" in check(
         ScalaInputType,
-          defaultValue = Map("title" -> "Post #1", "text" -> "Amazing!", "comments" -> List(Map("text" -> "First! :P"))),
+          defaultValue = scalaInput(Map("title" -> "Post #1", "text" -> "Amazing!", "comments" -> List(Map("text" -> "First! :P")))),
           expectedResult = Map(
             "title" -> "Post #1",
             "text" -> "Amazing!",
@@ -158,7 +166,8 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
           expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
     }
 
-    "used with JSON values" should {
+    "used with spray JSON values" should {
+      import spray.json._
       import spray.json._
       import sangria.integration.sprayJson.sprayJsonToInput
 
@@ -207,6 +216,111 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
           "shares" -> Map("twitter" -> 78, "facebook" -> 1),
           "comments" -> List(Map("author" -> "anonymous", "text" -> "First! :P", "likes" -> 1.5))),
         expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
+
+      "manual typeclass-based serialisation" in {
+        implicit object SharesToInput extends ToInput[Shares, JsValue] {
+          override def toInput(value: Shares) = {
+            val json = JsObject("twitter" -> JsNumber(value.twitter), "facebook" -> JsNumber(value.facebook))
+
+            json -> sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+          }
+        }
+
+        implicit object CommentToInput extends ToInput[Comment, JsValue] {
+          override def toInput(value: Comment) = {
+            val json = JsObject(
+              "author" -> JsString(value.author),
+              "text" -> JsString(value.text),
+              "likes" -> JsNumber(value.likes))
+
+            json -> sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+          }
+        }
+
+        implicit def listToInput[T](implicit ev: ToInput[T, JsValue]): ToInput[List[T], JsValue] =
+          new ToInput[List[T], JsValue] {
+            override def toInput(value: List[T]) = {
+              val json = JsArray(value.toVector map ((v: T) => ev.toInput(v)._1))
+
+              json -> sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+            }
+          }
+
+        val CustomInputType = complexInputType(
+          sharesDefault = Shares(123, 456),
+          commentsDefault = List(Comment("John Doe", "Nice post!", BigDecimal(100)), Comment("Foo", "Bar", BigDecimal(0.1))))
+
+        check(
+          CustomInputType,
+          defaultValue = """{"title": "Post #1", "text": "Amazing!"}""".parseJson,
+          expectedResult = Map(
+            "title" -> "Post #1",
+            "text" -> "Amazing!",
+            "tags" -> List("beginner", "scala"),
+            "views" -> 12,
+            "shares" -> Map("twitter" -> 123, "facebook" -> 456),
+            "comments" -> List(
+              Map("author" -> "John Doe", "text" -> "Nice post!", "likes" -> 100),
+              Map("author" -> "Foo", "text" -> "Bar", "likes" -> 0.1))),
+          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
+      }
+
+      "generated typeclass-based serialisation" in {
+        object MyJsonProtocol extends DefaultJsonProtocol {
+          implicit val sharesFormat = jsonFormat2(Shares.apply)
+          implicit val commentFormat = jsonFormat3(Comment.apply)
+        }
+
+        import MyJsonProtocol._
+        import sangria.integration.sprayJson.sprayJsonWriterToInput
+
+        val CustomInputType = complexInputType(
+          sharesDefault = Shares(123, 456),
+          commentsDefault = List(Comment("John Doe", "Nice post!", BigDecimal(100)), Comment("Foo", "Bar", BigDecimal(0.1))))
+
+        check(
+          CustomInputType,
+          defaultValue = """{"title": "Post #1", "text": "Amazing!"}""".parseJson,
+          expectedResult = Map(
+            "title" -> "Post #1",
+            "text" -> "Amazing!",
+            "tags" -> List("beginner", "scala"),
+            "views" -> 12,
+            "shares" -> Map("twitter" -> 123, "facebook" -> 456),
+            "comments" -> List(
+              Map("author" -> "John Doe", "text" -> "Nice post!", "likes" -> 100),
+              Map("author" -> "Foo", "text" -> "Bar", "likes" -> 0.1))),
+          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
+      }
+    }
+
+    "used with play JSON values" should {
+      "generated typeclass-based serialisation" in {
+        import play.api.libs.json._
+
+        implicit val sharesWrites = Json.writes[Shares]
+        implicit val commentWrites = Json.writes[Comment]
+
+        import sangria.integration.playJson._
+
+        val CustomInputType = complexInputType(
+          sharesDefault = Shares(123, 456),
+          commentsDefault = List(Comment("John Doe", "Nice post!", BigDecimal(100)), Comment("Foo", "Bar", BigDecimal(0.1))))
+
+        check(
+          CustomInputType,
+          defaultValue = Json.parse("""{"title": "Post #1", "text": "Amazing!"}"""),
+          expectedResult = Map(
+            "title" -> "Post #1",
+            "text" -> "Amazing!",
+            "tags" -> List("beginner", "scala"),
+            "views" -> 12,
+            "shares" -> Map("twitter" -> 123, "facebook" -> 456),
+            "comments" -> List(
+              Map("author" -> "John Doe", "text" -> "Nice post!", "likes" -> 100),
+              Map("author" -> "Foo", "text" -> "Bar", "likes" -> 0.1))),
+          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
+      }
     }
   }
 }

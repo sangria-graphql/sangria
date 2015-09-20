@@ -61,6 +61,11 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
 
   implicit def sprayJsonToInput[T <: JsValue]: ToInput[T, JsValue] =
     SprayJsonToInput.asInstanceOf[ToInput[T, JsValue]]
+
+  implicit def sprayJsonWriterToInput[T : JsonWriter]: ToInput[T, JsValue] =
+    new ToInput[T, JsValue] {
+      def toInput(value: T) = implicitly[JsonWriter[T]].write(value) -> SprayJsonInputUnmarshaller
+    }
 }
 
 trait SprayJsonSupportLowPrioImplicits {
