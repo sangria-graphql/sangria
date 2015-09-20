@@ -56,6 +56,13 @@ object json4s extends Json4sSupportLowPrioImplicits {
 
     def render(node: JValue) = compact(jsonRender(node))
   }
+
+  private object Json4sToInput extends ToInput[JValue, JValue] {
+    def toInput(value: JValue) = (value, Json4sInputUnmarshaller)
+  }
+
+  implicit def json4sToInput[T <: JValue]: ToInput[T, JValue] =
+    Json4sToInput.asInstanceOf[ToInput[T, JValue]]
 }
 
 trait Json4sSupportLowPrioImplicits {

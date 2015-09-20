@@ -3,7 +3,6 @@ package sangria.integration
 import io.circe._
 
 object circe {
-
   implicit object CirceResultMarshaller extends ResultMarshaller {
     type Node = Json
 
@@ -56,5 +55,9 @@ object circe {
       node.isBoolean || node.isNumber || node.isString
 
     def render(node: Json) = node.noSpaces
+  }
+
+  implicit object circeJsonToInput extends ToInput[Json, Json] {
+    def toInput(value: Json) = (value, CirceInputUnmarshaller)
   }
 }

@@ -52,6 +52,13 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
 
     def render(node: JsValue) = Json.stringify(node)
   }
+
+  private object PlayJsonToInput extends ToInput[JsValue, JsValue] {
+    def toInput(value: JsValue) = (value, PlayJsonInputUnmarshaller)
+  }
+
+  implicit def playJsonToInput[T <: JsValue]: ToInput[T, JsValue] =
+    PlayJsonToInput.asInstanceOf[ToInput[T, JsValue]]
 }
 
 trait PlayJsonSupportLowPrioImplicits {
