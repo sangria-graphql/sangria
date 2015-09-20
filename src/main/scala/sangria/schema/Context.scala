@@ -1,6 +1,7 @@
 package sangria.schema
 
-import sangria.execution.{Resolver, ResultMarshaller}
+import sangria.execution.Resolver
+import sangria.integration.ResultMarshaller
 
 import language.implicitConversions
 

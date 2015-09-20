@@ -1,4 +1,4 @@
-package sangria.execution
+package sangria.integration
 
 trait ResultMarshaller {
   type Node

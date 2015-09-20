@@ -2,6 +2,7 @@ package sangria.execution
 
 import org.parboiled2.Position
 import sangria.ast
+import sangria.integration.ResultMarshaller
 import sangria.parser.SourceMapper
 import sangria.schema._
 

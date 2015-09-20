@@ -2,7 +2,8 @@ package sangria.renderer
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.execution.{InputUnmarshaller, Executor}
+import sangria.execution.Executor
+import sangria.integration.InputUnmarshaller
 import sangria.schema._
 import sangria.util.AwaitSupport
 import sangria.introspection.introspectionQuery

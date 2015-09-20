@@ -1,10 +1,11 @@
 package sangria.execution
 
 import sangria.ast
+import sangria.integration.{ResultMarshaller, InputUnmarshaller}
 import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.validation.QueryValidator
-import sangria.execution.InputUnmarshaller.emptyMapVars
+import InputUnmarshaller.emptyMapVars
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Failure, Try}

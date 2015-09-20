@@ -1,7 +1,6 @@
 package sangria.integration
 
 import org.json4s.JsonAST._
-import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 
 import org.json4s.native.JsonMethods.{render => jsonRender, _}
 

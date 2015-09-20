@@ -1,5 +1,6 @@
 package sangria.execution
 
+import sangria.integration.ResultMarshaller
 import sangria.util.AwaitSupport
 
 import org.scalatest.{Matchers, WordSpec}

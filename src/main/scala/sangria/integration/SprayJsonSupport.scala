@@ -1,6 +1,5 @@
 package sangria.integration
 
-import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 import spray.json._
 
 

@@ -1,7 +1,6 @@
 package sangria.integration
 
 import play.api.libs.json._
-import sangria.execution.{InputUnmarshaller, ResultMarshaller}
 
 object PlayJsonSupport extends PlayJsonSupportLowPrioImplicits {
   implicit object PlayJsonResultMarshaller extends ResultMarshaller {

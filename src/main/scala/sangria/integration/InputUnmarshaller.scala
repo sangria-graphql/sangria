@@ -1,7 +1,7 @@
-package sangria.execution
+package sangria.integration
 
-import sangria.util.tag._
 import sangria.util.tag
+import sangria.util.tag._
 
 trait InputUnmarshaller[Node] {
   def getRootMapValue(node: Node, key: String): Option[Node]

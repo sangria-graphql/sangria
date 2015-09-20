@@ -2,6 +2,7 @@ package sangria.execution
 
 import org.parboiled2.Position
 import sangria.ast.AstNode
+import sangria.integration.ResultMarshaller
 import sangria.validation.{Violation, AstNodeLocation}
 
 class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException]) {
