@@ -7,7 +7,6 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{Pos, GraphQlSupport, AwaitSupport}
 import sangria.integration.sprayJson.SprayJsonInputUnmarshaller
-import sangria.integration.ToInput.toScalaInput
 
 import InputUnmarshaller.mapVars
 
