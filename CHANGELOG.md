@@ -22,6 +22,7 @@ I collected all of them in the change list below. They were necessary in order t
   Executor.execute(mySchema, query, variables = mapVars("someId" -> "1000"))
   ```
 * #67 - circe integration throws NoSuchElementException during execution
+* #75 - Identical documents should be equal
 * Minor bugfixes
 
 ## v0.3.1 (2015-08-27)

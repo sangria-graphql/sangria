@@ -407,14 +407,15 @@ class QueryParserSpec extends WordSpec with Matchers {
     }
 
     "not be equal for the same queries with different AST node positions" in {
-      val query1 = """
-        {
-          id
-          name
-          friends {
+      val query1 =
+        """
+          {
+            id
             name
+            friends {
+              name
+            }
           }
-        }
         """
 
       val query2 =
