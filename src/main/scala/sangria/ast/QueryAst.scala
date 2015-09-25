@@ -7,6 +7,19 @@ case class Document(definitions: List[Definition], position: Option[Position] = 
   lazy val operations = Map(definitions collect {case op: OperationDefinition => op.name -> op}: _*)
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition => fragment.name -> fragment}: _*)
   lazy val source = sourceMapper map (_.source)
+
+  override def canEqual(other: Any): Boolean = other.isInstanceOf[Document]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Document =>
+      (that canEqual this) &&
+          definitions == that.definitions &&
+          position == that.position
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
 }
 
 sealed trait ConditionalFragment extends AstNode {

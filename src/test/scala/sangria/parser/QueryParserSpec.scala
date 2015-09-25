@@ -389,4 +389,44 @@ class QueryParserSpec extends WordSpec with Matchers {
       }
     }
   }
+
+  "Ast" should {
+    "be equal for the same queries" in {
+      val query =
+        """
+          {
+            id
+            name
+            friends {
+              name
+            }
+          }
+        """
+
+      (QueryParser.parse(query) == QueryParser.parse(query)) should be (true)
+    }
+
+    "not be equal for the same queries with different AST node positions" in {
+      val query1 = """
+        {
+          id
+          name
+          friends {
+            name
+          }
+        }
+        """
+
+      val query2 =
+        """
+          {
+            id
+            name
+            friends {name}
+          }
+        """
+
+      (QueryParser.parse(query1) == QueryParser.parse(query2)) should be (false)
+    }
+  }
 }
