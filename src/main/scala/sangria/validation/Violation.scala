@@ -181,3 +181,7 @@ case class DuplicateOperationNameViolation(opName: String, sourceMapper: Option[
 case class DuplicateArgNameViolation(argName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"There can be only one argument named '$argName'.$astLocation"
 }
+
+case class DuplicateInputFieldViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val errorMessage = s"There can be only one input field named '$name'.$astLocation"
+}

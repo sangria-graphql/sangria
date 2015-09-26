@@ -33,6 +33,7 @@ object QueryValidator {
     new ScalarLeafs,
     new UniqueArgumentNames,
     new UniqueFragmentNames,
+    new UniqueInputFieldNames,
     new UniqueOperationNames,
     new VariablesAreInputTypes,
     new VariablesInAllowedPosition

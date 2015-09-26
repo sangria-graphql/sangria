@@ -24,6 +24,7 @@ I collected all of them in the change list below. They were necessary in order t
 * #74 - Improved unicode handling (spec change)
 * #67 - circe integration throws NoSuchElementException during execution
 * #75 - Identical documents should be equal
+* #73 - Verify input field uniqueness (spec change - new validation rule)
 * Minor bugfixes
 
 ## v0.3.1 (2015-08-27)
