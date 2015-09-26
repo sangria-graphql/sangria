@@ -90,6 +90,12 @@ class Resolver[Ctx](
                 val resolve = result match {
                   case Value(v) =>
                     Future.successful(resolveValue(path :+ fields.head.outputName, fields, sfield.fieldType, sfield, resolveVal(v), uc) -> resolveUc(v))
+                  case TryValue(v) =>
+                    Future.successful(v match {
+                      case Success(success) =>
+                        resolveValue(path :+ fields.head.outputName, fields, sfield.fieldType, sfield, resolveVal(success), uc) -> resolveUc(v)
+                      case Failure(error) => Result(ErrorRegistry(path :+ fields.head.outputName, error, fields.head.position), None) -> uc
+                    })
                   case DeferredValue(d) =>
                     val p = Promise[Any]()
 
@@ -166,6 +172,13 @@ class Resolver[Ctx](
           case (astFields, None) => astFields.head -> Result(ErrorRegistry.empty, None)
           case (astFields, Some((field, updateCtx, Value(v)))) =>
             astFields.head -> resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
+          case (astFields, Some((field, updateCtx, TryValue(v)))) =>
+            v match {
+              case Success(success) =>
+                astFields.head -> resolveValue(path :+ astFields.head.outputName, astFields, field.fieldType, field, resolveVal(updateCtx, success), resolveUc(updateCtx, success))
+              case Failure(error) =>
+                astFields.head -> Result(ErrorRegistry(path :+ astFields.head.outputName, error, astFields.head.position), None)
+            }
           case (astFields, Some((field, updateCtx, DeferredValue(deferred)))) =>
             val promise = Promise[Any]()
 

@@ -7,12 +7,15 @@ import sangria.schema._
 import sangria.util.{OutputMatchers, AwaitSupport}
 
 import scala.concurrent.Future
-import scala.util.Success
+import scala.util.{Failure, Try, Success}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport with OutputMatchers {
   val TestType = ObjectType("Test", fields[Unit, Unit](
+    Field("success", OptionType(StringType), resolve = _ => "Yay"),
+    Field("trySuccess", OptionType(StringType), resolve = _ => Success("try!")),
+    Field("tryError", OptionType(StringType), resolve = _ => Failure(new IllegalStateException("try boom!"))),
     Field("error", OptionType(StringType), resolve = _ => throw new IllegalStateException("Boom!")),
     Field("futureError", OptionType(StringType), resolve = _ => Future.failed[String](new IllegalStateException("Boom!")))
   ))
@@ -24,6 +27,9 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
       val out = captureStdErr {
         val Success(doc) = QueryParser.parse("""
         {
+          success
+          tryError
+          trySuccess
           error
           futureError
         }
@@ -32,17 +38,24 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
         Executor(schema).execute(doc).await should be  (
           Map(
             "data" -> Map(
+              "success" -> "Yay",
+              "trySuccess" -> "try!",
+              "tryError" -> null,
               "error" -> null,
               "futureError" -> null),
             "errors" -> List(
               Map(
                 "message" -> "Internal server error",
                 "field" -> "error",
-                "locations" -> List(Map("line" -> 3, "column" -> 11))),
+                "locations" -> List(Map("line" -> 6, "column" -> 11))),
+              Map(
+                "message" -> "Internal server error",
+                "field" -> "tryError",
+                "locations" -> List(Map("line" -> 4, "column" -> 11))),
               Map(
                 "message" -> "Internal server error",
                 "field" -> "futureError",
-                "locations" -> List(Map("line" -> 4, "column" -> 11))))))
+                "locations" -> List(Map("line" -> 7, "column" -> 11))))))
       }
 
       out should include ("java.lang.IllegalStateException: Boom!")
