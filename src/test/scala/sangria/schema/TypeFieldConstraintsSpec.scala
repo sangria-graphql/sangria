@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 
-class TypeFieldUniquenessSpec extends WordSpec with Matchers {
+class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
   "ObjectType" should {
     "allow unique fields" in {
@@ -33,6 +33,20 @@ class TypeFieldUniquenessSpec extends WordSpec with Matchers {
           Field("a", StringType, resolve = _ => "foo"),
           Field("b", StringType, resolve = _ => "foo"),
           Field("a", StringType, resolve = _ => "foo")
+        )).fields
+      }
+    }
+
+    "disallow invalid names" in {
+      an [IllegalArgumentException] should be thrownBy {
+        ObjectType("Test-object", fields[Unit, Unit](
+          Field("a", StringType, resolve = _ => "foo")
+        ))
+      }
+
+      an [IllegalArgumentException] should be thrownBy {
+        ObjectType("Test", () => fields[Unit, Unit](
+          Field("a-b-c", StringType, resolve = _ => "foo")
         )).fields
       }
     }
@@ -70,6 +84,20 @@ class TypeFieldUniquenessSpec extends WordSpec with Matchers {
         )).fields
       }
     }
+
+    "disallow invalid names" in {
+      an [IllegalArgumentException] should be thrownBy {
+        InterfaceType("Test-int", fields[Unit, Unit](
+          Field("a", StringType, resolve = _ => "foo")
+        ))
+      }
+
+      an [IllegalArgumentException] should be thrownBy {
+        InterfaceType("Test", fields[Unit, Unit](
+          Field("a-b-c", StringType, resolve = _ => "foo")
+        )).fields
+      }
+    }
   }
 
   "InputObjectType" should {
@@ -102,6 +130,22 @@ class TypeFieldUniquenessSpec extends WordSpec with Matchers {
           InputField("b", StringType),
           InputField("a", StringType)
         )).fields
+      }
+    }
+
+    "disallow invalid names" in {
+      an [IllegalArgumentException] should be thrownBy {
+        InputObjectType("Test-ab", List(
+          InputField("a", StringType),
+          InputField("b", StringType),
+          InputField("a", StringType)
+        ))
+      }
+
+      an [IllegalArgumentException] should be thrownBy {
+        InputObjectType("Test", List(
+          InputField("a-b", StringType)
+        ))
       }
     }
   }

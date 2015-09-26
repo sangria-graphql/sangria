@@ -36,20 +36,58 @@ sealed trait Named {
 }
 
 object Named {
-  private[schema] def checkFields[T <: Seq[Named]](fields: T): T =
+  private val NameRegexp = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
+
+  private[schema] def doCheckNonEmptyFields(fields: Seq[Named]): Unit =
     if (fields.isEmpty)
       throw new IllegalArgumentException("No fields provided! You need to provide at least one field to a Type.")
-    else if (fields.map(_.name).toSet.size != fields.size)
-      throw new IllegalArgumentException("All fields within a Type should have unique names!")
-    else fields
 
-  private[schema] def checkFieldsFn[T <: Seq[Named]](fields: T): () => T =
+  private[schema] def doCheckUniqueFields(fields: Seq[Named]): Unit =
     if (fields.map(_.name).toSet.size != fields.size)
       throw new IllegalArgumentException("All fields within a Type should have unique names!")
-    else () => fields
 
-  private[schema] def checkFields[T <: Seq[Named]](fieldsFn: () => T): () => T =
-    () => checkFields(fieldsFn())
+  private[schema] def doCheckFieldNames(fields: Seq[Named]): Unit =
+    fields.foreach(f => checkName(f.name))
+
+  private[schema] def checkObjFields[T <: Seq[Named]](fields: T): T = {
+    doCheckUniqueFields(fields)
+    doCheckFieldNames(fields)
+    fields
+  }
+
+  private[schema] def checkIntFields[T <: Seq[Named]](fields: T): T = {
+    doCheckNonEmptyFields(fields)
+    doCheckUniqueFields(fields)
+    doCheckFieldNames(fields)
+    fields
+  }
+
+  private[schema] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () => T = {
+    doCheckUniqueFields(fields)
+    doCheckFieldNames(fields)
+    () => fields
+  }
+
+  private[schema] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () => T = {
+    doCheckUniqueFields(fields)
+    doCheckNonEmptyFields(fields)
+    doCheckFieldNames(fields)
+    () => fields
+  }
+
+  private[schema] def checkObjFields[T <: Seq[Named]](fieldsFn: () => T): () => T =
+    () => checkObjFields(fieldsFn())
+
+  private[schema] def checkIntFields[T <: Seq[Named]](fieldsFn: () => T): () => T =
+    () => checkIntFields(fieldsFn())
+
+  private[schema] def checkName(name: String) = {
+    if (!NameRegexp.pattern.matcher(name).matches())
+      throw new IllegalArgumentException(s"Name '$name' is not valid GraphQL name! Valid name should satisfy following regex: /$NameRegexp/.")
+
+    name
+  }
+
 }
 
 case class ScalarType[T](
@@ -97,22 +135,22 @@ case class ObjectType[Ctx, Val: ClassTag] private (
 
 object ObjectType {
   def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields), Nil)
+    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), Nil)
+    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), Nil)
   def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType))
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType))
 
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, Named.checkFields(fieldsFn), Nil)
+    ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), Named.checkFields(fieldsFn), Nil)
+    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), Nil)
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, None, Named.checkFields(fieldsFn), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(name, Some(description), Named.checkFields(fieldsFn), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
 
   implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
@@ -133,22 +171,22 @@ object InterfaceType {
   val emptyPossibleTypes: () => List[ObjectType[_, _]] = () => Nil
 
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), Nil, emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(fields), Nil, emptyPossibleTypes)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), Nil, emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(fields), Nil, emptyPossibleTypes)
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType), emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(fields), interfaces map (_.interfaceType), emptyPossibleTypes)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields), interfaces map (_.interfaceType), emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(fields), interfaces map (_.interfaceType), emptyPossibleTypes)
 
   def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, Named.checkFields(fieldsFn), Nil, emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), None, Named.checkIntFields(fieldsFn), Nil, emptyPossibleTypes)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), Nil, emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn), Nil, emptyPossibleTypes)
   def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, Named.checkFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), None, Named.checkIntFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), Named.checkFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
+    InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
 }
 
 case class PossibleInterface[Ctx, Concrete](interfaceType: InterfaceType[Ctx, _])
@@ -210,7 +248,7 @@ object Field {
       resolve: Context[Ctx, Val] => Action[Ctx, Res],
       possibleTypes: => List[PossibleObject[_, _]] = Nil,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
-    Field[Ctx, Val](name, fieldType, description, arguments, resolve, deprecationReason, () => possibleTypes map (_.objectType))
+    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, () => possibleTypes map (_.objectType))
 }
 
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
@@ -250,24 +288,24 @@ object Argument {
       argumentType: InputType[T],
       description: String,
       defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(name, argumentType, Some(description), Some(defaultValue -> toInput))
+    Argument(Named.checkName(name), argumentType, Some(description), Some(defaultValue -> toInput))
 
   def apply[T, Default](
       name: String,
       argumentType: InputType[T],
       defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(name, argumentType, None, Some(defaultValue -> toInput))
+    Argument(Named.checkName(name), argumentType, None, Some(defaultValue -> toInput))
 
   def apply[T](
       name: String,
       argumentType: InputType[T],
       description: String)(implicit res: ArgumentType[T]): Argument[res.Res] =
-    Argument(name, argumentType, Some(description), None)
+    Argument(Named.checkName(name), argumentType, Some(description), None)
 
   def apply[T](
       name: String,
       argumentType: InputType[T])(implicit res: ArgumentType[T]): Argument[res.Res] =
-    Argument(name, argumentType, None, None)
+    Argument(Named.checkName(name), argumentType, None, None)
 }
 
 trait ArgumentType[T] {
@@ -326,14 +364,14 @@ object InputObjectType {
   type InputObjectRes = Map[String, Any]
 
   def apply(name: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
-    InputObjectType(name, None, fieldsFn = Named.checkFieldsFn(fields))
+    InputObjectType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(fields))
   def apply(name: String, description: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
-    InputObjectType(name, Some(description), fieldsFn = Named.checkFieldsFn(fields))
+    InputObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(fields))
 
   def apply(name: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] =
-    InputObjectType(name, None, Named.checkFields(fieldsFn))
+    InputObjectType(Named.checkName(name), None, Named.checkIntFields(fieldsFn))
   def apply(name: String, description: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] =
-    InputObjectType(name, Some(description), Named.checkFields(fieldsFn))
+    InputObjectType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn))
 }
 
 case class InputField[T] private (
