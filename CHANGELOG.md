@@ -21,6 +21,7 @@ I collected all of them in the change list below. They were necessary in order t
 
   Executor.execute(mySchema, query, variables = mapVars("someId" -> "1000"))
   ```
+* #66 - `DeprecationTracker` should provide more contextual information (breaking change: the signature of `deprecatedFieldUsed` is changed. It now provides much more contextual information, but you need to update the code that implements it)
 * #74 - Improved unicode handling (spec change)
 * #67 - circe integration throws NoSuchElementException during execution
 * #75 - Identical documents should be equal

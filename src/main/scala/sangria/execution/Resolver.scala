@@ -336,8 +336,6 @@ class Resolver[Ctx](
     val astField = astFields.head
     val field = tpe.getField(schema, astField.name).get.asInstanceOf[Field[Ctx, Any]]
 
-    field.deprecationReason foreach (_ => deprecationTracker.deprecatedFieldUsed(path, field, userCtx))
-
     valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>
         val ctx = Context[Ctx, Any](
@@ -350,7 +348,10 @@ class Resolver[Ctx](
           marshaller,
           sourceMapper,
           deprecationTracker,
-          astFields)
+          astFields,
+          path)
+
+        field.deprecationReason foreach (_ => deprecationTracker.deprecatedFieldUsed(ctx))
 
         try {
           val res = field.resolve match {

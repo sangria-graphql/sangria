@@ -13,16 +13,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport with OutputMatchers {
   class RecordingDeprecationTracker extends DeprecationTracker {
     val times = new AtomicInteger(0)
-    var path: Option[List[String]] = None
-    var name: Option[String] = None
+    var ctx: Option[Context[_, _]] = None
 
     var enumValue: Option[Any] = None
     var enum: Option[String] = None
 
-    def deprecatedFieldUsed[Ctx](path: List[String], field: Field[Ctx, _], userContext: Ctx) = {
+    def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]) = {
       times.incrementAndGet()
-      this.path = Some(path)
-      this.name = Some(field.name)
+
+      this.ctx = Some(ctx)
     }
 
     def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx) = {
@@ -46,8 +45,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
       Executor(schema, deprecationTracker = deprecationTracker).execute(query).await
 
       deprecationTracker.times.get should be (0)
-      deprecationTracker.path should be (None)
-      deprecationTracker.name should be (None)
+      deprecationTracker.ctx should be (None)
     }
 
     "track deprecated fields" in  {
@@ -63,8 +61,27 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
       Executor(schema, deprecationTracker = deprecationTracker).execute(query).await
 
       deprecationTracker.times.get should be (1)
-      deprecationTracker.path should be (Some(List("deprecated")))
-      deprecationTracker.name should be (Some("deprecated"))
+      deprecationTracker.ctx.get.path should be (List("deprecated"))
+      deprecationTracker.ctx.get.field.name should be ("deprecated")
+    }
+
+    "use field names without and ignore aliases" in  {
+      lazy val testType: ObjectType[Unit, Unit] = ObjectType("TestType", () => fields[Unit, Unit](
+        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None),
+        Field("nested", OptionType(testType), resolve = _ => Some(()))
+      ))
+
+      val schema = Schema(testType)
+      val Success(query) = QueryParser.parse("{ nested { aa: nested { bb: deprecated }}}")
+      val deprecationTracker = new RecordingDeprecationTracker
+
+      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+
+      deprecationTracker.times.get should be (1)
+      deprecationTracker.ctx.get.path should be ("nested" :: "aa" :: "bb" :: Nil)
+      deprecationTracker.ctx.get.field.name should be ("deprecated")
+      deprecationTracker.ctx.get.parentType.name should be ("TestType")
     }
 
     "track deprecated enum values" in  {
@@ -188,7 +205,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
         Executor(schema, deprecationTracker = DeprecationTracker.print).execute(query).await
       }
 
-      out should include ("Deprecated field 'deprecated' used at path 'deprecated'.")
+      out should include ("Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
     }
   }
 }

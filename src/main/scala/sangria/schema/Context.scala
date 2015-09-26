@@ -209,7 +209,8 @@ case class Context[Ctx, Val](
   marshaller: ResultMarshaller,
   sourceMapper: Option[SourceMapper],
   deprecationTracker: DeprecationTracker,
-  astFields: List[ast.Field]) extends WithArguments with WithInputTypeRendering[Ctx]
+  astFields: List[ast.Field],
+  path: List[String]) extends WithArguments with WithInputTypeRendering[Ctx]
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
 
