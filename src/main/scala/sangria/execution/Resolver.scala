@@ -78,7 +78,7 @@ class Resolver[Ctx](
                 Future.successful(Result(updatedErrors, Some(marshaller.addMapNodeElem(acc, fields.head.outputName, marshaller.nullNode))) -> uc)
               case (updatedErrors, None, _) => Future.successful(Result(updatedErrors, None), uc)
               case (updatedErrors, Some(result), newUc) =>
-                val sfield = tpe.getField(schema, origField.name).get
+                val sfield = tpe.getField(schema, origField.name).head
 
                 def resolveUc(v: Any) = newUc map (_.ctxFn(v)) getOrElse uc
 
@@ -143,7 +143,7 @@ class Resolver[Ctx](
         errors.add(path :+ name, error) -> (if (isOptional(tpe, origField.name)) Some(acc :+ (origField :: Nil, None)) else None)
       case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) =>
         resolveField(userCtx, tpe, path :+ name, value, errors, name, fields) match {
-          case (updatedErrors, Some(result), updateCtx) => updatedErrors -> Some(acc :+ (fields, Some((tpe.getField(schema, origField.name).get, updateCtx, result))))
+          case (updatedErrors, Some(result), updateCtx) => updatedErrors -> Some(acc :+ (fields, Some((tpe.getField(schema, origField.name).head, updateCtx, result))))
           case (updatedErrors, None, _) if isOptional(tpe, origField.name) => updatedErrors -> Some(acc :+ (origField :: Nil, None))
           case (updatedErrors, None, _) => updatedErrors -> None
         }
@@ -334,7 +334,8 @@ class Resolver[Ctx](
 
   def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: List[String], value: Any, errors: ErrorRegistry, name: String, astFields: List[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[MappedCtxUpdate[Ctx, Any, Any]]) = {
     val astField = astFields.head
-    val field = tpe.getField(schema, astField.name).get.asInstanceOf[Field[Ctx, Any]]
+    val allFields = tpe.getField(schema, astField.name).asInstanceOf[List[Field[Ctx, Any]]]
+    val field = allFields.head
 
     valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
       case Success(args) =>
@@ -351,7 +352,8 @@ class Resolver[Ctx](
           astFields,
           path)
 
-        field.deprecationReason foreach (_ => deprecationTracker.deprecatedFieldUsed(ctx))
+        if (allFields.exists(_.deprecationReason.isDefined))
+          deprecationTracker.deprecatedFieldUsed(ctx)
 
         try {
           val res = field.resolve match {
@@ -389,9 +391,9 @@ class Resolver[Ctx](
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) =>
               ff.values.toVector collect {
-                case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).isDefined && !objTpe.getField(schema, fields.head.name).get.resolve.isInstanceOf[NoProjection[_, _, _]] =>
+                case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe.getField(schema, fields.head.name).head.resolve.isInstanceOf[NoProjection[_, _, _]] =>
                   val astField = fields.head
-                  val field = objTpe.getField(schema, astField.name).get
+                  val field = objTpe.getField(schema, astField.name).head
                   val projectedName = field.resolve match {
                     case proj: Projection[_, _, _] => proj.projectedName
                     case _ => field.name
@@ -413,7 +415,7 @@ class Resolver[Ctx](
   }
 
   def isOptional(tpe: ObjectType[_, _], fieldName: String): Boolean =
-    isOptional(tpe.getField(schema, fieldName).get.fieldType)
+    isOptional(tpe.getField(schema, fieldName).head.fieldType)
 
   def isOptional(tpe: OutputType[_]): Boolean =
     tpe.isInstanceOf[OptionType[_]]

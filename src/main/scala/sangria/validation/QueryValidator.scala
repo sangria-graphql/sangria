@@ -299,7 +299,7 @@ class TypeInfo(schema: Schema[_, _]) {
     else if (astField.name == TypeNameMetaField.name)
       Some(TypeNameMetaField)
     else parent match {
-      case o: ObjectLikeType[_, _] => o.getField(schema, astField.name)
+      case o: ObjectLikeType[_, _] => o.getField(schema, astField.name).headOption
       case _ => None
     }
   }

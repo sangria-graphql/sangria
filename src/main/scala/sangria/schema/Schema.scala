@@ -110,17 +110,17 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
       case ((visited, acc), e) => (visited :+ valueFn(e), acc :+ e)
     }._2
 
-  lazy val fields: List[Field[Ctx, _]] = removeDuplicates(
-    ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[List[Field[Ctx, _]]]),
-    (e: Field[Ctx, _]) => e.name)
+  lazy val fields: List[Field[Ctx, _]] = ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[List[Field[Ctx, _]]])
 
-  private lazy val fieldsByName = fields groupBy (_.name) mapValues (_.head)
+  lazy val uniqueFields: List[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) => e.name)
 
-  def getField(schema: Schema[_, _], fieldName: String): Option[Field[Ctx, _]] =
-    if (fieldName == SchemaMetaField.name && name == schema.query.name) Some(SchemaMetaField.asInstanceOf[Field[Ctx, _]])
-    else if (fieldName == TypeMetaField.name && name == schema.query.name) Some(TypeMetaField.asInstanceOf[Field[Ctx, _]])
-    else if (fieldName == TypeNameMetaField.name) Some(TypeNameMetaField.asInstanceOf[Field[Ctx, _]])
-    else fieldsByName get fieldName
+  private lazy val fieldsByName = fields groupBy (_.name)
+
+  def getField(schema: Schema[_, _], fieldName: String): List[Field[Ctx, _]] =
+    if (fieldName == SchemaMetaField.name && name == schema.query.name) SchemaMetaField.asInstanceOf[Field[Ctx, _]] :: Nil
+    else if (fieldName == TypeMetaField.name && name == schema.query.name) TypeMetaField.asInstanceOf[Field[Ctx, _]] :: Nil
+    else if (fieldName == TypeNameMetaField.name) TypeNameMetaField.asInstanceOf[Field[Ctx, _]] :: Nil
+    else fieldsByName.getOrElse(fieldName, Nil)
 }
 
 case class ObjectType[Ctx, Val: ClassTag] private (
@@ -138,18 +138,18 @@ object ObjectType {
     ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), Nil)
-  def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType))
-  def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType))
 
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), Nil)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), Nil)
-  def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
-  def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
 
   implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =

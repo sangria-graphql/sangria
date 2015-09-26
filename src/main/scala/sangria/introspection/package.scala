@@ -99,8 +99,8 @@ package object introspection {
         val (_, tpe) = ctx.value
 
         tpe match {
-          case t: ObjectLikeType[_, _] if incDep => Some(t.fields.asInstanceOf[List[Field[_, _]]])
-          case t: ObjectLikeType[_, _] => Some(t.fields.asInstanceOf[List[Field[_, _]]].filter(_.deprecationReason.isEmpty))
+          case t: ObjectLikeType[_, _] if incDep => Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]])
+          case t: ObjectLikeType[_, _] => Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]].filter(_.deprecationReason.isEmpty))
           case _ => None
         }
       }),

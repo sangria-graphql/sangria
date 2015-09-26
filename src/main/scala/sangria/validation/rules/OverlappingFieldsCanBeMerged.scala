@@ -143,7 +143,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     selCont.selections foreach {
       case astField: ast.Field =>
         val fieldDef = parentType flatMap {
-          case tpe: ObjectLikeType[Any @unchecked, Any @unchecked] => tpe.getField(ctx.schema, astField.name)
+          case tpe: ObjectLikeType[Any @unchecked, Any @unchecked] => tpe.getField(ctx.schema, astField.name).headOption
           case _ => None
         }
 

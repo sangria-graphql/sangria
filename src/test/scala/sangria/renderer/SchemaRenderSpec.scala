@@ -180,7 +180,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         Field("str", OptionType(StringType), resolve = _ => "foo")
       ))
 
-      val bar = ObjectType("Bar", Nil, interfaces[Unit, Unit](foo))
+      val bar = ObjectType("Bar", interfaces[Unit, Unit](foo), Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
         Field("bar", OptionType(bar), resolve = _ => ())
@@ -212,7 +212,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         Field("int", OptionType(IntType), resolve = _ => 1)
       ))
 
-      val bar = ObjectType("Bar", Nil, interfaces[Unit, Unit](foo, baz))
+      val bar = ObjectType("Bar", interfaces[Unit, Unit](foo, baz), Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
         Field("bar", OptionType(bar), resolve = _ => ())

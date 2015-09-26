@@ -43,6 +43,7 @@ object TestSchema {
     ObjectType(
       "Human",
       "A humanoid creature in the Star Wars universe.",
+      interfaces[Unit, Human](Character),
       fields[Unit, Human](
         Field("id", StringType,
           Some("The id of the human."),
@@ -59,12 +60,12 @@ object TestSchema {
         Field("homePlanet", OptionType(StringType),
           Some("The home planet of the human, or null if unknown."),
           resolve = _.value.homePlanet)
-      ),
-      interfaces[Unit, Human](Character))
+      ))
 
   val Droid = ObjectType(
     "Droid",
     "A mechanical creature in the Star Wars universe.",
+    interfaces[Unit, Droid](Character),
     fields[Unit, Droid](
       Field("id", StringType,
         Some("The id of the droid."),
@@ -81,8 +82,7 @@ object TestSchema {
       Field("primaryFunction", OptionType(StringType),
         Some("The primary function of the droid."),
         resolve = _.value.primaryFunction)
-    ),
-    interfaces[Unit, Droid](Character))
+    ))
 
   val ID = Argument("id", StringType, description = "id of the character")
 

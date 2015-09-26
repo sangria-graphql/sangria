@@ -65,7 +65,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
       deprecationTracker.ctx.get.field.name should be ("deprecated")
     }
 
-    "use field names without and ignore aliases" in  {
+    "provide context information" in  {
       lazy val testType: ObjectType[Unit, Unit] = ObjectType("TestType", () => fields[Unit, Unit](
         Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
         Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None),
@@ -81,6 +81,27 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
       deprecationTracker.times.get should be (1)
       deprecationTracker.ctx.get.path should be ("nested" :: "aa" :: "bb" :: Nil)
       deprecationTracker.ctx.get.field.name should be ("deprecated")
+      deprecationTracker.ctx.get.parentType.name should be ("TestType")
+    }
+
+    "report usage even if field is defined only in the interface type" in  {
+      val testInt = InterfaceType("TestInterface", () => fields[Unit, Unit](
+        Field("foo", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+      ))
+
+      val testType = ObjectType("TestType", interfaces[Unit, Unit](testInt), fields[Unit, Unit](
+        Field("foo", OptionType(StringType), resolve = _ => None)
+      ))
+
+      val schema = Schema(testType)
+      val Success(query) = QueryParser.parse("{ foo }")
+      val deprecationTracker = new RecordingDeprecationTracker
+
+      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+
+      deprecationTracker.times.get should be (1)
+      deprecationTracker.ctx.get.path should be ("foo" :: Nil)
+      deprecationTracker.ctx.get.field.name should be ("foo")
       deprecationTracker.ctx.get.parentType.name should be ("TestType")
     }
 

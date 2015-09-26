@@ -31,7 +31,7 @@ trait ValidationSupport extends Matchers {
     EnumValue("SPOTTED", value = 3)
   ))
 
-  val Dog = ObjectType("Dog", List[TestField](
+  val Dog = ObjectType("Dog", interfaces[Unit, Unit](Being, Pet), List[TestField](
     Field("name", OptionType(StringType), resolve = _ => None),
     Field("nickname", OptionType(StringType), resolve = _ => None),
     Field("barks", OptionType(BooleanType), resolve = _ => None),
@@ -44,16 +44,14 @@ trait ValidationSupport extends Matchers {
       resolve = _ => None),
     Field("isAtLocation", OptionType(BooleanType),
       arguments = Argument("x", OptionInputType(IntType)) :: Argument("y", OptionInputType(IntType)) :: Nil,
-      resolve = _ => None)),
-    interfaces[Unit, Unit](Being, Pet))
+      resolve = _ => None)))
 
-  val Cat = ObjectType("Cat", List[TestField](
+  val Cat = ObjectType("Cat", interfaces[Unit, Unit](Being, Pet), List[TestField](
     Field("name", OptionType(StringType), resolve = _ => None),
     Field("nickname", OptionType(StringType), resolve = _ => None),
     Field("meows", OptionType(BooleanType), resolve = _ => None),
     Field("meowVolume", OptionType(IntType), resolve = _ => None),
-    Field("furColor", OptionType(FurColor), resolve = _ => None)),
-    interfaces[Unit, Unit](Being, Pet))
+    Field("furColor", OptionType(FurColor), resolve = _ => None)))
 
   val CatOrDog = UnionType("CatOrDog", types = Dog :: Cat :: Nil)
 
@@ -61,17 +59,15 @@ trait ValidationSupport extends Matchers {
     Field("iq", OptionType(IntType), resolve = _ => None)
   ))
 
-  val Human: ObjectType[Unit, Unit] = ObjectType("Human", () => List[TestField](
+  val Human: ObjectType[Unit, Unit] = ObjectType("Human", interfaces[Unit, Unit](Being, Intelligent), () => List[TestField](
     Field("name", OptionType(StringType),
       arguments = Argument("surname", OptionInputType(BooleanType)) :: Nil,
       resolve = _ => None),
     Field("pets", OptionType(ListType(OptionType(Pet))), resolve = _ => None),
-    Field("relatives", OptionType(ListType(OptionType(Human))), resolve = _ => None)),
-    interfaces[Unit, Unit](Being, Intelligent))
+    Field("relatives", OptionType(ListType(OptionType(Human))), resolve = _ => None)))
 
-  val Alien = ObjectType("Alien", List[TestField](
-    Field("numEyes", OptionType(IntType), resolve = _ => None)),
-    interfaces[Unit, Unit](Being, Intelligent))
+  val Alien = ObjectType("Alien", interfaces[Unit, Unit](Being, Intelligent), List[TestField](
+    Field("numEyes", OptionType(IntType), resolve = _ => None)))
 
   val DogOrHuman = UnionType("DogOrHuman", types = Dog :: Human :: Nil)
 
