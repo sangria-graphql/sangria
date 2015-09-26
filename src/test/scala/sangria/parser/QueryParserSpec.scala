@@ -338,6 +338,26 @@ class QueryParserSpec extends WordSpec with Matchers {
       )
     }
 
+    "disallows uncommon control characters" in {
+      QueryParser.parse("{ field\u0007 }").isSuccess should be (false)
+      QueryParser.parse("{ field } \u0007").isSuccess should be (false)
+    }
+
+    "accepts BOM header" in {
+      QueryParser.parse("\uFEFF{ field }").isSuccess should be (true)
+    }
+
+    "accepts new lines header" in {
+      QueryParser.parse("{ field \n another }").isSuccess should be (true)
+      QueryParser.parse("{ field \r\n another }").isSuccess should be (true)
+    }
+
+    "accepts escape sequences" in {
+      QueryParser.parse("{ field(id: \"\\u000A\") }").isSuccess should be (true)
+      QueryParser.parse("{ field(id: \"\\uXXXX\") }").isSuccess should be (false)
+      QueryParser.parse("{ field(id: \"\\x\") }").isSuccess should be (false)
+    }
+
     "allow `null` to be the prefix of an enum value" in {
       QueryParser.parse("query Foo($x: Complex = null111) { field }").isSuccess should be (true)
       QueryParser.parse("query Foo($x: Complex = null_foo) { field }").isSuccess should be (true)

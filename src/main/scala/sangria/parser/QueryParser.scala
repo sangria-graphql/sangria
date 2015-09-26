@@ -73,14 +73,15 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
 trait Ignored extends PositionTracking { this: Parser =>
 
-  val WhiteSpace = CharPredicate("\u0009\u000B\u000C\u0020\u00A0")
+  val WhiteSpace = CharPredicate("\u0009\u0020")
 
   def CRLF = rule { '\u000D' ~ '\u000A' }
 
-  val LineTerminator = CharPredicate("\u000A\u000D\u2028\u2029")
+  val LineTerminator = CharPredicate("\u000A")
 
-  def Ignored = rule { quiet(WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',') }
+  val UnicodeBOM = CharPredicate('\uFEFF')
 
+  def Ignored = rule { quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',') }
 
   def Comment = rule { "#" ~ CommentChar.* }
 
