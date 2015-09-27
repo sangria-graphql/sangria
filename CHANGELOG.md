@@ -1,12 +1,20 @@
-## Upcoming
+## v0.4.0 (2015-09-27)
 
 This release contains quite a few backwards-incompatible changes, but fear not - all of them are renames and similar minor changes which should be easy to migrate.
 I collected all of them in the change list below. They were necessary in order to ensure consistent naming and improve the structure and flexibility of the library.
 
+* #68 - Better handling of default input values. It's a part of ongoing effort to improve handling of input objects (#37). Default values should now have an instance
+  of `ToInput` type-class which is defined for all supported input types like scala map-like data structures, different json ASTs, etc.
+  It even supports things like `Writes` from play-json or `JsonFormat` from spray-json by default. This means that you can use your domain objects (like `User` or `Apple`) as a default value for input fields or arguments
+  as long as you have `Writes` or `JsonFormat` defined for them. The mechanism is very extensible, of course: you just need to define implicit `ToInput[T]` for a class you want to use as a default value.
+  This change makes it impossible to verify the default value type at compile time, since it can have any shape, like Json AST or maybe even some binary format. Don't worry though,
+  at a schema creation time all default values would be validated according to the input type.
+* #77 - Middleware support. This addition has a huge potential: you can measure performance, collect metrics, enforce security, etc. on a field and query level. Moreover
+  it makes it much easier for people to share standard middleware in a libraries (e.g. sangria-security, sangria-graphite, sangria-influxdb, etc.). In order to ensure generic classification of
+  fields, every field now got a generic list or `FieldTag`s which allow to provide user-defined meta information about this field
+  (just to highlight a few examples: `Permission("ViewOrders")`, `Authorized`, `Measured`, etc.).
+* #76 - You can now provide `maxQueryDepth` to `Executor`. It will then enforce this constraint for all queries (very useful if query has recursive types)
 * #69 - `DeferredResolver` now got `userContext` as an argument. (breaking change: you need to provide a type parameter and one extra argument in `resolve` for your `DeferredResolver`s. you you are not interested in `userContext`, you can just use `Any` type)
-* #68 - Better handling of default input values (huge!)
-* #77 - Middleware support (huge!)
-* #76 - You can now provide `maxQueryDepth` to `Executor`. It will then enforce this constraint for all queries (very useful for recursive types)
 * Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
   * `sangria.integration.CirceSupport` -> `sangria.integration.circe`
   * `sangria.integration.Json4sSupport` -> `sangria.integration.json4s`
@@ -14,7 +22,7 @@ I collected all of them in the change list below. They were necessary in order t
   * `sangria.integration.SprayJsonSupport` -> `sangria.integration.sprayJson`
 * `ResultMarshaller` and `InputUnmarshaller` are moved in the `integration` package
 * Renamed execution `arguments` to `variables` in order to be consistent with the spec (breaking change: you need to rename this argument as well, if you are using named arguments)
-* Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity, it now does not have a dependent type. Instead it uses "type tagging" for scala map variables.
+* Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity it now does not have a dependent type. Instead it uses "type tagging" for scala map variables.
   It's a minor breaking change. If you are providing execution variables as a scala map, then you need to use `mapVars` or `emptyMapVars` which are defined in `InputUnmarshaller` companion object (these functions do not wrap `Map` - they only needed to ensure type constraints):
   ```scala
   Executor.execute(mySchema, query, variables = mapVars(Map("someId" -> "1000")))
