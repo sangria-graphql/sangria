@@ -482,7 +482,7 @@ class Resolver[Ctx](
             } catch {
               case NonFatal(e) => (errors.add(path, e, astField.position), None, None)
             }
-          case Failure(error) => (errors.add(path, error, astField.position), None, None)
+          case Failure(error) => (errors.add(path, error), None, None)
         }
     }
   }
