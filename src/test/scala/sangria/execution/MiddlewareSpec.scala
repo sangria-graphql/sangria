@@ -2,7 +2,6 @@ package sangria.execution
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.sun.javafx.font.Metrics
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
 import sangria.integration.ResultMarshaller
