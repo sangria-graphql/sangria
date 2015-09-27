@@ -175,8 +175,6 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
         deferredResolver = new BrokenResolver,
         exceptionHandler = exceptionHandler).await
 
-      println(res)
-
       res.asInstanceOf[Map[String, Any]]("data") should be (Map(
         "anotherString" -> "foo",
         "a" -> "something very special!",
