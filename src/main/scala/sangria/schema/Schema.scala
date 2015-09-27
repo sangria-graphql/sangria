@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.execution.ValueCoercionHelper
+import sangria.execution.{FieldTag, ValueCoercionHelper}
 import sangria.integration.ToInput
 
 import language.{implicitConversions, existentials}
@@ -234,6 +234,7 @@ case class Field[Ctx, Val] private (
     arguments: List[Argument[_]],
     resolve: Context[Ctx, Val] => Action[Ctx, _],
     deprecationReason: Option[String],
+    tags: List[FieldTag],
     manualPossibleTypes: () => List[ObjectType[_, _]]) extends Named with HasArguments {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () => possible.toList map (_.objectType))
   def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () => possible() map (_.objectType))
@@ -247,8 +248,9 @@ object Field {
       arguments: List[Argument[_]] = Nil,
       resolve: Context[Ctx, Val] => Action[Ctx, Res],
       possibleTypes: => List[PossibleObject[_, _]] = Nil,
+      tags: List[FieldTag] = Nil,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
-    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, () => possibleTypes map (_.objectType))
+    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, () => possibleTypes map (_.objectType))
 }
 
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")

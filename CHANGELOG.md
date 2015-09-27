@@ -5,6 +5,7 @@ I collected all of them in the change list below. They were necessary in order t
 
 * #69 - `DeferredResolver` now got `userContext` as an argument. (breaking change: you need to provide a type parameter and one extra argument in `resolve` for your `DeferredResolver`s. you you are not interested in `userContext`, you can just use `Any` type)
 * #68 - Better handling of default input values (huge!)
+* #77 - Middleware support (huge!)
 * Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
   * `sangria.integration.CirceSupport` -> `sangria.integration.circe`
   * `sangria.integration.Json4sSupport` -> `sangria.integration.json4s`
