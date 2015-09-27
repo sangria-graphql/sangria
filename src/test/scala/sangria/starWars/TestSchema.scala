@@ -24,7 +24,7 @@ object TestSchema {
     InterfaceType(
       "Character",
       "A character in the Star Wars Trilogy",
-      () => List[Field[Unit, TestData.Character]](
+      () => fields[Unit, TestData.Character](
         Field("id", StringType,
           Some("The id of the character."),
           resolve = _.value.id),
