@@ -14,7 +14,7 @@ I collected all of them in the change list below. They were necessary in order t
   * `sangria.integration.SprayJsonSupport` -> `sangria.integration.sprayJson`
 * `ResultMarshaller` and `InputUnmarshaller` are moved in the `integration` package
 * Renamed execution `arguments` to `variables` in order to be consistent with the spec (breaking change: you need to rename this argument as well, if you are using named arguments)
-* Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity. It now does not have a dependent type. Instead it uses "type tagging" for scala map variables.
+* Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity, it now does not have a dependent type. Instead it uses "type tagging" for scala map variables.
   It's a minor breaking change. If you are providing execution variables as a scala map, then you need to use `mapVars` or `emptyMapVars` which are defined in `InputUnmarshaller` companion object (these functions do not wrap `Map` - they only needed to ensure type constraints):
   ```scala
   Executor.execute(mySchema, query, variables = mapVars(Map("someId" -> "1000")))
@@ -23,7 +23,7 @@ I collected all of them in the change list below. They were necessary in order t
 
   Executor.execute(mySchema, query, variables = mapVars("someId" -> "1000"))
   ```
-* #72 - `scala.util.Try` not can be returned from `resolve` in order to indicate a successful or failed result
+* #72 - `scala.util.Try` now can be returned from `resolve` in order to indicate a successful or failed result
 * #65 - `DeprecationTracker` should be called even if deprecation is in the interface type
 * #66 - `DeprecationTracker` should provide more contextual information (breaking change: the signature of `deprecatedFieldUsed` is changed. It now provides much more contextual information, but you need to update the code that implements it)
 * #74 - Improved unicode handling (spec change)
