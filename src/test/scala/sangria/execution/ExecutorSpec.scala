@@ -84,6 +84,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     Field("a", OptionType(StringType), resolve = _ => "Apple"),
     Field("b", OptionType(StringType), resolve = _ => "Banana"),
     Field("c", OptionType(StringType), resolve = _ => "Cherry"),
+    Field("d", StringType, resolve = _ => "Door"),
     Field("deep", OptionType(ParallelFragmentType), resolve = _ => ())
   ))
 
@@ -147,6 +148,94 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
       Executor(schema, new TestSubject, Ctx()).execute(doc, variables = mapVars(Map("size" -> 100))).await should be (expected)
     }
 
+    "respect max depth level" in {
+      val Success(doc) = QueryParser.parse("""
+        query Foo {
+          d1: deep {
+            deep {
+              deep {
+                deep {
+                  deep {
+                    a
+                    deep {
+                      b
+                    }
+                  }
+                }
+              }
+            }
+          }
+          d2: deep {
+            deep {
+              deep {
+                deep {
+                  deep {
+                    a
+                    deep {
+                      b
+                      d
+                      c
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        """)
+
+      val expected = Map(
+        "data" -> Map(
+          "d1" -> Map(
+            "deep" -> Map(
+              "deep" -> Map(
+                "deep" -> Map(
+                  "deep" -> Map(
+                    "a" -> "Apple",
+                    "deep" -> Map(
+                      "b" -> null
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          "d2" -> Map(
+            "deep" -> Map(
+              "deep" -> Map(
+                "deep" -> Map(
+                  "deep" -> Map(
+                    "a" -> "Apple",
+                    "deep" -> null
+                  )
+                )
+              )
+            )
+          )
+        ),
+        "errors" -> List(
+          Map(
+            "message" -> "Max query depth 6 is reached.",
+            "field" -> "d1.deep.deep.deep.deep.deep.b",
+            "locations" -> List(Map("line" -> 10, "column" -> 23))
+          ),
+          Map(
+            "message" -> "Max query depth 6 is reached.",
+            "field" -> "d2.deep.deep.deep.deep.deep.b",
+            "locations" -> List(Map("line" -> 24, "column" -> 23))
+          ),
+          Map(
+            "message" -> "Max query depth 6 is reached.",
+            "field" -> "d2.deep.deep.deep.deep.deep.d",
+            "locations" -> List(Map("line" -> 25, "column" -> 23))
+          )
+        )
+      )
+
+      val schema = Schema(ParallelFragmentType)
+
+      Executor.execute(schema, doc, maxDepthLevel = Some(6)).await should be (expected)
+    }
 
     "merge parallel fragments" in {
       val schema = Schema(ParallelFragmentType)

@@ -18,7 +18,8 @@ case class Executor[Ctx, Root](
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-    middleware: List[Middleware] = Nil)(implicit executionContext: ExecutionContext) {
+    middleware: List[Middleware] = Nil,
+    maxQueryDepth: Option[Int] = None)(implicit executionContext: ExecutionContext) {
 
   def execute[Input](
       queryAst: ast.Document,
@@ -66,7 +67,7 @@ case class Executor[Ctx, Root](
       tpe <- getOperationRootType(operation, sourceMapper)
       fields <- fieldCollector.collectFields(Nil, tpe, operation :: Nil)
       middlewareVal = middleware map (m => m.beforeQuery(middlewareCtx) -> m)
-      resolver = new Resolver[Ctx](marshaller, middlewareCtx, schema, valueCollector, variables, fieldCollector, userContext, exceptionHandler, deferredResolver, sourceMapper, deprecationTracker, middlewareVal)
+      resolver = new Resolver[Ctx](marshaller, middlewareCtx, schema, valueCollector, variables, fieldCollector, userContext, exceptionHandler, deferredResolver, sourceMapper, deprecationTracker, middlewareVal, maxQueryDepth)
     } yield {
       val result =
         operation.operationType match {
@@ -104,9 +105,10 @@ object Executor {
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-    middleware: List[Middleware] = Nil
+    middleware: List[Middleware] = Nil,
+    maxQueryDepth: Option[Int] = None
   )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] =
-    Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware).execute(queryAst, operationName, variables)
+    Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth).execute(queryAst, operationName, variables)
 }
 
 case class HandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty)

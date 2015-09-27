@@ -22,7 +22,8 @@ class Resolver[Ctx](
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,
-    middleware: List[(Any, Middleware)])(implicit executionContext: ExecutionContext) {
+    middleware: List[(Any, Middleware)],
+    maxQueryDepth: Option[Int])(implicit executionContext: ExecutionContext) {
 
   val resultResolver = new ResultResolver(marshaller, exceptionHandler)
 
@@ -389,96 +390,100 @@ class Resolver[Ctx](
     val allFields = tpe.getField(schema, astField.name).asInstanceOf[List[Field[Ctx, Any]]]
     val field = allFields.head
 
-    valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
-      case Success(args) =>
-        val ctx = Context[Ctx, Any](
-          value,
-          userCtx,
-          args,
-          schema.asInstanceOf[Schema[Ctx, Any]],
-          field,
-          tpe.asInstanceOf[ObjectType[Ctx, Any]],
-          marshaller,
-          sourceMapper,
-          deprecationTracker,
-          astFields,
-          path)
+    maxQueryDepth match {
+      case Some(max) if path.size > max => (errors.add(path, new ExecutionError(s"Max query depth $max is reached."), astField.position), None, None)
+      case _ =>
+        valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
+          case Success(args) =>
+            val ctx = Context[Ctx, Any](
+              value,
+              userCtx,
+              args,
+              schema.asInstanceOf[Schema[Ctx, Any]],
+              field,
+              tpe.asInstanceOf[ObjectType[Ctx, Any]],
+              marshaller,
+              sourceMapper,
+              deprecationTracker,
+              astFields,
+              path)
 
-        if (allFields.exists(_.deprecationReason.isDefined))
-          deprecationTracker.deprecatedFieldUsed(ctx)
+            if (allFields.exists(_.deprecationReason.isDefined))
+              deprecationTracker.deprecatedFieldUsed(ctx)
 
-        try {
-          val mBefore = middleware flatMap {
-            case (mv, m: MiddlewareBeforeField) =>
-              Some((m.beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx), mv, m))
-            case _ =>
-              None
-          }
-
-          val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField])
-          val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField])
-
-          def doAfterMiddleware[Val](v: Val): Val = {
-            val results = mAfter.flatMap {
-              case (cv, mv, m: MiddlewareAfterField) =>
-                m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], v, middlewareCtx, ctx).asInstanceOf[Option[Val]]
-              case _ => None
-            }
-
-            results.lastOption getOrElse v
-          }
-
-          def doErrorMiddleware(error: Throwable): Unit =
-            mAfter.collect {
-              case (cv, mv, m: MiddlewareErrorField) =>
-                m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, ctx)
-            }
-
-          def doAfterMiddlewareWithMap[Val, NewVal](fn: Val => NewVal)(v: Val): NewVal = {
-            val mapped = fn(v)
-
-            val results = mAfter.flatMap {
-              case (cv, mv, m: MiddlewareAfterField) =>
-                m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], mapped, middlewareCtx, ctx).asInstanceOf[Option[NewVal]]
-              case _ => None
-            }
-
-            results.lastOption getOrElse mapped
-          }
-
-          try {
-            val res = field.resolve match {
-              case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields, pfn.maxLevel))
-              case pfn: Projection[Ctx, _, _] =>
-                pfn.fn match {
-                  case projectorFn: Projector[Ctx, _, _] => projectorFn(ctx, collectProjections(path, field, astFields, projectorFn.maxLevel))
-                  case _ => pfn(ctx)
-                }
-              case fn => fn(ctx)
-            }
-
-            res match {
-              case resolved: LeafAction[Ctx, Any] =>
-                (errors, Some(resolved), if (mAfter.nonEmpty || mError.nonEmpty) Some(MappedCtxUpdate(_ => userCtx, if (mAfter.nonEmpty) doAfterMiddleware else identity, if (mError.nonEmpty) doErrorMiddleware else identity)) else None)
-              case res: UpdateCtx[Ctx, Any] =>
-                (errors, Some(res.action), Some(MappedCtxUpdate(res.nextCtx, if (mAfter.nonEmpty) doAfterMiddleware else identity, if (mError.nonEmpty) doErrorMiddleware else identity)))
-              case res: MappedUpdateCtx[Ctx, Any @unchecked, Any @unchecked] =>
-                (errors, Some(res.action), Some(MappedCtxUpdate(res.nextCtx, if (mAfter.nonEmpty) doAfterMiddlewareWithMap(res.mapFn) else res.mapFn, if (mError.nonEmpty) doErrorMiddleware else identity)))
-            }
-          } catch {
-            case NonFatal(e) =>
-              try {
-                if (mError.nonEmpty) doErrorMiddleware(e)
-
-                (errors.add(path, e, astField.position), None, None)
-              } catch {
-                case NonFatal(me) => (errors.add(path, e, astField.position).add(path, me, astField.position), None, None)
+            try {
+              val mBefore = middleware flatMap {
+                case (mv, m: MiddlewareBeforeField) =>
+                  Some((m.beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx), mv, m))
+                case _ =>
+                  None
               }
-          }
-        } catch {
-          case NonFatal(e) => (errors.add(path, e, astField.position), None, None)
+
+              val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField])
+              val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField])
+
+              def doAfterMiddleware[Val](v: Val): Val = {
+                val results = mAfter.flatMap {
+                  case (cv, mv, m: MiddlewareAfterField) =>
+                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], v, middlewareCtx, ctx).asInstanceOf[Option[Val]]
+                  case _ => None
+                }
+
+                results.lastOption getOrElse v
+              }
+
+              def doErrorMiddleware(error: Throwable): Unit =
+                mAfter.collect {
+                  case (cv, mv, m: MiddlewareErrorField) =>
+                    m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, ctx)
+                }
+
+              def doAfterMiddlewareWithMap[Val, NewVal](fn: Val => NewVal)(v: Val): NewVal = {
+                val mapped = fn(v)
+
+                val results = mAfter.flatMap {
+                  case (cv, mv, m: MiddlewareAfterField) =>
+                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], mapped, middlewareCtx, ctx).asInstanceOf[Option[NewVal]]
+                  case _ => None
+                }
+
+                results.lastOption getOrElse mapped
+              }
+
+              try {
+                val res = field.resolve match {
+                  case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields, pfn.maxLevel))
+                  case pfn: Projection[Ctx, _, _] =>
+                    pfn.fn match {
+                      case projectorFn: Projector[Ctx, _, _] => projectorFn(ctx, collectProjections(path, field, astFields, projectorFn.maxLevel))
+                      case _ => pfn(ctx)
+                    }
+                  case fn => fn(ctx)
+                }
+
+                res match {
+                  case resolved: LeafAction[Ctx, Any] =>
+                    (errors, Some(resolved), if (mAfter.nonEmpty || mError.nonEmpty) Some(MappedCtxUpdate(_ => userCtx, if (mAfter.nonEmpty) doAfterMiddleware else identity, if (mError.nonEmpty) doErrorMiddleware else identity)) else None)
+                  case res: UpdateCtx[Ctx, Any] =>
+                    (errors, Some(res.action), Some(MappedCtxUpdate(res.nextCtx, if (mAfter.nonEmpty) doAfterMiddleware else identity, if (mError.nonEmpty) doErrorMiddleware else identity)))
+                  case res: MappedUpdateCtx[Ctx, Any @unchecked, Any @unchecked] =>
+                    (errors, Some(res.action), Some(MappedCtxUpdate(res.nextCtx, if (mAfter.nonEmpty) doAfterMiddlewareWithMap(res.mapFn) else res.mapFn, if (mError.nonEmpty) doErrorMiddleware else identity)))
+                }
+              } catch {
+                case NonFatal(e) =>
+                  try {
+                    if (mError.nonEmpty) doErrorMiddleware(e)
+
+                    (errors.add(path, e, astField.position), None, None)
+                  } catch {
+                    case NonFatal(me) => (errors.add(path, e, astField.position).add(path, me, astField.position), None, None)
+                  }
+              }
+            } catch {
+              case NonFatal(e) => (errors.add(path, e, astField.position), None, None)
+            }
+          case Failure(error) => (errors.add(path, error, astField.position), None, None)
         }
-      case Failure(error) => (errors.add(path, error), None, None)
     }
   }
 
