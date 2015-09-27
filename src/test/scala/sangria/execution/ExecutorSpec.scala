@@ -234,7 +234,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(ParallelFragmentType)
 
-      Executor.execute(schema, doc, maxDepthLevel = Some(6)).await should be (expected)
+      Executor.execute(schema, doc, maxQueryDepth = Some(6)).await should be (expected)
     }
 
     "merge parallel fragments" in {
