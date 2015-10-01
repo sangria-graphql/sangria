@@ -69,7 +69,8 @@ object TestSchema {
     fields[Unit, Droid](
       Field("id", StringType,
         Some("The id of the droid."),
-        resolve = Projection("_id", _.value.id)),
+        tags = ProjectionName("_id") :: Nil,
+        resolve = _.value.id),
       Field("name", OptionType(StringType),
         Some("The name of the droid."),
         resolve = ctx => Future.successful(ctx.value.name)),

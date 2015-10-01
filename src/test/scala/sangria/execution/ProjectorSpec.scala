@@ -18,17 +18,17 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
 
   val VariantType = ObjectType("Variant", () => fields[Unit, Variant](
     Field("id", IDType, resolve = _.value.id),
-    Field("typeId", StringType, resolve = NoProjection(_ => "variant")),
-    Field("relatedProducts", ListType(ProductType), resolve = Projection("rp", Projector(1, (ctx, projected) => projected match {
+    Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ => "variant"),
+    Field("relatedProducts", ListType(ProductType), tags = ProjectionName("rp") :: Nil, resolve = Projector(1, (ctx, projected) => projected match {
       case Vector(ProjectedName("id", _)) => Value(ctx.value.relatedProductIds map (Left(_)))
       case _ => ProductDefer(ctx.value.relatedProductIds)
-    })))
+    }))
   ))
 
   val ProductType: ObjectType[Unit, Either[String, Product]] =
     ObjectType("Product", List[Field[Unit, Either[String, Product]]](
       Field("id", IDType, resolve = _.value.fold(identity, _.id)),
-      Field("typeId", StringType, resolve = NoProjection(_ => "product")),
+      Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ => "product"),
       Field("variants", ListType(VariantType), resolve = _.value.right.get.variants)
     ))
 

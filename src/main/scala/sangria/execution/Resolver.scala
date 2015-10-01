@@ -453,11 +453,6 @@ class Resolver[Ctx](
               try {
                 val res = field.resolve match {
                   case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields, pfn.maxLevel))
-                  case pfn: Projection[Ctx, _, _] =>
-                    pfn.fn match {
-                      case projectorFn: Projector[Ctx, _, _] => projectorFn(ctx, collectProjections(path, field, astFields, projectorFn.maxLevel))
-                      case _ => pfn(ctx)
-                    }
                   case fn => fn(ctx)
                 }
 
@@ -497,11 +492,12 @@ class Resolver[Ctx](
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) =>
               ff.values.toVector collect {
-                case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe.getField(schema, fields.head.name).head.resolve.isInstanceOf[NoProjection[_, _, _]] =>
+                case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe.getField(schema, fields.head.name).head.tags.contains(ProjectionExclude) =>
                   val astField = fields.head
                   val field = objTpe.getField(schema, astField.name).head
-                  val projectedName = field.resolve match {
-                    case proj: Projection[_, _, _] => proj.projectedName
+                  val projectedName =
+                    field.tags collect {case ProjectionName(name) => name} match {
+                    case name :: _ => name
                     case _ => field.name
                   }
 

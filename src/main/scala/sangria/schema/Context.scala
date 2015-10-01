@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.execution.{DeprecationTracker, ValueCoercionHelper, Resolver}
+import sangria.execution.{FieldTag, DeprecationTracker, ValueCoercionHelper, Resolver}
 import sangria.integration.{InputUnmarshaller, ToInput, ResultMarshaller}
 import sangria.parser.SourceMapper
 
@@ -65,23 +65,8 @@ object UpdateCtx {
   def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
 }
 
-abstract class NoProjection[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res])
-
-object NoProjection {
-  def apply[Ctx, Val, Res](fn: Context[Ctx, Val] => Action[Ctx, Res]) =
-    new NoProjection[Ctx, Val, Res] {
-      override def apply(ctx: Context[Ctx, Val]) = fn(ctx)
-    }
-}
-
-abstract class Projection[Ctx, Val, Res](val projectedName: String, val fn: Context[Ctx, Val] => Action[Ctx, Res]) extends (Context[Ctx, Val] => Action[Ctx, Res])
-
-object Projection {
-  def apply[Ctx, Val, Res](projectedName: String, fn: Context[Ctx, Val] => Action[Ctx, Res]) =
-    new Projection[Ctx, Val, Res](projectedName, fn) {
-      override def apply(ctx: Context[Ctx, Val]) = fn(ctx)
-    }
-}
+case class ProjectionName(name: String) extends FieldTag
+case object ProjectionExclude extends FieldTag
 
 trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
   val maxLevel: Int = Integer.MAX_VALUE
