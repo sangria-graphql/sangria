@@ -1,3 +1,7 @@
+## Upcoming
+
+* #80 - Introspection descriptions for scalars and introspection
+
 ## v0.4.0 (2015-09-27)
 
 This release contains quite a few backwards-incompatible changes, but fear not - all of them are renames and similar minor changes which should be easy to migrate.
