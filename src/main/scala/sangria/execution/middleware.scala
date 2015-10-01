@@ -4,7 +4,7 @@ import language.{implicitConversions, existentials}
 
 import sangria.ast
 import sangria.integration.InputUnmarshaller
-import sangria.schema.Context
+import sangria.schema.{Action, Context}
 
 trait Middleware {
   type QueryVal
@@ -16,7 +16,10 @@ trait Middleware {
 trait MiddlewareBeforeField extends Middleware {
   type FieldVal
 
-  def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]): FieldVal
+  def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]): (FieldVal, Option[Action[_, _]])
+
+  lazy val continue: (Unit, Option[Action[_, _]]) = (Unit, None)
+  def continue(fieldVal: FieldVal): (FieldVal, Option[Action[_, _]]) = (fieldVal, None)
 }
 
 trait MiddlewareAfterField extends Middleware with MiddlewareBeforeField {
