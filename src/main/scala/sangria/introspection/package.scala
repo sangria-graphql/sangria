@@ -10,7 +10,7 @@ package object introspection {
     val Scalar, Object, Interface, Union, Enum, InputObject, List, NonNull = Value
   }
 
-  val __TypeKind = EnumType("__TypeKind", Some("An enum describing what kind of type a given __Type is."), List(
+  val __TypeKind = EnumType("__TypeKind", Some("An enum describing what kind of type a given `__Type` is."), List(
     EnumValue("SCALAR", value = TypeKind.Scalar, description = Some("Indicates this type is a scalar.")),
     EnumValue("OBJECT", value = TypeKind.Object, description = Some(
       "Indicates this type is an object. " +
@@ -35,14 +35,19 @@ package object introspection {
       "`ofType` is a valid field."))
   ))
 
-  val __Field = ObjectType("__Field", () => List[Field[Unit, Field[_, _]]](
-    Field("name", StringType, resolve = _.value.name),
-    Field("description", OptionType(StringType), resolve = _.value.description),
-    Field("args", ListType(__InputValue), resolve = _.value.arguments),
-    Field("type", __Type, resolve = false -> _.value.fieldType),
-    Field("isDeprecated", BooleanType, resolve = _.value.deprecationReason.isDefined),
-    Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason)
-  ))
+  val __Field = ObjectType(
+    name = "__Field",
+    description =
+      "Object and Interface types are described by a list of Fields, each of " +
+      "which has a name, potentially a list of arguments, and a return type.",
+    fieldsFn = () => List[Field[Unit, Field[_, _]]](
+      Field("name", StringType, resolve = _.value.name),
+      Field("description", OptionType(StringType), resolve = _.value.description),
+      Field("args", ListType(__InputValue), resolve = _.value.arguments),
+      Field("type", __Type, resolve = false -> _.value.fieldType),
+      Field("isDeprecated", BooleanType, resolve = _.value.deprecationReason.isDefined),
+      Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason))
+  )
 
   val includeDeprecated = Argument("includeDeprecated", OptionInputType(BooleanType), false)
 
@@ -82,75 +87,95 @@ package object introspection {
     case _ => None
   }
 
-  val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType("__Type", () => List[Field[Unit, (Boolean, Type)]](
-    Field("kind", __TypeKind, resolve = ctx => getKind(ctx.value)),
-    Field("name", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
-      case TypeKind.NonNull | TypeKind.List => None
-      case _ => findNamed(ctx.value._2) map (_.name)
-    }),
-    Field("description", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
-      case TypeKind.NonNull | TypeKind.List => None
-      case _ => findNamed(ctx.value._2) flatMap (_.description)
-    }),
-    Field("fields", OptionType(ListType(__Field)),
-      arguments = includeDeprecated :: Nil,
-      resolve = ctx => {
-        val incDep = ctx.arg(includeDeprecated)
-        val (_, tpe) = ctx.value
-
-        tpe match {
-          case t: ObjectLikeType[_, _] if incDep => Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]])
-          case t: ObjectLikeType[_, _] => Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]].filter(_.deprecationReason.isEmpty))
-          case _ => None
-        }
+  val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType(
+    name = "__Type",
+    description =
+      "The fundamental unit of any GraphQL Schema is the type. There are " +
+      "many kinds of types in GraphQL as represented by the `__TypeKind` enum." +
+      "\n\nDepending on the kind of a type, certain fields describe " +
+      "information about that type. Scalar types provide no information " +
+      "beyond a name and description, while Enum types provide their values. " +
+      "Object and Interface types provide the fields they describe. Abstract " +
+      "types, Union and Interface, provide the Object types possible " +
+      "at runtime. List and NonNull types compose other types.",
+    fieldsFn = () => List[Field[Unit, (Boolean, Type)]](
+      Field("kind", __TypeKind, resolve = ctx => getKind(ctx.value)),
+      Field("name", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
+        case TypeKind.NonNull | TypeKind.List => None
+        case _ => findNamed(ctx.value._2) map (_.name)
       }),
-    Field("interfaces", OptionType(ListType(__Type)), resolve = _.value._2 match {
-      case t: ObjectType[_, _] => Some(t.interfaces.asInstanceOf[List[Type]] map (true -> _))
-      case _ => None
-    }),
-    Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
-      case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map { tpe =>
-        t match {
-          case _: UnionType[_] => tpe map (true -> _)
-          case _ => tpe sortBy (_.name) map (true -> _)
-        }
-      }
-      case _ => None
-    }),
-    Field("enumValues", OptionType(ListType(__EnumValue)),
-      arguments = includeDeprecated :: Nil,
-      resolve = ctx => {
-        val incDep = ctx.arg(includeDeprecated)
-
-        ctx.value._2 match {
-          case enum: EnumType[_] if incDep => Some(enum.values)
-          case enum: EnumType[_] => Some(enum.values.filter(_.deprecationReason.isEmpty))
-          case _ => None
-        }
+      Field("description", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
+        case TypeKind.NonNull | TypeKind.List => None
+        case _ => findNamed(ctx.value._2) flatMap (_.description)
       }),
-    Field("inputFields", OptionType(ListType(__InputValue)), resolve = _.value._2 match {
-      case io: InputObjectType[_] => Some(io.fields)
-      case _ => None
-    }),
-    Field("ofType", OptionType(__Type), resolve = ctx => getKind(ctx.value) match {
-      case TypeKind.NonNull => Some(true -> ctx.value._2)
-      case TypeKind.List => findListType(ctx.value._2) map (false -> _)
-      case _ => None
-    })
-  ))
+      Field("fields", OptionType(ListType(__Field)),
+        arguments = includeDeprecated :: Nil,
+        resolve = ctx => {
+          val incDep = ctx.arg(includeDeprecated)
+          val (_, tpe) = ctx.value
+
+          tpe match {
+            case t: ObjectLikeType[_, _] if incDep => Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]])
+            case t: ObjectLikeType[_, _] => Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]].filter(_.deprecationReason.isEmpty))
+            case _ => None
+          }
+        }),
+      Field("interfaces", OptionType(ListType(__Type)), resolve = _.value._2 match {
+        case t: ObjectType[_, _] => Some(t.interfaces.asInstanceOf[List[Type]] map (true -> _))
+        case _ => None
+      }),
+      Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
+        case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map { tpe =>
+          t match {
+            case _: UnionType[_] => tpe map (true -> _)
+            case _ => tpe sortBy (_.name) map (true -> _)
+          }
+        }
+        case _ => None
+      }),
+      Field("enumValues", OptionType(ListType(__EnumValue)),
+        arguments = includeDeprecated :: Nil,
+        resolve = ctx => {
+          val incDep = ctx.arg(includeDeprecated)
+
+          ctx.value._2 match {
+            case enum: EnumType[_] if incDep => Some(enum.values)
+            case enum: EnumType[_] => Some(enum.values.filter(_.deprecationReason.isEmpty))
+            case _ => None
+          }
+        }),
+      Field("inputFields", OptionType(ListType(__InputValue)), resolve = _.value._2 match {
+        case io: InputObjectType[_] => Some(io.fields)
+        case _ => None
+      }),
+      Field("ofType", OptionType(__Type), resolve = ctx => getKind(ctx.value) match {
+        case TypeKind.NonNull => Some(true -> ctx.value._2)
+        case TypeKind.List => findListType(ctx.value._2) map (false -> _)
+        case _ => None
+      }))
+  )
 
   val __InputValue: ObjectType[Unit, InputValue[_]] = ObjectType(
     name = "__InputValue",
+    description =
+      "Arguments provided to Fields or Directives and the input fields of an " +
+      "InputObject are represented as Input Values which describe their type " +
+      "and optionally a default value.",
     fields = List[Field[Unit, InputValue[_]]](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field("type", __Type, resolve = false -> _.value.inputValueType),
       Field("defaultValue", OptionType(StringType),
+        description = Some("A GraphQL-formatted string representing the default value for this input value."),
         resolve = ctx => ctx.value.defaultValue.map(ctx.renderInputValueCompact(_, ctx.value.inputValueType)))
     ))
 
   val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(
     name = "__EnumValue",
+    description =
+      "One possible value for a given Enum. Enum values are unique values, not " +
+      "a placeholder for a string or numeric value. However an Enum value is " +
+      "returned in a JSON response as a string.",
     fields = List[Field[Unit, EnumValue[_]]](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
@@ -160,6 +185,13 @@ package object introspection {
 
   val __Directive = ObjectType(
     name = "__Directive",
+    description =
+      "A Directives provides a way to describe alternate runtime execution and " +
+      "type validation behavior in a GraphQL document." +
+      "\n\nIn some cases, you need to provide options to alter GraphQL’s " +
+      "execution behavior in ways field arguments will not suffice, such as " +
+      "conditionally including or skipping a field. Directives provide this by " +
+      "describing additional information to the executor.",
     fields = fields[Unit, Directive](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
@@ -173,10 +205,10 @@ package object introspection {
   val __Schema = ObjectType(
     name = "__Schema",
     description =
-        "A GraphQL Schema defines the capabilities of a GraphQL " +
-        "server. It exposes all available types and directives on " +
-        "the server, as well as the entry points for query and " +
-        "mutation operations.",
+      "A GraphQL Schema defines the capabilities of a GraphQL " +
+      "server. It exposes all available types and directives on " +
+      "the server, as well as the entry points for query and " +
+      "mutation operations.",
     fields = List[Field[Unit, Schema[Any, Any]]](
       Field("types", ListType(__Type), Some("A list of all types supported by this server."), resolve = _.value.typeList map (true -> _)),
       Field("queryType", __Type, Some("The type that query operations will be rooted at."), resolve = true -> _.value.query),
