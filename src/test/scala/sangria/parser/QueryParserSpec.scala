@@ -199,6 +199,60 @@ class QueryParserSpec extends WordSpec with Matchers {
       QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
+    "parse anonymous query" in {
+      val query =
+        """
+          query {
+            foo bar,
+            baz
+          }
+        """
+
+      val expectedAst =
+        Document(List(
+          OperationDefinition(
+            OperationType.Query,
+            None,
+            Nil,
+            Nil,
+            List(
+              Field(None, "foo", Nil, Nil, Nil, Some(Position(31, 3, 13))),
+              Field(None, "bar", Nil, Nil, Nil, Some(Position(35, 3, 17))),
+              Field(None, "baz", Nil, Nil, Nil, Some(Position(52, 4, 13)))),
+            Some(Position(11, 2, 11)))),
+          Some(Position(11, 2, 11)),
+          None)
+
+      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+    }
+
+    "parse anonymous mutation" in {
+      val query =
+        """
+          mutation {
+            foo bar,
+            baz
+          }
+        """
+
+      val expectedAst =
+        Document(List(
+          OperationDefinition(
+            OperationType.Mutation,
+            None,
+            Nil,
+            Nil,
+            List(
+              Field(None, "foo", Nil, Nil, Nil, Some(Position(34, 3, 13))),
+              Field(None, "bar", Nil, Nil, Nil, Some(Position(38, 3, 17))),
+              Field(None, "baz", Nil, Nil, Nil, Some(Position(55, 4, 13)))),
+            Some(Position(11, 2, 11)))),
+          Some(Position(11, 2, 11)),
+          None)
+
+      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+    }
+
     "provide useful error message (fragement `on`)" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         """

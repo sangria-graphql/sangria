@@ -105,7 +105,7 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def OperationDefinition = rule {
     trackPos ~ SelectionSet ~> ((pos, s) => ast.OperationDefinition(selections = s, position = Some(pos))) |
-    trackPos ~ OperationType ~ (OperationName ~> (Some(_))) ~ (VariableDefinitions.? ~> (_ getOrElse Nil)) ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
+    trackPos ~ OperationType ~ OperationName.? ~ (VariableDefinitions.? ~> (_ getOrElse Nil)) ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
         ((pos, opType, name, vars, dirs, sels) => ast.OperationDefinition(opType, name, vars, dirs, sels, Some(pos)))
   }
 
