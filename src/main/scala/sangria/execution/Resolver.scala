@@ -419,12 +419,14 @@ class Resolver[Ctx](
                   None
               }
 
+              val beforeAction = mBefore.flatMap{case ((_, action), _, _) => action}.lastOption
+
               val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField])
               val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField])
 
               def doAfterMiddleware[Val](v: Val): Val = {
                 val results = mAfter.flatMap {
-                  case (cv, mv, m: MiddlewareAfterField) =>
+                  case ((cv, _), mv, m: MiddlewareAfterField) =>
                     m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], v, middlewareCtx, ctx).asInstanceOf[Option[Val]]
                   case _ => None
                 }
@@ -434,7 +436,7 @@ class Resolver[Ctx](
 
               def doErrorMiddleware(error: Throwable): Unit =
                 mAfter.collect {
-                  case (cv, mv, m: MiddlewareErrorField) =>
+                  case ((cv, _), mv, m: MiddlewareErrorField) =>
                     m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, ctx)
                 }
 
@@ -442,7 +444,7 @@ class Resolver[Ctx](
                 val mapped = fn(v)
 
                 val results = mAfter.flatMap {
-                  case (cv, mv, m: MiddlewareAfterField) =>
+                  case ((cv, _), mv, m: MiddlewareAfterField) =>
                     m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], mapped, middlewareCtx, ctx).asInstanceOf[Option[NewVal]]
                   case _ => None
                 }
@@ -451,18 +453,42 @@ class Resolver[Ctx](
               }
 
               try {
-                val res = field.resolve match {
-                  case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields, pfn.maxLevel))
-                  case fn => fn(ctx)
-                }
+                val res =
+                  beforeAction match {
+                    case Some(action) => action
+                    case None =>
+                      field.resolve match {
+                        case pfn: Projector[Ctx, _, _] => pfn(ctx, collectProjections(path, field, astFields, pfn.maxLevel))
+                        case fn => fn(ctx)
+                      }
+                  }
 
                 res match {
-                  case resolved: LeafAction[Ctx, Any] =>
-                    (errors, Some(resolved), if (mAfter.nonEmpty || mError.nonEmpty) Some(MappedCtxUpdate(_ => userCtx, if (mAfter.nonEmpty) doAfterMiddleware else identity, if (mError.nonEmpty) doErrorMiddleware else identity)) else None)
-                  case res: UpdateCtx[Ctx, Any] =>
-                    (errors, Some(res.action), Some(MappedCtxUpdate(res.nextCtx, if (mAfter.nonEmpty) doAfterMiddleware else identity, if (mError.nonEmpty) doErrorMiddleware else identity)))
+                  case resolved: LeafAction[Ctx, Any @unchecked] =>
+                    (errors,
+                      Some(resolved),
+                      if (mAfter.nonEmpty || mError.nonEmpty)
+                        Some(MappedCtxUpdate(
+                          _ => userCtx,
+                          if (mAfter.nonEmpty) doAfterMiddleware else identity,
+                          if (mError.nonEmpty) doErrorMiddleware else identity))
+                      else None)
+
+                  case res: UpdateCtx[Ctx, Any @unchecked] =>
+                    (errors,
+                      Some(res.action),
+                      Some(MappedCtxUpdate(
+                        res.nextCtx,
+                        if (mAfter.nonEmpty) doAfterMiddleware else identity,
+                        if (mError.nonEmpty) doErrorMiddleware else identity)))
+
                   case res: MappedUpdateCtx[Ctx, Any @unchecked, Any @unchecked] =>
-                    (errors, Some(res.action), Some(MappedCtxUpdate(res.nextCtx, if (mAfter.nonEmpty) doAfterMiddlewareWithMap(res.mapFn) else res.mapFn, if (mError.nonEmpty) doErrorMiddleware else identity)))
+                    (errors,
+                      Some(res.action),
+                      Some(MappedCtxUpdate(
+                        res.nextCtx,
+                        if (mAfter.nonEmpty) doAfterMiddlewareWithMap(res.mapFn) else res.mapFn,
+                        if (mError.nonEmpty) doErrorMiddleware else identity)))
                 }
               } catch {
                 case NonFatal(e) =>

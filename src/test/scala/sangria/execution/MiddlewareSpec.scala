@@ -31,6 +31,38 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
     }
   }
 
+  case object Cacheed extends FieldTag
+
+  class CachingMiddleware extends Middleware with MiddlewareAfterField {
+    type QueryVal = MutableMap[String, Action[_, _]]
+    type FieldVal = Boolean
+
+    def beforeQuery(context: MiddlewareQueryContext[_, _]) =
+      MutableMap()
+
+    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[_, _]) = ()
+
+    def cacheKey(ctx: Context[_, _]) = ctx.parentType.name + "." + ctx.field.name
+
+    val noCache = (false, None)
+
+    def beforeField(cache: QueryVal, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
+      val key = cacheKey(ctx)
+
+      if (ctx.field.tags.contains(Cacheed))
+        cache.contains(key) -> cache.get(cacheKey(ctx))
+      else
+        noCache
+    }
+
+    def afterField(cache: QueryVal, fromCache: FieldVal, value: Any, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
+      if (ctx.field.tags.contains(Cacheed) && !fromCache)
+        cache += cacheKey(ctx) -> Value(value)
+
+      None
+    }
+  }
+
   class Count {
     val count = new AtomicInteger(0)
     var context: Option[String] = None
@@ -51,7 +83,7 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
     def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
       if (ctx.field.name == "errorInBefore") throw new IllegalStateException("oops!")
 
-      System.currentTimeMillis()
+      continue(System.currentTimeMillis())
     }
 
     def afterField(queryVal: QueryVal, fieldVal: FieldVal, value: Any, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
@@ -86,6 +118,7 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
     Field("errorInAfter", OptionType(StringType), resolve = _ => "everything ok here"),
     Field("errorInBefore", OptionType(StringType), resolve = _ => "everything ok here"),
     Field("anotherString", StringType, resolve = _ => "foo"),
+    Field("cachedId", IntType, tags = Cacheed :: Nil, resolve = _.ctx.count.incrementAndGet()),
     Field("delay30", StringType, resolve = _ => Future {
       Thread.sleep(30)
       "slept for 30ms"
@@ -108,7 +141,7 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
   val schema = Schema(TestObject, Some(TestObject))
 
   "Query" should {
-    "should support before and after at query level " in {
+    "support before and after at query level " in {
       val query = graphql"{someString, delay30}"
       val ctx = new Count
 
@@ -117,8 +150,48 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
       ctx.count.get() should be (2)
       ctx.context should be (Some("Context stuff"))
     }
+    
+    "allow to prevent resolve call from `beforeField`" in {
+      val query =
+        graphql"""
+          {
+            cachedId
+            someString
+            nested {
+              cachedId
+              nested {
+                cachedId
+              }
+            }
+            foo: nested {
+              cachedId
+              nested {
+                cachedId
+              }
+            }
+          }
+        """
 
+      val ctx = new Count
 
+      val res = Executor.execute(schema, query, userContext = ctx, middleware = new CachingMiddleware :: Nil).await
+
+      res.asInstanceOf[Map[String, Any]]("data") should be (Map(
+        "cachedId" -> 1,
+        "foo" -> 1,
+        "someString" -> "nothing special",
+        "nested" -> Map(
+          "cachedId" -> 1,
+          "nested" -> Map(
+            "cachedId" -> 1)),
+        "foo" -> Map(
+          "cachedId" -> 1,
+          "nested" -> Map(
+            "cachedId" -> 1))))
+
+      ctx.count.get() should be (1)
+    }
+    
     behave like properFieldLevelMiddleware(
       graphql"""
         {
