@@ -1,7 +1,7 @@
 ## Upcoming
 
-* #80 - Introspection descriptions for scalars and introspection
-* #78 - `Projection` and `NoProjection` should be tags instead of resolve function wrappers. Backwards-incompatible change: you need to replace
+* Introspection descriptions for scalars and introspection (#80)
+* `Projection` and `NoProjection` should be tags instead of resolve function wrappers (#78). Backwards-incompatible change: you need to replace
   `Projection` with `ProjectionName` tag and `NoProjection` with `ProjectionExclude` tag. here is an example:
   ```scala
   // before
