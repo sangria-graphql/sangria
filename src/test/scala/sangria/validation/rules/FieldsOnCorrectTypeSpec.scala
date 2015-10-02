@@ -174,5 +174,20 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         }
       """)
+
+    "valid field in inline fragment without type condition" in expectFails(
+      """
+        query {
+          dog {
+            ... {
+              name
+              numberOfTails
+            }
+          }
+        }
+      """,
+      List(
+        "Cannot query field 'numberOfTails' on 'Dog'" -> Some(Pos(6, 15))
+      ))
   }
 }

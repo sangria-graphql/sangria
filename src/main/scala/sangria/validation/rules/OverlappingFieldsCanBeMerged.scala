@@ -152,7 +152,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
         else
           aad(astField.outputName) += astField -> fieldDef
       case frag: ast.InlineFragment =>
-        aad = collectFieldASTsAndDefs(ctx, ctx.schema.getOutputType(frag.typeCondition, true), frag, visitedFragmentNames, aad)
+        aad = collectFieldASTsAndDefs(ctx, frag.typeCondition.fold(parentType)(ctx.schema.getOutputType(_, true)), frag, visitedFragmentNames, aad)
       case frag: ast.FragmentSpread if visitedFragmentNames contains frag.name =>
         // do nothing at all
       case frag: ast.FragmentSpread  =>

@@ -106,7 +106,11 @@ class FieldCollector[Ctx, Val](
   }
 
   def doesFragmentConditionMatch(tpe: ObjectType[_, _], conditional: ast.ConditionalFragment): Try[Boolean] =
-    schema.outputTypes.get(conditional.typeCondition.name)
-      .map(condTpe => Success(condTpe.name == tpe.name || (condTpe.isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
-      .getOrElse(Failure(new ExecutionError(s"Unknown type '${conditional.typeCondition.name}'.", sourceMapper, conditional.position.toList)))
+    conditional.typeConditionOpt match {
+      case Some(tc) =>
+        schema.outputTypes.get(tc.name)
+          .map(condTpe => Success(condTpe.name == tpe.name || (condTpe.isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
+          .getOrElse(Failure(new ExecutionError(s"Unknown type '${tc.name}'.", sourceMapper, conditional.position.toList)))
+      case None => Success(true)
+    }
 }

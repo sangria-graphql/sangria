@@ -46,7 +46,7 @@ object AstVisitor {
           }
         case n @ InlineFragment(cond, dirs, sels, _) =>
           if (breakOrSkip(onEnter(n))) {
-            loop((cond))
+            cond.foreach(c => loop(c))
             dirs.foreach(d => loop(d))
             sels.foreach(s => loop(s))
             breakOrSkip(onLeave(n))

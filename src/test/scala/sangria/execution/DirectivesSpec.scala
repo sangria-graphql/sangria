@@ -220,6 +220,33 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              }
           """) should be (Map("data" -> Map("a" -> "a")))
       }
+
+      "include `true` includes inline fragments without type condition" in {
+        executeTestQuery(
+          """
+             query Q {
+               ... {
+                 a
+               }
+               ... @include(if: true) {
+                 b
+               }
+             }
+          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+      }
+      "include `false` omits inline fragments without type condition" in {
+        executeTestQuery(
+          """
+             query Q {
+               ... {
+                 a
+               }
+               ... @include(if: false) {
+                 b
+               }
+             }
+          """) should be(Map("data" -> Map("a" -> "a")))
+      }
     }
   }
 }

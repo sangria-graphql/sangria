@@ -23,7 +23,7 @@ case class Document(definitions: List[Definition], position: Option[Position] = 
 }
 
 sealed trait ConditionalFragment extends AstNode {
-  def typeCondition: NamedType
+  def typeConditionOpt: Option[NamedType]
 }
 
 sealed trait SelectionContainer {
@@ -42,11 +42,13 @@ case class OperationDefinition(
   position: Option[Position] = None) extends Definition with WithDirectives with SelectionContainer
 
 case class FragmentDefinition(
-  name: String,
-  typeCondition: NamedType,
-  directives: List[Directive],
-  selections: List[Selection],
-  position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer
+    name: String,
+    typeCondition: NamedType,
+    directives: List[Directive],
+    selections: List[Selection],
+    position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer {
+  lazy val typeConditionOpt = Some(typeCondition)
+}
 
 sealed trait OperationType
 
@@ -78,15 +80,19 @@ case class Field(
     position: Option[Position] = None) extends Selection with SelectionContainer {
   lazy val outputName = alias getOrElse name
 }
+
 case class FragmentSpread(
   name: String,
   directives: List[Directive],
   position: Option[Position] = None) extends Selection
+
 case class InlineFragment(
-  typeCondition: NamedType,
-  directives: List[Directive],
-  selections: List[Selection],
-  position: Option[Position] = None) extends Selection with ConditionalFragment with SelectionContainer
+    typeCondition: Option[NamedType],
+    directives: List[Directive],
+    selections: List[Selection],
+    position: Option[Position] = None) extends Selection with ConditionalFragment with SelectionContainer {
+  def typeConditionOpt = typeCondition
+}
 
 sealed trait NameValue extends AstNode {
   def name: String
@@ -155,7 +161,7 @@ object AstNode {
         position = None).asInstanceOf[T]
     case n: InlineFragment => 
       n.copy(
-        typeCondition = withoutPosition(n.typeCondition),
+        typeCondition = n.typeCondition map withoutPosition,
         directives = n.directives map withoutPosition,
         selections = n.selections map withoutPosition,
         position = None).asInstanceOf[T]

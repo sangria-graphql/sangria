@@ -55,7 +55,7 @@ class QueryParserSpec extends WordSpec with Matchers {
                   List(Field(None, "name", Nil, Nil, Nil, Some(Position(249, 7, 5)))),
                   Some(Position(202, 6, 3))),
                 InlineFragment(
-                  NamedType("User", Some(Position(280, 10, 10))),
+                  Some(NamedType("User", Some(Position(280, 10, 10)))),
                   Nil,
                   List(Field(None, "birth", Nil, Nil, List(Field(None, "day", Nil, Nil, Nil, Some(Position(297, 11, 11)))), Some(Position(291, 11, 5)))),
                   Some(Position(273, 10, 3))),
@@ -115,7 +115,7 @@ class QueryParserSpec extends WordSpec with Matchers {
                       Nil,
                       Some(Position(390, 10, 5))),
                     InlineFragment(
-                      NamedType("User", Some(Position(406, 11, 12))),
+                      Some(NamedType("User", Some(Position(406, 11, 12)))),
                       List(
                         Directive("defer", Nil, Some(Position(411, 11, 17)))),
                       List(
@@ -226,6 +226,40 @@ class QueryParserSpec extends WordSpec with Matchers {
       QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
+    "parse inline fragments without type condition" in {
+      val query =
+        """
+          query {
+            ... {
+              foo bar
+            }
+
+            ... @include(if: true) {
+              baz
+            }
+          }
+        """
+
+      val expectedAst =
+        Document(List(
+          OperationDefinition(OperationType.Query, None, Nil, Nil, List(
+            InlineFragment(None, Nil, List(
+              Field(None, "foo", Nil, Nil, Nil, Some(Position(51, 4, 15))),
+              Field(None, "bar", Nil, Nil, Nil, Some(Position(55, 4, 19)))),
+              Some(Position(31, 3, 13))),
+            InlineFragment(None,
+              List(Directive("include", List(
+                Argument("if", BooleanValue(true, Some(Position(103, 7, 30))),
+                  Some(Position(99, 7, 26)))),
+                Some(Position(90, 7, 17)))),
+              List(Field(None, "baz", Nil, Nil, Nil, Some(Position(125, 8, 15)))),
+              Some(Position(86, 7, 13)))),
+            Some(Position(11, 2, 11)))),
+          Some(Position(11, 2, 11)), None)
+
+      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+    }
+
     "parse anonymous mutation" in {
       val query =
         """
@@ -260,8 +294,10 @@ class QueryParserSpec extends WordSpec with Matchers {
           fragment MissingOn Type
         """)
 
+      println(error.formattedError)
+
       error.formattedError should be(
-        """Invalid input 'T', expected On (line 3, column 30):
+        """Invalid input 'T', expected TypeCondition (line 3, column 30):
           |          fragment MissingOn Type
           |                             ^""".stripMargin
       )

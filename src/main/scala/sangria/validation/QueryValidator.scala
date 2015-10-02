@@ -204,7 +204,7 @@ class TypeInfo(schema: Schema[_, _]) {
         typeStack.push(schema.allTypes get fd.typeCondition.name)
         pushParent()
       case ifd: ast.InlineFragment =>
-        typeStack.push(schema.allTypes get ifd.typeCondition.name)
+        typeStack.push(ifd.typeCondition.fold(tpe)(schema.allTypes get _.name))
         pushParent()
       case vd: ast.VariableDefinition =>
         inputTypeStack push schema.getInputType(vd.tpe)

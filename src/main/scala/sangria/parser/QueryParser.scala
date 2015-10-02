@@ -149,19 +149,19 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
   def FragmentSpread = rule { trackPos ~ Ellipsis ~ Ignored.* ~ FragmentName ~ (Directives.? ~> (_ getOrElse Nil)) ~>
       ((pos, name, dirs) => ast.FragmentSpread(name, dirs, Some(pos))) }
 
-  def InlineFragment = rule { trackPos ~ Ellipsis ~ Ignored.* ~ On ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
+  def InlineFragment = rule { trackPos ~ Ellipsis ~ Ignored.* ~ TypeCondition.? ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
       ((pos, typeCondition, dirs, sels) => ast.InlineFragment(typeCondition, dirs, sels, Some(pos))) }
 
-  def On = rule { Keyword("on") }
+  def on = rule { Keyword("on") }
 
   def Fragment = rule { Keyword("fragment") }
 
-  def FragmentDefinition = rule { trackPos ~ Fragment ~ FragmentName ~ On ~ TypeCondition ~ (Directives.?  ~> (_ getOrElse Nil)) ~ SelectionSet ~>
+  def FragmentDefinition = rule { trackPos ~ Fragment ~ FragmentName ~ TypeCondition ~ (Directives.?  ~> (_ getOrElse Nil)) ~ SelectionSet ~>
       ((pos, name, typeCondition, dirs, sels) => ast.FragmentDefinition(name, typeCondition, dirs, sels, Some(pos))) }
 
-  def FragmentName = rule { !On ~ Name }
+  def FragmentName = rule { !on ~ Name }
 
-  def TypeCondition = rule { NamedType }
+  def TypeCondition = rule { on ~ NamedType }
 
 }
 

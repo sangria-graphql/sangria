@@ -88,7 +88,7 @@ object QueryRenderer {
         indent + "..." + name + renderDirs(dirs, config, frontSep = true)
 
       case InlineFragment(typeCondition, dirs, sels, _) =>
-        indent + "..." + config.mandatorySeparator + "on" + config.mandatorySeparator + typeCondition.name + config.separator +
+        indent + "..." + config.mandatorySeparator + typeCondition.fold("")("on" + config.mandatorySeparator + _.name) + config.separator +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 

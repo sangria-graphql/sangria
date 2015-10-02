@@ -74,7 +74,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   List(Field(None, "name", Nil, Nil, Nil, Some(Position(244, 7, 5)))),
                   Some(Position(202, 6, 3))),
                 InlineFragment(
-                  NamedType("User", Some(Position(275, 10, 10))),
+                  Some(NamedType("User", Some(Position(275, 10, 10)))),
                   Nil,
                   List(Field(None, "birth", Nil, Nil, List(Field(None, "day", Nil, Nil, Nil, Some(Position(292, 11, 11)))), Some(Position(286, 11, 5)))),
                   Some(Position(268, 10, 3))),
@@ -173,7 +173,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                       Nil,
                       Some(Position(390, 10, 5))),
                     InlineFragment(
-                      NamedType("User", Some(Position(406, 11, 12))),
+                      Some(NamedType("User", Some(Position(406, 11, 12)))),
                       List(
                         Directive("defer", Nil, Some(Position(411, 11, 17)))),
                       List(
