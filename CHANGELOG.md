@@ -1,5 +1,6 @@
 ## Upcoming
 
+* Type condition optional on inline fragments. (#82) (spec change)
 * Introspection descriptions for scalars and introspection (#80)
 * Make operation name optional (#81) (spec change)
 * `beforeField` now able to replace value and prevent `resolve` call (#79). This can be useful for things like caching. It contains minor breaking change - return type of `beforeField` has changed. If you are implementing it, just return `continue` if your `FieldVal` was `Unit` or `continue(someFieldVal)`.
