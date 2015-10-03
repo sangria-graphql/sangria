@@ -1,8 +1,10 @@
-## Upcoming
+## v0.4.1 (2015-10-03)
+
+For the most part implemented spec changes. Now compatible with "October 2015" version of the GraphQL spec.
 
 * Type condition optional on inline fragments. (#82) (spec change)
-* Introspection descriptions for scalars and introspection (#80)
 * Make operation name optional (#81) (spec change)
+* Introspection descriptions for scalars and introspection (#80)
 * `beforeField` now able to replace value and prevent `resolve` call (#79). This can be useful for things like caching. It contains minor breaking change - return type of `beforeField` has changed. If you are implementing it, just return `continue` if your `FieldVal` was `Unit` or `continue(someFieldVal)`.
 * `Projection` and `NoProjection` should be tags instead of resolve function wrappers (#78). Backwards-incompatible change: you need to replace
   `Projection` with `ProjectionName` tag and `NoProjection` with `ProjectionExclude` tag. here is an example:
