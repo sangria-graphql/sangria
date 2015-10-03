@@ -20,7 +20,7 @@ For the most part implemented spec changes. Now compatible with "October 2015" v
   Field("id", StringType,
     Some("The id of the droid."),
     tags = ProjectionName("_id") :: Nil,
-    resolve = _.value.id),
+    resolve = _.value.id)
   ```
 
 ## v0.4.0 (2015-09-27)
