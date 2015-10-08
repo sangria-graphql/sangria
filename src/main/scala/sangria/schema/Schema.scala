@@ -431,50 +431,56 @@ case class Schema[Ctx, Val](
     def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)]) =
       if (result contains name) result else result.updated(name, priority -> tpe)
 
-    def collectTypes(priority: Int, tpe: Type, result: Map[String, (Int, Type with Named)]): Map[String, (Int, Type with Named)] = {
+    def collectTypes(parentInfo: String, priority: Int, tpe: Type, result: Map[String, (Int, Type with Named)]): Map[String, (Int, Type with Named)] = {
       tpe match {
+        case null => throw new IllegalStateException(
+          s"A `null` value was provided instead of type for $parentInfo.\n" +
+          "This can happen if you have recursive type definition or circular references withing your type graph.\n" +
+          "Please use no-arg function to provide fields for such types.\n" +
+          "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
         case t: Named if result contains t.name => result
-        case OptionType(ofType) => collectTypes(priority, ofType, result)
-        case OptionInputType(ofType) => collectTypes(priority, ofType, result)
-        case ListType(ofType) => collectTypes(priority, ofType, result)
-        case ListInputType(ofType) => collectTypes(priority, ofType, result)
+        case OptionType(ofType) => collectTypes(parentInfo, priority, ofType, result)
+        case OptionInputType(ofType) => collectTypes(parentInfo, priority, ofType, result)
+        case ListType(ofType) => collectTypes(parentInfo, priority, ofType, result)
+        case ListInputType(ofType) => collectTypes(parentInfo, priority, ofType, result)
 
         case t @ ScalarType(name, _, _, _, _) => updated(priority, name, t, result)
         case t @ EnumType(name, _, _) => updated(priority, name, t, result)
         case t @ InputObjectType(name, _, _) =>
-          t.fields.foldLeft(updated(priority, name, t, result)) {case (acc, field) => collectTypes(priority, field.fieldType, acc)}
+          t.fields.foldLeft(updated(priority, name, t, result)) {case (acc, field) =>
+            collectTypes(s"a field '${field.name}' of '$name' input object type", priority, field.fieldType, acc)}
         case t: ObjectLikeType[_, _] =>
           val own = t.fields.foldLeft(updated(priority, t.name, t, result)) {
             case (acc, field) =>
-              val fromArgs = field.arguments.foldLeft(collectTypes(priority, field.fieldType, acc)) {
-                case (aacc, arg) => collectTypes(priority, arg.argumentType, aacc)
+              val fromArgs = field.arguments.foldLeft(collectTypes(s"a field '${field.name}' of '${t.name}' type", priority, field.fieldType, acc)) {
+                case (aacc, arg) => collectTypes(s"an argument '${arg.name}' defined in field '${field.name}' of '${t.name}' type", priority, arg.argumentType, aacc)
               }
 
               field.manualPossibleTypes().foldLeft(fromArgs) {
-                case (acc, objectType) => collectTypes(priority, objectType, acc)
+                case (acc, objectType) => collectTypes(s"a manualPossibleType defined in '${t.name}' type", priority, objectType, acc)
               }
           }
 
           val withPossible = t match {
             case i: InterfaceType[_, _] =>
               i.manualPossibleTypes().foldLeft(own) {
-                case (acc, objectType) => collectTypes(priority, objectType, acc)
+                case (acc, objectType) => collectTypes(s"a manualPossibleType defined in '${i.name}' type", priority, objectType, acc)
               }
             case _ => own
           }
 
           t.interfaces.foldLeft(withPossible) {
-            case (acc, interface) => collectTypes(priority, interface, acc)
+            case (acc, interface) => collectTypes(s"an interface defined in '${t.name}' type", priority, interface, acc)
           }
         case t @ UnionType(name, _, types) =>
-          types.foldLeft(updated(priority, name, t, result)) {case (acc, tpe) => collectTypes(priority, tpe, acc)}
+          types.foldLeft(updated(priority, name, t, result)) {case (acc, tpe) => collectTypes(s"a '$name' type", priority, tpe, acc)}
       }
     }
 
-    val schemaTypes = collectTypes(3, introspection.__Schema, Map(BuiltinScalars map (s => s.name -> (4, s)): _*))
-    val queryTypes = collectTypes(2, query, schemaTypes)
+    val schemaTypes = collectTypes("a '__Schema' type", 3, introspection.__Schema, Map(BuiltinScalars map (s => s.name -> (4, s)): _*))
+    val queryTypes = collectTypes("a query type", 2, query, schemaTypes)
     val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t => t.name -> (1, t))
-    val queryAndMutTypes = mutation map (collectTypes(1, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
+    val queryAndMutTypes = mutation map (collectTypes("a mutation type", 1, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
 
     queryAndMutTypes
   }
