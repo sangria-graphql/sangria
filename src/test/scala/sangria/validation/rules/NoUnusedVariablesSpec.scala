@@ -96,7 +96,7 @@ class NoUnusedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$c' is not used." -> Some(Pos(2, 43))
+        "Variable '$c' is not used." → Some(Pos(2, 43))
       ))
 
     "multiple variables not used" in expectFails(
@@ -106,8 +106,8 @@ class NoUnusedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not used." -> Some(Pos(2, 19)),
-        "Variable '$c' is not used." -> Some(Pos(2, 43))
+        "Variable '$a' is not used." → Some(Pos(2, 19)),
+        "Variable '$c' is not used." → Some(Pos(2, 43))
       ))
 
     "variable not used in fragments" in expectFails(
@@ -130,7 +130,7 @@ class NoUnusedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$c' is not used." -> Some(Pos(2, 43))
+        "Variable '$c' is not used." → Some(Pos(2, 43))
       ))
 
     "multiple variables not used 1" in expectFails(
@@ -153,8 +153,8 @@ class NoUnusedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not used." -> Some(Pos(2, 19)),
-        "Variable '$c' is not used." -> Some(Pos(2, 43))
+        "Variable '$a' is not used." → Some(Pos(2, 19)),
+        "Variable '$c' is not used." → Some(Pos(2, 43))
       ))
 
     "variable not used by unreferenced fragment" in expectFails(
@@ -170,7 +170,7 @@ class NoUnusedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$b' is not used." -> Some(Pos(2, 19))
+        "Variable '$b' is not used." → Some(Pos(2, 19))
       ))
 
     "variable not used by fragment used by other operation" in expectFails(
@@ -189,8 +189,8 @@ class NoUnusedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$b' is not used." -> Some(Pos(2, 19)),
-        "Variable '$a' is not used." -> Some(Pos(5, 19))
+        "Variable '$b' is not used." → Some(Pos(2, 19)),
+        "Variable '$a' is not used." → Some(Pos(5, 19))
       ))
   }
 }

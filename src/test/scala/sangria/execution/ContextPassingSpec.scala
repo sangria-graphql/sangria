@@ -19,7 +19,7 @@ class ContextPassingSpec extends WordSpec with Matchers with AwaitSupport {
   }
 
   trait PersonComponent {
-    this: NameComponent =>
+    this: NameComponent ⇒
 
     def fullName = name + " bar"
   }
@@ -35,12 +35,12 @@ class ContextPassingSpec extends WordSpec with Matchers with AwaitSupport {
 
   val PersonType = ObjectType("Person", fields[PersonComponent, Unit](
     Field("fullName", StringType, resolve = _.ctx.fullName),
-    Field("name", NameType, resolve = _ => ())))
+    Field("name", NameType, resolve = _ ⇒ ())))
 
 
   val QueryType = ObjectType("Query", fields[Cake, Unit](
-    Field("color", ColorType, resolve = _ => ()),
-    Field("person", PersonType, resolve = _ => ())
+    Field("color", ColorType, resolve = _ ⇒ ()),
+    Field("person", PersonType, resolve = _ ⇒ ())
   ))
 
   val schema = Schema(QueryType)
@@ -58,13 +58,13 @@ class ContextPassingSpec extends WordSpec with Matchers with AwaitSupport {
         """)
 
       Executor.execute(schema, doc, userContext = new Cake).await should be (Map(
-        "data" -> Map(
-          "color" -> Map(
-            "name" -> "foo",
-            "colorName" -> "green"),
-          "person" -> Map(
-            "name" -> Map("name" -> "foo"),
-            "fullName" -> "foo bar"))))
+        "data" → Map(
+          "color" → Map(
+            "name" → "foo",
+            "colorName" → "green"),
+          "person" → Map(
+            "name" → Map("name" → "foo"),
+            "fullName" → "foo bar"))))
     }
   }
 

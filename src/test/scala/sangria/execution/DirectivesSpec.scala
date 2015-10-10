@@ -30,25 +30,25 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
   "Execute: handles directives" when {
     "directives are not used" should {
       "execute basic query" in {
-        executeTestQuery("{ a, b }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+        executeTestQuery("{ a, b }") should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
     }
 
     "used with scalar values" should {
       "if true includes scalar" in {
-        executeTestQuery("{ a, b @include(if: true) }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+        executeTestQuery("{ a, b @include(if: true) }") should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "if false omits on scalar" in {
-        executeTestQuery("{ a, b @include(if: false) }") should be (Map("data" -> Map("a" -> "a")))
+        executeTestQuery("{ a, b @include(if: false) }") should be (Map("data" → Map("a" → "a")))
       }
 
       "unless false includes scalar" in {
-        executeTestQuery("{ a, b @skip(if: false) }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+        executeTestQuery("{ a, b @skip(if: false) }") should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "unless true omits scalar" in {
-        executeTestQuery("{ a, b @skip(if: true) }") should be (Map("data" -> Map("a" -> "a")))
+        executeTestQuery("{ a, b @skip(if: true) }") should be (Map("data" → Map("a" → "a")))
       }
     }
 
@@ -63,7 +63,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be (Map("data" → Map("a" → "a")))
       }
 
       "if true includes fragment spread" in {
@@ -76,7 +76,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "unless false includes fragment spread" in {
@@ -89,7 +89,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "unless true omits fragment spread" in {
@@ -102,7 +102,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be (Map("data" → Map("a" → "a")))
       }
     }
 
@@ -119,7 +119,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be (Map("data" → Map("a" → "a")))
       }
 
       "if true includes inline fragment" in {
@@ -134,7 +134,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "unless false includes inline fragment" in {
@@ -149,7 +149,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "unless true includes inline fragment" in {
@@ -164,7 +164,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be (Map("data" → Map("a" → "a")))
       }
     }
 
@@ -179,7 +179,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType @include(if: false) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be (Map("data" → Map("a" → "a")))
       }
 
       "if true includes fragment" in {
@@ -192,7 +192,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType @include(if: true) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "unless false includes fragment" in {
@@ -205,7 +205,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType @skip(if: false) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
       "unless true omits fragment" in {
@@ -218,7 +218,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
              fragment Frag on TestType @skip(if: true) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be (Map("data" → Map("a" → "a")))
       }
 
       "include `true` includes inline fragments without type condition" in {
@@ -232,7 +232,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
       "include `false` omits inline fragments without type condition" in {
         executeTestQuery(
@@ -245,7 +245,7 @@ class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
                  b
                }
              }
-          """) should be(Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" → Map("a" → "a")))
       }
     }
   }

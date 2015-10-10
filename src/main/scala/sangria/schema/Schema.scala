@@ -47,7 +47,7 @@ object Named {
       throw new IllegalArgumentException("All fields within a Type should have unique names!")
 
   private[schema] def doCheckFieldNames(fields: Seq[Named]): Unit =
-    fields.foreach(f => checkName(f.name))
+    fields.foreach(f ⇒ checkName(f.name))
 
   private[schema] def checkObjFields[T <: Seq[Named]](fields: T): T = {
     doCheckUniqueFields(fields)
@@ -62,24 +62,24 @@ object Named {
     fields
   }
 
-  private[schema] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () => T = {
+  private[schema] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
-    () => fields
+    () ⇒ fields
   }
 
-  private[schema] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () => T = {
+  private[schema] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckNonEmptyFields(fields)
     doCheckFieldNames(fields)
-    () => fields
+    () ⇒ fields
   }
 
-  private[schema] def checkObjFields[T <: Seq[Named]](fieldsFn: () => T): () => T =
-    () => checkObjFields(fieldsFn())
+  private[schema] def checkObjFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+    () ⇒ checkObjFields(fieldsFn())
 
-  private[schema] def checkIntFields[T <: Seq[Named]](fieldsFn: () => T): () => T =
-    () => checkIntFields(fieldsFn())
+  private[schema] def checkIntFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+    () ⇒ checkIntFields(fieldsFn())
 
   private[schema] def checkName(name: String) = {
     if (!NameRegexp.pattern.matcher(name).matches())
@@ -93,26 +93,26 @@ object Named {
 case class ScalarType[T](
   name: String,
   description: Option[String] = None,
-  coerceUserInput: Any => Either[Violation, T],
-  coerceOutput: T => ast.Value,
-  coerceInput: ast.Value => Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+  coerceUserInput: Any ⇒ Either[Violation, T],
+  coerceOutput: T ⇒ ast.Value,
+  coerceInput: ast.Value ⇒ Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
 
-  def fieldsFn: () => List[Field[Ctx, Val]]
+  def fieldsFn: () ⇒ List[Field[Ctx, Val]]
 
   private lazy val ownFields = fieldsFn()
 
-  def removeDuplicates[T, E](list: List[T], valueFn: T => E) =
+  def removeDuplicates[T, E](list: List[T], valueFn: T ⇒ E) =
     list.foldLeft((Nil, Nil): (List[E], List[T])) {
-      case (a @ (visited, acc), e) if visited contains valueFn(e) => a
-      case ((visited, acc), e) => (visited :+ valueFn(e), acc :+ e)
+      case (a @ (visited, acc), e) if visited contains valueFn(e) ⇒ a
+      case ((visited, acc), e) ⇒ (visited :+ valueFn(e), acc :+ e)
     }._2
 
-  lazy val fields: List[Field[Ctx, _]] = ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[List[Field[Ctx, _]]])
+  lazy val fields: List[Field[Ctx, _]] = ownFields ++ interfaces.flatMap(i ⇒ i.fields.asInstanceOf[List[Field[Ctx, _]]])
 
-  lazy val uniqueFields: List[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) => e.name)
+  lazy val uniqueFields: List[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) ⇒ e.name)
 
   private lazy val fieldsByName = fields groupBy (_.name)
 
@@ -126,7 +126,7 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
 case class ObjectType[Ctx, Val: ClassTag] private (
   name: String,
   description: Option[String],
-  fieldsFn: () => List[Field[Ctx, Val]],
+  fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
 ) extends ObjectLikeType[Ctx, Val] {
 
@@ -143,13 +143,13 @@ object ObjectType {
   def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType))
 
-  def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), Nil)
-  def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), Nil)
-  def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
-  def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
 
   implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
@@ -159,16 +159,16 @@ object ObjectType {
 case class InterfaceType[Ctx, Val] private (
   name: String,
   description: Option[String] = None,
-  fieldsFn: () => List[Field[Ctx, Val]],
+  fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]],
-  manualPossibleTypes: () => List[ObjectType[_, _]]
+  manualPossibleTypes: () ⇒ List[ObjectType[_, _]]
 ) extends ObjectLikeType[Ctx, Val] with AbstractType {
-  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () => possible.toList map (_.objectType))
-  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () => possible() map (_.objectType))
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
+  def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
 }
 
 object InterfaceType {
-  val emptyPossibleTypes: () => List[ObjectType[_, _]] = () => Nil
+  val emptyPossibleTypes: () ⇒ List[ObjectType[_, _]] = () ⇒ Nil
 
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(fields), Nil, emptyPossibleTypes)
@@ -179,13 +179,13 @@ object InterfaceType {
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(fields), interfaces map (_.interfaceType), emptyPossibleTypes)
 
-  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(Named.checkName(name), None, Named.checkIntFields(fieldsFn), Nil, emptyPossibleTypes)
-  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn), Nil, emptyPossibleTypes)
-  def apply[Ctx, Val](name: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(Named.checkName(name), None, Named.checkIntFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
-  def apply[Ctx, Val](name: String, description: String, fieldsFn: () => List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
     InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes)
 }
 
@@ -232,12 +232,12 @@ case class Field[Ctx, Val] private (
     fieldType: OutputType[_],
     description: Option[String],
     arguments: List[Argument[_]],
-    resolve: Context[Ctx, Val] => Action[Ctx, _],
+    resolve: Context[Ctx, Val] ⇒ Action[Ctx, _],
     deprecationReason: Option[String],
     tags: List[FieldTag],
-    manualPossibleTypes: () => List[ObjectType[_, _]]) extends Named with HasArguments {
-  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () => possible.toList map (_.objectType))
-  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () => possible() map (_.objectType))
+    manualPossibleTypes: () ⇒ List[ObjectType[_, _]]) extends Named with HasArguments {
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
+  def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
 }
 
 object Field {
@@ -246,11 +246,11 @@ object Field {
       fieldType: OutputType[Out],
       description: Option[String] = None,
       arguments: List[Argument[_]] = Nil,
-      resolve: Context[Ctx, Val] => Action[Ctx, Res],
-      possibleTypes: => List[PossibleObject[_, _]] = Nil,
+      resolve: Context[Ctx, Val] ⇒ Action[Ctx, Res],
+      possibleTypes: ⇒ List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
-    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, () => possibleTypes map (_.objectType))
+    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, () ⇒ possibleTypes map (_.objectType))
 }
 
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
@@ -290,13 +290,13 @@ object Argument {
       argumentType: InputType[T],
       description: String,
       defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, Some(description), Some(defaultValue -> toInput))
+    Argument(Named.checkName(name), argumentType, Some(description), Some(defaultValue → toInput))
 
   def apply[T, Default](
       name: String,
       argumentType: InputType[T],
       defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, None, Some(defaultValue -> toInput))
+    Argument(Named.checkName(name), argumentType, None, Some(defaultValue → toInput))
 
   def apply[T](
       name: String,
@@ -334,14 +334,14 @@ case class EnumType[T](
   lazy val byValue = values groupBy (_.value) mapValues (_.head)
 
   def coerceUserInput(value: Any): Either[Violation, (T, Boolean)] = value match {
-    case name: String => byName get name map (v => Right(v.value -> v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
-    case v if byValue exists (_._1 == v) => Right(v.asInstanceOf[T] -> byValue(v.asInstanceOf[T]).deprecationReason.isDefined)
-    case _ => Left(EnumCoercionViolation)
+    case name: String ⇒ byName get name map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
+    case v if byValue exists (_._1 == v) ⇒ Right(v.asInstanceOf[T] → byValue(v.asInstanceOf[T]).deprecationReason.isDefined)
+    case _ ⇒ Left(EnumCoercionViolation)
   }
 
   def coerceInput(value: ast.Value): Either[Violation, (T, Boolean)] = value match {
-    case ast.EnumValue(name, _) => byName get name map (v => Right(v.value -> v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
-    case _ => Left(EnumCoercionViolation)
+    case ast.EnumValue(name, _) ⇒ byName get name map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
+    case _ ⇒ Left(EnumCoercionViolation)
   }
 
   def coerceOutput(value: T) = ast.EnumValue(byValue(value).name)
@@ -356,7 +356,7 @@ case class EnumValue[+T](
 case class InputObjectType[T] private (
   name: String,
   description: Option[String] = None,
-  fieldsFn: () => List[InputField[_]]
+  fieldsFn: () ⇒ List[InputField[_]]
 ) extends InputType[T] with NullableType with UnmodifiedType with Named {
   lazy val fields = fieldsFn()
   lazy val fieldsByName = fields groupBy(_.name) mapValues(_.head)
@@ -370,9 +370,9 @@ object InputObjectType {
   def apply(name: String, description: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
     InputObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(fields))
 
-  def apply(name: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] =
+  def apply(name: String, fieldsFn: () ⇒ List[InputField[_]]): InputObjectType[InputObjectRes] =
     InputObjectType(Named.checkName(name), None, Named.checkIntFields(fieldsFn))
-  def apply(name: String, description: String, fieldsFn: () => List[InputField[_]]): InputObjectType[InputObjectRes] =
+  def apply(name: String, description: String, fieldsFn: () ⇒ List[InputField[_]]): InputObjectType[InputObjectRes] =
     InputObjectType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn))
 }
 
@@ -390,10 +390,10 @@ case class InputField[T] private (
 
 object InputField {
   def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
-    InputField(name, fieldType, Some(description), Some(defaultValue -> toInput))
+    InputField(name, fieldType, Some(description), Some(defaultValue → toInput))
 
   def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
-    InputField(name, fieldType, None, Some(defaultValue -> toInput))
+    InputField(name, fieldType, None, Some(defaultValue → toInput))
 
   def apply[T, Default](name: String, fieldType: InputType[T], description: String): InputField[T] =
     InputField(name, fieldType, Some(description), None)
@@ -416,7 +416,7 @@ case class Directive(
   name: String,
   description: Option[String] = None,
   arguments: List[Argument[_]] = Nil,
-  shouldInclude: DirectiveContext => Boolean,
+  shouldInclude: DirectiveContext ⇒ Boolean,
   onOperation: Boolean,
   onFragment: Boolean,
   onField: Boolean) extends HasArguments
@@ -429,106 +429,106 @@ case class Schema[Ctx, Val](
     validationRules: List[SchemaValidationRule] = DefaultValuesValidationRule :: Nil) {
   lazy val types: Map[String, (Int, Type with Named)] = {
     def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)]) =
-      if (result contains name) result else result.updated(name, priority -> tpe)
+      if (result contains name) result else result.updated(name, priority → tpe)
 
     def collectTypes(parentInfo: String, priority: Int, tpe: Type, result: Map[String, (Int, Type with Named)]): Map[String, (Int, Type with Named)] = {
       tpe match {
-        case null => throw new IllegalStateException(
+        case null ⇒ throw new IllegalStateException(
           s"A `null` value was provided instead of type for $parentInfo.\n" +
           "This can happen if you have recursive type definition or circular references withing your type graph.\n" +
           "Please use no-arg function to provide fields for such types.\n" +
           "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
-        case t: Named if result contains t.name => result
-        case OptionType(ofType) => collectTypes(parentInfo, priority, ofType, result)
-        case OptionInputType(ofType) => collectTypes(parentInfo, priority, ofType, result)
-        case ListType(ofType) => collectTypes(parentInfo, priority, ofType, result)
-        case ListInputType(ofType) => collectTypes(parentInfo, priority, ofType, result)
+        case t: Named if result contains t.name ⇒ result
+        case OptionType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
+        case OptionInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
+        case ListType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
+        case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
-        case t @ ScalarType(name, _, _, _, _) => updated(priority, name, t, result)
-        case t @ EnumType(name, _, _) => updated(priority, name, t, result)
-        case t @ InputObjectType(name, _, _) =>
-          t.fields.foldLeft(updated(priority, name, t, result)) {case (acc, field) =>
+        case t @ ScalarType(name, _, _, _, _) ⇒ updated(priority, name, t, result)
+        case t @ EnumType(name, _, _) ⇒ updated(priority, name, t, result)
+        case t @ InputObjectType(name, _, _) ⇒
+          t.fields.foldLeft(updated(priority, name, t, result)) {case (acc, field) ⇒
             collectTypes(s"a field '${field.name}' of '$name' input object type", priority, field.fieldType, acc)}
-        case t: ObjectLikeType[_, _] =>
+        case t: ObjectLikeType[_, _] ⇒
           val own = t.fields.foldLeft(updated(priority, t.name, t, result)) {
-            case (acc, field) =>
+            case (acc, field) ⇒
               val fromArgs = field.arguments.foldLeft(collectTypes(s"a field '${field.name}' of '${t.name}' type", priority, field.fieldType, acc)) {
-                case (aacc, arg) => collectTypes(s"an argument '${arg.name}' defined in field '${field.name}' of '${t.name}' type", priority, arg.argumentType, aacc)
+                case (aacc, arg) ⇒ collectTypes(s"an argument '${arg.name}' defined in field '${field.name}' of '${t.name}' type", priority, arg.argumentType, aacc)
               }
 
               field.manualPossibleTypes().foldLeft(fromArgs) {
-                case (acc, objectType) => collectTypes(s"a manualPossibleType defined in '${t.name}' type", priority, objectType, acc)
+                case (acc, objectType) ⇒ collectTypes(s"a manualPossibleType defined in '${t.name}' type", priority, objectType, acc)
               }
           }
 
           val withPossible = t match {
-            case i: InterfaceType[_, _] =>
+            case i: InterfaceType[_, _] ⇒
               i.manualPossibleTypes().foldLeft(own) {
-                case (acc, objectType) => collectTypes(s"a manualPossibleType defined in '${i.name}' type", priority, objectType, acc)
+                case (acc, objectType) ⇒ collectTypes(s"a manualPossibleType defined in '${i.name}' type", priority, objectType, acc)
               }
-            case _ => own
+            case _ ⇒ own
           }
 
           t.interfaces.foldLeft(withPossible) {
-            case (acc, interface) => collectTypes(s"an interface defined in '${t.name}' type", priority, interface, acc)
+            case (acc, interface) ⇒ collectTypes(s"an interface defined in '${t.name}' type", priority, interface, acc)
           }
-        case t @ UnionType(name, _, types) =>
-          types.foldLeft(updated(priority, name, t, result)) {case (acc, tpe) => collectTypes(s"a '$name' type", priority, tpe, acc)}
+        case t @ UnionType(name, _, types) ⇒
+          types.foldLeft(updated(priority, name, t, result)) {case (acc, tpe) ⇒ collectTypes(s"a '$name' type", priority, tpe, acc)}
       }
     }
 
-    val schemaTypes = collectTypes("a '__Schema' type", 3, introspection.__Schema, Map(BuiltinScalars map (s => s.name -> (4, s)): _*))
+    val schemaTypes = collectTypes("a '__Schema' type", 3, introspection.__Schema, Map(BuiltinScalars map (s ⇒ s.name → (4, s)): _*))
     val queryTypes = collectTypes("a query type", 2, query, schemaTypes)
-    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t => t.name -> (1, t))
+    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t ⇒ t.name → (1, t))
     val queryAndMutTypes = mutation map (collectTypes("a mutation type", 1, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
 
     queryAndMutTypes
   }
 
-  lazy val typeList = types.values.toList.sortBy(t => t._1 + t._2.name).map(_._2)
+  lazy val typeList = types.values.toList.sortBy(t ⇒ t._1 + t._2.name).map(_._2)
 
-  lazy val allTypes = types collect {case (name, (_, tpe)) => name -> tpe}
-  lazy val inputTypes = types collect {case (name, (_, tpe: InputType[_])) => name -> tpe}
-  lazy val outputTypes = types collect {case (name, (_, tpe: OutputType[_])) => name -> tpe}
-  lazy val scalarTypes = types collect {case (name, (_, tpe: ScalarType[_])) => name -> tpe}
+  lazy val allTypes = types collect {case (name, (_, tpe)) ⇒ name → tpe}
+  lazy val inputTypes = types collect {case (name, (_, tpe: InputType[_])) ⇒ name → tpe}
+  lazy val outputTypes = types collect {case (name, (_, tpe: OutputType[_])) ⇒ name → tpe}
+  lazy val scalarTypes = types collect {case (name, (_, tpe: ScalarType[_])) ⇒ name → tpe}
   lazy val unionTypes: Map[String, UnionType[_]] =
     types.filter(_._2._2.isInstanceOf[UnionType[_]]).mapValues(_._2.asInstanceOf[UnionType[_]])
 
   lazy val directivesByName = directives groupBy (_.name) mapValues (_.head)
 
   def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
-    case ast.NamedType(name, _) => inputTypes get name map (OptionInputType(_))
-    case ast.NotNullType(ofType, _) => getInputType(ofType) collect {case OptionInputType(ot) => ot}
-    case ast.ListType(ofType, _) => getInputType(ofType) map (t => OptionInputType(ListInputType(t)))
+    case ast.NamedType(name, _) ⇒ inputTypes get name map (OptionInputType(_))
+    case ast.NotNullType(ofType, _) ⇒ getInputType(ofType) collect {case OptionInputType(ot) ⇒ ot}
+    case ast.ListType(ofType, _) ⇒ getInputType(ofType) map (t ⇒ OptionInputType(ListInputType(t)))
   }
 
   def getOutputType(tpe: ast.Type, topLevel: Boolean = false): Option[OutputType[_]] = tpe match {
-    case ast.NamedType(name, _) => outputTypes get name map (ot => if (topLevel) ot else OptionType(ot))
-    case ast.NotNullType(ofType, _) => getOutputType(ofType) collect {case OptionType(ot) => ot}
-    case ast.ListType(ofType, _) => getOutputType(ofType) map (ListType(_))
+    case ast.NamedType(name, _) ⇒ outputTypes get name map (ot ⇒ if (topLevel) ot else OptionType(ot))
+    case ast.NotNullType(ofType, _) ⇒ getOutputType(ofType) collect {case OptionType(ot) ⇒ ot}
+    case ast.ListType(ofType, _) ⇒ getOutputType(ofType) map (ListType(_))
   }
 
   lazy val directImplementations: Map[String, List[ObjectLikeType[_, _]]] = {
     typeList
-      .collect{case objectLike: ObjectLikeType[_, _] => objectLike}
-      .flatMap(objectLike => objectLike.interfaces map (_.name -> objectLike))
+      .collect{case objectLike: ObjectLikeType[_, _] ⇒ objectLike}
+      .flatMap(objectLike ⇒ objectLike.interfaces map (_.name → objectLike))
       .groupBy(_._1)
       .mapValues(_ map (_._2))
   }
 
   lazy val implementations: Map[String, List[ObjectType[_, _]]] = {
     def findConcreteTypes(tpe: ObjectLikeType[_, _]): List[ObjectType[_, _]] = tpe match {
-      case obj: ObjectType[_, _] => obj :: Nil
-      case interface: InterfaceType[_, _] => directImplementations(interface.name) flatMap findConcreteTypes
+      case obj: ObjectType[_, _] ⇒ obj :: Nil
+      case interface: InterfaceType[_, _] ⇒ directImplementations(interface.name) flatMap findConcreteTypes
     }
 
     directImplementations map {
-      case (name, directImpls) => name -> directImpls.flatMap(findConcreteTypes).groupBy(_.name).map(_._2.head).toList
+      case (name, directImpls) ⇒ name → directImpls.flatMap(findConcreteTypes).groupBy(_.name).map(_._2.head).toList
     }
   }
 
   lazy val possibleTypes: Map[String, List[ObjectType[_, _]]] =
-    implementations ++ unionTypes.values.map(ut => ut.name -> ut.types)
+    implementations ++ unionTypes.values.map(ut ⇒ ut.name → ut.types)
 
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
     possibleTypes get baseTypeName exists (_ exists (_.name == tpe.name))
@@ -546,29 +546,29 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
   def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
     val coercionHelper = ValueCoercionHelper.default
 
-    def validate(prefix: => String, path: List[String], tpe: InputType[_])(defaultValue: (_, ToInput[_, _])) = {
+    def validate(prefix: ⇒ String, path: List[String], tpe: InputType[_])(defaultValue: (_, ToInput[_, _])) = {
       val (default, toInput) = defaultValue.asInstanceOf[(Any, ToInput[Any, Any])]
       val (inputValue, iu) = toInput.toInput(default)
 
       coercionHelper.coerceInputValue(tpe, path, inputValue)(iu) match {
-        case Left(violations) => violations
-        case Right(violations) => Nil
+        case Left(violations) ⇒ violations
+        case Right(violations) ⇒ Nil
       }
     }
 
     val inputTypeViolations = schema.inputTypes.values.toList flatMap {
-      case it: InputObjectType[_] =>
-        it.fields flatMap (f =>
+      case it: InputObjectType[_] ⇒
+        it.fields flatMap (f ⇒
           f.defaultValue map validate(s"Invalid default value of field '${f.name}' in input type '${it.name}'.", it.name :: f.name :: Nil, f.inputValueType) getOrElse Nil)
-      case _ => Nil
+      case _ ⇒ Nil
     }
 
     val outputTypeViolations = schema.outputTypes.values.toList flatMap {
-      case ot: ObjectLikeType[_, _] =>
-        ot.fields flatMap (f =>
-          f.arguments flatMap (a =>
+      case ot: ObjectLikeType[_, _] ⇒
+        ot.fields flatMap (f ⇒
+          f.arguments flatMap (a ⇒
             a.defaultValue map validate(s"Invalid default value of argument '${a.name}' in field '${f.name}' defined in output type '${ot.name}'.", ot.name :: f.name :: ("[" + a.name + "]") :: Nil, a.inputValueType) getOrElse Nil))
-      case _ => Nil
+      case _ ⇒ Nil
     }
 
     inputTypeViolations ++ outputTypeViolations
@@ -577,5 +577,5 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
 
 case class SchemaValidationException(violations: List[Violation]) extends IllegalArgumentException {
   override lazy val getMessage =
-    "Schema contains validation errors.\n" + violations.map(v => "  * " + v.errorMessage).mkString("\n")
+    "Schema contains validation errors.\n" + violations.map(v ⇒ "  * " + v.errorMessage).mkString("\n")
 }

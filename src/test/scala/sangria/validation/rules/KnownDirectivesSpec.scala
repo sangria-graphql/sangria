@@ -41,7 +41,7 @@ class KnownDirectivesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown directive 'unknown'." -> Some(Pos(3, 15))
+        "Unknown directive 'unknown'." → Some(Pos(3, 15))
       ))
 
     "with many unknown directives" in expectFails(
@@ -59,9 +59,9 @@ class KnownDirectivesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown directive 'unknown'." -> Some(Pos(3, 15)),
-        "Unknown directive 'unknown'." -> Some(Pos(6, 17)),
-        "Unknown directive 'unknown'." -> Some(Pos(8, 18))
+        "Unknown directive 'unknown'." → Some(Pos(3, 15)),
+        "Unknown directive 'unknown'." → Some(Pos(6, 17)),
+        "Unknown directive 'unknown'." → Some(Pos(8, 18))
       ))
 
     "with well placed directives" in expectPasses(
@@ -82,7 +82,7 @@ class KnownDirectivesSpec extends WordSpec with ValidationSupport {
         }
       """,
     List(
-      "Directive 'include' may not be used on operation." -> Some(Pos(2, 19))
+      "Directive 'include' may not be used on operation." → Some(Pos(2, 19))
     ))
   }
 }

@@ -12,10 +12,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 sealed trait Action[+Ctx, +Val] {
-  def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): Action[Ctx, NewVal]
+  def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): Action[Ctx, NewVal]
 }
 sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val] {
-  def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
+  def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
 }
 
 object Action {
@@ -27,60 +27,60 @@ object Action {
 }
 
 case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): Value[Ctx, NewVal] =
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): Value[Ctx, NewVal] =
     Value(fn(value))
 }
 
 case class TryValue[Ctx, Val](value: Try[Val]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): TryValue[Ctx, NewVal] =
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): TryValue[Ctx, NewVal] =
     TryValue(value map fn)
 }
 
 case class FutureValue[Ctx, Val](value: Future[Val]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): FutureValue[Ctx, NewVal] =
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): FutureValue[Ctx, NewVal] =
     FutureValue(value map fn)
 }
 
 case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, fn))
 }
 
 case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
     DeferredFutureValue(value map (MappingDeferred(_, fn)))
 }
 
-class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx) extends Action[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewVal] =
+class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx) extends Action[Ctx, Val] {
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewVal] =
     new MappedUpdateCtx[Ctx, Val, NewVal](action, nextCtx, fn)
 }
 
-class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx, val mapFn: Val => NewVal) extends Action[Ctx, NewVal] {
-  override def map[NewNewVal](fn: NewVal => NewNewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
-    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v => fn(mapFn(v)))
+class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx, val mapFn: Val ⇒ NewVal) extends Action[Ctx, NewVal] {
+  override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
+    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v ⇒ fn(mapFn(v)))
 }
 
 object UpdateCtx {
-  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
+  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val ⇒ Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
 }
 
 case class ProjectionName(name: String) extends FieldTag
 case object ProjectionExclude extends FieldTag
 
-trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
+trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] ⇒ Action[Ctx, Res]) {
   val maxLevel: Int = Integer.MAX_VALUE
   def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res]
 }
 
 object Projector {
-  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
+  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) ⇒ Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
       def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
       override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException("Default apply should not be called on projector!")
     }
 
-  def apply[Ctx, Val, Res](levels: Int, fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
+  def apply[Ctx, Val, Res](levels: Int, fn: (Context[Ctx, Val], Vector[ProjectedName]) ⇒ Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
       override val maxLevel = levels
       def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
@@ -99,7 +99,7 @@ case class ProjectedName(name: String, children: Vector[ProjectedName] = Vector.
 
 trait Deferred[+T]
 
-case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A => B) extends Deferred[B]
+case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A ⇒ B) extends Deferred[B]
 
 trait WithArguments {
   def args: Map[String, Any]
@@ -125,27 +125,27 @@ trait WithInputTypeRendering[Ctx] {
 
   def renderInputValue[T](value: (_, ToInput[_, _]), tpe: InputType[T], m: ResultMarshaller = marshaller): m.Node = {
     def loop(t: InputType[_], v: Any): m.Node = t match {
-      case _ if v == null => m.nullNode
-      case s: ScalarType[Any @unchecked] => Resolver.marshalValue(s.coerceOutput(v), m)
-      case e: EnumType[Any @unchecked] => Resolver.marshalValue(e.coerceOutput(v), m)
-      case io: InputObjectType[_] =>
+      case _ if v == null ⇒ m.nullNode
+      case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalValue(s.coerceOutput(v), m)
+      case e: EnumType[Any @unchecked] ⇒ Resolver.marshalValue(e.coerceOutput(v), m)
+      case io: InputObjectType[_] ⇒
         val mapValue = v.asInstanceOf[Map[String, Any]]
 
         io.fields.foldLeft(m.emptyMapNode) {
-          case (acc, field) if mapValue contains field.name =>
+          case (acc, field) if mapValue contains field.name ⇒
             m.addMapNodeElem(acc, field.name, loop(field.fieldType, mapValue(field.name)))
-          case (acc, _) => acc
+          case (acc, _) ⇒ acc
         }
-      case l: ListInputType[_] =>
+      case l: ListInputType[_] ⇒
         val listValue = v.asInstanceOf[Seq[Any]]
 
         listValue.foldLeft(m.emptyArrayNode) {
-          case (acc, value) => m.addArrayNodeElem(acc, loop(l.ofType, value))
+          case (acc, value) ⇒ m.addArrayNodeElem(acc, loop(l.ofType, value))
         }
-      case o: OptionInputType[_] => v match {
-        case Some(optVal) => loop(o.ofType, optVal)
-        case None => m.nullNode
-        case other => loop(o.ofType, other)
+      case o: OptionInputType[_] ⇒ v match {
+        case Some(optVal) ⇒ loop(o.ofType, optVal)
+        case None ⇒ m.nullNode
+        case other ⇒ loop(o.ofType, other)
       }
     }
 
@@ -153,8 +153,8 @@ trait WithInputTypeRendering[Ctx] {
     val (inputValue, iu) = toInput.toInput(v)
 
     coercionHelper.coerceInputValue(tpe, Nil, inputValue)(iu) match {
-      case Right(Some(coerced)) => renderCoercedInputValue(tpe, coerced, m)
-      case _ => m.nullNode
+      case Right(Some(coerced)) ⇒ renderCoercedInputValue(tpe, coerced, m)
+      case _ ⇒ m.nullNode
     }
   }
 
@@ -165,27 +165,27 @@ trait WithInputTypeRendering[Ctx] {
     m.renderPretty(renderCoercedInputValue(tpe, value, m))
 
   def renderCoercedInputValue(t: InputType[_], v: Any, m: ResultMarshaller = marshaller): m.Node = t match {
-    case _ if v == null => m.nullNode
-    case s: ScalarType[Any @unchecked] => Resolver.marshalValue(s.coerceOutput(v), m)
-    case e: EnumType[Any @unchecked] => Resolver.marshalValue(e.coerceOutput(v), m)
-    case io: InputObjectType[_] =>
+    case _ if v == null ⇒ m.nullNode
+    case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalValue(s.coerceOutput(v), m)
+    case e: EnumType[Any @unchecked] ⇒ Resolver.marshalValue(e.coerceOutput(v), m)
+    case io: InputObjectType[_] ⇒
       val mapValue = v.asInstanceOf[Map[String, Any]]
 
       io.fields.foldLeft(m.emptyMapNode) {
-        case (acc, field) if mapValue contains field.name =>
+        case (acc, field) if mapValue contains field.name ⇒
           m.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name), m))
-        case (acc, _) => acc
+        case (acc, _) ⇒ acc
       }
-    case l: ListInputType[_] =>
+    case l: ListInputType[_] ⇒
       val listValue = v.asInstanceOf[Seq[Any]]
 
       listValue.foldLeft(m.emptyArrayNode) {
-        case (acc, value) => m.addArrayNodeElem(acc, renderCoercedInputValue(l.ofType, value, m))
+        case (acc, value) ⇒ m.addArrayNodeElem(acc, renderCoercedInputValue(l.ofType, value, m))
       }
-    case o: OptionInputType[_] => v match {
-      case Some(optVal) => renderCoercedInputValue(o.ofType, optVal, m)
-      case None => m.nullNode
-      case other => renderCoercedInputValue(o.ofType, other, m)
+    case o: OptionInputType[_] ⇒ v match {
+      case Some(optVal) ⇒ renderCoercedInputValue(o.ofType, optVal, m)
+      case None ⇒ m.nullNode
+      case other ⇒ renderCoercedInputValue(o.ofType, other, m)
     }
   }
 
@@ -212,7 +212,7 @@ trait DeferredResolver[-Ctx] {
 
 object DeferredResolver {
   val empty = new DeferredResolver[Any] {
-    override def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map (_ => Future.failed(UnsupportedDeferError))
+    override def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map (_ ⇒ Future.failed(UnsupportedDeferError))
   }
 }
 

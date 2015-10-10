@@ -23,7 +23,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
     val QueryType = ObjectType("Query", fields[CaptureCtx, Unit](
       Field("foo", StringType,
         arguments = arg :: Nil,
-        resolve = ctx => {
+        resolve = ctx ⇒ {
           ctx.ctx.arg = Some(ctx.arg[Any]("test"))
           "result"
         })
@@ -35,7 +35,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
 
     val ctx = new CaptureCtx
 
-    Executor.execute(schema, query, userContext = ctx).await should be (JsObject("data" -> JsObject("foo" -> JsString("result"))))
+    Executor.execute(schema, query, userContext = ctx).await should be (JsObject("data" → JsObject("foo" → JsString("result"))))
 
     ctx.arg should be (Some(expectedResult))
 
@@ -55,12 +55,12 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
       """
 
     Executor.execute(schema, introspectionQuery, userContext = ctx).await should be (
-      JsObject("data" ->
-        JsObject("__schema" ->
-          JsObject("queryType" ->
-            JsObject("fields" -> JsArray(
-              JsObject("args" -> JsArray(
-                JsObject("defaultValue" -> JsString(expectedDefault))))))))))
+      JsObject("data" →
+        JsObject("__schema" →
+          JsObject("queryType" →
+            JsObject("fields" → JsArray(
+              JsObject("args" → JsArray(
+                JsObject("defaultValue" → JsString(expectedDefault))))))))))
 
   }
 
@@ -149,19 +149,19 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
         expectedDefault = "[\"Hello\",\"World\"]")
 
       val ScalaInputType = complexInputType(
-        sharesDefault = scalaInput(Map("twitter" -> 78)),
-        commentsDefault = scalaInput(List(Map("text" -> "Foo"), Map("text" -> "bar", "likes" -> 3.2D))))
+        sharesDefault = scalaInput(Map("twitter" → 78)),
+        commentsDefault = scalaInput(List(Map("text" → "Foo"), Map("text" → "bar", "likes" → 3.2D))))
 
       "default scala complex object" in check(
         ScalaInputType,
-          defaultValue = scalaInput(Map("title" -> "Post #1", "text" -> "Amazing!", "comments" -> List(Map("text" -> "First! :P")))),
+          defaultValue = scalaInput(Map("title" → "Post #1", "text" → "Amazing!", "comments" → List(Map("text" → "First! :P")))),
           expectedResult = Map(
-            "title" -> "Post #1",
-            "text" -> "Amazing!",
-            "tags" -> List("beginner", "scala"),
-            "views" -> 12,
-            "shares" -> Map("twitter" -> 78, "facebook" -> 1),
-            "comments" -> List(Map("author" -> "anonymous", "text" -> "First! :P", "likes" -> 1.5))),
+            "title" → "Post #1",
+            "text" → "Amazing!",
+            "tags" → List("beginner", "scala"),
+            "views" → 12,
+            "shares" → Map("twitter" → 78, "facebook" → 1),
+            "comments" → List(Map("author" → "anonymous", "text" → "First! :P", "likes" → 1.5))),
           expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
 
       "validate scalar default values" in {
@@ -174,12 +174,12 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
 
       "validate complex default values" in {
         val BrokenInputType = complexInputType(
-          sharesDefault = scalaInput(Map("facebook" -> 78)),
-          commentsDefault = scalaInput(List(Map("text" -> "Foo"), Map("likes" -> 3.2D))))
+          sharesDefault = scalaInput(Map("facebook" → 78)),
+          commentsDefault = scalaInput(List(Map("text" → "Foo"), Map("likes" → 3.2D))))
 
         a [SchemaValidationException] should be thrownBy check(
           BrokenInputType,
-          defaultValue = scalaInput(Map("text" -> "Amazing!", "comments" -> List(Map("text" -> "First! :P")))),
+          defaultValue = scalaInput(Map("text" → "Amazing!", "comments" → List(Map("text" → "First! :P")))),
           expectedResult = (),
           expectedDefault = "")
       }
@@ -220,47 +220,47 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
         expectedDefault = "[\"foo\",\"bar\"]")
 
       val JsonInputType = complexInputType(
-        sharesDefault = JsObject("twitter" -> JsNumber(78)),
+        sharesDefault = JsObject("twitter" → JsNumber(78)),
         commentsDefault = """[{"text": "Foo"}, {"text": "bar", "likes": 3.2}]""".parseJson)
 
       "default scala complex object" in check(
         JsonInputType,
         defaultValue = """{"title": "Post #1", "text": "Amazing!", "comments": [{"text": "First! :P"}]}""".parseJson,
         expectedResult = Map(
-          "title" -> "Post #1",
-          "text" -> "Amazing!",
-          "tags" -> List("beginner", "scala"),
-          "views" -> 12,
-          "shares" -> Map("twitter" -> 78, "facebook" -> 1),
-          "comments" -> List(Map("author" -> "anonymous", "text" -> "First! :P", "likes" -> 1.5))),
+          "title" → "Post #1",
+          "text" → "Amazing!",
+          "tags" → List("beginner", "scala"),
+          "views" → 12,
+          "shares" → Map("twitter" → 78, "facebook" → 1),
+          "comments" → List(Map("author" → "anonymous", "text" → "First! :P", "likes" → 1.5))),
         expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
 
       "manual typeclass-based serialisation" in {
         implicit object SharesToInput extends ToInput[Shares, JsValue] {
           override def toInput(value: Shares) = {
-            val json = JsObject("twitter" -> JsNumber(value.twitter), "facebook" -> JsNumber(value.facebook))
+            val json = JsObject("twitter" → JsNumber(value.twitter), "facebook" → JsNumber(value.facebook))
 
-            json -> sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+            json → sangria.integration.sprayJson.SprayJsonInputUnmarshaller
           }
         }
 
         implicit object CommentToInput extends ToInput[Comment, JsValue] {
           override def toInput(value: Comment) = {
             val json = JsObject(
-              "author" -> JsString(value.author),
-              "text" -> JsString(value.text),
-              "likes" -> JsNumber(value.likes))
+              "author" → JsString(value.author),
+              "text" → JsString(value.text),
+              "likes" → JsNumber(value.likes))
 
-            json -> sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+            json → sangria.integration.sprayJson.SprayJsonInputUnmarshaller
           }
         }
 
         implicit def listToInput[T](implicit ev: ToInput[T, JsValue]): ToInput[List[T], JsValue] =
           new ToInput[List[T], JsValue] {
             override def toInput(value: List[T]) = {
-              val json = JsArray(value.toVector map ((v: T) => ev.toInput(v)._1))
+              val json = JsArray(value.toVector map ((v: T) ⇒ ev.toInput(v)._1))
 
-              json -> sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+              json → sangria.integration.sprayJson.SprayJsonInputUnmarshaller
             }
           }
 
@@ -272,14 +272,14 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
           CustomInputType,
           defaultValue = """{"title": "Post #1", "text": "Amazing!"}""".parseJson,
           expectedResult = Map(
-            "title" -> "Post #1",
-            "text" -> "Amazing!",
-            "tags" -> List("beginner", "scala"),
-            "views" -> 12,
-            "shares" -> Map("twitter" -> 123, "facebook" -> 456),
-            "comments" -> List(
-              Map("author" -> "John Doe", "text" -> "Nice post!", "likes" -> 100),
-              Map("author" -> "Foo", "text" -> "Bar", "likes" -> 0.1))),
+            "title" → "Post #1",
+            "text" → "Amazing!",
+            "tags" → List("beginner", "scala"),
+            "views" → 12,
+            "shares" → Map("twitter" → 123, "facebook" → 456),
+            "comments" → List(
+              Map("author" → "John Doe", "text" → "Nice post!", "likes" → 100),
+              Map("author" → "Foo", "text" → "Bar", "likes" → 0.1))),
           expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
       }
 
@@ -300,19 +300,19 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
           CustomInputType,
           defaultValue = """{"title": "Post #1", "text": "Amazing!"}""".parseJson,
           expectedResult = Map(
-            "title" -> "Post #1",
-            "text" -> "Amazing!",
-            "tags" -> List("beginner", "scala"),
-            "views" -> 12,
-            "shares" -> Map("twitter" -> 123, "facebook" -> 456),
-            "comments" -> List(
-              Map("author" -> "John Doe", "text" -> "Nice post!", "likes" -> 100),
-              Map("author" -> "Foo", "text" -> "Bar", "likes" -> 0.1))),
+            "title" → "Post #1",
+            "text" → "Amazing!",
+            "tags" → List("beginner", "scala"),
+            "views" → 12,
+            "shares" → Map("twitter" → 123, "facebook" → 456),
+            "comments" → List(
+              Map("author" → "John Doe", "text" → "Nice post!", "likes" → 100),
+              Map("author" → "Foo", "text" → "Bar", "likes" → 0.1))),
           expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
       }
     }
 
-    // FIXME: commented out because play requires Java 8 --> Move to integration library in order to remain compatible with Java 7 here
+    // FIXME: commented out because play requires Java 8 -→ Move to integration library in order to remain compatible with Java 7 here
 //    "used with play JSON values" should {
 //      "generated typeclass-based serialisation" in {
 //        import play.api.libs.json._
@@ -330,14 +330,14 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
 //          CustomInputType,
 //          defaultValue = Json.parse("""{"title": "Post #1", "text": "Amazing!"}"""),
 //          expectedResult = Map(
-//            "title" -> "Post #1",
-//            "text" -> "Amazing!",
-//            "tags" -> List("beginner", "scala"),
-//            "views" -> 12,
-//            "shares" -> Map("twitter" -> 123, "facebook" -> 456),
-//            "comments" -> List(
-//              Map("author" -> "John Doe", "text" -> "Nice post!", "likes" -> 100),
-//              Map("author" -> "Foo", "text" -> "Bar", "likes" -> 0.1))),
+//            "title" → "Post #1",
+//            "text" → "Amazing!",
+//            "tags" → List("beginner", "scala"),
+//            "views" → 12,
+//            "shares" → Map("twitter" → 123, "facebook" → 456),
+//            "comments" → List(
+//              Map("author" → "John Doe", "text" → "Nice post!", "likes" → 100),
+//              Map("author" → "Foo", "text" → "Bar", "likes" → 0.1))),
 //          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
 //      }
 //    }

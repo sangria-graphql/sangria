@@ -109,7 +109,7 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$d' is not defined." -> Some(Pos(3, 41))
+        "Variable '$d' is not defined." → Some(Pos(3, 41))
       ))
 
     "variable not defined by un-named query" in expectFails(
@@ -119,7 +119,7 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined." -> Some(Pos(3, 20))
+        "Variable '$a' is not defined." → Some(Pos(3, 20))
       ))
 
     "multiple variables not defined" in expectFails(
@@ -129,8 +129,8 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined." -> Some(Pos(3, 20)),
-        "Variable '$c' is not defined." -> Some(Pos(3, 34))
+        "Variable '$a' is not defined." → Some(Pos(3, 20)),
+        "Variable '$c' is not defined." → Some(Pos(3, 34))
       ))
 
     "variable in fragment not defined by un-named query" in expectFails(
@@ -143,7 +143,7 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined." -> Some(Pos(6, 20))
+        "Variable '$a' is not defined." → Some(Pos(6, 20))
       ))
 
     "variable in fragment not defined by operation" in expectFailsPosList(
@@ -166,7 +166,7 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$c' is not defined by operation 'Foo'." -> List(Pos(16, 20), Pos(2, 9))
+        "Variable '$c' is not defined by operation 'Foo'." → List(Pos(16, 20), Pos(2, 9))
       ))
 
     "multiple variables in fragments not defined" in expectFailsPosList(
@@ -189,8 +189,8 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(6, 20), Pos(2, 9)),
-        "Variable '$c' is not defined by operation 'Foo'." -> List(Pos(16, 20), Pos(2, 9))
+        "Variable '$a' is not defined by operation 'Foo'." → List(Pos(6, 20), Pos(2, 9)),
+        "Variable '$c' is not defined by operation 'Foo'." → List(Pos(16, 20), Pos(2, 9))
       ))
 
     "single variable in fragment not defined by multiple operations" in expectFailsPosList(
@@ -206,8 +206,8 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$b' is not defined by operation 'Foo'." -> List(Pos(9, 27), Pos(2, 9)),
-        "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(9, 27), Pos(5, 9))
+        "Variable '$b' is not defined by operation 'Foo'." → List(Pos(9, 27), Pos(2, 9)),
+        "Variable '$b' is not defined by operation 'Bar'." → List(Pos(9, 27), Pos(5, 9))
       ))
 
     "variables in fragment not defined by multiple operations" in expectFailsPosList(
@@ -223,8 +223,8 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(9, 20), Pos(2, 9)),
-        "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(9, 27), Pos(5, 9))
+        "Variable '$a' is not defined by operation 'Foo'." → List(Pos(9, 20), Pos(2, 9)),
+        "Variable '$b' is not defined by operation 'Bar'." → List(Pos(9, 27), Pos(5, 9))
       ))
 
     "variable in fragment used by other operation" in expectFailsPosList(
@@ -243,8 +243,8 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(9, 20), Pos(2, 9)),
-        "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(12, 20), Pos(5, 9))
+        "Variable '$a' is not defined by operation 'Foo'." → List(Pos(9, 20), Pos(2, 9)),
+        "Variable '$b' is not defined by operation 'Bar'." → List(Pos(12, 20), Pos(5, 9))
       ))
 
     "multiple undefined variables produce multiple errors" in expectFailsPosList(
@@ -265,12 +265,12 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(9, 21), Pos(2, 9)),
-        "Variable '$c' is not defined by operation 'Foo'." -> List(Pos(14, 21), Pos(2, 9)),
-        "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(11, 21), Pos(2, 9)),
-        "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(9, 28), Pos(5, 9)),
-        "Variable '$c' is not defined by operation 'Bar'." -> List(Pos(14, 21), Pos(5, 9)),
-        "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(11, 28), Pos(5, 9))
+        "Variable '$a' is not defined by operation 'Foo'." → List(Pos(9, 21), Pos(2, 9)),
+        "Variable '$c' is not defined by operation 'Foo'." → List(Pos(14, 21), Pos(2, 9)),
+        "Variable '$a' is not defined by operation 'Foo'." → List(Pos(11, 21), Pos(2, 9)),
+        "Variable '$b' is not defined by operation 'Bar'." → List(Pos(9, 28), Pos(5, 9)),
+        "Variable '$c' is not defined by operation 'Bar'." → List(Pos(14, 21), Pos(5, 9)),
+        "Variable '$b' is not defined by operation 'Bar'." → List(Pos(11, 28), Pos(5, 9))
       ))
   }
 }

@@ -29,14 +29,14 @@ object InputUnmarshaller {
   def emptyMapVars = tag[ScalaInput](Map.empty[String, Any])
 
   implicit def scalaInputUnmarshaller[T] = new InputUnmarshaller[T @@ ScalaInput] {
-    def getRootMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, Any]] get key map (v => tag[ScalaInput](v.asInstanceOf[T]))
+    def getRootMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, Any]] get key map (v ⇒ tag[ScalaInput](v.asInstanceOf[T]))
 
     def isMapNode(node: T @@ ScalaInput) = node.isInstanceOf[Map[_, _]]
-    def getMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, _]] get key map (v => tag[ScalaInput](v.asInstanceOf[T]))
+    def getMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, _]] get key map (v ⇒ tag[ScalaInput](v.asInstanceOf[T]))
     def getMapKeys(node: T @@ ScalaInput) = node.asInstanceOf[Map[String, _]].keySet
 
     def isArrayNode(node: T @@ ScalaInput) = node.isInstanceOf[Seq[_]]
-    def getListValue(node: T @@ ScalaInput) = node.asInstanceOf[Seq[_]] map (v => tag[ScalaInput](v.asInstanceOf[T]))
+    def getListValue(node: T @@ ScalaInput) = node.asInstanceOf[Seq[_]] map (v ⇒ tag[ScalaInput](v.asInstanceOf[T]))
 
     def isDefined(node: T @@ ScalaInput) = node != null
     def isScalarNode(node: T @@ ScalaInput) = !(isMapNode(node) || isArrayNode(node))

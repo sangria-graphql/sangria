@@ -10,7 +10,7 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
 
     def emptyMapNode = JsObject.empty
     def mapNode(keyValues: Seq[(String, JsValue)]) = JsObject(keyValues: _*)
-    def addMapNodeElem(node: JsValue, key: String, value: JsValue) = JsObject(node.asInstanceOf[JsObject].fields + (key -> value))
+    def addMapNodeElem(node: JsValue, key: String, value: JsValue) = JsObject(node.asInstanceOf[JsObject].fields + (key → value))
 
     def emptyArrayNode = JsArray.empty
     def isEmptyArrayNode(array: JsValue) = array.asInstanceOf[JsArray].elements.isEmpty
@@ -42,14 +42,14 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
 
     def isDefined(node: JsValue) = node != JsNull
     def getScalarValue(node: JsValue) = node match {
-      case JsBoolean(b) => b
-      case JsNumber(d) => d.toBigIntExact getOrElse d
-      case JsString(s) => s
-      case _ => throw new IllegalStateException(s"$node is not a scalar value")
+      case JsBoolean(b) ⇒ b
+      case JsNumber(d) ⇒ d.toBigIntExact getOrElse d
+      case JsString(s) ⇒ s
+      case _ ⇒ throw new IllegalStateException(s"$node is not a scalar value")
     }
     def isScalarNode(node: JsValue) = node match {
-      case _: JsBoolean | _: JsNumber | _: JsString => true
-      case _ => false
+      case _: JsBoolean | _: JsNumber | _: JsString ⇒ true
+      case _ ⇒ false
     }
 
     def render(node: JsValue) = node.compactPrint
@@ -64,7 +64,7 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
 
   implicit def sprayJsonWriterToInput[T : JsonWriter]: ToInput[T, JsValue] =
     new ToInput[T, JsValue] {
-      def toInput(value: T) = implicitly[JsonWriter[T]].write(value) -> SprayJsonInputUnmarshaller
+      def toInput(value: T) = implicitly[JsonWriter[T]].write(value) → SprayJsonInputUnmarshaller
     }
 }
 

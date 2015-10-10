@@ -9,7 +9,7 @@ import sangria.ast.AstVisitorCommand._
 import sangria.renderer.{SchemaRenderer, QueryRenderer}
 import sangria.validation._
 
-import scala.collection.mutable.{Set => MutableSet, Map => MutableMap}
+import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap}
 
 /**
  * Variables passed to field arguments conform to type
@@ -22,23 +22,23 @@ class VariablesInAllowedPosition extends ValidationRule {
     val visitedFragmentNames = MutableSet[String]()
 
     override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition =>
+      case _: ast.OperationDefinition ⇒
         varDefs.clear()
         visitedFragmentNames.clear()
         Right(Continue)
-      case varDef: ast.VariableDefinition =>
+      case varDef: ast.VariableDefinition ⇒
         varDefs(varDef.name) = varDef
         Right(Continue)
-      case ast.FragmentSpread(name, _, _) if visitedFragmentNames contains name =>
+      case ast.FragmentSpread(name, _, _) if visitedFragmentNames contains name ⇒
         Right(Skip)
-      case ast.FragmentSpread(name, _, _) =>
+      case ast.FragmentSpread(name, _, _) ⇒
         visitedFragmentNames += name
         Right(Continue)
-      case ast.VariableValue(name, pos) =>
+      case ast.VariableValue(name, pos) ⇒
         val res = for {
-          varDef <- varDefs get name
-          varTpe <- ctx.schema.getInputType(varDef.tpe)
-          inputType <- ctx.typeInfo.inputType
+          varDef ← varDefs get name
+          varTpe ← ctx.schema.getInputType(varDef.tpe)
+          inputType ← ctx.typeInfo.inputType
         } yield if (varTypeAllowedForType(effectiveType(varTpe, varDef), inputType))
           Vector.empty
         else
@@ -50,8 +50,8 @@ class VariablesInAllowedPosition extends ValidationRule {
             pos.toList))
 
         res match {
-          case Some(errors) if errors.nonEmpty => Left(errors)
-          case _ => Right(Continue)
+          case Some(errors) if errors.nonEmpty ⇒ Left(errors)
+          case _ ⇒ Right(Continue)
         }
     }
 
@@ -68,11 +68,11 @@ class VariablesInAllowedPosition extends ValidationRule {
     // be more strict than the expected item type.
     def varTypeAllowedForType(varType: InputType[_], expectedType: InputType[_]): Boolean =
       (varType, expectedType) match {
-        case (OptionInputType(ofType1), OptionInputType(ofType2)) => varTypeAllowedForType(ofType1, ofType2)
-        case (vt, OptionInputType(ofType2)) => varTypeAllowedForType(vt, ofType2)
-        case (ListInputType(ofType1), ListInputType(ofType2)) => varTypeAllowedForType(ofType1, ofType2)
-        case (t1: Named, t2: Named) => t1 == t2
-        case _ => false
+        case (OptionInputType(ofType1), OptionInputType(ofType2)) ⇒ varTypeAllowedForType(ofType1, ofType2)
+        case (vt, OptionInputType(ofType2)) ⇒ varTypeAllowedForType(vt, ofType2)
+        case (ListInputType(ofType1), ListInputType(ofType2)) ⇒ varTypeAllowedForType(ofType1, ofType2)
+        case (t1: Named, t2: Named) ⇒ t1 == t2
+        case _ ⇒ false
       }
   }
 }

@@ -25,7 +25,7 @@ class PlayJsonSupportSpec extends WordSpec with Matchers with AwaitSupport {
         }
         """)
 
-      val args = JsObject(Seq("someId" -> JsString("1000")))
+      val args = JsObject(Seq("someId" → JsString("1000")))
 
       val result = Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
         .execute(query, variables = args).await
@@ -57,10 +57,10 @@ class PlayJsonSupportSpec extends WordSpec with Matchers with AwaitSupport {
       PlayJsonResultMarshaller.bigDecimalNode(BigDecimal("12323432432432.2435454354543")) should be (JsNumber(BigDecimal("12323432432432.2435454354543")))
 
       PlayJsonResultMarshaller.emptyMapNode should be (JsObject(Nil))
-      PlayJsonResultMarshaller.addMapNodeElem(JsObject(Seq("aa" -> JsString("bb"))), "cc", JsNumber(321)) should be (
-        JsObject(Seq("aa" -> JsString("bb"), "cc" -> JsNumber(321))))
-      PlayJsonResultMarshaller.mapNode("aa" -> JsString("bb") :: "cc" -> JsNumber(321) :: Nil) should be (
-        JsObject(Seq("aa" -> JsString("bb"), "cc" -> JsNumber(321))))
+      PlayJsonResultMarshaller.addMapNodeElem(JsObject(Seq("aa" → JsString("bb"))), "cc", JsNumber(321)) should be (
+        JsObject(Seq("aa" → JsString("bb"), "cc" → JsNumber(321))))
+      PlayJsonResultMarshaller.mapNode("aa" → JsString("bb") :: "cc" → JsNumber(321) :: Nil) should be (
+        JsObject(Seq("aa" → JsString("bb"), "cc" → JsNumber(321))))
 
       PlayJsonResultMarshaller.nullNode should be (JsNull)
     }

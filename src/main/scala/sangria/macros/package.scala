@@ -1,6 +1,6 @@
 package sangria
 
-import scala.language.experimental.{macros => `scalac, please just let me do it!`}
+import scala.language.experimental.{macros ⇒ `scalac, please just let me do it!`}
 
 import sangria.ast.Document
 import sangria.parser.{SyntaxError, QueryParser}
@@ -22,16 +22,16 @@ package object macros {
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any
         // expressions, thus containing only a single tree
-        case Apply(_, List(Apply(_, t :: Nil))) =>
+        case Apply(_, List(Apply(_, t :: Nil))) ⇒
           val q"${gql: String}" = t
 
           try {
             q"${QueryParser.parse(gql.stripMargin).get}"
           } catch {
-            case syntaxError: SyntaxError =>
+            case syntaxError: SyntaxError ⇒
               c.abort(c.enclosingPosition, syntaxError.getMessage)
           }
-        case _ =>
+        case _ ⇒
           c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
       }
     }

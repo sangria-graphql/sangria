@@ -8,7 +8,7 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
 
     def emptyMapNode = JsObject(Seq.empty)
     def mapNode(keyValues: Seq[(String, JsValue)]) = JsObject(keyValues)
-    def addMapNodeElem(node: JsValue, key: String, value: JsValue) = node.asInstanceOf[JsObject] + (key -> value)
+    def addMapNodeElem(node: JsValue, key: String, value: JsValue) = node.asInstanceOf[JsObject] + (key → value)
 
     def emptyArrayNode = JsArray(Seq.empty)
     def isEmptyArrayNode(array: JsValue) = array.asInstanceOf[JsArray].value.isEmpty
@@ -40,14 +40,14 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
 
     def isDefined(node: JsValue) = node != JsNull
     def getScalarValue(node: JsValue) = node match {
-      case JsBoolean(b) => b
-      case JsNumber(d) => d.toBigIntExact getOrElse d
-      case JsString(s) => s
-      case _ => throw new IllegalStateException(s"$node is not a scalar value")
+      case JsBoolean(b) ⇒ b
+      case JsNumber(d) ⇒ d.toBigIntExact getOrElse d
+      case JsString(s) ⇒ s
+      case _ ⇒ throw new IllegalStateException(s"$node is not a scalar value")
     }
     def isScalarNode(node: JsValue) = node match {
-      case _: JsBoolean | _: JsNumber | _: JsString => true
-      case _ => false
+      case _: JsBoolean | _: JsNumber | _: JsString ⇒ true
+      case _ ⇒ false
     }
 
     def render(node: JsValue) = Json.stringify(node)
@@ -62,7 +62,7 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
 
   implicit def playJsonWriterToInput[T : Writes]: ToInput[T, JsValue] =
     new ToInput[T, JsValue] {
-      def toInput(value: T) = implicitly[Writes[T]].writes(value) -> PlayJsonInputUnmarshaller
+      def toInput(value: T) = implicitly[Writes[T]].writes(value) → PlayJsonInputUnmarshaller
     }
 }
 

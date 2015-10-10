@@ -70,17 +70,17 @@ object TestData {
 
   class FriendsResolver extends DeferredResolver[Any] {
     override def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
-      case DeferFriends(friendIds) =>
-        Future.fromTry(Try(friendIds map (id => characters.find(_.id == id))))
+      case DeferFriends(friendIds) ⇒
+        Future.fromTry(Try(friendIds map (id ⇒ characters.find(_.id == id))))
     }
   }
 
   class CharacterRepo {
     def getHero(episode: Option[Episode.Value]) =
-      episode flatMap (_ => getHuman("1000")) getOrElse characters.last
+      episode flatMap (_ ⇒ getHuman("1000")) getOrElse characters.last
 
-    def getHuman(id: String): Option[Human] = characters.find(c => c.isInstanceOf[Human] && c.id == id).asInstanceOf[Option[Human]]
+    def getHuman(id: String): Option[Human] = characters.find(c ⇒ c.isInstanceOf[Human] && c.id == id).asInstanceOf[Option[Human]]
 
-    def getDroid(id: String): Option[Droid] = characters.find(c => c.isInstanceOf[Droid] && c.id == id).asInstanceOf[Option[Droid]]
+    def getDroid(id: String): Option[Droid] = characters.find(c ⇒ c.isInstanceOf[Droid] && c.id == id).asInstanceOf[Option[Droid]]
   }
 }

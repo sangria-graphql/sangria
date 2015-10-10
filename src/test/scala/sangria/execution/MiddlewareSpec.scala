@@ -9,7 +9,7 @@ import sangria.macros._
 import sangria.schema._
 import sangria.util.AwaitSupport
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable.{Map ⇒ MutableMap}
 import scala.concurrent.Future
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,14 +50,14 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
       val key = cacheKey(ctx)
 
       if (ctx.field.tags.contains(Cacheed))
-        cache.contains(key) -> cache.get(cacheKey(ctx))
+        cache.contains(key) → cache.get(cacheKey(ctx))
       else
         noCache
     }
 
     def afterField(cache: QueryVal, fromCache: FieldVal, value: Any, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
       if (ctx.field.tags.contains(Cacheed) && !fromCache)
-        cache += cacheKey(ctx) -> Value(value)
+        cache += cacheKey(ctx) → Value(value)
 
       None
     }
@@ -110,32 +110,32 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
       }
   }
 
-  val TestObject: ObjectType[Count, Unit] = ObjectType("Test", () => fields[Count, Unit](
-    Field("error", OptionType(StringType), resolve = _ => throw new IllegalStateException("boom")),
-    Field("futureError", OptionType(StringType), resolve = _ => Future.failed[Option[String]](new IllegalStateException("boom"))),
-    Field("defError", OptionType(StringType), resolve = _ => Fail),
-    Field("someString", StringType, resolve = _ => "nothing special"),
-    Field("errorInAfter", OptionType(StringType), resolve = _ => "everything ok here"),
-    Field("errorInBefore", OptionType(StringType), resolve = _ => "everything ok here"),
-    Field("anotherString", StringType, resolve = _ => "foo"),
+  val TestObject: ObjectType[Count, Unit] = ObjectType("Test", () ⇒ fields[Count, Unit](
+    Field("error", OptionType(StringType), resolve = _ ⇒ throw new IllegalStateException("boom")),
+    Field("futureError", OptionType(StringType), resolve = _ ⇒ Future.failed[Option[String]](new IllegalStateException("boom"))),
+    Field("defError", OptionType(StringType), resolve = _ ⇒ Fail),
+    Field("someString", StringType, resolve = _ ⇒ "nothing special"),
+    Field("errorInAfter", OptionType(StringType), resolve = _ ⇒ "everything ok here"),
+    Field("errorInBefore", OptionType(StringType), resolve = _ ⇒ "everything ok here"),
+    Field("anotherString", StringType, resolve = _ ⇒ "foo"),
     Field("cachedId", IntType, tags = Cacheed :: Nil, resolve = _.ctx.count.incrementAndGet()),
-    Field("delay30", StringType, resolve = _ => Future {
+    Field("delay30", StringType, resolve = _ ⇒ Future {
       Thread.sleep(30)
       "slept for 30ms"
     }),
-    Field("nested", TestObject, resolve = _ => ())
+    Field("nested", TestObject, resolve = _ ⇒ ())
   ))
 
   case object Fail extends Deferred[String]
 
   class BrokenResolver extends DeferredResolver[Any] {
     def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
-      case Fail => Future.failed(new IllegalStateException("error in resolver"))
+      case Fail ⇒ Future.failed(new IllegalStateException("error in resolver"))
     }
   }
 
   val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
-    case (m, e: IllegalStateException) => HandledException(e.getMessage)
+    case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
   }
 
   val schema = Schema(TestObject, Some(TestObject))
@@ -177,17 +177,17 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
       val res = Executor.execute(schema, query, userContext = ctx, middleware = new CachingMiddleware :: Nil).await
 
       res.asInstanceOf[Map[String, Any]]("data") should be (Map(
-        "cachedId" -> 1,
-        "foo" -> 1,
-        "someString" -> "nothing special",
-        "nested" -> Map(
-          "cachedId" -> 1,
-          "nested" -> Map(
-            "cachedId" -> 1)),
-        "foo" -> Map(
-          "cachedId" -> 1,
-          "nested" -> Map(
-            "cachedId" -> 1))))
+        "cachedId" → 1,
+        "foo" → 1,
+        "someString" → "nothing special",
+        "nested" → Map(
+          "cachedId" → 1,
+          "nested" → Map(
+            "cachedId" → 1)),
+        "foo" → Map(
+          "cachedId" → 1,
+          "nested" → Map(
+            "cachedId" → 1))))
 
       ctx.count.get() should be (1)
     }
@@ -248,32 +248,32 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
         exceptionHandler = exceptionHandler).await
 
       res.asInstanceOf[Map[String, Any]]("data") should be (Map(
-        "anotherString" -> "foo",
-        "a" -> "something very special!",
-        "someString" -> "something very special!",
-        "error" -> null,
-        "errorInAfter" -> null,
-        "errorInBefore" -> null,
-        "nested" -> Map(
-          "someString" -> "something very special!",
-          "delay30" -> "slept for 30ms",
-          "error" -> null,
-          "futureError" -> null,
-          "defError" -> null,
-          "nested" -> Map(
-            "error" -> null,
-            "defError" -> null))))
+        "anotherString" → "foo",
+        "a" → "something very special!",
+        "someString" → "something very special!",
+        "error" → null,
+        "errorInAfter" → null,
+        "errorInBefore" → null,
+        "nested" → Map(
+          "someString" → "something very special!",
+          "delay30" → "slept for 30ms",
+          "error" → null,
+          "futureError" → null,
+          "defError" → null,
+          "nested" → Map(
+            "error" → null,
+            "defError" → null))))
 
       ctx.metrics.mapValues(_.size) should be (Map(
-        "errors" -> 7,
-        "Test.delay30" -> 1,
-        "Test.nested" -> 2,
-        "Test.someString" -> 3,
-        "Test.anotherString" -> 1,
-        "Test.error" -> 3,
-        "Test.futureError" -> 1,
-        "Test.defError" -> 2,
-        "Test.errorInAfter" -> 1
+        "errors" → 7,
+        "Test.delay30" → 1,
+        "Test.nested" → 2,
+        "Test.someString" → 3,
+        "Test.anotherString" → 1,
+        "Test.error" → 3,
+        "Test.futureError" → 1,
+        "Test.defError" → 2,
+        "Test.errorInAfter" → 1
       ))
     }
   }

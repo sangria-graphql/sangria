@@ -32,14 +32,14 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
     Field("width", OptionType(IntType), resolve = _.value.width),
     Field("height", OptionType(IntType), resolve = _.value.height)))
 
-  val BlogAuthorType = ObjectType("Author", () => fields[Unit, Author](
+  val BlogAuthorType = ObjectType("Author", () ⇒ fields[Unit, Author](
     Field("id", OptionType(StringType), resolve = _.value.id),
     Field("name", OptionType(StringType), resolve = _.value.name),
     Field("pic", OptionType(BlogImageType),
       arguments = Argument("width", OptionInputType(IntType)) :: Argument("height", OptionInputType(IntType)) :: Nil,
-      resolve = ctx => for {w <- ctx.argOpt[Int]("width"); h <- ctx.argOpt[Int]("height"); pic <- ctx.value.pic(w, h)} yield pic),
+      resolve = ctx ⇒ for {w ← ctx.argOpt[Int]("width"); h ← ctx.argOpt[Int]("height"); pic ← ctx.value.pic(w, h)} yield pic),
     Field("recentArticle", OptionType(BlogArticleType),
-      resolve = ctx => ctx.value.recentArticle map (ra => DeferredValue(ArticleDeferred(ra))) getOrElse Value(None))))
+      resolve = ctx ⇒ ctx.value.recentArticle map (ra ⇒ DeferredValue(ArticleDeferred(ra))) getOrElse Value(None))))
 
   val BlogArticleType: ObjectType[Unit, Article] = ObjectType("Article", fields[Unit, Article](
     Field("id", StringType, resolve = _.value.id),
@@ -52,9 +52,9 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
   val BlogQueryType = ObjectType("Query", fields[Unit, Unit](
     Field("article", OptionType(BlogArticleType),
       arguments = Argument("id", OptionInputType(IDType)) :: Nil,
-      resolve = ctx => ctx.argOpt[String]("id") flatMap (id => article(id.toInt))),
+      resolve = ctx ⇒ ctx.argOpt[String]("id") flatMap (id ⇒ article(id.toInt))),
     Field("feed", OptionType(ListType(OptionType(BlogArticleType))),
-      resolve = _ => (1 to 10).toList.map(article))))
+      resolve = _ ⇒ (1 to 10).toList.map(article))))
 
   val BlogSchema = Schema(BlogQueryType)
 
@@ -105,37 +105,37 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
       """)
 
       val expected = Map(
-        "data" -> Map(
-          "feed" -> List(
-            Map("id" -> "1", "title" -> "My Article 1"),
-            Map("id" -> "2", "title" -> "My Article 2"),
-            Map("id" -> "3", "title" -> "My Article 3"),
-            Map("id" -> "4", "title" -> "My Article 4"),
-            Map("id" -> "5", "title" -> "My Article 5"),
-            Map("id" -> "6", "title" -> "My Article 6"),
-            Map("id" -> "7", "title" -> "My Article 7"),
-            Map("id" -> "8", "title" -> "My Article 8"),
-            Map("id" -> "9", "title" -> "My Article 9"),
-            Map("id" -> "10", "title" -> "My Article 10")),
-          "article" -> Map(
-            "id" -> "1",
-            "isPublished" -> true,
-            "title" -> "My Article 1",
-            "body" -> "This is a post",
-            "author" -> Map(
-              "id" -> "123",
-              "name" -> "John Smith",
-              "pic" -> Map(
-                "url" -> "cdn://123",
-                "width" -> 640,
-                "height" -> 480
+        "data" → Map(
+          "feed" → List(
+            Map("id" → "1", "title" → "My Article 1"),
+            Map("id" → "2", "title" → "My Article 2"),
+            Map("id" → "3", "title" → "My Article 3"),
+            Map("id" → "4", "title" → "My Article 4"),
+            Map("id" → "5", "title" → "My Article 5"),
+            Map("id" → "6", "title" → "My Article 6"),
+            Map("id" → "7", "title" → "My Article 7"),
+            Map("id" → "8", "title" → "My Article 8"),
+            Map("id" → "9", "title" → "My Article 9"),
+            Map("id" → "10", "title" → "My Article 10")),
+          "article" → Map(
+            "id" → "1",
+            "isPublished" → true,
+            "title" → "My Article 1",
+            "body" → "This is a post",
+            "author" → Map(
+              "id" → "123",
+              "name" → "John Smith",
+              "pic" → Map(
+                "url" → "cdn://123",
+                "width" → 640,
+                "height" → 480
               ),
-              "recentArticle" -> Map(
-                "id" -> "1",
-                "isPublished" -> true,
-                "title" -> "My Article 1",
-                "body" -> "This is a post",
-                "keywords" -> List("foo", "bar", null, "1")
+              "recentArticle" → Map(
+                "id" → "1",
+                "isPublished" → true,
+                "title" → "My Article 1",
+                "body" → "This is a post",
+                "keywords" → List("foo", "bar", null, "1")
               )
             )
           )
@@ -144,7 +144,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
 
       val resolver = new DeferredResolver[Any] {
         def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
-          case ArticleDeferred(id) => Future.successful(article(id.toInt))
+          case ArticleDeferred(id) ⇒ Future.successful(article(id.toInt))
         }
       }
 

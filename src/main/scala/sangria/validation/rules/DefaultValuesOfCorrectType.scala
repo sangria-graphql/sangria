@@ -16,23 +16,23 @@ import sangria.validation._
 class DefaultValuesOfCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.VariableDefinition(name, _, default, _) =>
+      case ast.VariableDefinition(name, _, default, _) ⇒
         (ctx.typeInfo.inputType, default) match {
-          case (Some(it), Some(d)) if !it.isInstanceOf[OptionInputType[_]] =>
+          case (Some(it), Some(d)) if !it.isInstanceOf[OptionInputType[_]] ⇒
             Left(Vector(DefaultForNonNullArgViolation(
               name,
               SchemaRenderer.renderTypeName(it),
               SchemaRenderer.renderTypeName(OptionInputType(it)),
               ctx.sourceMapper,
               d.position.toList)))
-          case (Some(it), Some(defaultValue)) if !isValidLiteralValue(it, defaultValue) =>
+          case (Some(it), Some(defaultValue)) if !isValidLiteralValue(it, defaultValue) ⇒
             Left(Vector(BadValueForDefaultArgViolation(
               name,
               SchemaRenderer.renderTypeName(it),
               QueryRenderer.render(defaultValue),
               ctx.sourceMapper,
               defaultValue.position.toList)))
-          case _ =>
+          case _ ⇒
             Right(Continue)
         }
     }

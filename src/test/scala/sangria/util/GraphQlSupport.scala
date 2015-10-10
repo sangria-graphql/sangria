@@ -21,7 +21,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
-      case (m, e: IllegalStateException) => HandledException(e.getMessage)
+      case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
     }
 
     Executor(
@@ -46,7 +46,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
 
     errors should have size expectedErrors.size
 
-    expectedErrors foreach (expected => errors should contain (expected))
+    expectedErrors foreach (expected ⇒ errors should contain (expected))
   }
 
   def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, Option[Pos])], args: JsValue = JsObject.empty) = {
@@ -58,13 +58,13 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
 
     errors should have size expectedErrorStrings.size
 
-    expectedErrorStrings foreach { case(expected, pos) =>
-      withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n$errors") {
-        errors exists { error =>
+    expectedErrorStrings foreach { case(expected, pos) ⇒
+      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n$errors") {
+        errors exists { error ⇒
           val message = error("message").asInstanceOf[String]
 
           message.contains(expected) && {
-            pos map { p =>
+            pos map { p ⇒
               val location = error("locations").asInstanceOf[List[Map[String, Any]]](0)
 
               location("line") == p.line && location("column") == p.col

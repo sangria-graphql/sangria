@@ -29,19 +29,19 @@ case class Executor[Ctx, Root](
 
     if (violations.nonEmpty)
       Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(ValidationError(violations)).asInstanceOf[marshaller.Node])
-    else {
+    else {                              
       val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext)(um)
 
       val executionResult = for {
-        operation <- getOperation(queryAst, operationName)
-        unmarshalledVariables <- valueCollector.getVariableValues(operation.variables)
+        operation ← getOperation(queryAst, operationName)
+        unmarshalledVariables ← valueCollector.getVariableValues(operation.variables)
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector)
-        res <- executeOperation(MiddlewareQueryContext(this, queryAst, operationName, variables, um), operation, queryAst.sourceMapper, valueCollector, fieldCollector, marshaller, unmarshalledVariables)
+        res ← executeOperation(MiddlewareQueryContext(this, queryAst, operationName, variables, um), operation, queryAst.sourceMapper, valueCollector, fieldCollector, marshaller, unmarshalledVariables)
       } yield res
 
       executionResult match {
-        case Success(future) => future.asInstanceOf[Future[marshaller.Node]]
-        case Failure(error) => Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])
+        case Success(future) ⇒ future.asInstanceOf[Future[marshaller.Node]]
+        case Failure(error) ⇒ Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])
       }
     }
   }
@@ -50,7 +50,7 @@ case class Executor[Ctx, Root](
     if (document.operations.size != 1 && operationName.isEmpty)
       Failure(new ExecutionError("Must provide operation name if query contains multiple operations"))
     else {
-      val operation = operationName flatMap (opName => document.operations get Some(opName)) orElse document.operations.values.headOption
+      val operation = operationName flatMap (opName ⇒ document.operations get Some(opName)) orElse document.operations.values.headOption
 
       operation map (Success(_)) getOrElse Failure(new ExecutionError(s"Unknown operation name: ${operationName.get}"))
     }
@@ -64,31 +64,31 @@ case class Executor[Ctx, Root](
       marshaller: ResultMarshaller,
       variables: Map[String, Any]) =
     for {
-      tpe <- getOperationRootType(operation, sourceMapper)
-      fields <- fieldCollector.collectFields(Nil, tpe, operation :: Nil)
-      middlewareVal = middleware map (m => m.beforeQuery(middlewareCtx) -> m)
+      tpe ← getOperationRootType(operation, sourceMapper)
+      fields ← fieldCollector.collectFields(Nil, tpe, operation :: Nil)
+      middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
       resolver = new Resolver[Ctx](marshaller, middlewareCtx, schema, valueCollector, variables, fieldCollector, userContext, exceptionHandler, deferredResolver, sourceMapper, deprecationTracker, middlewareVal, maxQueryDepth)
     } yield {
       val result =
         operation.operationType match {
-          case ast.OperationType.Query => resolver.resolveFieldsPar(tpe, root, fields)
-          case ast.OperationType.Mutation => resolver.resolveFieldsSeq(tpe, root, fields)
+          case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields)
+          case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields)
         }
 
       if (middlewareVal.nonEmpty) {
         def onAfter() =
-          middlewareVal foreach {case (v, m) => m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)}
+          middlewareVal foreach {case (v, m) ⇒ m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)}
 
         result
-          .map {x => onAfter(); x}
-          .recover {case e => onAfter(); throw e}
+          .map {x ⇒ onAfter(); x}
+          .recover {case e ⇒ onAfter(); throw e}
       } else result
 
     }
 
   def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
-    case ast.OperationType.Query => Success(schema.query)
-    case ast.OperationType.Mutation => schema.mutation map (Success(_)) getOrElse
+    case ast.OperationType.Query ⇒ Success(schema.query)
+    case ast.OperationType.Mutation ⇒ schema.mutation map (Success(_)) getOrElse
         Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position.toList))
   }
 }

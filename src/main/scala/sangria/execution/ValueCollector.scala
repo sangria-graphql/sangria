@@ -19,29 +19,29 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       Failure(new ExecutionError(s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}"))
     else {
       val res = definitions.foldLeft(List[(String, Either[List[Violation], Any])]()) {
-        case (acc, varDef) =>
+        case (acc, varDef) ⇒
           val value = schema.getInputType(varDef.tpe)
             .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
             .getOrElse(Left(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position.toList) :: Nil))
 
           value match {
-            case Right(Some(v)) => acc :+ (varDef.name, Right(v))
-            case Right(None) => acc
-            case l: Left[_, _] => acc :+ (varDef.name, l)
+            case Right(Some(v)) ⇒ acc :+ (varDef.name, Right(v))
+            case Right(None) ⇒ acc
+            case l: Left[_, _] ⇒ acc :+ (varDef.name, l)
           }
       }
 
       val (errors, values) = res.partition(_._2.isLeft)
 
-      if (errors.nonEmpty) Failure(VariableCoercionError(errors.collect{case (name, Left(errors)) => errors}.flatten))
-      else Success(Map(values.collect {case (name, Right(v)) => name -> v}: _*))
+      if (errors.nonEmpty) Failure(VariableCoercionError(errors.collect{case (name, Left(errors)) ⇒ errors}.flatten))
+      else Success(Map(values.collect {case (name, Right(v)) ⇒ name → v}: _*))
     }
 
   def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
     val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
 
     val res = argumentDefs.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
-      case (acc, argDef) =>
+      case (acc, argDef) ⇒
         val argPath = argDef.name :: Nil
         val astValue = astArgMap get argDef.name map (_.value)
 
@@ -49,7 +49,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
           astValue map (coerceAstValue(argDef.argumentType, argPath, _, variables)) getOrElse Right(None), allowErrorsOnDefault = true)
     }
 
-    val errors = res.collect{case (_, Left(errors)) => errors}.toList.flatten
+    val errors = res.collect{case (_, Left(errors)) ⇒ errors}.toList.flatten
 
     if (errors.nonEmpty) Failure(AttributeCoercionError(errors))
     else Success(res mapValues (_.right.get))

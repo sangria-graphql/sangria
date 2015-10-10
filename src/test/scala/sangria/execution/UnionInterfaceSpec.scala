@@ -64,33 +64,33 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
         }
       """,
       Map(
-        "data" -> Map(
-          "Named" -> Map(
-            "kind" -> "INTERFACE",
-            "name" -> "Named",
-            "fields" -> List(
-              Map("name" -> "name")
+        "data" → Map(
+          "Named" → Map(
+            "kind" → "INTERFACE",
+            "name" → "Named",
+            "fields" → List(
+              Map("name" → "name")
             ),
-            "interfaces" -> null,
-            "possibleTypes" -> List(
-              Map("name" -> "Cat"),
-              Map("name" -> "Dog"),
-              Map("name" -> "Person")
+            "interfaces" → null,
+            "possibleTypes" → List(
+              Map("name" → "Cat"),
+              Map("name" → "Dog"),
+              Map("name" → "Person")
             ),
-            "enumValues" -> null,
-            "inputFields" -> null
+            "enumValues" → null,
+            "inputFields" → null
           ),
-          "Pet" -> Map(
-            "kind" -> "UNION",
-            "name" -> "Pet",
-            "fields" -> null,
-            "interfaces" -> null,
-            "possibleTypes" -> List(
-              Map("name" -> "Dog"),
-              Map("name" -> "Cat")
+          "Pet" → Map(
+            "kind" → "UNION",
+            "name" → "Pet",
+            "fields" → null,
+            "interfaces" → null,
+            "possibleTypes" → List(
+              Map("name" → "Dog"),
+              Map("name" → "Cat")
             ),
-            "enumValues" -> null,
-            "inputFields" -> null
+            "enumValues" → null,
+            "inputFields" → null
           )
         )
       )
@@ -111,12 +111,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
        }
       """,
       Map(
-        "data" -> Map(
-          "__typename" -> "Person",
-          "name" -> "Bob",
-          "pets" -> List(
-            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
-            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
+        "data" → Map(
+          "__typename" → "Person",
+          "name" → "Bob",
+          "pets" → List(
+            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )
         )
       )
@@ -142,12 +142,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
         }
       """,
       Map(
-        "data" -> Map(
-          "__typename" -> "Person",
-          "name" -> "Bob",
-          "pets" -> List(
-            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
-            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
+        "data" → Map(
+          "__typename" → "Person",
+          "name" → "Bob",
+          "pets" → List(
+            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )
         )
       )
@@ -168,12 +168,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
         }
       """,
       Map(
-        "data" -> Map(
-          "__typename" -> "Person",
-          "name" -> "Bob",
-          "friends" -> List(
-            Map("__typename" -> "Person", "name" -> "Liz"),
-            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
+        "data" → Map(
+          "__typename" → "Person",
+          "name" → "Bob",
+          "friends" → List(
+            Map("__typename" → "Person", "name" → "Liz"),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )
         )
       )
@@ -198,12 +198,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
         }
       """,
       Map(
-        "data" -> Map(
-          "__typename" -> "Person",
-          "name" -> "Bob",
-          "friends" -> List(
-            Map("__typename" -> "Person", "name" -> "Liz"),
-            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
+        "data" → Map(
+          "__typename" → "Person",
+          "name" → "Bob",
+          "friends" → List(
+            Map("__typename" → "Person", "name" → "Liz"),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )
         )
       )
@@ -243,16 +243,16 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
         }
       """,
       Map(
-        "data" -> Map(
-          "__typename" -> "Person",
-          "name" -> "Bob",
-          "pets" -> List(
-            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
-            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
+        "data" → Map(
+          "__typename" → "Person",
+          "name" → "Bob",
+          "pets" → List(
+            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           ),
-          "friends" -> List(
-            Map("__typename" -> "Person", "name" -> "Liz"),
-            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
+          "friends" → List(
+            Map("__typename" → "Person", "name" → "Liz"),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )
         )
       )

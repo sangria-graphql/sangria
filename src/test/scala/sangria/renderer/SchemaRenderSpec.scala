@@ -16,7 +16,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
   def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil) = {
     val root = ObjectType("Root", fields[Unit, Unit](
-      Field("singleField", tpe.asInstanceOf[OutputType[Unit]], arguments = args, resolve = _ => ())
+      Field("singleField", tpe.asInstanceOf[OutputType[Unit]], arguments = args, resolve = _ ⇒ ())
     ))
     val schema = Schema(root)
 
@@ -66,11 +66,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
     "Print Object Field" in {
       val foo = ObjectType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "foo")
+        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
       ))
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("foo", OptionType(foo), resolve = _ => ())
+        Field("foo", OptionType(foo), resolve = _ ⇒ ())
       ))
 
       val schema = Schema(root)
@@ -177,13 +177,13 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
     "Print Interface" in {
       val foo = InterfaceType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "foo")
+        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
       ))
 
       val bar = ObjectType("Bar", interfaces[Unit, Unit](foo), Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ => ())
+        Field("bar", OptionType(bar), resolve = _ ⇒ ())
       ))
 
       val schema = Schema(root)
@@ -205,17 +205,17 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
     "Print Multiple Interface" in {
       val foo = InterfaceType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "foo")
+        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
       ))
 
       val baz = InterfaceType("Baaz", fields[Unit, Unit](
-        Field("int", OptionType(IntType), resolve = _ => 1)
+        Field("int", OptionType(IntType), resolve = _ ⇒ 1)
       ))
 
       val bar = ObjectType("Bar", interfaces[Unit, Unit](foo, baz), Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ => ())
+        Field("bar", OptionType(bar), resolve = _ ⇒ ())
       ))
 
       val schema = Schema(root)
@@ -242,19 +242,19 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
     "Print Unions" in {
       val foo = ObjectType("Foo", fields[Unit, Unit](
-        Field("bool", OptionType(BooleanType), resolve = _ => true)
+        Field("bool", OptionType(BooleanType), resolve = _ ⇒ true)
       ))
 
       val bar = ObjectType("Bar", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "f")
+        Field("str", OptionType(StringType), resolve = _ ⇒ "f")
       ))
 
       val singleUnion = UnionType("SingleUnion", types = foo :: Nil)
       val multipleUnion = UnionType("MultipleUnion", types = foo :: bar :: Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("single", OptionType(singleUnion), resolve = _ => ()),
-        Field("multiple", OptionType(multipleUnion), resolve = _ => ())
+        Field("single", OptionType(singleUnion), resolve = _ ⇒ ()),
+        Field("multiple", OptionType(multipleUnion), resolve = _ ⇒ ())
       ))
 
       val schema = Schema(root)
@@ -287,7 +287,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
       val root = ObjectType("Root", fields[Unit, Unit](
         Field("str", OptionType(StringType),
           arguments = Argument("argOne", OptionInputType(inputType)) :: Nil,
-          resolve = _ => None)
+          resolve = _ ⇒ None)
       ))
 
       val schema = Schema(root)
@@ -307,18 +307,18 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
       val odd = ScalarType[Int]("Odd",
         coerceOutput = ast.IntValue(_),
         coerceUserInput = {
-          case i: Int if i % 2 != 0 => Right(i)
-          case i: BigInt if i.isValidInt && i % 2 != BigInt(0) => Right(i.intValue)
-          case _ => Left(IntCoercionViolation)
+          case i: Int if i % 2 != 0 ⇒ Right(i)
+          case i: BigInt if i.isValidInt && i % 2 != BigInt(0) ⇒ Right(i.intValue)
+          case _ ⇒ Left(IntCoercionViolation)
         },
         coerceInput = {
-          case ast.IntValue(i, _) if i % 2 != 0 => Right(i)
-          case ast.BigIntValue(i, _) if i.isValidInt && i % 2 != BigInt(0) => Right(i.intValue)
-          case _ => Left(IntCoercionViolation)
+          case ast.IntValue(i, _) if i % 2 != 0 ⇒ Right(i)
+          case ast.BigIntValue(i, _) if i.isValidInt && i % 2 != BigInt(0) ⇒ Right(i.intValue)
+          case _ ⇒ Left(IntCoercionViolation)
         })
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("odd", OptionType(odd), resolve = _ => None)
+        Field("odd", OptionType(odd), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(root)
@@ -339,7 +339,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         EnumValue("BLUE", value = 3)))
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("rgb", OptionType(rgb), resolve = _ => None)
+        Field("rgb", OptionType(rgb), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(root)

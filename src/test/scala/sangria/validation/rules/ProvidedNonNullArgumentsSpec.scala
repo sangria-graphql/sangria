@@ -110,7 +110,7 @@ class ProvidedNonNullArgumentsSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." -> Some(Pos(4, 15))
+          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." → Some(Pos(4, 15))
         ))
 
       "Missing multiple non-nullable arguments" in expectFails(
@@ -122,8 +122,8 @@ class ProvidedNonNullArgumentsSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." -> Some(Pos(4, 15)),
-          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." -> Some(Pos(4, 15))
+          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." → Some(Pos(4, 15)),
+          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." → Some(Pos(4, 15))
         ))
 
       "Incorrect value and missing argument" in expectFails(
@@ -135,7 +135,7 @@ class ProvidedNonNullArgumentsSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." -> Some(Pos(4, 15))
+          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." → Some(Pos(4, 15))
         ))
     }
 
@@ -168,8 +168,8 @@ class ProvidedNonNullArgumentsSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'include' argument 'if' of type 'Boolean!' is required but not provided." -> Some(Pos(3, 17)),
-          "Field 'skip' argument 'if' of type 'Boolean!' is required but not provided." -> Some(Pos(4, 20))
+          "Field 'include' argument 'if' of type 'Boolean!' is required but not provided." → Some(Pos(3, 17)),
+          "Field 'skip' argument 'if' of type 'Boolean!' is required but not provided." → Some(Pos(4, 20))
         ))
     }
   }

@@ -17,19 +17,19 @@ import scala.language.postfixOps
 class ScalarLeafs extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.Field(_, name, _, _, sels, pos) =>
+      case ast.Field(_, name, _, _, sels, pos) ⇒
         ctx.typeInfo.tpe match {
-          case Some(fieldType) =>
+          case Some(fieldType) ⇒
             val named = ctx.typeInfo.getNamedType(fieldType)
 
             named match {
-              case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty =>
+              case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty ⇒
                 Left(Vector(NoSubselectionAllowedViolation(name, SchemaRenderer.renderTypeName(tpe, true), ctx.sourceMapper, pos.toList)))
-              case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty =>
+              case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty ⇒
                 Left(Vector(RequiredSubselectionViolation(name, SchemaRenderer.renderTypeName(tpe, true), ctx.sourceMapper, pos.toList)))
-              case _ => Right(Continue)
+              case _ ⇒ Right(Continue)
             }
-          case None => Right(Continue)
+          case None ⇒ Right(Continue)
         }
     }
   }

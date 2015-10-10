@@ -71,7 +71,7 @@ class UniqueOperationNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can only be one operation named 'Foo'." -> Some(Pos(5, 9))
+        "There can only be one operation named 'Foo'." → Some(Pos(5, 9))
       ))
 
     "multiple operations of same name of different types" in expectFails(
@@ -84,7 +84,7 @@ class UniqueOperationNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can only be one operation named 'Foo'." -> Some(Pos(5, 9))
+        "There can only be one operation named 'Foo'." → Some(Pos(5, 9))
       ))
   }
 }

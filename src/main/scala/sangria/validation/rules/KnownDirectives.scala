@@ -16,23 +16,23 @@ import sangria.validation._
 class KnownDirectives extends ValidationRule {
    override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
      override val onEnter: ValidationVisit = {
-       case ast.Directive(name, _, pos) =>
+       case ast.Directive(name, _, pos) ⇒
          ctx.schema.directivesByName.get(name) match {
-           case None =>
+           case None ⇒
              Left(Vector(UnknownDirectiveViolation(name, ctx.sourceMapper, pos.toList)))
-           case Some(dir) =>
+           case Some(dir) ⇒
              (ctx.typeInfo.ancestors drop 1 head) match {
-               case _: ast.OperationDefinition if !dir.onOperation =>
+               case _: ast.OperationDefinition if !dir.onOperation ⇒
                  Left(Vector(MisplacedDirectiveViolation(name, "operation", ctx.sourceMapper, pos.toList)))
-               case _: ast.Field if !dir.onField =>
+               case _: ast.Field if !dir.onField ⇒
                  Left(Vector(MisplacedDirectiveViolation(name, "field", ctx.sourceMapper, pos.toList)))
-               case _: ast.FragmentDefinition if !dir.onFragment =>
+               case _: ast.FragmentDefinition if !dir.onFragment ⇒
                  Left(Vector(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos.toList)))
-               case _: ast.FragmentSpread if !dir.onFragment =>
+               case _: ast.FragmentSpread if !dir.onFragment ⇒
                  Left(Vector(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos.toList)))
-               case _: ast.InlineFragment if !dir.onFragment =>
+               case _: ast.InlineFragment if !dir.onFragment ⇒
                  Left(Vector(MisplacedDirectiveViolation(name, "fragment", ctx.sourceMapper, pos.toList)))
-               case _ =>
+               case _ ⇒
                  Right(Continue)
              }
          }

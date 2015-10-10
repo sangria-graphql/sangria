@@ -60,7 +60,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'meowVolume' on 'Dog'." -> Some(Pos(3, 11))
+        "Cannot query field 'meowVolume' on 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Field not defined deeply, only reports first" in expectFails(
@@ -72,7 +72,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'unknown_field' on 'Dog'." -> Some(Pos(3, 11))
+        "Cannot query field 'unknown_field' on 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Sub-field not defined" in expectFails(
@@ -84,7 +84,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'unknown_field' on 'Pet'." -> Some(Pos(4, 13))
+        "Cannot query field 'unknown_field' on 'Pet'." → Some(Pos(4, 13))
       ))
 
     "Field not defined on inline fragment" in expectFails(
@@ -96,7 +96,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'meowVolume' on 'Dog'." -> Some(Pos(4, 13))
+        "Cannot query field 'meowVolume' on 'Dog'." → Some(Pos(4, 13))
       ))
 
     "Aliased field target not defined" in expectFails(
@@ -106,7 +106,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'mooVolume' on 'Dog'." -> Some(Pos(3, 11))
+        "Cannot query field 'mooVolume' on 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Aliased lying field target not defined" in expectFails(
@@ -116,7 +116,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'kawVolume' on 'Dog'." -> Some(Pos(3, 11))
+        "Cannot query field 'kawVolume' on 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Not defined on interface" in expectFails(
@@ -126,7 +126,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'tailLength' on 'Pet'." -> Some(Pos(3, 11))
+        "Cannot query field 'tailLength' on 'Pet'." → Some(Pos(3, 11))
       ))
 
     "Defined on implmentors but not on interface" in expectFails(
@@ -136,7 +136,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'nickname' on 'Pet'." -> Some(Pos(3, 11))
+        "Cannot query field 'nickname' on 'Pet'." → Some(Pos(3, 11))
       ))
 
     "Meta field selection on union" in expectPasses(
@@ -153,7 +153,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'directField' on 'CatOrDog'." -> Some(Pos(3, 11))
+        "Cannot query field 'directField' on 'CatOrDog'." → Some(Pos(3, 11))
       ))
 
     "Defined on implementors queried on union" in expectFails(
@@ -163,7 +163,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'name' on 'CatOrDog'." -> Some(Pos(3, 11))
+        "Cannot query field 'name' on 'CatOrDog'." → Some(Pos(3, 11))
       ))
 
     "valid field in inline fragment" in expectPasses(
@@ -187,7 +187,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'numberOfTails' on 'Dog'" -> Some(Pos(6, 15))
+        "Cannot query field 'numberOfTails' on 'Dog'" → Some(Pos(6, 15))
       ))
   }
 }

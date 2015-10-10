@@ -2,7 +2,7 @@ package sangria.integration
 
 import org.json4s.JsonAST._
 
-import org.json4s.native.JsonMethods.{render => jsonRender, _}
+import org.json4s.native.JsonMethods.{render ⇒ jsonRender, _}
 
 object json4s extends Json4sSupportLowPrioImplicits {
   implicit object Json4sResultMarshaller extends ResultMarshaller {
@@ -10,7 +10,7 @@ object json4s extends Json4sSupportLowPrioImplicits {
 
     def emptyMapNode = JObject(Nil)
     def mapNode(keyValues: Seq[(String, JValue)]) = JObject(keyValues.toList)
-    def addMapNodeElem(node: JValue, key: String, value: JValue) = JObject(node.asInstanceOf[JObject].obj :+ (key -> value))
+    def addMapNodeElem(node: JValue, key: String, value: JValue) = JObject(node.asInstanceOf[JObject].obj :+ (key → value))
 
     def emptyArrayNode = JArray(Nil)
     def isEmptyArrayNode(array: JValue) = array.asInstanceOf[JArray].arr.isEmpty
@@ -42,16 +42,16 @@ object json4s extends Json4sSupportLowPrioImplicits {
 
     def isDefined(node: JValue) = node != JNull && node != JNothing
     def getScalarValue(node: JValue) = node match {
-      case JBool(b) => b
-      case JInt(i) => i
-      case JDouble(d) => d
-      case JDecimal(d) => d
-      case JString(s) => s
-      case _ => throw new IllegalStateException(s"$node is not a scalar value")
+      case JBool(b) ⇒ b
+      case JInt(i) ⇒ i
+      case JDouble(d) ⇒ d
+      case JDecimal(d) ⇒ d
+      case JString(s) ⇒ s
+      case _ ⇒ throw new IllegalStateException(s"$node is not a scalar value")
     }
     def isScalarNode(node: JValue) = node match {
-      case _: JBool | _: JNumber | _: JString => true
-      case _ => false
+      case _: JBool | _: JNumber | _: JString ⇒ true
+      case _ ⇒ false
     }
 
     def render(node: JValue) = compact(jsonRender(node))

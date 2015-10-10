@@ -22,9 +22,9 @@ class VariablesAreInputTypesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' cannot be non input type 'Dog'." -> Some(Pos(2, 23)),
-        "Variable '$b' cannot be non input type '[[CatOrDog!]]!'." -> Some(Pos(2, 32)),
-        "Variable '$c' cannot be non input type 'Pet'." -> Some(Pos(2, 52))
+        "Variable '$a' cannot be non input type 'Dog'." → Some(Pos(2, 23)),
+        "Variable '$b' cannot be non input type '[[CatOrDog!]]!'." → Some(Pos(2, 32)),
+        "Variable '$c' cannot be non input type 'Pet'." → Some(Pos(2, 52))
       ))
   }
 }

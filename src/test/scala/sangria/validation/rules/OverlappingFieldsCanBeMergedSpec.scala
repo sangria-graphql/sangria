@@ -79,7 +79,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields." -> List(Pos(3, 11), Pos(4, 11))
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "Alias masking direct field access" in expectFailsPosList(
@@ -90,7 +90,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'name' conflict because 'nickname' and 'name' are different fields." -> List(Pos(3, 11), Pos(4, 11))
+        "Field 'name' conflict because 'nickname' and 'name' are different fields." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "conflicting args" in expectFailsPosList(
@@ -101,7 +101,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(Pos(3, 11), Pos(4, 11))
+        "Field 'doesKnowCommand' conflict because they have differing arguments." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "conflicting directives" in expectFailsPosList(
@@ -112,7 +112,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'name' conflict because they have differing directives." -> List(Pos(3, 11), Pos(4, 11))
+        "Field 'name' conflict because they have differing directives." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "conflicting directive args" in expectFailsPosList(
@@ -123,7 +123,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'name' conflict because they have differing directives." -> List(Pos(3, 11), Pos(4, 11))
+        "Field 'name' conflict because they have differing directives." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "conflicting args with matching directives" in expectFailsPosList(
@@ -134,7 +134,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(Pos(3, 11), Pos(4, 11))
+        "Field 'doesKnowCommand' conflict because they have differing arguments." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "conflicting directives with matching args" in expectFailsPosList(
@@ -145,7 +145,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing directives." -> List(Pos(3, 11), Pos(4, 11))
+        "Field 'doesKnowCommand' conflict because they have differing directives." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "encounters conflict in fragments" in expectFailsPosList(
@@ -162,7 +162,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(Pos(7, 11), Pos(10, 11))
+        "Field 'x' conflict because 'a' and 'b' are different fields." → List(Pos(7, 11), Pos(10, 11))
       ))
 
     "reports each conflict once" in expectFailsPosList(
@@ -190,9 +190,9 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(Pos(18, 11), Pos(21, 11)),
-        "Field 'x' conflict because 'a' and 'c' are different fields." -> List(Pos(18, 11), Pos(14, 13)),
-        "Field 'x' conflict because 'b' and 'c' are different fields." -> List(Pos(21, 11), Pos(14, 13))
+        "Field 'x' conflict because 'a' and 'b' are different fields." → List(Pos(18, 11), Pos(21, 11)),
+        "Field 'x' conflict because 'a' and 'c' are different fields." → List(Pos(18, 11), Pos(14, 13)),
+        "Field 'x' conflict because 'b' and 'c' are different fields." → List(Pos(21, 11), Pos(14, 13))
       ))
 
     "deep conflict" in expectFailsPosList(
@@ -207,7 +207,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." -> List(Pos(3, 11), Pos(6, 11), Pos(4, 13), Pos(7, 13))
+        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." → List(Pos(3, 11), Pos(6, 11), Pos(4, 13), Pos(7, 13))
       ))
 
     "deep conflict with multiple issues" in expectFailsPosList(
@@ -224,7 +224,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'y' conflict because 'c' and 'd' are different fields and subfields 'x' conflict because 'a' and 'b' are different fields." ->
+        "Field 'field' conflict because subfields 'y' conflict because 'c' and 'd' are different fields and subfields 'x' conflict because 'a' and 'b' are different fields." →
           List(Pos(3, 11), Pos(7, 11), Pos(5, 13), Pos(9, 13), Pos(4, 13), Pos(8, 13))
       ))
 
@@ -244,7 +244,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
+        "Field 'field' conflict because subfields 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." →
           List(Pos(3, 11), Pos(8, 11), Pos(4, 13), Pos(9, 13), Pos(5, 15), Pos(10, 15))
       ))
 
@@ -267,25 +267,25 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
+        "Field 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." →
           List(Pos(4, 13), Pos(7, 13), Pos(5, 15), Pos(8, 15))
       ))
 
     "return types must be unambiguous" should {
       val StringBox = ObjectType("StringBox", fields[Unit, Unit](
-        Field("scalar", OptionType(StringType), resolve = _ => None)
+        Field("scalar", OptionType(StringType), resolve = _ ⇒ None)
       ))
 
       val IntBox = ObjectType("IntBox", fields[Unit, Unit](
-        Field("scalar", OptionType(IntType), resolve = _ => None)
+        Field("scalar", OptionType(IntType), resolve = _ ⇒ None)
       ))
 
       val NonNullStringBox1 = ObjectType("NonNullStringBox1", fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ => "")
+        Field("scalar", StringType, resolve = _ ⇒ "")
       ))
 
       val NonNullStringBox2 = ObjectType("NonNullStringBox2", fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ => "")
+        Field("scalar", StringType, resolve = _ ⇒ "")
       ))
 
       val BoxUnion = UnionType("BoxUnion", types = StringBox :: IntBox :: NonNullStringBox1 :: NonNullStringBox2 :: Nil)
@@ -295,17 +295,17 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           ObjectType("Edge", fields[Unit, Unit](
             Field("node", OptionType(
               ObjectType("Node", fields[Unit, Unit](
-                Field("id", OptionType(IDType), resolve = _ => ""),
-                Field("name", OptionType(StringType), resolve = _ => "")
+                Field("id", OptionType(IDType), resolve = _ ⇒ ""),
+                Field("name", OptionType(StringType), resolve = _ ⇒ "")
               ))
-            ), resolve = _ => ())
+            ), resolve = _ ⇒ ())
           ))
-        ))), resolve = _ => Nil)
+        ))), resolve = _ ⇒ Nil)
       ))
 
       val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](
-        Field("boxUnion", OptionType(BoxUnion), resolve = _ => ()),
-        Field("connection", OptionType(Connection), resolve = _ => ())
+        Field("boxUnion", OptionType(BoxUnion), resolve = _ ⇒ ()),
+        Field("connection", OptionType(Connection), resolve = _ ⇒ ())
       )))
 
       "conflicting scalar return types" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
@@ -322,7 +322,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'scalar' conflict because they return differing types 'Int' and 'String'." ->
+          "Field 'scalar' conflict because they return differing types 'Int' and 'String'." →
             List(Pos(5, 17), Pos(8, 17))
         ))
 
@@ -362,7 +362,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'edges' conflict because subfields 'node' conflict because subfields 'id' conflict because 'id' and 'name' are different fields." ->
+          "Field 'edges' conflict because subfields 'node' conflict because subfields 'id' conflict because 'id' and 'name' are different fields." →
             List(Pos(14, 13), Pos(5, 15), Pos(15, 15), Pos(6, 17), Pos(16, 17), Pos(7, 19))
         ))
 

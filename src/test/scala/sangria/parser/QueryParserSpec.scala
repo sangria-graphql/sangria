@@ -287,14 +287,12 @@ class QueryParserSpec extends WordSpec with Matchers {
       QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
-    "provide useful error message (fragement `on`)" in {
+    "provide useful error message (fragment `on`)" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         """
           { ...MissingOn }
           fragment MissingOn Type
         """)
-
-      println(error.formattedError)
 
       error.formattedError should be(
         """Invalid input 'T', expected TypeCondition (line 3, column 30):
@@ -456,23 +454,23 @@ class QueryParserSpec extends WordSpec with Matchers {
 
     def findAst[T <: AstNode : ClassTag](ast: AstNode): Option[T] =
       ast match {
-        case node if implicitly[ClassTag[T]].runtimeClass.isAssignableFrom(node.getClass) => Some(node.asInstanceOf[T])
-        case Document(defs, _, _) => defs map findAst[T] find (_.isDefined) flatten
-        case OperationDefinition(_, _, vars, _, _, _) => vars map findAst[T] find (_.isDefined) flatten
-        case VariableDefinition(_, _, default, _) => default flatMap findAst[T]
-        case _ => None
+        case node if implicitly[ClassTag[T]].runtimeClass.isAssignableFrom(node.getClass) ⇒ Some(node.asInstanceOf[T])
+        case Document(defs, _, _) ⇒ defs map findAst[T] find (_.isDefined) flatten
+        case OperationDefinition(_, _, vars, _, _, _) ⇒ vars map findAst[T] find (_.isDefined) flatten
+        case VariableDefinition(_, _, default, _) ⇒ default flatMap findAst[T]
+        case _ ⇒ None
       }
 
     "parse int values" in {
       val expectedTable = List(
-        "4" -> BigInt("4"),
-        "-4" -> BigInt("-4"),
-        "9" -> BigInt("9"),
-        "0" -> BigInt("0"),
-        "784236564875237645762347623147574756321" -> BigInt("784236564875237645762347623147574756321")
+        "4" → BigInt("4"),
+        "-4" → BigInt("-4"),
+        "9" → BigInt("9"),
+        "0" → BigInt("0"),
+        "784236564875237645762347623147574756321" → BigInt("784236564875237645762347623147574756321")
       )
 
-      expectedTable foreach { expected =>
+      expectedTable foreach { expected ⇒
         findAst[BigIntValue](QueryParser.parse(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be (
           Some(BigIntValue(expected._2, Some(Position(24, 1, 25)))))
       }
@@ -480,18 +478,18 @@ class QueryParserSpec extends WordSpec with Matchers {
 
     "parse float values" in {
       val expectedTable = List(
-        "4.123" -> BigDecimal("4.123"),
-        "-4.123" -> BigDecimal("-4.123"),
-        "0.123" -> BigDecimal("0.123"),
-        "123E4" -> BigDecimal("123E4"),
-        "123e-4" -> BigDecimal("123e-4"),
-        "-1.123e4" -> BigDecimal("-1.123e4"),
-        "-1.123E4" -> BigDecimal("-1.123E4"),
-        "-1.123e+4" -> BigDecimal("-1.123e+4"),
-        "-1.123e4567" -> BigDecimal("-1.123e4567")
+        "4.123" → BigDecimal("4.123"),
+        "-4.123" → BigDecimal("-4.123"),
+        "0.123" → BigDecimal("0.123"),
+        "123E4" → BigDecimal("123E4"),
+        "123e-4" → BigDecimal("123e-4"),
+        "-1.123e4" → BigDecimal("-1.123e4"),
+        "-1.123E4" → BigDecimal("-1.123E4"),
+        "-1.123e+4" → BigDecimal("-1.123e+4"),
+        "-1.123e4567" → BigDecimal("-1.123e4567")
       )
 
-      expectedTable foreach { expected =>
+      expectedTable foreach { expected ⇒
         withClue(s"Parsing ${expected._1}.") {
           findAst[BigDecimalValue](QueryParser.parse(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be(
             Some(BigDecimalValue(expected._2, Some(Position(24, 1, 25)))))

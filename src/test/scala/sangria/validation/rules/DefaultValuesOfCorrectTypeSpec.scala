@@ -40,8 +40,8 @@ class DefaultValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' of type 'Int!' is required and will never use the default value. Perhaps you meant to use type 'Int'." -> Some(Pos(2, 51)),
-        "Variable '$b' of type 'String!' is required and will never use the default value. Perhaps you meant to use type 'String'." -> Some(Pos(2, 68))
+        "Variable '$a' of type 'Int!' is required and will never use the default value. Perhaps you meant to use type 'Int'." → Some(Pos(2, 51)),
+        "Variable '$b' of type 'String!' is required and will never use the default value. Perhaps you meant to use type 'String'." → Some(Pos(2, 68))
       ))
 
     "variables with invalid default values" in expectFails(
@@ -55,9 +55,9 @@ class DefaultValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' of type 'Int' has invalid default value: \"one\"." -> Some(Pos(3, 21)),
-        "Variable '$b' of type 'String' has invalid default value: 4." -> Some(Pos(4, 24)),
-        "Variable '$c' of type 'ComplexInput' has invalid default value: \"notverycomplex\"." -> Some(Pos(5, 30))
+        "Variable '$a' of type 'Int' has invalid default value: \"one\"." → Some(Pos(3, 21)),
+        "Variable '$b' of type 'String' has invalid default value: 4." → Some(Pos(4, 24)),
+        "Variable '$c' of type 'ComplexInput' has invalid default value: \"notverycomplex\"." → Some(Pos(5, 30))
       ))
 
     "complex variables missing required field" in expectFails(
@@ -67,7 +67,7 @@ class DefaultValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' of type 'ComplexInput' has invalid default value: {intField: 3}." -> Some(Pos(2, 55))
+        "Variable '$a' of type 'ComplexInput' has invalid default value: {intField: 3}." → Some(Pos(2, 55))
       ))
 
     "list variables with invalid item" in expectFails(
@@ -77,7 +77,7 @@ class DefaultValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' of type '[String]' has invalid default value: [\"one\", 2]." -> Some(Pos(2, 42))
+        "Variable '$a' of type '[String]' has invalid default value: [\"one\", 2]." → Some(Pos(2, 42))
       ))
   }
 }

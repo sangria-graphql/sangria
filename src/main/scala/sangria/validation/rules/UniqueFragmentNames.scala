@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand._
 import sangria.validation._
 
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.{Set ⇒ MutableSet}
 
 /**
  * Unique fragment names
@@ -16,7 +16,7 @@ class UniqueFragmentNames extends ValidationRule {
     val knownFragmentNames = MutableSet[String]()
 
     override val onEnter: ValidationVisit = {
-      case fragDef: ast.FragmentDefinition =>
+      case fragDef: ast.FragmentDefinition ⇒
         if (knownFragmentNames contains fragDef.name)
           Left(Vector(DuplicateFragmentNameViolation(fragDef.name, ctx.sourceMapper, fragDef.position.toList)))
         else {

@@ -16,29 +16,29 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
 
   case class ProductDefer(productIds: List[String]) extends Deferred[List[Right[String, Product]]]
 
-  val VariantType = ObjectType("Variant", () => fields[Unit, Variant](
+  val VariantType = ObjectType("Variant", () ⇒ fields[Unit, Variant](
     Field("id", IDType, resolve = _.value.id),
-    Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ => "variant"),
-    Field("relatedProducts", ListType(ProductType), tags = ProjectionName("rp") :: Nil, resolve = Projector(1, (ctx, projected) => projected match {
-      case Vector(ProjectedName("id", _)) => Value(ctx.value.relatedProductIds map (Left(_)))
-      case _ => ProductDefer(ctx.value.relatedProductIds)
+    Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ ⇒ "variant"),
+    Field("relatedProducts", ListType(ProductType), tags = ProjectionName("rp") :: Nil, resolve = Projector(1, (ctx, projected) ⇒ projected match {
+      case Vector(ProjectedName("id", _)) ⇒ Value(ctx.value.relatedProductIds map (Left(_)))
+      case _ ⇒ ProductDefer(ctx.value.relatedProductIds)
     }))
   ))
 
   val ProductType: ObjectType[Unit, Either[String, Product]] =
     ObjectType("Product", List[Field[Unit, Either[String, Product]]](
       Field("id", IDType, resolve = _.value.fold(identity, _.id)),
-      Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ => "product"),
+      Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ ⇒ "product"),
       Field("variants", ListType(VariantType), resolve = _.value.right.get.variants)
     ))
 
   val QueryType = ObjectType("Query", fields[Ctx, Unit](
     Field("products", ListType(ProductType), resolve = _.ctx.products map (Right(_))),
-    Field("projectAll", ListType(ProductType), resolve = Projector((ctx, proj) => {
+    Field("projectAll", ListType(ProductType), resolve = Projector((ctx, proj) ⇒ {
       ctx.ctx.allProjections = proj
       ctx.ctx.products map (Right(_))
     })),
-    Field("projectOne", ListType(ProductType), resolve = Projector(1, (ctx, proj) => {
+    Field("projectOne", ListType(ProductType), resolve = Projector(1, (ctx, proj) ⇒ {
       ctx.ctx.oneLevelprojections = proj
       ctx.ctx.products map (Right(_))
     }))
@@ -67,8 +67,8 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
 
   class ProductResolver extends DeferredResolver[WithProducts] {
     override def resolve(deferred: List[Deferred[Any]], ctx: WithProducts) = deferred map {
-      case ProductDefer(ids) =>
-        Future.fromTry(Try(ids map (id => Right(ctx.products.find(_.id == id).get))))
+      case ProductDefer(ids) ⇒
+        Future.fromTry(Try(ids map (id ⇒ Right(ctx.products.find(_.id == id).get))))
     }
   }
 
@@ -106,60 +106,60 @@ class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
       val ctx = new Ctx
 
       Executor(schema, userContext = ctx, deferredResolver = new ProductResolver).execute(query).await should be (
-        Map("data" ->
+        Map("data" →
           Map(
-            "projectAll" ->
+            "projectAll" →
               List(
                 Map(
-                  "id" -> "1",
-                  "typeId" -> "product",
-                  "variants" -> List(
+                  "id" → "1",
+                  "typeId" → "product",
+                  "variants" → List(
                     Map(
-                      "id" -> "1",
-                      "typeId" -> "variant",
-                      "relatedProducts" -> Nil),
+                      "id" → "1",
+                      "typeId" → "variant",
+                      "relatedProducts" → Nil),
                     Map(
-                      "id" -> "2",
-                      "typeId" -> "variant",
-                      "relatedProducts" -> List(
+                      "id" → "2",
+                      "typeId" → "variant",
+                      "relatedProducts" → List(
                         Map(
-                          "id" -> "1",
-                          "typeId" -> "product",
-                          "variants" -> List(
-                            Map("id" -> "1"),
-                            Map("id" -> "2"))),
+                          "id" → "1",
+                          "typeId" → "product",
+                          "variants" → List(
+                            Map("id" → "1"),
+                            Map("id" → "2"))),
                         Map(
-                          "id" -> "2",
-                          "typeId" -> "product",
-                          "variants" -> List(
-                            Map("id" -> "1"))))))),
+                          "id" → "2",
+                          "typeId" → "product",
+                          "variants" → List(
+                            Map("id" → "1"))))))),
                 Map(
-                  "id" -> "2",
-                  "typeId" -> "product",
-                  "variants" -> List(
+                  "id" → "2",
+                  "typeId" → "product",
+                  "variants" → List(
                     Map(
-                      "id" -> "1",
-                      "typeId" -> "variant",
-                      "relatedProducts" -> Nil)))),
-          "projectOne" ->
+                      "id" → "1",
+                      "typeId" → "variant",
+                      "relatedProducts" → Nil)))),
+          "projectOne" →
             List(
               Map(
-                "id" -> "1",
-                "typeId" -> "product",
-                "variants" -> List(
+                "id" → "1",
+                "typeId" → "product",
+                "variants" → List(
                   Map(
-                    "id" -> "1",
-                    "typeId" -> "variant"),
+                    "id" → "1",
+                    "typeId" → "variant"),
                   Map(
-                    "id" -> "2",
-                    "typeId" -> "variant"))),
+                    "id" → "2",
+                    "typeId" → "variant"))),
               Map(
-                "id" -> "2",
-                "typeId" -> "product",
-                "variants" -> List(
+                "id" → "2",
+                "typeId" → "product",
+                "variants" → List(
                   Map(
-                    "id" -> "1",
-                    "typeId" -> "variant")))))))
+                    "id" → "1",
+                    "typeId" → "variant")))))))
 
       ctx.allProjections should be (
         Vector(

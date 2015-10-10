@@ -15,8 +15,8 @@ import sangria.ast.AstVisitorCommand._
 class ArgumentsOfCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.Argument(name, value, _) =>
-        ctx.typeInfo.argument.map { arg =>
+      case ast.Argument(name, value, _) ⇒
+        ctx.typeInfo.argument.map { arg ⇒
           if (!isValidLiteralValue(arg.inputValueType, value))
             Left(Vector(BadValueViolation(
               arg.name,

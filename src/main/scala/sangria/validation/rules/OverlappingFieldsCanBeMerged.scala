@@ -7,7 +7,7 @@ import sangria.ast.AstVisitorCommand._
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema._
 import sangria.validation._
-import scala.collection.mutable.{ListBuffer, Set => MutableSet, ListMap => MutableMap}
+import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet, ListMap ⇒ MutableMap}
 
 /**
  * Overlapping fields can be merged
@@ -21,12 +21,12 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     val comparedSet = new PairSet[ast.AstNode]
 
     override val onLeave: ValidationVisit = {
-      case selCont: ast.SelectionContainer =>
+      case selCont: ast.SelectionContainer ⇒
         val fields = collectFieldASTsAndDefs(ctx, ctx.typeInfo.previousParentType, selCont)
         val conflicts = findConflicts(fields)
 
         if (conflicts.nonEmpty)
-          Left(conflicts.toVector.map(c => FieldsConflictViolation(c.reason.fieldName, c.reason.reason, ctx.sourceMapper, c.fields flatMap (_.position))))
+          Left(conflicts.toVector.map(c ⇒ FieldsConflictViolation(c.reason.fieldName, c.reason.reason, ctx.sourceMapper, c.fields flatMap (_.position))))
         else
           Right(Continue)
     }
@@ -34,15 +34,15 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     def findConflicts(fieldMap: CollectedFields): Seq[Conflict] = {
       val conflicts = ListBuffer[Conflict]()
 
-      fieldMap.keys.foreach { outputName =>
+      fieldMap.keys.foreach { outputName ⇒
         val fields  = fieldMap(outputName)
 
         if (fields.size > 1)
-          for (i <- 0 until fields.size) {
-            for (j <- i until fields.size) {
+          for (i ← 0 until fields.size) {
+            for (j ← i until fields.size) {
               findConflict(outputName, fields(i), fields(j)) match {
-                case Some(conflict) => conflicts += conflict
-                case None => // do nothing
+                case Some(conflict) ⇒ conflicts += conflict
+                case None ⇒ // do nothing
               }
             }
           }
@@ -64,8 +64,8 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
           Some(Conflict(ConflictReason(outputName, Left(s"'${ast1.name}' and '${ast2.name}' are different fields")), ast1 :: ast2 :: Nil))
         } else {
           val typeRes = for {
-            field1 <- def1
-            field2 <- def2
+            field1 ← def1
+            field2 ← def2
             type1 = SchemaRenderer.renderTypeName(field1.fieldType)
             type2 = SchemaRenderer.renderTypeName(field2.fieldType)
           } yield if (!sameType(type1, type2))
@@ -74,21 +74,21 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
             None
 
           typeRes.flatten match {
-            case s @ Some(_) => s
-            case None =>
+            case s @ Some(_) ⇒ s
+            case None ⇒
               if (!sameArguments(ast1.arguments, ast2.arguments))
                 Some(Conflict(ConflictReason(outputName, Left("they have differing arguments")), ast1 :: ast2 :: Nil))
               else if (!sameDirectives(ast1.directives, ast2.directives))
                 Some(Conflict(ConflictReason(outputName, Left("they have differing directives")), ast1 :: ast2 :: Nil))
               else {
                 val visitedFragmentNames = MutableSet[String]()
-                val subfieldMap1 = collectFieldASTsAndDefs(ctx, def1.map (d => ctx.typeInfo.getNamedType(d.fieldType)), ast1, visitedFragmentNames)
-                val subfieldMap2 = collectFieldASTsAndDefs(ctx, def2.map (d => ctx.typeInfo.getNamedType(d.fieldType)), ast2, visitedFragmentNames, subfieldMap1)
+                val subfieldMap1 = collectFieldASTsAndDefs(ctx, def1.map (d ⇒ ctx.typeInfo.getNamedType(d.fieldType)), ast1, visitedFragmentNames)
+                val subfieldMap2 = collectFieldASTsAndDefs(ctx, def2.map (d ⇒ ctx.typeInfo.getNamedType(d.fieldType)), ast2, visitedFragmentNames, subfieldMap1)
                 val conflicts = findConflicts(subfieldMap2)
 
                 if (conflicts.nonEmpty)
                   Some(Conflict(ConflictReason(outputName, Right(conflicts map (_.reason) toVector)),
-                    conflicts.foldLeft(ast1 :: ast2 :: Nil){case (acc, Conflict(_, fields)) => acc ++ fields}))
+                    conflicts.foldLeft(ast1 :: ast2 :: Nil){case (acc, Conflict(_, fields)) ⇒ acc ++ fields}))
                 else
                   None
               }
@@ -102,19 +102,19 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
   def sameDirectives(directives1: List[ast.Directive], directives2: List[ast.Directive]) =
     if (directives1.size != directives2.size) false
-    else directives1.forall { d1 =>
+    else directives1.forall { d1 ⇒
       directives2.find(_.name == d1.name) match {
-        case Some(d2) => sameArguments(d1.arguments, d2.arguments)
-        case None => false
+        case Some(d2) ⇒ sameArguments(d1.arguments, d2.arguments)
+        case None ⇒ false
       }
     }
 
   def sameArguments(args1: List[ast.Argument], args2: List[ast.Argument]) =
     if (args1.size != args2.size) false
-    else args1.forall { a1 =>
+    else args1.forall { a1 ⇒
       args2.find(_.name == a1.name) match {
-        case Some(a2) => sameValue(a1.value, a2.value)
-        case None => false
+        case Some(a2) ⇒ sameValue(a1.value, a2.value)
+        case None ⇒ false
       }
     }
 
@@ -141,26 +141,26 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     var aad = astAndDefs
 
     selCont.selections foreach {
-      case astField: ast.Field =>
+      case astField: ast.Field ⇒
         val fieldDef = parentType flatMap {
-          case tpe: ObjectLikeType[Any @unchecked, Any @unchecked] => tpe.getField(ctx.schema, astField.name).headOption
-          case _ => None
+          case tpe: ObjectLikeType[Any @unchecked, Any @unchecked] ⇒ tpe.getField(ctx.schema, astField.name).headOption
+          case _ ⇒ None
         }
 
         if (!aad.contains(astField.outputName))
-          aad(astField.outputName) = ListBuffer(astField -> fieldDef)
+          aad(astField.outputName) = ListBuffer(astField → fieldDef)
         else
-          aad(astField.outputName) += astField -> fieldDef
-      case frag: ast.InlineFragment =>
+          aad(astField.outputName) += astField → fieldDef
+      case frag: ast.InlineFragment ⇒
         aad = collectFieldASTsAndDefs(ctx, frag.typeCondition.fold(parentType)(ctx.schema.getOutputType(_, true)), frag, visitedFragmentNames, aad)
-      case frag: ast.FragmentSpread if visitedFragmentNames contains frag.name =>
+      case frag: ast.FragmentSpread if visitedFragmentNames contains frag.name ⇒
         // do nothing at all
-      case frag: ast.FragmentSpread  =>
+      case frag: ast.FragmentSpread  ⇒
         visitedFragmentNames += frag.name
         ctx.fragments.get(frag.name) match {
-          case Some(fragDef) =>
+          case Some(fragDef) ⇒
             aad = collectFieldASTsAndDefs(ctx, ctx.schema.getOutputType(fragDef.typeCondition, true), fragDef, visitedFragmentNames, aad)
-          case None => // do nothing
+          case None ⇒ // do nothing
         }
     }
 

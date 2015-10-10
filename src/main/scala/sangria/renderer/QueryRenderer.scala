@@ -37,20 +37,20 @@ object QueryRenderer {
     (if (args.nonEmpty) "(" + (args map (render(_, config)) mkString ("," + config.separator)) + ")" + (if (withSep) config.separator else "") else "")
 
   def renderOpType(operationType: OperationType) = operationType match {
-    case OperationType.Query => "query"
-    case OperationType.Mutation => "mutation"
+    case OperationType.Query ⇒ "query"
+    case OperationType.Mutation ⇒ "mutation"
   }
 
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0): String = {
     lazy val indent = config.indentLevel * indentLevel
     
     node match {
-      case Document(defs, _, _) => defs map (render(_, config, indentLevel)) mkString config.definitionSeparator
+      case Document(defs, _, _) ⇒ defs map (render(_, config, indentLevel)) mkString config.definitionSeparator
 
-      case OperationDefinition(OperationType.Query, None, Nil, Nil, sels, _) =>
+      case OperationDefinition(OperationType.Query, None, Nil, Nil, sels, _) ⇒
         indent + renderSelections(sels, indent, indentLevel, config)
 
-      case OperationDefinition(opType, name, vars, dirs, sels, _) =>
+      case OperationDefinition(opType, name, vars, dirs, sels, _) ⇒
         indent + renderOpType(opType) + config.mandatorySeparator +
           (name getOrElse "") +
           (if (vars.nonEmpty) "(" + (vars map (render(_, config)) mkString ("," + config.separator)) + ")" else "") +
@@ -58,80 +58,80 @@ object QueryRenderer {
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case FragmentDefinition(name, typeCondition, dirs, sels, _) =>
+      case FragmentDefinition(name, typeCondition, dirs, sels, _) ⇒
         indent + "fragment" + config.mandatorySeparator + name + config.mandatorySeparator + "on" + config.mandatorySeparator + typeCondition.name + config.separator +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case VariableDefinition(name, tpe, defaultValue, _) =>
+      case VariableDefinition(name, tpe, defaultValue, _) ⇒
         indent + "$" + name + ":" + config.separator +
           render(tpe, config) +
-          (defaultValue map (v => config.separator + "=" + config.separator + render(v, config)) getOrElse "")
+          (defaultValue map (v ⇒ config.separator + "=" + config.separator + render(v, config)) getOrElse "")
 
-      case NotNullType(ofType, _) =>
+      case NotNullType(ofType, _) ⇒
         render(ofType) + "!"
 
-      case ListType(ofType, _) =>
+      case ListType(ofType, _) ⇒
         "[" + render(ofType) + "]"
 
-      case NamedType(name, _) =>
+      case NamedType(name, _) ⇒
         name
 
-      case Field(alias, name, args, dirs, sels, _) =>
+      case Field(alias, name, args, dirs, sels, _) ⇒
         indent + (alias map (_ + ":" + config.separator) getOrElse "") + name +
           renderArgs(args, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config, withSep = sels.nonEmpty) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case FragmentSpread(name, dirs, _) =>
+      case FragmentSpread(name, dirs, _) ⇒
         indent + "..." + name + renderDirs(dirs, config, frontSep = true)
 
-      case InlineFragment(typeCondition, dirs, sels, _) =>
+      case InlineFragment(typeCondition, dirs, sels, _) ⇒
         indent + "..." + config.mandatorySeparator + typeCondition.fold("")("on" + config.mandatorySeparator + _.name) + config.separator +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case Directive(name, args, _) =>
+      case Directive(name, args, _) ⇒
         indent + "@" + name + renderArgs(args, config, withSep = false)
 
-      case Argument(name, value, _) =>
+      case Argument(name, value, _) ⇒
         indent + name + ":" + config.separator + render(value, config)
 
-      case IntValue(value, _) => indent + value
-      case BigIntValue(value, _) => indent + value.toString
-      case FloatValue(value, _) => indent + value.toString
-      case BigDecimalValue(value, _) => indent + value.toString
-      case StringValue(value, _) => indent + '"' + escapeString(value) + '"'
-      case BooleanValue(value, _) => indent + value.toString
-      case EnumValue(value, _) => indent + value
-      case ListValue(value, _) =>
+      case IntValue(value, _) ⇒ indent + value
+      case BigIntValue(value, _) ⇒ indent + value.toString
+      case FloatValue(value, _) ⇒ indent + value.toString
+      case BigDecimalValue(value, _) ⇒ indent + value.toString
+      case StringValue(value, _) ⇒ indent + '"' + escapeString(value) + '"'
+      case BooleanValue(value, _) ⇒ indent + value.toString
+      case EnumValue(value, _) ⇒ indent + value
+      case ListValue(value, _) ⇒
         indent + "[" + (value map (render(_, config)) mkString ("," + config.separator)) + "]"
-      case ObjectValue(value, _) =>
+      case ObjectValue(value, _) ⇒
         indent + "{" + (value map (render(_, config)) mkString ("," + config.separator)) + "}"
-      case VariableValue(name, _) => indent + "$" + name
-      case ObjectField(name, value, _) => indent + name + ":" + config.separator + render(value, config)
+      case VariableValue(name, _) ⇒ indent + "$" + name
+      case ObjectField(name, value, _) ⇒ indent + name + ":" + config.separator + render(value, config)
     }
   }
 
   def escapeString(str: String) =
     str flatMap {
-      case ch if ch > 0xfff => "\\u" + charHex(ch)
-      case ch if ch > 0xff => "\\u0" + charHex(ch)
-      case ch if ch > 0x7f => "\\u00" + charHex(ch)
-      case ch if ch < 32 =>
+      case ch if ch > 0xfff ⇒ "\\u" + charHex(ch)
+      case ch if ch > 0xff ⇒ "\\u0" + charHex(ch)
+      case ch if ch > 0x7f ⇒ "\\u00" + charHex(ch)
+      case ch if ch < 32 ⇒
         ch match {
-          case '\b' => "\\b"
-          case '\n' => "\\n"
-          case '\t' => "\\t"
-          case '\f' => "\\f"
-          case '\r' => "\\r"
-          case ch if ch > 0xf => "\\u00" + charHex(ch)
-          case ch => "\\u000" + charHex(ch)
+          case '\b' ⇒ "\\b"
+          case '\n' ⇒ "\\n"
+          case '\t' ⇒ "\\t"
+          case '\f' ⇒ "\\f"
+          case '\r' ⇒ "\\r"
+          case ch if ch > 0xf ⇒ "\\u00" + charHex(ch)
+          case ch ⇒ "\\u000" + charHex(ch)
         }
-      case '"' => "\\\""
-      case '\\' => "\\\\"
-      case ch => ch.toString
+      case '"' ⇒ "\\\""
+      case '\\' ⇒ "\\\\"
+      case ch ⇒ ch.toString
     }
 
   def charHex(ch: Char): String =

@@ -47,7 +47,7 @@ class ScalaResultMarshaller extends ResultMarshaller {
   def mapNode(keyValues: Seq[(String, Node)]) = Map(keyValues: _*)
   def emptyMapNode = Map.empty[String, Any]
   def addMapNodeElem(node: Node, key: String, value: Node) =
-    node.asInstanceOf[Map[String, Any]] + (key -> value)
+    node.asInstanceOf[Map[String, Any]] + (key → value)
 
   def nullNode = null
 

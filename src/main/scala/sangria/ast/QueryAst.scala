@@ -4,22 +4,22 @@ import org.parboiled2.Position
 import sangria.parser.SourceMapper
 
 case class Document(definitions: List[Definition], position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode {
-  lazy val operations = Map(definitions collect {case op: OperationDefinition => op.name -> op}: _*)
-  lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition => fragment.name -> fragment}: _*)
+  lazy val operations = Map(definitions collect {case op: OperationDefinition ⇒ op.name → op}: _*)
+  lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition ⇒ fragment.name → fragment}: _*)
   lazy val source = sourceMapper map (_.source)
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[Document]
 
   override def equals(other: Any): Boolean = other match {
-    case that: Document =>
+    case that: Document ⇒
       (that canEqual this) &&
-          definitions == that.definitions &&
-          position == that.position
-    case _ => false
+        definitions == that.definitions &&
+        position == that.position
+    case _ ⇒ false
   }
 
   override def hashCode(): Int =
-    Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
 }
 
 sealed trait ConditionalFragment extends AstNode {
@@ -128,61 +128,61 @@ sealed trait AstNode {
 
 object AstNode {
   def withoutPosition[T <: AstNode](node: T): T = node match {
-    case n: Document => n.copy(definitions = n.definitions map withoutPosition, position = None, sourceMapper = None).asInstanceOf[T]
-    case n: OperationDefinition =>
+    case n: Document ⇒ n.copy(definitions = n.definitions map withoutPosition, position = None, sourceMapper = None).asInstanceOf[T]
+    case n: OperationDefinition ⇒
       n.copy(
         variables = n.variables map withoutPosition,
         directives = n.directives map withoutPosition,
         selections = n.selections map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: FragmentDefinition =>
+    case n: FragmentDefinition ⇒
       n.copy(
         typeCondition = withoutPosition(n.typeCondition),
         directives = n.directives map withoutPosition,
         selections = n.selections map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: VariableDefinition =>
+    case n: VariableDefinition ⇒
       n.copy(
         tpe = withoutPosition(n.tpe),
         defaultValue = n.defaultValue map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: NamedType => n.copy(position = None).asInstanceOf[T]
-    case n: NotNullType => n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
-    case n: ListType => n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
-    case n: Field =>
+    case n: NamedType ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: NotNullType ⇒ n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
+    case n: ListType ⇒ n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
+    case n: Field ⇒
       n.copy(
         arguments = n.arguments map withoutPosition,
         directives = n.directives map withoutPosition,
         selections = n.selections map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: FragmentSpread => 
+    case n: FragmentSpread ⇒
       n.copy(
         directives = n.directives map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: InlineFragment => 
+    case n: InlineFragment ⇒
       n.copy(
         typeCondition = n.typeCondition map withoutPosition,
         directives = n.directives map withoutPosition,
         selections = n.selections map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: Directive => 
+    case n: Directive ⇒
       n.copy(
         arguments = n.arguments map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: Argument => n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
-    case n: IntValue => n.copy(position = None).asInstanceOf[T]
-    case n: BigIntValue => n.copy(position = None).asInstanceOf[T]
-    case n: FloatValue => n.copy(position = None).asInstanceOf[T]
-    case n: BigDecimalValue => n.copy(position = None).asInstanceOf[T]
-    case n: StringValue => n.copy(position = None).asInstanceOf[T]
-    case n: BooleanValue => n.copy(position = None).asInstanceOf[T]
-    case n: EnumValue => n.copy(position = None).asInstanceOf[T]
-    case n: ListValue =>
+    case n: Argument ⇒ n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
+    case n: IntValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: BigIntValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: FloatValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: BigDecimalValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: StringValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: BooleanValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: EnumValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: ListValue ⇒
       n.copy(
         values = n.values map withoutPosition,
         position = None).asInstanceOf[T]
-    case n: ObjectValue => n.copy(fields = n.fields map withoutPosition, position = None).asInstanceOf[T]
-    case n: ObjectField => n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
-    case n: VariableValue => n.copy(position = None).asInstanceOf[T]
+    case n: ObjectValue ⇒ n.copy(fields = n.fields map withoutPosition, position = None).asInstanceOf[T]
+    case n: ObjectField ⇒ n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
+    case n: VariableValue ⇒ n.copy(position = None).asInstanceOf[T]
   }
 }

@@ -16,766 +16,766 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       val schema = Schema(ObjectType[Unit, Unit]("QueryRoot", Nil))
 
       Executor(schema).execute(introspectionQuery).await should be (Map(
-        "data" -> Map(
-          "__schema" -> Map(
-            "mutationType" -> null,
-            "queryType" -> Map(
-              "name" -> "QueryRoot"
+        "data" → Map(
+          "__schema" → Map(
+            "mutationType" → null,
+            "queryType" → Map(
+              "name" → "QueryRoot"
             ),
-            "types" -> List(
+            "types" → List(
               Map(
-                "kind" -> "OBJECT",
-                "name" -> "QueryRoot",
-                "fields" -> List(),
-                "inputFields" -> null,
-                "interfaces" -> List(),
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "OBJECT",
+                "name" → "QueryRoot",
+                "fields" → List(),
+                "inputFields" → null,
+                "interfaces" → List(),
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "OBJECT",
-                "name" -> "__Directive",
-                "fields" -> List(
+                "kind" → "OBJECT",
+                "name" → "__Directive",
+                "fields" → List(
                   Map(
-                    "name" -> "name",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "String",
-                        "ofType" -> null
+                    "name" → "name",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "String",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "description",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "description",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "args",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "LIST",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "NON_NULL",
-                          "name" -> null,
-                          "ofType" -> Map(
-                            "kind" -> "OBJECT",
-                            "name" -> "__InputValue"
+                    "name" → "args",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "LIST",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "NON_NULL",
+                          "name" → null,
+                          "ofType" → Map(
+                            "kind" → "OBJECT",
+                            "name" → "__InputValue"
                           )
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "onOperation",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "Boolean",
-                        "ofType" -> null
+                    "name" → "onOperation",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Boolean",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "onFragment",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "Boolean",
-                        "ofType" -> null
+                    "name" → "onFragment",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Boolean",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "onField",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "Boolean",
-                        "ofType" -> null
+                    "name" → "onField",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Boolean",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   )
                 ),
-                "inputFields" -> null,
-                "interfaces" -> List(),
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "inputFields" → null,
+                "interfaces" → List(),
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "OBJECT",
-                "name" -> "__EnumValue",
-                "fields" -> List(
+                "kind" → "OBJECT",
+                "name" → "__EnumValue",
+                "fields" → List(
                   Map(
-                    "name" -> "name",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "String",
-                        "ofType" -> null
+                    "name" → "name",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "String",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "description",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "description",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "isDeprecated",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "Boolean",
-                        "ofType" -> null
+                    "name" → "isDeprecated",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Boolean",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "deprecationReason",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "deprecationReason",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   )
                 ),
-                "inputFields" -> null,
-                "interfaces" -> List(),
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "inputFields" → null,
+                "interfaces" → List(),
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "OBJECT",
-                "name" -> "__Field",
-                "fields" -> List(
+                "kind" → "OBJECT",
+                "name" → "__Field",
+                "fields" → List(
                   Map(
-                    "name" -> "name",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "String",
-                        "ofType" -> null
+                    "name" → "name",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "String",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "description",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "description",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "args",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "LIST",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "NON_NULL",
-                          "name" -> null,
-                          "ofType" -> Map(
-                            "kind" -> "OBJECT",
-                            "name" -> "__InputValue"
+                    "name" → "args",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "LIST",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "NON_NULL",
+                          "name" → null,
+                          "ofType" → Map(
+                            "kind" → "OBJECT",
+                            "name" → "__InputValue"
                           )
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "type",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "OBJECT",
-                        "name" -> "__Type",
-                        "ofType" -> null
+                    "name" → "type",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "OBJECT",
+                        "name" → "__Type",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "isDeprecated",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "Boolean",
-                        "ofType" -> null
+                    "name" → "isDeprecated",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Boolean",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "deprecationReason",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "deprecationReason",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   )
                 ),
-                "inputFields" -> null,
-                "interfaces" -> List(),
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "inputFields" → null,
+                "interfaces" → List(),
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "OBJECT",
-                "name" -> "__InputValue",
-                "fields" -> List(
+                "kind" → "OBJECT",
+                "name" → "__InputValue",
+                "fields" → List(
                   Map(
-                    "name" -> "name",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "String",
-                        "ofType" -> null
+                    "name" → "name",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "String",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "description",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "description",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "type",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "OBJECT",
-                        "name" -> "__Type",
-                        "ofType" -> null
+                    "name" → "type",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "OBJECT",
+                        "name" → "__Type",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "defaultValue",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "defaultValue",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   )
                 ),
-                "inputFields" -> null,
-                "interfaces" -> List(),
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "inputFields" → null,
+                "interfaces" → List(),
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "OBJECT",
-                "name" -> "__Schema",
-                "fields" -> List(
+                "kind" → "OBJECT",
+                "name" → "__Schema",
+                "fields" → List(
                   Map(
-                    "name" -> "types",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "LIST",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "NON_NULL",
-                          "name" -> null,
-                          "ofType" -> Map(
-                            "kind" -> "OBJECT",
-                            "name" -> "__Type"
+                    "name" → "types",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "LIST",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "NON_NULL",
+                          "name" → null,
+                          "ofType" → Map(
+                            "kind" → "OBJECT",
+                            "name" → "__Type"
                           )
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "queryType",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "OBJECT",
-                        "name" -> "__Type",
-                        "ofType" -> null
+                    "name" → "queryType",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "OBJECT",
+                        "name" → "__Type",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "mutationType",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "OBJECT",
-                      "name" -> "__Type",
-                      "ofType" -> null
+                    "name" → "mutationType",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "OBJECT",
+                      "name" → "__Type",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "directives",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "LIST",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "NON_NULL",
-                          "name" -> null,
-                          "ofType" -> Map(
-                            "kind" -> "OBJECT",
-                            "name" -> "__Directive"
+                    "name" → "directives",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "LIST",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "NON_NULL",
+                          "name" → null,
+                          "ofType" → Map(
+                            "kind" → "OBJECT",
+                            "name" → "__Directive"
                           )
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   )
                 ),
-                "inputFields" -> null,
-                "interfaces" -> List(),
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "inputFields" → null,
+                "interfaces" → List(),
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "OBJECT",
-                "name" -> "__Type",
-                "fields" -> List(
+                "kind" → "OBJECT",
+                "name" → "__Type",
+                "fields" → List(
                   Map(
-                    "name" -> "kind",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "ENUM",
-                        "name" -> "__TypeKind",
-                        "ofType" -> null
+                    "name" → "kind",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "ENUM",
+                        "name" → "__TypeKind",
+                        "ofType" → null
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "name",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "name",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "description",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "SCALAR",
-                      "name" -> "String",
-                      "ofType" -> null
+                    "name" → "description",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "SCALAR",
+                      "name" → "String",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "fields",
-                    "args" -> List(
+                    "name" → "fields",
+                    "args" → List(
                       Map(
-                        "name" -> "includeDeprecated",
-                        "type" -> Map(
-                          "kind" -> "SCALAR",
-                          "name" -> "Boolean",
-                          "ofType" -> null
+                        "name" → "includeDeprecated",
+                        "type" → Map(
+                          "kind" → "SCALAR",
+                          "name" → "Boolean",
+                          "ofType" → null
                         ),
-                        "defaultValue" -> "false"
+                        "defaultValue" → "false"
                       )
                     ),
-                    "type" -> Map(
-                      "kind" -> "LIST",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "NON_NULL",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "OBJECT",
-                          "name" -> "__Field",
-                          "ofType" -> null
+                    "type" → Map(
+                      "kind" → "LIST",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "NON_NULL",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "OBJECT",
+                          "name" → "__Field",
+                          "ofType" → null
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "interfaces",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "LIST",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "NON_NULL",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "OBJECT",
-                          "name" -> "__Type",
-                          "ofType" -> null
+                    "name" → "interfaces",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "LIST",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "NON_NULL",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "OBJECT",
+                          "name" → "__Type",
+                          "ofType" → null
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "possibleTypes",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "LIST",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "NON_NULL",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "OBJECT",
-                          "name" -> "__Type",
-                          "ofType" -> null
+                    "name" → "possibleTypes",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "LIST",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "NON_NULL",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "OBJECT",
+                          "name" → "__Type",
+                          "ofType" → null
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "enumValues",
-                    "args" -> List(
+                    "name" → "enumValues",
+                    "args" → List(
                       Map(
-                        "defaultValue" -> "false",
-                        "name" -> "includeDeprecated",
-                        "type" -> Map(
-                          "kind" -> "SCALAR",
-                          "name" -> "Boolean",
-                          "ofType" -> null
+                        "defaultValue" → "false",
+                        "name" → "includeDeprecated",
+                        "type" → Map(
+                          "kind" → "SCALAR",
+                          "name" → "Boolean",
+                          "ofType" → null
                         )
                       )
                     ),
-                    "type" -> Map(
-                      "kind" -> "LIST",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "NON_NULL",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "OBJECT",
-                          "name" -> "__EnumValue",
-                          "ofType" -> null
+                    "type" → Map(
+                      "kind" → "LIST",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "NON_NULL",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "OBJECT",
+                          "name" → "__EnumValue",
+                          "ofType" → null
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "inputFields",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "LIST",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "NON_NULL",
-                        "name" -> null,
-                        "ofType" -> Map(
-                          "kind" -> "OBJECT",
-                          "name" -> "__InputValue",
-                          "ofType" -> null
+                    "name" → "inputFields",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "LIST",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "NON_NULL",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "OBJECT",
+                          "name" → "__InputValue",
+                          "ofType" → null
                         )
                       )
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "ofType",
-                    "args" -> List(),
-                    "type" -> Map(
-                      "kind" -> "OBJECT",
-                      "name" -> "__Type",
-                      "ofType" -> null
+                    "name" → "ofType",
+                    "args" → List(),
+                    "type" → Map(
+                      "kind" → "OBJECT",
+                      "name" → "__Type",
+                      "ofType" → null
                     ),
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   )
                 ),
-                "inputFields" -> null,
-                "interfaces" -> List(),
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "inputFields" → null,
+                "interfaces" → List(),
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "ENUM",
-                "name" -> "__TypeKind",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> List(
+                "kind" → "ENUM",
+                "name" → "__TypeKind",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → List(
                   Map(
-                    "name" -> "SCALAR",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "SCALAR",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "OBJECT",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "OBJECT",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "INTERFACE",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "INTERFACE",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "UNION",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "UNION",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "ENUM",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "ENUM",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "INPUT_OBJECT",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "INPUT_OBJECT",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "LIST",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "LIST",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   ),
                   Map(
-                    "name" -> "NON_NULL",
-                    "isDeprecated" -> false,
-                    "deprecationReason" -> null
+                    "name" → "NON_NULL",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null
                   )
                 ),
-                "possibleTypes" -> null
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "BigDecimal",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "BigDecimal",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "BigInt",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "BigInt",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "Boolean",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "Boolean",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "Float",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "Float",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "ID",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "ID",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "Int",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "Int",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "Long",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "Long",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               ),
               Map(
-                "kind" -> "SCALAR",
-                "name" -> "String",
-                "fields" -> null,
-                "inputFields" -> null,
-                "interfaces" -> null,
-                "enumValues" -> null,
-                "possibleTypes" -> null
+                "kind" → "SCALAR",
+                "name" → "String",
+                "fields" → null,
+                "inputFields" → null,
+                "interfaces" → null,
+                "enumValues" → null,
+                "possibleTypes" → null
               )
             ),
-            "directives" -> List(
+            "directives" → List(
               Map(
-                "name" -> "include",
-                "args" -> List(
+                "name" → "include",
+                "args" → List(
                   Map(
-                    "defaultValue" -> null,
-                    "name" -> "if",
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "Boolean",
-                        "ofType" -> null
+                    "defaultValue" → null,
+                    "name" → "if",
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Boolean",
+                        "ofType" → null
                       )
                     )
                   )
                 ),
-                "onOperation" -> false,
-                "onFragment" -> true,
-                "onField" -> true
+                "onOperation" → false,
+                "onFragment" → true,
+                "onField" → true
               ),
               Map(
-                "name" -> "skip",
-                "args" -> List(
+                "name" → "skip",
+                "args" → List(
                   Map(
-                    "defaultValue" -> null,
-                    "name" -> "if",
-                    "type" -> Map(
-                      "kind" -> "NON_NULL",
-                      "name" -> null,
-                      "ofType" -> Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "Boolean",
-                        "ofType" -> null
+                    "defaultValue" → null,
+                    "name" → "if",
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Boolean",
+                        "ofType" → null
                       )
                     )
                   )
                 ),
-                "onOperation" -> false,
-                "onFragment" -> true,
-                "onField" -> true
+                "onOperation" → false,
+                "onFragment" → true,
+                "onField" → true
               )
             )
           )
@@ -792,7 +792,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("field", OptionType(StringType),
           arguments = Argument("complex", OptionInputType(inputType)) :: Nil,
-          resolve = _ => None)
+          resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -834,119 +834,119 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
 
       val BuiltInTypes = List(
         Map(
-          "kind" -> "OBJECT",
-          "name" -> "TestType",
-          "inputFields" -> null
+          "kind" → "OBJECT",
+          "name" → "TestType",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "OBJECT",
-          "name" -> "__Directive",
-          "inputFields" -> null
+          "kind" → "OBJECT",
+          "name" → "__Directive",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "OBJECT",
-          "name" -> "__EnumValue",
-          "inputFields" -> null
+          "kind" → "OBJECT",
+          "name" → "__EnumValue",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "OBJECT",
-          "name" -> "__Field",
-          "inputFields" -> null
+          "kind" → "OBJECT",
+          "name" → "__Field",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "OBJECT",
-          "name" -> "__InputValue",
-          "inputFields" -> null
+          "kind" → "OBJECT",
+          "name" → "__InputValue",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "OBJECT",
-          "name" -> "__Schema",
-          "inputFields" -> null
+          "kind" → "OBJECT",
+          "name" → "__Schema",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "OBJECT",
-          "name" -> "__Type",
-          "inputFields" -> null
+          "kind" → "OBJECT",
+          "name" → "__Type",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "ENUM",
-          "name" -> "__TypeKind",
-          "inputFields" -> null
+          "kind" → "ENUM",
+          "name" → "__TypeKind",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "BigDecimal",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "BigDecimal",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "BigInt",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "BigInt",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "Boolean",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "Boolean",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "Float",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "Float",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "ID",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "ID",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "Int",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "Int",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "Long",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "Long",
+          "inputFields" → null
         ),
         Map(
-          "kind" -> "SCALAR",
-          "name" -> "String",
-          "inputFields" -> null
+          "kind" → "SCALAR",
+          "name" → "String",
+          "inputFields" → null
         )
       )
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "__schema" -> Map(
-            "types" -> (List(
+        "data" → Map(
+          "__schema" → Map(
+            "types" → (List(
               Map(
-                "kind" -> "INPUT_OBJECT",
-                "name" -> "TestInputObject",
-                "inputFields" -> List(
+                "kind" → "INPUT_OBJECT",
+                "name" → "TestInputObject",
+                "inputFields" → List(
                   Map(
-                    "name" -> "a",
-                    "type" ->
+                    "name" → "a",
+                    "type" →
                       Map(
-                        "kind" -> "SCALAR",
-                        "name" -> "String",
-                        "ofType" -> null
+                        "kind" → "SCALAR",
+                        "name" → "String",
+                        "ofType" → null
                       ),
-                    "defaultValue" -> "foo"
+                    "defaultValue" → "foo"
                   ),
                   Map(
-                    "name" -> "b",
-                    "type" ->
+                    "name" → "b",
+                    "type" →
                       Map(
-                        "kind" -> "LIST",
-                        "name" -> null,
-                        "ofType" ->
+                        "kind" → "LIST",
+                        "name" → null,
+                        "ofType" →
                           Map(
-                            "kind" -> "SCALAR",
-                            "name" -> "String",
-                            "ofType" -> null
+                            "kind" → "SCALAR",
+                            "name" → "String",
+                            "ofType" → null
                           )
                       ),
-                    "defaultValue" -> null
+                    "defaultValue" → null
                   )
                 )
               )
@@ -958,7 +958,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
 
     "supports the __type root field" in {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("testField", OptionType(StringType), resolve = _ => None)
+        Field("testField", OptionType(StringType), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -974,9 +974,9 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "__type" -> Map(
-            "name" -> "TestType"
+        "data" → Map(
+          "__type" → Map(
+            "name" → "TestType"
           )
         )
       ))
@@ -984,8 +984,8 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
 
     "identifies deprecated fields" in {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+        Field("nonDeprecated", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -1006,19 +1006,19 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "__type" -> Map(
-            "name" -> "TestType",
-            "fields" -> List(
+        "data" → Map(
+          "__type" → Map(
+            "name" → "TestType",
+            "fields" → List(
               Map(
-                "name" -> "nonDeprecated",
-                "isDeprecated" -> false,
-                "deprecationReason" -> null
+                "name" → "nonDeprecated",
+                "isDeprecated" → false,
+                "deprecationReason" → null
               ),
               Map(
-                "name" -> "deprecated",
-                "isDeprecated" -> true,
-                "deprecationReason" -> "Removed in 1.0"
+                "name" → "deprecated",
+                "isDeprecated" → true,
+                "deprecationReason" → "Removed in 1.0"
               )
             )
           )
@@ -1028,8 +1028,8 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
 
     "respects the includeDeprecated parameter for fields" in {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+        Field("nonDeprecated", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -1054,25 +1054,25 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "__type" -> Map(
-            "name" -> "TestType",
-            "trueFields" -> List(
+        "data" → Map(
+          "__type" → Map(
+            "name" → "TestType",
+            "trueFields" → List(
               Map(
-                "name" -> "nonDeprecated"
+                "name" → "nonDeprecated"
               ),
               Map(
-                "name" -> "deprecated"
+                "name" → "deprecated"
               )
             ),
-            "falseFields" -> List(
+            "falseFields" → List(
               Map(
-                "name" -> "nonDeprecated"
+                "name" → "nonDeprecated"
               )
             ),
-            "omittedFields" -> List(
+            "omittedFields" → List(
               Map(
-                "name" -> "nonDeprecated"
+                "name" → "nonDeprecated"
               )
             )
           )
@@ -1087,7 +1087,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         EnumValue("ALSONONDEPRECATED", value = 3)))
 
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("testEnum", OptionType(testEnum), resolve = _ => None)
+        Field("testEnum", OptionType(testEnum), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -1108,24 +1108,24 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "__type" -> Map(
-            "name" -> "TestEnum",
-            "enumValues" -> List(
+        "data" → Map(
+          "__type" → Map(
+            "name" → "TestEnum",
+            "enumValues" → List(
               Map(
-                "name" -> "NONDEPRECATED",
-                "isDeprecated" -> false,
-                "deprecationReason" -> null
+                "name" → "NONDEPRECATED",
+                "isDeprecated" → false,
+                "deprecationReason" → null
               ),
               Map(
-                "name" -> "DEPRECATED",
-                "isDeprecated" -> true,
-                "deprecationReason" -> "Removed in 1.0"
+                "name" → "DEPRECATED",
+                "isDeprecated" → true,
+                "deprecationReason" → "Removed in 1.0"
               ),
               Map(
-                "name" -> "ALSONONDEPRECATED",
-                "isDeprecated" -> false,
-                "deprecationReason" -> null
+                "name" → "ALSONONDEPRECATED",
+                "isDeprecated" → false,
+                "deprecationReason" → null
               )
             )
           )
@@ -1140,7 +1140,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         EnumValue("ALSONONDEPRECATED", value = 3)))
 
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("testEnum", OptionType(testEnum), resolve = _ => None)
+        Field("testEnum", OptionType(testEnum), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -1165,34 +1165,34 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "__type" -> Map(
-            "name" -> "TestEnum",
-            "trueValues" -> List(
+        "data" → Map(
+          "__type" → Map(
+            "name" → "TestEnum",
+            "trueValues" → List(
               Map(
-                "name" -> "NONDEPRECATED"
+                "name" → "NONDEPRECATED"
               ),
               Map(
-                "name" -> "DEPRECATED"
+                "name" → "DEPRECATED"
               ),
               Map(
-                "name" -> "ALSONONDEPRECATED"
+                "name" → "ALSONONDEPRECATED"
               )
             ),
-            "falseValues" -> List(
+            "falseValues" → List(
               Map(
-                "name" -> "NONDEPRECATED"
+                "name" → "NONDEPRECATED"
               ),
               Map(
-                "name" -> "ALSONONDEPRECATED"
+                "name" → "ALSONONDEPRECATED"
               )
             ),
-            "omittedValues" -> List(
+            "omittedValues" → List(
               Map(
-                "name" -> "NONDEPRECATED"
+                "name" → "NONDEPRECATED"
               ),
               Map(
-                "name" -> "ALSONONDEPRECATED"
+                "name" → "ALSONONDEPRECATED"
               )
             )
           )
@@ -1202,7 +1202,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
 
     "fails as expected on the __type root field without an arg" in {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("testField", OptionType(StringType), resolve = _ => None)
+        Field("testField", OptionType(StringType), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -1219,7 +1219,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
 
       val result = Executor(schema, queryValidator = QueryValidator.empty).execute(query).await.asInstanceOf[Map[String, Any]]
 
-      result("data") should be (Map("__type" -> null))
+      result("data") should be (Map("__type" → null))
       result("errors").asInstanceOf[List[Map[String, Any]]](0)("message").asInstanceOf[String] should include (
         "Null value was provided for the NotNull Type 'String!' at path 'name'.")
     }
@@ -1242,32 +1242,32 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         """)
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "schemaType" -> Map(
-            "name" -> "__Schema",
-            "description" -> (
+        "data" → Map(
+          "schemaType" → Map(
+            "name" → "__Schema",
+            "description" → (
               "A GraphQL Schema defines the capabilities of a " +
               "GraphQL server. It exposes all available types and " +
               "directives on the server, as well as the entry " +
               "points for query and mutation operations."),
-            "fields" -> List(
+            "fields" → List(
               Map(
-                "name" -> "types",
-                "description" -> "A list of all types supported by this server."
+                "name" → "types",
+                "description" → "A list of all types supported by this server."
               ),
               Map(
-                "name" -> "queryType",
-                "description" -> "The type that query operations will be rooted at."
+                "name" → "queryType",
+                "description" → "The type that query operations will be rooted at."
               ),
               Map(
-                "name" -> "mutationType",
-                "description" -> (
+                "name" → "mutationType",
+                "description" → (
                   "If this server supports mutation, the type that " +
                   "mutation operations will be rooted at.")
               ),
               Map(
-                "name" -> "directives",
-                "description" -> "A list of all directives supported by this server."
+                "name" → "directives",
+                "description" → "A list of all directives supported by this server."
               )
             )
           )
@@ -1293,56 +1293,56 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
         """)
 
       Executor(schema).execute(query).await should be (Map(
-        "data" -> Map(
-          "typeKindType" -> Map(
-            "name" -> "__TypeKind",
-            "description" -> "An enum describing what kind of type a given `__Type` is.",
-            "enumValues" -> List(
+        "data" → Map(
+          "typeKindType" → Map(
+            "name" → "__TypeKind",
+            "description" → "An enum describing what kind of type a given `__Type` is.",
+            "enumValues" → List(
               Map(
-                "description" -> "Indicates this type is a scalar.",
-                "name" -> "SCALAR"
+                "description" → "Indicates this type is a scalar.",
+                "name" → "SCALAR"
               ),
               Map(
-                "description" -> (
+                "description" → (
                   "Indicates this type is an object. " +
                   "`fields` and `interfaces` are valid fields."),
-                "name" -> "OBJECT"
+                "name" → "OBJECT"
               ),
               Map(
-                "description" -> (
+                "description" → (
                   "Indicates this type is an interface. " +
                   "`fields` and `possibleTypes` are valid fields."),
-                "name" -> "INTERFACE"
+                "name" → "INTERFACE"
               ),
               Map(
-                "description" -> (
+                "description" → (
                   "Indicates this type is a union. " +
                   "`possibleTypes` is a valid field."),
-                "name" -> "UNION"
+                "name" → "UNION"
               ),
               Map(
-                "description" -> (
+                "description" → (
                   "Indicates this type is an enum. " +
                   "`enumValues` is a valid field."),
-                "name" -> "ENUM"
+                "name" → "ENUM"
               ),
               Map(
-                "description" -> (
+                "description" → (
                   "Indicates this type is an input object. " +
                   "`inputFields` is a valid field."),
-                "name" -> "INPUT_OBJECT"
+                "name" → "INPUT_OBJECT"
               ),
               Map(
-                "description" -> (
+                "description" → (
                   "Indicates this type is a list. " +
                   "`ofType` is a valid field."),
-                "name" -> "LIST"
+                "name" → "LIST"
               ),
               Map(
-                "description" -> (
+                "description" → (
                   "Indicates this type is a non-null. " +
                   "`ofType` is a valid field."),
-                "name" -> "NON_NULL"
+                "name" → "NON_NULL"
               )
             )
           )

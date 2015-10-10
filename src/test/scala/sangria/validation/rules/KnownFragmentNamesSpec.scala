@@ -46,9 +46,9 @@ class KnownFragmentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown fragment 'UnknownFragment1'." -> Some(Pos(4, 13)),
-        "Unknown fragment 'UnknownFragment2'." -> Some(Pos(6, 15)),
-        "Unknown fragment 'UnknownFragment3'." -> Some(Pos(12, 11))
+        "Unknown fragment 'UnknownFragment1'." → Some(Pos(4, 13)),
+        "Unknown fragment 'UnknownFragment2'." → Some(Pos(6, 15)),
+        "Unknown fragment 'UnknownFragment3'." → Some(Pos(12, 11))
       ))
   }
 }

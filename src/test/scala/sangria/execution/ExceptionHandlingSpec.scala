@@ -13,11 +13,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport with OutputMatchers {
   val TestType = ObjectType("Test", fields[Unit, Unit](
-    Field("success", OptionType(StringType), resolve = _ => "Yay"),
-    Field("trySuccess", OptionType(StringType), resolve = _ => Success("try!")),
-    Field("tryError", OptionType(StringType), resolve = _ => Failure(new IllegalStateException("try boom!"))),
-    Field("error", OptionType(StringType), resolve = _ => throw new IllegalStateException("Boom!")),
-    Field("futureError", OptionType(StringType), resolve = _ => Future.failed[String](new IllegalStateException("Boom!")))
+    Field("success", OptionType(StringType), resolve = _ ⇒ "Yay"),
+    Field("trySuccess", OptionType(StringType), resolve = _ ⇒ Success("try!")),
+    Field("tryError", OptionType(StringType), resolve = _ ⇒ Failure(new IllegalStateException("try boom!"))),
+    Field("error", OptionType(StringType), resolve = _ ⇒ throw new IllegalStateException("Boom!")),
+    Field("futureError", OptionType(StringType), resolve = _ ⇒ Future.failed[String](new IllegalStateException("Boom!")))
   ))
 
   val schema = Schema(TestType)
@@ -37,25 +37,25 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
 
         Executor(schema).execute(doc).await should be  (
           Map(
-            "data" -> Map(
-              "success" -> "Yay",
-              "trySuccess" -> "try!",
-              "tryError" -> null,
-              "error" -> null,
-              "futureError" -> null),
-            "errors" -> List(
+            "data" → Map(
+              "success" → "Yay",
+              "trySuccess" → "try!",
+              "tryError" → null,
+              "error" → null,
+              "futureError" → null),
+            "errors" → List(
               Map(
-                "message" -> "Internal server error",
-                "field" -> "error",
-                "locations" -> List(Map("line" -> 6, "column" -> 11))),
+                "message" → "Internal server error",
+                "field" → "error",
+                "locations" → List(Map("line" → 6, "column" → 11))),
               Map(
-                "message" -> "Internal server error",
-                "field" -> "tryError",
-                "locations" -> List(Map("line" -> 4, "column" -> 11))),
+                "message" → "Internal server error",
+                "field" → "tryError",
+                "locations" → List(Map("line" → 4, "column" → 11))),
               Map(
-                "message" -> "Internal server error",
-                "field" -> "futureError",
-                "locations" -> List(Map("line" -> 7, "column" -> 11))))))
+                "message" → "Internal server error",
+                "field" → "futureError",
+                "locations" → List(Map("line" → 7, "column" → 11))))))
       }
 
       out should include ("java.lang.IllegalStateException: Boom!")
@@ -70,23 +70,23 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
         """)
 
       val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
-        case (m, e: IllegalStateException) => HandledException(e.getMessage)
+        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
       Executor(schema, exceptionHandler = exceptionHandler).execute(doc).await should be  (
         Map(
-          "data" -> Map(
-            "error" -> null,
-            "futureError" -> null),
-          "errors" -> List(
+          "data" → Map(
+            "error" → null,
+            "futureError" → null),
+          "errors" → List(
             Map(
-              "message" -> "Boom!",
-              "field" -> "error",
-              "locations" -> List(Map("line" -> 3, "column" -> 11))),
+              "message" → "Boom!",
+              "field" → "error",
+              "locations" → List(Map("line" → 3, "column" → 11))),
             Map(
-              "message" -> "Boom!",
-              "field" -> "futureError",
-              "locations" -> List(Map("line" -> 4, "column" -> 11))))))
+              "message" → "Boom!",
+              "field" → "futureError",
+              "locations" → List(Map("line" → 4, "column" → 11))))))
     }
 
     "provide user-defined exception handling mechanism which allows to provide additional fields" in {
@@ -98,29 +98,29 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
         """)
 
       val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
-        case (m, e: IllegalStateException) =>
+        case (m, e: IllegalStateException) ⇒
           HandledException(e.getMessage,
-            Map("foo" -> m.arrayNode(Seq(m.stringNode("bar"), m.intNode(1234))), "baz" -> m.stringNode("Test")))
+            Map("foo" → m.arrayNode(Seq(m.stringNode("bar"), m.intNode(1234))), "baz" → m.stringNode("Test")))
       }
 
       Executor(schema, exceptionHandler = exceptionHandler).execute(doc).await should be  (
         Map(
-          "data" -> Map(
-            "error" -> null,
-            "futureError" -> null),
-          "errors" -> List(
+          "data" → Map(
+            "error" → null,
+            "futureError" → null),
+          "errors" → List(
             Map(
-              "message" -> "Boom!",
-              "field" -> "error",
-              "foo" -> List("bar", 1234),
-              "baz" -> "Test",
-              "locations" -> List(Map("line" -> 3, "column" -> 11))),
+              "message" → "Boom!",
+              "field" → "error",
+              "foo" → List("bar", 1234),
+              "baz" → "Test",
+              "locations" → List(Map("line" → 3, "column" → 11))),
             Map(
-              "message" -> "Boom!",
-              "field" -> "futureError",
-              "foo" -> List("bar", 1234),
-              "baz" -> "Test",
-              "locations" -> List(Map("line" -> 4, "column" -> 11))))))
+              "message" → "Boom!",
+              "field" → "futureError",
+              "foo" → List("bar", 1234),
+              "baz" → "Test",
+              "locations" → List(Map("line" → 4, "column" → 11))))))
     }
   }
 

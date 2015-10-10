@@ -34,8 +34,8 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
   "DeprecationTracker" should {
     "not track non-deprecated fields" in  {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+        Field("nonDeprecated", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -50,8 +50,8 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
 
     "track deprecated fields" in  {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+        Field("nonDeprecated", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -66,10 +66,10 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
     }
 
     "provide context information" in  {
-      lazy val testType: ObjectType[Unit, Unit] = ObjectType("TestType", () => fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None),
-        Field("nested", OptionType(testType), resolve = _ => Some(()))
+      lazy val testType: ObjectType[Unit, Unit] = ObjectType("TestType", () ⇒ fields[Unit, Unit](
+        Field("nonDeprecated", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None),
+        Field("nested", OptionType(testType), resolve = _ ⇒ Some(()))
       ))
 
       val schema = Schema(testType)
@@ -85,12 +85,12 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
     }
 
     "report usage even if field is defined only in the interface type" in  {
-      val testInt = InterfaceType("TestInterface", () => fields[Unit, Unit](
-        Field("foo", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+      val testInt = InterfaceType("TestInterface", () ⇒ fields[Unit, Unit](
+        Field("foo", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None)
       ))
 
       val testType = ObjectType("TestType", interfaces[Unit, Unit](testInt), fields[Unit, Unit](
-        Field("foo", OptionType(StringType), resolve = _ => None)
+        Field("foo", OptionType(StringType), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -114,7 +114,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
       val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(StringType),
           arguments = Argument("foo", testEnum) :: Nil,
-          resolve = _ => None)
+          resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -145,7 +145,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
       val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(StringType),
           arguments = Argument("foo", testEnum) :: Nil,
-          resolve = _ => None)
+          resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -171,8 +171,8 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
   "NilDeprecationTracker" should {
     "shouldn't do anything" in  {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+        Field("nonDeprecated", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -192,7 +192,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
       val testType = ObjectType("TestType", fields[Unit, Unit](
         Field("testEnum", OptionType(StringType),
           arguments = Argument("foo", testEnum) :: Nil,
-          resolve = _ => None)
+          resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)
@@ -215,8 +215,8 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with AwaitSupport wi
 
     "track deprecated fields" in  {
       val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
+        Field("nonDeprecated", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ ⇒ None)
       ))
 
       val schema = Schema(testType)

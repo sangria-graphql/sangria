@@ -15,7 +15,7 @@ import scala.language.postfixOps
 class KnownTypeNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.NamedType(name, pos) =>
+      case ast.NamedType(name, pos) ⇒
         if (!ctx.schema.allTypes.contains(name))
           Left(Vector(UnknownTypeViolation(name, ctx.sourceMapper, pos.toList)))
         else

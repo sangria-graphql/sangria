@@ -6,7 +6,7 @@ import sangria.ast.AstVisitorCommand._
 import sangria.schema._
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 import sangria.validation.rules._
-import scala.collection.mutable.{Stack => MutableStack, Set => MutableSet, Map => MutableMap, ListBuffer}
+import scala.collection.mutable.{Stack ⇒ MutableStack, Set ⇒ MutableSet, Map ⇒ MutableMap, ListBuffer}
 
 trait QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): List[Violation]
@@ -57,9 +57,9 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 
   def validateUsingRules(queryAst: ast.AstNode, ctx: ValidationContext, visitors: List[ValidationRule#AstValidatingVisitor], topLevel: Boolean): Unit = AstVisitor.visitAst(
     doc = queryAst,
-    onEnter = node => {
+    onEnter = node ⇒ {
       ctx.typeInfo.enter(node)
-      visitors foreach { visitor =>
+      visitors foreach { visitor ⇒
         if (ctx.validVisitor(visitor)) {
           if (visitor.visitSpreadFragments && node.isInstanceOf[ast.FragmentDefinition] && topLevel)
             handleResult(ctx, node, visitor, Right(Skip))
@@ -69,18 +69,18 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
       }
 
       node match {
-        case spread: ast.FragmentSpread if ctx.fragments contains spread.name =>
-          val interested = visitors.filter(v => v.visitSpreadFragments && ctx.validVisitor(v))
+        case spread: ast.FragmentSpread if ctx.fragments contains spread.name ⇒
+          val interested = visitors.filter(v ⇒ v.visitSpreadFragments && ctx.validVisitor(v))
 
           if (interested.nonEmpty)
             validateUsingRules(ctx.fragments(spread.name), ctx, interested, false)
-        case _ => // do nothing
+        case _ ⇒ // do nothing
       }
 
       Continue
     },
-    onLeave = node => {
-      visitors foreach { visitor =>
+    onLeave = node ⇒ {
+      visitors foreach { visitor ⇒
         if (visitor.onLeave.isDefinedAt(node) && ctx.validVisitor(visitor)) {
           handleResult(ctx, node, visitor, visitor.onLeave(node))
         }
@@ -96,13 +96,13 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 
   def handleResult(ctx: ValidationContext, node: ast.AstNode, visitor: ValidationRule#AstValidatingVisitor, visitRes: Either[Vector[Violation], AstVisitorCommand.Value]) =
     visitRes match {
-      case Left(violation) =>
+      case Left(violation) ⇒
         ctx.addViolations(violation)
-      case Right(Skip) =>
+      case Right(Skip) ⇒
         ctx.skips(visitor) = node
-      case Right(Break) =>
+      case Right(Break) ⇒
         ctx.ignoredVisitors += visitor
-      case _ => // do nothing
+      case _ ⇒ // do nothing
     }
 }
 
@@ -115,7 +115,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
   val skips = MutableMap[ValidationRule#AstValidatingVisitor, ast.AstNode]()
 
   lazy val fragments = doc.definitions
-    .collect{case frDef: FragmentDefinition => frDef}
+    .collect{case frDef: FragmentDefinition ⇒ frDef}
     .groupBy(_.name)
     .mapValues(_.head)
 
@@ -132,29 +132,29 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
 
 object ValidationContext {
   def isValidLiteralValue(tpe: InputType[_], value: ast.Value): Boolean = (tpe, value) match {
-    case (_, _: ast.VariableValue) => true
-    case (OptionInputType(ofType), v) =>
+    case (_, _: ast.VariableValue) ⇒ true
+    case (OptionInputType(ofType), v) ⇒
       isValidLiteralValue(ofType, v)
-    case (ListInputType(ofType), ast.ListValue(values, _)) =>
+    case (ListInputType(ofType), ast.ListValue(values, _)) ⇒
       values.forall(isValidLiteralValue(ofType, _))
-    case (ListInputType(ofType), v) =>
+    case (ListInputType(ofType), v) ⇒
       isValidLiteralValue(ofType, v)
-    case (io: InputObjectType[_], ast.ObjectValue(fields, _)) =>
-      fields.forall(f => io.fieldsByName contains f.name) && {
-        io.fields.forall { field =>
+    case (io: InputObjectType[_], ast.ObjectValue(fields, _)) ⇒
+      fields.forall(f ⇒ io.fieldsByName contains f.name) && {
+        io.fields.forall { field ⇒
           val astField = fields.find(_.name == field.name)
 
           (astField, field.fieldType) match {
-            case (None, _: OptionInputType[_]) => true
-            case (None, _) => false
-            case (Some(af), _) => isValidLiteralValue(field.fieldType, af.value)
+            case (None, _: OptionInputType[_]) ⇒ true
+            case (None, _) ⇒ false
+            case (Some(af), _) ⇒ isValidLiteralValue(field.fieldType, af.value)
           }
         }
       }
-    case (io: InputObjectType[_], _) => false
-    case (s: ScalarType[_], v) =>
+    case (io: InputObjectType[_], _) ⇒ false
+    case (s: ScalarType[_], v) ⇒
       s.coerceInput(v).isRight
-    case (enum: EnumType[_], v) =>
+    case (enum: EnumType[_], v) ⇒
       enum.coerceInput(v).isRight
 
   }
@@ -183,7 +183,7 @@ class TypeInfo(schema: Schema[_, _]) {
     ancestorStack push node
 
     node match {
-      case f: ast.Field =>
+      case f: ast.Field ⇒
         val parent = parentType
         val fieldDef = parent flatMap (getFieldDef(_, f))
         val fieldType = fieldDef map (_.fieldType)
@@ -192,103 +192,103 @@ class TypeInfo(schema: Schema[_, _]) {
         typeStack push fieldType
 
         pushParent()
-      case ast.Directive(name, _, _) =>
+      case ast.Directive(name, _, _) ⇒
         directive = schema.directivesByName get name
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) =>
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) ⇒
         typeStack push Some(schema.query)
         pushParent()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) =>
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) ⇒
         typeStack push schema.mutation
         pushParent()
-      case fd: ast.FragmentDefinition =>
+      case fd: ast.FragmentDefinition ⇒
         typeStack.push(schema.allTypes get fd.typeCondition.name)
         pushParent()
-      case ifd: ast.InlineFragment =>
+      case ifd: ast.InlineFragment ⇒
         typeStack.push(ifd.typeCondition.fold(tpe)(schema.allTypes get _.name))
         pushParent()
-      case vd: ast.VariableDefinition =>
+      case vd: ast.VariableDefinition ⇒
         inputTypeStack push schema.getInputType(vd.tpe)
-      case a: ast.Argument =>
-        argument = directive orElse fieldDef flatMap { withArgs =>
+      case a: ast.Argument ⇒
+        argument = directive orElse fieldDef flatMap { withArgs ⇒
           withArgs.arguments find (_.name == a.name)
         }
         inputTypeStack push argument.map(_.inputValueType)
-      case ast.ListValue(values, _) =>
+      case ast.ListValue(values, _) ⇒
         inputType match {
-          case Some(it) => getNotNullType(it) match {
-            case it: ListInputType[_] => inputTypeStack push Some(it.ofType)
-            case _ => inputTypeStack push None
+          case Some(it) ⇒ getNotNullType(it) match {
+            case it: ListInputType[_] ⇒ inputTypeStack push Some(it.ofType)
+            case _ ⇒ inputTypeStack push None
           }
-          case None => inputTypeStack push None
+          case None ⇒ inputTypeStack push None
         }
-      case ast.ObjectField(name, value, _) =>
-        val fieldType = inputType flatMap (it => getNamedType(it) match {
-          case obj: InputObjectType[_] => obj.fieldsByName.get(name) map (_.inputValueType)
-          case _ => None
+      case ast.ObjectField(name, value, _) ⇒
+        val fieldType = inputType flatMap (it ⇒ getNamedType(it) match {
+          case obj: InputObjectType[_] ⇒ obj.fieldsByName.get(name) map (_.inputValueType)
+          case _ ⇒ None
         })
 
         inputTypeStack push fieldType
-      case _ => // ignore
+      case _ ⇒ // ignore
     }
   }
 
   def pushParent(): Unit = {
     tpe match {
-      case Some(some) => getNamedType(some) match {
-        case comp: CompositeType[_] => parentTypeStack push Some(comp)
-        case _ => parentTypeStack push None
+      case Some(some) ⇒ getNamedType(some) match {
+        case comp: CompositeType[_] ⇒ parentTypeStack push Some(comp)
+        case _ ⇒ parentTypeStack push None
       }
-      case _ => parentTypeStack push None
+      case _ ⇒ parentTypeStack push None
     }
   }
 
   def leave(node: ast.AstNode) = {
     node match {
-      case f: ast.Field =>
+      case f: ast.Field ⇒
         fieldDefStack.pop()
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.Directive(name, _, _) =>
+      case ast.Directive(name, _, _) ⇒
         directive = None
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) =>
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) =>
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case fd: ast.FragmentDefinition =>
+      case fd: ast.FragmentDefinition ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case fd: ast.InlineFragment =>
+      case fd: ast.InlineFragment ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case vd: ast.VariableDefinition =>
+      case vd: ast.VariableDefinition ⇒
         inputTypeStack.pop()
-      case a: ast.Argument =>
+      case a: ast.Argument ⇒
         argument = None
         inputTypeStack.pop()
-      case ast.ListValue(values, _) =>
+      case ast.ListValue(values, _) ⇒
         inputTypeStack.pop()
-      case ast.ObjectField(name, value, _) =>
+      case ast.ObjectField(name, value, _) ⇒
         inputTypeStack.pop()
-      case _ => // ignore
+      case _ ⇒ // ignore
     }
 
     ancestorStack.pop()
   }
 
   def getNamedType(it: Type): Type with Named = it match {
-    case OptionInputType(ofType) => getNamedType(ofType)
-    case OptionType(ofType) => getNamedType(ofType)
-    case ListInputType(ofType) => getNamedType(ofType)
-    case ListType(ofType) => getNamedType(ofType)
-    case n: Named => n
-    case t => throw new IllegalStateException("Expected named type, but got: " + t)
+    case OptionInputType(ofType) ⇒ getNamedType(ofType)
+    case OptionType(ofType) ⇒ getNamedType(ofType)
+    case ListInputType(ofType) ⇒ getNamedType(ofType)
+    case ListType(ofType) ⇒ getNamedType(ofType)
+    case n: Named ⇒ n
+    case t ⇒ throw new IllegalStateException("Expected named type, but got: " + t)
   }
 
   def getNotNullType(it: InputType[_]): InputType[_] = it match {
-    case OptionInputType(ofType) => ofType
-    case n => n
+    case OptionInputType(ofType) ⇒ ofType
+    case n ⇒ n
   }
 
   def getFieldDef(parent: CompositeType[_], astField: ast.Field): Option[Field[_, _]] = {
@@ -299,8 +299,8 @@ class TypeInfo(schema: Schema[_, _]) {
     else if (astField.name == TypeNameMetaField.name)
       Some(TypeNameMetaField)
     else parent match {
-      case o: ObjectLikeType[_, _] => o.getField(schema, astField.name).headOption
-      case _ => None
+      case o: ObjectLikeType[_, _] ⇒ o.getField(schema, astField.name).headOption
+      case _ ⇒ None
     }
   }
 }

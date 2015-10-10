@@ -16,15 +16,15 @@ import sangria.validation._
 class FieldsOnCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.Field(_, name, _, _, _, pos) =>
+      case ast.Field(_, name, _, _, _, pos) ⇒
         (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
-          case (Some(parent), None) =>
+          case (Some(parent), None) ⇒
             Left(Vector(UndefinedFieldViolation(
               name,
               SchemaRenderer.renderTypeName(parent, topLevel = true),
               ctx.sourceMapper,
               pos.toList)))
-          case _ =>
+          case _ ⇒
             Right(Continue)
         }
     }

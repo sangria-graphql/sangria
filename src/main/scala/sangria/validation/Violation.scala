@@ -15,8 +15,8 @@ trait AstNodeLocation {
   def positions: List[Position]
 
   lazy val astLocation = (for {
-    sm <- sourceMapper
-  } yield positions map(p => s" ${sm.renderLocation(p)}:\n${sm.renderLinePosition(p)}") mkString "\n") getOrElse ""
+    sm ← sourceMapper
+  } yield positions map(p ⇒ s" ${sm.renderLocation(p)}:\n${sm.renderLinePosition(p)}") mkString "\n") getOrElse ""
 }
 
 trait AstNodeViolation extends Violation with AstNodeLocation
@@ -161,8 +161,8 @@ case class FieldsConflictViolation(outputName: String, reason: Either[String, Ve
   lazy val errorMessage = s"Field '$outputName' conflict because ${reasonMessage(reason)}.$astLocation"
 
   private def reasonMessage(reason: Either[String, Vector[ConflictReason]]): String = reason match {
-    case Left(message) => message
-    case Right(subReasons) => subReasons map (sr => s"subfields '${sr.fieldName}' conflict because ${reasonMessage(sr.reason)}") mkString " and "
+    case Left(message) ⇒ message
+    case Right(subReasons) ⇒ subReasons map (sr ⇒ s"subfields '${sr.fieldName}' conflict because ${reasonMessage(sr.reason)}") mkString " and "
   }
 }
 
