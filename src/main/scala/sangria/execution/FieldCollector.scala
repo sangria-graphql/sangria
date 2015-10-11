@@ -4,6 +4,7 @@ import sangria.parser.SourceMapper
 import sangria.schema.{AbstractType, DirectiveContext, Schema, ObjectType}
 import sangria.ast
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{Set ⇒ MutableSet}
 
@@ -16,19 +17,15 @@ class FieldCollector[Ctx, Val](
     sourceMapper: Option[SourceMapper],
     valueCollector: ValueCollector[Ctx, _]) {
 
-  @volatile private var resultCache = Map.empty[(List[String], String), Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]
+  private val resultCache = TrieMap[(List[String], String), Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]()
 
   def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.SelectionContainer]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] = {
     val cacheKey = path → tpe.name
 
-    if (resultCache contains cacheKey) resultCache(cacheKey)
-    else {
-      val res = selections.foldLeft(Success(ListMap.empty): Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
+    resultCache.getOrElseUpdate(cacheKey,
+      selections.foldLeft(Success(ListMap.empty): Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
         case (acc, s) ⇒ collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
-      }
-      resultCache = resultCache.updated(cacheKey, res)
-      res
-    }
+      })
   }
 
   private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String], initial: Try[Map[String, (ast.Field, Try[List[ast.Field]])]]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] =

@@ -37,6 +37,15 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else Success(Map(values.collect {case (name, Right(v)) ⇒ name → v}: _*))
     }
 
+  def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[Input]): Either[List[Violation], Option[Any]] =
+    if (isValidValue(tpe, input)) {
+      val fieldPath = s"$$${definition.name}" :: Nil
+
+      if (input.isEmpty || !um.isDefined(input.get))
+        definition.defaultValue map (coerceAstValue(tpe, fieldPath, _, Map.empty)) getOrElse Right(None)
+      else coerceInputValue(tpe, fieldPath, input.get)
+    } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position.toList) :: Nil)
+
   def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
     val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
 
@@ -54,13 +63,4 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     if (errors.nonEmpty) Failure(AttributeCoercionError(errors))
     else Success(res mapValues (_.right.get))
   }
-
-  def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[Input]): Either[List[Violation], Option[Any]] =
-    if (isValidValue(tpe, input)) {
-      val fieldPath = s"$$${definition.name}" :: Nil
-
-      if (input.isEmpty || !um.isDefined(input.get))
-        definition.defaultValue map (coerceAstValue(tpe, fieldPath, _, Map.empty)) getOrElse Right(None)
-      else coerceInputValue(tpe, fieldPath, input.get)
-    } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position.toList) :: Nil)
 }
