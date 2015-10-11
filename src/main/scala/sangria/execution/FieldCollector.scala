@@ -19,14 +19,11 @@ class FieldCollector[Ctx, Val](
 
   private val resultCache = TrieMap[(List[String], String), Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]()
 
-  def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.SelectionContainer]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] = {
-    val cacheKey = path → tpe.name
-
-    resultCache.getOrElseUpdate(cacheKey,
+  def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.SelectionContainer]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] =
+    resultCache.getOrElseUpdate(path → tpe.name,
       selections.foldLeft(Success(ListMap.empty): Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
         case (acc, s) ⇒ collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
       })
-  }
 
   private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String], initial: Try[Map[String, (ast.Field, Try[List[ast.Field]])]]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] =
     selections.foldLeft(initial) {
@@ -67,12 +64,12 @@ class FieldCollector[Ctx, Val](
                       shouldInclude ← shouldIncludeNode(fragment.directives, fragment)
                       fragmentConditionMatch ← doesFragmentConditionMatch(tpe, fragment)
                       fragmentFields ←
-                      if (shouldInclude && fragmentConditionMatch)
-                        collectFieldsInternal(tpe, fragment.selections, visitedFragments, s)
-                      else s
+                        if (shouldInclude && fragmentConditionMatch)
+                          collectFieldsInternal(tpe, fragment.selections, visitedFragments, s)
+                        else s
                     } yield fragmentFields
                   case None ⇒
-                    Failure(new ExecutionError(s"Fragment with name '${name}' is not defined", sourceMapper, position.toList))
+                    Failure(new ExecutionError(s"Fragment with name '$name' is not defined", sourceMapper, position.toList))
                 }
               } else s
             }

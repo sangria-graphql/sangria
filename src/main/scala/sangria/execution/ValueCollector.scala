@@ -7,12 +7,15 @@ import sangria.renderer.QueryRenderer
 import sangria.schema._
 import sangria.validation._
 
+import scala.collection.concurrent.TrieMap
 import scala.util.{Success, Failure, Try}
 
 class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx)(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   import coercionHelper._
+
+  private val argumentCache = TrieMap[(List[String], List[ast.Argument]), Try[Map[String, Any]]]()
 
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] =
     if (!um.isMapNode(inputVars))
@@ -45,6 +48,9 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
         definition.defaultValue map (coerceAstValue(tpe, fieldPath, _, Map.empty)) getOrElse Right(None)
       else coerceInputValue(tpe, fieldPath, input.get)
     } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position.toList) :: Nil)
+
+  def getFieldArgumentValues(path: List[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] =
+    argumentCache.getOrElseUpdate(path → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
   def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
     val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)

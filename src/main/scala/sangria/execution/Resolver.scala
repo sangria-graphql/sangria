@@ -393,7 +393,7 @@ class Resolver[Ctx](
     maxQueryDepth match {
       case Some(max) if path.size > max ⇒ (errors.add(path, new ExecutionError(s"Max query depth $max is reached."), astField.position), None, None)
       case _ ⇒
-        valueCollector.getArgumentValues(field.arguments, astField.arguments, variables) match {
+        valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables) match {
           case Success(args) ⇒
             val ctx = Context[Ctx, Any](
               value,

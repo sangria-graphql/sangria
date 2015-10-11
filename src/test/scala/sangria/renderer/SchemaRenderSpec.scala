@@ -20,7 +20,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
     ))
     val schema = Schema(root)
 
-    renderForTest(Executor(schema).execute(introspectionQuery).await)
+    renderForTest(Executor.execute(schema, introspectionQuery).await)
   }
 
   "SchemaRenderer" should {
