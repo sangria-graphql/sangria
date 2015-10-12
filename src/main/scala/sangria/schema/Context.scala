@@ -102,11 +102,11 @@ trait Deferred[+T]
 case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A ⇒ B) extends Deferred[B]
 
 trait WithArguments {
-  def args: Map[String, Any]
-  def arg[T](arg: Argument[T]) = args(arg.name).asInstanceOf[T]
-  def arg[T](name: String) = args(name).asInstanceOf[T]
-  def argOpt[T](arg: Argument[T]) = args.get(arg.name).asInstanceOf[Option[T]]
-  def argOpt[T](name: String) = args.get(name).asInstanceOf[Option[T]]
+  def args: Args
+  def arg[T](arg: Argument[T]): T = args.arg(arg)
+  def arg[T](name: String): T = args.arg(name)
+  def argOpt[T](arg: Argument[T]): Option[T] = args.argOpt(arg)
+  def argOpt[T](name: String): Option[T] = args.argOpt(name)
 }
 
 trait WithInputTypeRendering[Ctx] {
@@ -194,7 +194,7 @@ trait WithInputTypeRendering[Ctx] {
 case class Context[Ctx, Val](
   value: Val,
   ctx: Ctx,
-  args: Map[String, Any],
+  args: Args,
   schema: Schema[Ctx, Val],
   field: Field[Ctx, Val],
   parentType: ObjectType[Ctx, Any],
@@ -204,7 +204,14 @@ case class Context[Ctx, Val](
   astFields: List[ast.Field],
   path: List[String]) extends WithArguments with WithInputTypeRendering[Ctx]
 
-case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Map[String, Any]) extends WithArguments
+case class Args(args: Map[String, Any]) extends AnyVal {
+  def arg[T](arg: Argument[T]): T = args(arg.name).asInstanceOf[T]
+  def arg[T](name: String): T = args(name).asInstanceOf[T]
+  def argOpt[T](arg: Argument[T]): Option[T] = args.get(arg.name).asInstanceOf[Option[T]]
+  def argOpt[T](name: String): Option[T] = args.get(name).asInstanceOf[Option[T]]
+}
+
+case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments
 
 trait DeferredResolver[-Ctx] {
   def resolve(deferred: List[Deferred[Any]], ctx: Ctx): List[Future[Any]]

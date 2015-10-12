@@ -19,7 +19,8 @@ case class Executor[Ctx, Root](
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware] = Nil,
-    maxQueryDepth: Option[Int] = None)(implicit executionContext: ExecutionContext) {
+    maxQueryDepth: Option[Int] = None,
+    measureComplexity: Option[Double ⇒ Unit] = None)(implicit executionContext: ExecutionContext) {
 
   def execute[Input](
       queryAst: ast.Document,
@@ -40,7 +41,7 @@ case class Executor[Ctx, Root](
       } yield res
 
       executionResult match {
-        case Success(future) ⇒ future.asInstanceOf[Future[marshaller.Node]]
+        case Success(future) ⇒ future
         case Failure(error) ⇒ Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])
       }
     }
@@ -62,17 +63,18 @@ case class Executor[Ctx, Root](
       valueCollector: ValueCollector[Ctx, _],
       fieldCollector: FieldCollector[Ctx, Root],
       marshaller: ResultMarshaller,
-      variables: Map[String, Any]) =
+      variables: Map[String, Any]): Try[Future[marshaller.Node]] =
     for {
       tpe ← getOperationRootType(operation, sourceMapper)
       fields ← fieldCollector.collectFields(Nil, tpe, operation :: Nil)
       middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
       resolver = new Resolver[Ctx](marshaller, middlewareCtx, schema, valueCollector, variables, fieldCollector, userContext, exceptionHandler, deferredResolver, sourceMapper, deprecationTracker, middlewareVal, maxQueryDepth)
+      _ ← measureComplexity.fold(Success(()): Try[Unit])(fn ⇒ Try(fn(resolver.estimateComplexity(tpe, fields))))
     } yield {
       val result =
         operation.operationType match {
-          case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields)
-          case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields)
+          case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
+          case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
         }
 
       if (middlewareVal.nonEmpty) {
@@ -83,7 +85,6 @@ case class Executor[Ctx, Root](
           .map {x ⇒ onAfter(); x}
           .recover {case e ⇒ onAfter(); throw e}
       } else result
-
     }
 
   def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
@@ -106,9 +107,10 @@ object Executor {
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware] = Nil,
-    maxQueryDepth: Option[Int] = None
+    maxQueryDepth: Option[Int] = None,
+    measureComplexity: Option[Double ⇒ Unit] = None
   )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] =
-    Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth).execute(queryAst, operationName, variables)
+    Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth, measureComplexity).execute(queryAst, operationName, variables)
 }
 
 case class HandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty)

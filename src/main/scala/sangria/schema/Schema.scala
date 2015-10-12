@@ -95,7 +95,8 @@ case class ScalarType[T](
   description: Option[String] = None,
   coerceUserInput: Any ⇒ Either[Violation, T],
   coerceOutput: T ⇒ ast.Value,
-  coerceInput: ast.Value ⇒ Either[Violation, T]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+  coerceInput: ast.Value ⇒ Either[Violation, T],
+  complexity: Double = 0.0D) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
@@ -235,6 +236,7 @@ case class Field[Ctx, Val] private (
     resolve: Context[Ctx, Val] ⇒ Action[Ctx, _],
     deprecationReason: Option[String],
     tags: List[FieldTag],
+    complexity: Option[(Args, Double) ⇒ Double],
     manualPossibleTypes: () ⇒ List[ObjectType[_, _]]) extends Named with HasArguments {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
@@ -249,8 +251,9 @@ object Field {
       resolve: Context[Ctx, Val] ⇒ Action[Ctx, Res],
       possibleTypes: ⇒ List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
+      complexity: Option[(Args, Double) ⇒ Double] = None,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
-    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, () ⇒ possibleTypes map (_.objectType))
+    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, complexity, () ⇒ possibleTypes map (_.objectType))
 }
 
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
@@ -444,7 +447,7 @@ case class Schema[Ctx, Val](
         case ListType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
         case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
-        case t @ ScalarType(name, _, _, _, _) ⇒ updated(priority, name, t, result)
+        case t @ ScalarType(name, _, _, _, _, _) ⇒ updated(priority, name, t, result)
         case t @ EnumType(name, _, _) ⇒ updated(priority, name, t, result)
         case t @ InputObjectType(name, _, _) ⇒
           t.fields.foldLeft(updated(priority, name, t, result)) {case (acc, field) ⇒

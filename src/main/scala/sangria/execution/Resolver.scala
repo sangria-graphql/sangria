@@ -398,7 +398,7 @@ class Resolver[Ctx](
             val ctx = Context[Ctx, Any](
               value,
               userCtx,
-              args,
+              Args(args),
               schema.asInstanceOf[Schema[Ctx, Any]],
               field,
               tpe.asInstanceOf[ObjectType[Ctx, Any]],
@@ -542,6 +542,61 @@ class Resolver[Ctx](
     loop(path, field.fieldType, astFields, 1)
   }
 
+  def estimateComplexity(rootTpe: ObjectType[_, _], fields: Map[String, (ast.Field, Try[List[ast.Field]])]): Double = {
+    import Resolver.DefaultComplexity
+
+    def measureComplexity(path: List[String], field: Field[_, _], astField: ast.Field, childComplexity: Double) = {
+      field.complexity match {
+        case Some(fn) ⇒
+          valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables) match {
+            case Success(args) ⇒ fn(Args(args), childComplexity)
+            case Failure(_) ⇒ DefaultComplexity + childComplexity
+          }
+        case None ⇒ DefaultComplexity + childComplexity
+      }
+    }
+
+    def loop(path: List[String], tpe: OutputType[_], astFields: List[ast.Field]): Double =
+      tpe match {
+        case OptionType(ofType) ⇒ loop(path, ofType, astFields)
+        case ListType(ofType) ⇒ loop(path, ofType, astFields)
+        case objTpe: ObjectType[Ctx, _] ⇒
+          fieldCollector.collectFields(path, objTpe, astFields) match {
+            case Success(ff) ⇒
+              ff.values.toVector.foldLeft(0.0D) {
+                case (acc, (_, Success(fields))) if objTpe.getField(schema, fields.head.name).nonEmpty ⇒
+                  val astField = fields.head
+                  val field = objTpe.getField(schema, astField.name).head
+                  val newPath = path :+ astField.outputName
+                  val childComplexity = loop(newPath, field.fieldType, fields)
+                  val complexity = measureComplexity(newPath, field, astField, childComplexity)
+
+                  acc + complexity
+              }
+            case Failure(_) ⇒ DefaultComplexity
+          }
+        case abst: AbstractType ⇒
+          schema.possibleTypes
+            .get (abst.name)
+            .map (_.map(loop(path, _, astFields)).max)
+            .getOrElse (DefaultComplexity)
+        case s: ScalarType[_] ⇒ s.complexity
+        case _ ⇒ 0.0D
+      }
+
+    fields.values.toVector.foldLeft(0.0D) {
+      case (acc, (_, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty =>
+        val astField = astFields.head
+        val field = rootTpe.getField(schema, astField.name).head
+        val path = astField.outputName :: Nil
+        val childComplexity = loop(path, field.fieldType, astFields)
+        val complexity = measureComplexity(path, field, astField, childComplexity)
+
+        acc + complexity
+      case (acc, _) ⇒ acc + DefaultComplexity
+    }
+  }
+
   def isOptional(tpe: ObjectType[_, _], fieldName: String): Boolean =
     isOptional(tpe.getField(schema, fieldName).head.fieldType)
 
@@ -583,6 +638,8 @@ class Resolver[Ctx](
 case class MappedCtxUpdate[Ctx, Val, NewVal](ctxFn: Val ⇒ Ctx, mapFn: Val ⇒ NewVal, onError: Throwable ⇒ Unit)
 
 object Resolver {
+  val DefaultComplexity = 1.0D
+
   def marshalValue(value: ast.Value, marshaller: ResultMarshaller): marshaller.Node = value match {
     case ast.StringValue(str, _) ⇒ marshaller.stringNode(str)
     case ast.IntValue(i, _) ⇒ marshaller.intNode(i)
