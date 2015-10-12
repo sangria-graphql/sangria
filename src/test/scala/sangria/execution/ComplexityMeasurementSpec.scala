@@ -65,8 +65,8 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
       complexity = Some((args, c) ⇒ 4.0D + args.arg[Int]("size") * c),
       resolve = _ ⇒ List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))),
     Field("pets", OptionType(ListType(PetType)),
-      arguments = Argument("size", IntType) :: Nil,
-      complexity = Some((args, c) ⇒ 3.5D + args.arg[Int]("size") * c),
+      arguments = Argument("limit", IntType) :: Nil,
+      complexity = Some((args, c) ⇒ 3.5D + args.arg[Int]("limit") * c),
       resolve = _ ⇒ List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true))))
   ))
 
@@ -313,7 +313,7 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
         """)
 
       val rejectComplexity = (c: Double) ⇒
-        if (c > 14)
+        if (c > 1000)
           throw new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c")
         else ()
 

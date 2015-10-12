@@ -1,3 +1,47 @@
+## v0.4.2 (2015-10-12)
+
+* Query complexity calculation mechanism is implemented (#85). This mechanism makes a rough estimation of the query complexity before it is executed.
+  Every field in the query gets a default score `1.0`. The "complexity" of the query is the sum of all field scores. You can customize the
+  field score with `complexity` argument:
+  ```scala
+  Field("pets", OptionType(ListType(PetType)),
+    arguments = Argument("limit", IntType) :: Nil,
+    complexity = Some((args, childrenScore) ⇒ 25.0D + args.arg[Int]("limit") * childrenScore),
+    resolve = ctx ⇒ ...)
+  ```
+  If you would like to use this feature, you need to provide `measureComplexity` argument to the `Executor`. For example:
+  ```scala
+  val rejectComplexQueries = (c: Double) ⇒
+    if (c > 1000)
+      throw new IllegalArgumentException(s"Too complex query: max allowed complexity is 1000.0, but got $c")
+    else ()
+
+  val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+    case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
+  }
+
+  Executor.execute(schema, query,
+    exceptionHandler = exceptionHandler,
+    measureComplexity = Some(rejectComplexQueries))
+  ```
+  The complexity of full introspection query (used by tools like GraphiQL) is `102.0`.
+* json4s-jackson is now supported in addition to native (#84). This results in minor import change:
+  ```scala
+  // before
+
+  sangria.integration.json4s._
+
+  // after
+
+  // either (same behaviour as before)
+  sangria.integration.json4s.native._
+
+  //or
+  sangria.integration.json4s.jackson._
+  ```
+* json4s is updated to version 3.3.0 (#84)
+* Provide a helpful error messages if schema has a broken circular references (which cause `fields` to be null) (#83)
+
 ## v0.4.1 (2015-10-03)
 
 For the most part implemented spec changes. Now compatible with "October 2015" version of the GraphQL spec.
