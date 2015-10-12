@@ -16,9 +16,10 @@ libraryDependencies ++= Seq(
   // parsing
   "org.parboiled" %% "parboiled" % "2.1.0",
 
-  // Json marshalling/unmarshalling. IT IS ONLY TEMPORARY IN THIS PROJECT TODO: extract in different library (see #38)
+  // JSON marshalling/unmarshalling. IT IS ONLY TEMPORARY IN THIS PROJECT TODO: extract in different library (see #38)
   "io.spray" %%  "spray-json" % "1.3.2" % "optional",
-  "org.json4s" %% "json4s-native" % "3.2.11" % "optional",
+  "org.json4s" %% "json4s-native" % "3.3.0" % "optional",
+  "org.json4s" %% "json4s-jackson" % "3.3.0" % "optional",
   "com.typesafe.play" % "play-json_2.11" % "2.4.2" % "optional",
   "io.circe" %% "circe-core" % "0.1.1" % "optional",
   "io.circe" %% "circe-generic" % "0.1.1" % "optional",
