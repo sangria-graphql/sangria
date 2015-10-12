@@ -290,7 +290,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("b", OptionType(StringType),
           arguments = Argument("numArg", OptionInputType(IntType)) :: Argument("stringArg", OptionInputType(StringType)) :: Nil,
-          resolve = ctx ⇒ {resolvedArgs = ctx.args.args; None}))))
+          resolve = ctx ⇒ {resolvedArgs = ctx.args.raw; None}))))
 
       val Success(doc) = QueryParser.parse("""
         query Example {

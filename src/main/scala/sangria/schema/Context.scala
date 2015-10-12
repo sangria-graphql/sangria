@@ -204,11 +204,11 @@ case class Context[Ctx, Val](
   astFields: List[ast.Field],
   path: List[String]) extends WithArguments with WithInputTypeRendering[Ctx]
 
-case class Args(args: Map[String, Any]) extends AnyVal {
-  def arg[T](arg: Argument[T]): T = args(arg.name).asInstanceOf[T]
-  def arg[T](name: String): T = args(name).asInstanceOf[T]
-  def argOpt[T](arg: Argument[T]): Option[T] = args.get(arg.name).asInstanceOf[Option[T]]
-  def argOpt[T](name: String): Option[T] = args.get(name).asInstanceOf[Option[T]]
+case class Args(raw: Map[String, Any]) extends AnyVal {
+  def arg[T](arg: Argument[T]): T = raw(arg.name).asInstanceOf[T]
+  def arg[T](name: String): T = raw(name).asInstanceOf[T]
+  def argOpt[T](arg: Argument[T]): Option[T] = raw.get(arg.name).asInstanceOf[Option[T]]
+  def argOpt[T](name: String): Option[T] = raw.get(name).asInstanceOf[Option[T]]
 }
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments
