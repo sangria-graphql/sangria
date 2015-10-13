@@ -542,14 +542,14 @@ class Resolver[Ctx](
     loop(path, field.fieldType, astFields, 1)
   }
 
-  def estimateComplexity(rootTpe: ObjectType[_, _], fields: Map[String, (ast.Field, Try[List[ast.Field]])]): Double = {
+  def estimateComplexity(rootTpe: ObjectType[Ctx, _], fields: Map[String, (ast.Field, Try[List[ast.Field]])]): Double = {
     import Resolver.DefaultComplexity
 
-    def measureComplexity(path: List[String], field: Field[_, _], astField: ast.Field, childComplexity: Double) = {
+    def measureComplexity(path: List[String], field: Field[Ctx, _], astField: ast.Field, childComplexity: Double) = {
       field.complexity match {
         case Some(fn) ⇒
           valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables) match {
-            case Success(args) ⇒ fn(Args(args), childComplexity)
+            case Success(args) ⇒ fn(userContext, Args(args), childComplexity)
             case Failure(_) ⇒ DefaultComplexity + childComplexity
           }
         case None ⇒ DefaultComplexity + childComplexity

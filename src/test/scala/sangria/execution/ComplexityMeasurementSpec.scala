@@ -33,12 +33,12 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
 
   val NamedType = InterfaceType("Named", fields[Unit, Named](
     Field("name", OptionType(StringType),
-      complexity = Some((_, _) ⇒ 10D),
+      complexity = Some((_, _, _) ⇒ 10D),
       resolve = _.value.name)))
 
   val DogType = ObjectType("Dog", interfaces[Unit, Dog](NamedType), fields[Unit, Dog](
     Field("barks", OptionType(BooleanType),
-      complexity = Some((_, _) ⇒ 1.2D),
+      complexity = Some((_, _, _) ⇒ 1.2D),
       resolve = _.value.barks)))
 
   val CatType = ObjectType("Cat", interfaces[Unit, Cat](NamedType), fields[Unit, Cat](
@@ -49,7 +49,7 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
   lazy val TestType: ObjectType[Unit, Unit] = ObjectType("Test", () ⇒ fields[Unit, Unit](
     Field("scalar", StringType, resolve = _ ⇒ "tests"),
     Field("scalarCustom", StringType,
-      complexity = Some((_, c) ⇒ 3.0D + c),
+      complexity = Some((_, _, c) ⇒ 3.0D + c),
       resolve = _ ⇒ "testsc"),
     Field("scalarArgs", StringType,
       arguments = Argument("foo", StringType) :: Nil,
@@ -57,16 +57,16 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
     Field("complexScalar", TestScalar, resolve = _ ⇒ "testcs"),
     Field("nestList", ListType(TestType),
       arguments = Argument("size", IntType) :: Nil,
-      complexity = Some((args, c) ⇒ 1.1D + args.arg[Int]("size") * c),
+      complexity = Some((_, args, c) ⇒ 1.1D + args.arg[Int]("size") * c),
       resolve = ctx ⇒ (1 to ctx.arg[Int]("size")) map (_ ⇒ ())),
     Field("nest", TestType, resolve = _ ⇒ ()),
     Field("named", OptionType(ListType(NamedType)),
       arguments = Argument("size", IntType) :: Nil,
-      complexity = Some((args, c) ⇒ 4.0D + args.arg[Int]("size") * c),
+      complexity = Some((_, args, c) ⇒ 4.0D + args.arg[Int]("size") * c),
       resolve = _ ⇒ List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))),
     Field("pets", OptionType(ListType(PetType)),
       arguments = Argument("size", IntType) :: Nil,
-      complexity = Some((args, c) ⇒ 3.5D + args.arg[Int]("size") * c),
+      complexity = Some((_, args, c) ⇒ 3.5D + args.arg[Int]("size") * c),
       resolve = _ ⇒ List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true))))
   ))
 

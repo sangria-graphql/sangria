@@ -236,7 +236,7 @@ case class Field[Ctx, Val] private (
     resolve: Context[Ctx, Val] ⇒ Action[Ctx, _],
     deprecationReason: Option[String],
     tags: List[FieldTag],
-    complexity: Option[(Args, Double) ⇒ Double],
+    complexity: Option[(Ctx, Args, Double) ⇒ Double],
     manualPossibleTypes: () ⇒ List[ObjectType[_, _]]) extends Named with HasArguments {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
@@ -251,7 +251,7 @@ object Field {
       resolve: Context[Ctx, Val] ⇒ Action[Ctx, Res],
       possibleTypes: ⇒ List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
-      complexity: Option[(Args, Double) ⇒ Double] = None,
+      complexity: Option[(Ctx, Args, Double) ⇒ Double] = None,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
     Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, complexity, () ⇒ possibleTypes map (_.objectType))
 }
