@@ -93,7 +93,7 @@ class FieldCollector[Ctx, Val](
 
     possibleDirs.collect{case Failure(error) ⇒ error}.headOption map (Failure(_)) getOrElse {
       val validDirs = possibleDirs collect {case Success(v) ⇒ v}
-      val should = validDirs.forall { case (dir, args) ⇒ dir.shouldInclude(DirectiveContext(selection, dir, Args(args))) }
+      val should = validDirs.forall { case (dir, args) ⇒ dir.shouldInclude(DirectiveContext(selection, dir, args)) }
 
       Success(should)
     }

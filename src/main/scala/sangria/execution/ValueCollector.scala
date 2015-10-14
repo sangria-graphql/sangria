@@ -15,7 +15,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   import coercionHelper._
 
-  private val argumentCache = TrieMap[(List[String], List[ast.Argument]), Try[Map[String, Any]]]()
+  private val argumentCache = TrieMap[(List[String], List[ast.Argument]), Try[Args]]()
 
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] =
     if (!um.isMapNode(inputVars))
@@ -49,10 +49,10 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else coerceInputValue(tpe, fieldPath, input.get)
     } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position.toList) :: Nil)
 
-  def getFieldArgumentValues(path: List[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] =
+  def getFieldArgumentValues(path: List[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] =
     argumentCache.getOrElseUpdate(path → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
-  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Map[String, Any]] = {
+  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] = {
     val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
 
     val res = argumentDefs.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
@@ -67,6 +67,6 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     val errors = res.collect{case (_, Left(errors)) ⇒ errors}.toList.flatten
 
     if (errors.nonEmpty) Failure(AttributeCoercionError(errors))
-    else Success(res mapValues (_.right.get))
+    else Success(Args(res mapValues (_.right.get)))
   }
 }

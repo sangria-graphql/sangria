@@ -31,7 +31,8 @@ trait MiddlewareErrorField extends Middleware with MiddlewareBeforeField {
 }
 
 case class MiddlewareQueryContext[Ctx, Input](
-  executor: Executor[_, _],
+  ctx: Ctx,
+  executor: Executor[Ctx, _],
   queryAst: ast.Document,
   operationName: Option[String],
   variables: Input,

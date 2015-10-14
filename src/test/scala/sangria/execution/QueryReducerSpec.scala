@@ -11,7 +11,10 @@ import sangria.validation.StringCoercionViolation
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
-class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport {
+class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
+  case class ATag(num: Int) extends FieldTag
+  case object BTag extends FieldTag
+  
   val TestScalar = ScalarType[String]("TestScalar",
     complexity = 2.5D,
     coerceOutput = s ⇒ ast.StringValue(s),
@@ -31,22 +34,24 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
   case class Dog(name: Option[String], barks: Option[Boolean]) extends Named
   case class Cat(name: Option[String], meows: Option[Boolean]) extends Named
 
-  val NamedType = InterfaceType("Named", fields[Unit, Named](
+  case class Info(nums: Seq[Int])
+
+  val NamedType = InterfaceType("Named", fields[Any, Named](
     Field("name", OptionType(StringType),
       complexity = Some((_, _, _) ⇒ 10D),
       resolve = _.value.name)))
 
-  val DogType = ObjectType("Dog", interfaces[Unit, Dog](NamedType), fields[Unit, Dog](
+  val DogType = ObjectType("Dog", interfaces[Any, Dog](NamedType), fields[Any, Dog](
     Field("barks", OptionType(BooleanType),
       complexity = Some((_, _, _) ⇒ 1.2D),
       resolve = _.value.barks)))
 
-  val CatType = ObjectType("Cat", interfaces[Unit, Cat](NamedType), fields[Unit, Cat](
+  val CatType = ObjectType("Cat", interfaces[Any, Cat](NamedType), fields[Any, Cat](
     Field("meows", OptionType(BooleanType), resolve = _.value.meows)))
 
-  val PetType = UnionType[Unit]("Pet", types = DogType :: CatType :: Nil)
+  val PetType = UnionType[Any]("Pet", types = DogType :: CatType :: Nil)
 
-  lazy val TestType: ObjectType[Unit, Unit] = ObjectType("Test", () ⇒ fields[Unit, Unit](
+  lazy val TestType: ObjectType[Info, Unit] = ObjectType("Test", () ⇒ fields[Info, Unit](
     Field("scalar", StringType, resolve = _ ⇒ "tests"),
     Field("scalarCustom", StringType,
       complexity = Some((_, _, c) ⇒ 3.0D + c),
@@ -67,12 +72,22 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
     Field("pets", OptionType(ListType(PetType)),
       arguments = Argument("size", IntType) :: Nil,
       complexity = Some((_, args, c) ⇒ 3.5D + args.arg[Int]("size") * c),
-      resolve = _ ⇒ List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true))))
+      resolve = _ ⇒ List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))),
+    Field("a", StringType, 
+      tags = ATag(1) :: Nil,
+      resolve = _ ⇒ "testa"),
+    Field("b", StringType,
+      tags = BTag :: Nil,
+      resolve = _ ⇒ "testb"),
+    Field("ab", StringType,
+      tags = ATag(2) :: BTag :: Nil,
+      resolve = _ ⇒ "testab"),
+    Field("info", ListType(IntType), resolve = _.ctx.nums)
   ))
 
   val schema = Schema(TestType)
 
-  "ComplexityMeasurement" should {
+  "MeasureComplexity" should {
     "perform basic calculation with overridden `complexity` function" in {
       val Success(query) = QueryParser.parse("""
         {
@@ -94,9 +109,12 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
 
       var complexity = 0.0D
 
-      val captureComplexity = (c: Double) ⇒ complexity = c
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        Right(ctx)
+      }
 
-      Executor.execute(schema, query, measureComplexity = Some(captureComplexity)).await should be (
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
         Map("data" →
           Map(
             "scalar" → "tests",
@@ -150,9 +168,12 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
 
       var complexity = 0.0D
 
-      val captureComplexity = (c: Double) ⇒ complexity = c
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        Right(ctx)
+      }
 
-      Executor.execute(schema, query, measureComplexity = Some(captureComplexity)).await should be (
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
         Map("data" → Map(
           "scalarArgs" → "testsa",
           "baz" → "testsa",
@@ -196,9 +217,12 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
 
       var complexity = 0.0D
 
-      val captureComplexity = (c: Double) ⇒ complexity = c
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        Right(ctx)
+      }
 
-      Executor.execute(schema, query, measureComplexity = Some(captureComplexity)).await should be (
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
         Map("data" →
           Map(
             "n1" → List(
@@ -250,9 +274,12 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
 
       var complexity = 0.0D
 
-      val captureComplexity = (c: Double) ⇒ complexity = c
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        Right(ctx)
+      }
 
-      Executor.execute(schema, query, measureComplexity = Some(captureComplexity)).await should be (
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
         Map("data" →
           Map(
             "p1" → List(
@@ -289,9 +316,12 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
 
       var complexity = 0.0D
 
-      val captureComplexity = (c: Double) ⇒ complexity = c
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        Right(ctx)
+      }
 
-      Executor.execute(schema, query, measureComplexity = Some(captureComplexity)).await should be (
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
         Map("data" →
           Map(
             "pets" → List(
@@ -312,22 +342,94 @@ class ComplexityMeasurementSpec extends WordSpec with Matchers with AwaitSupport
         }
         """)
 
-      val rejectComplexity = (c: Double) ⇒
-        if (c > 14)
-          throw new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c")
-        else ()
-
       val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
         case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
       }
 
+      val rejectComplexQuery = QueryReducer.rejectComplexQueries(14, c ⇒
+        new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
+
       Executor.execute(schema, query,
+          userContext = Info(Nil),
           exceptionHandler = exceptionHandler,
-          measureComplexity = Some(rejectComplexity)).await should be (
+          queryReducers = rejectComplexQuery :: Nil).await should be (
         Map(
           "data" → null,
           "errors" → List(
             Map("message" → "Too complex query: max allowed complexity is 14.0, but got 15.0"))))
+    }
+  }
+
+  "TagCollector" should {
+    "collect mapped tag values and update a user context" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          info
+          a
+          nest {
+            b
+          }
+        }
+      """)
+
+      var complexity = 0.0D
+
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        Right(ctx)
+      }
+
+      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num} ((nums, ctx) ⇒
+        Right(ctx.copy(nums = nums)))
+
+      Executor.execute(schema, query,
+          userContext = Info(Nil),
+          queryReducers = complReducer :: tagColl :: Nil).await should be (
+        Map("data" →
+            Map(
+              "info" -> List(1),
+              "a" → "testa",
+              "nest" →
+                Map("b" → "testb"))))
+
+      complexity should be (4D)
+    }
+
+    "collect all mapped tag values and update a user context" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          info
+          a
+          nest {
+            b
+            ab
+          }
+        }
+      """)
+
+      var complexity = 0.0D
+
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        Right(ctx)
+      }
+
+      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num} ((nums, ctx) ⇒
+        Right(ctx.copy(nums = nums)))
+
+      Executor.execute(schema, query,
+          userContext = Info(Nil),
+          queryReducers = complReducer :: tagColl :: Nil).await
+        Map("data" →
+            Map(
+              "info" -> List(1, 2),
+              "a" → "testa",
+              "nest" →
+                  Map(
+                    "b" → "testb",
+                    "ab" → "testab")))
+
+      complexity should be (5D)
     }
   }
 }
