@@ -111,7 +111,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
         complexity = c
-        Right(ctx)
+        ctx
       }
 
       Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
@@ -170,7 +170,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
         complexity = c
-        Right(ctx)
+        ctx
       }
 
       Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
@@ -219,7 +219,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
         complexity = c
-        Right(ctx)
+        ctx
       }
 
       Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
@@ -276,7 +276,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
         complexity = c
-        Right(ctx)
+        ctx
       }
 
       Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
@@ -318,7 +318,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
         complexity = c
-        Right(ctx)
+        ctx
       }
 
       Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
@@ -346,7 +346,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
         case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
       }
 
-      val rejectComplexQuery = QueryReducer.rejectComplexQueries(14, c ⇒
+      val rejectComplexQuery = QueryReducer.rejectComplexQueries[Info](14, (c, _) ⇒
         new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
 
       Executor.execute(schema, query,
@@ -376,11 +376,11 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
         complexity = c
-        Right(ctx)
+        ctx
       }
 
       val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num} ((nums, ctx) ⇒
-        Right(ctx.copy(nums = nums)))
+        ctx.copy(nums = nums))
 
       Executor.execute(schema, query,
           userContext = Info(Nil),
@@ -411,11 +411,11 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
         complexity = c
-        Right(ctx)
+        ctx
       }
 
       val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num} ((nums, ctx) ⇒
-        Right(ctx.copy(nums = nums)))
+        ctx.copy(nums = nums))
 
       Executor.execute(schema, query,
           userContext = Info(Nil),

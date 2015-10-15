@@ -20,7 +20,7 @@ case class Executor[Ctx, Root](
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
-    queryReducers: List[QueryReducer] = Nil)(implicit executionContext: ExecutionContext) {
+    queryReducers: List[QueryReducer[Ctx, _]] = Nil)(implicit executionContext: ExecutionContext) {
 
   def execute[Input](
       queryAst: ast.Document,
@@ -137,7 +137,7 @@ case class Executor[Ctx, Root](
       variables: Map[String, Any],
       rootTpe: ObjectType[_, _],
       fields: Map[String, (ast.Field, Try[List[ast.Field]])],
-      reducers: Vector[QueryReducer]): Any = {
+      reducers: Vector[QueryReducer[Ctx, _]]): Any = {
     // Using mutability here locally in order to reduce footprint
     import scala.collection.mutable.ListBuffer
 
@@ -163,11 +163,11 @@ case class Executor[Ctx, Root](
                   for (i ← 0 until reducers.size) {
                     val reducer = reducers(i)
 
-                    acc(i) = reducer.reduceField(
+                    acc(i) = reducer.reduceField[Any](
                       acc(i).asInstanceOf[reducer.Acc],
                       childReduced(i).asInstanceOf[reducer.Acc],
                       newPath, userContext, fields,
-                      objTpe.asInstanceOf[ObjectType[Ctx, Any]],
+                      objTpe.asInstanceOf[ObjectType[Any, Any]],
                       field.asInstanceOf[Field[Ctx, Any]], argumentValuesFn)
                   }
 
@@ -206,7 +206,7 @@ case class Executor[Ctx, Root](
             childReduced(i).asInstanceOf[reducer.Acc],
             path, userContext, astFields,
             rootTpe.asInstanceOf[ObjectType[Any, Any]],
-            field.asInstanceOf[Field[Any, Any]], argumentValuesFn)
+            field.asInstanceOf[Field[Ctx, Any]], argumentValuesFn)
         }
 
         acc
@@ -215,18 +215,20 @@ case class Executor[Ctx, Root](
 
     // Unsafe part to avoid addition boxing in order to reduce the footprint
     reducers.zipWithIndex.foldLeft(userContext: Any) {
-      case (acc: Future[_], (reducer, idx)) ⇒
+      case (acc: Future[Ctx], (reducer, idx)) ⇒
         acc.flatMap(a ⇒ reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], a) match {
-          case Left(future) ⇒ future
-          case Right(value) ⇒ Future.successful(value)
+          case FutureValue(future) ⇒ future
+          case Value(value) ⇒ Future.successful(value)
+          case TryValue(value) ⇒ Future.fromTry(value)
         })
 
-      case (acc, (reducer, idx)) ⇒
+      case (acc: Ctx @unchecked, (reducer, idx)) ⇒
         reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], acc)  match {
-          case Left(future) ⇒ future
-          case Right(value) ⇒ value
+          case FutureValue(future) ⇒ future
+          case Value(value) ⇒ value
+          case TryValue(value) ⇒ value.get
         }
-    }.asInstanceOf[Ctx]
+    }
   }
 }
 
@@ -244,7 +246,7 @@ object Executor {
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
-    queryReducers: List[QueryReducer] = Nil
+    queryReducers: List[QueryReducer[Ctx, _]] = Nil
   )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] =
     Executor(schema, root, userContext, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth, queryReducers).execute(queryAst, operationName, variables)
 }

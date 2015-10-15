@@ -3,52 +3,53 @@ package sangria.execution
 import sangria.ast
 import sangria.schema._
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
 import scala.util.{Try, Failure, Success}
 
-trait QueryReducer {
+trait QueryReducer[-Ctx, +Out] {
   type Acc
 
   def initial: Acc
 
   def reduceAlternatives(alterntives: Seq[Acc]): Acc
 
-  def reduceField[Ctx, Val](
+  def reduceField[Val](
     fieldAcc: Acc,
     childrenAcc: Acc,
     path: List[String],
     ctx: Ctx,
     astFields: List[ast.Field],
-    parentType: ObjectType[Ctx, Val],
-    field: Field[Ctx, Val],
+    parentType: ObjectType[Out, Val] @uncheckedVariance,
+    field: Field[Ctx, Val] @uncheckedVariance,
     argumentValuesFn: (List[String], List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc
 
-  def reduceScalar[Ctx, T](
+  def reduceScalar[T](
     path: List[String],
     ctx: Ctx,
     tpe: ScalarType[T]): Acc
 
-  def reduceEnum[Ctx, T](
+  def reduceEnum[T](
     path: List[String],
     ctx: Ctx,
     tpe: EnumType[T]): Acc
 
-  def reduceCtx[Ctx](acc: Acc, ctx: Ctx): Either[Future[Ctx], Ctx]
+  def reduceCtx(acc: Acc, ctx: Ctx): ReduceAction[Out, Out]
 }
 
 object QueryReducer {
-  def measureComplexity[Ctx](fn: (Double, Ctx) ⇒ Either[Future[Ctx], Ctx]): QueryReducer =
+  def measureComplexity[Ctx](fn: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new MeasureComplexity[Ctx](fn)
 
-  def rejectComplexQueries(complexityThreshold: Double, error: Double ⇒ Throwable): QueryReducer =
-    new MeasureComplexity[Any]((c, ctx) ⇒
-      if (c >= complexityThreshold) throw error(c) else Right(ctx))
+  def rejectComplexQueries[Ctx](complexityThreshold: Double, error: (Double, Ctx) ⇒ Throwable): QueryReducer[Ctx, Ctx] =
+    new MeasureComplexity[Ctx]((c, ctx) ⇒
+      if (c >= complexityThreshold) throw error(c, ctx) else ctx)
 
-  def collectTags[Ctx, T](tagMatcher: PartialFunction[FieldTag, T])(fn: (Seq[T], Ctx) ⇒ Either[Future[Ctx], Ctx]): QueryReducer =
+  def collectTags[Ctx, T](tagMatcher: PartialFunction[FieldTag, T])(fn: (Seq[T], Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new TagCollector[Ctx, T](tagMatcher, fn)
 }
 
-class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ Either[Future[Ctx], Ctx]) extends QueryReducer {
+class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
   type Acc = Double
 
   import MeasureComplexity.DefaultComplexity
@@ -57,14 +58,14 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ Either[Future[Ctx], Ctx])
 
   def reduceAlternatives(alterntives: Seq[Acc]) = alterntives.max
 
-  def reduceField[C, Val](
+  def reduceField[Val](
       fieldAcc: Acc,
       childrenAcc: Acc,
       path: List[String],
-      ctx: C,
+      ctx: Ctx,
       astFields: List[ast.Field],
-      parentType: ObjectType[C, Val],
-      field: Field[C, Val],
+      parentType: ObjectType[Ctx, Val],
+      field: Field[Ctx, Val],
       argumentValuesFn: (List[String], List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc = {
     val estimate = field.complexity match {
       case Some(fn) ⇒
@@ -78,52 +79,52 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ Either[Future[Ctx], Ctx])
     fieldAcc + estimate
   }
 
-  def reduceScalar[C, T](
+  def reduceScalar[T](
     path: List[String],
-    ctx: C,
+    ctx: Ctx,
     tpe: ScalarType[T]): Acc = tpe.complexity
 
-  def reduceEnum[C, T](
+  def reduceEnum[T](
     path: List[String],
-    ctx: C,
+    ctx: Ctx,
     tpe: EnumType[T]): Acc = initial
 
-  def reduceCtx[C](acc: Acc, ctx: C) =
-    action(acc, ctx.asInstanceOf[Ctx]).asInstanceOf[Either[Future[C], C]]
+  def reduceCtx(acc: Acc, ctx: Ctx) =
+    action(acc, ctx)
 }
 
 object MeasureComplexity {
   val DefaultComplexity = 1.0D
 }
 
-class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Seq[T], Ctx) ⇒ Either[Future[Ctx], Ctx]) extends QueryReducer {
+class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Seq[T], Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
   type Acc = Vector[T]
 
   val initial = Vector.empty
 
   def reduceAlternatives(alterntives: Seq[Acc]) = alterntives.toVector.flatten
 
-  def reduceField[C, Val](
+  def reduceField[Val](
       fieldAcc: Acc,
       childrenAcc: Acc,
       path: List[String],
-      ctx: C,
+      ctx: Ctx,
       astFields: List[ast.Field],
-      parentType: ObjectType[C, Val],
-      field: Field[C, Val],
+      parentType: ObjectType[Ctx, Val],
+      field: Field[Ctx, Val],
       argumentValuesFn: (List[String], List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc =
     fieldAcc ++ childrenAcc ++ field.tags.collect {case t if tagMatcher.isDefinedAt(t) ⇒ tagMatcher(t)}
 
-  def reduceScalar[C, ST](
+  def reduceScalar[ST](
     path: List[String],
-    ctx: C,
+    ctx: Ctx,
     tpe: ScalarType[ST]): Acc = initial
 
-  def reduceEnum[C, ET](
+  def reduceEnum[ET](
     path: List[String],
-    ctx: C,
+    ctx: Ctx,
     tpe: EnumType[ET]): Acc = initial
 
-  def reduceCtx[C](acc: Acc, ctx: C) =
-    action(acc, ctx.asInstanceOf[Ctx]).asInstanceOf[Either[Future[C], C]]
+  def reduceCtx(acc: Acc, ctx: Ctx) =
+    action(acc, ctx)
 }

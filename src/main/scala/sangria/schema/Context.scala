@@ -17,26 +17,36 @@ sealed trait Action[+Ctx, +Val] {
 sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val] {
   def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
 }
+sealed trait ReduceAction[+Ctx, +Val] extends Action[Ctx, Val] {
+  def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
+}
+
+object ReduceAction {
+  implicit def futureAction[Ctx, Val](value: Future[Val]): ReduceAction[Ctx, Val] = FutureValue(value)
+  implicit def tryAction[Ctx, Val](value: Try[Val]): ReduceAction[Ctx, Val] = TryValue(value)
+  implicit def defaultAction[Ctx, Val](value: Val): ReduceAction[Ctx, Val] = Value(value)
+}
 
 object Action {
-  implicit def futureAction[Ctx, Val](value: Future[Val]): LeafAction[Ctx, Val] = FutureValue(value)
   implicit def deferredAction[Ctx, Val](value: Deferred[Val]): LeafAction[Ctx, Val] = DeferredValue(value)
   implicit def deferredFutureAction[Ctx, Val, D <: Deferred[Val]](value: Future[D])(implicit ev: D <:< Deferred[Val]): LeafAction[Ctx, Val] = DeferredFutureValue(value)
+
+  implicit def futureAction[Ctx, Val](value: Future[Val]): LeafAction[Ctx, Val] = FutureValue(value)
   implicit def tryAction[Ctx, Val](value: Try[Val]): LeafAction[Ctx, Val] = TryValue(value)
   implicit def defaultAction[Ctx, Val](value: Val): LeafAction[Ctx, Val] = Value(value)
 }
 
-case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] {
+case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): Value[Ctx, NewVal] =
     Value(fn(value))
 }
 
-case class TryValue[Ctx, Val](value: Try[Val]) extends LeafAction[Ctx, Val] {
+case class TryValue[Ctx, Val](value: Try[Val]) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): TryValue[Ctx, NewVal] =
     TryValue(value map fn)
 }
 
-case class FutureValue[Ctx, Val](value: Future[Val]) extends LeafAction[Ctx, Val] {
+case class FutureValue[Ctx, Val](value: Future[Val]) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): FutureValue[Ctx, NewVal] =
     FutureValue(value map fn)
 }
