@@ -119,7 +119,11 @@ case class Executor[Ctx, Root](
 
       if (queryReducers.nonEmpty)
         reduceQuery(fieldCollector, valueCollector, variables, tpe, fields, queryReducers.toVector) match {
-          case future: Future[Ctx] ⇒ future.flatMap(newCtx ⇒ doExecute(newCtx))
+          case future: Future[Ctx] ⇒
+            future
+              .map (newCtx ⇒ doExecute(newCtx))
+              .recover {case error: Throwable ⇒ Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])}
+              .flatMap (identity)
           case newCtx: Ctx @unchecked ⇒ doExecute(newCtx)
         }
       else doExecute(userContext)

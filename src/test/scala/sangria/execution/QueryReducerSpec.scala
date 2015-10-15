@@ -9,7 +9,8 @@ import sangria.util.AwaitSupport
 import sangria.validation.StringCoercionViolation
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
   case class ATag(num: Int) extends FieldTag
@@ -86,6 +87,10 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
   ))
 
   val schema = Schema(TestType)
+
+  val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+    case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
+  }
 
   "MeasureComplexity" should {
     "perform basic calculation with overridden `complexity` function" in {
@@ -342,10 +347,6 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
         }
         """)
 
-      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
-        case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
-      }
-
       val rejectComplexQuery = QueryReducer.rejectComplexQueries[Info](14, (c, _) ⇒
         new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
 
@@ -361,7 +362,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
   }
 
   "TagCollector" should {
-    "collect mapped tag values and update a user context" in {
+    "collect mapped tag values and update a user context using `Value`" in {
       val Success(query) = QueryParser.parse("""
         {
           info
@@ -393,6 +394,135 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
                 Map("b" → "testb"))))
 
       complexity should be (4D)
+    }
+
+    "collect mapped tag values and update a user context using `FutureValue`" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          info
+          a
+          nest {
+            a
+            b
+            ab
+          }
+        }
+      """)
+
+      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num + 123} ((nums, ctx) ⇒
+        Future.successful(ctx.copy(nums = nums)))
+
+      Executor.execute(schema, query,
+          userContext = Info(Nil),
+          queryReducers = tagColl :: Nil).await should be (
+        Map("data" →
+            Map(
+              "info" -> List(124, 124, 125),
+              "a" → "testa",
+              "nest" →
+                Map(
+                  "a" → "testa",
+                  "b" → "testb",
+                  "ab" → "testab"))))
+    }
+
+    "collect mapped tag values and update a user context using `TryValue`" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          info
+          a
+          nest {
+            a
+            b
+            ab
+          }
+        }
+      """)
+
+      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num + 123} ((nums, ctx) ⇒
+        Success(ctx.copy(nums = nums)))
+
+      Executor.execute(schema, query,
+          userContext = Info(Nil),
+          queryReducers = tagColl :: Nil).await should be (
+        Map("data" →
+            Map(
+              "info" -> List(124, 124, 125),
+              "a" → "testa",
+              "nest" →
+                Map(
+                  "a" → "testa",
+                  "b" → "testb",
+                  "ab" → "testab"))))
+    }
+
+    "handle thrown exceptions correctly" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          info
+          a
+          nest {
+            a
+            b
+            ab
+          }
+        }
+      """)
+
+      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num + 123} ((nums, ctx) ⇒
+        throw new IllegalArgumentException("boom!"))
+
+      Executor.execute(schema, query,
+          userContext = Info(Nil),
+          exceptionHandler = exceptionHandler,
+          queryReducers = tagColl :: Nil).await should be (
+        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+    }
+
+    "handle `TryValue` exceptions correctly" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          info
+          a
+          nest {
+            a
+            b
+            ab
+          }
+        }
+        """)
+
+      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num + 123} ((nums, ctx) ⇒
+        Failure(new IllegalArgumentException("boom!")))
+
+      Executor.execute(schema, query,
+          userContext = Info(Nil),
+          exceptionHandler = exceptionHandler,
+          queryReducers = tagColl :: Nil).await should be (
+        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+    }
+
+    "handle `FutureValue` exceptions correctly" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          info
+          a
+          nest {
+            a
+            b
+            ab
+          }
+        }
+        """)
+
+      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) ⇒ num + 123} ((nums, ctx) ⇒
+        Future.failed(new IllegalArgumentException("boom!")))
+
+      Executor.execute(schema, query,
+        userContext = Info(Nil),
+        exceptionHandler = exceptionHandler,
+        queryReducers = tagColl :: Nil).await should be (
+        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
     }
 
     "collect all mapped tag values and update a user context" in {
