@@ -6,33 +6,34 @@ import sangria.ast
 import sangria.integration.InputUnmarshaller
 import sangria.schema.{Action, Context}
 
-trait Middleware {
+
+trait Middleware[-Ctx] {
   type QueryVal
 
-  def beforeQuery(context: MiddlewareQueryContext[_, _]): QueryVal
-  def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[_, _]): Unit
+  def beforeQuery(context: MiddlewareQueryContext[Ctx, _, _]): QueryVal
+  def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Ctx, _, _]): Unit
 }
 
-trait MiddlewareBeforeField extends Middleware {
+trait MiddlewareBeforeField[Ctx] extends Middleware[Ctx] {
   type FieldVal
 
-  def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]): (FieldVal, Option[Action[_, _]])
+  def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[Ctx, _, _], ctx: Context[Ctx, _]): (FieldVal, Option[Action[Ctx, _]])
 
-  lazy val continue: (Unit, Option[Action[_, _]]) = (Unit, None)
-  def continue(fieldVal: FieldVal): (FieldVal, Option[Action[_, _]]) = (fieldVal, None)
+  lazy val continue: (Unit, Option[Action[Ctx, _]]) = (Unit, None)
+  def continue(fieldVal: FieldVal): (FieldVal, Option[Action[Ctx, _]]) = (fieldVal, None)
 }
 
-trait MiddlewareAfterField extends Middleware with MiddlewareBeforeField {
-  def afterField(queryVal: QueryVal, fieldVal: FieldVal, value: Any, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]): Option[Any]
+trait MiddlewareAfterField[Ctx] extends MiddlewareBeforeField[Ctx] {
+  def afterField(queryVal: QueryVal, fieldVal: FieldVal, value: Any, mctx: MiddlewareQueryContext[Ctx, _, _], ctx: Context[Ctx, _]): Option[Any]
 }
 
-trait MiddlewareErrorField extends Middleware with MiddlewareBeforeField {
-  def fieldError(queryVal: QueryVal, fieldVal: FieldVal, error: Throwable, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]): Unit
+trait MiddlewareErrorField[Ctx] extends MiddlewareBeforeField[Ctx] {
+  def fieldError(queryVal: QueryVal, fieldVal: FieldVal, error: Throwable, mctx: MiddlewareQueryContext[Ctx, _, _], ctx: Context[Ctx, _]): Unit
 }
 
-case class MiddlewareQueryContext[Ctx, Input](
+case class MiddlewareQueryContext[+Ctx, RootVal, Input](
   ctx: Ctx,
-  executor: Executor[Ctx, _],
+  executor: Executor[_ <: Ctx, RootVal],
   queryAst: ast.Document,
   operationName: Option[String],
   variables: Input,

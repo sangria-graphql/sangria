@@ -12,7 +12,7 @@ import scala.util.{Success, Failure, Try}
 
 class Resolver[Ctx](
     val marshaller: ResultMarshaller,
-    middlewareCtx: MiddlewareQueryContext[Ctx, _],
+    middlewareCtx: MiddlewareQueryContext[Ctx, _, _],
     schema: Schema[Ctx, _],
     valueCollector: ValueCollector[Ctx, _],
     variables: Map[String, Any],
@@ -22,7 +22,7 @@ class Resolver[Ctx](
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,
-    middleware: List[(Any, Middleware)],
+    middleware: List[(Any, Middleware[_])],
     maxQueryDepth: Option[Int])(implicit executionContext: ExecutionContext) {
 
   val resultResolver = new ResultResolver(marshaller, exceptionHandler)
@@ -413,7 +413,7 @@ class Resolver[Ctx](
 
             try {
               val mBefore = middleware flatMap {
-                case (mv, m: MiddlewareBeforeField) ⇒
+                case (mv, m: MiddlewareBeforeField[Ctx]) ⇒
                   Some((m.beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx), mv, m))
                 case _ ⇒
                   None
@@ -421,12 +421,12 @@ class Resolver[Ctx](
 
               val beforeAction = mBefore.flatMap{case ((_, action), _, _) ⇒ action}.lastOption
 
-              val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField])
-              val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField])
+              val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField[Ctx]])
+              val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField[Ctx]])
 
               def doAfterMiddleware[Val](v: Val): Val = {
                 val results = mAfter.flatMap {
-                  case ((cv, _), mv, m: MiddlewareAfterField) ⇒
+                  case ((cv, _), mv, m: MiddlewareAfterField[Ctx]) ⇒
                     m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], v, middlewareCtx, ctx).asInstanceOf[Option[Val]]
                   case _ ⇒ None
                 }
@@ -436,7 +436,7 @@ class Resolver[Ctx](
 
               def doErrorMiddleware(error: Throwable): Unit =
                 mAfter.collect {
-                  case ((cv, _), mv, m: MiddlewareErrorField) ⇒
+                  case ((cv, _), mv, m: MiddlewareErrorField[Ctx]) ⇒
                     m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, ctx)
                 }
 
@@ -444,7 +444,7 @@ class Resolver[Ctx](
                 val mapped = fn(v)
 
                 val results = mAfter.flatMap {
-                  case ((cv, _), mv, m: MiddlewareAfterField) ⇒
+                  case ((cv, _), mv, m: MiddlewareAfterField[Ctx]) ⇒
                     m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], mapped, middlewareCtx, ctx).asInstanceOf[Option[NewVal]]
                   case _ ⇒ None
                 }

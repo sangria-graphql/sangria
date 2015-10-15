@@ -15,38 +15,36 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
-  class QueryMiddleware extends Middleware {
+  class QueryMiddleware extends Middleware[Count] {
     type QueryVal = String
 
-    def userCtx(c: MiddlewareQueryContext[_, _]) = c.executor.userContext.asInstanceOf[Count]
-
-    def beforeQuery(context: MiddlewareQueryContext[_, _]) = {
-      userCtx(context).count.incrementAndGet()
+    def beforeQuery(context: MiddlewareQueryContext[Count, _, _]) = {
+      context.ctx.count.incrementAndGet()
       "Context stuff"
     }
 
-    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[_, _]) = {
-      userCtx(context).count.incrementAndGet()
-      userCtx(context).context = Some(queryVal)
+    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Count, _, _]) = {
+      context.ctx.count.incrementAndGet()
+      context.ctx.context = Some(queryVal)
     }
   }
 
   case object Cacheed extends FieldTag
 
-  class CachingMiddleware extends Middleware with MiddlewareAfterField {
-    type QueryVal = MutableMap[String, Action[_, _]]
+  class CachingMiddleware extends Middleware[Any] with MiddlewareAfterField[Any] {
+    type QueryVal = MutableMap[String, Action[Any, _]]
     type FieldVal = Boolean
 
-    def beforeQuery(context: MiddlewareQueryContext[_, _]) =
+    def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) =
       MutableMap()
 
-    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[_, _]) = ()
+    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = ()
 
-    def cacheKey(ctx: Context[_, _]) = ctx.parentType.name + "." + ctx.field.name
+    def cacheKey(ctx: Context[Any, _]) = ctx.parentType.name + "." + ctx.field.name
 
     val noCache = (false, None)
 
-    def beforeField(cache: QueryVal, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
+    def beforeField(cache: QueryVal, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = {
       val key = cacheKey(ctx)
 
       if (ctx.field.tags.contains(Cacheed))
@@ -55,7 +53,7 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
         noCache
     }
 
-    def afterField(cache: QueryVal, fromCache: FieldVal, value: Any, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
+    def afterField(cache: QueryVal, fromCache: FieldVal, value: Any, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = {
       if (ctx.field.tags.contains(Cacheed) && !fromCache)
         cache += cacheKey(ctx) → Value(value)
 
@@ -69,24 +67,24 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
     var metrics: MutableMap[String, List[Long]] = MutableMap()
   }
 
-  class FieldMetrics extends Middleware with MiddlewareAfterField with MiddlewareErrorField {
+  class FieldMetrics extends Middleware[Any] with MiddlewareAfterField[Any] with MiddlewareErrorField[Any] {
     type QueryVal = MutableMap[String, List[Long]]
     type FieldVal = Long
 
-    def beforeQuery(context: MiddlewareQueryContext[_, _]) =
+    def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) =
       MutableMap()
 
-    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[_, _]) = {
+    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = {
       context.executor.userContext.asInstanceOf[Count].metrics = queryVal
     }
 
-    def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
+    def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = {
       if (ctx.field.name == "errorInBefore") throw new IllegalStateException("oops!")
 
       continue(System.currentTimeMillis())
     }
 
-    def afterField(queryVal: QueryVal, fieldVal: FieldVal, value: Any, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) = {
+    def afterField(queryVal: QueryVal, fieldVal: FieldVal, value: Any, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = {
       if (ctx.field.name == "errorInAfter") throw new IllegalStateException("oops!")
 
       queryVal.synchronized {
@@ -99,7 +97,7 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
       }
     }
 
-    def fieldError(queryVal: QueryVal, fieldVal: FieldVal, error: Throwable, mctx: MiddlewareQueryContext[_, _], ctx: Context[_, _]) =
+    def fieldError(queryVal: QueryVal, fieldVal: FieldVal, error: Throwable, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) =
       queryVal.synchronized {
         val key = ctx.parentType.name + "." + ctx.field.name
         val list = queryVal.getOrElse(key, Nil)
