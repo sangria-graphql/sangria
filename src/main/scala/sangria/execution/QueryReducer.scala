@@ -4,7 +4,6 @@ import sangria.ast
 import sangria.schema._
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.Future
 import scala.util.{Try, Failure, Success}
 
 trait QueryReducer[-Ctx, +Out] {
