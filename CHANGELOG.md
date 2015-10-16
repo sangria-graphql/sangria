@@ -1,3 +1,27 @@
+## v0.4.3 (2015-10-16)
+
+* `QueryReducer` is introduced. It allows you to analyze a query and take an action before it's executed. It provides very similar functionality to
+  complexity analysis (introduced in previous release), but in much more generic form. That's because complexity analysis is now rewritten as
+  a `QueryReducer`. In order to migrate, you need to replace `measureComplexity` function with `QueryReducer.measureComplexity`. Here is an example:
+  ```scala
+  val complReducer = QueryReducer.measureComplexity[MyCtx] { (c, ctx) ⇒
+    complexity = c
+    ctx
+  }
+
+  Executor.execute(schema, query,
+    userContext = new MyCtx,
+    queryReducers = complReducer :: Nil)
+  ```
+  Since rejection of complex queries is such a common use-case, there is now a helper function to create a reducer for it:
+  ```scala
+  val rejectComplexQuery = QueryReducer.rejectComplexQueries[MyCtx](14, (c, ctx) ⇒
+    new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
+  ```
+* `Middleware` got a type parameter for `Ctx`. This is a minor breaking change. If you don't use the `userContext` inside of the `Middleware`,
+  then you can just parametrize it with `Any`.
+* Complexity function on field should also be given the `Ctx` (#87)
+
 ## v0.4.2 (2015-10-12)
 
 * Query complexity calculation mechanism is implemented (#85). This mechanism makes a rough estimation of the query complexity before it is executed.
