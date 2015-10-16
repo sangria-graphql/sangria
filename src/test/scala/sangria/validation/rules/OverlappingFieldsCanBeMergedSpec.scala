@@ -17,6 +17,16 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """)
 
+    "allows inline typeless fragments" in expectPasses(
+      """
+        {
+          a
+          ... {
+            a
+          }
+        }
+      """)
+
     "unique fields on inline fragments without type condition" in expectPasses(
       """
         fragment uniqueFields on Dog {

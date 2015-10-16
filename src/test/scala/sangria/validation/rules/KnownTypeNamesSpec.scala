@@ -12,7 +12,7 @@ class KnownTypeNamesSpec extends WordSpec with ValidationSupport {
       """
         query Foo($var: String, $required: [String!]!) {
           user(id: 4) {
-            pets { ... on Pet { name }, ...PetFields }
+            pets { ... on Pet { name }, ...PetFields, ... { name }}
           }
         }
         fragment PetFields on Pet {

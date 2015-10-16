@@ -16,6 +16,9 @@ class KnownFragmentNamesSpec extends WordSpec with ValidationSupport {
             ... on Human {
               ...HumanFields2
             }
+            ... {
+              name
+            }
           }
         }
         fragment HumanFields1 on Human {

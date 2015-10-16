@@ -79,5 +79,14 @@ class FragmentsOnCompositeTypeSpec extends WordSpec with ValidationSupport {
       List(
         "Fragment cannot condition on non composite type 'String'." → Some(Pos(3, 18))
       ))
+
+    "inline fragment without type is valid" in expectPasses(
+      """
+        fragment validFragment on Pet {
+          ... {
+            name
+          }
+        }
+      """)
   }
 }

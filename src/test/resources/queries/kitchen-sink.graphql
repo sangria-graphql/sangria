@@ -35,4 +35,11 @@ fragment frag on Friend {
 {
   unnamed(truthy: true, falsey: false),
   query
+
+  ... @skip(unless: $foo) {
+    id
+  }
+  ... {
+    id
+  }
 }

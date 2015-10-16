@@ -192,7 +192,12 @@ class QueryParserSpec extends WordSpec with Matchers {
                   Nil,
                   Nil,
                   Some(Position(742, 36, 3))),
-                Field(None, "query", Nil, Nil, Nil, Some(Position(782, 37, 3)))),
+                Field(None, "query", Nil, Nil, Nil, Some(Position(782, 37, 3))),
+                InlineFragment(None,
+                  List(Directive("skip", List(Argument("unless", VariableValue("foo", Some(Position(809, 39, 21))), Some(Position(801, 39, 13)))), Some(Position(795, 39, 7)))),
+                  List(Field(None, "id", Nil, Nil, Nil, Some(Position(821, 40, 5)))),
+                  Some(Position(791, 39, 3))),
+                InlineFragment(None, Nil, List(Field(None, "id", Nil, Nil, Nil, Some(Position(840, 43, 5)))), Some(Position(830, 42, 3)))),
               Some(Position(738, 35, 1)))),
           Some(Position(288, 8, 1)))
       
