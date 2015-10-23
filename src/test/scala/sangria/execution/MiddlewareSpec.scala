@@ -127,7 +127,7 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
   case object Fail extends Deferred[String]
 
   class BrokenResolver extends DeferredResolver[Any] {
-    def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
       case Fail ⇒ Future.failed(new IllegalStateException("error in resolver"))
     }
   }

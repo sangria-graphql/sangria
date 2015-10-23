@@ -79,7 +79,7 @@ case class Executor[Ctx, Root](
       variables: Map[String, Any]): Try[Future[marshaller.Node]] =
     for {
       tpe ← getOperationRootType(operation, sourceMapper)
-      fields ← fieldCollector.collectFields(Nil, tpe, operation :: Nil)
+      fields ← fieldCollector.collectFields(Vector.empty, tpe, Vector(operation))
     } yield {
       def doExecute(ctx: Ctx) = {
         val middlewareCtx = MiddlewareQueryContext(ctx, this, queryAst, operationName, inputVariables, inputUnmarshaller)
@@ -140,17 +140,17 @@ case class Executor[Ctx, Root](
       valueCollector: ValueCollector[Ctx, _],
       variables: Map[String, Any],
       rootTpe: ObjectType[_, _],
-      fields: Map[String, (ast.Field, Try[List[ast.Field]])],
+      fields: Map[String, (ast.Field, Try[Vector[ast.Field]])],
       reducers: Vector[QueryReducer[Ctx, _]]): Any = {
     // Using mutability here locally in order to reduce footprint
     import scala.collection.mutable.ListBuffer
 
-    val argumentValuesFn = (path: List[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument]) ⇒
+    val argumentValuesFn = (path: Vector[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument]) ⇒
       valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, variables)
 
     val initialValues: Vector[Any] = reducers map (_.initial)
 
-    def loop(path: List[String], tpe: OutputType[_], astFields: List[ast.Field]): Seq[Any] =
+    def loop(path: Vector[String], tpe: OutputType[_], astFields: Vector[ast.Field]): Seq[Any] =
       tpe match {
         case OptionType(ofType) ⇒ loop(path, ofType, astFields)
         case ListType(ofType) ⇒ loop(path, ofType, astFields)
@@ -199,7 +199,7 @@ case class Executor[Ctx, Root](
       case (acc, (_, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty =>
         val astField = astFields.head
         val field = rootTpe.getField(schema, astField.name).head
-        val path = astField.outputName :: Nil
+        val path = Vector(astField.outputName)
         val childReduced = loop(path, field.fieldType, astFields)
 
         for (i ← 0 until reducers.size) {

@@ -69,7 +69,7 @@ object TestData {
   )
 
   class FriendsResolver extends DeferredResolver[Any] {
-    override def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
       case DeferFriends(friendIds) ⇒
         Future.fromTry(Try(friendIds map (id ⇒ characters.find(_.id == id))))
     }

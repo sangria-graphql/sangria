@@ -211,8 +211,8 @@ case class Context[Ctx, Val](
   marshaller: ResultMarshaller,
   sourceMapper: Option[SourceMapper],
   deprecationTracker: DeprecationTracker,
-  astFields: List[ast.Field],
-  path: List[String]) extends WithArguments with WithInputTypeRendering[Ctx]
+  astFields: Vector[ast.Field],
+  path: Vector[String]) extends WithArguments with WithInputTypeRendering[Ctx]
 
 case class Args(raw: Map[String, Any]) extends AnyVal {
   def arg[T](arg: Argument[T]): T = raw(arg.name).asInstanceOf[T]
@@ -221,15 +221,19 @@ case class Args(raw: Map[String, Any]) extends AnyVal {
   def argOpt[T](name: String): Option[T] = raw.get(name).asInstanceOf[Option[T]]
 }
 
+object Args {
+  val empty = Args(Map.empty)
+}
+
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments
 
 trait DeferredResolver[-Ctx] {
-  def resolve(deferred: List[Deferred[Any]], ctx: Ctx): List[Future[Any]]
+  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx): Vector[Future[Any]]
 }
 
 object DeferredResolver {
   val empty = new DeferredResolver[Any] {
-    override def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map (_ ⇒ Future.failed(UnsupportedDeferError))
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map (_ ⇒ Future.failed(UnsupportedDeferError))
   }
 }
 

@@ -42,7 +42,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
 
     result("data") should be (expectedData)
 
-    val errors = result.getOrElse("errors", Nil).asInstanceOf[List[Any]]
+    val errors = result.getOrElse("errors", Vector.empty).asInstanceOf[Seq[Any]]
 
     errors should have size expectedErrors.size
 
@@ -54,7 +54,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
 
     result("data") should be (expectedData)
 
-    val errors = result.getOrElse("errors", Nil).asInstanceOf[List[Map[String, Any]]]
+    val errors = result.getOrElse("errors", Vector.empty).asInstanceOf[Seq[Map[String, Any]]]
 
     errors should have size expectedErrorStrings.size
 
@@ -65,7 +65,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
 
           message.contains(expected) && {
             pos map { p ⇒
-              val location = error("locations").asInstanceOf[List[Map[String, Any]]](0)
+              val location = error("locations").asInstanceOf[Seq[Map[String, Any]]](0)
 
               location("line") == p.line && location("column") == p.col
             } getOrElse true

@@ -42,7 +42,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
   }
 
   def resolveError(error: Throwable) =
-    marshalResult(None, marshalErrors(ErrorRegistry(Nil, error)))
+    marshalResult(None, marshalErrors(ErrorRegistry(Vector.empty, error)))
 
   def handleException(exception: Throwable): marshaller.Node = exception match {
     case e: UserFacingError ⇒
@@ -56,20 +56,20 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
       marshaller.mapNode(Seq("message" → marshaller.stringNode("Internal server error")))
   }
 
-  case class ErrorRegistry(errorList: List[ErrorPath]) {
-    def add(path: List[String], error: String) =
+  case class ErrorRegistry(errorList: Vector[ErrorPath]) {
+    def add(path: Vector[String], error: String) =
       copy(errorList:+ ErrorPath(path, marshaller.mapNode(Seq("message" → marshaller.stringNode(error))), None))
 
-    def add(path: List[String], error: Throwable) =
+    def add(path: Vector[String], error: Throwable) =
       copy(errorList ++ createErrorPaths(path, error))
 
-    def add(path: List[String], error: Throwable, position: Option[Position]) =
+    def add(path: Vector[String], error: Throwable, position: Option[Position]) =
       copy(errorList :+ ErrorPath(path, handleException(error), position map singleLocation))
 
     def add(other: ErrorRegistry) =
       ErrorRegistry(errorList ++ other.errorList)
 
-    def createErrorPaths(path: List[String], e: Throwable) = e match {
+    def createErrorPaths(path: Vector[String], e: Throwable) = e match {
       case e: WithViolations if e.violations.nonEmpty ⇒
         e.violations map { v ⇒
           ErrorPath(path, marshaller.mapNode(Seq("message" → marshaller.stringNode(v.errorMessage))), getLocations(v))
@@ -109,10 +109,10 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
   }
 
   object ErrorRegistry {
-    val empty = ErrorRegistry(Nil)
-    def apply(path: List[String], error: Throwable): ErrorRegistry = empty.add(path, error)
-    def apply(path: List[String], error: Throwable, pos: Option[Position]): ErrorRegistry = empty.add(path, error, pos)
+    val empty = ErrorRegistry(Vector.empty)
+    def apply(path: Vector[String], error: Throwable): ErrorRegistry = empty.add(path, error)
+    def apply(path: Vector[String], error: Throwable, pos: Option[Position]): ErrorRegistry = empty.add(path, error, pos)
   }
 
-  case class ErrorPath(path: List[String], error: marshaller.Node, location: Option[marshaller.Node])
+  case class ErrorPath(path: Vector[String], error: marshaller.Node, location: Option[marshaller.Node])
 }

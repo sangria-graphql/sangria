@@ -17,15 +17,15 @@ class FieldCollector[Ctx, Val](
     sourceMapper: Option[SourceMapper],
     valueCollector: ValueCollector[Ctx, _]) {
 
-  private val resultCache = TrieMap[(List[String], String), Try[Map[String, (ast.Field, Try[List[ast.Field]])]]]()
+  private val resultCache = TrieMap[(Vector[String], String), Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]]]()
 
-  def collectFields(path: List[String], tpe: ObjectType[Ctx, _], selections: List[ast.SelectionContainer]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] =
+  def collectFields(path: Vector[String], tpe: ObjectType[Ctx, _], selections: Vector[ast.SelectionContainer]): Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]] =
     resultCache.getOrElseUpdate(path → tpe.name,
-      selections.foldLeft(Success(ListMap.empty): Try[Map[String, (ast.Field, Try[List[ast.Field]])]]) {
+      selections.foldLeft(Success(ListMap.empty): Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]]) {
         case (acc, s) ⇒ collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
       })
 
-  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String], initial: Try[Map[String, (ast.Field, Try[List[ast.Field]])]]): Try[Map[String, (ast.Field, Try[List[ast.Field]])]] =
+  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String], initial: Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]]): Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]] =
     selections.foldLeft(initial) {
       case (f @ Failure(_), selection) ⇒ f
       case (s @ Success(acc), selection) ⇒
@@ -37,7 +37,7 @@ class FieldCollector[Ctx, Val](
               case Success(true) ⇒ acc.get(name) match {
                 case Some((f, Success(list))) ⇒ Success(acc.updated(name, f → Success(list :+ field)))
                 case Some((_, Failure(_))) ⇒ s
-                case None ⇒ Success(acc.updated(name, field → Success(field :: Nil)))
+                case None ⇒ Success(acc.updated(name, field → Success(Vector(field))))
               }
               case Success(false) ⇒ s
               case Failure(error) ⇒ Success(acc.updated(name, field → Failure(error)))

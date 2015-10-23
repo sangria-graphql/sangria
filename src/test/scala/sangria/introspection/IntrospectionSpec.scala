@@ -1220,7 +1220,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       val result = Executor(schema, queryValidator = QueryValidator.empty).execute(query).await.asInstanceOf[Map[String, Any]]
 
       result("data") should be (Map("__type" → null))
-      result("errors").asInstanceOf[List[Map[String, Any]]](0)("message").asInstanceOf[String] should include (
+      result("errors").asInstanceOf[Seq[Map[String, Any]]](0)("message").asInstanceOf[String] should include (
         "Null value was provided for the NotNull Type 'String!' at path 'name'.")
     }
 

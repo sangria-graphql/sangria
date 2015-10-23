@@ -143,7 +143,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
       )
 
       val resolver = new DeferredResolver[Any] {
-        def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
           case ArticleDeferred(id) ⇒ Future.successful(article(id.toInt))
         }
       }

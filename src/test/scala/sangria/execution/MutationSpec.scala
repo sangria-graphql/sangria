@@ -15,7 +15,7 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
   case class FailedDefer(num: NumberHolder) extends Deferred[NumberHolder]
 
   class Resolver extends DeferredResolver[Any] {
-    def resolve(deferred: List[Deferred[Any]], ctx: Any) = deferred map {
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
       case SuccessfulDefer(n) ⇒ Future.successful(n)
       case FailedDefer(_) ⇒ Future.failed(new IllegalStateException("error in resolver"))
     }

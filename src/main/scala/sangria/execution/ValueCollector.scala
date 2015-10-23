@@ -15,7 +15,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   import coercionHelper._
 
-  private val argumentCache = TrieMap[(List[String], List[ast.Argument]), Try[Args]]()
+  private val argumentCache = TrieMap[(Vector[String], List[ast.Argument]), Try[Args]]()
 
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] =
     if (!um.isMapNode(inputVars))
@@ -49,24 +49,32 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else coerceInputValue(tpe, fieldPath, input.get)
     } else Left(VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, sourceMapper, definition.position.toList) :: Nil)
 
-  def getFieldArgumentValues(path: List[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] =
-    argumentCache.getOrElseUpdate(path → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
+  private val emtyArgs = Success(Args.empty)
 
-  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] = {
-    val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
+  def getFieldArgumentValues(path: Vector[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] =
+    if(argumentDefs.isEmpty)
+      emtyArgs
+    else
+      argumentCache.getOrElseUpdate(path → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
-    val res = argumentDefs.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
-      case (acc, argDef) ⇒
-        val argPath = argDef.name :: Nil
-        val astValue = astArgMap get argDef.name map (_.value)
+  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] =
+    if (argumentDefs.isEmpty)
+      emtyArgs
+    else {
+      val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
 
-        resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, acc,
-          astValue map (coerceAstValue(argDef.argumentType, argPath, _, variables)) getOrElse Right(None), allowErrorsOnDefault = true)
+      val res = argumentDefs.foldLeft(Map.empty[String, Either[List[Violation], Any]]) {
+        case (acc, argDef) ⇒
+          val argPath = argDef.name :: Nil
+          val astValue = astArgMap get argDef.name map (_.value)
+
+          resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, acc,
+            astValue map (coerceAstValue(argDef.argumentType, argPath, _, variables)) getOrElse Right(None), allowErrorsOnDefault = true)
+      }
+
+      val errors = res.collect{case (_, Left(errors)) ⇒ errors}.toList.flatten
+
+      if (errors.nonEmpty) Failure(AttributeCoercionError(errors))
+      else Success(Args(res mapValues (_.right.get)))
     }
-
-    val errors = res.collect{case (_, Left(errors)) ⇒ errors}.toList.flatten
-
-    if (errors.nonEmpty) Failure(AttributeCoercionError(errors))
-    else Success(Args(res mapValues (_.right.get)))
-  }
 }

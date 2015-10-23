@@ -151,7 +151,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
 
           result("data") should equal (null)
 
-          val errors = result("errors").asInstanceOf[List[Map[String, Any]]]
+          val errors = result("errors").asInstanceOf[Seq[Map[String, Any]]]
 
           errors should have size 1
 

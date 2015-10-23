@@ -40,9 +40,9 @@ class ScalaResultMarshaller extends ResultMarshaller {
   def bigDecimalNode(value: BigDecimal) = value
 
   def arrayNode(values: Seq[Node]) = values
-  def isEmptyArrayNode(array: Node) = array.asInstanceOf[List[_]].isEmpty
-  def emptyArrayNode = Nil
-  def addArrayNodeElem(array: Node, elem: Node) = array.asInstanceOf[List[_]] :+ elem
+  def isEmptyArrayNode(array: Node) = array.asInstanceOf[Vector[_]].isEmpty
+  def emptyArrayNode = Vector.empty
+  def addArrayNodeElem(array: Node, elem: Node) = array.asInstanceOf[Vector[_]] :+ elem
 
   def mapNode(keyValues: Seq[(String, Node)]) = Map(keyValues: _*)
   def emptyMapNode = Map.empty[String, Any]
