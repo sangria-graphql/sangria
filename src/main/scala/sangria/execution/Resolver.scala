@@ -387,7 +387,7 @@ class Resolver[Ctx](
 
   def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: Vector[String], value: Any, errors: ErrorRegistry, name: String, astFields: Vector[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[MappedCtxUpdate[Ctx, Any, Any]]) = {
     val astField = astFields.head
-    val allFields = tpe.getField(schema, astField.name).asInstanceOf[List[Field[Ctx, Any]]]
+    val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Any]]]
     val field = allFields.head
 
     maxQueryDepth match {

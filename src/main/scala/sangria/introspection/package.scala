@@ -115,8 +115,8 @@ package object introspection {
           val (_, tpe) = ctx.value
 
           tpe match {
-            case t: ObjectLikeType[_, _] if incDep ⇒ Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]])
-            case t: ObjectLikeType[_, _] ⇒ Some(t.uniqueFields.asInstanceOf[List[Field[_, _]]].filter(_.deprecationReason.isEmpty))
+            case t: ObjectLikeType[_, _] if incDep ⇒ Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]])
+            case t: ObjectLikeType[_, _] ⇒ Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]].filter(_.deprecationReason.isEmpty))
             case _ ⇒ None
           }
         }),
@@ -235,6 +235,8 @@ package object introspection {
     fieldType = StringType,
     description = Some("The name of the current Object type at runtime."),
     resolve = ctx ⇒ ctx.parentType.name)
+
+  val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 
   lazy val Success(introspectionQuery) = QueryParser.parse(
     """

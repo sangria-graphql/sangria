@@ -103,25 +103,27 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
 
   def fieldsFn: () ⇒ List[Field[Ctx, Val]]
 
-  private lazy val ownFields = fieldsFn()
+  private lazy val ownFields = fieldsFn().toVector
 
-  def removeDuplicates[T, E](list: List[T], valueFn: T ⇒ E) =
-    list.foldLeft((Nil, Nil): (List[E], List[T])) {
+  def removeDuplicates[T, E](list: Vector[T], valueFn: T ⇒ E) =
+    list.foldLeft((Vector.empty, Vector.empty): (Vector[E], Vector[T])) {
       case (a @ (visited, acc), e) if visited contains valueFn(e) ⇒ a
       case ((visited, acc), e) ⇒ (visited :+ valueFn(e), acc :+ e)
     }._2
 
-  lazy val fields: List[Field[Ctx, _]] = ownFields ++ interfaces.flatMap(i ⇒ i.fields.asInstanceOf[List[Field[Ctx, _]]])
+  lazy val fields: Vector[Field[Ctx, _]] = ownFields ++ interfaces.flatMap(i ⇒ i.fields.asInstanceOf[Vector[Field[Ctx, _]]])
 
-  lazy val uniqueFields: List[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) ⇒ e.name)
+  lazy val uniqueFields: Vector[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) ⇒ e.name)
 
   private lazy val fieldsByName = fields groupBy (_.name)
 
-  def getField(schema: Schema[_, _], fieldName: String): List[Field[Ctx, _]] =
-    if (fieldName == SchemaMetaField.name && name == schema.query.name) SchemaMetaField.asInstanceOf[Field[Ctx, _]] :: Nil
-    else if (fieldName == TypeMetaField.name && name == schema.query.name) TypeMetaField.asInstanceOf[Field[Ctx, _]] :: Nil
-    else if (fieldName == TypeNameMetaField.name) TypeNameMetaField.asInstanceOf[Field[Ctx, _]] :: Nil
-    else fieldsByName.getOrElse(fieldName, Nil)
+  def getField(schema: Schema[_, _], fieldName: String): Vector[Field[Ctx, _]] =
+    if (sangria.introspection.MetaFieldNames contains fieldName)
+      if (fieldName == SchemaMetaField.name && name == schema.query.name) Vector(SchemaMetaField.asInstanceOf[Field[Ctx, _]])
+      else if (fieldName == TypeMetaField.name && name == schema.query.name) Vector(TypeMetaField.asInstanceOf[Field[Ctx, _]])
+      else if (fieldName == TypeNameMetaField.name) Vector(TypeNameMetaField.asInstanceOf[Field[Ctx, _]])
+      else Vector.empty
+    else fieldsByName.getOrElse(fieldName, Vector.empty)
 }
 
 case class ObjectType[Ctx, Val: ClassTag] private (
