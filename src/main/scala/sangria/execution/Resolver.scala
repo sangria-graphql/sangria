@@ -464,6 +464,28 @@ class Resolver[Ctx](
                   }
 
                 res match {
+                  // these specific cases are important for time measuring middleware and eager values
+                  case resolved: Value[Ctx, Any @unchecked] ⇒
+                    (errors,
+                      if (mAfter.nonEmpty)
+                        Some(Value(doAfterMiddleware(resolved.value)))
+                      else
+                        Some(resolved.value),
+                      None)
+
+                  case resolved: TryValue[Ctx, Any @unchecked] ⇒
+                    (errors,
+                      if (mAfter.nonEmpty && resolved.value.isSuccess)
+                        Some(Value(doAfterMiddleware(resolved.value.get)))
+                      else
+                        Some(resolved.value),
+                      if (mError.nonEmpty)
+                        Some(MappedCtxUpdate(
+                          _ ⇒ userCtx,
+                          identity,
+                          doErrorMiddleware))
+                      else None)
+
                   case resolved: LeafAction[Ctx, Any @unchecked] ⇒
                     (errors,
                       Some(resolved),
