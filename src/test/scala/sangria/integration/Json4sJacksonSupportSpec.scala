@@ -43,13 +43,7 @@ class Json4sJacksonSupportSpec extends WordSpec with Matchers with AwaitSupport 
     "correctly serialize" in {
       import sangria.integration.json4s.jackson.Json4sJacksonResultMarshaller
 
-      Json4sJacksonResultMarshaller.addArrayNodeElem(JArray(List(JString("aa"))), JString("bb")) should be (
-        JArray(List(JString("aa"), JString("bb"))))
-
-      Json4sJacksonResultMarshaller.emptyArrayNode should be (JArray(Nil))
-      Json4sJacksonResultMarshaller.isEmptyArrayNode(JArray(Nil)) should be (true)
-      Json4sJacksonResultMarshaller.isEmptyArrayNode(JArray(JString("aa") :: Nil)) should be (false)
-      Json4sJacksonResultMarshaller.arrayNode(JString("aa") :: JInt(11) :: Nil) should be (JArray(JString("aa") :: JInt(11) :: Nil))
+      Json4sJacksonResultMarshaller.arrayNode(Vector(JString("aa"), JInt(11))) should be (JArray(JString("aa") :: JInt(11) :: Nil))
 
       Json4sJacksonResultMarshaller.booleanNode(true) should be (JBool(true))
       Json4sJacksonResultMarshaller.intNode(111) should be (JInt(111))

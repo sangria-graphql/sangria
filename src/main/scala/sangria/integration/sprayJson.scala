@@ -12,10 +12,7 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
     def mapNode(keyValues: Seq[(String, JsValue)]) = JsObject(keyValues: _*)
     def addMapNodeElem(node: JsValue, key: String, value: JsValue) = JsObject(node.asInstanceOf[JsObject].fields + (key → value))
 
-    def emptyArrayNode = JsArray.empty
-    def isEmptyArrayNode(array: JsValue) = array.asInstanceOf[JsArray].elements.isEmpty
-    def arrayNode(values: Seq[JsValue]) = JsArray(values.toVector)
-    def addArrayNodeElem(array: JsValue, elem: JsValue) = JsArray(array.asInstanceOf[JsArray].elements :+ elem)
+    def arrayNode(values: Vector[JsValue]) = JsArray(values.toVector)
 
     def stringNode(value: String) = JsString(value)
     def booleanNode(value: Boolean) = JsBoolean(value)

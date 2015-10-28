@@ -10,10 +10,7 @@ object circe {
     def mapNode(keyValues: Seq[(String, Json)]) = Json.obj(keyValues: _*)
     def addMapNodeElem(node: Json, key: String, value: Json) = node.mapObject(_ + (key, value))
 
-    lazy val emptyArrayNode = Json.array()
-    def isEmptyArrayNode(array: Json) = array.asArray.get.isEmpty
-    def arrayNode(values: Seq[Json]) = Json.array(values.toVector: _*)
-    def addArrayNodeElem(array: Json, elem: Json) = array.mapArray(_ :+ elem)
+    def arrayNode(values: Vector[Json]) = Json.array(values: _*)
 
     def booleanNode(value: Boolean) = Json.bool(value)
     def floatNode(value: Double) = Json.number(value).get

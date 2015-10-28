@@ -149,9 +149,7 @@ trait WithInputTypeRendering[Ctx] {
       case l: ListInputType[_] ⇒
         val listValue = v.asInstanceOf[Seq[Any]]
 
-        listValue.foldLeft(m.emptyArrayNode) {
-          case (acc, value) ⇒ m.addArrayNodeElem(acc, loop(l.ofType, value))
-        }
+        m.mapAndMarshal[Any](listValue, loop(l.ofType, _))
       case o: OptionInputType[_] ⇒ v match {
         case Some(optVal) ⇒ loop(o.ofType, optVal)
         case None ⇒ m.nullNode
@@ -189,9 +187,7 @@ trait WithInputTypeRendering[Ctx] {
     case l: ListInputType[_] ⇒
       val listValue = v.asInstanceOf[Seq[Any]]
 
-      listValue.foldLeft(m.emptyArrayNode) {
-        case (acc, value) ⇒ m.addArrayNodeElem(acc, renderCoercedInputValue(l.ofType, value, m))
-      }
+      m.mapAndMarshal[Any](listValue, renderCoercedInputValue(l.ofType, _, m))
     case o: OptionInputType[_] ⇒ v match {
       case Some(optVal) ⇒ renderCoercedInputValue(o.ofType, optVal, m)
       case None ⇒ m.nullNode

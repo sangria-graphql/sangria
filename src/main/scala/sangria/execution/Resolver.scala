@@ -6,6 +6,7 @@ import sangria.integration.ResultMarshaller
 import sangria.parser.SourceMapper
 import sangria.schema._
 
+import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ExecutionContext, Promise, Future}
 import scala.util.control.NonFatal
 import scala.util.{Success, Failure, Try}
@@ -344,18 +345,33 @@ class Resolver[Ctx](
 
           val res = actualValue map (resolveValue(path, astFields, listTpe, field, _, userCtx))
           val simpleRes = res.collect { case r: Result ⇒ r}
+          val optional = isOptional(listTpe)
 
           if (simpleRes.size == res.size)
-            simpleRes.foldLeft(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))) {
-              case (acc, res) ⇒ acc.addToList(res, isOptional(listTpe), path, astFields.head.position)
-            }
-          else
-            res.foldLeft(DeferredResult(Vector.empty, Future.successful(Result(ErrorRegistry.empty, Some(marshaller.emptyArrayNode))))) {
-              case (acc, res: Result) ⇒ acc.copy(futureValue = acc.futureValue map (r ⇒ r.addToList(res, isOptional(listTpe), path, astFields.head.position)))
+            resolveSimpleListValue(simpleRes, path, optional, astFields.head.position)
+          else {
+            // this is very hot place, so resorting to mutability to minimize the footprint
+            val deferredBuilder = new VectorBuilder[Future[Vector[Defer]]]
+            val resultFutures = new VectorBuilder[Future[Result]]
 
-              case (acc, DeferredResult(deferred, futureValue)) ⇒ acc.copy(deferred = acc.deferred ++ deferred, futureValue =
-                  for {accRes ← acc.futureValue; res ← futureValue} yield accRes.addToList(res, isOptional(listTpe), path, astFields.head.position))
+            val resIt = res.iterator
+
+            while(resIt.hasNext) {
+              resIt.next() match {
+                case r: Result ⇒
+                  resultFutures += Future.successful(r)
+                case dr: DeferredResult ⇒
+                  resultFutures += dr.futureValue
+                  deferredBuilder ++= dr.deferred
+              }
             }
+
+            DeferredResult(
+              deferred = deferredBuilder.result(),
+              futureValue = Future.sequence(resultFutures.result()) map (
+                  resolveSimpleListValue(_, path, optional, astFields.head.position))
+            )
+          }
         }
       case scalar: ScalarType[Any @unchecked] ⇒
         try {
@@ -384,6 +400,36 @@ class Resolver[Ctx](
             new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astFields.head.position.toList)), None)
         }
     }
+
+  def resolveSimpleListValue(simpleRes: Seq[Result], path: Vector[String], optional: Boolean, astPosition: Option[Position]): Result = {
+    // this is very hot place, so resorting to mutability to minimize the footprint
+
+    var errorReg = ErrorRegistry.empty
+    var listBuilder = new VectorBuilder[marshaller.Node]
+    var canceled = false
+    val resIt = simpleRes.iterator
+
+    while (resIt.hasNext && !canceled) {
+      val res = resIt.next()
+
+      if (!optional && res.value.isEmpty && res.errors.errorList.isEmpty)
+        errorReg = errorReg.add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, astPosition.toList))
+      else if (res.errors.errorList.nonEmpty)
+        errorReg = errorReg.add(res.errors)
+
+
+      res.value match {
+        case Some(other) ⇒
+          listBuilder += other
+        case None if optional ⇒
+          listBuilder += marshaller.nullNode
+        case None ⇒
+          canceled = true
+      }
+    }
+
+    Result(errorReg, if (canceled) None else Some(marshaller.arrayNode(listBuilder.result())))
+  }
 
   def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: Vector[String], value: Any, errors: ErrorRegistry, name: String, astFields: Vector[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[MappedCtxUpdate[Ctx, Any, Any]]) = {
     val astField = astFields.head
@@ -587,18 +633,6 @@ class Resolver[Ctx](
               value map (marshaller.addMapNodeElem(_, key, marshaller.nullNode))
             else
               for {myVal ← value; otherVal ← other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal))
-
-    def addToList(other: Result, optional: Boolean, path: Vector[String], position: Option[Position]) = copy(
-      errors =
-          if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
-            errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position.toList))
-          else
-            errors.add(other.errors),
-      value =
-          if (optional && other.value.isEmpty)
-            value map (marshaller.addArrayNodeElem(_, marshaller.nullNode))
-          else
-            for {myVal ← value; otherVal ← other.value} yield marshaller.addArrayNodeElem(myVal, otherVal))
   }
 }
 
@@ -615,7 +649,7 @@ object Resolver {
     case ast.BigDecimalValue(f, _) ⇒ marshaller.bigDecimalNode(f)
     case ast.BooleanValue(b, _) ⇒ marshaller.booleanNode(b)
     case ast.EnumValue(enum, _) ⇒ marshaller.stringNode(enum)
-    case ast.ListValue(values, _) ⇒ marshaller.arrayNode(values map (marshalValue(_, marshaller)))
+    case ast.ListValue(values, _) ⇒ marshaller.arrayNode(values.toVector map (marshalValue(_, marshaller)))
     case ast.ObjectValue(values, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalValue(v.value, marshaller)))
     case ast.VariableValue(_, _) ⇒ throw new IllegalStateException("Can't marshall variable values!")
   }

@@ -10,10 +10,7 @@ abstract class Json4sResultMarshaller extends ResultMarshaller {
   def mapNode(keyValues: Seq[(String, JValue)]) = JObject(keyValues.toList)
   def addMapNodeElem(node: JValue, key: String, value: JValue) = JObject(node.asInstanceOf[JObject].obj :+ (key → value))
 
-  def emptyArrayNode = JArray(Nil)
-  def isEmptyArrayNode(array: JValue) = array.asInstanceOf[JArray].arr.isEmpty
-  def arrayNode(values: Seq[JValue]) = JArray(values.toList)
-  def addArrayNodeElem(array: JValue, elem: JValue) = JArray(array.asInstanceOf[JArray].arr :+ elem)
+  def arrayNode(values: Vector[JValue]) = JArray(values.toList)
 
   def stringNode(value: String) = JString(value)
   def floatNode(value: Double) = JDouble(value)

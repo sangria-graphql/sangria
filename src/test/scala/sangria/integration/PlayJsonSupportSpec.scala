@@ -41,13 +41,7 @@ class PlayJsonSupportSpec extends WordSpec with Matchers with AwaitSupport {
     }
     
     "correctly serialize" in {
-      PlayJsonResultMarshaller.addArrayNodeElem(JsArray(List(JsString("aa"))), JsString("bb")) should be (
-        JsArray(List(JsString("aa"), JsString("bb"))))
-
-      PlayJsonResultMarshaller.emptyArrayNode should be (JsArray(Nil))
-      PlayJsonResultMarshaller.isEmptyArrayNode(JsArray(Nil)) should be (true)
-      PlayJsonResultMarshaller.isEmptyArrayNode(JsArray(JsString("aa") :: Nil)) should be (false)
-      PlayJsonResultMarshaller.arrayNode(JsString("aa") :: JsNumber(11) :: Nil) should be (JsArray(JsString("aa") :: JsNumber(11) :: Nil))
+      PlayJsonResultMarshaller.arrayNode(Vector(JsString("aa"), JsNumber(11))) should be (JsArray(JsString("aa") :: JsNumber(11) :: Nil))
 
       PlayJsonResultMarshaller.booleanNode(true) should be (JsBoolean(true))
       PlayJsonResultMarshaller.intNode(111) should be (JsNumber(111))

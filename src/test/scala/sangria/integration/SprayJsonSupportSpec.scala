@@ -42,13 +42,7 @@ class SprayJsonSupportSpec extends WordSpec with Matchers with AwaitSupport {
     }
     
     "correctly serialize" in {
-      SprayJsonResultMarshaller.addArrayNodeElem(JsArray(Vector(JsString("aa"))), JsString("bb")) should be (
-        JsArray(Vector(JsString("aa"), JsString("bb"))))
-
-      SprayJsonResultMarshaller.emptyArrayNode should be (JsArray(Vector.empty))
-      SprayJsonResultMarshaller.isEmptyArrayNode(JsArray(Vector.empty)) should be (true)
-      SprayJsonResultMarshaller.isEmptyArrayNode(JsArray(Vector(JsString("aa")))) should be (false)
-      SprayJsonResultMarshaller.arrayNode(JsString("aa") :: JsNumber(11) :: Nil) should be (JsArray(Vector(JsString("aa"), JsNumber(11))))
+      SprayJsonResultMarshaller.arrayNode(Vector(JsString("aa"), JsNumber(11))) should be (JsArray(Vector(JsString("aa"), JsNumber(11))))
 
       SprayJsonResultMarshaller.booleanNode(true) should be (JsBoolean(true))
       SprayJsonResultMarshaller.intNode(111) should be (JsNumber(111))

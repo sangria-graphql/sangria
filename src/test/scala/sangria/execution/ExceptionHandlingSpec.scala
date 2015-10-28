@@ -100,7 +100,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
       val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
         case (m, e: IllegalStateException) ⇒
           HandledException(e.getMessage,
-            Map("foo" → m.arrayNode(Seq(m.stringNode("bar"), m.intNode(1234))), "baz" → m.stringNode("Test")))
+            Map("foo" → m.arrayNode(Vector(m.stringNode("bar"), m.intNode(1234))), "baz" → m.stringNode("Test")))
       }
 
       Executor(schema, exceptionHandler = exceptionHandler).execute(doc).await should be  (

@@ -1,5 +1,7 @@
 package sangria.integration
 
+import scala.collection.immutable.VectorBuilder
+
 trait ResultMarshaller {
   type Node
 
@@ -7,10 +9,8 @@ trait ResultMarshaller {
   def addMapNodeElem(node: Node, key: String, value: Node): Node
   def mapNode(keyValues: Seq[(String, Node)]): Node
 
-  def emptyArrayNode: Node
-  def isEmptyArrayNode(array: Node): Boolean
-  def arrayNode(values: Seq[Node]): Node
-  def addArrayNodeElem(array: Node, elem: Node): Node
+//  def addArrayNodeElem1(array: Node, elem: Node): Node
+  def arrayNode(values: Vector[Node]): Node
 
   def stringNode(value: String): Node
   def intNode(value: Int): Node
@@ -23,6 +23,16 @@ trait ResultMarshaller {
 
   def renderCompact(node: Node): String
   def renderPretty(node: Node): String
+
+  def mapAndMarshal[T](seq: Seq[T], fn: T ⇒ Node): Node = {
+    val res = new VectorBuilder[Node]
+
+    for (elem ← seq) {
+      res += fn(elem)
+    }
+
+    arrayNode(res.result())
+  }
 }
 
 object ResultMarshaller {
@@ -39,10 +49,7 @@ class ScalaResultMarshaller extends ResultMarshaller {
   def bigIntNode(value: BigInt) = value
   def bigDecimalNode(value: BigDecimal) = value
 
-  def arrayNode(values: Seq[Node]) = values
-  def isEmptyArrayNode(array: Node) = array.asInstanceOf[Vector[_]].isEmpty
-  def emptyArrayNode = Vector.empty
-  def addArrayNodeElem(array: Node, elem: Node) = array.asInstanceOf[Vector[_]] :+ elem
+  def arrayNode(values: Vector[Node]) = values
 
   def mapNode(keyValues: Seq[(String, Node)]) = Map(keyValues: _*)
   def emptyMapNode = Map.empty[String, Any]

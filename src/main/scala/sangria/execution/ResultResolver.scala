@@ -5,25 +5,25 @@ import sangria.ast.AstNode
 import sangria.integration.ResultMarshaller
 import sangria.validation.{Violation, AstNodeLocation}
 
+import scala.collection.immutable.VectorBuilder
+
 class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException]) {
   def marshalErrors(errors: ErrorRegistry) = {
-    val marshalled = errors.errorList.foldLeft(marshaller.emptyArrayNode) {
-      case (acc, ErrorPath(path, error, location)) ⇒
+    val marshalled = errors.errorList.map {
+      case ErrorPath(path, error, location) ⇒
         val withPath =
           if (path.nonEmpty)
             marshaller.addMapNodeElem(error, "field", marshaller.stringNode(path mkString "."))
           else
             error
 
-        val withLocations = location match {
+        location match {
           case Some(node) ⇒ marshaller.addMapNodeElem(withPath, "locations", node)
           case None ⇒ withPath
         }
-
-        marshaller.addArrayNodeElem(acc, withLocations)
     }
 
-    if (marshaller.isEmptyArrayNode(marshalled)) None else Some(marshalled)
+    if (marshalled.isEmpty) None else Some(marshaller.arrayNode(marshalled))
   }
 
 
@@ -79,33 +79,27 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
     }
 
     def getLocations(violation: Violation) = violation match {
-      case v: AstNodeLocation ⇒
-        val violationLocations = marshallPositions(v.positions)
-
-        if (marshaller.isEmptyArrayNode(violationLocations)) None else Some(violationLocations)
+      case v: AstNodeLocation if v.positions.nonEmpty ⇒
+        Some(marshallPositions(v.positions))
       case v ⇒
         None
     }
 
-    def getLocations(error: Throwable) = {
-      val astNodeLocations = error match {
-        case error: AstNodeLocation ⇒ marshallPositions(error.positions)
-        case _ ⇒ marshaller.emptyArrayNode
+    def getLocations(error: Throwable) =
+      error match {
+        case error: AstNodeLocation if error.positions.nonEmpty ⇒ Some(marshallPositions(error.positions))
+        case _ ⇒ None
       }
-
-      if (marshaller.isEmptyArrayNode(astNodeLocations)) None else Some(astNodeLocations)
-    }
 
     def marshallPositions(px: List[Position]) =
-      px.foldLeft(marshaller.emptyArrayNode) {
-        case (acc, p) ⇒ marshaller.addArrayNodeElem(acc, createLocation(p))
-      }
+      marshaller.mapAndMarshal(px, createLocation)
+
 
     def createLocation(pos: Position) = marshaller.mapNode(Seq(
       "line" → marshaller.intNode(pos.line),
       "column" → marshaller.intNode(pos.column)))
 
-    def singleLocation(pos: Position) = marshaller.arrayNode(Seq(createLocation(pos)))
+    def singleLocation(pos: Position) = marshaller.arrayNode(Vector(createLocation(pos)))
   }
 
   object ErrorRegistry {
