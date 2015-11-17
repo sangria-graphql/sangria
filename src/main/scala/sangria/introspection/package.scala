@@ -186,7 +186,7 @@ package object introspection {
   val __Directive = ObjectType(
     name = "__Directive",
     description =
-      "A Directives provides a way to describe alternate runtime execution and " +
+      "A Directive provides a way to describe alternate runtime execution and " +
       "type validation behavior in a GraphQL document." +
       "\n\nIn some cases, you need to provide options to alter GraphQL’s " +
       "execution behavior in ways field arguments will not suffice, such as " +
