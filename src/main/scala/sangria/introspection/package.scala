@@ -238,6 +238,7 @@ package object introspection {
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 
+  // TODO: add subscription type as soon as it is added
   lazy val Success(introspectionQuery) = QueryParser.parse(
     """
       |query IntrospectionQuery {
@@ -249,10 +250,9 @@ package object introspection {
       |    }
       |    directives {
       |      name
+      |      description
       |      args {
-      |        name
-      |        type { ...TypeRef }
-      |        defaultValue
+      |        ...InputValue
       |      }
       |      onOperation
       |      onFragment
@@ -260,16 +260,15 @@ package object introspection {
       |    }
       |  }
       |}
-      |
       |fragment FullType on __Type {
       |  kind
       |  name
-      |  fields {
+      |  description
+      |  fields(includeDeprecated: true) {
       |    name
+      |    description
       |    args {
-      |      name
-      |      type { ...TypeRef }
-      |      defaultValue
+      |      ...InputValue
       |    }
       |    type {
       |      ...TypeRef
@@ -278,15 +277,14 @@ package object introspection {
       |    deprecationReason
       |  }
       |  inputFields {
-      |    name
-      |    type { ...TypeRef }
-      |    defaultValue
+      |    ...InputValue
       |  }
       |  interfaces {
       |    ...TypeRef
       |  }
-      |  enumValues {
+      |  enumValues(includeDeprecated: true) {
       |    name
+      |    description
       |    isDeprecated
       |    deprecationReason
       |  }
@@ -294,7 +292,12 @@ package object introspection {
       |    ...TypeRef
       |  }
       |}
-      |
+      |fragment InputValue on __InputValue {
+      |  name
+      |  description
+      |  type { ...TypeRef }
+      |  defaultValue
+      |}
       |fragment TypeRef on __Type {
       |  kind
       |  name

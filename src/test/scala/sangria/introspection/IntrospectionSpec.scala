@@ -18,53 +18,56 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
       Executor(schema).execute(introspectionQuery).await should be (Map(
         "data" → Map(
           "__schema" → Map(
-            "mutationType" → null,
             "queryType" → Map(
-              "name" → "QueryRoot"
-            ),
-            "types" → List(
+              "name" → "QueryRoot"),
+            "mutationType" → null,
+            "types" → Vector(
               Map(
-                "kind" → "OBJECT",
-                "name" → "QueryRoot",
-                "fields" → List(),
                 "inputFields" → null,
-                "interfaces" → List(),
+                "name" → "QueryRoot",
+                "description" → null,
+                "interfaces" → Nil,
                 "enumValues" → null,
+                "fields" → Nil,
+                "kind" → "OBJECT",
                 "possibleTypes" → null
               ),
               Map(
-                "kind" → "OBJECT",
+                "inputFields" → null,
                 "name" → "__Directive",
-                "fields" → List(
+                "description" → "A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.\n\nIn some cases, you need to provide options to alter GraphQL’s execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.",
+                "interfaces" → Nil,
+                "enumValues" → null,
+                "fields" → Vector(
                   Map(
                     "name" → "name",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "String",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "description",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                      "ofType" → null)),
                   Map(
                     "name" → "args",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
@@ -76,160 +79,142 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__InputValue"
-                          )
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                            "name" → "__InputValue"))))),
                   Map(
                     "name" → "onOperation",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "onFragment",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "onField",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  )
+                        "ofType" → null)))
                 ),
-                "inputFields" → null,
-                "interfaces" → List(),
-                "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
                 "kind" → "OBJECT",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
                 "name" → "__EnumValue",
-                "fields" → List(
+                "description" → "One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.",
+                "interfaces" → Nil,
+                "enumValues" → null,
+                "fields" → Vector(
                   Map(
                     "name" → "name",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "String",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "description",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                      "ofType" → null)),
                   Map(
                     "name" → "isDeprecated",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "deprecationReason",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  )
+                      "ofType" → null))
                 ),
-                "inputFields" → null,
-                "interfaces" → List(),
-                "enumValues" → null,
+                "kind" → "OBJECT",
                 "possibleTypes" → null
               ),
               Map(
-                "kind" → "OBJECT",
+                "inputFields" → null,
                 "name" → "__Field",
-                "fields" → List(
+                "description" → "Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.",
+                "interfaces" → Nil,
+                "enumValues" → null,
+                "fields" → Vector(
                   Map(
                     "name" → "name",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "String",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "description",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                      "ofType" → null)),
                   Map(
                     "name" → "args",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
@@ -241,130 +226,117 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__InputValue"
-                          )
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                            "name" → "__InputValue"))))),
                   Map(
                     "name" → "type",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "OBJECT",
                         "name" → "__Type",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "isDeprecated",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "deprecationReason",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  )
+                      "ofType" → null))
                 ),
-                "inputFields" → null,
-                "interfaces" → List(),
-                "enumValues" → null,
+                "kind" → "OBJECT",
                 "possibleTypes" → null
               ),
               Map(
-                "kind" → "OBJECT",
+                "inputFields" → null,
                 "name" → "__InputValue",
-                "fields" → List(
+                "description" → "Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.",
+                "interfaces" → Nil,
+                "enumValues" → null,
+                "fields" → Vector(
                   Map(
                     "name" → "name",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "String",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "description",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                      "ofType" → null)),
                   Map(
                     "name" → "type",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "OBJECT",
                         "name" → "__Type",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "defaultValue",
-                    "args" → List(),
+                    "description" → "A GraphQL-formatted string representing the default value for this input value.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  )
+                      "ofType" → null))
                 ),
-                "inputFields" → null,
-                "interfaces" → List(),
-                "enumValues" → null,
+                "kind" → "OBJECT",
                 "possibleTypes" → null
               ),
               Map(
-                "kind" → "OBJECT",
+                "inputFields" → null,
                 "name" → "__Schema",
-                "fields" → List(
+                "description" → "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query and mutation operations.",
+                "interfaces" → Nil,
+                "enumValues" → null,
+                "fields" → Vector(
                   Map(
                     "name" → "types",
-                    "args" → List(),
+                    "description" → "A list of all types supported by this server.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
@@ -376,43 +348,36 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__Type"
-                          )
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                            "name" → "__Type"))))),
                   Map(
                     "name" → "queryType",
-                    "args" → List(),
+                    "description" → "The type that query operations will be rooted at.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "OBJECT",
                         "name" → "__Type",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "mutationType",
-                    "args" → List(),
+                    "description" → "If this server supports mutation, the type that mutation operations will be rooted at.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "OBJECT",
                       "name" → "__Type",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                      "ofType" → null)),
                   Map(
                     "name" → "directives",
-                    "args" → List(),
+                    "description" → "A list of all directives supported by this server.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
@@ -424,74 +389,65 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__Directive"
-                          )
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  )
+                            "name" → "__Directive")))))
                 ),
-                "inputFields" → null,
-                "interfaces" → List(),
-                "enumValues" → null,
+                "kind" → "OBJECT",
                 "possibleTypes" → null
               ),
               Map(
-                "kind" → "OBJECT",
+                "inputFields" → null,
                 "name" → "__Type",
-                "fields" → List(
+                "description" → "The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\n\nDepending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name and description, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.",
+                "interfaces" → Nil,
+                "enumValues" → null,
+                "fields" → Vector(
                   Map(
                     "name" → "kind",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "ENUM",
                         "name" → "__TypeKind",
-                        "ofType" → null
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                        "ofType" → null))),
                   Map(
                     "name" → "name",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                      "ofType" → null)),
                   Map(
                     "name" → "description",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "SCALAR",
                       "name" → "String",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                      "ofType" → null)),
                   Map(
                     "name" → "fields",
-                    "args" → List(
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Vector(
                       Map(
                         "name" → "includeDeprecated",
+                        "description" → null,
                         "type" → Map(
                           "kind" → "SCALAR",
                           "name" → "Boolean",
-                          "ofType" → null
-                        ),
-                        "defaultValue" → "false"
-                      )
-                    ),
+                          "ofType" → null),
+                        "defaultValue" → "false")),
                     "type" → Map(
                       "kind" → "LIST",
                       "name" → null,
@@ -501,16 +457,13 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                         "ofType" → Map(
                           "kind" → "OBJECT",
                           "name" → "__Field",
-                          "ofType" → null
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                          "ofType" → null)))),
                   Map(
                     "name" → "interfaces",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "LIST",
                       "name" → null,
@@ -520,16 +473,13 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                         "ofType" → Map(
                           "kind" → "OBJECT",
                           "name" → "__Type",
-                          "ofType" → null
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                          "ofType" → null)))),
                   Map(
                     "name" → "possibleTypes",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "LIST",
                       "name" → null,
@@ -539,26 +489,21 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                         "ofType" → Map(
                           "kind" → "OBJECT",
                           "name" → "__Type",
-                          "ofType" → null
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                          "ofType" → null)))),
                   Map(
                     "name" → "enumValues",
-                    "args" → List(
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Vector(
                       Map(
-                        "defaultValue" → "false",
                         "name" → "includeDeprecated",
+                        "description" → null,
                         "type" → Map(
                           "kind" → "SCALAR",
                           "name" → "Boolean",
-                          "ofType" → null
-                        )
-                      )
-                    ),
+                          "ofType" → null),
+                        "defaultValue" → "false")),
                     "type" → Map(
                       "kind" → "LIST",
                       "name" → null,
@@ -568,16 +513,13 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                         "ofType" → Map(
                           "kind" → "OBJECT",
                           "name" → "__EnumValue",
-                          "ofType" → null
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                          "ofType" → null)))),
                   Map(
                     "name" → "inputFields",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "LIST",
                       "name" → null,
@@ -587,200 +529,180 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                         "ofType" → Map(
                           "kind" → "OBJECT",
                           "name" → "__InputValue",
-                          "ofType" → null
-                        )
-                      )
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                          "ofType" → null)))),
                   Map(
                     "name" → "ofType",
-                    "args" → List(),
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
                     "type" → Map(
                       "kind" → "OBJECT",
                       "name" → "__Type",
-                      "ofType" → null
-                    ),
-                    "isDeprecated" → false,
-                    "deprecationReason" → null
-                  )
+                      "ofType" → null))
                 ),
-                "inputFields" → null,
-                "interfaces" → List(),
-                "enumValues" → null,
+                "kind" → "OBJECT",
                 "possibleTypes" → null
               ),
               Map(
-                "kind" → "ENUM",
-                "name" → "__TypeKind",
-                "fields" → null,
                 "inputFields" → null,
+                "name" → "__TypeKind",
+                "description" → "An enum describing what kind of type a given `__Type` is.",
                 "interfaces" → null,
-                "enumValues" → List(
+                "enumValues" → Vector(
                   Map(
                     "name" → "SCALAR",
+                    "description" → "Indicates this type is a scalar.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                    "deprecationReason" → null),
                   Map(
                     "name" → "OBJECT",
+                    "description" → "Indicates this type is an object. `fields` and `interfaces` are valid fields.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                    "deprecationReason" → null),
                   Map(
                     "name" → "INTERFACE",
+                    "description" → "Indicates this type is an interface. `fields` and `possibleTypes` are valid fields.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                    "deprecationReason" → null),
                   Map(
                     "name" → "UNION",
+                    "description" → "Indicates this type is a union. `possibleTypes` is a valid field.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                    "deprecationReason" → null),
                   Map(
                     "name" → "ENUM",
+                    "description" → "Indicates this type is an enum. `enumValues` is a valid field.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                    "deprecationReason" → null),
                   Map(
                     "name" → "INPUT_OBJECT",
+                    "description" → "Indicates this type is an input object. `inputFields` is a valid field.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                    "deprecationReason" → null),
                   Map(
                     "name" → "LIST",
+                    "description" → "Indicates this type is a list. `ofType` is a valid field.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  ),
+                    "deprecationReason" → null),
                   Map(
                     "name" → "NON_NULL",
+                    "description" → "Indicates this type is a non-null. `ofType` is a valid field.",
                     "isDeprecated" → false,
-                    "deprecationReason" → null
-                  )
+                    "deprecationReason" → null)
                 ),
-                "possibleTypes" → null
-              ),
+                "fields" → null,
+                "kind" → "ENUM",
+                "possibleTypes" → null),
               Map(
-                "kind" → "SCALAR",
+                "inputFields" → null,
                 "name" → "BigDecimal",
-                "fields" → null,
-                "inputFields" → null,
+                "description" → null,
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
+                "fields" → null,
                 "kind" → "SCALAR",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
                 "name" → "BigInt",
-                "fields" → null,
-                "inputFields" → null,
+                "description" → "Arbitrary big integer value",
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
+                "fields" → null,
                 "kind" → "SCALAR",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
                 "name" → "Boolean",
-                "fields" → null,
-                "inputFields" → null,
+                "description" → null,
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
+                "fields" → null,
                 "kind" → "SCALAR",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
                 "name" → "Float",
-                "fields" → null,
-                "inputFields" → null,
+                "description" → null,
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
+                "fields" → null,
                 "kind" → "SCALAR",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
                 "name" → "ID",
-                "fields" → null,
-                "inputFields" → null,
+                "description" → null,
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
+                "fields" → null,
                 "kind" → "SCALAR",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
                 "name" → "Int",
-                "fields" → null,
-                "inputFields" → null,
+                "description" → "32-bit integer value",
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
+                "fields" → null,
                 "kind" → "SCALAR",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
                 "name" → "Long",
-                "fields" → null,
-                "inputFields" → null,
+                "description" → "64-bit integer value",
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              ),
-              Map(
+                "fields" → null,
                 "kind" → "SCALAR",
-                "name" → "String",
-                "fields" → null,
+                "possibleTypes" → null),
+              Map(
                 "inputFields" → null,
+                "name" → "String",
+                "description" → null,
                 "interfaces" → null,
                 "enumValues" → null,
-                "possibleTypes" → null
-              )
-            ),
-            "directives" → List(
+                "fields" → null,
+                "kind" → "SCALAR",
+                "possibleTypes" → null)),
+            "directives" → Vector(
               Map(
                 "name" → "include",
-                "args" → List(
+                "description" → "Directs the executor to include this field or fragment only when the `if` argument is true.",
+                "onOperation" → false,
+                "onFragment" → true,
+                "onField" → true,
+                "args" → Vector(
                   Map(
-                    "defaultValue" → null,
                     "name" → "if",
+                    "description" → "Included when true.",
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null
-                      )
-                    )
-                  )
-                ),
-                "onOperation" → false,
-                "onFragment" → true,
-                "onField" → true
-              ),
+                        "ofType" → null)),
+                    "defaultValue" → null))),
               Map(
                 "name" → "skip",
-                "args" → List(
+                "description" → "Directs the executor to skip this field or fragment when the `if` argument is true.",
+                "onOperation" → false,
+                "onFragment" → true,
+                "onField" → true,
+                "args" → Vector(
                   Map(
-                    "defaultValue" → null,
                     "name" → "if",
+                    "description" → "Included when true.",
                     "type" → Map(
                       "kind" → "NON_NULL",
                       "name" → null,
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null
-                      )
-                    )
-                  )
-                ),
-                "onOperation" → false,
-                "onFragment" → true,
-                "onField" → true
-              )
-            )
-          )
-        )
-      ))
+                        "ofType" → null)),
+                    "defaultValue" → null))))))))
     }
 
     "introspects on input object" in {
