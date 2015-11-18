@@ -1,3 +1,7 @@
+## Upcoming
+
+* Added basic subscription support as defined in the spec (https://github.com/facebook/graphql/pull/109) and reference implementation. (#89)
+
 ## v0.4.3 (2015-10-16)
 
 * `QueryReducer` is introduced. It allows you to analyze a query and take an action before it's executed. It provides very similar functionality to
