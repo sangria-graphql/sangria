@@ -104,6 +104,7 @@ case class Executor[Ctx, Root](
         val result =
           operation.operationType match {
             case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
+            case ast.OperationType.Subscription ⇒ resolver.resolveFieldsPar(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
             case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
           }
 
@@ -133,6 +134,8 @@ case class Executor[Ctx, Root](
     case ast.OperationType.Query ⇒ Success(schema.query)
     case ast.OperationType.Mutation ⇒ schema.mutation map (Success(_)) getOrElse
         Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position.toList))
+    case ast.OperationType.Subscription ⇒ schema.subscription map (Success(_)) getOrElse
+        Failure(new ExecutionError("Schema is not configured for subscriptions", sourceMapper, operation.position.toList))
   }
 
   private def reduceQuery[Val](

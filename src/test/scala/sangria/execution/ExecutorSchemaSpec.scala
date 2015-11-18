@@ -5,6 +5,7 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.AwaitSupport
 import sangria.validation.QueryValidator
+import sangria.macros._
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -56,7 +57,12 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
     Field("feed", OptionType(ListType(OptionType(BlogArticleType))),
       resolve = _ ⇒ (1 to 10).toList.map(article))))
 
-  val BlogSchema = Schema(BlogQueryType)
+  val BlogSubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
+    Field("articleSubscribe", OptionType(BlogArticleType),
+      arguments = Argument("id", OptionInputType(IDType)) :: Nil,
+      resolve = ctx ⇒ ctx.argOpt[String]("id") flatMap (id ⇒ article(id.toInt)))))
+
+  val BlogSchema = Schema(BlogQueryType, subscription = Some(BlogSubscriptionType))
 
   val JohnSmith = Author(id = Some("123"), name = Some("John Smith"), recentArticle = Some("1"))
 
@@ -69,7 +75,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
     keywords = List(Some("foo"), Some("bar"), None, Some("1"))))
 
   "Execute: Handles execution with a complex schema" should {
-    "execute using a schema" in {
+    "execute using a query type" in {
       val Success(doc) = QueryParser.parse("""
         {
           feed {
@@ -149,6 +155,71 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
       }
 
       Executor(BlogSchema, deferredResolver = resolver, queryValidator = QueryValidator.empty).execute(doc).await should be (expected)
+    }
+
+    "execute using subscription type" in {
+      val query = graphql"""
+       subscription NewArticles {
+         articleSubscribe(id: "1") {
+           ...articleFields,
+           author {
+             id,
+             name,
+             pic(width: 640, height: 480) {
+               url,
+               width,
+               height
+             },
+             recentArticle {
+               ...articleFields,
+               keywords
+             }
+           }
+         }
+       }
+
+       fragment articleFields on Article {
+         id,
+         isPublished,
+         title,
+         body,
+         hidden,
+         notdefined
+       }
+      """
+
+      val resolver = new DeferredResolver[Any] {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+          case ArticleDeferred(id) ⇒ Future.successful(article(id.toInt))
+        }
+      }
+
+      Executor.execute(BlogSchema, query, deferredResolver = resolver, queryValidator = QueryValidator.empty).await should be (Map(
+        "data" → Map(
+          "articleSubscribe" → Map(
+            "id" → "1",
+            "isPublished" → true,
+            "title" → "My Article 1",
+            "body" → "This is a post",
+            "author" → Map(
+              "id" → "123",
+              "name" → "John Smith",
+              "pic" → Map(
+                "url" → "cdn://123",
+                "width" → 640,
+                "height" → 480
+              ),
+              "recentArticle" → Map(
+                "id" → "1",
+                "isPublished" → true,
+                "title" → "My Article 1",
+                "body" → "This is a post",
+                "keywords" → List("foo", "bar", null, "1")
+              )
+            )
+          )
+        )
+      ))
     }
   }
 }

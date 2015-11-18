@@ -24,47 +24,62 @@ class QueryRendererSpec extends WordSpec with Matchers {
       compactRendered should be (
         "query queryName($foo:ComplexType,$site:Site=MOBILE){whoever123is:node(id:[123,456]){" +
             "id ... on User@defer{field2{id alias:field1(first:10,after:$foo)@include(if:$foo){id ...frag}}}}}" +
-            "mutation likeStory{like(story:123)@defer{story{id}}}fragment frag on Friend{foo(size:$size,bar:$b,obj:" +
+            "mutation likeStory{like(story:123)@defer{story{id}}}" +
+            "subscription StoryLikeSubscription($input:StoryLikeSubscribeInput){storyLikeSubscribe(input:$input){story{likers{count} likeSentence{text}}}}" +
+            "fragment frag on Friend{foo(size:$size,bar:$b,obj:" +
             "{key:\"value\"})}{unnamed(truthy:true,falsey:false) query ... @skip(unless:$foo){id} ... {id}}")
 
       prettyRendered should be (
         """query queryName($foo: ComplexType, $site: Site = MOBILE) {
-          |  whoever123is: node(id: [123, 456]) {
-          |    id
-          |    ... on User @defer {
-          |      field2 {
-          |        id
-          |        alias: field1(first: 10, after: $foo) @include(if: $foo) {
-          |          id
-          |          ...frag
-          |        }
-          |      }
-          |    }
-          |  }
-          |}
-          |
-          |mutation likeStory {
-          |  like(story: 123) @defer {
-          |    story {
-          |      id
-          |    }
-          |  }
-          |}
-          |
-          |fragment frag on Friend {
-          |  foo(size: $size, bar: $b, obj: {key: "value"})
-          |}
-          |
-          |{
-          |  unnamed(truthy: true, falsey: false)
-          |  query
-          |  ...  @skip(unless: $foo) {
-          |    id
-          |  }
-          |  ...  {
-          |    id
-          |  }
-          |}""".stripMargin)
+         |  whoever123is: node(id: [123, 456]) {
+         |    id
+         |    ... on User @defer {
+         |      field2 {
+         |        id
+         |        alias: field1(first: 10, after: $foo) @include(if: $foo) {
+         |          id
+         |          ...frag
+         |        }
+         |      }
+         |    }
+         |  }
+         |}
+         |
+         |mutation likeStory {
+         |  like(story: 123) @defer {
+         |    story {
+         |      id
+         |    }
+         |  }
+         |}
+         |
+         |subscription StoryLikeSubscription($input: StoryLikeSubscribeInput) {
+         |  storyLikeSubscribe(input: $input) {
+         |    story {
+         |      likers {
+         |        count
+         |      }
+         |      likeSentence {
+         |        text
+         |      }
+         |    }
+         |  }
+         |}
+         |
+         |fragment frag on Friend {
+         |  foo(size: $size, bar: $b, obj: {key: "value"})
+         |}
+         |
+         |{
+         |  unnamed(truthy: true, falsey: false)
+         |  query
+         |  ...  @skip(unless: $foo) {
+         |    id
+         |  }
+         |  ...  {
+         |    id
+         |  }
+         |}""".stripMargin)
     }
 
     "render partial AST" in {

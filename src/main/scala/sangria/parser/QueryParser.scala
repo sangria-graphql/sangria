@@ -111,11 +111,17 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def OperationName = rule { Name }
 
-  def OperationType = rule { Query ~ push(ast.OperationType.Query) | Mutation ~ push(ast.OperationType.Mutation) }
+  def OperationType = rule {
+    Query ~ push(ast.OperationType.Query) |
+    Mutation ~ push(ast.OperationType.Mutation) |
+    Subscription ~ push(ast.OperationType.Subscription)
+  }
 
   def Query = rule { Keyword("query") }
 
   def Mutation = rule { Keyword("mutation") }
+
+  def Subscription = rule { Keyword("subscription") }
 
   def VariableDefinitions = rule { ws('(') ~ VariableDefinition.+ ~ ws(')') ~> (_.toList)}
 

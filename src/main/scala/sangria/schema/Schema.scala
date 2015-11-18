@@ -429,6 +429,7 @@ case class Directive(
 case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],
     mutation: Option[ObjectType[Ctx, Val]] = None,
+    subscription: Option[ObjectType[Ctx, Val]] = None,
     additionalTypes: List[Type with Named] = Nil,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = DefaultValuesValidationRule :: Nil) {
@@ -482,12 +483,13 @@ case class Schema[Ctx, Val](
       }
     }
 
-    val schemaTypes = collectTypes("a '__Schema' type", 3, introspection.__Schema, Map(BuiltinScalars map (s ⇒ s.name → (4, s)): _*))
-    val queryTypes = collectTypes("a query type", 2, query, schemaTypes)
-    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t ⇒ t.name → (1, t))
-    val queryAndMutTypes = mutation map (collectTypes("a mutation type", 1, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
+    val schemaTypes = collectTypes("a '__Schema' type", 30, introspection.__Schema, Map(BuiltinScalars map (s ⇒ s.name → (40, s)): _*))
+    val queryTypes = collectTypes("a query type", 20, query, schemaTypes)
+    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t ⇒ t.name → (10, t))
+    val queryAndSubTypes = mutation map (collectTypes("a mutation type", 10, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
+    val queryAndSubAndMutTypes = subscription map (collectTypes("a subscription type", 10, _, queryTypesWithAdditions)) getOrElse queryAndSubTypes
 
-    queryAndMutTypes
+    queryAndSubAndMutTypes
   }
 
   lazy val typeList = types.values.toList.sortBy(t ⇒ t._1 + t._2.name).map(_._2)

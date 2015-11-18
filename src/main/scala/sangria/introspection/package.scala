@@ -207,13 +207,18 @@ package object introspection {
     description =
       "A GraphQL Schema defines the capabilities of a GraphQL " +
       "server. It exposes all available types and directives on " +
-      "the server, as well as the entry points for query and " +
-      "mutation operations.",
+      "the server, as well as the entry points for query, mutation, and subscription operations.",
     fields = List[Field[Unit, Schema[Any, Any]]](
-      Field("types", ListType(__Type), Some("A list of all types supported by this server."), resolve = _.value.typeList map (true → _)),
-      Field("queryType", __Type, Some("The type that query operations will be rooted at."), resolve = true → _.value.query),
+      Field("types", ListType(__Type), Some("A list of all types supported by this server."),
+        resolve = _.value.typeList map (true → _)),
+      Field("queryType", __Type, Some("The type that query operations will be rooted at."),
+        resolve = true → _.value.query),
       Field("mutationType", OptionType(__Type),
-        Some("If this server supports mutation, the type that mutation operations will be rooted at."), resolve = _.value.mutation map (true → _)),
+        Some("If this server supports mutation, the type that mutation operations will be rooted at."),
+        resolve = _.value.mutation map (true → _)),
+      Field("subscriptionType", OptionType(__Type),
+        Some("If this server support subscription, the type that subscription operations will be rooted at."),
+        resolve = _.value.subscription map (true → _)),
       Field("directives", ListType(__Directive),
         Some("A list of all directives supported by this server."), resolve = _.value.directives)))
 
@@ -238,13 +243,13 @@ package object introspection {
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 
-  // TODO: add subscription type as soon as it is added
   lazy val Success(introspectionQuery) = QueryParser.parse(
     """
       |query IntrospectionQuery {
       |  __schema {
       |    queryType { name }
       |    mutationType { name }
+      |    subscriptionType { name }
       |    types {
       |      ...FullType
       |    }

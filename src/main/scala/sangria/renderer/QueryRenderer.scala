@@ -34,11 +34,12 @@ object QueryRenderer {
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
   def renderArgs(args: List[Argument], config: QueryRendererConfig, withSep: Boolean = true) =
-    (if (args.nonEmpty) "(" + (args map (render(_, config)) mkString ("," + config.separator)) + ")" + (if (withSep) config.separator else "") else "")
+    if (args.nonEmpty) "(" + (args map (render(_, config)) mkString ("," + config.separator)) + ")" + (if (withSep) config.separator else "") else ""
 
   def renderOpType(operationType: OperationType) = operationType match {
     case OperationType.Query ⇒ "query"
     case OperationType.Mutation ⇒ "mutation"
+    case OperationType.Subscription ⇒ "subscription"
   }
 
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0): String = {

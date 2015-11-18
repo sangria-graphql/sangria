@@ -403,13 +403,16 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
         Map("data" → null, "errors" → List(Map("message" → "Must provide operation name if query contains multiple operations"))))
     }
 
-    "use the query schema for queries" in {
+    "use correct schema type schema for operation" in {
       val schema = Schema(
         ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ ⇒ "b"))),
-        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ ⇒ "d")))))
-      val Success(doc) = QueryParser.parse("query Q { a } mutation M { c }")
+        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ ⇒ "d")))),
+        Some(ObjectType("S", fields[Unit, Unit](Field("e", OptionType(StringType), resolve = _ ⇒ "f")))))
+      val Success(doc) = QueryParser.parse("query Q { a } mutation M { c } subscription S { e }")
 
-      Executor(schema).execute(doc, Some("Q")).await should be  (Map("data" → Map("a" → "b")))
+      Executor(schema).execute(doc, Some("Q")).await should be (Map("data" → Map("a" → "b")))
+      Executor(schema).execute(doc, Some("M")).await should be (Map("data" → Map("c" → "d")))
+      Executor(schema).execute(doc, Some("S")).await should be (Map("data" → Map("e" → "f")))
     }
 
     "avoid recursion" in {

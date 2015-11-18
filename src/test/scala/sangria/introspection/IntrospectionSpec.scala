@@ -21,6 +21,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
             "queryType" → Map(
               "name" → "QueryRoot"),
             "mutationType" → null,
+            "subscriptionType" → null,
             "types" → Vector(
               Map(
                 "inputFields" → null,
@@ -327,7 +328,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "__Schema",
-                "description" → "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query and mutation operations.",
+                "description" → "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.",
                 "interfaces" → Nil,
                 "enumValues" → null,
                 "fields" → Vector(
@@ -365,6 +366,16 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                   Map(
                     "name" → "mutationType",
                     "description" → "If this server supports mutation, the type that mutation operations will be rooted at.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
+                    "type" → Map(
+                      "kind" → "OBJECT",
+                      "name" → "__Type",
+                      "ofType" → null)),
+                  Map(
+                    "name" → "subscriptionType",
+                    "description" → "If this server support subscription, the type that subscription operations will be rooted at.",
                     "isDeprecated" → false,
                     "deprecationReason" → null,
                     "args" → Nil,
@@ -1168,10 +1179,9 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
           "schemaType" → Map(
             "name" → "__Schema",
             "description" → (
-              "A GraphQL Schema defines the capabilities of a " +
-              "GraphQL server. It exposes all available types and " +
-              "directives on the server, as well as the entry " +
-              "points for query and mutation operations."),
+                "A GraphQL Schema defines the capabilities of a GraphQL " +
+                "server. It exposes all available types and directives on " +
+                "the server, as well as the entry points for query, mutation, and subscription operations."),
             "fields" → List(
               Map(
                 "name" → "types",
@@ -1186,6 +1196,12 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
                 "description" → (
                   "If this server supports mutation, the type that " +
                   "mutation operations will be rooted at.")
+              ),
+              Map(
+                "name" → "subscriptionType",
+                "description" → (
+                  "If this server support subscription, the type that " +
+                  "subscription operations will be rooted at.")
               ),
               Map(
                 "name" → "directives",

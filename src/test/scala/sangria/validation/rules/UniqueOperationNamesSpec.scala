@@ -49,6 +49,10 @@ class UniqueOperationNamesSpec extends WordSpec with ValidationSupport {
         mutation Bar {
           field
         }
+
+        subscription Baz {
+          field
+        }
       """)
 
     "fragment and operation named the same" in expectPasses(
@@ -74,12 +78,25 @@ class UniqueOperationNamesSpec extends WordSpec with ValidationSupport {
         "There can only be one operation named 'Foo'." → Some(Pos(5, 9))
       ))
 
-    "multiple operations of same name of different types" in expectFails(
+    "multiple operations of same name of different types (mutation)" in expectFails(
       """
         query Foo {
           fieldA
         }
         mutation Foo {
+          fieldB
+        }
+      """,
+      List(
+        "There can only be one operation named 'Foo'." → Some(Pos(5, 9))
+      ))
+
+    "multiple operations of same name of different types (subscription)" in expectFails(
+      """
+        query Foo {
+          fieldA
+        }
+        subscription Foo {
           fieldB
         }
       """,

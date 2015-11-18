@@ -22,6 +22,7 @@ trait AstLiftable {
   implicit def liftOperationType: Liftable[OperationType] = Liftable {
     case OperationType.Query ⇒ q"_root_.sangria.ast.OperationType.Query"
     case OperationType.Mutation ⇒ q"_root_.sangria.ast.OperationType.Mutation"
+    case OperationType.Subscription ⇒ q"_root_.sangria.ast.OperationType.Subscription"
   }
 
   implicit def liftType[T <: sangria.ast.Type]: Liftable[T] = Liftable {

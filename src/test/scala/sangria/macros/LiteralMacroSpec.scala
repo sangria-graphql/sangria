@@ -117,6 +117,19 @@ class LiteralMacroSpec extends WordSpec with Matchers {
           |  }
           |}
           |
+          |subscription StoryLikeSubscription($$input: StoryLikeSubscribeInput) {
+          |  storyLikeSubscribe(input: $$input) {
+          |    story {
+          |      likers {
+          |        count
+          |      }
+          |      likeSentence {
+          |        text
+          |      }
+          |    }
+          |  }
+          |}
+          |
           |mutation likeStory {
           |  like(story: 123) @defer {
           |    story {
@@ -136,22 +149,29 @@ class LiteralMacroSpec extends WordSpec with Matchers {
 
       ast.sourceMapper should not be ('empty)
 
+
       ast.copy(sourceMapper = None) should be {
         Document(
           List(
-            OperationDefinition(
-              OperationType.Query,
+            OperationDefinition(OperationType.Query,
               Some("queryName"),
               List(
                 VariableDefinition(
                   "foo",
-                  NamedType("ComplexType", Some(Position(310, 8, 23))),
+                  NamedType(
+                    "ComplexType",
+                    Some(Position(310, 8, 23))),
                   None,
                   Some(Position(304, 8, 17))),
                 VariableDefinition(
                   "site",
-                  NamedType("Site", Some(Position(330, 8, 43))),
-                  Some(EnumValue("MOBILE", Some(Position(337, 8, 50)))),
+                  NamedType(
+                    "Site",
+                    Some(Position(330, 8, 43))),
+                  Some(
+                    EnumValue(
+                      "MOBILE",
+                      Some(Position(337, 8, 50)))),
                   Some(Position(323, 8, 36)))),
               Nil,
               List(
@@ -161,38 +181,29 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   List(
                     Argument(
                       "id",
-                      ListValue(List(BigIntValue(BigInt(123), Some(Position(373, 9, 27))), BigIntValue(BigInt(456), Some(Position(378, 9, 32)))), Some(Position(372, 9, 26))),
+                      ListValue(
+                        List(
+                          BigIntValue(123, Some(Position(373, 9, 27))),
+                          BigIntValue(456, Some(Position(378, 9, 32)))),
+                        Some(Position(372, 9, 26))),
                       Some(Position(368, 9, 22)))),
                   Nil,
                   List(
                     Field(
-                      None,
-                      "id",
-                      Nil,
-                      Nil,
-                      Nil,
-                      Some(Position(390, 10, 5))),
+                      None, "id", Nil, Nil, Nil, Some(Position(390, 10, 5))),
                     InlineFragment(
                       Some(NamedType("User", Some(Position(406, 11, 12)))),
+                      List(Directive("defer", Nil, Some(Position(411, 11, 17)))),
                       List(
-                        Directive("defer", Nil, Some(Position(411, 11, 17)))),
-                      List(
-                        Field(
-                          None,
-                          "field2",
-                          Nil,
-                          Nil,
+                        Field(None, "field2", Nil, Nil,
                           List(
                             Field(None, "id", Nil, Nil, Nil, Some(Position(443, 13, 9))),
-                            Field(
-                              Some("alias"),
-                              "field1",
+                            Field(Some("alias"), "field1",
                               List(
-                                Argument("first", BigIntValue(BigInt(10), Some(Position(476, 14, 29))), Some(Position(470, 14, 23))),
+                                Argument("first", BigIntValue(10, Some(Position(476, 14, 29))), Some(Position(470, 14, 23))),
                                 Argument("after", VariableValue("foo", Some(Position(486, 14, 39))), Some(Position(480, 14, 33)))),
                               List(
-                                Directive(
-                                  "include",
+                                Directive("include",
                                   List(Argument("if", VariableValue("foo", Some(Position(506, 14, 59))), Some(Position(502, 14, 55)))),
                                   Some(Position(493, 14, 46)))),
                               List(
@@ -204,55 +215,62 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Some(Position(349, 9, 3)))),
               Some(Position(288, 8, 1))),
             OperationDefinition(
-              OperationType.Mutation,
-              Some("likeStory"),
-              Nil,
+              OperationType.Subscription,
+              Some("StoryLikeSubscription"),
+              List(
+                VariableDefinition("input",
+                  NamedType("StoryLikeSubscribeInput", Some(Position(620, 23, 44))),
+                  None, Some(Position(612, 23, 36)))),
               Nil,
               List(
-                Field(
-                  None,
-                  "like",
-                  List(Argument("story", BigIntValue(BigInt(123), Some(Position(612, 24, 15))), Some(Position(605, 24, 8)))),
-                  List(Directive("defer", Nil, Some(Position(617, 24, 20)))),
+                Field(None, "storyLikeSubscribe",
+                  List(Argument("input", VariableValue("input", Some(Position(675, 24, 29))), Some(Position(668, 24, 22)))),
+                  Nil,
                   List(
                     Field(None, "story", Nil, Nil, List(
-                      Field(None, "id", Nil, Nil, Nil, Some(Position(644, 26, 7)))), Some(Position(630, 25, 5)))),
-                  Some(Position(600, 24, 3)))),
+                      Field(None, "likers", Nil, Nil, List(
+                        Field(None, "count", Nil, Nil, Nil, Some(Position(720, 27, 9)))), Some(Position(703, 26, 7))),
+                      Field(None, "likeSentence", Nil, Nil, List(
+                        Field(None, "text", Nil, Nil, Nil, Some(Position(763, 30, 9)))), Some(Position(740, 29, 7)))), Some(Position(689, 25, 5)))),
+                  Some(Position(649, 24, 3)))),
               Some(Position(577, 23, 1))),
-            FragmentDefinition(
-              "frag",
-              NamedType("Friend", Some(Position(677, 31, 18))),
-              Nil,
-              List(
-                Field(
-                  None,
-                  "foo",
-                  List(
-                    Argument("size", VariableValue("size", Some(Position(698, 32, 13))), Some(Position(692, 32, 7))),
-                    Argument("bar", VariableValue("b", Some(Position(710, 32, 25))), Some(Position(705, 32, 20))),
-                    Argument("obj", ObjectValue(List(ObjectField("key", StringValue("value", Some(Position(725, 32, 40))), Some(Position(720, 32, 35)))), Some(Position(719, 32, 34))), Some(Position(714, 32, 29)))),
-                  Nil,
-                  Nil,
-                  Some(Position(688, 32, 3)))),
-              Some(Position(660, 31, 1))),
             OperationDefinition(
-              OperationType.Query,
-              None,
-              Nil,
+              OperationType.Mutation,
+              Some("likeStory"), Nil, Nil,
+              List(
+                Field(None, "like",
+                  List(Argument("story", BigIntValue(123, Some(Position(824, 37, 15))), Some(Position(817, 37, 8)))),
+                  List(Directive("defer", Nil, Some(Position(829, 37, 20)))),
+                  List(
+                    Field(None, "story", Nil, Nil, List(
+                      Field(None, "id", Nil, Nil, Nil, Some(Position(856, 39, 7)))), Some(Position(842, 38, 5)))),
+                  Some(Position(812, 37, 3)))),
+              Some(Position(789, 36, 1))),
+            FragmentDefinition("frag", NamedType("Friend", Some(Position(889, 44, 18))),
               Nil,
               List(
-                Field(
-                  None,
-                  "unnamed",
+                Field(None, "foo",
                   List(
-                    Argument("truthy", BooleanValue(true, Some(Position(758, 36, 19))), Some(Position(750, 36, 11))),
-                    Argument("falsey", BooleanValue(false, Some(Position(772, 36, 33))), Some(Position(764, 36, 25)))),
+                    Argument("size", VariableValue("size", Some(Position(910, 45, 13))), Some(Position(904, 45, 7))),
+                    Argument("bar", VariableValue("b", Some(Position(922, 45, 25))), Some(Position(917, 45, 20))),
+                    Argument("obj",
+                      ObjectValue(List(
+                        ObjectField("key", StringValue("value", Some(Position(937, 45, 40))), Some(Position(932, 45, 35)))), Some(Position(931, 45, 34))),
+                      Some(Position(926, 45, 29)))),
                   Nil,
                   Nil,
-                  Some(Position(742, 36, 3))),
-                Field(None, "query", Nil, Nil, Nil, Some(Position(782, 37, 3)))),
-              Some(Position(738, 35, 1)))),
-          Some(Position(288, 8, 1)))
+                  Some(Position(900, 45, 3)))),
+              Some(Position(872, 44, 1))),
+            OperationDefinition(OperationType.Query, None, Nil, Nil,
+              List(
+                Field(None, "unnamed",
+                  List(
+                    Argument("truthy", BooleanValue(true, Some(Position(970, 49, 19))), Some(Position(962, 49, 11))),
+                    Argument("falsey", BooleanValue(false, Some(Position(984, 49, 33))), Some(Position(976, 49, 25)))),
+                  Nil,
+                  Nil,
+                  Some(Position(954, 49, 3))),
+                Field(None, "query", Nil, Nil, Nil, Some(Position(994, 50, 3)))), Some(Position(950, 48, 1)))), Some(Position(288, 8, 1)), None)
       }
     }
   }

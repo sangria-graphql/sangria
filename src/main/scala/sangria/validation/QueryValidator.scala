@@ -200,6 +200,9 @@ class TypeInfo(schema: Schema[_, _]) {
       case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) ⇒
         typeStack push schema.mutation
         pushParent()
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _) ⇒
+        typeStack push schema.subscription
+        pushParent()
       case fd: ast.FragmentDefinition ⇒
         typeStack.push(schema.allTypes get fd.typeCondition.name)
         pushParent()
@@ -254,6 +257,9 @@ class TypeInfo(schema: Schema[_, _]) {
         typeStack.pop()
         parentTypeStack.pop()
       case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) ⇒
+        typeStack.pop()
+        parentTypeStack.pop()
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
       case fd: ast.FragmentDefinition ⇒

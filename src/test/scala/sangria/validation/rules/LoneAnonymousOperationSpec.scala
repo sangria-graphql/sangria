@@ -69,5 +69,18 @@ class LoneAnonymousOperationSpec extends WordSpec with ValidationSupport {
       List(
         "This anonymous operation must be the only defined operation." → Some(Pos(2, 9))
       ))
+
+    "anon operation with another operation with subscription" in expectFails(
+      """
+        {
+          fieldA
+        }
+        subscription Foo {
+          fieldB
+        }
+      """,
+      List(
+        "This anonymous operation must be the only defined operation." → Some(Pos(2, 9))
+      ))
   }
 }
