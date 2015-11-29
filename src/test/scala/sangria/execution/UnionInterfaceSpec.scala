@@ -27,6 +27,8 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
 
   val PersonType = ObjectType("Person", interfaces[Unit, Person](NamedType), fields[Unit, Person](
     Field("pets", OptionType(ListType(OptionType(PetType))), resolve = _.value.pets),
+    Field("favouritePet", PetType, resolve = _.value.pets.flatMap(_.headOption.flatMap(identity)).get),
+    Field("favouritePetOpt", OptionType(PetType), resolve = _.value.pets.flatMap(_.headOption.flatMap(identity))),
     Field("friends", OptionType(ListType(OptionType(NamedType))), resolve = _.value.friends)))
   
   val TestSchema = Schema(PersonType)
@@ -102,6 +104,8 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
        {
          __typename
          name
+         favouritePet {name}
+         favouritePetOpt {name}
          pets {
            __typename
            name
@@ -114,6 +118,8 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
         "data" → Map(
           "__typename" → "Person",
           "name" → "Bob",
+          "favouritePet" → Map("name" → "Garfield"),
+          "favouritePetOpt" → Map("name" → "Garfield"),
           "pets" → List(
             Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
             Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
