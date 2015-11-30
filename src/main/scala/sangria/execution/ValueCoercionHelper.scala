@@ -34,11 +34,11 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
     }
   }
 
-  def coerceInputValue[In](tpe: InputType[_], fieldPath: List[String], input: In)(implicit iu: InputUnmarshaller[In]): Either[List[Violation], Option[Any]] = (tpe, input) match {
-    case (OptionInputType(ofType), value) ⇒ coerceInputValue(ofType, fieldPath, value)
+  def coerceInputValue[In](tpe: InputType[_], fieldPath: List[String], input: In, errorPrefix: ⇒ String = "")(implicit iu: InputUnmarshaller[In]): Either[List[Violation], Option[Any]] = (tpe, input) match {
+    case (OptionInputType(ofType), value) ⇒ coerceInputValue(ofType, fieldPath, value, errorPrefix)
     case (ListInputType(ofType), values) if iu.isArrayNode(values) ⇒
       val res = iu.getListValue(values).map {
-        case defined if iu.isDefined(defined) ⇒ resolveListValue(ofType, fieldPath, coerceInputValue(ofType, fieldPath, defined))
+        case defined if iu.isDefined(defined) ⇒ resolveListValue(ofType, fieldPath, coerceInputValue(ofType, fieldPath, defined, errorPrefix))
         case _ ⇒ resolveListValue(ofType, fieldPath, Right(None))
       }
 
@@ -47,7 +47,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       if (errors.nonEmpty) Left(errors.collect{case Left(errors) ⇒ errors}.toList.flatten)
       else Right(Some(successes.collect {case Right(v) ⇒ v}))
     case (ListInputType(ofType), value) ⇒
-      resolveListValue(ofType, fieldPath, coerceInputValue(ofType, fieldPath, value)) match {
+      resolveListValue(ofType, fieldPath, coerceInputValue(ofType, fieldPath, value, errorPrefix)) match {
         case Right(v) ⇒ Right(Some(Seq(v)))
         case l @ Left(violations) ⇒ Left(violations)
       }
@@ -56,7 +56,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         case (acc, field) ⇒ iu.getMapValue(valueMap, field.name) match {
           case Some(defined) if iu.isDefined(defined) ⇒
             resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, acc,
-              coerceInputValue(field.fieldType, fieldPath :+ field.name, defined))
+              coerceInputValue(field.fieldType, fieldPath :+ field.name, defined, errorPrefix))
           case _ ⇒ resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, acc, Right(None))
         }
       }
@@ -67,10 +67,10 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       else Right(Some(res mapValues (_.right.get)))
     case (scalar: ScalarType[_], value) if iu.isScalarNode(value) ⇒
       scalar.coerceUserInput(iu.getScalarValue(value))
-          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, None, Nil) :: Nil), v ⇒ Right(Some(v)))
+          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, None, Nil, errorPrefix) :: Nil), v ⇒ Right(Some(v)))
     case (enum: EnumType[_], value) if iu.isScalarNode(value) ⇒
       enum.coerceUserInput(iu.getScalarValue(value))
-          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, None, Nil) :: Nil), {
+          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, None, Nil, errorPrefix) :: Nil), {
         case (v, deprecated) ⇒
           if (deprecated && userContext.isDefined) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext.get)
 
@@ -133,10 +133,10 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       Left(InputObjectTypeMismatchViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), QueryRenderer.render(value), sourceMapper, value.position.toList) :: Nil)
     case (scalar: ScalarType[_], value) ⇒
       scalar.coerceInput(value)
-          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position.toList) :: Nil), v ⇒ Right(Some(v)))
+          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position.toList, "") :: Nil), v ⇒ Right(Some(v)))
     case (enum: EnumType[_], value) ⇒
       enum.coerceInput(value)
-          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position.toList) :: Nil), {
+          .fold(violation ⇒ Left(FieldCoercionViolation(fieldPath, violation, sourceMapper, value.position.toList, "") :: Nil), {
         case (v, deprecated) ⇒
           if (deprecated && userContext.isDefined) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext.get)
 

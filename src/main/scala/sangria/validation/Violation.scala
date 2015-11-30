@@ -39,8 +39,8 @@ case object IDCoercionViolation extends ValueCoercionViolation("String or Int va
 case class EnumValueCoercionViolation(name: String) extends ValueCoercionViolation(s"Enum value '$name' is undefined")
 case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
-case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val errorMessage = s"Field '${fieldPath mkString "."}' has wrong value: ${valueViolation.errorMessage}.$astLocation"
+case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, sourceMapper: Option[SourceMapper], positions: List[Position], errorPrefix: String) extends AstNodeViolation {
+  lazy val errorMessage = s"${errorPrefix}Field '${fieldPath mkString "."}' has wrong value: ${valueViolation.errorMessage}.$astLocation"
 }
 
 case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
@@ -185,3 +185,22 @@ case class DuplicateArgNameViolation(argName: String, sourceMapper: Option[Sourc
 case class DuplicateInputFieldViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val errorMessage = s"There can be only one input field named '$name'.$astLocation"
 }
+
+case class InvalidImplementationFieldTypeViolation(interfaceName: String, objectName: String, fieldName: String, interfaceFieldType: String, objectFieldType: String) extends Violation {
+  lazy val errorMessage = s"$interfaceName.$fieldName expects type '$interfaceFieldType', but $objectName.$fieldName provides type '$objectFieldType'."
+}
+
+case class MissingImplementationFieldArgumentViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String) extends Violation {
+  lazy val errorMessage = s"$interfaceName.$fieldName expects argument '$argumentName', but $objectName.$fieldName does not provide it."
+}
+
+case class InvalidImplementationFieldArgumentTypeViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String, interfaceFieldType: String, objectFieldType: String) extends Violation {
+  lazy val errorMessage = s"$interfaceName.$fieldName($argumentName) expects type '$interfaceFieldType', but $objectName.$fieldName($argumentName) provides type '$objectFieldType'."
+}
+
+case class ImplementationExtraFieldArgumentNotOptionalViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String, objectFieldType: String) extends Violation {
+  lazy val errorMessage = s"$objectName.$fieldName($argumentName) is of required type '$objectFieldType', but is not also provided by the interface $interfaceName.$fieldName."
+}
+
+
+
