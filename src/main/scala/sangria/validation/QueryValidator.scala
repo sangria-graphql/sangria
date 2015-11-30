@@ -121,6 +121,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
     .mapValues(_.head)
 
   private val fragmentSpreadsCache = TrieMap[Int, List[ast.FragmentSpread]]()
+  private val recursivelyReferencedFragmentsCache = TrieMap[Int, List[ast.FragmentDefinition]]()
 
   def getFragmentSpreads(astNode: ast.SelectionContainer) =
     fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {
@@ -141,6 +142,37 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
       }
 
       spreads.toList
+    })
+
+  def getRecursivelyReferencedFragments(operation: ast.OperationDefinition) =
+    recursivelyReferencedFragmentsCache.getOrElseUpdate(operation.cacheKeyHash, {
+      val frags = ListBuffer[ast.FragmentDefinition]()
+      val collectedNames = MutableSet[String]()
+      val nodesToVisit = MutableStack[ast.SelectionContainer]()
+
+      nodesToVisit.push(operation)
+
+      while (nodesToVisit.nonEmpty) {
+        val node = nodesToVisit.pop()
+        val spreads = getFragmentSpreads(node)
+
+        spreads.foreach { spread ⇒
+          val fragName = spread.name
+
+          if (!collectedNames.contains(fragName)) {
+            collectedNames += fragName
+
+            fragments.get(fragName) match {
+              case Some(frag) ⇒
+                frags += frag
+                nodesToVisit.push(frag)
+              case None ⇒ // do nothing
+            }
+          }
+        }
+      }
+
+      frags.toList
     })
 
   def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =

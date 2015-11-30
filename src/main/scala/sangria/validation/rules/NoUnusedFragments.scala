@@ -16,39 +16,25 @@ import scala.language.postfixOps
 class NoUnusedFragments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val fragmentDefs = ListBuffer[ast.FragmentDefinition]()
-    val spreadsWithinOperation = ListBuffer[MutableSet[String]]()
-    val fragAdjacencies = MutableMap[String, MutableSet[String]]()
-    var spreadNames = MutableSet[String]()
+    val operationDefs = ListBuffer[ast.OperationDefinition]()
 
     override val onEnter: ValidationVisit = {
-      case o: ast.OperationDefinition ⇒
-        spreadNames = MutableSet[String]()
-        spreadsWithinOperation += spreadNames
-        Right(Continue)
+      case od: ast.OperationDefinition ⇒
+        operationDefs += od
+        Right(Skip)
+
       case fd: ast.FragmentDefinition ⇒
         fragmentDefs += fd
-        spreadNames = MutableSet[String]()
-        fragAdjacencies(fd.name) = spreadNames
-        Right(Continue)
-      case fs: ast.FragmentSpread ⇒
-        spreadNames += fs.name
-        Right(Continue)
+        Right(Skip)
      }
 
     override def onLeave: ValidationVisit = {
       case ast.Document(_, _, _) ⇒
         val fragmentNameUsed = MutableSet[String]()
 
-        def reduceSpreadFragments(spreads: scala.collection.Set[String]): Unit = {
-          spreads foreach { fragName ⇒
-            if (!fragmentNameUsed.contains(fragName)) {
-              fragmentNameUsed += fragName
-              fragAdjacencies get fragName foreach reduceSpreadFragments
-            }
-          }
-        }
-
-        spreadsWithinOperation foreach reduceSpreadFragments
+        operationDefs.foreach(operation ⇒
+          ctx.getRecursivelyReferencedFragments(operation)
+            .foreach(fragment ⇒ fragmentNameUsed += fragment.name))
 
         val errors = fragmentDefs.toVector
           .filter(fd ⇒ !fragmentNameUsed.contains(fd.name))
