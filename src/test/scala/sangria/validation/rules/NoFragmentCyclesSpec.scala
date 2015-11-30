@@ -40,6 +40,13 @@ class NoFragmentCyclesSpec extends WordSpec with ValidationSupport {
         }
       """)
 
+    "does not false positive on unknown fragment" in expectPasses(
+      """
+        fragment nameFragment on Pet {
+          ...UnknownFragment
+        }
+      """)
+
     "spreading recursively within field fails" in expectFails(
       """
         fragment fragA on Human { relatives { ...fragA } },

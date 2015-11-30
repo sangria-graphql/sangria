@@ -33,20 +33,22 @@ class NoFragmentCycles extends ValidationRule {
          val errors = ListBuffer[Violation]()
 
          def detectCycleRecursive(fragmentName: String): Unit = {
-           spreadsInFragment(fragmentName) foreach { spreadNode ⇒
-             if (!knownToLeadToCycle.contains(spreadNode)) {
-               if (spreadNode.name == initialName) {
-                 val cyclePath = spreadNode +: spreadPath
+           if (spreadsInFragment.contains(fragmentName)) {
+             spreadsInFragment(fragmentName) foreach { spreadNode ⇒
+               if (!knownToLeadToCycle.contains(spreadNode)) {
+                 if (spreadNode.name == initialName) {
+                   val cyclePath = spreadNode +: spreadPath
 
-                 cyclePath foreach knownToLeadToCycle.add
+                   cyclePath foreach knownToLeadToCycle.add
 
-                 val reversedPath = spreadPath.toList.reverse
+                   val reversedPath = spreadPath.toList.reverse
 
-                 errors += CycleErrorViolation(initialName, reversedPath map (_.name), ctx.sourceMapper, cyclePath.toList.reverse.flatMap(_.position))
-               } else if (!spreadPath.exists(_ == spreadNode)) {
-                 spreadPath.push(spreadNode)
-                 detectCycleRecursive(spreadNode.name)
-                 spreadPath.pop
+                   errors += CycleErrorViolation(initialName, reversedPath map (_.name), ctx.sourceMapper, cyclePath.toList.reverse.flatMap(_.position))
+                 } else if (!spreadPath.contains(spreadNode)) {
+                   spreadPath.push(spreadNode)
+                   detectCycleRecursive(spreadNode.name)
+                   spreadPath.pop
+                 }
                }
              }
            }
