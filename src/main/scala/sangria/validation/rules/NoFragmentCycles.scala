@@ -1,62 +1,71 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.{FragmentSpread, AstVisitor}
+import sangria.ast.AstVisitorCommand
 import sangria.ast.AstVisitorCommand._
 import sangria.validation._
 
-import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet, Stack ⇒ MutableStack}
+import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap, Stack ⇒ MutableStack}
 import scala.language.postfixOps
 
 class NoFragmentCycles extends ValidationRule {
    override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-     val spreadsInFragment =
-       ctx.doc.definitions.collect{case fd: ast.FragmentDefinition ⇒ fd}.groupBy(_.name).mapValues { v ⇒
-         val fd  = v.head
-         val acc = ListBuffer[ast.FragmentSpread]()
+     val visitedFrags = MutableSet[String]()
+     val spreadPath = MutableStack[ast.FragmentSpread]()
+     val spreadPathIndexByName = MutableMap[String, Int]()
 
-         AstVisitor.visitAst(fd, onEnter = {
-           case fs: ast.FragmentSpread ⇒
-             acc += fs
-             Continue
-           case _ ⇒ Continue
-         })
+     def detectCycleRecursive(fragmentDef: ast.FragmentDefinition): Vector[Violation] = {
+       visitedFrags += fragmentDef.name
 
-         acc.toVector
-       }
+       val spreadNodes = ctx.getFragmentSpreads(fragmentDef)
 
-     val knownToLeadToCycle = MutableSet[FragmentSpread]()
+       if (spreadNodes.nonEmpty) {
+         var errors: Vector[Violation] = Vector.empty
 
-     override val onEnter: ValidationVisit = {
-       case ast.FragmentDefinition(initialName, _, _, _, _) ⇒
-         val spreadPath = MutableStack[FragmentSpread]()
-         val errors = ListBuffer[Violation]()
+         spreadPathIndexByName(fragmentDef.name) = spreadPath.size
 
-         def detectCycleRecursive(fragmentName: String): Unit = {
-           if (spreadsInFragment.contains(fragmentName)) {
-             spreadsInFragment(fragmentName) foreach { spreadNode ⇒
-               if (!knownToLeadToCycle.contains(spreadNode)) {
-                 if (spreadNode.name == initialName) {
-                   val cyclePath = spreadNode +: spreadPath
+         spreadNodes.foreach { spreadNode ⇒
+           spreadPathIndexByName.get(spreadNode.name) match {
+             case None ⇒
+               spreadPath.push(spreadNode)
 
-                   cyclePath foreach knownToLeadToCycle.add
-
-                   val reversedPath = spreadPath.toList.reverse
-
-                   errors += CycleErrorViolation(initialName, reversedPath map (_.name), ctx.sourceMapper, cyclePath.toList.reverse.flatMap(_.position))
-                 } else if (!spreadPath.contains(spreadNode)) {
-                   spreadPath.push(spreadNode)
-                   detectCycleRecursive(spreadNode.name)
-                   spreadPath.pop
+               if (!visitedFrags.contains(spreadNode.name)) {
+                 ctx.fragments.get(spreadNode.name) match {
+                   case Some(frag) ⇒ errors = errors ++ detectCycleRecursive(frag)
+                   case _ ⇒ // do nothing
                  }
                }
-             }
+
+               spreadPath.pop()
+
+             case Some(cycleIndex) ⇒
+               val cyclePath = spreadPath.toList.reverse.slice(cycleIndex, spreadPath.size)
+
+               errors = errors :+ CycleErrorViolation(
+                 spreadNode.name,
+                 cyclePath map (_.name),
+                 ctx.sourceMapper,
+                 (cyclePath :+ spreadNode).flatMap(_.position))
            }
          }
 
-         detectCycleRecursive(initialName)
+         spreadPathIndexByName.remove(fragmentDef.name)
 
-         if (errors.nonEmpty) Left(errors.toVector) else Right(Continue)
+         errors
+       } else Vector.empty
+     }
+
+     override val onEnter: ValidationVisit = {
+       case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _) ⇒
+         if (visitedFrags.contains(fragmentName)) Right(Skip)
+         else {
+           val errors = detectCycleRecursive(fragmentDef)
+
+           if (errors.nonEmpty) Left(errors)
+           else Right(Continue)
+         }
+
+       case _: ast.OperationDefinition ⇒ Right(Skip)
      }
    }
  }

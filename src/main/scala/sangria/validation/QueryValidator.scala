@@ -6,6 +6,7 @@ import sangria.ast.AstVisitorCommand._
 import sangria.schema._
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 import sangria.validation.rules._
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.{Stack ⇒ MutableStack, Set ⇒ MutableSet, Map ⇒ MutableMap, ListBuffer}
 
 trait QueryValidator {
@@ -118,6 +119,29 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
     .collect{case frDef: FragmentDefinition ⇒ frDef}
     .groupBy(_.name)
     .mapValues(_.head)
+
+  private val fragmentSpreadsCache = TrieMap[Int, List[ast.FragmentSpread]]()
+
+  def getFragmentSpreads(astNode: ast.SelectionContainer) =
+    fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {
+      val spreads = ListBuffer[ast.FragmentSpread]()
+      val setsToVisit = MutableStack[List[ast.Selection]]()
+
+      setsToVisit.push(astNode.selections)
+
+      while (setsToVisit.nonEmpty) {
+        val set = setsToVisit.pop()
+
+        set.foreach {
+          case fs: ast.FragmentSpread ⇒
+            spreads += fs
+          case cont: ast.SelectionContainer ⇒
+            setsToVisit push cont.selections
+        }
+      }
+
+      spreads.toList
+    })
 
   def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
     !ignoredVisitors.contains(visitor) && !skips.contains(visitor)

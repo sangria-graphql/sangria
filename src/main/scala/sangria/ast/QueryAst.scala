@@ -26,7 +26,7 @@ sealed trait ConditionalFragment extends AstNode {
   def typeConditionOpt: Option[NamedType]
 }
 
-sealed trait SelectionContainer {
+sealed trait SelectionContainer extends AstNode {
   def selections: List[Selection]
   def position: Option[Position]
 }
@@ -125,6 +125,7 @@ case class ObjectField(name: String, value: Value, position: Option[Position] = 
 
 sealed trait AstNode {
   def position: Option[Position]
+  def cacheKeyHash: Int = System.identityHashCode(this)
 }
 
 object AstNode {

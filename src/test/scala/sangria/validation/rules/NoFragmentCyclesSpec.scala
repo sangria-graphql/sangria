@@ -118,14 +118,17 @@ class NoFragmentCyclesSpec extends WordSpec with ValidationSupport {
         fragment fragX on Dog { ...fragY }
         fragment fragY on Dog { ...fragZ }
         fragment fragZ on Dog { ...fragO }
-        fragment fragO on Dog { ...fragA, ...fragX }
+        fragment fragO on Dog { ...fragP }
+        fragment fragP on Dog { ...fragA, ...fragX }
       """,
       List(
-        "Cannot spread fragment 'fragA' within itself via 'fragB', 'fragC', 'fragO'." → List(Pos(2, 33), Pos(3, 33), Pos(4, 33), Pos(8, 33)),
-        "Cannot spread fragment 'fragX' within itself via 'fragY', 'fragZ', 'fragO'." → List(Pos(5, 33), Pos(6, 33), Pos(7, 33), Pos(8, 43))
+        "Cannot spread fragment 'fragA' within itself via 'fragB', 'fragC', 'fragO', 'fragP'." →
+            List(Pos(2, 33), Pos(3, 33), Pos(4, 33), Pos(8, 33), Pos(9, 33)),
+        "Cannot spread fragment 'fragO' within itself via 'fragP', 'fragX', 'fragY', 'fragZ'." →
+            List(Pos(8, 33), Pos(9, 43), Pos(5, 33), Pos(6, 33), Pos(7, 33))
       ))
 
-    "no spreading itself deeply two paths -- new rule" in expectFailsPosList(
+    "no spreading itself deeply two paths" in expectFailsPosList(
       """
         fragment fragA on Dog { ...fragB, ...fragC }
         fragment fragB on Dog { ...fragA }
@@ -134,6 +137,29 @@ class NoFragmentCyclesSpec extends WordSpec with ValidationSupport {
       List(
         "Cannot spread fragment 'fragA' within itself via 'fragB'." → List(Pos(2, 33), Pos(3, 33)),
         "Cannot spread fragment 'fragA' within itself via 'fragC'." → List(Pos(2, 43), Pos(4, 33))
+      ))
+
+    "no spreading itself deeply two paths -- alt traverse order" in expectFailsPosList(
+      """
+        fragment fragA on Dog { ...fragC }
+        fragment fragB on Dog { ...fragC }
+        fragment fragC on Dog { ...fragA, ...fragB }
+      """,
+      List(
+        "Cannot spread fragment 'fragA' within itself via 'fragC'." → List(Pos(2, 33), Pos(4, 33)),
+        "Cannot spread fragment 'fragC' within itself via 'fragB'." → List(Pos(4, 43), Pos(3, 33))
+      ))
+
+    "no spreading itself deeply and immediately" in expectFailsPosList(
+      """
+        fragment fragA on Dog { ...fragB }
+        fragment fragB on Dog { ...fragB, ...fragC }
+        fragment fragC on Dog { ...fragA, ...fragB }
+      """,
+      List(
+        "Cannot spread fragment 'fragB' within itself" → List(Pos(3, 33)),
+        "Cannot spread fragment 'fragA' within itself via 'fragB', 'fragC'." → List(Pos(2, 33), Pos(3, 43), Pos(4, 33)),
+        "Cannot spread fragment 'fragB' within itself via 'fragC'." → List(Pos(3, 43), Pos(4, 43))
       ))
   }
 }
