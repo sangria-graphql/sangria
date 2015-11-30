@@ -73,6 +73,17 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """)
 
+    // Note: Differing skip/include directives don't create an ambiguous return
+    // value and are acceptable in conditions where differing runtime values
+    // may have the same desired effect of including or skipping a field.
+    "different skip/include directives accepted" in expectPasses(
+      """
+        fragment differentDirectivesWithDifferentAliases on Dog {
+          name @include(if: true)
+          name @include(if: false)
+        }
+      """)
+
     "different directives with different aliases" in expectPasses(
       """
         fragment differentDirectivesWithDifferentAliases on Dog {
@@ -112,50 +123,6 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       """,
       List(
         "Field 'doesKnowCommand' conflict because they have differing arguments." → List(Pos(3, 11), Pos(4, 11))
-      ))
-
-    "conflicting directives" in expectFailsPosList(
-      """
-        fragment conflictingDirectiveArgs on Dog {
-          name @include(if: true)
-          name @skip(if: false)
-        }
-      """,
-      List(
-        "Field 'name' conflict because they have differing directives." → List(Pos(3, 11), Pos(4, 11))
-      ))
-
-    "conflicting directive args" in expectFailsPosList(
-      """
-        fragment conflictingDirectiveArgs on Dog {
-          name @include(if: true)
-          name @include(if: false)
-        }
-      """,
-      List(
-        "Field 'name' conflict because they have differing directives." → List(Pos(3, 11), Pos(4, 11))
-      ))
-
-    "conflicting args with matching directives" in expectFailsPosList(
-      """
-        fragment conflictingArgsWithMatchingDirectiveArgs on Dog {
-          doesKnowCommand(dogCommand: SIT) @include(if: true)
-          doesKnowCommand(dogCommand: HEEL) @include(if: true)
-        }
-      """,
-      List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." → List(Pos(3, 11), Pos(4, 11))
-      ))
-
-    "conflicting directives with matching args" in expectFailsPosList(
-      """
-        fragment conflictingDirectiveArgsWithMatchingArgs on Dog {
-          doesKnowCommand(dogCommand: SIT) @include(if: true)
-          doesKnowCommand(dogCommand: SIT) @skip(if: false)
-        }
-      """,
-      List(
-        "Field 'doesKnowCommand' conflict because they have differing directives." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "encounters conflict in fragments" in expectFailsPosList(

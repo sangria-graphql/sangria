@@ -78,8 +78,6 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
             case None ⇒
               if (!sameArguments(ast1.arguments, ast2.arguments))
                 Some(Conflict(ConflictReason(outputName, Left("they have differing arguments")), ast1 :: ast2 :: Nil))
-              else if (!sameDirectives(ast1.directives, ast2.directives))
-                Some(Conflict(ConflictReason(outputName, Left("they have differing directives")), ast1 :: ast2 :: Nil))
               else {
                 val visitedFragmentNames = MutableSet[String]()
                 val subfieldMap1 = collectFieldASTsAndDefs(ctx, def1.map (d ⇒ ctx.typeInfo.getNamedType(d.fieldType)), ast1, visitedFragmentNames)
@@ -99,15 +97,6 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
   }
 
   type CollectedFields = MutableMap[String, ListBuffer[(ast.Field, Option[Field[_, _]])]]
-
-  def sameDirectives(directives1: List[ast.Directive], directives2: List[ast.Directive]) =
-    if (directives1.size != directives2.size) false
-    else directives1.forall { d1 ⇒
-      directives2.find(_.name == d1.name) match {
-        case Some(d2) ⇒ sameArguments(d1.arguments, d2.arguments)
-        case None ⇒ false
-      }
-    }
 
   def sameArguments(args1: List[ast.Argument], args2: List[ast.Argument]) =
     if (args1.size != args2.size) false
