@@ -5,6 +5,7 @@ import sangria.ast
 import sangria.execution.Executor
 import sangria.integration.InputUnmarshaller
 import sangria.schema._
+import sangria.macros._
 import sangria.util.AwaitSupport
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
@@ -426,6 +427,17 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
           |  NON_NULL
           |}
           |""".stripMargin))
+    }
+
+    "throw an exception if introspection results contain some errors" in {
+      val root = ObjectType("Root", fields[Unit, Unit](
+        Field("singleField", StringType, resolve = _ ⇒ "")
+      ))
+
+      val schema = Schema(root)
+
+      an [IllegalArgumentException] should be thrownBy
+        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").await)
     }
   }
 }

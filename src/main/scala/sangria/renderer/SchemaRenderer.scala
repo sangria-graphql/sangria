@@ -92,6 +92,8 @@ object SchemaRenderer {
   def renderSchema[T: InputUnmarshaller](introspectionResult: T) = {
     val u = um[T]
 
+    checkErrors(introspectionResult)
+
     for {
       data ← um.getRootMapValue(introspectionResult, "data")
       schema ← um.getMapValue(data, "__schema")
@@ -110,6 +112,16 @@ object SchemaRenderer {
       typeList = um.getListValue(types) filter (isIntrospectionType(_)) sortBy (stringField(_, "name"))
     } yield typeList map (renderType(_)) mkString TypeSeparator
   }
+
+  def checkErrors[T : InputUnmarshaller](introspectionResult: T): Unit = {
+    um.getRootMapValue(introspectionResult, "errors") match {
+      case Some(errors) ⇒
+        throw new IllegalArgumentException(
+          s"Can't render introspection results because it contains errors: ${um.render(errors)}")
+      case None ⇒ // everything is fine
+    }
+  }
+
 
   def isBuiltIn[In : InputUnmarshaller](tpe: In) =
     isIntrospectionType(tpe) || isBuiltInScalar(tpe)
