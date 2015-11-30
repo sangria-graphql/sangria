@@ -51,11 +51,26 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
       conflicts
     }
 
-    def findConflict(outputName: String, pair1: (ast.Field, Option[Field[_, _]]), pair2: (ast.Field, Option[Field[_, _]])): Option[Conflict] = {
-      val (ast1, def1) = pair1
-      val (ast2, def2) = pair2
+    def findConflict(
+        outputName: String,
+        fieldInfo1: (Option[Type], ast.Field, Option[Field[_, _]]),
+        fieldInfo2: (Option[Type], ast.Field, Option[Field[_, _]])): Option[Conflict] = {
+      val (parentType1, ast1, def1) = fieldInfo1
+      val (parentType2, ast2, def2) = fieldInfo2
 
-      if ((ast1 eq ast2) || comparedSet.contains(ast1, ast2)) {
+      // If the statically known parent types could not possibly apply at the same
+      // time, then it is safe to permit them to diverge as they will not present
+      // any ambiguity by differing.
+      // It is known that two parent types could never overlap if they are
+      // different Object types. Interface or Union types might overlap - if not
+      // in the current state of the schema, then perhaps in some future version,
+      // thus may not safely diverge.
+      val differentTypes = (parentType1, parentType2) match {
+        case (Some(pt1: ObjectType[_, _]), Some(pt2: ObjectType[_, _])) if pt1.name != pt2.name ⇒ true
+        case _ ⇒ false
+      }
+
+      if ((ast1 eq ast2) || differentTypes || comparedSet.contains(ast1, ast2)) {
         None
       } else {
         comparedSet.add(ast1, ast2)
@@ -96,7 +111,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     }
   }
 
-  type CollectedFields = MutableMap[String, ListBuffer[(ast.Field, Option[Field[_, _]])]]
+  type CollectedFields = MutableMap[String, ListBuffer[(Option[Type], ast.Field, Option[Field[_, _]])]]
 
   def sameArguments(args1: List[ast.Argument], args2: List[ast.Argument]) =
     if (args1.size != args2.size) false
@@ -135,15 +150,16 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
         }
 
         if (!aad.contains(astField.outputName))
-          aad(astField.outputName) = ListBuffer(astField → fieldDef)
+          aad(astField.outputName) = ListBuffer((parentType, astField, fieldDef))
         else
-          aad(astField.outputName) += astField → fieldDef
+          aad(astField.outputName) += ((parentType, astField, fieldDef))
       case frag: ast.InlineFragment ⇒
         aad = collectFieldASTsAndDefs(ctx, frag.typeCondition.fold(parentType)(ctx.schema.getOutputType(_, true)), frag, visitedFragmentNames, aad)
       case frag: ast.FragmentSpread if visitedFragmentNames contains frag.name ⇒
         // do nothing at all
       case frag: ast.FragmentSpread  ⇒
         visitedFragmentNames += frag.name
+
         ctx.fragments.get(frag.name) match {
           case Some(fragDef) ⇒
             aad = collectFieldASTsAndDefs(ctx, ctx.schema.getOutputType(fragDef.typeCondition, true), fragDef, visitedFragmentNames, aad)

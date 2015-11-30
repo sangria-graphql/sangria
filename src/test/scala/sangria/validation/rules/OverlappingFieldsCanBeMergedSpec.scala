@@ -103,6 +103,18 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         "Field 'fido' conflict because 'name' and 'nickname' are different fields." → List(Pos(3, 11), Pos(4, 11))
       ))
 
+    "Same aliases allowed on non-overlapping fields" in expectPasses(
+      """
+        fragment sameAliasesWithDifferentFieldTargets on Pet {
+          ... on Dog {
+            name
+          }
+          ... on Cat {
+            name: nickname
+          }
+        }
+      """)
+
     "Alias masking direct field access" in expectFailsPosList(
       """
         fragment aliasMaskingDirectFieldAccess on Dog {
@@ -112,6 +124,28 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       """,
       List(
         "Field 'name' conflict because 'nickname' and 'name' are different fields." → List(Pos(3, 11), Pos(4, 11))
+      ))
+
+    "different args, second adds an argument" in expectFailsPosList(
+      """
+        fragment conflictingArgs on Dog {
+          doesKnowCommand
+          doesKnowCommand(dogCommand: HEEL)
+        }
+      """,
+      List(
+        "Field 'doesKnowCommand' conflict because they have differing arguments." → List(Pos(3, 11), Pos(4, 11))
+      ))
+
+    "different args, second missing an argument" in expectFailsPosList(
+      """
+        fragment conflictingArgs on Dog {
+          doesKnowCommand(dogCommand: SIT)
+          doesKnowCommand
+        }
+      """,
+      List(
+        "Field 'doesKnowCommand' conflict because they have differing arguments." → List(Pos(3, 11), Pos(4, 11))
       ))
 
     "conflicting args" in expectFailsPosList(
@@ -124,6 +158,18 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       List(
         "Field 'doesKnowCommand' conflict because they have differing arguments." → List(Pos(3, 11), Pos(4, 11))
       ))
+
+    "allows different args where no conflict is possible" in expectPasses(
+      """
+        fragment conflictingArgs on Pet {
+          ... on Dog {
+            name(surname: true)
+          }
+          ... on Cat {
+            name
+          }
+        }
+      """)
 
     "encounters conflict in fragments" in expectFailsPosList(
       """
@@ -249,23 +295,33 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       ))
 
     "return types must be unambiguous" should {
-      val StringBox = ObjectType("StringBox", fields[Unit, Unit](
+      val SomeBox = InterfaceType("SomeBox", fields[Unit, Unit](
+        Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None)
+      ))
+
+      val StringBox = ObjectType("StringBox", interfaces[Unit, Unit](SomeBox), fields[Unit, Unit](
         Field("scalar", OptionType(StringType), resolve = _ ⇒ None)
       ))
 
-      val IntBox = ObjectType("IntBox", fields[Unit, Unit](
+      val IntBox = ObjectType("IntBox", interfaces[Unit, Unit](SomeBox), fields[Unit, Unit](
         Field("scalar", OptionType(IntType), resolve = _ ⇒ None)
       ))
 
-      val NonNullStringBox1 = ObjectType("NonNullStringBox1", fields[Unit, Unit](
+      val NonNullStringBox1 = InterfaceType("NonNullStringBox1", fields[Unit, Unit](
         Field("scalar", StringType, resolve = _ ⇒ "")
       ))
 
-      val NonNullStringBox2 = ObjectType("NonNullStringBox2", fields[Unit, Unit](
+      val NonNullStringBox1Impl = ObjectType("NonNullStringBox1Impl", interfaces[Unit, Unit](SomeBox, NonNullStringBox1), fields[Unit, Unit](
         Field("scalar", StringType, resolve = _ ⇒ "")
       ))
 
-      val BoxUnion = UnionType("BoxUnion", types = StringBox :: IntBox :: NonNullStringBox1 :: NonNullStringBox2 :: Nil)
+      val NonNullStringBox2 = InterfaceType("NonNullStringBox2", fields[Unit, Unit](
+        Field("scalar", StringType, resolve = _ ⇒ "")
+      ))
+
+      val NonNullStringBox2Impl = ObjectType("NonNullStringBox2Impl", interfaces[Unit, Unit](SomeBox, NonNullStringBox2), fields[Unit, Unit](
+        Field("scalar", StringType, resolve = _ ⇒ "")
+      ))
 
       val Connection = ObjectType("NonNullStringBox2", fields[Unit, Unit](
         Field("edges", OptionType(ListType(OptionType(
@@ -281,36 +337,54 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       ))
 
       val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](
-        Field("boxUnion", OptionType(BoxUnion), resolve = _ ⇒ ()),
+        Field("someBox", OptionType(SomeBox), resolve = _ ⇒ ()),
         Field("connection", OptionType(Connection), resolve = _ ⇒ ())
-      )))
+      )), additionalTypes = IntBox :: StringBox :: NonNullStringBox1 :: NonNullStringBox1Impl :: NonNullStringBox2 :: NonNullStringBox2Impl :: Nil)
 
-      "conflicting scalar return types" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      // This is invalid since an object could potentially be both the Object
+      // type IntBox and the interface type NonNullStringBox1. While that
+      // condition does not exist in the current schema, the schema could
+      // expand in the future to allow this. Thus it is invalid.
+      "conflicting return types which potentially overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
-            boxUnion {
+            someBox {
               ...on IntBox {
                 scalar
               }
-              ...on StringBox {
+              ...on NonNullStringBox1 {
                 scalar
               }
             }
           }
         """,
         List(
-          "Field 'scalar' conflict because they return differing types 'Int' and 'String'." →
+          "Field 'scalar' conflict because they return differing types 'Int' and 'String!'." →
             List(Pos(5, 17), Pos(8, 17))
         ))
 
       "same wrapped scalar return types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
-            boxUnion {
+            someBox {
               ...on NonNullStringBox1 {
                 scalar
               }
               ...on NonNullStringBox2 {
+                scalar
+              }
+            }
+          }
+        """)
+
+      "'allows differing return types which cannot overlap" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ...on IntBox {
+                scalar
+              }
+              ...on StringBox {
                 scalar
               }
             }
@@ -346,7 +420,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       "ignores unknown types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
-            boxUnion {
+            someBox {
               ...on UnknownType {
                 scalar
               }
