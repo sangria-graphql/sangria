@@ -39,7 +39,7 @@ class VariablesInAllowedPosition extends ValidationRule {
           varDef ← varDefs get name
           varTpe ← ctx.schema.getInputType(varDef.tpe)
           inputType ← ctx.typeInfo.inputType
-        } yield if (varTypeAllowedForType(effectiveType(varTpe, varDef), inputType))
+        } yield if (TypeComparators.isSubType(ctx.schema, effectiveType(varTpe, varDef), inputType))
           Vector.empty
         else
           Vector(BadVarPositionViolation(
@@ -61,18 +61,5 @@ class VariablesInAllowedPosition extends ValidationRule {
         varType.asInstanceOf[OptionInputType[_]].ofType
       else
         varType
-
-    // A var type is allowed if it is the same or more strict than the expected
-    // type. It can be more strict if the variable type is non-null when the
-    // expected type is nullable. If both are list types, the variable item type can
-    // be more strict than the expected item type.
-    def varTypeAllowedForType(varType: InputType[_], expectedType: InputType[_]): Boolean =
-      (varType, expectedType) match {
-        case (OptionInputType(ofType1), OptionInputType(ofType2)) ⇒ varTypeAllowedForType(ofType1, ofType2)
-        case (vt, OptionInputType(ofType2)) ⇒ varTypeAllowedForType(vt, ofType2)
-        case (ListInputType(ofType1), ListInputType(ofType2)) ⇒ varTypeAllowedForType(ofType1, ofType2)
-        case (t1: Named, t2: Named) ⇒ t1 == t2
-        case _ ⇒ false
-      }
   }
 }

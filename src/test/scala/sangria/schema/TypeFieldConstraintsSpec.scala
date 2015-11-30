@@ -1,6 +1,8 @@
 package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.util.Pos
+import sangria.util.SimpleGraphQlSupport._
 
 class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
@@ -170,6 +172,75 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
       val error = intercept[IllegalStateException](Schema(QueryType))
 
       error.getMessage should include("A `null` value was provided instead of type for a field 'a' of 'B' type.")
+    }
+
+    "allow covariant return types" in {
+      trait Fruit {
+        def size: Int
+      }
+
+      case class Apple(size: Int, color: String) extends Fruit
+
+      trait Basket {
+        def fruit: Fruit
+      }
+
+      case class AppleBasket(fruit: Apple) extends Basket
+
+      val FruitType = InterfaceType("Fruit", fields[Unit, Fruit](
+        Field("size", IntType, resolve = _ ⇒ 1)
+      ))
+
+      val AppleType = ObjectType("Apple", interfaces[Unit, Apple](FruitType), fields[Unit, Apple](
+        Field("size", IntType, resolve = _ ⇒ 1),
+        Field("color", StringType, resolve = _ ⇒ "red")
+      ))
+
+      val BasketType = InterfaceType("Basket", fields[Unit, Basket](
+        Field("fruit", FruitType, resolve = _.value.fruit)
+      ))
+
+      val AppleBasketType = ObjectType("Apple", interfaces[Unit, AppleBasket](BasketType), fields[Unit, AppleBasket](
+        Field("fruit", AppleType, resolve = _.value.fruit)
+      ))
+
+      val QueryType = ObjectType("Query", fields[Unit, Basket](
+        Field("basket", BasketType, resolve = _.value)
+      ))
+
+      val schema = Schema(QueryType, additionalTypes = AppleType :: AppleBasketType :: Nil)
+
+      check(
+        schema,
+        AppleBasket(Apple(11, "red")),
+        """
+         {
+          basket {
+            fruit {
+              size
+            }
+          }
+         }
+       """,
+        Map("data" -> Map(
+          "basket" -> Map(
+            "fruit" -> Map(
+              "size" -> 1)))))
+
+      checkContainsErrors(
+        schema,
+        AppleBasket(Apple(11, "red")),
+        """
+         {
+          basket {
+            fruit {
+              color
+            }
+          }
+         }
+        """,
+        null,
+        List("Cannot query field 'color' on 'Fruit'." → Some(Pos(5, 15))))
     }
   }
 

@@ -125,7 +125,8 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
             Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )
         )
-      )
+      ) ,
+      validateQuery = false
     )
 
     "executes union types with inline fragments" in check(
@@ -182,7 +183,8 @@ class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with G
             Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )
         )
-      )
+      ),
+      validateQuery = false
     )
 
     "executes interface types with inline fragments" in check(

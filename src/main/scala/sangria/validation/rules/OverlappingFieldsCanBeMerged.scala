@@ -66,12 +66,12 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
           val typeRes = for {
             field1 ← def1
             field2 ← def2
-            type1 = SchemaRenderer.renderTypeName(field1.fieldType)
-            type2 = SchemaRenderer.renderTypeName(field2.fieldType)
-          } yield if (!sameType(type1, type2))
+          } yield if (!TypeComparators.isEqualType(field1.fieldType, field2.fieldType)) {
+            val type1 = SchemaRenderer.renderTypeName(field1.fieldType)
+            val type2 = SchemaRenderer.renderTypeName(field2.fieldType)
+
             Some(Conflict(ConflictReason(outputName, Left(s"they return differing types '$type1' and '$type2'")), ast1 :: ast2 :: Nil))
-          else
-            None
+          } else None
 
           typeRes.flatten match {
             case s @ Some(_) ⇒ s
@@ -121,8 +121,6 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
   def sameValue(v1: ast.Value, v2: ast.Value) =
     QueryRenderer.render(v1, QueryRenderer.Compact) ==
       QueryRenderer.render(v2, QueryRenderer.Compact)
-
-  def sameType(type1: String, type2: String) = type1 == type2
 
   /**
    * Given a selectionSet, adds all of the fields in that selection to
