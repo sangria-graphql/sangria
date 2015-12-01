@@ -13,6 +13,7 @@ import scala.language.postfixOps
  * variable definitions and fragment conditions) are defined by the type schema.
  */
 class KnownTypeNames extends ValidationRule {
+  // todo: ignore type definitions when support is added: https://github.com/graphql/graphql-js/commit/812e09d681c2f10d4e5d09f75314e47953eeb7d4
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
       case ast.NamedType(name, pos) ⇒

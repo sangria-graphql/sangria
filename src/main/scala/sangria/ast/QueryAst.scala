@@ -118,8 +118,11 @@ case class StringValue(value: String, position: Option[Position] = None) extends
 case class BooleanValue(value: Boolean, position: Option[Position] = None) extends ScalarValue
 case class EnumValue(value: String, position: Option[Position] = None) extends Value
 case class ListValue(values: List[Value], position: Option[Position] = None) extends Value
-case class ObjectValue(fields: List[ObjectField], position: Option[Position] = None) extends Value
 case class VariableValue(name: String, position: Option[Position] = None) extends Value
+case class NullValue(position: Option[Position] = None) extends Value
+case class ObjectValue(fields: List[ObjectField], position: Option[Position] = None) extends Value {
+  lazy val fieldsByName = fields groupBy (_.name) mapValues (_.head.value)
+}
 
 case class ObjectField(name: String, value: Value, position: Option[Position] = None) extends NameValue
 
@@ -178,6 +181,7 @@ object AstNode {
     case n: BigDecimalValue ⇒ n.copy(position = None).asInstanceOf[T]
     case n: StringValue ⇒ n.copy(position = None).asInstanceOf[T]
     case n: BooleanValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: NullValue ⇒ n.copy(position = None).asInstanceOf[T]
     case n: EnumValue ⇒ n.copy(position = None).asInstanceOf[T]
     case n: ListValue ⇒
       n.copy(

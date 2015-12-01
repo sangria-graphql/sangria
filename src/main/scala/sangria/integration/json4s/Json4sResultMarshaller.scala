@@ -1,7 +1,7 @@
 package sangria.integration.json4s
 
 import org.json4s.JsonAST._
-import sangria.integration.ResultMarshaller
+import sangria.marshalling.ResultMarshaller
 
 abstract class Json4sResultMarshaller extends ResultMarshaller {
   type Node = JValue

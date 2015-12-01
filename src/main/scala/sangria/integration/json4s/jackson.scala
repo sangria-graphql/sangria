@@ -1,9 +1,9 @@
 package sangria.integration.json4s
 
 import org.json4s.JsonAST.{JObject, JValue}
-import sangria.integration.{InputUnmarshaller, ToInput}
 
 import org.json4s.jackson.JsonMethods.{render ⇒ jsonRender, pretty, compact}
+import sangria.marshalling.{InputUnmarshaller, ToInput}
 
 object jackson extends Json4sJacksonSupportLowPrioImplicits {
   implicit object Json4sJacksonResultMarshaller extends Json4sResultMarshaller {

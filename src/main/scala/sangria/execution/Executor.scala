@@ -1,7 +1,7 @@
 package sangria.execution
 
 import sangria.ast
-import sangria.integration.{ResultMarshaller, InputUnmarshaller}
+import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.validation.QueryValidator

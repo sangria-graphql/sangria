@@ -3,7 +3,7 @@ package sangria.renderer
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.Executor
-import sangria.integration.InputUnmarshaller
+import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 import sangria.macros._
 import sangria.util.AwaitSupport

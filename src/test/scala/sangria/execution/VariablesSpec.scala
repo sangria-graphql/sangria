@@ -1,8 +1,7 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
-
-import sangria.integration.InputUnmarshaller
+import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{Pos, GraphQlSupport, AwaitSupport}
@@ -90,7 +89,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
             }
           """,
           Map("fieldWithObjectInput" → null),
-          List("""Value '["foo", "bar", "baz"]' of wrong type was provided to the field of type 'TestInputObject!' at path 'input'.""" → Some(Pos(3, 43))),
+          List("""Value '["foo","bar","baz"]' of wrong type was provided to the field of type 'TestInputObject!' at path 'input'.""" → Some(Pos(3, 43))),
           validateQuery = false
         )
       }

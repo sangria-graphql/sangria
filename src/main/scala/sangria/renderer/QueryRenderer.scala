@@ -11,7 +11,14 @@ object QueryRenderer {
     separator = " ",
     mandatorySeparator = " ",
     mandatoryLineBreak = "\n",
-    definitionSeparator = "\n\n")
+    definitionSeparator = "\n\n",
+    inputFieldSeparator = ", ",
+    inputListSeparator = ", ",
+    formatInputValues = false)
+
+  val PrettyInput = Pretty.copy(
+    inputFieldSeparator = "\n",
+    formatInputValues = true)
 
   val Compact = QueryRendererConfig(
     indentLevel = "",
@@ -19,8 +26,11 @@ object QueryRenderer {
     separator = "",
     mandatorySeparator = " ",
     mandatoryLineBreak = " ",
-    definitionSeparator = "")
-  
+    definitionSeparator = "",
+    inputFieldSeparator = ",",
+    inputListSeparator = ",",
+    formatInputValues = false)
+
   def renderSelections(sels: List[Selection], indent: String, indentLevel: Int, config: QueryRendererConfig) =
     if (sels.nonEmpty)
       "{" + config.lineBreak +
@@ -44,7 +54,7 @@ object QueryRenderer {
 
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0): String = {
     lazy val indent = config.indentLevel * indentLevel
-    
+
     node match {
       case Document(defs, _, _) ⇒ defs map (render(_, config, indentLevel)) mkString config.definitionSeparator
 
@@ -99,21 +109,36 @@ object QueryRenderer {
       case Argument(name, value, _) ⇒
         indent + name + ":" + config.separator + render(value, config)
 
-      case IntValue(value, _) ⇒ indent + value
-      case BigIntValue(value, _) ⇒ indent + value.toString
-      case FloatValue(value, _) ⇒ indent + value.toString
-      case BigDecimalValue(value, _) ⇒ indent + value.toString
-      case StringValue(value, _) ⇒ indent + '"' + escapeString(value) + '"'
-      case BooleanValue(value, _) ⇒ indent + value.toString
+      case IntValue(value, _) ⇒ "" + value
+      case BigIntValue(value, _) ⇒ value.toString
+      case FloatValue(value, _) ⇒ value.toString
+      case BigDecimalValue(value, _) ⇒ value.toString
+      case StringValue(value, _) ⇒ '"' + escapeString(value) + '"'
+      case BooleanValue(value, _) ⇒ value.toString
+      case NullValue(_) ⇒ indent + "null"
       case EnumValue(value, _) ⇒ indent + value
       case ListValue(value, _) ⇒
-        indent + "[" + (value map (render(_, config)) mkString ("," + config.separator)) + "]"
+        "[" + (value map (render(_, config, indentLevel)) mkString (config.inputListSeparator)) + "]"
       case ObjectValue(value, _) ⇒
-        indent + "{" + (value map (render(_, config)) mkString ("," + config.separator)) + "}"
+        "{" + inputLineBreak(config) +
+            (value map (render(_, config, inputFieldIndent(config, indentLevel))) mkString config.inputFieldSeparator) +
+            inputLineBreak(config) + inputIndent(config, indent) + "}"
       case VariableValue(name, _) ⇒ indent + "$" + name
-      case ObjectField(name, value, _) ⇒ indent + name + ":" + config.separator + render(value, config)
+      case ObjectField(name, value, _) ⇒ indent + name + ":" + config.separator + render(value, config, indentLevel)
     }
   }
+
+  def inputLineBreak(config: QueryRendererConfig) =
+    if (config.formatInputValues) config.lineBreak
+    else ""
+
+  def inputFieldIndent(config: QueryRendererConfig, indent: Int) =
+    if (config.formatInputValues) indent + 1
+    else 0
+
+  def inputIndent(config: QueryRendererConfig, indent: String) =
+    if (config.formatInputValues) indent
+    else ""
 
   def escapeString(str: String) =
     str flatMap {
@@ -140,9 +165,12 @@ object QueryRenderer {
 }
 
 case class QueryRendererConfig(
-  indentLevel: String,
-  lineBreak: String,
-  mandatorySeparator: String,
-  mandatoryLineBreak: String,
-  separator: String,
-  definitionSeparator: String)
+                                  indentLevel: String,
+                                  lineBreak: String,
+                                  mandatorySeparator: String,
+                                  mandatoryLineBreak: String,
+                                  separator: String,
+                                  definitionSeparator: String,
+                                  inputFieldSeparator: String,
+                                  inputListSeparator: String,
+                                  formatInputValues: Boolean)

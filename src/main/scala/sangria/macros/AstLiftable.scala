@@ -53,6 +53,7 @@ trait AstLiftable {
     case FloatValue(v, p) ⇒ q"_root_.sangria.ast.FloatValue($v, $p)"
     case StringValue(v, p) ⇒ q"_root_.sangria.ast.StringValue($v, $p)"
     case BooleanValue(v, p) ⇒ q"_root_.sangria.ast.BooleanValue($v, $p)"
+    case NullValue(p) ⇒ q"_root_.sangria.ast.NullValue($p)"
     case EnumValue(v, p) ⇒ q"_root_.sangria.ast.EnumValue($v, $p)"
     case ListValue(v, p) ⇒ q"_root_.sangria.ast.ListValue($v, $p)"
     case ObjectValue(f, p) ⇒ q"_root_.sangria.ast.ObjectValue($f, $p)"

@@ -336,17 +336,6 @@ class QueryParserSpec extends WordSpec with Matchers {
       )
     }
 
-    "prevent null to be used as an enum value" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
-        "query Foo($x: Complex = null) { field }")
-
-      error.formattedError should be (
-        """Invalid input "null", expected StringValue, BooleanValue, ObjectValueConst, ListValueConst, EnumValue or NumberValue (line 1, column 25):
-          |query Foo($x: Complex = null) { field }
-          |                        ^""".stripMargin
-      )
-    }
-
     "produce parse error for `1.`" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = 1.) { field }")
@@ -363,7 +352,7 @@ class QueryParserSpec extends WordSpec with Matchers {
         "query Foo($x: Complex = .123) { field }")
 
       error.formattedError should be (
-        """Invalid input '.', expected StringValue, BooleanValue, ObjectValueConst, ListValueConst, EnumValue or NumberValue (line 1, column 25):
+        """Invalid input '.', expected StringValue, BooleanValue, ObjectValueConst, NullValue, ListValueConst, EnumValue or NumberValue (line 1, column 25):
           |query Foo($x: Complex = .123) { field }
           |                        ^""".stripMargin
       )
@@ -396,7 +385,7 @@ class QueryParserSpec extends WordSpec with Matchers {
         "query Foo($x: Complex = +1) { field }")
 
       error.formattedError should be (
-        """Invalid input '+', expected StringValue, BooleanValue, ObjectValueConst, ListValueConst, EnumValue or NumberValue (line 1, column 25):
+        """Invalid input '+', expected StringValue, BooleanValue, ObjectValueConst, NullValue, ListValueConst, EnumValue or NumberValue (line 1, column 25):
           |query Foo($x: Complex = +1) { field }
           |                        ^""".stripMargin
       )
@@ -480,6 +469,54 @@ class QueryParserSpec extends WordSpec with Matchers {
         withClue(s"Parsing ${expected._1}.") {
           findAst[BigDecimalValue](QueryParser.parse(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be(
             Some(BigDecimalValue(expected._2, Some(Position(24, 1, 25)))))
+        }
+      }
+    }
+
+    "parse input values independently" in {
+      val expectedTable = List(
+        "null" → NullValue(Some(Position(0, 1, 1))),
+        "1.234" → BigDecimalValue(BigDecimal("1.234"), Some(Position(0, 1, 1))),
+        "HELLO_WORLD" → EnumValue("HELLO_WORLD", Some(Position(0, 1, 1))),
+        "[1, 2 \"test\"]" → ListValue(
+          List(
+            BigIntValue(1, Some(Position(1, 1, 2))),
+            BigIntValue(2, Some(Position(4, 1, 5))),
+            StringValue("test", Some(Position(6, 1, 7)))),
+          Some(Position(0, 1, 1))),
+        "{a: 1, b: \"foo\" c: {nest: true, oops: null, e: FOO_BAR}}" →
+          ObjectValue(
+            List(
+              ObjectField("a", BigIntValue(1, Some(Position(4, 1, 5))), Some(Position(1, 1, 2))),
+              ObjectField("b", StringValue("foo", Some(Position(10, 1, 11))), Some(Position(7, 1, 8))),
+              ObjectField("c",
+                ObjectValue(
+                  List(
+                    ObjectField("nest", BooleanValue(true, Some(Position(26, 1, 27))), Some(Position(20, 1, 21))),
+                    ObjectField("oops", NullValue(Some(Position(38, 1, 39))), Some(Position(32, 1, 33))),
+                    ObjectField("e", EnumValue("FOO_BAR", Some(Position(47, 1, 48))), Some(Position(44, 1, 45)))),
+                  Some(Position(19, 1, 20))),
+                Some(Position(16, 1, 17)))),
+            Some(Position(0, 1, 1))),
+        """
+         {
+           a: 1
+
+           # This is a test comment!
+           b: "foo"
+         }
+        """ →
+          ObjectValue(
+            List(
+              ObjectField("a", BigIntValue(1, Some(Position(26, 3, 15))), Some(Position(23, 3, 12))),
+              ObjectField("b", StringValue("foo", Some(Position(80, 6, 15))), Some(Position(77, 6, 12)))),
+            Some(Position(10, 2, 10)))
+
+      )
+
+      expectedTable foreach { expected ⇒
+        withClue(s"Parsing ${expected._1}.") {
+          QueryParser.parseInput(expected._1) should be (Success(expected._2))
         }
       }
     }

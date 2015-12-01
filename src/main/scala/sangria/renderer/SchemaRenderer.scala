@@ -1,6 +1,6 @@
 package sangria.renderer
 
-import sangria.integration.InputUnmarshaller
+import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 
 object SchemaRenderer {

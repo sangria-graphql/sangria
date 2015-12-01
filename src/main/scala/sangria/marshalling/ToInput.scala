@@ -1,12 +1,9 @@
-package sangria.integration
+package sangria.marshalling
 
-import language.higherKinds
-
-import sangria.util.tag
 import sangria.util.tag._
-import sangria.integration.ScalaInput.scalaInput
 
 import scala.annotation.implicitNotFound
+import scala.language.higherKinds
 
 @implicitNotFound("Type ${Val} cannot be used as a default value. Please consider defining an implicit instance of `ToInput` for it.")
 trait ToInput[Val, Raw] {
@@ -15,7 +12,7 @@ trait ToInput[Val, Raw] {
 
 object ToInput {
   class ScalarToInput[T] extends ToInput[T, T @@ ScalaInput] {
-    def toInput(value: T) = (scalaInput(value), InputUnmarshaller.scalaInputUnmarshaller)
+    def toInput(value: T) = (ScalaInput.scalaInput(value), InputUnmarshaller.scalaInputUnmarshaller)
   }
 
   implicit def normalScalaInput[T] = new ToInput[T @@ ScalaInput, T @@ ScalaInput] {

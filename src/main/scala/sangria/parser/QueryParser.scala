@@ -93,9 +93,11 @@ trait Ignored extends PositionTracking { this: Parser ⇒
 
 }
 
-trait Document { this: Parser with Operations with Ignored with Fragments with Operations ⇒
+trait Document { this: Parser with Operations with Ignored with Fragments with Operations with Values ⇒
 
   def Document = rule { Ignored.* ~ trackPos ~ Definition.+ ~ EOI ~> ((pos, d) ⇒ ast.Document(d.toList, Some(pos))) }
+
+  def InputDocument = rule { Ignored.* ~ ValueConst ~ EOI }
 
   def Definition = rule { OperationDefinition | FragmentDefinition }
 
@@ -174,7 +176,7 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 trait Values { this: Parser with Tokens with Ignored with Operations ⇒
 
   def ValueConst: Rule1[ast.Value] = rule {
-    NumberValue | StringValue | BooleanValue | EnumValue | ListValueConst | ObjectValueConst
+    NumberValue | StringValue | BooleanValue | NullValue | EnumValue | ListValueConst | ObjectValueConst
   }
 
   def Value: Rule1[ast.Value] = rule {
@@ -182,6 +184,7 @@ trait Values { this: Parser with Tokens with Ignored with Operations ⇒
     NumberValue |
     StringValue |
     BooleanValue |
+    NullValue |
     EnumValue |
     ListValue |
     ObjectValue
@@ -198,7 +201,9 @@ trait Values { this: Parser with Tokens with Ignored with Operations ⇒
 
   def Null = rule { Keyword("null") }
 
-  def EnumValue = rule { !True ~ !False ~ !Null ~ trackPos ~ Name ~> ((pos, name) ⇒ ast.EnumValue(name, Some(pos))) }
+  def NullValue = rule { trackPos ~ Null ~> (pos ⇒ ast.NullValue(Some(pos))) }
+
+  def EnumValue = rule { !True ~ !False ~ trackPos ~ Name ~> ((pos, name) ⇒ ast.EnumValue(name, Some(pos))) }
 
   def ListValueConst = rule { trackPos ~ ws('[') ~ ValueConst.* ~ ws(']')  ~> ((pos, v) ⇒ ast.ListValue(v.toList, Some(pos))) }
 
@@ -251,6 +256,19 @@ object QueryParser {
     parser.Document.run() match {
       case Success(res) ⇒
         scheme.success(res.copy(sourceMapper = Some(new Parboiled2SourceMapper(input))))
+      case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
+      case Failure(e) ⇒ scheme.failure(e)
+    }
+  }
+
+  def parseInput(input: String)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result =
+    parseInput(ParserInput(input))( scheme)
+
+  def parseInput(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result = {
+    val parser = new QueryParser(input)
+
+    parser.InputDocument.run() match {
+      case Success(res) ⇒ scheme.success(res)
       case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) ⇒ scheme.failure(e)
     }

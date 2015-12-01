@@ -1,13 +1,14 @@
 package sangria.schema
 
+import sangria.marshalling.{ScalaInput, ToInput}
+
 import language.higherKinds
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
-import sangria.integration.ToInput
 import sangria.macros._
 import sangria.util.AwaitSupport
-import sangria.integration.ScalaInput.scalaInput
+import ScalaInput.scalaInput
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

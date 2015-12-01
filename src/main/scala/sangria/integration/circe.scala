@@ -1,6 +1,7 @@
 package sangria.integration
 
 import io.circe._
+import sangria.marshalling.{InputUnmarshaller, ToInput, ResultMarshaller}
 
 object circe {
   implicit object CirceResultMarshaller extends ResultMarshaller {
@@ -48,8 +49,13 @@ object circe {
       else
         throw new IllegalStateException(s"$node is not a scalar value")
 
+    def isEnumNode(node: Json) = node.isString
+
     def isScalarNode(node: Json) =
       node.isBoolean || node.isNumber || node.isString
+
+    def isVariableNode(node: Json) = false
+    def getVariableName(node: Json) = throw new IllegalArgumentException("variables are not supported")
 
     def render(node: Json) = node.noSpaces
   }

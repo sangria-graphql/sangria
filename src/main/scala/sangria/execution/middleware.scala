@@ -1,9 +1,10 @@
 package sangria.execution
 
+import sangria.marshalling.InputUnmarshaller
+
 import language.{implicitConversions, existentials}
 
 import sangria.ast
-import sangria.integration.InputUnmarshaller
 import sangria.schema.{Action, Context}
 
 

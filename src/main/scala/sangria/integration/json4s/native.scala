@@ -1,8 +1,8 @@
 package sangria.integration.json4s
 
 import org.json4s.JsonAST.{JObject, JValue}
-import sangria.integration.{InputUnmarshaller, ToInput}
 import org.json4s.native.JsonMethods.{render ⇒ jsonRender, pretty, compact}
+import sangria.marshalling.{InputUnmarshaller, ToInput}
 
 object native extends Json4sNativeSupportLowPrioImplicits {
   implicit object Json4sNativeResultMarshaller extends Json4sResultMarshaller {

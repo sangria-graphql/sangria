@@ -1,5 +1,6 @@
 package sangria.integration
 
+import sangria.marshalling.{InputUnmarshaller, ToInput, ResultMarshaller}
 import spray.json._
 
 
@@ -44,10 +45,16 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
       case JsString(s) ⇒ s
       case _ ⇒ throw new IllegalStateException(s"$node is not a scalar value")
     }
+
+    def isEnumNode(node: JsValue) = node.isInstanceOf[JsString]
+
     def isScalarNode(node: JsValue) = node match {
       case _: JsBoolean | _: JsNumber | _: JsString ⇒ true
       case _ ⇒ false
     }
+
+    def isVariableNode(node: JsValue) = false
+    def getVariableName(node: JsValue) = throw new IllegalArgumentException("variables are not supported")
 
     def render(node: JsValue) = node.compactPrint
   }

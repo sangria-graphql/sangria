@@ -2,7 +2,7 @@ package sangria.starWars
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
-import sangria.integration.InputUnmarshaller
+import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.starWars.TestSchema.StarWarsSchema

@@ -1,7 +1,7 @@
 package sangria.schema
 
 import sangria.execution.{FieldTag, ValueCoercionHelper}
-import sangria.integration.ToInput
+import sangria.marshalling.ToInput
 
 import language.{implicitConversions, existentials}
 

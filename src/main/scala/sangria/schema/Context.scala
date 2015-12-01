@@ -1,7 +1,8 @@
 package sangria.schema
 
 import sangria.execution.{FieldTag, DeprecationTracker, ValueCoercionHelper, Resolver}
-import sangria.integration.{InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.marshalling.InputUnmarshaller
+import sangria.marshalling.{ToInput, ResultMarshaller}
 import sangria.parser.SourceMapper
 
 import language.implicitConversions
@@ -160,7 +161,7 @@ trait WithInputTypeRendering[Ctx] {
     val (v, toInput) = value.asInstanceOf[(Any, ToInput[Any, Any])]
     val (inputValue, iu) = toInput.toInput(v)
 
-    coercionHelper.coerceInputValue(tpe, Nil, inputValue)(iu) match {
+    coercionHelper.coerceInputValue(tpe, Nil, inputValue, None)(iu) match {
       case Right(Some(coerced)) ⇒ renderCoercedInputValue(tpe, coerced, m)
       case _ ⇒ m.nullNode
     }

@@ -1,7 +1,7 @@
 package sangria.execution
 
 import sangria.ast
-import sangria.integration.InputUnmarshaller
+import sangria.marshalling.InputUnmarshaller
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema._
@@ -46,9 +46,12 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     if (violations.isEmpty) {
       val fieldPath = s"$$${definition.name}" :: Nil
 
-      if (input.isEmpty || !um.isDefined(input.get))
-        definition.defaultValue map (coerceAstValue(tpe, fieldPath, _, Map.empty)) getOrElse Right(None)
-      else coerceInputValue(tpe, fieldPath, input.get)
+      if (input.isEmpty || !um.isDefined(input.get)) {
+        import sangria.marshalling.queryAst.queryAstInputUnmarshaller
+
+        definition.defaultValue map (coerceInputValue(tpe, fieldPath, _, None)) getOrElse Right(None)
+      } else
+        coerceInputValue(tpe, fieldPath, input.get, None)
     } else Left(violations.map(violation ⇒
       VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.position.toList)))
   }
@@ -72,8 +75,10 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
           val argPath = argDef.name :: Nil
           val astValue = astArgMap get argDef.name map (_.value)
 
+          import sangria.marshalling.queryAst.queryAstInputUnmarshaller
+
           resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, acc,
-            astValue map (coerceAstValue(argDef.argumentType, argPath, _, variables)) getOrElse Right(None), allowErrorsOnDefault = true)
+            astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables))) getOrElse Right(None), allowErrorsOnDefault = true)
       }
 
       val errors = res.collect{case (_, Left(errors)) ⇒ errors}.toVector.flatten

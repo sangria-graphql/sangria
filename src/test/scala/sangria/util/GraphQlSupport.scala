@@ -2,7 +2,7 @@ package sangria.util
 
 import org.scalatest.Matchers
 import sangria.execution.{HandledException, Executor}
-import sangria.integration.{ResultMarshaller, InputUnmarshaller}
+import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.parser.QueryParser
 import sangria.schema.{DeferredResolver, Schema}
 import sangria.validation.QueryValidator

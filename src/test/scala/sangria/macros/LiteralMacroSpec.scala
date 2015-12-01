@@ -273,5 +273,40 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                 Field(None, "query", Nil, Nil, Nil, Some(Position(994, 50, 3)))), Some(Position(950, 48, 1)))), Some(Position(288, 8, 1)), None)
       }
     }
+
+    "parse input values with macro independently" in {
+      val ast = graphqlInput"""
+        {
+          a: null
+
+          # test comment
+          b: 1
+          c: {
+            someNull: null
+            enum: HELLO
+          }
+        }
+      """
+
+      ast should be (
+        ObjectValue(
+          List(
+            ObjectField("a", NullValue(Some(Position(24, 3, 14))), Some(Position(21, 3, 11))),
+            ObjectField("b", BigIntValue(1, Some(Position(68, 6, 14))), Some(Position(65, 6, 11))),
+            ObjectField("c",
+              ObjectValue(
+                List(
+                  ObjectField("someNull", NullValue(Some(Position(107, 8, 23))), Some(Position(97, 8, 13))),
+                  ObjectField("enum", EnumValue("HELLO", Some(Position(130, 9, 19))), Some(Position(124, 9, 13)))),
+                Some(Position(83, 7, 14))),
+              Some(Position(80, 7, 11)))),
+          Some(Position(9, 2, 9))))
+    }
+
+    "fail compilation on syntax error in input values" in {
+      """
+        val ast = graphqlInput" {a: 1 c} "
+      """ shouldNot compile
+    }
   }
 }

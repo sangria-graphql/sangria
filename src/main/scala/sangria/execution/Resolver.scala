@@ -2,7 +2,7 @@ package sangria.execution
 
 import org.parboiled2.Position
 import sangria.ast
-import sangria.integration.ResultMarshaller
+import sangria.marshalling.ResultMarshaller
 import sangria.parser.SourceMapper
 import sangria.schema._
 
@@ -648,6 +648,7 @@ object Resolver {
     case ast.FloatValue(f, _) ⇒ marshaller.floatNode(f)
     case ast.BigDecimalValue(f, _) ⇒ marshaller.bigDecimalNode(f)
     case ast.BooleanValue(b, _) ⇒ marshaller.booleanNode(b)
+    case ast.NullValue(_) ⇒ marshaller.nullNode
     case ast.EnumValue(enum, _) ⇒ marshaller.stringNode(enum)
     case ast.ListValue(values, _) ⇒ marshaller.arrayNode(values.toVector map (marshalValue(_, marshaller)))
     case ast.ObjectValue(values, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalValue(v.value, marshaller)))

@@ -4,8 +4,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
-import sangria.integration.ResultMarshaller
 import sangria.macros._
+import sangria.marshalling.ResultMarshaller
 import sangria.schema._
 import sangria.util.AwaitSupport
 

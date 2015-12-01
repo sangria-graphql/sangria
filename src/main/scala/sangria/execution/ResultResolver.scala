@@ -1,11 +1,8 @@
 package sangria.execution
 
 import org.parboiled2.Position
-import sangria.ast.AstNode
-import sangria.integration.ResultMarshaller
+import sangria.marshalling.ResultMarshaller
 import sangria.validation.{Violation, AstNodeLocation}
-
-import scala.collection.immutable.VectorBuilder
 
 class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException]) {
   def marshalErrors(errors: ErrorRegistry) = {
