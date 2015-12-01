@@ -102,38 +102,38 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """)
 
-    "variable not defined" in expectFails(
+    "variable not defined" in expectFailsPosList(
       """
         query Foo($a: String, $b: String, $c: String) {
           field(a: $a, b: $b, c: $c, d: $d)
         }
       """,
       List(
-        "Variable '$d' is not defined." → Some(Pos(3, 41))
+        "Variable '$d' is not defined by operation 'Foo'." → List(Pos(3, 41), Pos(2, 9))
       ))
 
-    "variable not defined by un-named query" in expectFails(
+    "variable not defined by un-named query" in expectFailsPosList(
       """
         {
           field(a: $a)
         }
       """,
       List(
-        "Variable '$a' is not defined." → Some(Pos(3, 20))
+        "Variable '$a' is not defined." → List(Pos(3, 20), Pos(2, 9))
       ))
 
-    "multiple variables not defined" in expectFails(
+    "multiple variables not defined" in expectFailsPosList(
       """
         query Foo($b: String) {
           field(a: $a, b: $b, c: $c)
         }
       """,
       List(
-        "Variable '$a' is not defined." → Some(Pos(3, 20)),
-        "Variable '$c' is not defined." → Some(Pos(3, 34))
+        "Variable '$a' is not defined by operation 'Foo'." → List(Pos(3, 20), Pos(2, 9)),
+        "Variable '$c' is not defined by operation 'Foo'." → List(Pos(3, 34), Pos(2, 9))
       ))
 
-    "variable in fragment not defined by un-named query" in expectFails(
+    "variable in fragment not defined by un-named query" in expectFailsPosList(
       """
         {
           ...FragA
@@ -143,7 +143,7 @@ class NoUndefinedVariablesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' is not defined." → Some(Pos(6, 20))
+        "Variable '$a' is not defined." → List(Pos(6, 20), Pos(2, 9))
       ))
 
     "variable in fragment not defined by operation" in expectFailsPosList(

@@ -110,6 +110,8 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typeInfo: TypeInfo) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
+  import ValidationContext.VariableUsage
+
   private val errors = ListBuffer[Violation]()
 
   val ignoredVisitors = MutableSet[ValidationRule#AstValidatingVisitor]()
@@ -122,6 +124,8 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
 
   private val fragmentSpreadsCache = TrieMap[Int, List[ast.FragmentSpread]]()
   private val recursivelyReferencedFragmentsCache = TrieMap[Int, List[ast.FragmentDefinition]]()
+  private val variableUsages = TrieMap[Int, List[VariableUsage]]()
+  private val recursiveVariableUsages = TrieMap[Int, List[VariableUsage]]()
 
   def getFragmentSpreads(astNode: ast.SelectionContainer) =
     fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {
@@ -175,6 +179,41 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
       frags.toList
     })
 
+  def getVariableUsages(astNode: ast.SelectionContainer) =
+    variableUsages.getOrElseUpdate(astNode.cacheKeyHash, {
+      val usages = ListBuffer[VariableUsage]()
+      val typeInfo = new TypeInfo(schema)
+
+      AstVisitor.visitAst(
+        doc = astNode,
+        onEnter = node ⇒ {
+          typeInfo.enter(node)
+
+          node match {
+            case _: ast.VariableDefinition ⇒
+              Skip
+            case vv: ast.VariableValue ⇒
+              usages += VariableUsage(vv, typeInfo.inputType)
+              Continue
+            case _ ⇒
+              Continue
+          }
+        },
+        onLeave = node ⇒ {
+          typeInfo.leave(node)
+          Continue
+        }
+      )
+
+      usages.toList
+    })
+
+  def getRecursiveVariableUsages(operation: ast.OperationDefinition) =
+    recursiveVariableUsages.getOrElseUpdate(operation.cacheKeyHash,
+      getRecursivelyReferencedFragments(operation).foldLeft(getVariableUsages(operation)) {
+        case (acc, fragment) ⇒ acc ++ getVariableUsages(fragment)
+      })
+
   def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
     !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
 
@@ -187,6 +226,8 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
 }
 
 object ValidationContext {
+  case class VariableUsage(node: ast.VariableValue, tpe: Option[InputType[_]])
+
   def isValidLiteralValue(tpe: InputType[_], value: ast.Value): Boolean = (tpe, value) match {
     case (_, _: ast.VariableValue) ⇒ true
     case (OptionInputType(ofType), v) ⇒

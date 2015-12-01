@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand._
 import sangria.validation._
 
-import scala.collection.mutable.{ListBuffer, Map ⇒ MutableMap, Set ⇒ MutableSet}
+import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 
 /**
@@ -15,40 +15,27 @@ import scala.language.postfixOps
  */
 class NoUnusedVariables extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val visitSpreadFragments = true
-
-    val visitedFragmentNames = MutableSet[String]()
     val variableDefs = ListBuffer[ast.VariableDefinition]()
-    val variableNameUsed = MutableSet[String]()
 
     override val onEnter: ValidationVisit = {
-      case o: ast.OperationDefinition ⇒
-        visitedFragmentNames.clear()
+      case _: ast.OperationDefinition ⇒
         variableDefs.clear()
-        variableNameUsed.clear()
         Right(Continue)
-      case vd: ast.VariableDefinition ⇒
-        variableDefs += vd
 
-        // Do not visit deeper, or else the defined variable name will be visited.
-        Right(Skip)
-      case vv: ast.VariableValue ⇒
-        variableNameUsed += vv.name
+      case varDef: ast.VariableDefinition ⇒
+        variableDefs += varDef
         Right(Continue)
-      case fs: ast.FragmentSpread if visitedFragmentNames contains fs.name ⇒
-        Right(Skip)
-      case fs: ast.FragmentSpread ⇒
-        visitedFragmentNames += fs.name
-        Right(Continue)
-     }
+    }
 
     override def onLeave: ValidationVisit = {
-      case o: ast.OperationDefinition ⇒
-        val errors = variableDefs.toVector
-          .filter(vd ⇒ !variableNameUsed.contains(vd.name))
-          .map(vd ⇒ UnusedVariableViolation(vd.name, ctx.sourceMapper, vd.position.toList))
+      case operation: ast.OperationDefinition ⇒
+        val usages = ctx.getRecursiveVariableUsages(operation)
+        val variableNameUsed = usages.map(_.node.name).toSet
 
-        if (errors.nonEmpty) Left(errors) else Right(Continue)
+        val errors = variableDefs.filterNot(vd ⇒ variableNameUsed.contains(vd.name)).toVector.map(vd ⇒
+          UnusedVariableViolation(vd.name, ctx.sourceMapper, vd.position.toList))
+
+        if (errors.nonEmpty) Left(errors.distinct) else Right(Continue)
     }
   }
 }

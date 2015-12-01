@@ -154,7 +154,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """)
 
-    "Int ⇒ Int!" in expectFails(
+    "Int ⇒ Int!" in expectFailsPosList(
       """
         query Query($intArg: Int)
         {
@@ -164,10 +164,10 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." → Some(Pos(5, 47))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." → List(Pos(2, 21), Pos(5, 47))
       ))
 
-    "Int ⇒ Int! within fragment" in expectFails(
+    "Int ⇒ Int! within fragment" in expectFailsPosList(
       """
         fragment nonNullIntArgFieldFrag on ComplicatedArgs {
           nonNullIntArgField(nonNullIntArg: $intArg)
@@ -181,10 +181,10 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." → Some(Pos(3, 45))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." → List(Pos(6, 21), Pos(3, 45))
       ))
 
-    "Int ⇒ Int! within nested fragment" in expectFails(
+    "Int ⇒ Int! within nested fragment" in expectFailsPosList(
       """
         fragment outerFrag on ComplicatedArgs {
           ...nonNullIntArgFieldFrag
@@ -202,10 +202,10 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." → Some(Pos(7, 45))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." → List(Pos(10, 21), Pos(7, 45))
       ))
 
-    "String over Boolean" in expectFails(
+    "String over Boolean" in expectFailsPosList(
       """
         query Query($stringVar: String)
         {
@@ -215,10 +215,10 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean'." → Some(Pos(5, 41))
+        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean'." → List(Pos(2, 21), Pos(5, 41))
       ))
 
-    "String ⇒ [String]" in expectFails(
+    "String ⇒ [String]" in expectFailsPosList(
       """
         query Query($stringVar: String)
         {
@@ -228,10 +228,10 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$stringVar' of type 'String' used in position expecting type '[String]'." → Some(Pos(5, 47))
+        "Variable '$stringVar' of type 'String' used in position expecting type '[String]'." → List(Pos(2, 21), Pos(5, 47))
       ))
 
-    "Boolean ⇒ Boolean! in directive" in expectFails(
+    "Boolean ⇒ Boolean! in directive" in expectFailsPosList(
       """
         query Query($boolVar: Boolean)
         {
@@ -239,10 +239,10 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$boolVar' of type 'Boolean' used in position expecting type 'Boolean!'." → Some(Pos(4, 28))
+        "Variable '$boolVar' of type 'Boolean' used in position expecting type 'Boolean!'." → List(Pos(2, 21), Pos(4, 28))
       ))
 
-    "String ⇒ Boolean! in directive" in expectFails(
+    "String ⇒ Boolean! in directive" in expectFailsPosList(
       """
         query Query($stringVar: String)
         {
@@ -250,7 +250,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean!'." → Some(Pos(4, 28))
+        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean!'." → List(Pos(2, 21), Pos(4, 28))
       ))
   }
 }

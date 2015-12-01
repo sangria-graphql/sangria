@@ -2,57 +2,56 @@ package sangria.validation.rules
 
 import scala.language.postfixOps
 
-import sangria.schema.{Named, ListInputType, OptionInputType, InputType}
+import sangria.schema.{OptionInputType, InputType}
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand._
-import sangria.renderer.{SchemaRenderer, QueryRenderer}
+import sangria.renderer.SchemaRenderer
 import sangria.validation._
 
-import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap}
+import scala.collection.mutable.{Map ⇒ MutableMap}
 
 /**
  * Variables passed to field arguments conform to type
  */
 class VariablesInAllowedPosition extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val visitSpreadFragments = true
-
     val varDefs = MutableMap[String, ast.VariableDefinition]()
-    val visitedFragmentNames = MutableSet[String]()
 
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition ⇒
         varDefs.clear()
-        visitedFragmentNames.clear()
         Right(Continue)
+
       case varDef: ast.VariableDefinition ⇒
         varDefs(varDef.name) = varDef
         Right(Continue)
-      case ast.FragmentSpread(name, _, _) if visitedFragmentNames contains name ⇒
-        Right(Skip)
-      case ast.FragmentSpread(name, _, _) ⇒
-        visitedFragmentNames += name
-        Right(Continue)
-      case ast.VariableValue(name, pos) ⇒
-        val res = for {
-          varDef ← varDefs get name
-          varTpe ← ctx.schema.getInputType(varDef.tpe)
-          inputType ← ctx.typeInfo.inputType
-        } yield if (TypeComparators.isSubType(ctx.schema, effectiveType(varTpe, varDef), inputType))
-          Vector.empty
-        else
-          Vector(BadVarPositionViolation(
-            name,
-            SchemaRenderer.renderTypeName(varTpe),
-            SchemaRenderer.renderTypeName(inputType),
-            ctx.sourceMapper,
-            pos.toList))
+    }
 
-        res match {
-          case Some(errors) if errors.nonEmpty ⇒ Left(errors)
-          case _ ⇒ Right(Continue)
+    override def onLeave: ValidationVisit = {
+      case operation: ast.OperationDefinition ⇒
+        val usages = ctx.getRecursiveVariableUsages(operation)
+
+        // A var type is allowed if it is the same or more strict (e.g. is
+        // a subtype of) than the expected type. It can be more strict if
+        // the variable type is non-null when the expected type is nullable.
+        // If both are list types, the variable item type can be more strict
+        // than the expected item type (contravariant).
+        val errors = usages.toVector.flatMap { usage ⇒
+          for {
+            varDef ← varDefs.get(usage.node.name)
+            tpe ← usage.tpe
+            inputTpe ← ctx.schema.getInputType(varDef.tpe)
+            if !TypeComparators.isSubType(ctx.schema, effectiveType(inputTpe, varDef), tpe)
+          } yield BadVarPositionViolation(
+            usage.node.name,
+            SchemaRenderer.renderTypeName(inputTpe),
+            SchemaRenderer.renderTypeName(tpe),
+            ctx.sourceMapper,
+            varDef.position.toList ++ usage.node.position.toList)
         }
+
+        if (errors.nonEmpty) Left(errors.distinct) else Right(Continue)
     }
 
     // If a variable definition has a default value, it's effectively non-null.

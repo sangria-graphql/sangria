@@ -47,7 +47,7 @@ object SimpleGraphQlSupport extends AwaitSupport with Matchers {
     expectedErrors foreach (expected ⇒ errors should contain (expected))
   }
 
-  def checkContainsErrors[T](schema: Schema[_, _], data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, Option[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit = {
+  def checkContainsErrors[T](schema: Schema[_, _], data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, List[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit = {
     val result = executeTestQuery(schema, data, query, args, validateQuery = validateQuery).asInstanceOf[Map[String, Any]]
 
     result("data") should be (expectedData)
@@ -57,16 +57,17 @@ object SimpleGraphQlSupport extends AwaitSupport with Matchers {
     errors should have size expectedErrorStrings.size
 
     expectedErrorStrings foreach { case(expected, pos) ⇒
-      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") getOrElse ""}. Actual:\n$errors") {
+      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString ","}. Actual:\n$errors") {
         errors exists { error ⇒
           val message = error("message").asInstanceOf[String]
 
           message.contains(expected) && {
-            pos map { p ⇒
-              val location = error("locations").asInstanceOf[Seq[Map[String, Any]]](0)
-
-              location("line") == p.line && location("column") == p.col
-            } getOrElse true
+            error.get("locations") match {
+              case None if pos.nonEmpty ⇒ false
+              case None ⇒ true
+              case Some(locs: Seq[Map[String, Any]] @unchecked) ⇒
+                locs.map(loc ⇒ Pos(loc("line").asInstanceOf[Int], loc("column").asInstanceOf[Int])) == pos
+            }
           }
         } should be(true)
       }
@@ -87,6 +88,9 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
     SimpleGraphQlSupport.checkErrors(schema, data, query, expectedData, expectedErrors, args, userContext, resolver, validateQuery)
 
   def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, Option[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
+    SimpleGraphQlSupport.checkContainsErrors(schema, data, query, expectedData, expectedErrorStrings map {case (error, pos) ⇒ error → pos.toList}, args, validateQuery)
+
+  def checkContainsErrorPosList[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, List[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
     SimpleGraphQlSupport.checkContainsErrors(schema, data, query, expectedData, expectedErrorStrings, args, validateQuery)
 }
 

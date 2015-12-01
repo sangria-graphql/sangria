@@ -361,7 +361,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
          }
         """,
         null,
-        List("Cannot query field 'color' on 'Fruit'." → Some(Pos(5, 15))))
+        List("Cannot query field 'color' on 'Fruit'." → List(Pos(5, 15))))
     }
   }
 

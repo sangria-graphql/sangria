@@ -96,19 +96,19 @@ class EnumTypeSpec extends WordSpec with Matchers with GraphQlSupport {
       Map("data" → Map("colorEnum" → "GREEN")),
       JsObject("color" → JsNumber(1)))
 
-    "does not accept string variables as enum input" in checkContainsErrors(
+    "does not accept string variables as enum input" in checkContainsErrorPosList(
       (),
       """query test($color: String!) { colorEnum(fromEnum: $color) }""",
       null,
-      List("Variable '$color' of type 'String!' used in position expecting type 'Color'." → Some(Pos(1, 51))),
+      List("Variable '$color' of type 'String!' used in position expecting type 'Color'." → List(Pos(1, 12), Pos(1, 51))),
       JsObject("color" → JsString("BLUE")),
       validateQuery = true)
 
-    "does not accept internal value variable as enum input" in checkContainsErrors(
+    "does not accept internal value variable as enum input" in checkContainsErrorPosList(
       (),
       """query test($color: Int!) { colorEnum(fromEnum: $color) }""",
       null,
-      List("Variable '$color' of type 'Int!' used in position expecting type 'Color'." → Some(Pos(1, 48))),
+      List("Variable '$color' of type 'Int!' used in position expecting type 'Color'." → List(Pos(1, 12), Pos(1, 48))),
       JsObject("color" → JsNumber(2)),
       validateQuery = true)
 
