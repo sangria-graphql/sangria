@@ -629,7 +629,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         List(
           "Argument 'complexArg' expected type 'ComplexInput' but got: {intField: 4}" → Some(Pos(4, 43))))
 
-      "Partial object, invalid field type" in expectFails(
+      "Partial object, invalid field type" in expectFailsPosList(
         """
           {
             complicatedArgs {
@@ -641,9 +641,10 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument 'complexArg' expected type 'ComplexInput' but got: {stringListField: [\"one\", 2], requiredField: true}" → Some(Pos(4, 43))))
+          "Argument 'complexArg' expected type 'ComplexInput' but got: {stringListField: [\"one\", 2], requiredField: true}. Reason: [in field 'stringListField'] [at index #1] String value expected" →
+              List(Pos(4, 43), Pos(5, 34))))
 
-      "Partial object, unknown field arg" in expectFails(
+      "Partial object, unknown field arg" in expectFailsPosList(
         """
           {
             complicatedArgs {
@@ -655,7 +656,8 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument 'complexArg' expected type 'ComplexInput' but got: {requiredField: true, unknownField: \"value\"}" → Some(Pos(4, 43))))
+          "Argument 'complexArg' expected type 'ComplexInput' but got: {requiredField: true, unknownField: \"value\"}. Reason: Unknown field 'unknownField' is not defined in the input type 'ComplexInput'" →
+              List(Pos(4, 43), Pos(6, 17))))
     }
 
     "Directive arguments" should {

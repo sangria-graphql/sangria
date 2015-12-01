@@ -25,13 +25,20 @@ class DefaultValuesOfCorrectType extends ValidationRule {
               SchemaRenderer.renderTypeName(OptionInputType(it)),
               ctx.sourceMapper,
               d.position.toList)))
-          case (Some(it), Some(defaultValue)) if !isValidLiteralValue(it, defaultValue) ⇒
-            Left(Vector(BadValueForDefaultArgViolation(
-              name,
-              SchemaRenderer.renderTypeName(it),
-              QueryRenderer.render(defaultValue),
-              ctx.sourceMapper,
-              defaultValue.position.toList)))
+          case (Some(it), Some(defaultValue)) ⇒
+            val violations = isValidLiteralValue(it, defaultValue, ctx.sourceMapper)
+
+            if (violations.nonEmpty)
+              Left(violations.map(violation ⇒
+                BadValueForDefaultArgViolation(
+                  name,
+                  SchemaRenderer.renderTypeName(it),
+                  QueryRenderer.render(defaultValue),
+                  violation,
+                  ctx.sourceMapper,
+                  defaultValue.position.toList)))
+            else
+              Right(Continue)
           case _ ⇒
             Right(Continue)
         }

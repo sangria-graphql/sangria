@@ -13,6 +13,7 @@ trait WithViolations extends UserFacingError{
 }
 
 class ExecutionError(message: String, val sourceMapper: Option[SourceMapper] = None, val positions: List[Position] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError {
+  override def simpleErrorMessage = super.getMessage
   override def getMessage = super.getMessage + astLocation
 }
 
