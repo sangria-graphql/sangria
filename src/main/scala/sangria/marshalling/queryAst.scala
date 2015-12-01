@@ -8,12 +8,12 @@ object queryAst {
 
   implicit val queryAstResultMarshaller = new QueryAstResultMarshaller
 
-  private object PlayJsonToInput extends ToInput[ast.Value, ast.Value] {
+  private object QueryAstToInput extends ToInput[ast.Value, ast.Value] {
     def toInput(value: ast.Value) = (value, queryAstInputUnmarshaller)
   }
 
-  implicit def playJsonToInput[T <: ast.Value]: ToInput[T, ast.Value] =
-    PlayJsonToInput.asInstanceOf[ToInput[T, ast.Value]]
+  implicit def queryAstToInput[T <: ast.Value]: ToInput[T, ast.Value] =
+    QueryAstToInput.asInstanceOf[ToInput[T, ast.Value]]
 }
 
 class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {

@@ -4,7 +4,7 @@ import org.parboiled2.Position
 import sangria.ast
 import sangria.marshalling.{InputUnmarshaller, ToInput}
 import sangria.parser.SourceMapper
-import sangria.renderer.{QueryRenderer, SchemaRenderer}
+import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.validation._
 
