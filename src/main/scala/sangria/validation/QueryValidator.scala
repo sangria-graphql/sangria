@@ -60,22 +60,11 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     doc = queryAst,
     onEnter = node ⇒ {
       ctx.typeInfo.enter(node)
+
       visitors foreach { visitor ⇒
-        if (ctx.validVisitor(visitor)) {
-          if (visitor.visitSpreadFragments && node.isInstanceOf[ast.FragmentDefinition] && topLevel)
-            handleResult(ctx, node, visitor, Right(Skip))
-          else if (visitor.onEnter.isDefinedAt(node))
-            handleResult(ctx, node, visitor, visitor.onEnter(node))
+        if (ctx.validVisitor(visitor) && visitor.onEnter.isDefinedAt(node)) {
+          handleResult(ctx, node, visitor, visitor.onEnter(node))
         }
-      }
-
-      node match {
-        case spread: ast.FragmentSpread if ctx.fragments contains spread.name ⇒
-          val interested = visitors.filter(v ⇒ v.visitSpreadFragments && ctx.validVisitor(v))
-
-          if (interested.nonEmpty)
-            validateUsingRules(ctx.fragments(spread.name), ctx, interested, false)
-        case _ ⇒ // do nothing
       }
 
       Continue

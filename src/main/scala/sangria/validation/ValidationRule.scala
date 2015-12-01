@@ -6,8 +6,6 @@ trait ValidationRule {
   type ValidationVisit = PartialFunction[AstNode, Either[Vector[Violation], AstVisitorCommand.Value]]
 
   trait AstValidatingVisitor {
-    def visitSpreadFragments: Boolean = false
-
     def onEnter: ValidationVisit = PartialFunction.empty
     def onLeave: ValidationVisit = PartialFunction.empty
   }
