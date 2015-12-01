@@ -9,7 +9,7 @@ trait UserFacingError {
 }
 
 trait WithViolations extends UserFacingError{
-  def violations: List[Violation]
+  def violations: Vector[Violation]
 }
 
 class ExecutionError(message: String, val sourceMapper: Option[SourceMapper] = None, val positions: List[Position] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError {
@@ -17,11 +17,11 @@ class ExecutionError(message: String, val sourceMapper: Option[SourceMapper] = N
   override def getMessage = super.getMessage + astLocation
 }
 
-case class VariableCoercionError(violations: List[Violation]) extends ExecutionError(
+case class VariableCoercionError(violations: Vector[Violation]) extends ExecutionError(
   s"Error during variable coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}") with WithViolations
 
-case class ValidationError(violations: List[Violation]) extends ExecutionError(
+case class ValidationError(violations: Vector[Violation]) extends ExecutionError(
   s"Query does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}") with WithViolations
 
-case class AttributeCoercionError(violations: List[Violation]) extends ExecutionError(
+case class AttributeCoercionError(violations: Vector[Violation]) extends ExecutionError(
   s"Error during attribute coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}") with WithViolations

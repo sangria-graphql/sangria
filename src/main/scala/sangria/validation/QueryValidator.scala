@@ -12,7 +12,7 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.{Stack ⇒ MutableStack, Set ⇒ MutableSet, Map ⇒ MutableMap, ListBuffer}
 
 trait QueryValidator {
-  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): List[Violation]
+  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
 }
 
 object QueryValidator {
@@ -43,14 +43,14 @@ object QueryValidator {
   )
 
   val empty = new QueryValidator {
-    def validateQuery(schema: Schema[_, _], queryAst: ast.Document): List[Violation] = Nil
+    def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = Vector.empty
   }
 
   val default = new RuleBasedQueryValidator(allRules)
 }
 
 class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
-  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): List[Violation] = {
+  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
     val ctx = new ValidationContext(schema, queryAst, new TypeInfo(schema))
 
     validateUsingRules(queryAst, ctx, rules map (_ visitor ctx), true)
@@ -213,7 +213,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
   def addViolation(v: Violation) = errors += v
   def addViolations(vs: Vector[Violation]) = errors ++= vs
 
-  def violations = errors.toList
+  def violations = errors.toVector
 }
 
 object ValidationContext {
@@ -262,7 +262,6 @@ object ValidationContext {
         case Left(violation) ⇒ Vector(violation)
         case _ ⇒ Vector.empty
       }
-
   }
 }
 

@@ -61,8 +61,23 @@ case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Viola
   lazy val simpleErrorMessage = s"${errorPrefix}Field '${fieldPath mkString "."}' has wrong value: $violationMessage."
 }
 
-case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Variable '$$$definitionName' expected value of type '$expectedType' but ${input map ("got: " + _) getOrElse "value is undefined"}."
+case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], violation: Violation, ownSourceMapper: Option[SourceMapper], ownPositions: List[Position]) extends AstNodeViolation {
+  lazy val sourceMapper = violation match {
+    case astv: AstNodeViolation ⇒ astv.sourceMapper
+    case _ ⇒ ownSourceMapper
+  }
+
+  lazy val positions = violation match {
+    case astv: AstNodeViolation ⇒ (ownPositions ++ astv.positions).distinct
+    case _ ⇒ ownPositions
+  }
+
+  lazy val violationMessage = violation match {
+    case astv: AstNodeViolation ⇒ astv.simpleErrorMessage
+    case v ⇒ v.errorMessage
+  }
+
+  lazy val simpleErrorMessage = s"Variable '$$$definitionName' expected value of type '$expectedType' but ${input map ("got: " + _) getOrElse "value is undefined"}. Reason: $violationMessage"
 }
 
 case class UnknownVariableTypeViolation(definitionName: String, varType: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
@@ -282,10 +297,18 @@ case class NotNullInputObjectFieldMissingViolation(typeName: String, fieldName: 
   lazy val simpleErrorMessage = s"The NotNull field '$fieldName' defined in the input type '$typeName' is missing."
 }
 
+case class NotNullValueIsNullViolation(sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Expected non-null value, found null."
+}
+
 case class UnknownInputObjectFieldViolation(typeName: String, fieldName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Unknown field '$fieldName' is not defined in the input type '$typeName'."
 }
 
 case class InputObjectIsOfWrongTypeMissingViolation(typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Expected '$typeName', found not an object."
+}
+
+case class GenericInvalidValueViolation(sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Invalid value."
 }

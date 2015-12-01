@@ -171,7 +171,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
 
         "errors on omission of nested non-null" in  assertErrorResult(
           """{"input": {"a": "foo", "b": "bar"}}""".parseJson,
-          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar"}""")
+          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar"}. Reason: [in field 'c'] Expected non-null value, found null""")
 
         "errors on addition of unknown input field" in  assertErrorResult(
           """{"input": {"a": "foo", "b": "bar", "c": "baz", "d": "dog"}}""".parseJson,
