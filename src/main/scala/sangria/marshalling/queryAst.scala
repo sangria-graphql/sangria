@@ -50,12 +50,16 @@ class QueryAstResultMarshaller extends ResultMarshaller {
   def bigDecimalNode(value: BigDecimal) = ast.BigDecimalValue(value)
 
   def arrayNode(values: Vector[Node]) = ast.ListValue(values.toList)
+  def optionalArrayNodeValue(value: Option[Node]) = value match {
+    case Some(v) ⇒ v
+    case None ⇒ nullNode
+  }
 
   def mapNode(keyValues: Seq[(String, Node)]) =
     ast.ObjectValue(keyValues.toList.map{case (k, v) ⇒ ast.ObjectField(k, v)})
 
   def emptyMapNode = ast.ObjectValue(Nil)
-  def addMapNodeElem(node: Node, key: String, value: Node) = {
+  def addMapNodeElem(node: Node, key: String, value: Node, optional: Boolean) = {
     val obj = node.asInstanceOf[ast.ObjectValue]
 
     obj.copy(fields = obj.fields :+ ast.ObjectField(key, value))

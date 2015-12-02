@@ -221,6 +221,7 @@ object ValidationContext {
 
   def isValidLiteralValue(tpe: InputType[_], value: ast.Value, sourceMapper: Option[SourceMapper]): Vector[Violation] = (tpe, value) match {
     case (_, _: ast.VariableValue) ⇒ Vector.empty
+    case (OptionInputType(ofType), _: ast.NullValue) ⇒ Vector.empty
     case (OptionInputType(ofType), v) ⇒
       isValidLiteralValue(ofType, v, sourceMapper)
     case (ListInputType(ofType), ast.ListValue(values, pos)) ⇒

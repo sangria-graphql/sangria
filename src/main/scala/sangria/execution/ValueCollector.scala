@@ -1,13 +1,14 @@
 package sangria.execution
 
 import sangria.ast
-import sangria.marshalling.InputUnmarshaller
+import sangria.marshalling.{FromInput, CoercedScalaResultMarshaller, ResultMarshaller, InputUnmarshaller}
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema._
 import sangria.validation._
 
 import scala.collection.concurrent.TrieMap
+import scala.collection.immutable.VectorBuilder
 import scala.util.{Success, Failure, Try}
 
 class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx)(implicit um: InputUnmarshaller[Input]) {
@@ -17,11 +18,11 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   private val argumentCache = TrieMap[(Vector[String], List[ast.Argument]), Try[Args]]()
 
-  def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, Any]] =
+  def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
       Failure(new ExecutionError(s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}"))
     else {
-      val res = definitions.foldLeft(Vector.empty[(String, Either[Vector[Violation], Any])]) {
+      val res = definitions.foldLeft(Vector.empty[(String, Either[Vector[Violation], VariableValue])]) {
         case (acc, varDef) ⇒
           val value = schema.getInputType(varDef.tpe)
             .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
@@ -30,7 +31,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
           value match {
             case Right(Some(v)) ⇒ acc :+ (varDef.name, Right(v))
             case Right(None) ⇒ acc
-            case l: Left[_, _] ⇒ acc :+ (varDef.name, l)
+            case Left(violations) ⇒ acc :+ (varDef.name, Left(violations))
           }
       }
 
@@ -40,7 +41,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else Success(Map(values.collect {case (name, Right(v)) ⇒ name → v}: _*))
     }
 
-  def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[Input]): Either[Vector[Violation], Option[Any]] = {
+  def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[Input]): Either[Vector[Violation], Option[VariableValue]] = {
     val violations = isValidValue(tpe, input)
 
     if (violations.isEmpty) {
@@ -49,41 +50,55 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       if (input.isEmpty || !um.isDefined(input.get)) {
         import sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
-        definition.defaultValue map (coerceInputValue(tpe, fieldPath, _, None)) getOrElse Right(None)
+        definition.defaultValue match {
+          case Some(dv) ⇒ Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ coerceInputValue(tpe, fieldPath, dv, None, marshaller, firstKindMarshaller))))
+          case None ⇒ Right(None)
+        }
       } else
-        coerceInputValue(tpe, fieldPath, input.get, None)
+        Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ coerceInputValue(tpe, fieldPath, input.get, None, marshaller, firstKindMarshaller))))
     } else Left(violations.map(violation ⇒
       VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.position.toList)))
   }
 
   private val emptyArgs = Success(Args.empty)
 
-  def getFieldArgumentValues(path: Vector[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] =
+  def getFieldArgumentValues(path: Vector[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
     if(argumentDefs.isEmpty)
       emptyArgs
     else
       argumentCache.getOrElseUpdate(path → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
-  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, Any]): Try[Args] =
+  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
     if (argumentDefs.isEmpty)
       emptyArgs
     else {
       val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
+      val marshaller = CoercedScalaResultMarshaller.default
+      val errors = new VectorBuilder[Violation]
 
-      val res = argumentDefs.foldLeft(Map.empty[String, Either[Vector[Violation], Any]]) {
+      val res = argumentDefs.foldLeft(marshaller.emptyMapNode: marshaller.Node) {
         case (acc, argDef) ⇒
           val argPath = argDef.name :: Nil
           val astValue = astArgMap get argDef.name map (_.value)
+          val fromInput = argDef.fromInput
 
           import sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
-          resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, acc,
-            astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables))) getOrElse Right(None), allowErrorsOnDefault = true)
+          resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller, allowErrorsOnDefault = true, errors = errors, valueMap = fromInput.fromResult)(
+            acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller)))
       }
 
-      val errors = res.collect{case (_, Left(errors)) ⇒ errors}.toVector.flatten
+      val errorRes = errors.result()
 
-      if (errors.nonEmpty) Failure(AttributeCoercionError(errors))
-      else Success(Args(res mapValues (_.right.get)))
+      if (errorRes.nonEmpty) Failure(AttributeCoercionError(errorRes))
+      else Success(Args(res.asInstanceOf[Map[String, Any]]))
     }
+}
+
+case class VariableValue(fn: (ResultMarshaller, ResultMarshaller) ⇒ Either[Vector[Violation], Option[ResultMarshaller#Node]]) {
+  private val cache = TrieMap[Int, Either[Vector[Violation], Option[ResultMarshaller#Node]]]()
+
+  def resolve(marshaller: ResultMarshaller, firstKindMarshaller: ResultMarshaller): Either[Vector[Violation], Option[firstKindMarshaller.Node]] =
+    cache.getOrElseUpdate(System.identityHashCode(firstKindMarshaller),
+      fn(marshaller, firstKindMarshaller)).asInstanceOf[Either[Vector[Violation], Option[firstKindMarshaller.Node]]]
 }

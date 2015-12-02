@@ -74,7 +74,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with AwaitSupport {
         "HeroOnlyQuery", fields[CharacterRepo, Unit](
           Field("hero", TestSchema.Character,
             arguments = TestSchema.EpisodeArg :: Nil,
-            resolve = (ctx) ⇒ ctx.ctx.getHero(ctx.argOpt(TestSchema.EpisodeArg)))
+            resolve = (ctx) ⇒ ctx.ctx.getHero(ctx.arg(TestSchema.EpisodeArg)))
         ))
 
       val heroOnlySchema = Schema(HeroOnlyQuery, additionalTypes = TestSchema.Human :: TestSchema.Droid :: Nil)

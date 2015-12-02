@@ -1,6 +1,6 @@
 package sangria.integration
 
-import sangria.marshalling.{InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.marshalling.{FromInput, InputUnmarshaller, ToInput, ResultMarshaller}
 import spray.json._
 
 
@@ -11,9 +11,14 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
 
     def emptyMapNode = JsObject.empty
     def mapNode(keyValues: Seq[(String, JsValue)]) = JsObject(keyValues: _*)
-    def addMapNodeElem(node: JsValue, key: String, value: JsValue) = JsObject(node.asInstanceOf[JsObject].fields + (key → value))
+    def addMapNodeElem(node: JsValue, key: String, value: JsValue, optional: Boolean) =
+      JsObject(node.asInstanceOf[JsObject].fields + (key → value))
 
     def arrayNode(values: Vector[JsValue]) = JsArray(values.toVector)
+    def optionalArrayNodeValue(value: Option[JsValue]) = value match {
+      case Some(v) ⇒ v
+      case None ⇒ nullNode
+    }
 
     def stringNode(value: String) = JsString(value)
     def booleanNode(value: Boolean) = JsBoolean(value)
@@ -63,12 +68,26 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
     def toInput(value: JsValue) = (value, SprayJsonInputUnmarshaller)
   }
 
+  private object SprayJsonFromInput extends FromInput[JsValue] {
+    val marshaller = SprayJsonResultMarshaller
+    def fromResult(node: marshaller.Node) = node
+  }
+
   implicit def sprayJsonToInput[T <: JsValue]: ToInput[T, JsValue] =
     SprayJsonToInput.asInstanceOf[ToInput[T, JsValue]]
+
+  implicit def sprayJsonFromInput[T <: JsValue]: FromInput[T] =
+    SprayJsonFromInput.asInstanceOf[FromInput[T]]
 
   implicit def sprayJsonWriterToInput[T : JsonWriter]: ToInput[T, JsValue] =
     new ToInput[T, JsValue] {
       def toInput(value: T) = implicitly[JsonWriter[T]].write(value) → SprayJsonInputUnmarshaller
+    }
+
+  implicit def sprayJsonReaderFromInput[T : JsonReader]: FromInput[T] =
+    new FromInput[T] {
+      val marshaller = SprayJsonResultMarshaller
+      def fromResult(node: marshaller.Node) = implicitly[JsonReader[T]].read(node)
     }
 }
 

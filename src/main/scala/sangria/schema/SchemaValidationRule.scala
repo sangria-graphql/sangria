@@ -1,7 +1,7 @@
 package sangria.schema
 
 import sangria.execution.ValueCoercionHelper
-import sangria.marshalling.ToInput
+import sangria.marshalling.{CoercedScalaResultMarshaller, ToInput}
 import sangria.renderer.SchemaRenderer
 import sangria.validation._
 
@@ -22,7 +22,7 @@ class DefaultValuesValidationRule extends SchemaValidationRule {
       val (default, toInput) = defaultValue.asInstanceOf[(Any, ToInput[Any, Any])]
       val (inputValue, iu) = toInput.toInput(default)
 
-      coercionHelper.coerceInputValue(tpe, path, inputValue, None, prefix)(iu) match {
+      coercionHelper.coerceInputValue(tpe, path, inputValue, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default, prefix)(iu) match {
         case Left(violations) ⇒ violations
         case Right(violations) ⇒ Nil
       }

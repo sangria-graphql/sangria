@@ -76,7 +76,7 @@ case class Executor[Ctx, Root](
       valueCollector: ValueCollector[Ctx, _],
       fieldCollector: FieldCollector[Ctx, Root],
       marshaller: ResultMarshaller,
-      variables: Map[String, Any]): Try[Future[marshaller.Node]] =
+      variables: Map[String, VariableValue]): Try[Future[marshaller.Node]] =
     for {
       tpe ← getOperationRootType(operation, sourceMapper)
       fields ← fieldCollector.collectFields(Vector.empty, tpe, Vector(operation))
@@ -141,7 +141,7 @@ case class Executor[Ctx, Root](
   private def reduceQuery[Val](
       fieldCollector: FieldCollector[Ctx, Val],
       valueCollector: ValueCollector[Ctx, _],
-      variables: Map[String, Any],
+      variables: Map[String, VariableValue],
       rootTpe: ObjectType[_, _],
       fields: Map[String, (ast.Field, Try[Vector[ast.Field]])],
       reducers: Vector[QueryReducer[Ctx, _]]): Any = {

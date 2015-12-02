@@ -16,7 +16,7 @@ class Resolver[Ctx](
     middlewareCtx: MiddlewareQueryContext[Ctx, _, _],
     schema: Schema[Ctx, _],
     valueCollector: ValueCollector[Ctx, _],
-    variables: Map[String, Any],
+    variables: Map[String, VariableValue],
     fieldCollector: FieldCollector[Ctx, _],
     userContext: Ctx,
     exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException],
@@ -75,11 +75,11 @@ class Resolver[Ctx](
           case (acc @ (Result(_, None), _), _) ⇒ Future.successful(acc)
           case (acc, (name, (origField, _))) if tpe.getField(schema, origField.name).isEmpty ⇒ Future.successful(acc)
           case ((Result(errors, s @ Some(acc)), uc), (name, (origField, Failure(error)))) ⇒
-            Future.successful(Result(errors.add(path :+ name, error), if (isOptional(tpe, origField.name)) Some(marshaller.addMapNodeElem(acc, origField.outputName, marshaller.nullNode)) else None) → uc)
+            Future.successful(Result(errors.add(path :+ name, error), if (isOptional(tpe, origField.name)) Some(marshaller.addMapNodeElem(acc, origField.outputName, marshaller.nullNode, optional = true)) else None) → uc)
           case ((accRes @ Result(errors, s @ Some(acc)), uc), (name, (origField, Success(fields)))) ⇒
             resolveField(uc, tpe, path :+ name, value, errors, name, fields) match {
               case (updatedErrors, None, _) if isOptional(tpe, origField.name) ⇒
-                Future.successful(Result(updatedErrors, Some(marshaller.addMapNodeElem(acc, fields.head.outputName, marshaller.nullNode))) → uc)
+                Future.successful(Result(updatedErrors, Some(marshaller.addMapNodeElem(acc, fields.head.outputName, marshaller.nullNode, optional = isOptional(tpe, origField.name)))) → uc)
               case (updatedErrors, None, _) ⇒ Future.successful(Result(updatedErrors, None), uc)
               case (updatedErrors, Some(result), newUc) ⇒
                 val sfield = tpe.getField(schema, origField.name).head
@@ -369,7 +369,7 @@ class Resolver[Ctx](
             DeferredResult(
               deferred = deferredBuilder.result(),
               futureValue = Future.sequence(resultFutures.result()) map (
-                  resolveSimpleListValue(_, path, optional, astFields.head.position))
+                resolveSimpleListValue(_, path, optional, astFields.head.position))
             )
           }
         }
@@ -417,12 +417,11 @@ class Resolver[Ctx](
       else if (res.errors.errorList.nonEmpty)
         errorReg = errorReg.add(res.errors)
 
-
       res.value match {
+        case node if optional ⇒
+          listBuilder += marshaller.optionalArrayNodeValue(node)
         case Some(other) ⇒
           listBuilder += other
-        case None if optional ⇒
-          listBuilder += marshaller.nullNode
         case None ⇒
           canceled = true
       }
@@ -630,9 +629,9 @@ class Resolver[Ctx](
               errors.add(other.errors),
         value =
             if (optional && other.value.isEmpty)
-              value map (marshaller.addMapNodeElem(_, key, marshaller.nullNode))
+              value map (marshaller.addMapNodeElem(_, key, marshaller.nullNode, optional = false))
             else
-              for {myVal ← value; otherVal ← other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal))
+              for {myVal ← value; otherVal ← other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal, optional = false))
   }
 }
 

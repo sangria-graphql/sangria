@@ -22,10 +22,14 @@ class ScalaResultMarshaller extends ResultMarshaller {
   def bigDecimalNode(value: BigDecimal) = value
 
   def arrayNode(values: Vector[Node]) = values
+  def optionalArrayNodeValue(value: Option[Node]) = value match {
+    case Some(v) ⇒ v
+    case None ⇒ nullNode
+  }
 
   def mapNode(keyValues: Seq[(String, Node)]) = Map(keyValues: _*)
   def emptyMapNode = Map.empty[String, Any]
-  def addMapNodeElem(node: Node, key: String, value: Node) =
+  def addMapNodeElem(node: Node, key: String, value: Node, optional: Boolean) =
     node.asInstanceOf[Map[String, Any]] + (key → value)
 
   def nullNode = null

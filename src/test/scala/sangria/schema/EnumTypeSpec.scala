@@ -21,23 +21,23 @@ class EnumTypeSpec extends WordSpec with Matchers with GraphQlSupport {
     Field("colorEnum", OptionType(ColorType),
       arguments = Args.fromEnum :: Args.fromInt :: Nil,
       resolve = ctx ⇒
-        ctx.args.argOpt(Args.fromInt).orElse(ctx.args.argOpt(Args.fromEnum))),
+        ctx.args.arg(Args.fromInt).orElse(ctx.args.arg(Args.fromEnum))),
     Field("colorInt", OptionType(IntType),
       arguments = Args.fromEnum :: Args.fromInt :: Nil,
       resolve = ctx ⇒
-        ctx.args.argOpt(Args.fromInt).orElse(ctx.args.argOpt(Args.fromEnum)))
+        ctx.args.arg(Args.fromInt).orElse(ctx.args.arg(Args.fromEnum)))
   ))
 
   val MutationType = ObjectType("Mutation", fields[Unit, Unit](
     Field("favoriteEnum", OptionType(ColorType),
       arguments = Args.fromEnum :: Nil,
-      resolve = _.args.argOpt(Args.fromEnum))
+      resolve = _.args.arg(Args.fromEnum))
   ))
 
   val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
     Field("subscribeToEnum", OptionType(ColorType),
       arguments = Args.fromEnum :: Nil,
-      resolve = _.args.argOpt(Args.fromEnum))
+      resolve = _.args.arg(Args.fromEnum))
   ))
 
   val schema = Schema(QueryType, Some(MutationType), Some(SubscriptionType))
@@ -62,14 +62,14 @@ class EnumTypeSpec extends WordSpec with Matchers with GraphQlSupport {
       (),
       """{ colorEnum(fromEnum: "GREEN") }""",
       Map("colorEnum" → null),
-      List("Field 'fromEnum' has wrong value: Enum value expected." → Some(Pos(1, 23))),
+      List("Field 'fromEnum' has wrong value: Enum value expected." → List(Pos(1, 23))),
       validateQuery = false)
 
     "does not accept internal value in place of enum literal" in checkContainsErrors(
       (),
       """{ colorEnum(fromEnum: 1) }""",
       Map("colorEnum" → null),
-      List("Field 'fromEnum' has wrong value: Enum value expected." → Some(Pos(1, 23))),
+      List("Field 'fromEnum' has wrong value: Enum value expected." → List(Pos(1, 23))),
       validateQuery = false)
 
     "accepts JSON string as enum variable" in check(
@@ -90,14 +90,14 @@ class EnumTypeSpec extends WordSpec with Matchers with GraphQlSupport {
       Map("data" → Map("subscribeToEnum" → "GREEN")),
       JsObject("color" → JsString("GREEN")))
 
-    "does not accept internal value as enum variables" in checkContainsErrorPosList(
+    "does not accept internal value as enum variables" in checkContainsErrors(
       (),
       """query test($color: Color!) { colorEnum(fromEnum: $color) }""",
       null,
       List("Variable '$color' expected value of type 'Color!' but got: 1. Reason: Enum value expected" → List(Pos(1, 12))),
       JsObject("color" → JsNumber(1)))
 
-    "does not accept string variables as enum input" in checkContainsErrorPosList(
+    "does not accept string variables as enum input" in checkContainsErrors(
       (),
       """query test($color: String!) { colorEnum(fromEnum: $color) }""",
       null,
@@ -105,7 +105,7 @@ class EnumTypeSpec extends WordSpec with Matchers with GraphQlSupport {
       JsObject("color" → JsString("BLUE")),
       validateQuery = true)
 
-    "does not accept internal value variable as enum input" in checkContainsErrorPosList(
+    "does not accept internal value variable as enum input" in checkContainsErrors(
       (),
       """query test($color: Int!) { colorEnum(fromEnum: $color) }""",
       null,

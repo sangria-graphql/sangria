@@ -49,6 +49,7 @@ package object introspection {
       Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason))
   )
 
+
   val includeDeprecated = Argument("includeDeprecated", OptionInputType(BooleanType), false)
 
   private def getKind(value: (Boolean, Type)) = {

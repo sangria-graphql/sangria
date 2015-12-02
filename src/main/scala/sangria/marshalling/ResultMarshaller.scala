@@ -6,10 +6,11 @@ trait ResultMarshaller {
   type Node
 
   def emptyMapNode: Node
-  def addMapNodeElem(node: Node, key: String, value: Node): Node
+  def addMapNodeElem(node: Node, key: String, value: Node, optional: Boolean): Node
   def mapNode(keyValues: Seq[(String, Node)]): Node
 
   def arrayNode(values: Vector[Node]): Node
+  def optionalArrayNodeValue(value: Option[Node]): Node
 
   def stringNode(value: String): Node
   def intNode(value: Int): Node
@@ -36,4 +37,21 @@ trait ResultMarshaller {
 
 object ResultMarshaller {
   implicit val defaultResultMarshaller = scalaMarshalling.scalaResultMarshaller
+}
+
+/**
+  * Alters the behaviour of the executor and marshals raw (in-scala coerced representation) or scalar values and enums.
+  */
+trait RawResultMarshaller extends ResultMarshaller {
+  def rawScalarNode(rawValue: Any): Node
+
+  private def onlyRawValuesExpected =
+    throw new IllegalArgumentException("Only raw values expected in `RawResultMarshaller`!")
+
+  final def stringNode(value: String) = onlyRawValuesExpected
+  final def intNode(value: Int) = onlyRawValuesExpected
+  final def bigIntNode(value: BigInt) = onlyRawValuesExpected
+  final def floatNode(value: Double) = onlyRawValuesExpected
+  final def bigDecimalNode(value: BigDecimal) = onlyRawValuesExpected
+  final def booleanNode(value: Boolean) = onlyRawValuesExpected
 }

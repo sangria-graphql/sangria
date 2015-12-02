@@ -10,12 +10,12 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
       case ErrorPath(path, error, location) ⇒
         val withPath =
           if (path.nonEmpty)
-            marshaller.addMapNodeElem(error, "field", marshaller.stringNode(path mkString "."))
+            marshaller.addMapNodeElem(error, "field", marshaller.stringNode(path mkString "."), optional = false)
           else
             error
 
         location match {
-          case Some(node) ⇒ marshaller.addMapNodeElem(withPath, "locations", node)
+          case Some(node) ⇒ marshaller.addMapNodeElem(withPath, "locations", node, optional = false)
           case None ⇒ withPath
         }
     }
@@ -23,17 +23,16 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
     if (marshalled.isEmpty) None else Some(marshaller.arrayNode(marshalled))
   }
 
-
   def marshalResult(data: Option[marshaller.Node], errors: Option[marshaller.Node]) = {
     val empty = marshaller.emptyMapNode
 
     val withData = data match {
-      case Some(d) ⇒ marshaller.addMapNodeElem(empty, "data", d)
-      case None ⇒ marshaller.addMapNodeElem(empty, "data", marshaller.nullNode)
+      case Some(d) ⇒ marshaller.addMapNodeElem(empty, "data", d, optional = false)
+      case None ⇒ marshaller.addMapNodeElem(empty, "data", marshaller.nullNode, optional = false)
     }
 
     errors match {
-      case Some(e) ⇒ marshaller.addMapNodeElem(withData, "errors", e)
+      case Some(e) ⇒ marshaller.addMapNodeElem(withData, "errors", e, optional = false)
       case None ⇒ withData
     }
   }

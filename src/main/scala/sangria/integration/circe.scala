@@ -9,9 +9,13 @@ object circe {
 
     def emptyMapNode = Json.obj()
     def mapNode(keyValues: Seq[(String, Json)]) = Json.obj(keyValues: _*)
-    def addMapNodeElem(node: Json, key: String, value: Json) = node.mapObject(_ + (key, value))
+    def addMapNodeElem(node: Json, key: String, value: Json, optional: Boolean) = node.mapObject(_ + (key, value))
 
     def arrayNode(values: Vector[Json]) = Json.array(values: _*)
+    def optionalArrayNodeValue(value: Option[Json]) = value match {
+      case Some(v) ⇒ v
+      case None ⇒ nullNode
+    }
 
     def booleanNode(value: Boolean) = Json.bool(value)
     def floatNode(value: Double) = Json.number(value).get

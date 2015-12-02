@@ -1,7 +1,8 @@
 package sangria.schema
 
-import sangria.execution.{FieldTag, ValueCoercionHelper}
-import sangria.marshalling.ToInput
+import sangria.execution.FieldTag
+import sangria.marshalling.FromInput.{InputObjectResult, CoercedScalaResult}
+import sangria.marshalling.{FromInput, ToInput}
 
 import language.{implicitConversions, existentials}
 
@@ -11,6 +12,8 @@ import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
+
+import sangria.util.tag._
 
 sealed trait Type
 
@@ -96,7 +99,7 @@ case class ScalarType[T](
   coerceUserInput: Any ⇒ Either[Violation, T],
   coerceOutput: T ⇒ ast.Value,
   coerceInput: ast.Value ⇒ Either[Violation, T],
-  complexity: Double = 0.0D) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+  complexity: Double = 0.0D) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
@@ -285,7 +288,8 @@ case class Argument[T] private (
     name: String,
     argumentType: InputType[_],
     description: Option[String],
-    defaultValue: Option[(_, ToInput[_, _])]) extends InputValue[T] with Named {
+    defaultValue: Option[(_, ToInput[_, _])],
+    fromInput: FromInput[_]) extends InputValue[T] with Named {
 
   if (!argumentType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
     throw new IllegalArgumentException(s"Argument '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this argument nullable or remove the default value.")
@@ -298,25 +302,57 @@ object Argument {
       name: String,
       argumentType: InputType[T],
       description: String,
-      defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, Some(description), Some(defaultValue → toInput))
+      defaultValue: Default)(implicit toInput: ToInput[Default, _], fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, Some(description), Some(defaultValue → toInput), fromInput)
 
   def apply[T, Default](
       name: String,
       argumentType: InputType[T],
-      defaultValue: Default)(implicit toInput: ToInput[Default, _], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, None, Some(defaultValue → toInput))
+      defaultValue: Default)(implicit toInput: ToInput[Default, _], fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, None, Some(defaultValue → toInput), fromInput)
 
   def apply[T](
       name: String,
       argumentType: InputType[T],
-      description: String)(implicit res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, Some(description), None)
+      description: String)(implicit fromInput: FromInput[T], res: WithoutCoercedTag[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, Some(description), None, fromInput)
 
   def apply[T](
       name: String,
-      argumentType: InputType[T])(implicit res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, None, None)
+      argumentType: InputType[T])(implicit fromInput: FromInput[T], res: WithoutCoercedTag[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, None, None, fromInput)
+}
+
+trait WithoutCoercedTag[T] {
+  type Res
+}
+
+object WithoutCoercedTag extends ArgumentTypeWithoutDefaultLowPrio {
+  implicit def coercedArgTpe[T] = new WithoutCoercedTag[T @@ CoercedScalaResult] {
+    type Res = T
+  }
+
+  implicit def coercedOptArgTpe[T] = new WithoutCoercedTag[Option[T @@ CoercedScalaResult]] {
+    type Res = Option[T]
+  }
+
+  implicit def coercedSeqOptArgTpe[T] = new WithoutCoercedTag[Seq[Option[T @@ CoercedScalaResult]]] {
+    type Res = Seq[Option[T]]
+  }
+
+  implicit def coercedOptSeqArgTpe[T] = new WithoutCoercedTag[Option[Seq[T @@ CoercedScalaResult]]] {
+    type Res = Option[Seq[T]]
+  }
+
+  implicit def coercedOptSeqOptArgTpe[T] = new WithoutCoercedTag[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
+    type Res = Option[Seq[Option[T]]]
+  }
+}
+
+trait ArgumentTypeWithoutDefaultLowPrio {
+  implicit def defaultArgTpe[T] = new WithoutCoercedTag[T] {
+    type Res = T
+  }
 }
 
 trait ArgumentType[T] {
@@ -324,12 +360,34 @@ trait ArgumentType[T] {
 }
 
 object ArgumentType extends ArgumentTypeLowPrio {
+  implicit def coercedArgTpe[T] = new ArgumentType[T @@ CoercedScalaResult] {
+    type Res = T
+  }
+
+  implicit def coercedOptArgTpe[T] = new ArgumentType[Option[T @@ CoercedScalaResult]] {
+    type Res = T
+  }
+
+  implicit def coercedSeqOptArgTpe[T] = new ArgumentType[Seq[Option[T @@ CoercedScalaResult]]] {
+    type Res = Seq[Option[T]]
+  }
+
+  implicit def coercedOptSeqArgTpe[T] = new ArgumentType[Option[Seq[T @@ CoercedScalaResult]]] {
+    type Res = Seq[T]
+  }
+
+  implicit def coercedOptSeqOptArgTpe[T] = new ArgumentType[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
+    type Res = Seq[Option[T]]
+  }
+}
+
+trait ArgumentTypeLowPrio extends ArgumentTypeLowestPrio {
   implicit def optionArgTpe[T] = new ArgumentType[Option[T]] {
     type Res = T
   }
 }
 
-trait ArgumentTypeLowPrio {
+trait ArgumentTypeLowestPrio {
   implicit def defaultArgTpe[T] = new ArgumentType[T] {
     type Res = T
   }
@@ -338,7 +396,7 @@ trait ArgumentTypeLowPrio {
 case class EnumType[T](
     name: String,
     description: Option[String] = None,
-    values: List[EnumValue[T]]) extends InputType[T] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
+    values: List[EnumValue[T]]) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
   lazy val byName = values groupBy (_.name) mapValues (_.head)
   lazy val byValue = values groupBy (_.value) mapValues (_.head)
 
@@ -366,23 +424,39 @@ case class InputObjectType[T] private (
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[InputField[_]]
-) extends InputType[T] with NullableType with UnmodifiedType with Named {
+) extends InputType[T @@ InputObjectResult] with NullableType with UnmodifiedType with Named {
   lazy val fields = fieldsFn()
   lazy val fieldsByName = fields groupBy(_.name) mapValues(_.head)
 }
 
 object InputObjectType {
-  type InputObjectRes = Map[String, Any]
+  type DefaultInput = Map[String, Any]
 
-  def apply(name: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
+  def apply[T](name: String, fields: List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
     InputObjectType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(fields))
-  def apply(name: String, description: String, fields: List[InputField[_]]): InputObjectType[InputObjectRes] =
+  def apply[T](name: String, description: String, fields: List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
     InputObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(fields))
 
-  def apply(name: String, fieldsFn: () ⇒ List[InputField[_]]): InputObjectType[InputObjectRes] =
+  def apply[T](name: String, fieldsFn: () ⇒ List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
     InputObjectType(Named.checkName(name), None, Named.checkIntFields(fieldsFn))
-  def apply(name: String, description: String, fieldsFn: () ⇒ List[InputField[_]]): InputObjectType[InputObjectRes] =
+  def apply[T](name: String, description: String, fieldsFn: () ⇒ List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
     InputObjectType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn))
+}
+
+trait InputObjectDefaultResult[T] {
+  type Res
+}
+
+object InputObjectDefaultResult extends InputObjectDefaultResultLowPrio {
+  implicit def nothingResult = new InputObjectDefaultResult[Nothing] {
+    override type Res = InputObjectType.DefaultInput
+  }
+}
+
+trait InputObjectDefaultResultLowPrio {
+  implicit def defaultResult[T] = new InputObjectDefaultResult[T] {
+    override type Res = T
+  }
 }
 
 case class InputField[T] private (
@@ -398,24 +472,24 @@ case class InputField[T] private (
 }
 
 object InputField {
-  def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
-    InputField(name, fieldType, Some(description), Some(defaultValue → toInput))
+  def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutCoercedTag[T]): InputField[res.Res] =
+    InputField(name, fieldType, Some(description), Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _]): InputField[T] =
-    InputField(name, fieldType, None, Some(defaultValue → toInput))
+  def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutCoercedTag[T]): InputField[res.Res] =
+    InputField(name, fieldType, None, Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T], description: String): InputField[T] =
-    InputField(name, fieldType, Some(description), None)
+  def apply[T, Default](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutCoercedTag[T]): InputField[res.Res] =
+    InputField(name, fieldType, Some(description), None).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T]): InputField[T] =
-    InputField(name, fieldType, None, None)
+  def apply[T, Default](name: String, fieldType: InputType[T])(implicit res: WithoutCoercedTag[T]): InputField[res.Res] =
+    InputField(name, fieldType, None, None).asInstanceOf[InputField[res.Res]]
 }
 
 case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType
 case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with NullableType
 
 case class OptionType[T](ofType: OutputType[T]) extends OutputType[Option[T]]
-case class OptionInputType[T](ofType: InputType[T]) extends InputType[Option[T]]
+case class OptionInputType[T] (ofType: InputType[T]) extends InputType[Option[T]]
 
 sealed trait HasArguments {
   def arguments: List[Argument[_]]

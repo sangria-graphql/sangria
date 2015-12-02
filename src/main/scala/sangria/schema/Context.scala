@@ -1,8 +1,7 @@
 package sangria.schema
 
 import sangria.execution.{FieldTag, DeprecationTracker, ValueCoercionHelper, Resolver}
-import sangria.marshalling.InputUnmarshaller
-import sangria.marshalling.{ToInput, ResultMarshaller}
+import sangria.marshalling.{CoercedScalaResultMarshaller, InputUnmarshaller, ToInput, ResultMarshaller}
 import sangria.parser.SourceMapper
 
 import language.implicitConversions
@@ -116,7 +115,6 @@ trait WithArguments {
   def args: Args
   def arg[T](arg: Argument[T]): T = args.arg(arg)
   def arg[T](name: String): T = args.arg(name)
-  def argOpt[T](arg: Argument[T]): Option[T] = args.argOpt(arg)
   def argOpt[T](name: String): Option[T] = args.argOpt(name)
 }
 
@@ -144,7 +142,7 @@ trait WithInputTypeRendering[Ctx] {
 
         io.fields.foldLeft(m.emptyMapNode) {
           case (acc, field) if mapValue contains field.name ⇒
-            m.addMapNodeElem(acc, field.name, loop(field.fieldType, mapValue(field.name)))
+            m.addMapNodeElem(acc, field.name, loop(field.fieldType, mapValue(field.name)), optional = false)
           case (acc, _) ⇒ acc
         }
       case l: ListInputType[_] ⇒
@@ -161,7 +159,7 @@ trait WithInputTypeRendering[Ctx] {
     val (v, toInput) = value.asInstanceOf[(Any, ToInput[Any, Any])]
     val (inputValue, iu) = toInput.toInput(v)
 
-    coercionHelper.coerceInputValue(tpe, Nil, inputValue, None)(iu) match {
+    coercionHelper.coerceInputValue(tpe, Nil, inputValue, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default)(iu) match {
       case Right(Some(coerced)) ⇒ renderCoercedInputValue(tpe, coerced, m)
       case _ ⇒ m.nullNode
     }
@@ -182,7 +180,7 @@ trait WithInputTypeRendering[Ctx] {
 
       io.fields.foldLeft(m.emptyMapNode) {
         case (acc, field) if mapValue contains field.name ⇒
-          m.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name), m))
+          m.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name), m), optional = false)
         case (acc, _) ⇒ acc
       }
     case l: ListInputType[_] ⇒
@@ -212,10 +210,9 @@ case class Context[Ctx, Val](
   path: Vector[String]) extends WithArguments with WithInputTypeRendering[Ctx]
 
 case class Args(raw: Map[String, Any]) extends AnyVal {
-  def arg[T](arg: Argument[T]): T = raw(arg.name).asInstanceOf[T]
+  def arg[T](arg: Argument[T]): T = raw.get(arg.name).fold(None.asInstanceOf[T])(_.asInstanceOf[T])
   def arg[T](name: String): T = raw(name).asInstanceOf[T]
-  def argOpt[T](arg: Argument[T]): Option[T] = raw.get(arg.name).asInstanceOf[Option[T]]
-  def argOpt[T](name: String): Option[T] = raw.get(name).asInstanceOf[Option[T]]
+  def argOpt[T](name: String): Option[T] = raw.get(name).asInstanceOf[Option[Option[T]]].flatten
 }
 
 object Args {

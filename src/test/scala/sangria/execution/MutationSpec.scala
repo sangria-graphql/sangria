@@ -32,23 +32,23 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
     val numberHolder = new NumberHolder(initial)
     val rnd = new Random
 
-    def immediatelyChangeTheNumber(newNumber: Int) = {
-      numberHolder getAndSet newNumber
+    def immediatelyChangeTheNumber(newNumber: Option[Int]) = {
+      newNumber foreach (numberHolder.getAndSet)
       numberHolder
     }
 
-    def promiseToChangeTheNumber(newNumber: Int) =
+    def promiseToChangeTheNumber(newNumber: Option[Int]) =
       Future {
         Thread.sleep(rnd nextInt 50)
-        numberHolder getAndSet newNumber
+        newNumber foreach (numberHolder.getAndSet)
         Thread.sleep(rnd nextInt 50)
         numberHolder
       }
 
-    def failToChangeTheNumber(newNumber: Int): NumberHolder =
+    def failToChangeTheNumber(newNumber: Option[Int]): NumberHolder =
       throw new IllegalStateException("Cannot change the number")
 
-    def promiseAndFailToChangeTheNumber(newNumber: Int): Future[NumberHolder] =
+    def promiseAndFailToChangeTheNumber(newNumber: Option[Int]): Future[NumberHolder] =
       Future {
         Thread.sleep(rnd nextInt 50)
         throw new IllegalStateException("Cannot change the number")

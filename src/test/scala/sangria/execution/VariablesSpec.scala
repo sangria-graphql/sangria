@@ -15,11 +15,12 @@ import DefaultJsonProtocol._
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQlSupport {
+class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
   val TestInputObject = InputObjectType("TestInputObject", List(
     InputField("a", OptionInputType(StringType)),
     InputField("b", OptionInputType(ListInputType(OptionInputType(StringType)))),
-    InputField("c", StringType)))
+    InputField("c", StringType),
+    InputField("d", OptionInputType(ListInputType(StringType)))))
 
   val TestType = ObjectType("TestType", {
     import sangria.integration.sprayJson.{SprayJsonResultMarshaller ⇒ SJM}
@@ -33,22 +34,22 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
         resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(StringType), SJM))),
       Field("fieldWithNonNullableStringInput", OptionType(StringType),
         arguments = Argument("input", StringType) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, StringType, SJM))),
+        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), StringType, SJM)),
       Field("fieldWithDefaultArgumentValue", OptionType(StringType),
         arguments = Argument("input", OptionInputType(StringType), defaultValue = "Hello World") :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(StringType), SJM))),
+        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), OptionInputType(StringType), SJM)),
       Field("list", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(OptionInputType(StringType)))) :: Nil,
         resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(OptionInputType(StringType))), SJM))),
       Field("nnList", OptionType(StringType),
         arguments = Argument("input", ListInputType(OptionInputType(StringType))) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, ListInputType(OptionInputType(StringType)), SJM))),
+        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(OptionInputType(StringType)), SJM)),
       Field("listNN", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(StringType))) :: Nil,
         resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(StringType)), SJM))),
       Field("nnListNN", OptionType(StringType),
         arguments = Argument("input", ListInputType(StringType)) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, ListInputType(StringType), SJM)))
+        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(StringType), SJM))
     )
   })
 
@@ -57,6 +58,18 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
   "Execute: Handles inputs" when {
     "Handles objects and nullability" when {
       "using inline structs" when {
+        "executes with null input" in check(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: null)
+            }
+          """,
+          Map("data" → Map(
+            "fieldWithObjectInput" → null
+          ))
+        )
+
         "executes with complex input" in check(
           (),
           """
@@ -66,6 +79,98 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           """,
           Map("data" → Map(
             "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
+          ))
+        )
+
+        "executes with complex input containing nulls in object fields" in check(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: {a: null, b: ["bar"], c: "baz"})
+            }
+          """,
+          Map("data" → Map(
+            "fieldWithObjectInput" → """{"a":null,"b":["bar"],"c":"baz"}"""
+          ))
+        )
+
+        "executes with complex input containing nulls in list values inside of complex objects" in check(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: {a: "foo", b: ["bar", null, "test"], c: "baz"})
+            }
+          """,
+          Map("data" → Map(
+            "fieldWithObjectInput" → """{"a":"foo","b":["bar",null,"test"],"c":"baz"}"""
+          ))
+        )
+
+        "executes with complex input containing nulls in list values" in check(
+          (),
+          """
+            {
+              nnList(input: ["a1", null, "b1"])
+            }
+          """,
+          Map("data" → Map(
+            "nnList" → """["a1",null,"b1"]"""
+          ))
+        )
+
+        "does not allow null literals in not-null lists" in checkContainsErrors(
+          (),
+          """
+            {
+              nnListNN(input: ["a1", null, "b1"])
+            }
+          """,
+          null,
+          List("""Argument 'input' expected type '[String!]!' but got: ["a1", null, "b1"]. Reason: [at index #1] String value expected""" → List(Pos(3, 31)))
+        )
+
+        "does not allow null literals in not-null fields in complex objects" in checkContainsErrors(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: {a: "foo", c: null})
+            }
+          """,
+          null,
+          List("""Argument 'input' expected type 'TestInputObject' but got: {a: "foo", c: null}. Reason: [in field 'c'] String value expected""" → List(Pos(3, 43), Pos(3, 54)))
+        )
+
+        "does not allow null literals in not-null arguments" in checkContainsErrors(
+          (),
+          """
+            {
+              nnListNN(input: null)
+            }
+          """,
+          null,
+          List("""Argument 'input' expected type '[String!]!' but got: null. Reason: [at index #0] String value expected""" → List(Pos(3, 31)))
+        )
+
+        "does not allow null literals in not-null lists inside of complex objects" in checkContainsErrors(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: {a: "foo", c: "baz", d: ["aa", null]})
+            }
+          """,
+          null,
+          List("""Argument 'input' expected type 'TestInputObject' but got: {a: "foo", c: "baz", d: ["aa", null]}. Reason: [in field 'd'] [at index #1] String value expected""" → List(Pos(3, 43), Pos(3, 67)))
+        )
+
+        "executes with complex input containing undefined object fields" in check(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: {b: ["bar"], c: "baz"})
+            }
+          """,
+          Map("data" → Map(
+            "fieldWithObjectInput" → """{"b":["bar"],"c":"baz"}"""
           ))
         )
 
@@ -89,7 +194,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
             }
           """,
           Map("fieldWithObjectInput" → null),
-          List("""Value '["foo","bar","baz"]' of wrong type was provided to the field of type 'TestInputObject!' at path 'input'.""" → Some(Pos(3, 43))),
+          List("""Value '["foo","bar","baz"]' of wrong type was provided to the field of type 'TestInputObject!' at path 'input'.""" → List(Pos(3, 43))),
           validateQuery = false
         )
       }
@@ -173,8 +278,8 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar"}. Reason: [in field 'c'] Expected non-null value, found null""")
 
         "errors on addition of unknown input field" in  assertErrorResult(
-          """{"input": {"a": "foo", "b": "bar", "c": "baz", "d": "dog"}}""".parseJson,
-          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":"baz","d":"dog"}""")
+          """{"input": {"a": "foo", "b": "bar", "c": "baz", "z": "dog"}}""".parseJson,
+          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":"baz","z":"dog"}""")
       }
     }
 
@@ -268,7 +373,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable '$value' expected value of type 'String!' but value is undefined.""" → Some(Pos(2, 33)))
+        List("""Variable '$value' expected value of type 'String!' but value is undefined.""" → List(Pos(2, 33)))
       )
 
       "does not allow non-nullable inputs to be set to null in a variable" in  checkContainsErrors(
@@ -279,7 +384,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable '$value' expected value of type 'String!' but got: null.""" → Some(Pos(2, 33))),
+        List("""Variable '$value' expected value of type 'String!' but got: null.""" → List(Pos(2, 33))),
         """{"value": null}""".parseJson
       )
 
@@ -316,7 +421,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         Map("fieldWithNonNullableStringInput" → null),
-        List("""Null value was provided for the NotNull Type 'String!' at path 'input'.""" → None),
+        List("""Null value was provided for the NotNull Type 'String!' at path 'input'.""" → Nil),
         validateQuery = false
       )
     }
@@ -363,7 +468,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable '$input' expected value of type '[String]!' but got: null.""" → Some(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String]!' but got: null.""" → List(Pos(2, 19))),
         """{"input": null}""".parseJson
       )
 
@@ -419,7 +524,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable '$input' expected value of type '[String!]' but got: ["A",null,"B"].""" → Some(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String!]' but got: ["A",null,"B"].""" → List(Pos(2, 19))),
         """{"input": ["A",null,"B"]}""".parseJson
       )
 
@@ -431,7 +536,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         Map("nnListNN" → null),
-        List("""Null value was provided for the NotNull Type '[String!]!' at path 'input'.""" → None),
+        List("""Null value was provided for the NotNull Type '[String!]!' at path 'input'.""" → Nil),
         """{"input": null}""".parseJson,
         validateQuery = false
       )
@@ -455,7 +560,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable '$input' expected value of type '[String!]!' but got: ["A",null,"B"].""" → Some(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String!]!' but got: ["A",null,"B"].""" → List(Pos(2, 19))),
         """{"input": ["A",null,"B"]}""".parseJson
       )
 
@@ -467,7 +572,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable 'TestType!' expected value of type '$input' which cannot be used as an input type.""" → Some(Pos(2, 19))),
+        List("""Variable 'TestType!' expected value of type '$input' which cannot be used as an input type.""" → List(Pos(2, 19))),
         """{"input": ["A", "B"]}""".parseJson,
         validateQuery = false
       )
@@ -480,7 +585,7 @@ class VariablesSpec extends WordSpec with Matchers with AwaitSupport with GraphQ
           }
         """,
         null,
-        List("""Variable 'UnknownType!' expected value of type '$input' which cannot be used as an input type.""" → Some(Pos(2, 19))),
+        List("""Variable 'UnknownType!' expected value of type '$input' which cannot be used as an input type.""" → List(Pos(2, 19))),
         """{"input": "whoknows"}""".parseJson,
         validateQuery = false
       )

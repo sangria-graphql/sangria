@@ -13,7 +13,7 @@ import scala.util.{Try, Failure, Success}
 class FieldCollector[Ctx, Val](
     schema: Schema[Ctx, Val],
     document: ast.Document,
-    variables: Map[String, Any],
+    variables: Map[String, VariableValue],
     sourceMapper: Option[SourceMapper],
     valueCollector: ValueCollector[Ctx, _]) {
 

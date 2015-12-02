@@ -9,9 +9,15 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
 
     def emptyMapNode = JsObject(Seq.empty)
     def mapNode(keyValues: Seq[(String, JsValue)]) = JsObject(keyValues)
-    def addMapNodeElem(node: JsValue, key: String, value: JsValue) = node.asInstanceOf[JsObject] + (key → value)
+    def addMapNodeElem(node: JsValue, key: String, value: JsValue, optional: Boolean) =
+      node.asInstanceOf[JsObject] + (key → value)
 
     def arrayNode(values: Vector[JsValue]) = JsArray(values)
+
+    def optionalArrayNodeValue(value: Option[JsValue]) = value match {
+      case Some(v) ⇒ v
+      case None ⇒ nullNode
+    }
 
     def stringNode(value: String) = JsString(value)
     def floatNode(value: Double) = JsNumber(value)

@@ -299,7 +299,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
       """)
 
       Executor(schema).execute(doc).await
-      resolvedArgs should be (Map("numArg" → 123, "stringArg" → "foo"))
+      resolvedArgs should be (Map("numArg" → Some(123), "stringArg" → Some("foo")))
     }
 
     "null out error subtrees" in {

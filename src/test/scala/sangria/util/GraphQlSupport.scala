@@ -87,10 +87,7 @@ trait GraphQlSupport extends AwaitSupport with Matchers {
   def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit =
     SimpleGraphQlSupport.checkErrors(schema, data, query, expectedData, expectedErrors, args, userContext, resolver, validateQuery)
 
-  def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, Option[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
-    SimpleGraphQlSupport.checkContainsErrors(schema, data, query, expectedData, expectedErrorStrings map {case (error, pos) ⇒ error → pos.toList}, args, validateQuery)
-
-  def checkContainsErrorPosList[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, List[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
+  def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, List[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
     SimpleGraphQlSupport.checkContainsErrors(schema, data, query, expectedData, expectedErrorStrings, args, validateQuery)
 }
 

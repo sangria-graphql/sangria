@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.marshalling.{ScalaInput, ToInput}
+import sangria.marshalling.{FromInput, ScalaInput, ToInput}
 
 import language.higherKinds
 
@@ -13,7 +13,7 @@ import ScalaInput.scalaInput
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
-  def check[Default](inputType: InputType[_], defaultValue: Default, expectedResult: Any, expectedDefault: String)(implicit ev: ToInput[Default, _]) = {
+  def check[T, Default](inputType: InputType[T], defaultValue: Default, expectedResult: Any, expectedDefault: String)(implicit ev: ToInput[Default, _], ev1: FromInput[T]) = {
     import sangria.integration.sprayJson._
     import spray.json._
 
@@ -155,15 +155,15 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
 
       "default scala complex object" in check(
         ScalaInputType,
-          defaultValue = scalaInput(Map("title" → "Post #1", "text" → "Amazing!", "comments" → List(Map("text" → "First! :P")))),
-          expectedResult = Map(
-            "title" → "Post #1",
-            "text" → "Amazing!",
-            "tags" → List("beginner", "scala"),
-            "views" → 12,
-            "shares" → Map("twitter" → 78, "facebook" → 1),
-            "comments" → List(Map("author" → "anonymous", "text" → "First! :P", "likes" → 1.5))),
-          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
+        defaultValue = scalaInput(Map("title" → "Post #1", "text" → "Amazing!", "comments" → List(Map("text" → "First! :P")))),
+        expectedResult = Map(
+          "title" → "Post #1",
+          "text" → "Amazing!",
+          "tags" → List("beginner", "scala"),
+          "views" → 12,
+          "shares" → Map("twitter" → 78, "facebook" → 1),
+          "comments" → List(Map("author" → "anonymous", "text" → "First! :P", "likes" → 1.5))),
+        expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
 
       "validate scalar default values" in {
         a [SchemaValidationException] should be thrownBy check(
