@@ -116,9 +116,9 @@ object QueryRenderer {
       case StringValue(value, _) ⇒ '"' + escapeString(value) + '"'
       case BooleanValue(value, _) ⇒ value.toString
       case NullValue(_) ⇒ "null"
-      case EnumValue(value, _) ⇒ indent + value
+      case EnumValue(value, _) ⇒ value
       case ListValue(value, _) ⇒
-        "[" + (value map (render(_, config, indentLevel)) mkString (config.inputListSeparator)) + "]"
+        "[" + (value map (render(_, config, indentLevel)) mkString config.inputListSeparator) + "]"
       case ObjectValue(value, _) ⇒
         "{" + inputLineBreak(config) +
             (value map (render(_, config, inputFieldIndent(config, indentLevel))) mkString config.inputFieldSeparator) +

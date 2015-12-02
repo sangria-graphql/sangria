@@ -1,11 +1,58 @@
-## v0.4.3 (2015-12-02)
+## v0.5.0 (2015-12-03)
 
 * A lot of performance improvements across the whole library
 * Added basic subscription support as defined in the spec (https://github.com/facebook/graphql/pull/109) and reference implementation (#89).
-  At the moment subscription is pretty basic, so it's meant more for experiments rather than use in real applications.
-* `null` value support (as defined in the spec change: https://github.com/facebook/graphql/pull/83) (#55)
-
-
+  At the moment subscriptions are pretty basic, so it's meant more for experiments rather than for use in real applications. 
+  It is very likely that this feature will experience breaking changes in the near future (spec change)
+* `null` value support (as defined in the spec change: https://github.com/facebook/graphql/pull/83) (#55) (spec change)
+* Extracted input value parsing and made it a first-class citizen (#103). So now you can parse and render any `ast.Value` independently from 
+  GraphQL query. There is even a new `graphqlInput` macros available:
+  ```scala
+  import sangria.renderer.QueryRenderer
+  import sangria.macros._
+  import sangria.ast
+  
+  val parsed: ast.Value =
+    graphqlInput"""
+      {
+        id: "1234345"
+        version: 2 # changed 2 times
+        deliveries: [
+          {id: 123, received: false, note: null, state: OPEN}
+        ]
+      }
+    """
+  
+  val rendered: String =
+    QueryRenderer.render(parsed, QueryRenderer.PrettyInput)
+  
+  println(rendered)
+  ```
+  It will print something like this:
+  ```js
+  {
+    id: "1234345"
+    version: 2
+    deliveries: [{
+      id: 123
+      received: false
+      note: null
+      state: OPEN
+    }]
+  }
+  ```
+  `InputUnmarshaller` and `ResultMarshaller` are also now available for it, so you can use `ast.Value` as a variables or it can be a result 
+  of GraphQL query execution (instead of more traditional JSON).
+* `ToInput`, `InputUnmarshaller` and `ResultMarshaller` are moved to `sangria.marshalling` package.
+* Improved error messages for input values (#86). Now they will contain the reason why particular value is invalid.
+* Implementations of interfaces can include additional field args (#90) (spec change)
+* Loosen overlapping field validation rules (#94) (spec change)
+* False positive validation error from fragment cycle when unknown fragment (#95)
+* Interfaces with covariant return types (#96)
+* A lot of minor changes and performance improvements in validation rules and query validator (#97) (spec change)
+* Add error handling in the `SchemaRenderer` (#100)
+* Ambiguous implicit when using a `UnionType` bug (#101)
+* A lot of internal refactorings (especially in variable and argument processing) to make everything above possible
 
 ## v0.4.3 (2015-10-16)
 
