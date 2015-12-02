@@ -1,7 +1,11 @@
-## Upcoming
+## v0.4.3 (2015-12-02)
 
-* Added basic subscription support as defined in the spec (https://github.com/facebook/graphql/pull/109) and reference implementation. (#89)
-* A lot of performance improvements in different parts of the library
+* A lot of performance improvements across the whole library
+* Added basic subscription support as defined in the spec (https://github.com/facebook/graphql/pull/109) and reference implementation (#89).
+  At the moment subscription is pretty basic, so it's meant more for experiments rather than use in real applications.
+* `null` value support (as defined in the spec change: https://github.com/facebook/graphql/pull/83) (#55)
+
+
 
 ## v0.4.3 (2015-10-16)
 

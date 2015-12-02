@@ -115,7 +115,7 @@ object QueryRenderer {
       case BigDecimalValue(value, _) ⇒ value.toString
       case StringValue(value, _) ⇒ '"' + escapeString(value) + '"'
       case BooleanValue(value, _) ⇒ value.toString
-      case NullValue(_) ⇒ indent + "null"
+      case NullValue(_) ⇒ "null"
       case EnumValue(value, _) ⇒ indent + value
       case ListValue(value, _) ⇒
         "[" + (value map (render(_, config, indentLevel)) mkString (config.inputListSeparator)) + "]"
@@ -165,12 +165,12 @@ object QueryRenderer {
 }
 
 case class QueryRendererConfig(
-                                  indentLevel: String,
-                                  lineBreak: String,
-                                  mandatorySeparator: String,
-                                  mandatoryLineBreak: String,
-                                  separator: String,
-                                  definitionSeparator: String,
-                                  inputFieldSeparator: String,
-                                  inputListSeparator: String,
-                                  formatInputValues: Boolean)
+  indentLevel: String,
+  lineBreak: String,
+  mandatorySeparator: String,
+  mandatoryLineBreak: String,
+  separator: String,
+  definitionSeparator: String,
+  inputFieldSeparator: String,
+  inputListSeparator: String,
+  formatInputValues: Boolean)
