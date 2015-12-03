@@ -4,6 +4,78 @@
 * Added basic subscription support as defined in the spec (https://github.com/facebook/graphql/pull/109) and reference implementation (#89).
   At the moment subscriptions are pretty basic, so it's meant more for experiments rather than for use in real applications. 
   It is very likely that this feature will experience breaking changes in the near future (spec change)
+* Much better handling of input objects (#37, #70). A new type-class is introduced: `FromInput`. It provides very high-level and very lo-level 
+  way to deserialize arbitrary input objects, just like `ToInput`.
+   
+  In order to use this feature, you need to provide a type parameter to the `InputObjectType`:
+   
+  ```scala
+  case class Article(title: String, text: Option[String])
+  
+  val ArticleType = InputObjectType[Article]("Article", List(
+    InputField("title", StringType),
+    InputField("text", OptionInputType(StringType))))
+    
+  val arg = Argument("article", ArticleType)
+  ```
+  
+  This code will not compile unless you define an implicit instance of `FromInput` for `Article` case class:
+
+  ```scala
+  implicit val manual = new FromInput[Article] {
+    val marshaller = CoercedScalaResultMarshaller.default
+    def fromResult(node: marshaller.Node) = {
+      val ad = node.asInstanceOf[Map[String, Any]]
+
+      Article(
+        title = ad("title").asInstanceOf[String],
+        text = ad.get("text").flatMap(_.asInstanceOf[Option[String]])
+    }
+  }
+  ```
+
+  As you can see, you need to provide a `ResultMarshaller` for desired format and then use a marshaled value to create a domain object based on it.
+  Many instances of `FromInput` are already provided out-of-the-box. For instance `FromInput[Map[String, Any]]` that previously supported format still
+  works as expected. All supported Json libraries also provide `FromInput[JsValue]` so that you can use Json AST instead of working with `Map[String, Any]`.
+  
+  Moreover, play-json and spray-json integration provide support for `Reads` and `JsonFormat`. This means that your domain objects are automatically
+  supported as long as you have `Reads` or `JsonFormat` defined for them. For instance this example should compile and work just fine without explicit 
+  `FromInput` declaration:
+  
+  ```scala
+  import sangria.integration.playJson._
+  import play.api.libs.json._
+  
+  case class Article(title: String, text: Option[String])
+  
+  implicit val articleFormat = Json.format[ArticleForPlay]
+    
+  val ArticleType = InputObjectType[Article]("Article", List(
+    InputField("title", StringType),
+    InputField("text", OptionInputType(StringType))))
+    
+  val arg = Argument("article", ArticleType)
+  ```
+  
+  **CAUTION: this is minor breaking change**. Together with `null` value support this feature changes the way input objects are 
+  deserialized into map-like structures (which still happens by default). Optional input fields will now produce input 
+  objects like:
+  ```scala 
+  // for JSON input: {"op1": "foo", "opt2": null} 
+  Map("opt1" → Some("foo"), "opt2" → None)
+  
+  // for JSON input: {"op1": "foo"} 
+  Map("opt1" → Some("foo"))
+  ```
+  instead of (old format):
+  ```scala 
+  // for JSON input: {"op1": "foo", "opt2": null} 
+  Map("opt1" → "foo")
+  
+  // for JSON input: {"op1": "foo"} 
+  Map("opt1" → "foo")
+  ```   
+  As you can see, this allows you to distinguish between "undefined" json object fields and json object field that are set to `null`.
 * `null` value support (as defined in the spec change: https://github.com/facebook/graphql/pull/83) (#55) (spec change)
 * Extracted input value parsing and made it a first-class citizen (#103). So now you can parse and render any `ast.Value` independently from 
   GraphQL query. There is even a new `graphqlInput` macros available:
@@ -157,11 +229,11 @@ I collected all of them in the change list below. They were necessary in order t
   It even supports things like `Writes` from play-json or `JsonFormat` from spray-json by default. This means that you can use your domain objects (like `User` or `Apple`) as a default value for input fields or arguments
   as long as you have `Writes` or `JsonFormat` defined for them. The mechanism is very extensible, of course: you just need to define implicit `ToInput[T]` for a class you want to use as a default value.
   This change makes it impossible to verify the default value type at compile time, since it can have any shape, like Json AST or maybe even some binary format. Don't worry though,
-  at a schema creation time all default values would be validated according to the input type. You can find more info in [docs](http://sangria-graphql.org/learn/#middleware) and [auth example](http://sangria-graphql.org/learn/#middleware-based-auth)
+  at a schema creation time all default values would be validated according to the input type.
 * #77 - Middleware support. This addition has a huge potential: you can measure performance, collect metrics, enforce security, etc. on a field and query level. Moreover
   it makes it much easier for people to share standard middleware in a libraries (e.g. sangria-security, sangria-graphite, sangria-influxdb, etc.). In order to ensure generic classification of
   fields, every field now got a generic list or `FieldTag`s which allow to provide user-defined meta information about this field
-  (just to highlight a few examples: `Permission("ViewOrders")`, `Authorized`, `Measured`, etc.).
+  (just to highlight a few examples: `Permission("ViewOrders")`, `Authorized`, `Measured`, etc.). You can find more info in [docs](http://sangria-graphql.org/learn/#middleware) and [auth example](http://sangria-graphql.org/learn/#middleware-based-auth)
 * #76 - You can now provide `maxQueryDepth` to `Executor`. It will then enforce this constraint for all queries (very useful if query has recursive types) [Docs](http://sangria-graphql.org/learn/#limiting-query-depth)
 * #69 - `DeferredResolver` now got `userContext` as an argument. (breaking change: you need to provide a type parameter and one extra argument in `resolve` for your `DeferredResolver`s. you you are not interested in `userContext`, you can just use `Any` type)
 * Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
