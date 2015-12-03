@@ -4,7 +4,7 @@
 * Added basic subscription support as defined in the spec (https://github.com/facebook/graphql/pull/109) and reference implementation (#89).
   At the moment subscriptions are pretty basic, so it's meant more for experiments rather than for use in real applications. 
   It is very likely that this feature will experience breaking changes in the near future (spec change)
-* Much better handling of input objects (#37, #70). A new type-class is introduced: `FromInput`. It provides very high-level and very lo-level 
+* Much better handling of input objects (#37, #70). A new type-class is introduced: `FromInput`. It provides high-level and low-level 
   way to deserialize arbitrary input objects, just like `ToInput`.
    
   In order to use this feature, you need to provide a type parameter to the `InputObjectType`:
@@ -35,8 +35,8 @@
   ```
 
   As you can see, you need to provide a `ResultMarshaller` for desired format and then use a marshaled value to create a domain object based on it.
-  Many instances of `FromInput` are already provided out-of-the-box. For instance `FromInput[Map[String, Any]]` that previously supported format still
-  works as expected. All supported Json libraries also provide `FromInput[JsValue]` so that you can use Json AST instead of working with `Map[String, Any]`.
+  Many instances of `FromInput` are already provided out-of-the-box. For instance `FromInput[Map[String, Any]]` was added to support existing map-like 
+  data-structure format. All supported Json libraries also provide `FromInput[JsValue]` so that you can use Json AST instead of working with `Map[String, Any]`.
   
   Moreover, play-json and spray-json integration provide support for `Reads` and `JsonFormat`. This means that your domain objects are automatically
   supported as long as you have `Reads` or `JsonFormat` defined for them. For instance this example should compile and work just fine without explicit 
@@ -48,7 +48,7 @@
   
   case class Article(title: String, text: Option[String])
   
-  implicit val articleFormat = Json.format[ArticleForPlay]
+  implicit val articleFormat = Json.format[Article]
     
   val ArticleType = InputObjectType[Article]("Article", List(
     InputField("title", StringType),
@@ -57,7 +57,7 @@
   val arg = Argument("article", ArticleType)
   ```
   
-  **CAUTION: this is minor breaking change**. Together with `null` value support this feature changes the way input objects are 
+  **CAUTION: this is minor breaking change**. Together with `null` value support, this feature changes the way input objects are 
   deserialized into map-like structures (which still happens by default). Optional input fields will now produce input 
   objects like:
   ```scala 
@@ -75,7 +75,7 @@
   // for JSON input: {"op1": "foo"} 
   Map("opt1" → "foo")
   ```   
-  As you can see, this allows you to distinguish between "undefined" json object fields and json object field that are set to `null`.
+  As you can see, this allows you to distinguish between "undefined" json object fields and json object fields that are set to `null`.
 * `null` value support (as defined in the spec change: https://github.com/facebook/graphql/pull/83) (#55) (spec change)
 * Extracted input value parsing and made it a first-class citizen (#103). So now you can parse and render any `ast.Value` independently from 
   GraphQL query. There is even a new `graphqlInput` macros available:
