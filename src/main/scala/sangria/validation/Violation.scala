@@ -316,3 +316,7 @@ case class GenericInvalidValueViolation(sourceMapper: Option[SourceMapper], posi
 case class VariableNotAllowedViolation(varName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Variable '$varName' is used in a place where it is not allowed to be used."
 }
+
+case class InvalidInputValueViolation(argumentName: String, errorText: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Argument '$argumentName' has invalid value: $errorText"
+}

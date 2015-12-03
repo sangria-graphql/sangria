@@ -14,7 +14,6 @@ class FromInputSpec extends WordSpec with Matchers {
     implicit val articleFormat = jsonFormat4(Article.apply)
   }
 
-  import MyJsonProtocol._
   import sangria.integration.sprayJson.sprayJsonWriterToInput
 
   val CommentType = InputObjectType[Comment]("Comment", List(
@@ -30,6 +29,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
   def manualSprayJsonSchema = {
     import sangria.integration.sprayJson.sprayJsonFromInput
+    import MyJsonProtocol._
 
     val TestType = ObjectType("TestType", {
       val Comment1Type = InputObjectType[JsValue]("Comment", List(
@@ -66,6 +66,7 @@ class FromInputSpec extends WordSpec with Matchers {
   }
 
   def automaticWithJsonFormatSchema = {
+    import MyJsonProtocol._
     import sangria.integration.sprayJson.sprayJsonReaderFromInput
 
     val TestType = ObjectType("TestType", {
@@ -82,7 +83,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
       fields[Unit, Unit](
         {
-          val arg = Argument("article", ArticleType)
+          val arg = Argument("article", Article1Type)
 
           Field("nn", OptionType(StringType),
             arguments = arg :: Nil,
@@ -114,6 +115,8 @@ class FromInputSpec extends WordSpec with Matchers {
   }
 
   def manualCoercedScalaSchema = {
+    import MyJsonProtocol._
+
     implicit val manual = new FromInput[Article] {
       val marshaller = CoercedScalaResultMarshaller.default
       def fromResult(node: marshaller.Node) = {
@@ -377,10 +380,10 @@ class FromInputSpec extends WordSpec with Matchers {
         }
       """,
       Map("data" → Map(
-        "olo1" → Vector(Some("""{"title":"def1","tags":["c","d"],"comments":[{"author":"c1"},null]}"""), None, Some("""{"title":"def2","text":"some text","comments":[]}""")).toString,
-        "olo2" → Vector(Some("""{"title":"first","comments":[null]}"""), None, Some("""{"title":"second","comments":[null,null]}""")).toString,
-        "olo3" → Vector(Some("""{"title":"foo","text":"bar","tags":["a","b"],"comments":[null,{"author":"anonymous"},{"author":"anonymous","text":"commnet3"}]}"""), None).toString,
-        "olo4" → Vector(Some("""{"title":"bar","text":null,"tags":null,"comments":[null]}"""), None, Some("""{"title":"baz","comments":[]}""")).toString)),
+        "olo1" → Vector(Some( """{"title":"def1","tags":["c","d"],"comments":[{"author":"c1"},null]}"""), None, Some( """{"title":"def2","text":"some text","comments":[]}""")).toString,
+        "olo2" → Vector(Some( """{"title":"first","comments":[null]}"""), None, Some( """{"title":"second","comments":[null,null]}""")).toString,
+        "olo3" → Vector(Some( """{"title":"foo","text":"bar","tags":["a","b"],"comments":[null,{"author":"anonymous"},{"author":"anonymous","text":"commnet3"}]}"""), None).toString,
+        "olo4" → Vector(Some( """{"title":"bar","text":null,"tags":null,"comments":[null]}"""), None, Some( """{"title":"baz","comments":[]}""")).toString)),
       """
         {
           "var1": {
@@ -467,5 +470,101 @@ class FromInputSpec extends WordSpec with Matchers {
         }
       """.parseJson
     )
+
   }
+
+  // TODO: commented out because play requires Java 8 → Move to integration library in order to remain compatible with Java 7 here
+//  case class CommentForPlay(author: String, text: Option[String])
+//  case class ArticleForPlay(title: String, text: Option[String], tags: Option[List[String]], comments: List[CommentForPlay])
+//
+//  "Play Json support" should {
+//    def automaticWithPlayWritesSchema = {
+//      import sangria.integration.playJson._
+//      import play.api.libs.json._
+//
+//
+//      implicit val commentFormat = Json.format[CommentForPlay]
+//      implicit val articleFormat = Json.format[ArticleForPlay]
+//
+//      val TestType = ObjectType("TestType", {
+//        val Comment1Type = InputObjectType[CommentForPlay]("Comment", List(
+//          InputField("author", OptionInputType(StringType), defaultValue = "anonymous"),
+//          InputField("text", OptionInputType(StringType))
+//        ))
+//
+//        val Article1Type = InputObjectType[ArticleForPlay]("Article", List(
+//          InputField("title", StringType),
+//          InputField("text", OptionInputType(StringType)),
+//          InputField("tags", OptionInputType(ListInputType(StringType))),
+//          InputField("comments", ListInputType(Comment1Type))))
+//
+//        fields[Unit, Unit](
+//          {
+//            val arg = Argument("articles", OptionInputType(ListInputType(OptionInputType(Article1Type))), Vector(
+//              Some(ArticleForPlay("def1", None, Some(List("c", "d")), List(CommentForPlay("c1", None)))),
+//              None,
+//              Some(ArticleForPlay("def2", Some("some text"), None, Nil))
+//            ))
+//
+//            Field("optListOpt", OptionType(StringType),
+//              arguments = arg :: Nil,
+//              resolve = ctx ⇒ {
+//                val value: Seq[Option[ArticleForPlay]] = ctx.arg(arg)
+//
+//                "" + value
+//              })
+//          }
+//        )
+//      })
+//
+//      Schema(TestType)
+//    }
+//
+//    "deserialize automatically with spray-json JsonFormat (optional list with optional values and default)" in check(
+//      automaticWithPlayWritesSchema,
+//      (),
+//      """
+//        query Test($var1: Article!, $var2: [Article]) {
+//          olo1: optListOpt(articles: null)
+//          olo2: optListOpt(articles: [{title: "first", comments: [{author: "test-user"}]}, null, {title: "second", comments: [{}]}])
+//          olo3: optListOpt(articles: [$var1, ])
+//          olo4: optListOpt(articles: $var2)
+//        }
+//      """,
+//      Map("data" → Map(
+//        "olo1" → Vector(
+//          Some(ArticleForPlay("def1", None, Some(List("c", "d")), List(CommentForPlay("c1", None)))),
+//          None,
+//          Some(ArticleForPlay("def2", Some("some text"), None, Nil))).toString,
+//        "olo2" → Vector(
+//          Some(ArticleForPlay("first", None, None, List(CommentForPlay("test-user", None)))),
+//          None,
+//          Some(ArticleForPlay("second", None, None, List(CommentForPlay("anonymous",None))))).toString,
+//        "olo3" → Vector(
+//          Some(ArticleForPlay("foo", Some("bar"), Some(List("a", "b")),
+//            List(CommentForPlay("anonymous", None), CommentForPlay("anonymous", Some("commnet3")))))).toString,
+//        "olo4" → Vector(
+//          Some(ArticleForPlay("bar", None, None, Nil)),
+//          None,
+//          Some(ArticleForPlay("baz", None, None, Nil))).toString)),
+//      """
+//        {
+//          "var1": {
+//            "title": "foo",
+//            "text": "bar",
+//            "tags": ["a", "b"],
+//            "comments": [
+//              {},
+//              {"text": "commnet3"}
+//            ]
+//          },
+//          "var2": [
+//            {"title": "bar", "text": null, "tags": null, "comments": []},
+//            null,
+//            {"title": "baz", "comments": []}
+//          ]
+//        }
+//      """.parseJson
+//    )
+//  }
 }

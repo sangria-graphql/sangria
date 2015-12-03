@@ -2,7 +2,7 @@ package sangria.integration.json4s
 
 import org.json4s.JsonAST.{JObject, JValue}
 import org.json4s.native.JsonMethods.{render ⇒ jsonRender, pretty, compact}
-import sangria.marshalling.{InputUnmarshaller, ToInput}
+import sangria.marshalling.{ResultMarshaller, FromInput, InputUnmarshaller, ToInput}
 
 object native extends Json4sNativeSupportLowPrioImplicits {
   implicit object Json4sNativeResultMarshaller extends Json4sResultMarshaller {
@@ -20,6 +20,14 @@ object native extends Json4sNativeSupportLowPrioImplicits {
 
   implicit def json4sNativeToInput[T <: JValue]: ToInput[T, JValue] =
     Json4sNativeToInput.asInstanceOf[ToInput[T, JValue]]
+
+  private object Json4sNativeFromInput extends FromInput[JValue] {
+    val marshaller = Json4sNativeResultMarshaller
+    def fromResult(node: marshaller.Node) = node
+  }
+
+  implicit def json4sNativeFromInput[T <: JValue]: FromInput[T] =
+    Json4sNativeFromInput.asInstanceOf[FromInput[T]]
 }
 
 trait Json4sNativeSupportLowPrioImplicits {

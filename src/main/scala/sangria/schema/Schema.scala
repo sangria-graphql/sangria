@@ -314,43 +314,63 @@ object Argument {
   def apply[T](
       name: String,
       argumentType: InputType[T],
-      description: String)(implicit fromInput: FromInput[T], res: WithoutCoercedTag[T]): Argument[res.Res] =
+      description: String)(implicit fromInput: FromInput[T], res: WithoutInputTypeTags[T]): Argument[res.Res] =
     Argument(Named.checkName(name), argumentType, Some(description), None, fromInput)
 
   def apply[T](
       name: String,
-      argumentType: InputType[T])(implicit fromInput: FromInput[T], res: WithoutCoercedTag[T]): Argument[res.Res] =
+      argumentType: InputType[T])(implicit fromInput: FromInput[T], res: WithoutInputTypeTags[T]): Argument[res.Res] =
     Argument(Named.checkName(name), argumentType, None, None, fromInput)
 }
 
-trait WithoutCoercedTag[T] {
+trait WithoutInputTypeTags[T] {
   type Res
 }
 
-object WithoutCoercedTag extends ArgumentTypeWithoutDefaultLowPrio {
-  implicit def coercedArgTpe[T] = new WithoutCoercedTag[T @@ CoercedScalaResult] {
+object WithoutInputTypeTags extends WithoutInputTypeTagsLowPrio {
+  implicit def coercedArgTpe[T] = new WithoutInputTypeTags[T @@ CoercedScalaResult] {
     type Res = T
   }
 
-  implicit def coercedOptArgTpe[T] = new WithoutCoercedTag[Option[T @@ CoercedScalaResult]] {
+  implicit def coercedOptArgTpe[T] = new WithoutInputTypeTags[Option[T @@ CoercedScalaResult]] {
     type Res = Option[T]
   }
 
-  implicit def coercedSeqOptArgTpe[T] = new WithoutCoercedTag[Seq[Option[T @@ CoercedScalaResult]]] {
+  implicit def coercedSeqOptArgTpe[T] = new WithoutInputTypeTags[Seq[Option[T @@ CoercedScalaResult]]] {
     type Res = Seq[Option[T]]
   }
 
-  implicit def coercedOptSeqArgTpe[T] = new WithoutCoercedTag[Option[Seq[T @@ CoercedScalaResult]]] {
+  implicit def coercedOptSeqArgTpe[T] = new WithoutInputTypeTags[Option[Seq[T @@ CoercedScalaResult]]] {
     type Res = Option[Seq[T]]
   }
 
-  implicit def coercedOptSeqOptArgTpe[T] = new WithoutCoercedTag[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
+  implicit def coercedOptSeqOptArgTpe[T] = new WithoutInputTypeTags[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
+    type Res = Option[Seq[Option[T]]]
+  }
+
+  implicit def ioArgTpe[T] = new WithoutInputTypeTags[T @@ InputObjectResult] {
+    type Res = T
+  }
+
+  implicit def ioOptArgTpe[T] = new WithoutInputTypeTags[Option[T @@ InputObjectResult]] {
+    type Res = Option[T]
+  }
+
+  implicit def ioSeqOptArgTpe[T] = new WithoutInputTypeTags[Seq[Option[T @@ InputObjectResult]]] {
+    type Res = Seq[Option[T]]
+  }
+
+  implicit def ioOptSeqArgTpe[T] = new WithoutInputTypeTags[Option[Seq[T @@ InputObjectResult]]] {
+    type Res = Option[Seq[T]]
+  }
+
+  implicit def ioOptSeqOptArgTpe[T] = new WithoutInputTypeTags[Option[Seq[Option[T @@ InputObjectResult]]]] {
     type Res = Option[Seq[Option[T]]]
   }
 }
 
-trait ArgumentTypeWithoutDefaultLowPrio {
-  implicit def defaultArgTpe[T] = new WithoutCoercedTag[T] {
+trait WithoutInputTypeTagsLowPrio {
+  implicit def defaultArgTpe[T] = new WithoutInputTypeTags[T] {
     type Res = T
   }
 }
@@ -377,6 +397,26 @@ object ArgumentType extends ArgumentTypeLowPrio {
   }
 
   implicit def coercedOptSeqOptArgTpe[T] = new ArgumentType[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
+    type Res = Seq[Option[T]]
+  }
+
+  implicit def ioArgTpe[T] = new ArgumentType[T @@ InputObjectResult] {
+    type Res = T
+  }
+
+  implicit def ioOptArgTpe[T] = new ArgumentType[Option[T @@ InputObjectResult]] {
+    type Res = T
+  }
+
+  implicit def ioSeqOptArgTpe[T] = new ArgumentType[Seq[Option[T @@ InputObjectResult]]] {
+    type Res = Seq[Option[T]]
+  }
+
+  implicit def ioOptSeqArgTpe[T] = new ArgumentType[Option[Seq[T @@ InputObjectResult]]] {
+    type Res = Seq[T]
+  }
+
+  implicit def ioOptSeqOptArgTpe[T] = new ArgumentType[Option[Seq[Option[T @@ InputObjectResult]]]] {
     type Res = Seq[Option[T]]
   }
 }
@@ -472,16 +512,16 @@ case class InputField[T] private (
 }
 
 object InputField {
-  def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutCoercedTag[T]): InputField[res.Res] =
+  def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, Some(description), Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutCoercedTag[T]): InputField[res.Res] =
+  def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, None, Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutCoercedTag[T]): InputField[res.Res] =
+  def apply[T, Default](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, Some(description), None).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T])(implicit res: WithoutCoercedTag[T]): InputField[res.Res] =
+  def apply[T, Default](name: String, fieldType: InputType[T])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, None, None).asInstanceOf[InputField[res.Res]]
 }
 

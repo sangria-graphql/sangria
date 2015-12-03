@@ -313,7 +313,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
       }
     }
 
-    // FIXME: commented out because play requires Java 8 → Move to integration library in order to remain compatible with Java 7 here
+    // TODO: commented out because play requires Java 8 → Move to integration library in order to remain compatible with Java 7 here
 //    "used with play JSON values" should {
 //      "generated typeclass-based serialisation" in {
 //        import play.api.libs.json._

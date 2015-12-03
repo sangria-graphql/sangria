@@ -1,5 +1,6 @@
 package sangria.integration
 
+import sangria.execution.InputParsingError
 import sangria.marshalling.{FromInput, InputUnmarshaller, ToInput, ResultMarshaller}
 import spray.json._
 
@@ -87,7 +88,9 @@ object sprayJson extends SprayJsonSupportLowPrioImplicits {
   implicit def sprayJsonReaderFromInput[T : JsonReader]: FromInput[T] =
     new FromInput[T] {
       val marshaller = SprayJsonResultMarshaller
-      def fromResult(node: marshaller.Node) = implicitly[JsonReader[T]].read(node)
+      def fromResult(node: marshaller.Node) = try implicitly[JsonReader[T]].read(node) catch {
+        case e: DeserializationException ⇒ throw InputParsingError(Vector(e.msg))
+      }
     }
 }
 

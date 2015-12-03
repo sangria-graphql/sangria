@@ -1,7 +1,7 @@
 package sangria.integration
 
 import io.circe._
-import sangria.marshalling.{InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.marshalling.{FromInput, InputUnmarshaller, ToInput, ResultMarshaller}
 
 object circe {
   implicit object CirceResultMarshaller extends ResultMarshaller {
@@ -66,5 +66,10 @@ object circe {
 
   implicit object circeJsonToInput extends ToInput[Json, Json] {
     def toInput(value: Json) = (value, CirceInputUnmarshaller)
+  }
+
+  implicit object circeJsonFromInput extends FromInput[Json] {
+    val marshaller = CirceResultMarshaller
+    def fromResult(node: marshaller.Node) = node
   }
 }

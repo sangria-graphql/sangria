@@ -3,7 +3,7 @@ package sangria.integration.json4s
 import org.json4s.JsonAST.{JObject, JValue}
 
 import org.json4s.jackson.JsonMethods.{render ⇒ jsonRender, pretty, compact}
-import sangria.marshalling.{InputUnmarshaller, ToInput}
+import sangria.marshalling.{FromInput, InputUnmarshaller, ToInput}
 
 object jackson extends Json4sJacksonSupportLowPrioImplicits {
   implicit object Json4sJacksonResultMarshaller extends Json4sResultMarshaller {
@@ -21,6 +21,14 @@ object jackson extends Json4sJacksonSupportLowPrioImplicits {
 
   implicit def json4sJacksonToInput[T <: JValue]: ToInput[T, JValue] =
     Json4sJacksonToInput.asInstanceOf[ToInput[T, JValue]]
+
+  private object Json4sJacksonFromInput extends FromInput[JValue] {
+    val marshaller = Json4sJacksonResultMarshaller
+    def fromResult(node: marshaller.Node) = node
+  }
+
+  implicit def json4sJacksonFromInput[T <: JValue]: FromInput[T] =
+    Json4sJacksonFromInput.asInstanceOf[FromInput[T]]
 }
 
 trait Json4sJacksonSupportLowPrioImplicits {

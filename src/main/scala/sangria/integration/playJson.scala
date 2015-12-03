@@ -1,7 +1,8 @@
 package sangria.integration
 
 import play.api.libs.json._
-import sangria.marshalling.{InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.execution.InputParsingError
+import sangria.marshalling.{FromInput, InputUnmarshaller, ToInput, ResultMarshaller}
 
 object playJson extends PlayJsonSupportLowPrioImplicits {
   implicit object PlayJsonResultMarshaller extends ResultMarshaller {
@@ -73,6 +74,28 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
   implicit def playJsonWriterToInput[T : Writes]: ToInput[T, JsValue] =
     new ToInput[T, JsValue] {
       def toInput(value: T) = implicitly[Writes[T]].writes(value) → PlayJsonInputUnmarshaller
+    }
+
+  private object PlayJsonFromInput extends FromInput[JsValue] {
+    val marshaller = PlayJsonResultMarshaller
+    def fromResult(node: marshaller.Node) = node
+  }
+
+  implicit def playJsonFromInput[T <: JsValue]: FromInput[T] =
+    PlayJsonFromInput.asInstanceOf[FromInput[T]]
+
+  implicit def playJsonReaderFromInput[T : Reads]: FromInput[T] =
+    new FromInput[T] {
+      val marshaller = PlayJsonResultMarshaller
+      def fromResult(node: marshaller.Node) = implicitly[Reads[T]].reads(node) match {
+        case JsSuccess(v, _) ⇒ v
+        case JsError(errors) ⇒
+          val formattedErrors = errors.toVector.flatMap {
+            case (JsPath(nodes), es) ⇒ es.map(e ⇒ s"At path '${nodes mkString "."}': ${e.message}")
+          }
+
+          throw InputParsingError(formattedErrors)
+      }
     }
 }
 
