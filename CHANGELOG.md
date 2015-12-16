@@ -1,3 +1,8 @@
+## Upcoming
+
+* Added a utility function to convert between different input representations (#108). 
+  This functionality is available though `sangria.marshalling.MarshallingUtil`. 
+
 ## v0.5.0 (2015-12-03)
 
 * A lot of performance improvements across the whole library
