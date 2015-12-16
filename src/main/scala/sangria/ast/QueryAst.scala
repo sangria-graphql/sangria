@@ -3,6 +3,8 @@ package sangria.ast
 import org.parboiled2.Position
 import sangria.parser.SourceMapper
 
+import scala.collection.immutable.ListMap
+
 case class Document(definitions: List[Definition], position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode {
   lazy val operations = Map(definitions collect {case op: OperationDefinition ⇒ op.name → op}: _*)
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition ⇒ fragment.name → fragment}: _*)
@@ -121,7 +123,10 @@ case class ListValue(values: List[Value], position: Option[Position] = None) ext
 case class VariableValue(name: String, position: Option[Position] = None) extends Value
 case class NullValue(position: Option[Position] = None) extends Value
 case class ObjectValue(fields: List[ObjectField], position: Option[Position] = None) extends Value {
-  lazy val fieldsByName = fields groupBy (_.name) mapValues (_.head.value)
+  lazy val fieldsByName =
+    fields.foldLeft(ListMap.empty[String, Value]) {
+      case (acc, field) ⇒ acc + (field.name → field.value)
+    }
 }
 
 case class ObjectField(name: String, value: Value, position: Option[Position] = None) extends NameValue

@@ -5,10 +5,14 @@ import sangria.util.tag._
 
 object scalaMarshalling {
   private val scalaScalaUnmarshallerGen = new ScalaInputUnmarshaller[Any]
-
   implicit val scalaResultMarshaller = new ScalaResultMarshaller
 
-  implicit def scalaInputUnmarshaller[T] = scalaScalaUnmarshallerGen.asInstanceOf[InputUnmarshaller[T @@ ScalaInput]]
+  implicit object ScalaMarshallerForType extends ResultMarshallerForType[Any @@ ScalaInput] {
+    val marshaller = scalaResultMarshaller
+  }
+
+  implicit def scalaInputUnmarshaller[T]: InputUnmarshaller[T @@ ScalaInput] =
+    scalaScalaUnmarshallerGen.asInstanceOf[InputUnmarshaller[T @@ ScalaInput]]
 }
 
 class ScalaResultMarshaller extends ResultMarshaller {
@@ -43,17 +47,18 @@ class ScalaInputUnmarshaller[T] extends InputUnmarshaller[T @@ ScalaInput] {
 
   def isMapNode(node: T @@ ScalaInput) = node.isInstanceOf[Map[_, _]]
   def getMapValue(node: T @@ ScalaInput, key: String) = node.asInstanceOf[Map[String, _]] get key map (v ⇒ tag[ScalaInput](v.asInstanceOf[T]))
-  def getMapKeys(node: T @@ ScalaInput) = node.asInstanceOf[Map[String, _]].keySet
+  def getMapKeys(node: T @@ ScalaInput) = node.asInstanceOf[Map[String, _]].keys
 
-  def isArrayNode(node: T @@ ScalaInput) = node.isInstanceOf[Seq[_]]
+  def isListNode(node: T @@ ScalaInput) = node.isInstanceOf[Seq[_]]
   def getListValue(node: T @@ ScalaInput) = node.asInstanceOf[Seq[_]] map (v ⇒ tag[ScalaInput](v.asInstanceOf[T]))
 
   def isDefined(node: T @@ ScalaInput) = node != null
 
   def isEnumNode(node: T @@ ScalaInput) = isScalarNode(node)
 
-  def isScalarNode(node: T @@ ScalaInput) = !(isMapNode(node) || isArrayNode(node))
+  def isScalarNode(node: T @@ ScalaInput) = !(isMapNode(node) || isListNode(node))
   def getScalarValue(node: T @@ ScalaInput) = node
+  def getScalaScalarValue(node: T @@ ScalaInput) = getScalarValue(node)
 
   def isVariableNode(node: T @@ ScalaInput) = false
   def getVariableName(node: T @@ ScalaInput) = throw new IllegalArgumentException("variables are not supported")

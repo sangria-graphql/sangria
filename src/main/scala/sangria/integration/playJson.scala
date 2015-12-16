@@ -2,7 +2,7 @@ package sangria.integration
 
 import play.api.libs.json._
 import sangria.execution.InputParsingError
-import sangria.marshalling.{FromInput, InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.marshalling._
 
 object playJson extends PlayJsonSupportLowPrioImplicits {
   implicit object PlayJsonResultMarshaller extends ResultMarshaller {
@@ -33,10 +33,14 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
     def renderPretty(node: JsValue) = Json.prettyPrint(node)
   }
 
+  implicit object PlayJsonMarshallerForType extends ResultMarshallerForType[JsValue] {
+    val marshaller = PlayJsonResultMarshaller
+  }
+
   implicit object PlayJsonInputUnmarshaller extends InputUnmarshaller[JsValue] {
     def getRootMapValue(node: JsValue, key: String) = node.asInstanceOf[JsObject].value get key
 
-    def isArrayNode(node: JsValue) = node.isInstanceOf[JsArray]
+    def isListNode(node: JsValue) = node.isInstanceOf[JsArray]
     def getListValue(node: JsValue) = node.asInstanceOf[JsArray].value
 
     def isMapNode(node: JsValue) = node.isInstanceOf[JsObject]
@@ -50,6 +54,8 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
       case JsString(s) ⇒ s
       case _ ⇒ throw new IllegalStateException(s"$node is not a scalar value")
     }
+
+    def getScalaScalarValue(node: JsValue) = getScalarValue(node)
 
     def isEnumNode(node: JsValue) = node.isInstanceOf[JsString]
 

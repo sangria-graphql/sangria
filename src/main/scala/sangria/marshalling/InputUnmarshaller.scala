@@ -12,7 +12,7 @@ trait InputUnmarshaller[Node] {
   def getMapValue(node: Node, key: String): Option[Node]
   def getMapKeys(node: Node): Traversable[String]
 
-  def isArrayNode(node: Node): Boolean
+  def isListNode(node: Node): Boolean
   def getListValue(node: Node): Seq[Node]
 
   def isDefined(node: Node): Boolean
@@ -20,8 +20,19 @@ trait InputUnmarshaller[Node] {
   def isEnumNode(node: Node): Boolean
   def isVariableNode(node: Node): Boolean
 
-  // Scalar values are Scala String, Int, Double, Boolean and Enum values defined in the schema
+  /**
+    * @return Scalar values are Scala String, Int, Double, Boolean and Enum values defined in the schema
+    *          as well as ast nodes if appropriate.
+    *
+    * TODO: find better approach. Ideally the should be only one `getScalarValue` method witch returns normal scala values
+    */
   def getScalarValue(node: Node): Any
+
+  /**
+    * @return Only normal scala scalar values
+    */
+  def getScalaScalarValue(node: Node): Any
+
   def getVariableName(node: Node): String
 
   def render(node: Node): String

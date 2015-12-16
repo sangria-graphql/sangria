@@ -8,6 +8,10 @@ object queryAst {
 
   implicit val queryAstResultMarshaller = new QueryAstResultMarshaller
 
+  implicit object QueryAstMarshallerForType extends ResultMarshallerForType[ast.Value] {
+    val marshaller = queryAstResultMarshaller
+  }
+
   private object QueryAstToInput extends ToInput[ast.Value, ast.Value] {
     def toInput(value: ast.Value) = (value, queryAstInputUnmarshaller)
   }
@@ -21,9 +25,9 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
 
   def isMapNode(node: ast.Value) = node.isInstanceOf[ast.ObjectValue]
   def getMapValue(node: ast.Value, key: String) = node.asInstanceOf[ast.ObjectValue].fieldsByName get key
-  def getMapKeys(node: ast.Value) = node.asInstanceOf[ast.ObjectValue].fieldsByName.keySet
+  def getMapKeys(node: ast.Value) = node.asInstanceOf[ast.ObjectValue].fieldsByName.keys
 
-  def isArrayNode(node: ast.Value) = node.isInstanceOf[ast.ListValue]
+  def isListNode(node: ast.Value) = node.isInstanceOf[ast.ListValue]
   def getListValue(node: ast.Value) = node.asInstanceOf[ast.ListValue].values
 
   def isDefined(node: ast.Value) = !node.isInstanceOf[ast.NullValue]
@@ -32,6 +36,16 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
 
   def isScalarNode(node: ast.Value) = node.isInstanceOf[ast.ScalarValue]
   def getScalarValue(node: ast.Value) = node
+  def getScalaScalarValue(node: ast.Value) = node match {
+    case ast.BooleanValue(b, _) ⇒ b
+    case ast.BigIntValue(i, _) ⇒ i
+    case ast.BigDecimalValue(d, _) ⇒ d
+    case ast.FloatValue(f, _) ⇒ f
+    case ast.IntValue(i, _) ⇒ i
+    case ast.StringValue(s, _) ⇒ s
+    case ast.EnumValue(s, _) ⇒ s
+    case node ⇒ throw new IllegalStateException("Unsupported scalar node: " + node)
+  }
 
   def isVariableNode(node: ast.Value) = node.isInstanceOf[ast.VariableValue]
   def getVariableName(node: ast.Value) = node.asInstanceOf[ast.VariableValue].name

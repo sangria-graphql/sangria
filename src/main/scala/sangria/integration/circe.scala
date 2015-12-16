@@ -1,7 +1,7 @@
 package sangria.integration
 
 import io.circe._
-import sangria.marshalling.{FromInput, InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.marshalling._
 
 object circe {
   implicit object CirceResultMarshaller extends ResultMarshaller {
@@ -30,6 +30,10 @@ object circe {
     def renderPretty(node: Json) = node.spaces2
   }
 
+  implicit object CirceMarshallerForType extends ResultMarshallerForType[Json] {
+    val marshaller = CirceResultMarshaller
+  }
+
   implicit object CirceInputUnmarshaller extends InputUnmarshaller[Json] {
     def getRootMapValue(node: Json, key: String) = node.asObject.get(key)
 
@@ -37,7 +41,7 @@ object circe {
     def getMapValue(node: Json, key: String) = node.asObject.get(key)
     def getMapKeys(node: Json) = node.asObject.get.fields
 
-    def isArrayNode(node: Json) = node.isArray
+    def isListNode(node: Json) = node.isArray
     def getListValue(node: Json) = node.asArray.get
 
     def isDefined(node: Json) = !node.isNull
@@ -52,6 +56,8 @@ object circe {
         node.asString.get
       else
         throw new IllegalStateException(s"$node is not a scalar value")
+
+    def getScalaScalarValue(node: Json) = getScalarValue(node)
 
     def isEnumNode(node: Json) = node.isString
 

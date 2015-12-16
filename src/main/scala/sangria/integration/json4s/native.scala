@@ -2,12 +2,16 @@ package sangria.integration.json4s
 
 import org.json4s.JsonAST.{JObject, JValue}
 import org.json4s.native.JsonMethods.{render ⇒ jsonRender, pretty, compact}
-import sangria.marshalling.{ResultMarshaller, FromInput, InputUnmarshaller, ToInput}
+import sangria.marshalling._
 
 object native extends Json4sNativeSupportLowPrioImplicits {
   implicit object Json4sNativeResultMarshaller extends Json4sResultMarshaller {
     def renderCompact(node: JValue) =  compact(jsonRender(node))
     def renderPretty(node: JValue) = pretty(jsonRender(node))
+  }
+
+  implicit object Json4sNativeMarshallerForType extends ResultMarshallerForType[JValue] {
+    val marshaller = Json4sNativeResultMarshaller
   }
 
   implicit object Json4sNativeInputUnmarshaller extends Json4sInputUnmarshaller {

@@ -113,7 +113,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
     case (OptionInputType(ofType), value) ⇒
       Right(None)
 
-    case (ListInputType(ofType), values) if iu.isArrayNode(values) ⇒
+    case (ListInputType(ofType), values) if iu.isListNode(values) ⇒
       val res = iu.getListValue(values).toVector.map {
         case defined if iu.isDefined(defined) ⇒
           resolveListValue(ofType, fieldPath, marshaller, valuePosition(defined))(
@@ -219,7 +219,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
     case (OptionInputType(_), _) ⇒ Vector.empty
     case (_, None) ⇒ Vector(NotNullValueIsNullViolation(sourceMapper, Nil))
 
-    case (ListInputType(ofType), Some(values)) if um.isArrayNode(values) ⇒
+    case (ListInputType(ofType), Some(values)) if um.isListNode(values) ⇒
       um.getListValue(values).toVector.flatMap(v ⇒ isValidValue(ofType, v match {
         case opt: Option[In @unchecked] ⇒ opt
         case other ⇒ Option(other)

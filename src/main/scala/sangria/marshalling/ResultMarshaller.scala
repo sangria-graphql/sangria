@@ -1,5 +1,6 @@
 package sangria.marshalling
 
+import scala.annotation.implicitNotFound
 import scala.collection.immutable.VectorBuilder
 
 trait ResultMarshaller {
@@ -54,4 +55,9 @@ trait RawResultMarshaller extends ResultMarshaller {
   final def floatNode(value: Double) = onlyRawValuesExpected
   final def bigDecimalNode(value: BigDecimal) = onlyRawValuesExpected
   final def booleanNode(value: Boolean) = onlyRawValuesExpected
+}
+
+@implicitNotFound("Type ${T} cannot be marshaled. Please consider defining an implicit instance of `ResultMarshallerForType` for it or import appropriate marshaling from `sangria.marshalling`.")
+trait ResultMarshallerForType[+T] {
+  def marshaller: ResultMarshaller
 }
