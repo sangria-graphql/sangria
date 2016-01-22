@@ -10,6 +10,15 @@ case class Document(definitions: List[Definition], position: Option[Position] = 
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition ⇒ fragment.name → fragment}: _*)
   lazy val source = sourceMapper map (_.source)
 
+  def operationType(operationName: Option[String] = None): Option[OperationType] =
+    operation(operationName) map (_.operationType)
+
+  def operation(operationName: Option[String] = None): Option[OperationDefinition] =
+    if (operations.size != 1 && operationName.isEmpty)
+      None
+    else
+      operationName flatMap (opName ⇒ operations get Some(opName)) orElse operations.values.headOption
+
   override def canEqual(other: Any): Boolean = other.isInstanceOf[Document]
 
   override def equals(other: Any): Boolean = other match {
