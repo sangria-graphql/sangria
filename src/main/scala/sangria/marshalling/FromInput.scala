@@ -1,7 +1,5 @@
 package sangria.marshalling
 
-import sangria.schema.InputObjectType
-
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 
@@ -32,8 +30,8 @@ object FromInput {
   import sangria.util.tag._
 
   implicit def coercedScalaInput[T] = ScalarFromInput.asInstanceOf[FromInput[T @@ CoercedScalaResult]]
-  implicit def fooInput[T] = ScalarFromInput.asInstanceOf[FromInput[InputObjectType.DefaultInput]]
-  implicit def foo1Input[T](implicit ev: FromInput[T]) = ev.asInstanceOf[FromInput[T @@ InputObjectResult]]
+  implicit def defaultInput[T] = ScalarFromInput.asInstanceOf[FromInput[Map[String, Any]]]
+  implicit def inputObjectResultInput[T](implicit ev: FromInput[T]) = ev.asInstanceOf[FromInput[T @@ InputObjectResult]]
 
   implicit def optionInput[T](implicit ev: FromInput[T]) = ev.asInstanceOf[FromInput[Option[T]]]
   implicit def seqInput[T](implicit ev: FromInput[T]) = new SeqFromInput[T](ev)
