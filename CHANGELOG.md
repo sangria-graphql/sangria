@@ -1,5 +1,46 @@
-## Upcoming
+## v0.5.1 (2016-01-23)
 
+* JSON library integration is extracted to separate libraries (#38). Evey integration library will have a separate and independent versioning and release cycle. Following new libraries were introduced:
+  * [sangria-marshalling-api](https://github.com/sangria-graphql/sangria-marshalling-api) now includes all of the interfaces that marshalling
+    library needs to implement.
+  * [sangria-marshalling-testkit](https://github.com/sangria-graphql/sangria-marshalling-testkit) contains a set of generic test cases that can be used
+    to test a concrete marshalling library integration.
+  * [sangria-spray-json](https://github.com/sangria-graphql/sangria-spray-json) contains an integration with [spray-json](https://github.com/spray/spray-json) library.
+    From now on, please use following dependency if you would like to use spray-json support:
+    
+    ```scala
+    libraryDependencies += "org.sangria-graphql" %% "sangria-spray-json" % "0.1.0"
+    ```
+    
+    The package is changed for the sake of consistency. From now on please use following import:
+    
+    ```scala
+    import sangria.marshalling.sprayJson._
+    ```
+  * [sangria-play-json](https://github.com/sangria-graphql/sangria-play-json) contains an integration with [play-json](https://www.playframework.com/documentation/2.2.x/ScalaJson) library.
+    From now on, please use following dependency if you would like to use spray-json support:
+    
+    ```scala
+    libraryDependencies += "org.sangria-graphql" %% "sangria-play-json" % "0.1.0"
+    ```
+    
+    The package is changed for the sake of consistency. From now on please use following import:
+    
+    ```scala
+    import sangria.marshalling.playJson._
+    ```
+* [Argonaut](http://argonaut.io) scala JSON library is now supported via [sangria-argonaut](https://github.com/sangria-graphql/sangria-argonaut) (#59).
+  Please use following dependency if you would like to use argonaut support:
+  
+  ```scala
+  libraryDependencies += "org.sangria-graphql" %% "sangria-argonaut" % "0.1.0"
+  ```
+  
+  And here is an import statement:
+  
+  ```scala
+  import sangria.marshalling.argonaut._
+  ```
 * Added `operationType` and `operation` on `ast.Document` to easily identify the operation type (#110)
 * Added a utility function to convert between different input representations (#108). 
   This functionality is available though `sangria.marshalling.MarshallingUtil`. 

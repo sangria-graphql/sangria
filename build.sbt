@@ -17,15 +17,14 @@ libraryDependencies ++= Seq(
   "org.parboiled" %% "parboiled" % "2.1.0",
 
   // marshalling
-  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.1.0-SNAPSHOT",
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.1.0",
 
   // testing
   "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.1.0-SNAPSHOT" % "test",
-  "org.sangria-graphql" %% "sangria-spray-json" % "0.1.0-SNAPSHOT" % "test"
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.1.0" % "test",
+  "org.sangria-graphql" %% "sangria-spray-json" % "0.1.0" % "test"
 )
 
-resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 
 // Publishing
