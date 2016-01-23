@@ -17,8 +17,6 @@ class ExecutionError(message: String, val sourceMapper: Option[SourceMapper] = N
   override def getMessage = super.getMessage + astLocation
 }
 
-case class InputParsingError(errors: Vector[String]) extends Exception(errors.mkString("\n"))
-
 case class VariableCoercionError(violations: Vector[Violation]) extends ExecutionError(
   s"Error during variable coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}") with WithViolations
 

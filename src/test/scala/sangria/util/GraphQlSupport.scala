@@ -12,7 +12,7 @@ import spray.json.{JsValue, JsObject}
 import scala.util.Success
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 
 object SimpleGraphQlSupport extends AwaitSupport with Matchers {
   def executeTestQuery[T, A: InputUnmarshaller](schema: Schema[_, _], data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true) = {

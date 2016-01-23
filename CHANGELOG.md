@@ -1,5 +1,6 @@
 ## Upcoming
 
+* Added `operationType` and `operation` on `ast.Document` to easily identify the operation type (#110)
 * Added a utility function to convert between different input representations (#108). 
   This functionality is available though `sangria.marshalling.MarshallingUtil`. 
 

@@ -3,9 +3,6 @@
    - "2.11.7"
  jdk:
    - oraclejdk7
- before_script:
-   - mkdir -p $HOME/.sbt/launchers/0.13.9/
-   - curl -L -o $HOME/.sbt/launchers/0.13.9/sbt-launch.jar http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.9/sbt-launch.jar
  script: "sbt clean coverage test"
  after_success: "sbt coveralls"
  env:

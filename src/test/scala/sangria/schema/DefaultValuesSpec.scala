@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
   def check[T, Default](inputType: InputType[T], defaultValue: Default, expectedResult: Any, expectedDefault: String)(implicit ev: ToInput[Default, _], ev1: FromInput[T]) = {
-    import sangria.integration.sprayJson._
+    import sangria.marshalling.sprayJson._
     import spray.json._
 
     class CaptureCtx(var arg: Option[Any] = None)
@@ -188,7 +188,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
 
     "used with spray JSON values" should {
       import spray.json._
-      import sangria.integration.sprayJson.sprayJsonToInput
+      import sangria.marshalling.sprayJson.sprayJsonToInput
 
       "default Int" in check(IntType,
         defaultValue = JsNumber(1),
@@ -241,7 +241,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
           override def toInput(value: Shares) = {
             val json = JsObject("twitter" → JsNumber(value.twitter), "facebook" → JsNumber(value.facebook))
 
-            json → sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+            json → sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
           }
         }
 
@@ -252,7 +252,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
               "text" → JsString(value.text),
               "likes" → JsNumber(value.likes))
 
-            json → sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+            json → sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
           }
         }
 
@@ -261,7 +261,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
             override def toInput(value: List[T]) = {
               val json = JsArray(value.toVector map ((v: T) ⇒ ev.toInput(v)._1))
 
-              json → sangria.integration.sprayJson.SprayJsonInputUnmarshaller
+              json → sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
             }
           }
 
@@ -291,7 +291,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
         }
 
         import MyJsonProtocol._
-        import sangria.integration.sprayJson.sprayJsonWriterToInput
+        import sangria.marshalling.sprayJson.sprayJsonWriterToInput
 
         val CustomInputType = complexInputType(
           sharesDefault = Shares(123, 456),
@@ -312,35 +312,5 @@ class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
           expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
       }
     }
-
-    // TODO: commented out because play requires Java 8 → Move to integration library in order to remain compatible with Java 7 here
-//    "used with play JSON values" should {
-//      "generated typeclass-based serialisation" in {
-//        import play.api.libs.json._
-//
-//        implicit val sharesWrites = Json.writes[Shares]
-//        implicit val commentWrites = Json.writes[Comment]
-//
-//        import sangria.integration.playJson._
-//
-//        val CustomInputType = complexInputType(
-//          sharesDefault = Shares(123, 456),
-//          commentsDefault = List(Comment("John Doe", "Nice post!", BigDecimal(100)), Comment("Foo", "Bar", BigDecimal(0.1))))
-//
-//        check(
-//          CustomInputType,
-//          defaultValue = Json.parse("""{"title": "Post #1", "text": "Amazing!"}"""),
-//          expectedResult = Map(
-//            "title" → "Post #1",
-//            "text" → "Amazing!",
-//            "tags" → List("beginner", "scala"),
-//            "views" → 12,
-//            "shares" → Map("twitter" → 123, "facebook" → 456),
-//            "comments" → List(
-//              Map("author" → "John Doe", "text" → "Nice post!", "likes" → 100),
-//              Map("author" → "Foo", "text" → "Bar", "likes" → 0.1))),
-//          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
-//      }
-//    }
   }
 }

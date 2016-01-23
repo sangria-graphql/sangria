@@ -1,7 +1,7 @@
 package sangria.execution
 
 import sangria.ast
-import sangria.marshalling.{FromInput, CoercedScalaResultMarshaller, ResultMarshaller, InputUnmarshaller}
+import sangria.marshalling._
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema._

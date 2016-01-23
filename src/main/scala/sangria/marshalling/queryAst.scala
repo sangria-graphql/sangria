@@ -18,6 +18,14 @@ object queryAst {
 
   implicit def queryAstToInput[T <: ast.Value]: ToInput[T, ast.Value] =
     QueryAstToInput.asInstanceOf[ToInput[T, ast.Value]]
+
+  private object QueryAstFromInput extends FromInput[ast.Value] {
+    val marshaller = queryAstResultMarshaller
+    def fromResult(node: marshaller.Node) = node
+  }
+
+  implicit def queryAstFromInput[T <: ast.Value]: FromInput[T] =
+    QueryAstFromInput.asInstanceOf[FromInput[T]]
 }
 
 class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {

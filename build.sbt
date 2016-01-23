@@ -16,17 +16,13 @@ libraryDependencies ++= Seq(
   // parsing
   "org.parboiled" %% "parboiled" % "2.1.0",
 
-  // JSON marshalling/unmarshalling. IT IS ONLY TEMPORARY IN THIS PROJECT TODO: extract in different library (see #38)
-  "io.spray" %%  "spray-json" % "1.3.2" % "optional",
-  "org.json4s" %% "json4s-native" % "3.3.0" % "optional",
-  "org.json4s" %% "json4s-jackson" % "3.3.0" % "optional",
-  "com.typesafe.play" % "play-json_2.11" % "2.4.2" % "optional",
-  "io.circe" %% "circe-core" % "0.1.1" % "optional",
-  "io.circe" %% "circe-generic" % "0.1.1" % "optional",
-  "io.circe" %% "circe-jawn" % "0.1.1" % "optional",
+  // marshalling
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.1.0-SNAPSHOT",
 
   // testing
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.4" % "test",
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.1.0-SNAPSHOT" % "test",
+  "org.sangria-graphql" %% "sangria-spray-json" % "0.1.0-SNAPSHOT" % "test"
 )
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
