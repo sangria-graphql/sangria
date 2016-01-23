@@ -25,6 +25,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-spray-json" % "0.1.0-SNAPSHOT" % "test"
 )
 
+resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 
 // Publishing
