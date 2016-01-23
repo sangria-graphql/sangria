@@ -18,7 +18,7 @@
     import sangria.marshalling.sprayJson._
     ```
   * [sangria-play-json](https://github.com/sangria-graphql/sangria-play-json) contains an integration with [play-json](https://www.playframework.com/documentation/2.2.x/ScalaJson) library.
-    From now on, please use following dependency if you would like to use spray-json support:
+    From now on, please use following dependency if you would like to use play-json support:
     
     ```scala
     libraryDependencies += "org.sangria-graphql" %% "sangria-play-json" % "0.1.0"
@@ -28,6 +28,42 @@
     
     ```scala
     import sangria.marshalling.playJson._
+    ```
+  * [sangria-json4s-native](https://github.com/sangria-graphql/sangria-json4s-native) contains an integration with [json4s-native](http://json4s.org) library.
+    From now on, please use following dependency if you would like to use json4s-native support:
+    
+    ```scala
+    libraryDependencies += "org.sangria-graphql" %% "sangria-json4s-native" % "0.1.0"
+    ```
+    
+    The package is changed for the sake of consistency. From now on please use following import:
+    
+    ```scala
+    import sangria.marshalling.json4s.native._
+    ```
+  * [sangria-json4s-jackson](https://github.com/sangria-graphql/sangria-json4s-jackson) contains an integration with [json4s-jackson](http://json4s.org) library.
+    From now on, please use following dependency if you would like to use json4s-jackson support:
+    
+    ```scala
+    libraryDependencies += "org.sangria-graphql" %% "sangria-json4s-jackson" % "0.1.0"
+    ```
+    
+    The package is changed for the sake of consistency. From now on please use following import:
+    
+    ```scala
+    import sangria.marshalling.json4s.jackson._
+    ```  
+  * [sangria-circe](https://github.com/sangria-graphql/sangria-circe) contains an integration with [circe](http://circe.io) library.
+    From now on, please use following dependency if you would like to use circe support:
+    
+    ```scala
+    libraryDependencies += "org.sangria-graphql" %% "sangria-circe" % "0.1.0"
+    ```
+    
+    The package is changed for the sake of consistency. From now on please use following import:
+    
+    ```scala
+    import sangria.marshalling.circe._
     ```
 * [Argonaut](http://argonaut.io) scala JSON library is now supported via [sangria-argonaut](https://github.com/sangria-graphql/sangria-argonaut) (#59).
   Please use following dependency if you would like to use argonaut support:
