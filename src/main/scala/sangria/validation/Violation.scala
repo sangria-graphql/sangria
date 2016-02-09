@@ -188,8 +188,8 @@ case class UnusedFragmentViolation(name: String, sourceMapper: Option[SourceMapp
   lazy val simpleErrorMessage = s"Fragment '$name' is not used."
 }
 
-case class UnusedVariableViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Variable '$$$name' is not used."
+case class UnusedVariableViolation(name: String, operationName: Option[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Variable '$$$name' is not used${operationName.fold("")(" in operation " + _)}."
 }
 
 case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
