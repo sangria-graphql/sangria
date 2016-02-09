@@ -4,6 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.{Directive, Field, AstNode}
 import sangria.parser.QueryParser
 import sangria.util.FileUtil
+import sangria.macros._
 
 import scala.util.Success
 
@@ -86,6 +87,36 @@ class QueryRendererSpec extends WordSpec with Matchers {
       val ast = Field(Some("al"), "field1", Nil, List(Directive("foo", Nil)), Nil)
 
       QueryRenderer.render(ast) should be ("al: field1 @foo")
+    }
+
+    "correctly prints query operations without name" in {
+      val ast = graphql"query { id, name }"
+
+      QueryRenderer.render(ast).replaceAll("\r", "") should be (
+        """{
+          |  id
+          |  name
+          |}""".stripMargin.replaceAll("\r", ""))
+    }
+
+    "correctly prints query operations with artifacts and without name" in {
+      val ast = graphql"query ($$foo: TestType) @testDirective { id, name }"
+
+      QueryRenderer.render(ast).replaceAll("\r", "") should be (
+        """query ($foo: TestType) @testDirective {
+          |  id
+          |  name
+          |}""".stripMargin.replaceAll("\r", ""))
+    }
+
+    "correctly prints mutation operations with artifacts and without name" in {
+      val ast = graphql"mutation ($$foo: TestType) @testDirective { id, name }"
+
+      QueryRenderer.render(ast).replaceAll("\r", "") should be (
+        """mutation ($foo: TestType) @testDirective {
+          |  id
+          |  name
+          |}""".stripMargin.replaceAll("\r", ""))
     }
   }
 }
