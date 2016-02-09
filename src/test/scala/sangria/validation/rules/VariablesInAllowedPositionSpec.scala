@@ -123,7 +123,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
         query Query($complexVar: ComplexInput)
         {
           complicatedArgs {
-            complexArgField(complexArg: $ComplexInput)
+            complexArgField(complexArg: $complexVar)
           }
         }
       """)
