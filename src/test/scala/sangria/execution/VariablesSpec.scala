@@ -279,7 +279,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
 
         "errors on addition of unknown input field" in  assertErrorResult(
           """{"input": {"a": "foo", "b": "bar", "c": "baz", "z": "dog"}}""".parseJson,
-          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":"baz","z":"dog"}""")
+          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":"baz","z":"dog"}. Reason: Unknown field 'z' is not defined in the input type 'TestInputObject'.""")
       }
     }
 
