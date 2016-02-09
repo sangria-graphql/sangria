@@ -18,6 +18,12 @@ trait ValidationSupport extends Matchers {
     Field("name", OptionType(StringType), resolve = _ ⇒ None)
   ))
 
+  val Canine = InterfaceType("Canine", List[TestField](
+    Field("name", OptionType(StringType),
+      arguments = Argument("surname", OptionInputType(BooleanType)) :: Nil,
+      resolve = _ ⇒ None)
+  ))
+
   val DogCommand = EnumType("DogCommand", values = List(
     EnumValue("SIT", value = 0),
     EnumValue("HEEL", value = 1),
@@ -31,8 +37,10 @@ trait ValidationSupport extends Matchers {
     EnumValue("SPOTTED", value = 3)
   ))
 
-  val Dog = ObjectType("Dog", interfaces[Unit, Unit](Being, Pet), List[TestField](
-    Field("name", OptionType(StringType), resolve = _ ⇒ None),
+  val Dog = ObjectType("Dog", interfaces[Unit, Unit](Being, Pet, Canine), List[TestField](
+    Field("name", OptionType(StringType),
+      arguments = Argument("surname", OptionInputType(BooleanType)) :: Nil,
+      resolve = _ ⇒ None),
     Field("nickname", OptionType(StringType), resolve = _ ⇒ None),
     Field("barks", OptionType(BooleanType), resolve = _ ⇒ None),
     Field("barkVolume", OptionType(IntType), resolve = _ ⇒ None),

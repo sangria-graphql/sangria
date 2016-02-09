@@ -136,8 +136,23 @@ case class DefaultForNonNullArgViolation(varName: String, typeName: String, gues
   lazy val simpleErrorMessage = s"Variable '$$$varName' of type '$typeName' is required and will never use the default value. Perhaps you meant to use type '$guessTypeName'."
 }
 
-case class UndefinedFieldViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Cannot query field '$fieldName' on '$typeName'."
+case class UndefinedFieldViolation(fieldName: String, typeName: String, suggestedTypes: Seq[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  import UndefinedFieldViolation.MaxSuggestions
+
+  lazy val simpleErrorMessage = {
+    val message = s"Cannot query field '$fieldName' on type '$typeName'."
+
+    if (suggestedTypes.nonEmpty) {
+      val list = suggestedTypes take MaxSuggestions map ("'" + _ + "'") mkString ", "
+      val more = if (suggestedTypes.size > MaxSuggestions) s", and ${suggestedTypes.size- MaxSuggestions} other types" else ""
+
+      message + s" However, this field exists on $list$more. Perhaps you meant to use an inline fragment?"
+    } else message
+  }
+}
+
+object UndefinedFieldViolation {
+  val MaxSuggestions = 5
 }
 
 case class InlineFragmentOnNonCompositeErrorViolation(typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {

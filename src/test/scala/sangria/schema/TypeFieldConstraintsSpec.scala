@@ -361,7 +361,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
          }
         """,
         null,
-        List("Cannot query field 'color' on 'Fruit'." → List(Pos(5, 15))))
+        List("Cannot query field 'color' on type 'Fruit'. However, this field exists on 'Apple'. Perhaps you meant to use an inline fragment?" → List(Pos(5, 15))))
     }
   }
 

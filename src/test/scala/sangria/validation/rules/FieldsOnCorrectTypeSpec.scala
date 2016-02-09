@@ -2,6 +2,7 @@ package sangria.validation.rules
 
 import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
+import sangria.validation.UndefinedFieldViolation
 
 class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
 
@@ -60,7 +61,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'meowVolume' on 'Dog'." → Some(Pos(3, 11))
+        "Cannot query field 'meowVolume' on type 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Field not defined deeply, only reports first" in expectFails(
@@ -72,7 +73,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'unknown_field' on 'Dog'." → Some(Pos(3, 11))
+        "Cannot query field 'unknown_field' on type 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Sub-field not defined" in expectFails(
@@ -84,7 +85,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'unknown_field' on 'Pet'." → Some(Pos(4, 13))
+        "Cannot query field 'unknown_field' on type 'Pet'." → Some(Pos(4, 13))
       ))
 
     "Field not defined on inline fragment" in expectFails(
@@ -96,7 +97,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'meowVolume' on 'Dog'." → Some(Pos(4, 13))
+        "Cannot query field 'meowVolume' on type 'Dog'." → Some(Pos(4, 13))
       ))
 
     "Aliased field target not defined" in expectFails(
@@ -106,7 +107,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'mooVolume' on 'Dog'." → Some(Pos(3, 11))
+        "Cannot query field 'mooVolume' on type 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Aliased lying field target not defined" in expectFails(
@@ -116,7 +117,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'kawVolume' on 'Dog'." → Some(Pos(3, 11))
+        "Cannot query field 'kawVolume' on type 'Dog'." → Some(Pos(3, 11))
       ))
 
     "Not defined on interface" in expectFails(
@@ -126,17 +127,17 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'tailLength' on 'Pet'." → Some(Pos(3, 11))
+        "Cannot query field 'tailLength' on type 'Pet'." → Some(Pos(3, 11))
       ))
 
-    "Defined on implmentors but not on interface" in expectFails(
+    "Defined on implementors but not on interface" in expectFails(
       """
         fragment definedOnImplementorsButNotInterface on Pet {
           nickname
         }
       """,
       List(
-        "Cannot query field 'nickname' on 'Pet'." → Some(Pos(3, 11))
+        "Cannot query field 'nickname' on type 'Pet'. However, this field exists on 'Cat', 'Dog'. Perhaps you meant to use an inline fragment?" → Some(Pos(3, 11))
       ))
 
     "Meta field selection on union" in expectPasses(
@@ -153,7 +154,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'directField' on 'CatOrDog'." → Some(Pos(3, 11))
+        "Cannot query field 'directField' on type 'CatOrDog'." → Some(Pos(3, 11))
       ))
 
     "Defined on implementors queried on union" in expectFails(
@@ -163,7 +164,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'name' on 'CatOrDog'." → Some(Pos(3, 11))
+        "Cannot query field 'name' on type 'CatOrDog'. However, this field exists on 'Being', 'Pet', 'Canine', 'Cat', 'Dog'. Perhaps you meant to use an inline fragment?" → Some(Pos(3, 11))
       ))
 
     "valid field in inline fragment" in expectPasses(
@@ -187,7 +188,24 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'numberOfTails' on 'Dog'" → Some(Pos(6, 15))
+        "Cannot query field 'numberOfTails' on type 'Dog'" → Some(Pos(6, 15))
       ))
+  }
+
+  "Fields on correct type error message" should {
+    "Works with no suggestions" in {
+      UndefinedFieldViolation("T", "f", Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'T' on type 'f'.")
+    }
+
+    "Works with no small numbers of suggestions" in {
+      UndefinedFieldViolation("T", "f", "A" :: "B" :: Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'T' on type 'f'. However, this field exists on 'A', 'B'. Perhaps you meant to use an inline fragment?")
+    }
+
+    "Works with lots of suggestions" in {
+      UndefinedFieldViolation("T", "f", "A" :: "B" :: "C" :: "D" :: "E" :: "F" :: Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'T' on type 'f'. However, this field exists on 'A', 'B', 'C', 'D', 'E', and 1 other types. Perhaps you meant to use an inline fragment?")
+    }
   }
 }

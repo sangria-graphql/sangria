@@ -3,7 +3,7 @@ package sangria.validation.rules
 import sangria.ast
 import sangria.ast.AstVisitorCommand._
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
-import sangria.schema.OptionInputType
+import sangria.schema.{AbstractType, CompositeType, OptionInputType}
 import sangria.validation.ValidationContext._
 import sangria.validation._
 
@@ -22,11 +22,45 @@ class FieldsOnCorrectType extends ValidationRule {
             Left(Vector(UndefinedFieldViolation(
               name,
               SchemaRenderer.renderTypeName(parent, topLevel = true),
+              collectSuggestedTypes(parent, name),
               ctx.sourceMapper,
               pos.toList)))
           case _ ⇒
             Right(Continue)
         }
     }
+
+    private def collectSuggestedTypes(tpe: CompositeType[_], fieldName: String) =
+      tpe match {
+        case a: AbstractType ⇒
+          siblingInterfacesIncludingField(a, fieldName) ++ implementationsIncludingField(a, fieldName)
+        case _ ⇒ Vector.empty
+      }
+
+    /**
+      * Go through all of the implementations of type, and find other interaces
+      * that they implement. If those interfaces include `field` as a valid field,
+      * return them, sorted by how often the implementations include the other
+      * interface.
+      */
+    private def siblingInterfacesIncludingField(tpe: AbstractType, fieldName: String) =
+      ctx.schema.possibleTypes(tpe.name)
+        .foldLeft(Map.empty[String, Int]) {
+          case (oacc, obj) ⇒ obj.interfaces.foldLeft(oacc) {
+            case (iacc, i) if i.getField(ctx.schema, fieldName).isEmpty ⇒ iacc
+            case (iacc, i) if iacc contains i.name ⇒ iacc.updated(i.name, iacc(i.name) + 1)
+            case (iacc, i) ⇒ iacc + (i.name → 1)
+          }
+        }
+        .toVector
+        .sortBy(-_._2)
+        .map(_._1)
+
+
+    private def implementationsIncludingField(tpe: AbstractType, fieldName: String) =
+      ctx.schema.possibleTypes(tpe.name)
+        .filter(_.getField(ctx.schema, fieldName).nonEmpty)
+        .map(_.name)
+        .sorted
   }
 }

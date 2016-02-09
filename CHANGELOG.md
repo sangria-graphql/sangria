@@ -1,6 +1,8 @@
 ## Upcoming
 
+* Add suggested types to incorrect field message (#111)
 * Updated descriptions of a scalar values
+* Minor improvements
 
 ## v0.5.1 (2016-01-23)
 
