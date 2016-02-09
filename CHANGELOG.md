@@ -1,3 +1,7 @@
+## Upcoming
+
+* Updated descriptions of a scalar values
+
 ## v0.5.1 (2016-01-23)
 
 * JSON library integration is extracted to separate libraries (#38). Evey integration library will have a separate and independent versioning and release cycle. Following new libraries were introduced:
