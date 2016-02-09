@@ -4,7 +4,9 @@ import sangria.validation._
 
 package object schema {
   val IntType = ScalarType[Int]("Int",
-    description = Some("32-bit integer value"),
+    description = Some(
+      "The `Int` scalar type represents non-fractional signed whole numeric values. " +
+      "Int can represent values between -(2^31) and 2^31 - 1."),
     coerceOutput = ast.IntValue(_),
     coerceUserInput = {
       case i: Int ⇒ Right(i)
@@ -21,7 +23,9 @@ package object schema {
     })
 
   val LongType = ScalarType[Long]("Long",
-    description = Some("64-bit integer value"),
+    description = Some(
+      "The `Long` scalar type represents non-fractional signed whole numeric values. " +
+      "Long can represent values between -(2^63) and 2^63 - 1."),
     coerceOutput = l ⇒ ast.BigIntValue(BigInt(l)),
     coerceUserInput = {
       case i: Int ⇒ Right(i: Long)
@@ -38,7 +42,9 @@ package object schema {
     })
 
   val BigIntType = ScalarType[BigInt]("BigInt",
-    description = Some("Arbitrary big integer value"),
+    description = Some(
+      "The `BigInt` scalar type represents non-fractional signed whole numeric values. " +
+      "BigInt can represent arbitrary big values."),
     coerceOutput = ast.BigIntValue(_),
     coerceUserInput = {
       case i: Int ⇒ Right(BigInt(i))
@@ -53,6 +59,9 @@ package object schema {
     })
 
   val FloatType = ScalarType[Double]("Float",
+    description = Some(
+      "The `Float` scalar type represents signed double-precision fractional " +
+      "values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."),
     coerceOutput = ast.FloatValue(_),
     coerceUserInput = {
       case i: Int ⇒ Right(i.toDouble)
@@ -75,6 +84,7 @@ package object schema {
     })
 
   val BigDecimalType = ScalarType[BigDecimal]("BigDecimal",
+    description = Some("The `BigDecimal` scalar type represents signed fractional values with arbitrary precision."),
     coerceOutput = ast.BigDecimalValue(_),
     coerceUserInput = {
       case i: Int ⇒ Right(BigDecimal(i))
@@ -93,6 +103,7 @@ package object schema {
     })
 
   val BooleanType = ScalarType[Boolean]("Boolean",
+    description = Some("The `Boolean` scalar type represents `true` or `false`."),
     coerceOutput = b ⇒ ast.BooleanValue(b),
     coerceUserInput = {
       case b: Boolean ⇒ Right(b)
@@ -104,6 +115,10 @@ package object schema {
     })
 
   val StringType = ScalarType[String]("String",
+    description = Some(
+      "The `String` scalar type represents textual data, represented as UTF-8 " +
+      "character sequences. The String type is most often used by GraphQL to " +
+      "represent free-form human-readable text."),
     coerceOutput = s ⇒ ast.StringValue(s),
     coerceUserInput = {
       case s: String ⇒ Right(s)
@@ -115,6 +130,12 @@ package object schema {
     })
 
   val IDType = ScalarType[String]("ID",
+    description = Some(
+      "The `ID` scalar type represents a unique identifier, often used to " +
+      "refetch an object or as key for a cache. The ID type appears in a JSON " +
+      "response as a String; however, it is not intended to be human-readable. " +
+      "When expected as an input type, any string (such as `\"4\"`) or integer " +
+      "(such as `4`) input value will be accepted as an ID."),
     coerceOutput = s ⇒ ast.StringValue(s),
     coerceUserInput = {
       case s: String ⇒ Right(s)

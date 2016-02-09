@@ -608,7 +608,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "BigDecimal",
-                "description" → null,
+                "description" → "The `BigDecimal` scalar type represents signed fractional values with arbitrary precision.",
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
@@ -617,7 +617,9 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "BigInt",
-                "description" → "Arbitrary big integer value",
+                "description" → (
+                  "The `BigInt` scalar type represents non-fractional signed whole numeric values. " +
+                  "BigInt can represent arbitrary big values."),
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
@@ -626,7 +628,7 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "Boolean",
-                "description" → null,
+                "description" → "The `Boolean` scalar type represents `true` or `false`.",
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
@@ -635,7 +637,9 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "Float",
-                "description" → null,
+                "description" → (
+                  "The `Float` scalar type represents signed double-precision fractional " +
+                  "values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."),
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
@@ -644,7 +648,12 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "ID",
-                "description" → null,
+                "description" → (
+                  "The `ID` scalar type represents a unique identifier, often used to " +
+                  "refetch an object or as key for a cache. The ID type appears in a JSON " +
+                  "response as a String; however, it is not intended to be human-readable. " +
+                  "When expected as an input type, any string (such as `\"4\"`) or integer " +
+                  "(such as `4`) input value will be accepted as an ID."),
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
@@ -653,7 +662,9 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "Int",
-                "description" → "32-bit integer value",
+                "description" → (
+                  "The `Int` scalar type represents non-fractional signed whole numeric values. " +
+                  "Int can represent values between -(2^31) and 2^31 - 1."),
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
@@ -662,7 +673,9 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "Long",
-                "description" → "64-bit integer value",
+                "description" → (
+                  "The `Long` scalar type represents non-fractional signed whole numeric values. " +
+                  "Long can represent values between -(2^63) and 2^63 - 1."),
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
@@ -671,7 +684,10 @@ class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
               Map(
                 "inputFields" → null,
                 "name" → "String",
-                "description" → null,
+                "description" → (
+                  "The `String` scalar type represents textual data, represented as UTF-8 " +
+                  "character sequences. The String type is most often used by GraphQL to " +
+                  "represent free-form human-readable text."),
                 "interfaces" → null,
                 "enumValues" → null,
                 "fields" → null,
