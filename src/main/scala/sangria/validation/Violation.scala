@@ -335,3 +335,7 @@ case class VariableNotAllowedViolation(varName: String, sourceMapper: Option[Sou
 case class InvalidInputValueViolation(argumentName: String, errorText: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Argument '$argumentName' has invalid value: $errorText"
 }
+
+case class DuplicateVariableViolation(variableName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"There can be only one variable named '$variableName'."
+}

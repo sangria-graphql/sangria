@@ -38,6 +38,7 @@ object QueryValidator {
     new UniqueFragmentNames,
     new UniqueInputFieldNames,
     new UniqueOperationNames,
+    new UniqueVariableNames,
     new VariablesAreInputTypes,
     new VariablesInAllowedPosition
   )

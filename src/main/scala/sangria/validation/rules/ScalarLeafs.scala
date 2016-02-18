@@ -1,12 +1,12 @@
 package sangria.validation.rules
 
+import scala.language.postfixOps
+
 import sangria.ast
 import sangria.ast.AstVisitorCommand._
 import sangria.renderer.SchemaRenderer
 import sangria.schema.LeafType
 import sangria.validation._
-
-import scala.language.postfixOps
 
 /**
  * Scalar leafs
