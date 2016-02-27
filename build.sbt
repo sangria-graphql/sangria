@@ -14,13 +14,13 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
   // parsing
-  "org.parboiled" %% "parboiled" % "2.1.0",
+  "org.parboiled" %% "parboiled" % "2.1.1",
 
   // marshalling
   "org.sangria-graphql" %% "sangria-marshalling-api" % "0.1.0",
 
   // testing
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test",
+  "org.scalatest" %% "scalatest" % "2.2.6" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.1.0" % "test",
   "org.sangria-graphql" %% "sangria-spray-json" % "0.1.0" % "test"
 )
