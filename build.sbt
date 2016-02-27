@@ -21,7 +21,7 @@ libraryDependencies ++= Seq(
 
   // testing
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.1.0" % "test",
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.1.1" % "test",
   "org.sangria-graphql" %% "sangria-spray-json" % "0.1.0" % "test"
 )
 

@@ -14,17 +14,18 @@ import sangria.marshalling.sprayJson._
 
 class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
   def renderForTest[T: InputUnmarshaller](res: T) = SchemaRenderer.renderSchema(res) map ("\n" + _ + "\n")
+  def renderForTest(schema: Schema[Unit, Unit]) = Some("\n" + SchemaRenderer.renderSchema(schema) + "\n")
 
-  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil) = {
+  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit render: Schema[Unit, Unit] ⇒ Option[String]) = {
     val root = ObjectType("Root", fields[Unit, Unit](
       Field("singleField", tpe.asInstanceOf[OutputType[Unit]], arguments = args, resolve = _ ⇒ ())
     ))
     val schema = Schema(root)
 
-    renderForTest(Executor.execute(schema, introspectionQuery).await)
+    render(schema)
   }
 
-  "SchemaRenderer" should {
+  def `default schema renderer`(implicit render: Schema[Unit, Unit] ⇒ Option[String]): Unit = {
     "Prints String Field" in {
       renderSingleFieldSchema(OptionType(StringType)) should be (Some("""
         |type Root {
@@ -357,7 +358,28 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         |}
         |""".stripMargin))
     }
+  }
 
+  "Introspection-based Schema Renderer" should {
+    behave like `default schema renderer` (schema ⇒ renderForTest(Executor.execute(schema, introspectionQuery).await))
+
+    "throw an exception if introspection results contain some errors" in {
+      val root = ObjectType("Root", fields[Unit, Unit](
+        Field("singleField", StringType, resolve = _ ⇒ "")
+      ))
+
+      val schema = Schema(root)
+
+      an [IllegalArgumentException] should be thrownBy
+        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").await)
+    }
+  }
+
+  "Schema-based Schema Renderer" should {
+    behave like `default schema renderer` (schema ⇒ renderForTest(schema))
+  }
+
+  "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
       val schema = Schema(ObjectType[Unit, Unit]("Root", Nil))
 
@@ -427,17 +449,6 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
           |  NON_NULL
           |}
           |""".stripMargin))
-    }
-
-    "throw an exception if introspection results contain some errors" in {
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("singleField", StringType, resolve = _ ⇒ "")
-      ))
-
-      val schema = Schema(root)
-
-      an [IllegalArgumentException] should be thrownBy
-        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").await)
     }
   }
 }
