@@ -1,11 +1,46 @@
-## Upcoming
+## v0.5.2 (2016-02-28)
 
+* Added introspection-based schema materializer (#21). This feature has a lot of potential for clint-side tools, testing, mocking, 
+  creating facade GraphQL servers, etc.
+
+  Here is simple example of how you can use this feature (Using circe in this particular example):
+  
+  ```scala
+  import io.circe._
+  import sangria.marshalling.circe._
+  
+  val introspectionResults: Json = ??? // coming from other server of file
+  val clientSchema: Schema[Unit, Unit] = 
+    Schema.buildFromIntrospection(introspectionResults)  
+  ```
+  
+  It takes a results of full introspection query (loaded from the server, file, etc.) and recreates the schema definition with stubs for 
+  resolve methods. You can customize a lot of aspects of materialization by providing custom `MaterializationLogic` implementation 
+  (you can also extend `DefaultMaterializationLogic` class). This means that you can, for instance, plug in some generic field resolution logic (`resolveField` method) or
+  provide generic logic for custom scalars (`coerceScalar*` methods). Without these customisations schema only would be able to execute introspection queries. 
+     
+  By default, default values (for input object fields and arguments) would be ignored because it's just a string as far as introspection API is concerned. However you can enable default value
+  support if you know the format of the default values (in many cases it would be JSON). There is even a helper function for this:
+    
+  ```scala
+  import spray.json._
+  import sangria.marshalling.sprayJson._
+  
+  val clientSchema: Schema[Unit, Unit] = 
+    Schema.buildFromIntrospection(introspectionResults,
+      MaterializationLogic.withDefaultValues[Unit, JsValue])
+  ```
+  
+  This will inform schema materializer that default values are serialized as JSON and that spray-json should be used to work with them (please note, that 
+  circe does not have a built-in JSON parsing support, so it can't be used out-of-the-box here. On the other hand, it's pretty easy to add support for particular circe
+  parser by defining an implicit instance of `InputParser` type class).  
 * `SchemaRenderer.renderSchema` is now able to render `Schema` objects and only introspection results (#114). This can be useful if you already 
   have schema in memory and don't want to execute an introspection query against the schema in order to render it.
 * Query validation rule: Unique variable names (#112)
 * Add suggested types to incorrect field message (#111)
-* Introspection result now has a parser which deserializes a JSON (or any other format) to set of case classes. This may simplify client-side tools that work with introspection queries.
+* Introspection result now has a parser which deserializes a JSON (or any other format) to a set of case classes. This may simplify client-side tools that work with introspection queries.
   Please use `sangria.introspection.IntrospectionParser.parse` to parse an introspection query results.
+* Introduced `InputParser` type class in order provide optional support for default value parsing in schema materialization. 
 * Updated descriptions of a scalar values
 * Updated dependencies
 * Minor improvements
