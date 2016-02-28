@@ -9,7 +9,7 @@
   import io.circe._
   import sangria.marshalling.circe._
   
-  val introspectionResults: Json = ??? // coming from other server of file
+  val introspectionResults: Json = ??? // coming from other server or file
   val clientSchema: Schema[Unit, Unit] = 
     Schema.buildFromIntrospection(introspectionResults)  
   ```
