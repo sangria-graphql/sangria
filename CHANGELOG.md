@@ -4,6 +4,8 @@
   have schema in memory and don't want to execute an introspection query against the schema in order to render it.
 * Query validation rule: Unique variable names (#112)
 * Add suggested types to incorrect field message (#111)
+* Introspection result now has a parser which parses it to set of case classes. This may simplify client-side tools that work with introspection queries.
+  Please use `sangria.introspection.IntrospectionParser.parse` to parse an introspection query results.
 * Updated descriptions of a scalar values
 * Updated dependencies
 * Minor improvements
