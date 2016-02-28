@@ -3,7 +3,7 @@ package sangria.marshalling
 import org.scalatest.{Matchers, WordSpec}
 
 import sangria.execution.Executor
-import sangria.marshalling.testkit.{InputHandlingBehaviour, MarshallingBehaviour}
+import sangria.marshalling.testkit.{ParsingBehaviour, InputHandlingBehaviour, MarshallingBehaviour}
 import sangria.parser.QueryParser
 import sangria.renderer.QueryRenderer
 import sangria.starWars.TestData.{CharacterRepo, FriendsResolver}
@@ -16,12 +16,21 @@ import sangria.util.AwaitSupport
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
-class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with AwaitSupport with MarshallingBehaviour with InputHandlingBehaviour {
+class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with AwaitSupport with MarshallingBehaviour with InputHandlingBehaviour with ParsingBehaviour {
   "QueryAstMarshalling" should {
     behave like `value (un)marshaller` (queryAstResultMarshaller)
 
     behave like `AST-based input unmarshaller` (queryAstFromInput[ast.Value])
     behave like `AST-based input marshaller` (queryAstResultMarshaller)
+
+    behave like `input parser` (ParseTestSubjects(
+      complex = "{a: [null, 123, [{foo: \"bar\"}]], b: {c: true, d: null}}",
+      simpleString = "\"bar\"",
+      simpleInt = "12345",
+      simpleNull = "null",
+      list = "[\"bar\", 1, null, true, [1, 2, 3]]",
+      syntaxError = List("[123, FOO BAR")
+    ))
 
     "marshal and unmarshal" in {
       val Success(query) = QueryParser.parse("""

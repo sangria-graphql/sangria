@@ -8,7 +8,7 @@ case class IntrospectionSchema(
   directives: Seq[IntrospectionDirective])
 
 sealed trait IntrospectionType {
-  def kind: String
+  def kind: TypeKind.Value
   def name: String
   def description: Option[String]
 }
@@ -16,7 +16,7 @@ sealed trait IntrospectionType {
 case class IntrospectionScalarType(
     name: String,
     description: Option[String]) extends IntrospectionType {
-  val kind = "SCALAR"
+  val kind = TypeKind.Scalar
 }
 
 case class IntrospectionObjectType(
@@ -24,14 +24,14 @@ case class IntrospectionObjectType(
     description: Option[String],
     fields: Seq[IntrospectionField],
     interfaces: Seq[IntrospectionNamedTypeRef]) extends IntrospectionType {
-  val kind = "OBJECT"
+  val kind = TypeKind.Object
 }
 
 case class IntrospectionInputObjectType(
     name: String,
     description: Option[String],
     inputFields: Seq[IntrospectionInputValue]) extends IntrospectionType {
-  val kind = "INPUT_OBJECT"
+  val kind = TypeKind.InputObject
 }
 
 case class IntrospectionInterfaceType(
@@ -39,21 +39,21 @@ case class IntrospectionInterfaceType(
     description: Option[String],
     fields: Seq[IntrospectionField],
     possibleTypes: Seq[IntrospectionNamedTypeRef]) extends IntrospectionType {
-  val kind = "INTERFACE"
+  val kind = TypeKind.Interface
 }
 
 case class IntrospectionUnionType(
     name: String,
     description: Option[String],
     possibleTypes: Seq[IntrospectionNamedTypeRef]) extends IntrospectionType {
-  val kind = "UNION"
+  val kind = TypeKind.Union
 }
 
 case class IntrospectionEnumType(
     name: String,
     description: Option[String],
     enumValues: Seq[IntrospectionEnumValue]) extends IntrospectionType {
-  val kind = "ENUM"
+  val kind = TypeKind.Enum
 }
 
 case class IntrospectionField(
@@ -77,17 +77,17 @@ case class IntrospectionInputValue(
   defaultValue: Option[String])
 
 sealed trait IntrospectionTypeRef {
-  def kind: String
+  def kind: TypeKind.Value
 }
 
-case class IntrospectionNamedTypeRef(kind: String, name: String) extends IntrospectionTypeRef
+case class IntrospectionNamedTypeRef(kind: TypeKind.Value, name: String) extends IntrospectionTypeRef
 
 case class IntrospectionListTypeRef(ofType: IntrospectionTypeRef) extends IntrospectionTypeRef {
-  val kind = "LIST"
+  val kind = TypeKind.List
 }
 
 case class IntrospectionNonNullTypeRef(ofType: IntrospectionTypeRef) extends IntrospectionTypeRef {
-  val kind = "NON_NULL"
+  val kind = TypeKind.NonNull
 }
 
 case class IntrospectionDirective(

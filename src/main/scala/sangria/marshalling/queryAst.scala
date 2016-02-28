@@ -1,6 +1,7 @@
 package sangria.marshalling
 
 import sangria.ast
+import sangria.parser.QueryParser
 import sangria.renderer.QueryRenderer
 
 object queryAst {
@@ -26,6 +27,10 @@ object queryAst {
 
   implicit def queryAstFromInput[T <: ast.Value]: FromInput[T] =
     QueryAstFromInput.asInstanceOf[FromInput[T]]
+
+  implicit object QueryAstInputParser extends InputParser[ast.Value] {
+    def parse(str: String) = QueryParser.parseInput(str)
+  }
 }
 
 class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {

@@ -2,13 +2,13 @@ package sangria.schema
 
 import sangria.execution.FieldTag
 import sangria.marshalling.FromInput.{InputObjectResult, CoercedScalaResult}
-import sangria.marshalling.{FromInput, ToInput}
+import sangria.marshalling.{InputUnmarshaller, FromInput, ToInput}
 
 import language.{implicitConversions, existentials}
 
 import sangria.{introspection, ast}
 import sangria.validation.{EnumValueCoercionViolation, EnumCoercionViolation, Violation}
-import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
+import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField, IntrospectionTypesByName}
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -129,13 +129,12 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
     else fieldsByName.getOrElse(fieldName, Vector.empty)
 }
 
-case class ObjectType[Ctx, Val: ClassTag] private (
+case class ObjectType[Ctx, Val: ClassTag] private[schema] (
   name: String,
   description: Option[String],
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
 ) extends ObjectLikeType[Ctx, Val] {
-
   def isInstanceOf(value: Any) = implicitly[ClassTag[Val]].runtimeClass.isAssignableFrom(value.getClass)
 }
 
@@ -162,7 +161,7 @@ object ObjectType {
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
 }
 
-case class InterfaceType[Ctx, Val] private (
+case class InterfaceType[Ctx, Val] private[schema] (
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
@@ -233,7 +232,7 @@ case class UnionType[Ctx](
   description: Option[String] = None,
   types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType
 
-case class Field[Ctx, Val] private (
+case class Field[Ctx, Val] private[schema] (
     name: String,
     fieldType: OutputType[_],
     description: Option[String],
@@ -284,7 +283,7 @@ trait InputValue[T] {
   def defaultValue: Option[(_, ToInput[_, _])]
 }
 
-case class Argument[T] private (
+case class Argument[T] private[schema] (
     name: String,
     argumentType: InputType[_],
     description: Option[String],
@@ -460,7 +459,7 @@ case class EnumValue[+T](
   value: T,
   deprecationReason: Option[String] = None) extends Named
 
-case class InputObjectType[T] private (
+case class InputObjectType[T] private[schema] (
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[InputField[_]]
@@ -499,7 +498,7 @@ trait InputObjectDefaultResultLowPrio {
   }
 }
 
-case class InputField[T] private (
+case class InputField[T] private[schema] (
     name: String,
     fieldType: InputType[T],
     description: Option[String],
@@ -605,7 +604,7 @@ case class Schema[Ctx, Val](
     val queryTypes = collectTypes("a query type", 20, query, schemaTypes)
     val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t ⇒ t.name → (10, t))
     val queryAndSubTypes = mutation map (collectTypes("a mutation type", 10, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
-    val queryAndSubAndMutTypes = subscription map (collectTypes("a subscription type", 10, _, queryTypesWithAdditions)) getOrElse queryAndSubTypes
+    val queryAndSubAndMutTypes = subscription map (collectTypes("a subscription type", 10, _, queryAndSubTypes)) getOrElse queryAndSubTypes
 
     queryAndSubAndMutTypes
   }
@@ -661,4 +660,44 @@ case class Schema[Ctx, Val](
   val validationErrors = validationRules flatMap (_.validate(this))
 
   if (validationErrors.nonEmpty) throw SchemaValidationException(validationErrors)
+}
+
+object Schema {
+  def isBuiltInType(typeName: String) =
+    BuiltinScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
+
+  def isIntrospectionType(typeName: String) =
+    IntrospectionTypesByName.contains(typeName)
+
+  def getBuiltInType(typeName: String): Option[Type with Named] =
+    BuiltinScalarsByName.get(typeName) orElse IntrospectionTypesByName.get(typeName)
+
+  /**
+    * Build a `Schema` for use by client tools.
+    *
+    * Given the result of a client running the introspection query, creates and
+    * returns a `Schema` instance which can be then used with all sangria
+    * tools, but cannot be used to execute a query, as introspection does not
+    * represent the "resolver", "parse" or "serialize" functions or any other
+    * server-internal mechanisms.
+    *
+    * @param introspectionResult the result of introspection query
+    */
+  def buildFromIntrospection[T : InputUnmarshaller](introspectionResult: T) =
+    IntrospectionSchemaMaterializer.buildSchema[T](introspectionResult)
+
+  /**
+    * Build a `Schema` for use by client tools.
+    *
+    * Given the result of a client running the introspection query, creates and
+    * returns a `Schema` instance which can be then used with all sangria
+    * tools, but cannot be used to execute a query, as introspection does not
+    * represent the "resolver", "parse" or "serialize" functions or any other
+    * server-internal mechanisms.
+    *
+    * @param introspectionResult the result of introspection query
+    * @param logic custom schema logic that would be used for all materialized fields. By default `MaterializedSchemaException` would be thrown.
+    */
+  def buildFromIntrospection[Ctx, T : InputUnmarshaller](introspectionResult: T, logic: MaterializationLogic[Ctx]) =
+    IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, logic)
 }

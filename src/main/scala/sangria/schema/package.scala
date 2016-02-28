@@ -151,7 +151,11 @@ package object schema {
       case _ ⇒ Left(IDCoercionViolation)
     })
 
-  val BuiltinScalars = IntType :: LongType :: BigIntType :: FloatType :: BigDecimalType :: BooleanType :: StringType :: IDType :: Nil
+  val BuiltinScalars: List[ScalarType[_]] =
+    IntType :: LongType :: BigIntType :: FloatType :: BigDecimalType :: BooleanType :: StringType :: IDType :: Nil
+
+  val BuiltinScalarsByName: Map[String, ScalarType[_]] =
+    BuiltinScalars.groupBy(_.name).mapValues(_.head)
 
   val IfArg = Argument("if", BooleanType, "Included when true.")
 

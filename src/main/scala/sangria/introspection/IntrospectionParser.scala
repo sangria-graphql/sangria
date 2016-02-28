@@ -105,7 +105,7 @@ object IntrospectionParser {
       directives = mapFieldOpt(schema, "directives") map um.getListValue getOrElse Vector.empty map (i ⇒ parseDirective(i, path :+ "directives")))
 
   private def parseNamedTypeRef[In : InputUnmarshaller](in: In, path: Vector[String]) =
-    IntrospectionNamedTypeRef(mapStringFieldOpt(in, "kind", path) getOrElse "OBJECT", mapStringField(in, "name", path))
+    IntrospectionNamedTypeRef(mapStringFieldOpt(in, "kind", path) map TypeKind.fromString getOrElse TypeKind.Object, mapStringField(in, "name", path))
 
   private def parseTypeRef[In : InputUnmarshaller](in: In, path: Vector[String]): IntrospectionTypeRef =
     mapStringField(in, "kind", path) match {
@@ -128,13 +128,13 @@ object IntrospectionParser {
     }
 
   private def stringValue[In : InputUnmarshaller](value: In, path: Vector[String]) =
-    um.getScalarValue(value) match {
+    um.getScalaScalarValue(value) match {
       case s: String ⇒ s
       case _ ⇒ error(s"Expected String but got '${um.render(value)}' at path ${path mkString "."}")
     }
 
   private def booleanValue[In : InputUnmarshaller](value: In, path: Vector[String]) =
-    um.getScalarValue(value) match {
+    um.getScalaScalarValue(value) match {
       case b: Boolean ⇒ b
       case _ ⇒ error(s"Expected Boolean but got '${um.render(value)}' at path ${path mkString "."}")
     }

@@ -34,7 +34,7 @@ object SchemaRenderer {
     else
       ""
 
-  private def renderTypeName(tpe: IntrospectionTypeRef): String =
+  def renderTypeName(tpe: IntrospectionTypeRef): String =
     tpe match {
       case IntrospectionListTypeRef(ofType) ⇒ s"[${renderTypeName(ofType)}]"
       case IntrospectionNonNullTypeRef(ofType) ⇒ s"${renderTypeName(ofType)}!"
@@ -191,19 +191,14 @@ object SchemaRenderer {
     schema.typeList filterNot isBuiltInType sortBy (_.name) map renderType mkString TypeSeparator
 
   def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String =
-    introspectionSchema.types filter (tpe ⇒ isIntrospectionType(tpe.name)) sortBy (_.name) map renderType mkString TypeSeparator
+    introspectionSchema.types filter (tpe ⇒ Schema.isIntrospectionType(tpe.name)) sortBy (_.name) map renderType mkString TypeSeparator
 
   def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T): String =
     renderIntrospectionSchema(IntrospectionParser parse introspectionResult)
 
   private def isBuiltIn(tpe: IntrospectionType) =
-    isIntrospectionType(tpe.name) || isBuiltInScalar(tpe.name)
+    Schema.isBuiltInType(tpe.name)
 
   private def isBuiltInType(tpe: Type with Named) =
-    isIntrospectionType(tpe.name) || isBuiltInScalar(tpe.name)
-
-  def isIntrospectionType(tpeName: String) = tpeName startsWith "__"
-
-  def isBuiltInScalar(tpeName: String) =
-    sangria.schema.BuiltinScalars.exists(_.name == tpeName)
+    Schema.isBuiltInType(tpe.name)
 }

@@ -8,6 +8,17 @@ import scala.util.Success
 package object introspection {
   object TypeKind extends Enumeration {
     val Scalar, Object, Interface, Union, Enum, InputObject, List, NonNull = Value
+
+    def fromString(kind: String): TypeKind.Value = kind match {
+      case "SCALAR" ⇒ Scalar
+      case "OBJECT" ⇒ Object
+      case "INTERFACE" ⇒ Interface
+      case "UNION" ⇒ Union
+      case "ENUM" ⇒ Enum
+      case "INPUT_OBJECT" ⇒ InputObject
+      case "LIST" ⇒ List
+      case "NON_NULL" ⇒ NonNull
+    }
   }
 
   val __TypeKind = EnumType("__TypeKind", Some("An enum describing what kind of type a given `__Type` is."), List(
@@ -243,6 +254,12 @@ package object introspection {
     resolve = ctx ⇒ ctx.parentType.name)
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
+
+  val IntrospectionTypes: List[Type with Named] =
+    __Schema :: __TypeKind :: __Type :: __Field :: __InputValue :: __EnumValue :: __Directive :: Nil
+
+  val IntrospectionTypesByName: Map[String, Type with Named] =
+    IntrospectionTypes.groupBy(_.name).mapValues(_.head)
 
   lazy val Success(introspectionQuery) = QueryParser.parse(
     """

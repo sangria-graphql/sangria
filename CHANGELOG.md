@@ -1,6 +1,6 @@
 ## Upcoming
 
-* `SchemaRenderer.renderSchema` is not able to render `Schema` objects and only introspection results (#114). This can be useful if you already 
+* `SchemaRenderer.renderSchema` is now able to render `Schema` objects and only introspection results (#114). This can be useful if you already 
   have schema in memory and don't want to execute an introspection query against the schema in order to render it.
 * Query validation rule: Unique variable names (#112)
 * Add suggested types to incorrect field message (#111)
