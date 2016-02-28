@@ -4,11 +4,11 @@ import sangria.marshalling.InputUnmarshaller
 import sangria.parser.DeliveryScheme
 
 object IntrospectionParser {
-  def parse[In](introspectionResults: In)(implicit iu: InputUnmarshaller[In], scheme: DeliveryScheme[IntrospectionSchema]): scheme.Result =
+  def parse[In](introspectionResult: In)(implicit iu: InputUnmarshaller[In], scheme: DeliveryScheme[IntrospectionSchema]): scheme.Result =
     try {
-      checkErrors(introspectionResults)
+      checkErrors(introspectionResult)
 
-      scheme.success(parseSchema(mapField(mapField(introspectionResults, "data"), "__schema", Vector("data")), Vector("data", "__schema")))
+      scheme.success(parseSchema(mapField(mapField(introspectionResult, "data"), "__schema", Vector("data")), Vector("data", "__schema")))
     } catch { // exception mechanism is used intentionally in order to minimise the footprint of parsing
       case e: IllegalAccessException ⇒ scheme.failure(e)
     }

@@ -13,10 +13,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 
 class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
-  def renderForTest[T: InputUnmarshaller](res: T) = SchemaRenderer.renderSchema(res) map ("\n" + _ + "\n")
-  def renderForTest(schema: Schema[Unit, Unit]) = Some("\n" + SchemaRenderer.renderSchema(schema) + "\n")
+  def renderForTest[T: InputUnmarshaller](res: T) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
+  def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 
-  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit render: Schema[Unit, Unit] ⇒ Option[String]) = {
+  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit render: Schema[Unit, Unit] ⇒ String) = {
     val root = ObjectType("Root", fields[Unit, Unit](
       Field("singleField", tpe.asInstanceOf[OutputType[Unit]], arguments = args, resolve = _ ⇒ ())
     ))
@@ -25,45 +25,45 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
     render(schema)
   }
 
-  def `default schema renderer`(implicit render: Schema[Unit, Unit] ⇒ Option[String]): Unit = {
+  def `default schema renderer`(implicit render: Schema[Unit, Unit] ⇒ String): Unit = {
     "Prints String Field" in {
-      renderSingleFieldSchema(OptionType(StringType)) should be (Some("""
+      renderSingleFieldSchema(OptionType(StringType)) should be ("""
         |type Root {
         |  singleField: String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints [String] Field" in {
-      renderSingleFieldSchema(OptionType(ListType(OptionType(StringType)))) should be (Some("""
+      renderSingleFieldSchema(OptionType(ListType(OptionType(StringType)))) should be ("""
         |type Root {
         |  singleField: [String]
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String! Field" in {
-      renderSingleFieldSchema(StringType) should be (Some("""
+      renderSingleFieldSchema(StringType) should be ("""
         |type Root {
         |  singleField: String!
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints [String]! Field" in {
-      renderSingleFieldSchema(ListType(OptionType(StringType))) should be (Some("""
+      renderSingleFieldSchema(ListType(OptionType(StringType))) should be ("""
         |type Root {
         |  singleField: [String]!
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints [String!] Field" in {
-      renderSingleFieldSchema(OptionType(ListType(StringType))) should be (Some("""
+      renderSingleFieldSchema(OptionType(ListType(StringType))) should be ("""
         |type Root {
         |  singleField: [String!]
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Print Object Field" in {
@@ -77,7 +77,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(root)
 
-      renderForTest(Executor(schema).execute(introspectionQuery).await) should be (Some("""
+      renderForTest(Executor(schema).execute(introspectionQuery).await) should be ("""
         |type Foo {
         |  str: String
         |}
@@ -85,51 +85,51 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         |type Root {
         |  foo: Foo
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String Field With Int Arg" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType)) :: Nil
-      ) should be (Some("""
+      ) should be ("""
         |type Root {
         |  singleField(argOne: Int): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String Field With Int Arg With Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType), 2) :: Nil
-      ) should be (Some("""
+      ) should be ("""
         |type Root {
         |  singleField(argOne: Int = 2): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String Field With Int! Arg" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", IntType) :: Nil
-      ) should be (Some("""
+      ) should be ("""
         |type Root {
         |  singleField(argOne: Int!): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String Field With Multiple Args" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType)) :: Argument("argTwo", OptionInputType(StringType)) :: Nil
-      ) should be (Some("""
+      ) should be ("""
         |type Root {
         |  singleField(argOne: Int, argTwo: String): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String Field With Multiple Args, First is Default" in {
@@ -140,11 +140,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
           Argument("argTwo", OptionInputType(StringType)) ::
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
-      ) should be (Some("""
+      ) should be ("""
         |type Root {
         |  singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String Field With Multiple Args, Second is Default" in {
@@ -155,11 +155,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
           Argument("argTwo", OptionInputType(StringType), defaultValue = "foo") ::
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
-      ) should be (Some("""
+      ) should be ("""
         |type Root {
         |  singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Prints String Field With Multiple Args, Last is Default" in {
@@ -170,11 +170,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
           Argument("argTwo", OptionInputType(StringType)) ::
           Argument("argThree", OptionInputType(BooleanType), false) ::
           Nil
-      ) should be (Some("""
+      ) should be ("""
         |type Root {
         |  singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Print Interface" in {
@@ -190,7 +190,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(root)
 
-      renderForTest(Executor(schema).execute(introspectionQuery).await) should be (Some("""
+      renderForTest(Executor(schema).execute(introspectionQuery).await) should be ("""
         |type Bar implements Foo {
         |  str: String
         |}
@@ -202,7 +202,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Print Multiple Interface" in {
@@ -222,7 +222,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(root)
 
-      renderForTest(Executor(schema).execute(introspectionQuery).await) should be (Some("""
+      renderForTest(Executor(schema).execute(introspectionQuery).await) should be ("""
         |interface Baaz {
         |  int: Int
         |}
@@ -239,7 +239,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Print Unions" in {
@@ -261,7 +261,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(root)
 
-      renderForTest(Executor(schema).execute(introspectionQuery).await) should be (Some("""
+      renderForTest(Executor(schema).execute(introspectionQuery).await) should be ("""
         |type Bar {
         |  str: String
         |}
@@ -278,7 +278,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         |}
         |
         |union SingleUnion = Foo
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Print Input Type" in {
@@ -294,7 +294,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(root)
 
-      renderForTest(Executor(schema).execute(introspectionQuery).await) should be (Some("""
+      renderForTest(Executor(schema).execute(introspectionQuery).await) should be ("""
         |input InputType {
         |  int: Int
         |}
@@ -302,7 +302,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         |type Root {
         |  str(argOne: InputType): String
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Custom Scalar" in {
@@ -325,13 +325,13 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(root)
 
-      renderForTest(Executor(schema).execute(introspectionQuery).await) should be (Some("""
+      renderForTest(Executor(schema).execute(introspectionQuery).await) should be ("""
         |scalar Odd
         |
         |type Root {
         |  odd: Odd
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
 
     "Enum" in {
@@ -346,7 +346,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(root)
 
-      renderForTest(Executor(schema).execute(introspectionQuery).await) should be (Some("""
+      renderForTest(Executor(schema).execute(introspectionQuery).await) should be ("""
         |enum RGB {
         |  RED
         |  GREEN
@@ -356,7 +356,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
         |type Root {
         |  rgb: RGB
         |}
-        |""".stripMargin))
+        |""".stripMargin)
     }
   }
 
@@ -382,10 +382,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
   "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
       val schema = Schema(ObjectType[Unit, Unit]("Root", Nil))
+      val rendered = SchemaRenderer.renderIntrospectionSchema(Executor(schema).execute(introspectionQuery).await)
 
-      SchemaRenderer
-        .renderIntrospectionSchema(Executor(schema).execute(introspectionQuery).await)
-        .map("\n" + _ + "\n") should be (Some("""
+
+        ("\n" + rendered + "\n") should be ("""
           |type __Directive {
           |  name: String!
           |  description: String
@@ -448,7 +448,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
           |  LIST
           |  NON_NULL
           |}
-          |""".stripMargin))
+          |""".stripMargin)
     }
   }
 }
