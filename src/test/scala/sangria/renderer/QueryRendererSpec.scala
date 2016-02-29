@@ -1,5 +1,6 @@
 package sangria.renderer
 
+import org.scalactic._
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.{Directive, Field, AstNode}
 import sangria.parser.QueryParser
@@ -9,6 +10,11 @@ import sangria.macros._
 import scala.util.Success
 
 class QueryRendererSpec extends WordSpec with Matchers {
+
+  def strippedOfCarriageReturns = new AbstractStringUniformity {
+    def normalized(s: String): String = s.replaceAll("\\r", "")
+  }
+
   "QueryRenderer" should {
     "render kitchen sink" in {
       val Success(ast) = QueryParser.parse(FileUtil loadQuery "kitchen-sink.graphql")
@@ -92,31 +98,31 @@ class QueryRendererSpec extends WordSpec with Matchers {
     "correctly prints query operations without name" in {
       val ast = graphql"query { id, name }"
 
-      QueryRenderer.render(ast).replaceAll("\r", "") should be (
+      QueryRenderer.render(ast) should equal (
         """{
           |  id
           |  name
-          |}""".stripMargin.replaceAll("\r", ""))
+          |}""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "correctly prints query operations with artifacts and without name" in {
       val ast = graphql"query ($$foo: TestType) @testDirective { id, name }"
 
-      QueryRenderer.render(ast).replaceAll("\r", "") should be (
+      QueryRenderer.render(ast) should equal (
         """query ($foo: TestType) @testDirective {
           |  id
           |  name
-          |}""".stripMargin.replaceAll("\r", ""))
+          |}""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "correctly prints mutation operations with artifacts and without name" in {
       val ast = graphql"mutation ($$foo: TestType) @testDirective { id, name }"
 
-      QueryRenderer.render(ast).replaceAll("\r", "") should be (
+      QueryRenderer.render(ast) should equal (
         """mutation ($foo: TestType) @testDirective {
           |  id
           |  name
-          |}""".stripMargin.replaceAll("\r", ""))
+          |}""".stripMargin) (after being strippedOfCarriageReturns)
     }
   }
 }
