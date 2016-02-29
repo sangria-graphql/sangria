@@ -1,20 +1,14 @@
 package sangria.renderer
 
-import org.scalactic._
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.{Directive, Field, AstNode}
 import sangria.parser.QueryParser
-import sangria.util.FileUtil
+import sangria.util.{StringMatchers, FileUtil}
 import sangria.macros._
 
 import scala.util.Success
 
-class QueryRendererSpec extends WordSpec with Matchers {
-
-  def strippedOfCarriageReturns = new AbstractStringUniformity {
-    def normalized(s: String): String = s.replaceAll("\\r", "")
-  }
-
+class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
   "QueryRenderer" should {
     "render kitchen sink" in {
       val Success(ast) = QueryParser.parse(FileUtil loadQuery "kitchen-sink.graphql")
@@ -36,7 +30,7 @@ class QueryRendererSpec extends WordSpec with Matchers {
             "fragment frag on Friend{foo(size:$size,bar:$b,obj:" +
             "{key:\"value\"})}{unnamed(truthy:true,falsey:false) query ... @skip(unless:$foo){id} ... {id}}")
 
-      prettyRendered should be (
+      prettyRendered should equal (
         """query queryName($foo: ComplexType, $site: Site = MOBILE) {
          |  whoever123is: node(id: [123, 456]) {
          |    id
@@ -86,7 +80,7 @@ class QueryRendererSpec extends WordSpec with Matchers {
          |  ...  {
          |    id
          |  }
-         |}""".stripMargin)
+         |}""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "render partial AST" in {

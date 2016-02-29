@@ -5,12 +5,12 @@ import language.postfixOps
 import org.parboiled2.{ParserInput, Position}
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
-import sangria.util.FileUtil
+import sangria.util.{StringMatchers, FileUtil}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
-class QueryParserSpec extends WordSpec with Matchers {
+class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
   "QueryParser" should {
     "parse complex query" in {
@@ -210,7 +210,7 @@ class QueryParserSpec extends WordSpec with Matchers {
           Some(Position(11, 2, 11)),
           None)
 
-      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+      QueryParser.parse(stripCarriageReturns(query)) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
     "parse inline fragments without type condition" in {
@@ -244,7 +244,7 @@ class QueryParserSpec extends WordSpec with Matchers {
             Some(Position(11, 2, 11)))),
           Some(Position(11, 2, 11)), None)
 
-      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+      QueryParser.parse(stripCarriageReturns(query)) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
     "parse anonymous mutation" in {
@@ -271,7 +271,7 @@ class QueryParserSpec extends WordSpec with Matchers {
           Some(Position(11, 2, 11)),
           None)
 
-      QueryParser.parse(query) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+      QueryParser.parse(stripCarriageReturns(query)) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
     }
 
     "provide useful error message (fragment `on`)" in {
@@ -281,44 +281,39 @@ class QueryParserSpec extends WordSpec with Matchers {
           fragment MissingOn Type
         """)
 
-      error.formattedError should be(
+      error.formattedError should equal (
         """Invalid input 'T', expected TypeCondition (line 3, column 30):
           |          fragment MissingOn Type
-          |                             ^""".stripMargin
-      )
+          |                             ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "provide useful error message (braces)" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "{ field: {} }")
 
-      error.formattedError should be(
+      error.formattedError should equal (
         """Invalid input '{', expected Name (line 1, column 10):
           |{ field: {} }
-          |         ^""".stripMargin
-      )
+          |         ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "provide useful error message (operation def)" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "notanoperation Foo { field }")
 
-      error.formattedError should be(
+      error.formattedError should equal (
         """Invalid input 'n', expected OperationDefinition or FragmentDefinition (line 1, column 1):
           |notanoperation Foo { field }
-          |^""".stripMargin
-      )
+          |^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "provide useful error message (ellipsis)" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
-        "...")
+      val Failure(error: SyntaxError) = QueryParser.parse("...")
 
-      error.formattedError should be (
+      error.formattedError should equal (
         """Invalid input '.', expected OperationDefinition or FragmentDefinition (line 1, column 1):
           |...
-          |^""".stripMargin
-      )
+          |^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "parses constant default values" in {
@@ -329,77 +324,70 @@ class QueryParserSpec extends WordSpec with Matchers {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }")
 
-      error.getMessage should be (
+      error.getMessage should equal (
         """Syntax error while parsing GraphQL query. Invalid input '$', expected ValueConst or ws (line 1, column 37):
           |query Foo($x: Complex = { a: { b: [ $var ] } }) { field }
-          |                                    ^""".stripMargin
-      )
+          |                                    ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "produce parse error for `1.`" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = 1.) { field }")
 
-      error.formattedError should be (
+      error.formattedError should equal (
         """Invalid input ')', expected '0' or NonZeroDigit (line 1, column 27):
           |query Foo($x: Complex = 1.) { field }
-          |                          ^""".stripMargin
-      )
+          |                          ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "produce parse error for `.123`" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = .123) { field }")
 
-      error.formattedError should be (
+      error.formattedError should equal (
         """Invalid input '.', expected StringValue, BooleanValue, ObjectValueConst, NullValue, ListValueConst, EnumValue or NumberValue (line 1, column 25):
           |query Foo($x: Complex = .123) { field }
-          |                        ^""".stripMargin
-      )
+          |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "produce parse error for `1.0e`" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = 1.0e) { field }")
 
-      error.formattedError should be (
+      error.formattedError should equal (
         """Invalid input ')', expected Sign or Digit (line 1, column 29):
           |query Foo($x: Complex = 1.0e) { field }
-          |                            ^""".stripMargin
-      )
+          |                            ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "produce parse error for `1.A`" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = 1.A) { field }")
 
-      error.formattedError should be (
+      error.formattedError should equal (
         """Invalid input 'A', expected '0' or NonZeroDigit (line 1, column 27):
           |query Foo($x: Complex = 1.A) { field }
-          |                          ^""".stripMargin
-      )
+          |                          ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "produce parse error for `+1`" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = +1) { field }")
 
-      error.formattedError should be (
+      error.formattedError should equal (
         """Invalid input '+', expected StringValue, BooleanValue, ObjectValueConst, NullValue, ListValueConst, EnumValue or NumberValue (line 1, column 25):
           |query Foo($x: Complex = +1) { field }
-          |                        ^""".stripMargin
-      )
+          |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "produce parse error for `1.0eA`" in {
       val Failure(error: SyntaxError) = QueryParser.parse(
         "query Foo($x: Complex = 1.0eA) { field }")
 
-      error.formattedError should be (
+      error.formattedError should equal (
         """Invalid input 'A', expected Sign or Digit (line 1, column 29):
           |query Foo($x: Complex = 1.0eA) { field }
-          |                            ^""".stripMargin
-      )
+          |                            ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "disallows uncommon control characters" in {
@@ -516,7 +504,7 @@ class QueryParserSpec extends WordSpec with Matchers {
 
       expectedTable foreach { expected ⇒
         withClue(s"Parsing ${expected._1}.") {
-          QueryParser.parseInput(expected._1) should be (Success(expected._2))
+          QueryParser.parseInput(stripCarriageReturns(expected._1)) should equal (Success(expected._2))
         }
       }
     }
