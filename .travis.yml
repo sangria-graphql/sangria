@@ -1,10 +1,18 @@
- language: scala
- scala:
-   - "2.11.7"
- jdk:
-   - oraclejdk7
- script: "sbt clean coverage test"
- after_success: "sbt coveralls"
- env:
-   global:
-     secure: "ko5RdiI9X097LZxOOFjWimFcV04D/CISaVpEKMzWkvrBQI+DTmVTyzudZD+azLnCXFVxgNbQ71Fuc0JaB1pgVRcfAuYC5ySlUtk1h4zpscZRAldPvtFRK+bM+nVF+dbhhcRQgZ3o1PLpAdxX+g4g/VAy3Oj50eDHmNERRMwtTHWdGUZAwPa3Bur/LVGWxhgmQbsu8R+PbN4zniTxO24a0jQKbPQ5ilT8YKTLEqLJrhKsMX1fhZxVXwMJjHmzvdELvwWiqPO8nvUgz7egrjwtaWF7OkRmT9/MyIeLJELhr+reuh/gj46bQCbHEEov0P0kD1nSPMfhW0tQKgBm9s/9iwp+XcGfgZlB2ZjRPyLCyLun/IC8V5qrK4LeWCJYiCUJhdMK8TcDMvknz7JfBGjjE1Bww57i8LNN5xzyUZhKtUBjjEoLZwBewfIEmSuVGlwrrRPgJks5hiThAt0dzV1RPHr46nJtTxowLWDjA9gVQLDu5tv4+yFZVrowWhfuV5HfOg4yRf7ebFlVlKsHrKxOXQjykCoZJuPLAhAzWxzKSd/MMJ3RGw6ja8arG9w91Wpd4L7yLELrmBuXeKwUIGL64uDBsZ3dx81B2Oj8X2kJBc9ZF25xBhFV0mWHaqRw6mqfXowCaLSrb89+1BGauBmbNblkeGEKm/5NFHmcw5QIUL8="
+sudo: false
+language: scala
+scala:
+  - "2.11.7"
+jdk:
+  - oraclejdk7
+script: "sbt clean coverage test"
+after_success: "sbt coveralls"
+before_cache:
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
+env:
+  global:
+    secure: "ko5RdiI9X097LZxOOFjWimFcV04D/CISaVpEKMzWkvrBQI+DTmVTyzudZD+azLnCXFVxgNbQ71Fuc0JaB1pgVRcfAuYC5ySlUtk1h4zpscZRAldPvtFRK+bM+nVF+dbhhcRQgZ3o1PLpAdxX+g4g/VAy3Oj50eDHmNERRMwtTHWdGUZAwPa3Bur/LVGWxhgmQbsu8R+PbN4zniTxO24a0jQKbPQ5ilT8YKTLEqLJrhKsMX1fhZxVXwMJjHmzvdELvwWiqPO8nvUgz7egrjwtaWF7OkRmT9/MyIeLJELhr+reuh/gj46bQCbHEEov0P0kD1nSPMfhW0tQKgBm9s/9iwp+XcGfgZlB2ZjRPyLCyLun/IC8V5qrK4LeWCJYiCUJhdMK8TcDMvknz7JfBGjjE1Bww57i8LNN5xzyUZhKtUBjjEoLZwBewfIEmSuVGlwrrRPgJks5hiThAt0dzV1RPHr46nJtTxowLWDjA9gVQLDu5tv4+yFZVrowWhfuV5HfOg4yRf7ebFlVlKsHrKxOXQjykCoZJuPLAhAzWxzKSd/MMJ3RGw6ja8arG9w91Wpd4L7yLELrmBuXeKwUIGL64uDBsZ3dx81B2Oj8X2kJBc9ZF25xBhFV0mWHaqRw6mqfXowCaLSrb89+1BGauBmbNblkeGEKm/5NFHmcw5QIUL8="
