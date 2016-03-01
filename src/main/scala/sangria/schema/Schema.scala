@@ -569,7 +569,7 @@ case class Schema[Ctx, Val](
       tpe match {
         case null ⇒ throw new IllegalStateException(
           s"A `null` value was provided instead of type for $parentInfo.\n" +
-          "This can happen if you have recursive type definition or circular references withing your type graph.\n" +
+          "This can happen if you have recursive type definition or circular references within your type graph.\n" +
           "Please use no-arg function to provide fields for such types.\n" +
           "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
         case t: Named if result contains t.name ⇒
