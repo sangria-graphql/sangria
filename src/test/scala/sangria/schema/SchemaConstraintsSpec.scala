@@ -51,7 +51,7 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
       val error = intercept [SchemaValidationException] (Schema(queryType))
 
       error.getMessage should include (
-        "Type name 'Point' is used for several conflicting GraphQL types kinds: ScalarType, InputObjectType. Conflict found in an argument 'points' defined in field 'foo' of 'Query' type.")
+        "Type name 'Point' is used for several conflicting GraphQL type kinds: ScalarType, InputObjectType. Conflict found in an argument 'points' defined in field 'foo' of 'Query' type.")
     }
   }
 }

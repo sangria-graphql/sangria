@@ -341,5 +341,5 @@ case class DuplicateVariableViolation(variableName: String, sourceMapper: Option
 }
 
 case class ConflictingTypeDefinitionViolation(typeName: String, conflictingTypes: List[String], parentInfo: String) extends Violation {
-  lazy val errorMessage = s"Type name '$typeName' is used for several conflicting GraphQL types kinds: ${conflictingTypes mkString ", "}. Conflict found in $parentInfo."
+  lazy val errorMessage = s"Type name '$typeName' is used for several conflicting GraphQL type kinds: ${conflictingTypes mkString ", "}. Conflict found in $parentInfo."
 }
