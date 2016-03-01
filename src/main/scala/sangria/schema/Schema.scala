@@ -7,7 +7,7 @@ import sangria.marshalling.{InputUnmarshaller, FromInput, ToInput}
 import language.{implicitConversions, existentials}
 
 import sangria.{introspection, ast}
-import sangria.validation.{EnumValueCoercionViolation, EnumCoercionViolation, Violation}
+import sangria.validation.{ConflictingTypeDefinitionViolation, EnumValueCoercionViolation, EnumCoercionViolation, Violation}
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField, IntrospectionTypesByName}
 
 import scala.annotation.implicitNotFound
@@ -551,8 +551,19 @@ case class Schema[Ctx, Val](
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default) {
   lazy val types: Map[String, (Int, Type with Named)] = {
-    def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)]) =
-      if (result contains name) result else result.updated(name, priority → tpe)
+    def sameType(t1: Type, t2: Type) =
+      t1.getClass.getSimpleName == t2.getClass.getSimpleName
+
+    def typeConflict(name: String, t1: Type, t2: Type, parentInfo: String) =
+      throw SchemaValidationException(ConflictingTypeDefinitionViolation(
+        name, t1.getClass.getSimpleName :: t2.getClass.getSimpleName :: Nil, parentInfo) :: Nil)
+
+    def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)], parentInfo: String) =
+      result get name match {
+        case Some(found) if !sameType(found._2, tpe) ⇒ typeConflict(name, found._2, tpe, parentInfo)
+        case Some(_) ⇒ result
+        case None ⇒ result.updated(name, priority → tpe)
+      }
 
     def collectTypes(parentInfo: String, priority: Int, tpe: Type, result: Map[String, (Int, Type with Named)]): Map[String, (Int, Type with Named)] = {
       tpe match {
@@ -561,19 +572,25 @@ case class Schema[Ctx, Val](
           "This can happen if you have recursive type definition or circular references withing your type graph.\n" +
           "Please use no-arg function to provide fields for such types.\n" +
           "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
-        case t: Named if result contains t.name ⇒ result
+        case t: Named if result contains t.name ⇒
+          result get t.name match {
+            case Some(found) if !sameType(found._2, t) ⇒ typeConflict(t.name, found._2, t, parentInfo)
+            case _ ⇒ result
+          }
         case OptionType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
         case OptionInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
         case ListType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
         case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
-        case t @ ScalarType(name, _, _, _, _, _) ⇒ updated(priority, name, t, result)
-        case t @ EnumType(name, _, _) ⇒ updated(priority, name, t, result)
+        case t @ ScalarType(name, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
+        case t @ EnumType(name, _, _) ⇒ updated(priority, name, t, result, parentInfo)
         case t @ InputObjectType(name, _, _) ⇒
-          t.fields.foldLeft(updated(priority, name, t, result)) {case (acc, field) ⇒
-            collectTypes(s"a field '${field.name}' of '$name' input object type", priority, field.fieldType, acc)}
+          t.fields.foldLeft(updated(priority, name, t, result, parentInfo)) {
+            case (acc, field) ⇒
+              collectTypes(s"a field '${field.name}' of '$name' input object type", priority, field.fieldType, acc)
+          }
         case t: ObjectLikeType[_, _] ⇒
-          val own = t.fields.foldLeft(updated(priority, t.name, t, result)) {
+          val own = t.fields.foldLeft(updated(priority, t.name, t, result, parentInfo)) {
             case (acc, field) ⇒
               val fromArgs = field.arguments.foldLeft(collectTypes(s"a field '${field.name}' of '${t.name}' type", priority, field.fieldType, acc)) {
                 case (aacc, arg) ⇒ collectTypes(s"an argument '${arg.name}' defined in field '${field.name}' of '${t.name}' type", priority, arg.argumentType, aacc)
@@ -596,7 +613,7 @@ case class Schema[Ctx, Val](
             case (acc, interface) ⇒ collectTypes(s"an interface defined in '${t.name}' type", priority, interface, acc)
           }
         case t @ UnionType(name, _, types) ⇒
-          types.foldLeft(updated(priority, name, t, result)) {case (acc, tpe) ⇒ collectTypes(s"a '$name' type", priority, tpe, acc)}
+          types.foldLeft(updated(priority, name, t, result, parentInfo)) {case (acc, tpe) ⇒ collectTypes(s"a '$name' type", priority, tpe, acc)}
       }
     }
 

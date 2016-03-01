@@ -339,3 +339,7 @@ case class InvalidInputValueViolation(argumentName: String, errorText: String, s
 case class DuplicateVariableViolation(variableName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"There can be only one variable named '$variableName'."
 }
+
+case class ConflictingTypeDefinitionViolation(typeName: String, conflictingTypes: List[String], parentInfo: String) extends Violation {
+  lazy val errorMessage = s"Type name '$typeName' is used for several conflicting GraphQL types kinds: ${conflictingTypes mkString ", "}. Conflict found in $parentInfo."
+}

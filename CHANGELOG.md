@@ -1,3 +1,7 @@
+## Upcoming
+
+* Detect name collisions with incompatible types during schema definition (#117)
+
 ## v0.5.2 (2016-02-28)
 
 * Added introspection-based schema materializer (#21). This feature has a lot of potential for clint-side tools, testing, mocking, 
