@@ -27,15 +27,15 @@ class ExecutionError(message: String, val exceptionHandler: Executor.ExceptionHa
   override def getMessage = super.getMessage + astLocation
 }
 
-case class VariableCoercionError(violations: Vector[Violation], eh: Executor.ExceptionHandler) extends ExecutionError(
-  s"Error during variable coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations
-
-case class AttributeCoercionError(violations: Vector[Violation], eh: Executor.ExceptionHandler) extends ExecutionError(
-  s"Error during attribute coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations
-
 trait QueryAnalysisError extends ErrorWithResolver {
   this: Throwable ⇒
 }
+
+case class VariableCoercionError(violations: Vector[Violation], eh: Executor.ExceptionHandler) extends ExecutionError(
+  s"Error during variable coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
+
+case class AttributeCoercionError(violations: Vector[Violation], eh: Executor.ExceptionHandler) extends ExecutionError(
+  s"Error during attribute coercion. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
 
 case class ValidationError(violations: Vector[Violation], eh: Executor.ExceptionHandler) extends ExecutionError(
   s"Query does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
