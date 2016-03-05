@@ -45,6 +45,8 @@
   ```
   
   HTTP status code would be 401 for unauthorized users.
+  
+  If you have issues with the migration, please raise [an issue](https://github.com/sangria-graphql/sangria/issues/new) so that we can find a good solution together.
 * Detect name collisions with incompatible types during schema definition (#117)
 * Introduced a type alias `Executor.ExceptionHandler` for exception handler partial function 
 
