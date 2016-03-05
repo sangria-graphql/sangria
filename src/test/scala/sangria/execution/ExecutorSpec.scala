@@ -4,7 +4,8 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.macros._
+import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import InputUnmarshaller.mapVars
 
@@ -12,7 +13,7 @@ import scala.concurrent.Future
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
+class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
   class TestSubject {
     def a: Option[String] = Some("Apple")
     def b: Option[String] = Some("Banana")
@@ -336,7 +337,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
               syncDeferError
         }""")
 
-      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+      val exceptionHandler: Executor.ExceptionHandler = {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
@@ -399,8 +400,9 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
         Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
       val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
 
-      Executor(schema).execute(doc).await should be (
-        Map("data" → null, "errors" → List(Map("message" → "Must provide operation name if query contains multiple operations"))))
+      val error = intercept [OperationSelectionError] (Executor(schema).execute(doc).await)
+
+      error.getMessage should be ("Must provide operation name if query contains multiple operations")
     }
 
     "use correct schema type schema for operation" in {
@@ -477,16 +479,20 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
     }
 
     "resolve deferred values correctly" in {
-      val Success(doc) = QueryParser.parse("""
+      val query = graphql"""
         {
           def { color }
           defFut { color }
         }
-        """)
+        """
 
       val schema = Schema(DataType)
 
-      Executor(schema, new TestSubject, Ctx(), deferredResolver = new LightColorResolver).execute(doc).await should be  (
+      Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new LightColorResolver).recover {
+        case error: ErrorWithResolver ⇒ error.resolveError
+      }
+
+      Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new LightColorResolver).await should be  (
         Map(
           "data" → Map(
             "def" → Map("color" → "lightmagenta"),
@@ -503,7 +509,7 @@ class ExecutorSpec extends WordSpec with Matchers with AwaitSupport {
 
       val schema = Schema(DataType)
 
-      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+      val exceptionHandler: Executor.ExceptionHandler = {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 

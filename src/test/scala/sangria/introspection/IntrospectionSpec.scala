@@ -4,13 +4,13 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
-class IntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
+class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport {
   "Introspection" should {
     "executes an introspection query" in {
       val schema = Schema(ObjectType[Unit, Unit]("QueryRoot", Nil))

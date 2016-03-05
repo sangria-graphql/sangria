@@ -1,7 +1,7 @@
 package sangria.execution
 
 import sangria.marshalling.ResultMarshaller
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import org.scalatest.{Matchers, WordSpec}
 
@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ListsSpec extends WordSpec with Matchers with AwaitSupport {
+class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
   case class Data(test: Action[Unit, Any])
 
   def check(testType: OutputType[Any], testData: Action[Unit, Any], expected: Any) = {
@@ -28,7 +28,7 @@ class ListsSpec extends WordSpec with Matchers with AwaitSupport {
 
     val Success(doc) = QueryParser.parse("{ nest { test } }")
 
-    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+    val exceptionHandler: Executor.ExceptionHandler = {
       case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
     }
 

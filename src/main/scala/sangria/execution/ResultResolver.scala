@@ -4,7 +4,7 @@ import org.parboiled2.Position
 import sangria.marshalling.ResultMarshaller
 import sangria.validation.{Violation, AstNodeLocation}
 
-class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException]) {
+class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executor.ExceptionHandler) {
   def marshalErrors(errors: ErrorRegistry) = {
     val marshalled = errors.errorList.map {
       case ErrorPath(path, error, location) ⇒
@@ -40,13 +40,19 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Partial
   def resolveError(error: Throwable) =
     marshalResult(None, marshalErrors(ErrorRegistry(Vector.empty, error)))
 
+  def handleSupportedError(e: Throwable) = {
+    val handeled = exceptionHandler(marshaller → e)
+
+    marshaller.mapNode(Seq("message" → marshaller.stringNode(handeled.message)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]])
+  }
+
   def handleException(exception: Throwable): marshaller.Node = exception match {
     case e: UserFacingError ⇒
       marshaller.mapNode(Seq("message" → marshaller.stringNode(e.getMessage)))
     case e if exceptionHandler isDefinedAt (marshaller → e) ⇒
-      val handeled = exceptionHandler(marshaller → e)
-
-      marshaller.mapNode(Seq("message" → marshaller.stringNode(handeled.message)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]])
+      handleSupportedError(e)
+    case QueryReducingError(cause, _) if exceptionHandler isDefinedAt (marshaller → cause) ⇒
+      handleSupportedError(cause)
     case e ⇒
       e.printStackTrace() // todo proper logging?
       marshaller.mapNode(Seq("message" → marshaller.stringNode("Internal server error")))

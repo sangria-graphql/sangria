@@ -3,11 +3,11 @@ package sangria.starWars
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.starWars.TestSchema.StarWarsSchema
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import scala.util.Success
 
-class StartWarsValidationSpec extends WordSpec with Matchers with AwaitSupport {
+class StartWarsValidationSpec extends WordSpec with Matchers with FutureResultSupport {
   "Basic Queries" should {
     "Validates a complex but valid query" in {
       val Success(query) = QueryParser.parse("""

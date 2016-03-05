@@ -11,7 +11,7 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
 import scala.util.{Success, Failure, Try}
 
-class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx)(implicit um: InputUnmarshaller[Input]) {
+class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: Executor.ExceptionHandler)(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   import coercionHelper._
@@ -20,7 +20,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
-      Failure(new ExecutionError(s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}"))
+      Failure(new ExecutionError(s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}", exceptionHandler))
     else {
       val res = definitions.foldLeft(Vector.empty[(String, Either[Vector[Violation], VariableValue])]) {
         case (acc, varDef) ⇒
@@ -37,7 +37,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
       val (errors, values) = res.partition(_._2.isLeft)
 
-      if (errors.nonEmpty) Failure(VariableCoercionError(errors.collect{case (name, Left(errors)) ⇒ errors}.flatten))
+      if (errors.nonEmpty) Failure(VariableCoercionError(errors.collect{case (name, Left(errors)) ⇒ errors}.flatten, exceptionHandler))
       else Success(Map(values.collect {case (name, Right(v)) ⇒ name → v}: _*))
     }
 
@@ -96,7 +96,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
       val errorRes = errors.result()
 
-      if (errorRes.nonEmpty) Failure(AttributeCoercionError(errorRes))
+      if (errorRes.nonEmpty) Failure(AttributeCoercionError(errorRes, exceptionHandler))
       else Success(Args(res.asInstanceOf[Map[String, Any]]))
     }
 }

@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{Pos, GraphQlSupport, AwaitSupport}
+import sangria.util.{Pos, GraphQlSupport}
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 
 import InputUnmarshaller.mapVars
@@ -252,7 +252,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         }
 
         def assertErrorResult[T: InputUnmarshaller](args: T, expectedError: String) = {
-          val result = Executor(schema).execute(testQuery, variables = args).await.asInstanceOf[Map[String, AnyRef]]
+          val result = Executor(schema).execute(testQuery, variables = args).awaitAndRecoverQueryAnalysisScala.asInstanceOf[Map[String, AnyRef]]
 
           result("data") should equal (null)
 

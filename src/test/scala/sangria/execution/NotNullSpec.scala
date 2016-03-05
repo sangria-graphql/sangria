@@ -2,11 +2,11 @@ package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
-import sangria.util.{GraphQlSupport, AwaitSupport}
+import sangria.util.{GraphQlSupport, FutureResultSupport}
 
 import scala.concurrent.Future
 
-class NotNullSpec extends WordSpec with Matchers with AwaitSupport with GraphQlSupport {
+class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with GraphQlSupport {
   trait TestSubject {
     def sync: Option[String]
     def nonNullSync: String

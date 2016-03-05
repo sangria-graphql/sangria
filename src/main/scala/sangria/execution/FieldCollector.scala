@@ -15,7 +15,8 @@ class FieldCollector[Ctx, Val](
     document: ast.Document,
     variables: Map[String, VariableValue],
     sourceMapper: Option[SourceMapper],
-    valueCollector: ValueCollector[Ctx, _]) {
+    valueCollector: ValueCollector[Ctx, _],
+    exceptionHandler: Executor.ExceptionHandler) {
 
   private val resultCache = TrieMap[(Vector[String], String), Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]]]()
 
@@ -69,7 +70,7 @@ class FieldCollector[Ctx, Val](
                         else s
                     } yield fragmentFields
                   case None ⇒
-                    Failure(new ExecutionError(s"Fragment with name '$name' is not defined", sourceMapper, position.toList))
+                    Failure(new ExecutionError(s"Fragment with name '$name' is not defined", exceptionHandler, sourceMapper, position.toList))
                 }
               } else s
             }
@@ -81,14 +82,14 @@ class FieldCollector[Ctx, Val](
         .map(d ⇒ schema.directivesByName
           .get(d.name)
           .map(dd ⇒ selection match {
-            case _: ast.Field if !dd.onField ⇒ Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", sourceMapper, d.position.toList))
+            case _: ast.Field if !dd.onField ⇒ Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", exceptionHandler, sourceMapper, d.position.toList))
             case _: ast.InlineFragment | _: ast.FragmentSpread | _: ast.FragmentDefinition if !dd.onFragment ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment", sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment", exceptionHandler, sourceMapper, d.position.toList))
             case _: ast.OperationDefinition if !dd.onOperation ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on operation", sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on operation", exceptionHandler, sourceMapper, d.position.toList))
             case _ ⇒ Success(d → dd)
           })
-          .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", sourceMapper, d.position.toList))))
+          .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", exceptionHandler, sourceMapper, d.position.toList))))
         .map(_.flatMap{case (astDir, dir) ⇒ valueCollector.getArgumentValues(dir.arguments, astDir.arguments, variables) map (dir → _)})
 
     possibleDirs.collect{case Failure(error) ⇒ error}.headOption map (Failure(_)) getOrElse {
@@ -104,7 +105,7 @@ class FieldCollector[Ctx, Val](
       case Some(tc) ⇒
         schema.outputTypes.get(tc.name)
           .map(condTpe ⇒ Success(condTpe.name == tpe.name || (condTpe.isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
-          .getOrElse(Failure(new ExecutionError(s"Unknown type '${tc.name}'.", sourceMapper, conditional.position.toList)))
+          .getOrElse(Failure(new ExecutionError(s"Unknown type '${tc.name}'.", exceptionHandler, sourceMapper, conditional.position.toList)))
       case None ⇒ Success(true)
     }
 }

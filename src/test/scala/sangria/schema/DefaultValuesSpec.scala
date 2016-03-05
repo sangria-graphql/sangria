@@ -7,12 +7,12 @@ import language.higherKinds
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.macros._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 import ScalaInput.scalaInput
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DefaultValuesSpec extends WordSpec with Matchers with AwaitSupport {
+class DefaultValuesSpec extends WordSpec with Matchers with FutureResultSupport {
   def check[T, Default](inputType: InputType[T], defaultValue: Default, expectedResult: Any, expectedDefault: String)(implicit ev: ToInput[Default, _], ev1: FromInput[T]) = {
     import sangria.marshalling.sprayJson._
     import spray.json._

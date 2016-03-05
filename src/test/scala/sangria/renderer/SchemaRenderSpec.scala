@@ -6,13 +6,13 @@ import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 import sangria.macros._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 
-class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
+class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport {
   def renderForTest[T: InputUnmarshaller](res: T) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
   def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 
@@ -371,7 +371,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with AwaitSupport {
       val schema = Schema(root)
 
       an [IllegalArgumentException] should be thrownBy
-        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").await)
+        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").awaitAndRecoverQueryAnalysis)
     }
   }
 

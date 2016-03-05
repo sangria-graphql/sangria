@@ -1,6 +1,6 @@
 package sangria.execution
 
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
@@ -10,7 +10,7 @@ import sangria.validation.QueryValidator
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DirectivesSpec extends WordSpec with Matchers with AwaitSupport {
+class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
 
   case class TestSubject(a: Option[String], b: Option[String])
 

@@ -4,14 +4,14 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.ResultMarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{OutputMatchers, AwaitSupport}
+import sangria.util.{OutputMatchers, FutureResultSupport}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try, Success}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport with OutputMatchers {
+class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers {
   val TestType = ObjectType("Test", fields[Unit, Unit](
     Field("success", OptionType(StringType), resolve = _ ⇒ "Yay"),
     Field("trySuccess", OptionType(StringType), resolve = _ ⇒ Success("try!")),
@@ -69,7 +69,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
         }
         """)
 
-      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+      val exceptionHandler: Executor.ExceptionHandler = {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
@@ -97,7 +97,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with AwaitSupport wit
         }
         """)
 
-      val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+      val exceptionHandler: Executor.ExceptionHandler = {
         case (m, e: IllegalStateException) ⇒
           HandledException(e.getMessage,
             Map("foo" → m.arrayNode(Vector(m.stringNode("bar"), m.intNode(1234))), "baz" → m.stringNode("Test")))

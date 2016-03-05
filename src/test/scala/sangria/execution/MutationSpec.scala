@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
-import sangria.util.{GraphQlSupport, AwaitSupport}
+import sangria.util.{GraphQlSupport, FutureResultSupport}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global

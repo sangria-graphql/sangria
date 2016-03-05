@@ -2,10 +2,10 @@ package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
-import sangria.util.{GraphQlSupport, AwaitSupport}
+import sangria.util.{GraphQlSupport, FutureResultSupport}
 
 
-class UnionInterfaceSpec extends WordSpec with Matchers with AwaitSupport with GraphQlSupport {
+class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport with GraphQlSupport {
   trait Named {
     def name: Option[String]
   }

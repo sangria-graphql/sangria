@@ -7,14 +7,14 @@ import sangria.ast.Document
 import sangria.macros._
 import sangria.marshalling.ResultMarshaller
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import scala.collection.mutable.{Map ⇒ MutableMap}
 import scala.concurrent.Future
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
+class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
   class QueryMiddleware extends Middleware[Count] {
     type QueryVal = String
 
@@ -132,7 +132,7 @@ class MiddlewareSpec extends WordSpec with Matchers with AwaitSupport {
     }
   }
 
-  val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+  val exceptionHandler: Executor.ExceptionHandler = {
     case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
   }
 

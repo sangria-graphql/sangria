@@ -3,7 +3,7 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import sangria.macros._
 
@@ -11,7 +11,7 @@ import scala.concurrent.Future
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ExecutorSchemaSpec extends WordSpec with Matchers with AwaitSupport {
+class ExecutorSchemaSpec extends WordSpec with Matchers with FutureResultSupport {
   case class Image(url: Option[String], width: Option[Int], height: Option[Int])
 
   case class Author(id: Option[String], name: Option[String], recentArticle: Option[String]) {

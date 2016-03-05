@@ -5,12 +5,12 @@ import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.starWars.TestSchema.StarWarsSchema
 import sangria.starWars.TestData.{FriendsResolver, CharacterRepo}
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class StarWarsIntrospectionSpec extends WordSpec with Matchers with AwaitSupport {
+class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResultSupport {
   "Basic Introspection" should {
     "Allows querying the schema for types" in {
       val Success(query) = QueryParser.parse("""

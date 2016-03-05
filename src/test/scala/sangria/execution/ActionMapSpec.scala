@@ -3,14 +3,14 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import scala.concurrent.Future
 import scala.util.Success
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ActionMapSpec extends WordSpec with Matchers with AwaitSupport {
+class ActionMapSpec extends WordSpec with Matchers with FutureResultSupport {
   case class Color(name: String)
 
   case class ColorDefer(num: Int) extends Deferred[String]

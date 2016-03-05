@@ -5,14 +5,14 @@ import sangria.marshalling.ResultMarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.ast
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 import sangria.validation.StringCoercionViolation
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
+class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
   case class ATag(num: Int) extends FieldTag
   case object BTag extends FieldTag
   
@@ -88,7 +88,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
 
   val schema = Schema(TestType)
 
-  val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+  val exceptionHandler: Executor.ExceptionHandler = {
     case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
   }
 
@@ -350,14 +350,11 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
       val rejectComplexQuery = QueryReducer.rejectComplexQueries[Info](14, (c, _) ⇒
         new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
 
-      Executor.execute(schema, query,
+      val error = intercept [QueryReducingError] (Executor.execute(schema, query,
           userContext = Info(Nil),
-          exceptionHandler = exceptionHandler,
-          queryReducers = rejectComplexQuery :: Nil).await should be (
-        Map(
-          "data" → null,
-          "errors" → List(
-            Map("message" → "Too complex query: max allowed complexity is 14.0, but got 15.0"))))
+          queryReducers = rejectComplexQuery :: Nil).await)
+
+      error.cause.getMessage should be ("Too complex query: max allowed complexity is 14.0, but got 15.0")
     }
   }
 
@@ -388,7 +385,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
           queryReducers = complReducer :: tagColl :: Nil).await should be (
         Map("data" →
             Map(
-              "info" -> List(1),
+              "info" → List(1),
               "a" → "testa",
               "nest" →
                 Map("b" → "testb"))))
@@ -417,7 +414,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
           queryReducers = tagColl :: Nil).await should be (
         Map("data" →
             Map(
-              "info" -> List(124, 124, 125),
+              "info" → List(124, 124, 125),
               "a" → "testa",
               "nest" →
                 Map(
@@ -447,7 +444,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
           queryReducers = tagColl :: Nil).await should be (
         Map("data" →
             Map(
-              "info" -> List(124, 124, 125),
+              "info" → List(124, 124, 125),
               "a" → "testa",
               "nest" →
                 Map(
@@ -475,8 +472,8 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
       Executor.execute(schema, query,
           userContext = Info(Nil),
           exceptionHandler = exceptionHandler,
-          queryReducers = tagColl :: Nil).await should be (
-        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+          queryReducers = tagColl :: Nil).awaitAndRecoverQueryAnalysisScala should be (
+        Map("data" → null, "errors" → List(Map("message" → "boom!"))))
     }
 
     "handle `TryValue` exceptions correctly" in {
@@ -498,8 +495,8 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
       Executor.execute(schema, query,
           userContext = Info(Nil),
           exceptionHandler = exceptionHandler,
-          queryReducers = tagColl :: Nil).await should be (
-        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+          queryReducers = tagColl :: Nil).awaitAndRecoverQueryAnalysisScala should be (
+        Map("data" → null, "errors" → List(Map("message" → "boom!"))))
     }
 
     "handle `FutureValue` exceptions correctly" in {
@@ -521,8 +518,8 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
       Executor.execute(schema, query,
         userContext = Info(Nil),
         exceptionHandler = exceptionHandler,
-        queryReducers = tagColl :: Nil).await should be (
-        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+        queryReducers = tagColl :: Nil).awaitAndRecoverQueryAnalysisScala should be (
+        Map("data" → null, "errors" → List(Map("message" → "boom!"))))
     }
 
     "collect all mapped tag values and update a user context" in {
@@ -552,7 +549,7 @@ class QueryReducerSpec extends WordSpec with Matchers with AwaitSupport {
           queryReducers = complReducer :: tagColl :: Nil).await
         Map("data" →
             Map(
-              "info" -> List(1, 2),
+              "info" → List(1, 2),
               "a" → "testa",
               "nest" →
                   Map(

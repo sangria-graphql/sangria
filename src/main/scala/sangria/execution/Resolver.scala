@@ -19,7 +19,7 @@ class Resolver[Ctx](
     variables: Map[String, VariableValue],
     fieldCollector: FieldCollector[Ctx, _],
     userContext: Ctx,
-    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException],
+    exceptionHandler: Executor.ExceptionHandler,
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,
@@ -397,7 +397,7 @@ class Resolver[Ctx](
         abst.typeOf(value, schema) match {
           case Some(obj) ⇒ resolveValue(path, astFields, obj, field, value, userCtx)
           case None ⇒ Result(ErrorRegistry(path,
-            new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", sourceMapper, astFields.head.position.toList)), None)
+            new ExecutionError(s"Can't find appropriate subtype for field at path ${path mkString ", "}", exceptionHandler, sourceMapper, astFields.head.position.toList)), None)
         }
     }
 
@@ -413,7 +413,7 @@ class Resolver[Ctx](
       val res = resIt.next()
 
       if (!optional && res.value.isEmpty && res.errors.errorList.isEmpty)
-        errorReg = errorReg.add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, astPosition.toList))
+        errorReg = errorReg.add(path, new ExecutionError("Cannot return null for non-nullable type", exceptionHandler, sourceMapper, astPosition.toList))
       else if (res.errors.errorList.nonEmpty)
         errorReg = errorReg.add(res.errors)
 
@@ -436,7 +436,7 @@ class Resolver[Ctx](
     val field = allFields.head
 
     maxQueryDepth match {
-      case Some(max) if path.size > max ⇒ (errors.add(path, new ExecutionError(s"Max query depth $max is reached."), astField.position), None, None)
+      case Some(max) if path.size > max ⇒ (errors.add(path, new ExecutionError(s"Max query depth $max is reached.", exceptionHandler), astField.position), None, None)
       case _ ⇒
         valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables) match {
           case Success(args) ⇒
@@ -624,7 +624,7 @@ class Resolver[Ctx](
       copy(
         errors =
             if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
-              errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", sourceMapper, position.toList))
+              errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", exceptionHandler, sourceMapper, position.toList))
             else
               errors.add(other.errors),
         value =

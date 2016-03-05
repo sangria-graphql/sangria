@@ -1,7 +1,7 @@
 package sangria.util
 
 import org.scalatest.Matchers
-import sangria.execution.{HandledException, Executor}
+import sangria.execution.{QueryAnalysisError, HandledException, Executor}
 import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.parser.QueryParser
 import sangria.schema.{DeferredResolver, Schema}
@@ -9,16 +9,17 @@ import sangria.validation.QueryValidator
 
 import spray.json.{JsValue, JsObject}
 
+import scala.concurrent.Future
 import scala.util.Success
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 
-object SimpleGraphQlSupport extends AwaitSupport with Matchers {
+object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
   def executeTestQuery[T, A: InputUnmarshaller](schema: Schema[_, _], data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true) = {
     val Success(doc) = QueryParser.parse(query)
 
-    val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+    val exceptionHandler: Executor.ExceptionHandler = {
       case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
     }
 
@@ -28,7 +29,7 @@ object SimpleGraphQlSupport extends AwaitSupport with Matchers {
       exceptionHandler = exceptionHandler,
       userContext = userContext,
       queryValidator = if (validateQuery) QueryValidator.default else QueryValidator.empty,
-      deferredResolver = resolver).execute(doc.copy(sourceMapper = None), variables = args).await
+      deferredResolver = resolver).execute(doc.copy(sourceMapper = None), variables = args).awaitAndRecoverQueryAnalysisScala
   }
 
   def check[T](schema: Schema[_, _], data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {
@@ -75,7 +76,7 @@ object SimpleGraphQlSupport extends AwaitSupport with Matchers {
   }
 }
 
-trait GraphQlSupport extends AwaitSupport with Matchers {
+trait GraphQlSupport extends FutureResultSupport with Matchers {
   def schema: Schema[_, _]
 
   def executeTestQuery[T, A: InputUnmarshaller](data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit =

@@ -8,6 +8,7 @@ import sangria.validation.QueryValidator
 import InputUnmarshaller.emptyMapVars
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Success, Failure, Try}
 
 case class Executor[Ctx, Root](
@@ -16,7 +17,7 @@ case class Executor[Ctx, Root](
     userContext: Ctx = (),
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
+    exceptionHandler: Executor.ExceptionHandler = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
@@ -29,14 +30,14 @@ case class Executor[Ctx, Root](
     val violations = queryValidator.validateQuery(schema, queryAst)
 
     if (violations.nonEmpty)
-      Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(ValidationError(violations)).asInstanceOf[marshaller.Node])
-    else {                              
-      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext)(um)
+      Future.failed(ValidationError(violations, exceptionHandler))
+    else {
+      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler)(um)
 
       val executionResult = for {
         operation ← getOperation(queryAst, operationName)
         unmarshalledVariables ← valueCollector.getVariableValues(operation.variables)
-        fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector)
+        fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
         res ← executeOperation(
           queryAst,
           operationName,
@@ -52,18 +53,18 @@ case class Executor[Ctx, Root](
 
       executionResult match {
         case Success(future) ⇒ future
-        case Failure(error) ⇒ Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])
+        case Failure(error) ⇒ Future.failed(error)
       }
     }
   }
 
   def getOperation(document: ast.Document, operationName: Option[String]): Try[ast.OperationDefinition] =
     if (document.operations.size != 1 && operationName.isEmpty)
-      Failure(new ExecutionError("Must provide operation name if query contains multiple operations"))
+      Failure(OperationSelectionError("Must provide operation name if query contains multiple operations", exceptionHandler))
     else {
       val operation = operationName flatMap (opName ⇒ document.operations get Some(opName)) orElse document.operations.values.headOption
 
-      operation map (Success(_)) getOrElse Failure(new ExecutionError(s"Unknown operation name: ${operationName.get}"))
+      operation map (Success(_)) getOrElse Failure(OperationSelectionError(s"Unknown operation name: ${operationName.get}", exceptionHandler))
     }
 
   def executeOperation[Input](
@@ -84,38 +85,43 @@ case class Executor[Ctx, Root](
       def doExecute(ctx: Ctx) = {
         val middlewareCtx = MiddlewareQueryContext(ctx, this, queryAst, operationName, inputVariables, inputUnmarshaller)
 
-        val middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
+        try {
+          val middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
 
-        val resolver = new Resolver[Ctx](
-          marshaller,
-          middlewareCtx,
-          schema,
-          valueCollector,
-          variables,
-          fieldCollector,
-          ctx,
-          exceptionHandler,
-          deferredResolver,
-          sourceMapper,
-          deprecationTracker,
-          middlewareVal,
-          maxQueryDepth)
+          val resolver = new Resolver[Ctx](
+            marshaller,
+            middlewareCtx,
+            schema,
+            valueCollector,
+            variables,
+            fieldCollector,
+            ctx,
+            exceptionHandler,
+            deferredResolver,
+            sourceMapper,
+            deprecationTracker,
+            middlewareVal,
+            maxQueryDepth)
 
-        val result =
-          operation.operationType match {
-            case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
-            case ast.OperationType.Subscription ⇒ resolver.resolveFieldsPar(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
-            case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
-          }
+          val result =
+            operation.operationType match {
+              case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
+              case ast.OperationType.Subscription ⇒ resolver.resolveFieldsPar(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
+              case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields).asInstanceOf[Future[marshaller.Node]]
+            }
 
-        if (middlewareVal.nonEmpty) {
-          def onAfter() =
-            middlewareVal foreach { case (v, m) ⇒ m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)}
+          if (middlewareVal.nonEmpty) {
+            def onAfter() =
+              middlewareVal foreach { case (v, m) ⇒ m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)}
 
-          result
-              .map { x ⇒ onAfter(); x}
-              .recover { case e ⇒ onAfter(); throw e}
-        } else result
+            result
+                .map { x ⇒ onAfter(); x}
+                .recover { case e ⇒ onAfter(); throw e}
+          } else result
+        } catch {
+          case NonFatal(error) ⇒
+            Future.failed(error)
+        }
       }
 
       if (queryReducers.nonEmpty)
@@ -123,7 +129,7 @@ case class Executor[Ctx, Root](
           case future: Future[Ctx] ⇒
             future
               .map (newCtx ⇒ doExecute(newCtx))
-              .recover {case error: Throwable ⇒ Future.successful(new ResultResolver(marshaller, exceptionHandler).resolveError(error).asInstanceOf[marshaller.Node])}
+              .recover {case error: Throwable ⇒ throw QueryReducingError(error, exceptionHandler)}
               .flatMap (identity)
           case newCtx: Ctx @unchecked ⇒ doExecute(newCtx)
         }
@@ -131,11 +137,14 @@ case class Executor[Ctx, Root](
     }
 
   def getOperationRootType(operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
-    case ast.OperationType.Query ⇒ Success(schema.query)
-    case ast.OperationType.Mutation ⇒ schema.mutation map (Success(_)) getOrElse
-        Failure(new ExecutionError("Schema is not configured for mutations", sourceMapper, operation.position.toList))
-    case ast.OperationType.Subscription ⇒ schema.subscription map (Success(_)) getOrElse
-        Failure(new ExecutionError("Schema is not configured for subscriptions", sourceMapper, operation.position.toList))
+    case ast.OperationType.Query ⇒
+      Success(schema.query)
+    case ast.OperationType.Mutation ⇒
+      schema.mutation map (Success(_)) getOrElse
+        Failure(OperationSelectionError("Schema is not configured for mutations", exceptionHandler, sourceMapper, operation.position.toList))
+    case ast.OperationType.Subscription ⇒
+      schema.subscription map (Success(_)) getOrElse
+        Failure(OperationSelectionError("Schema is not configured for subscriptions", exceptionHandler, sourceMapper, operation.position.toList))
   }
 
   private def reduceQuery[Val](
@@ -167,7 +176,7 @@ case class Executor[Ctx, Root](
                   val newPath = path :+ astField.outputName
                   val childReduced = loop(newPath, field.fieldType, fields)
 
-                  for (i ← 0 until reducers.size) {
+                  for (i ← reducers.indices) {
                     val reducer = reducers(i)
 
                     acc(i) = reducer.reduceField[Any](
@@ -205,7 +214,7 @@ case class Executor[Ctx, Root](
         val path = Vector(astField.outputName)
         val childReduced = loop(path, field.fieldType, astFields)
 
-        for (i ← 0 until reducers.size) {
+        for (i ← reducers.indices) {
           val reducer = reducers(i)
 
           acc(i) = reducer.reduceField(
@@ -220,26 +229,32 @@ case class Executor[Ctx, Root](
       case (acc, _) ⇒ acc
     }
 
-    // Unsafe part to avoid addition boxing in order to reduce the footprint
-    reducers.zipWithIndex.foldLeft(userContext: Any) {
-      case (acc: Future[Ctx], (reducer, idx)) ⇒
-        acc.flatMap(a ⇒ reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], a) match {
-          case FutureValue(future) ⇒ future
-          case Value(value) ⇒ Future.successful(value)
-          case TryValue(value) ⇒ Future.fromTry(value)
-        })
+    try {
+      // Unsafe part to avoid addition boxing in order to reduce the footprint
+      reducers.zipWithIndex.foldLeft(userContext: Any) {
+        case (acc: Future[Ctx], (reducer, idx)) ⇒
+          acc.flatMap(a ⇒ reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], a) match {
+            case FutureValue(future) ⇒ future
+            case Value(value) ⇒ Future.successful(value)
+            case TryValue(value) ⇒ Future.fromTry(value)
+          })
 
-      case (acc: Ctx @unchecked, (reducer, idx)) ⇒
-        reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], acc)  match {
-          case FutureValue(future) ⇒ future
-          case Value(value) ⇒ value
-          case TryValue(value) ⇒ value.get
-        }
+        case (acc: Ctx@unchecked, (reducer, idx)) ⇒
+          reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], acc) match {
+            case FutureValue(future) ⇒ future
+            case Value(value) ⇒ value
+            case TryValue(value) ⇒ value.get
+          }
+      }
+    } catch {
+      case NonFatal(error) ⇒ Future.failed(error)
     }
   }
 }
 
 object Executor {
+  type ExceptionHandler = PartialFunction[(ResultMarshaller, Throwable), HandledException]
+
   def execute[Ctx, Root, Input](
     schema: Schema[Ctx, Root],
     queryAst: ast.Document,
@@ -249,7 +264,7 @@ object Executor {
     userContext: Ctx = (),
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-    exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = PartialFunction.empty,
+    exceptionHandler: Executor.ExceptionHandler = PartialFunction.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,

@@ -1,6 +1,52 @@
 ## Upcoming
 
+* `Executor.execute` now returns `Future` with failure if error happened before query execution (#109). It can be extremely helpful when you need to take some action or produce different result in case of error. Typical example is returning different HTTP status code.     
+
+  **CAUTION: breaking change and action needed!** Since things like validation errors and errors in query reducers are now explicitly returned in `Future` failure and not as a successful result, you need to take some action to handle them. In order to migrate, all you need to do is following:
+  
+  ```scala
+  Executor.execute(schema, query).recover {
+    case error: ErrorWithResolver ⇒ error.resolveError
+  }
+  ```
+  
+  `recover` function will make sure that all of the errors, that were previously handled internally in `Executor`, are now properly handled. **Code above will produce exactly the same result as before.** `resolveError` produces a valid GraphQL response JSON and will use custom exception handler, if you have provided one.
+      
+  This new approach to error handling gives you much more flexibility. For example in most cases it makes a lot of sense to return 400 HTTP status code if query validation failed. It was not really possible to do this before. Now you able to do something like this (using playframefork in this particular example):
+      
+  ```scala
+  executor.execute(query, ...)
+    .map(Ok(_))
+    .recover {
+      case error: QueryAnalysisError ⇒ BadRequest(error.resolveError)
+      case error: ErrorWithResolver ⇒ InternalServerError(error.resolveError)
+    }
+  ```
+  
+  This code will produce status code 400 in case of any error caused by client (query validation, invalid operation name, etc.).
+   
+  Errors that happened in a query reducer would be wrapped in `QueryReducingError`. Here is an example of returning custom status code in case of error in the query reducer:
+  
+  ```scala
+  val authReducer = QueryReducer.collectTags[MyContext, String] {
+    case Permission(name) ⇒ name
+  } { (permissionNames, ctx) ⇒
+    if (ctx.isUserAuthorized(permissionNames)) ctx
+    else throw AuthorizationException("User is not authorized!")
+  }
+  
+  Executor.execute(schema, queryAst, userContext = new MyContext, queryReducers = authReducer :: Nil)
+    .map(Ok(_))
+    .recover {
+      case QueryReducingError(error: AuthorizationException) ⇒ Unauthorized(error.getMessage)
+      case error: QueryAnalysisError ⇒ BadRequest(error.resolveError)
+      case error: ErrorWithResolver ⇒ InternalServerError(error.resolveError)
+    }
+  ```
+  
+  HTTP status code would be 401 for unauthorized users.
 * Detect name collisions with incompatible types during schema definition (#117)
+* Introduced a type alias `Executor.ExceptionHandler` for exception handler partial function 
 
 ## v0.5.2 (2016-02-28)
 
@@ -302,7 +348,7 @@
       throw new IllegalArgumentException(s"Too complex query: max allowed complexity is 1000.0, but got $c")
     else ()
 
-  val exceptionHandler: PartialFunction[(ResultMarshaller, Throwable), HandledException] = {
+  val exceptionHandler: Executor.ExceptionHandler = {
     case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
   }
 

@@ -3,13 +3,13 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import scala.util.Success
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ContextPassingSpec extends WordSpec with Matchers with AwaitSupport {
+class ContextPassingSpec extends WordSpec with Matchers with FutureResultSupport {
   trait ColorComponent {
     def color = "green"
   }

@@ -7,13 +7,13 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.starWars.TestSchema.StarWarsSchema
 import sangria.starWars.TestData.{FriendsResolver, CharacterRepo}
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 import InputUnmarshaller.mapVars
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
-class StarWarsQuerySpec extends WordSpec with Matchers with AwaitSupport {
+class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport {
   "Basic Queries" should {
     "Correctly identifies R2-D2 as the hero of the Star Wars Saga" in {
       val Success(query) = QueryParser.parse("""

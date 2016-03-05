@@ -3,14 +3,14 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 import scala.util.{Try, Success}
 
-class ProjectorSpec extends WordSpec with Matchers with AwaitSupport {
+class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
   case class Product(id: String, variants: List[Variant])
   case class Variant(id: String, relatedProductIds: List[String])
 

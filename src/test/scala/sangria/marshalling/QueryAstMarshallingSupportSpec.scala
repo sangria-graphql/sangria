@@ -11,12 +11,12 @@ import sangria.starWars.TestSchema._
 import sangria.ast
 import sangria.marshalling.queryAst._
 import sangria.macros._
-import sangria.util.AwaitSupport
+import sangria.util.FutureResultSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
-class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with AwaitSupport with MarshallingBehaviour with InputHandlingBehaviour with ParsingBehaviour {
+class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with FutureResultSupport with MarshallingBehaviour with InputHandlingBehaviour with ParsingBehaviour {
   "QueryAstMarshalling" should {
     behave like `value (un)marshaller` (queryAstResultMarshaller)
 
