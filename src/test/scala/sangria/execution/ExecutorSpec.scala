@@ -146,7 +146,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      Executor(schema, new TestSubject, Ctx()).execute(doc, variables = mapVars(Map("size" → 100))).await should be (expected)
+      Executor.execute(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" → 100))).await should be (expected)
     }
 
     "respect max depth level" in {
@@ -268,7 +268,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
               "c" → "Cherry")))
       )
 
-      Executor(schema).execute(doc).await should be (expected)
+      Executor.execute(schema, doc).await should be (expected)
     }
 
     "threads context correctly" in {
@@ -281,7 +281,8 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val Success(doc) = QueryParser.parse("query Example { a }")
 
-      Executor(schema, Thing(Some("thing"))).execute(doc).await should be (Map("data" → Map("a" → "thing")))
+      Executor.execute(schema, doc, root = Thing(Some("thing"))).await should be (Map("data" → Map("a" → "thing")))
+
       resolvedCtx should be (Some("thing"))
     }
 
@@ -299,7 +300,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         }
       """)
 
-      Executor(schema).execute(doc).await
+      Executor.execute(schema, doc).await
       resolvedArgs should be (Map("numArg" → Some(123), "stringArg" → Some("foo")))
     }
 
@@ -341,7 +342,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
-      val result = Executor(schema, new Data, exceptionHandler = exceptionHandler).execute(doc).await.asInstanceOf[Map[String, Any]]
+      val result = Executor.execute(schema, doc, root = new Data, exceptionHandler = exceptionHandler).await.asInstanceOf[Map[String, Any]]
 
       val data = result("data")
       val errors = result("errors").asInstanceOf[Seq[_]]
@@ -384,7 +385,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
       val Success(doc) = QueryParser.parse("{ a }")
 
-      Executor(schema).execute(doc).await should be (Map("data" → Map("a" → "b")))
+      Executor.execute(schema, doc).await should be (Map("data" → Map("a" → "b")))
     }
 
     "use the only operation if no operation is provided" in {
@@ -392,7 +393,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
       val Success(doc) = QueryParser.parse("query Example { a }")
 
-      Executor(schema).execute(doc).await should be (Map("data" → Map("a" → "b")))
+      Executor.execute(schema, doc).await should be (Map("data" → Map("a" → "b")))
     }
 
     "throw if no operation is provided with multiple operations" in {
@@ -400,7 +401,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
       val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
 
-      val error = intercept [OperationSelectionError] (Executor(schema).execute(doc).await)
+      val error = intercept [OperationSelectionError] (Executor.execute(schema, doc).await)
 
       error.getMessage should be ("Must provide operation name if query contains multiple operations")
     }
@@ -410,11 +411,12 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ ⇒ "b"))),
         Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ ⇒ "d")))),
         Some(ObjectType("S", fields[Unit, Unit](Field("e", OptionType(StringType), resolve = _ ⇒ "f")))))
+
       val Success(doc) = QueryParser.parse("query Q { a } mutation M { c } subscription S { e }")
 
-      Executor(schema).execute(doc, Some("Q")).await should be (Map("data" → Map("a" → "b")))
-      Executor(schema).execute(doc, Some("M")).await should be (Map("data" → Map("c" → "d")))
-      Executor(schema).execute(doc, Some("S")).await should be (Map("data" → Map("e" → "f")))
+      Executor.execute(schema, doc, operationName = Some("Q")).await should be (Map("data" → Map("a" → "b")))
+      Executor.execute(schema, doc, operationName = Some("M")).await should be (Map("data" → Map("c" → "d")))
+      Executor.execute(schema, doc, operationName = Some("S")).await should be (Map("data" → Map("e" → "f")))
     }
 
     "avoid recursion" in {
@@ -434,7 +436,8 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         }
       """)
 
-      Executor(schema, queryValidator = QueryValidator.empty).execute(doc, Some("Q")).await should be  (Map("data" → Map("a" → "b")))
+      Executor.execute(schema, doc, operationName = Some("Q"), queryValidator = QueryValidator.empty).await should be (
+        Map("data" → Map("a" → "b")))
     }
 
     "not include illegal fields in output" in {
@@ -443,7 +446,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ ⇒ "d")))))
       val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
 
-      Executor(schema, queryValidator = QueryValidator.empty).execute(doc).await should be  (Map("data" → Map()))
+      Executor.execute(schema, doc, queryValidator = QueryValidator.empty).await should be (Map("data" → Map()))
     }
 
     "update context in query operations" in {
@@ -469,7 +472,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      Executor(schema, new TestSubject, Ctx(), deferredResolver = new LightColorResolver).execute(doc).await should be  (
+      Executor.execute(schema, doc, Ctx(), new TestSubject, deferredResolver = new LightColorResolver).await should be (
         Map(
           "data" → Map(
             "ctxUpdating" → Map("ctxColor" → "blue"),
@@ -492,7 +495,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         case error: ErrorWithResolver ⇒ error.resolveError
       }
 
-      Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new LightColorResolver).await should be  (
+      Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new LightColorResolver).await should be (
         Map(
           "data" → Map(
             "def" → Map("color" → "lightmagenta"),
@@ -517,7 +520,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         root = new TestSubject,
         userContext = Ctx(),
         deferredResolver = new LightColorResolver,
-        exceptionHandler = exceptionHandler).await should be  (
+        exceptionHandler = exceptionHandler).await should be (
           Map(
             "data" → Map(
               "defFail" → null,

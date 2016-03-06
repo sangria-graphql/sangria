@@ -24,7 +24,7 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
   def executeTestQuery(query: String) = {
     val Success(doc) = QueryParser.parse(query)
 
-    Executor(schema, data, queryValidator = QueryValidator.empty).execute(doc).await
+    Executor.execute(schema, doc, root = data, queryValidator = QueryValidator.empty).await
   }
 
   "Execute: handles directives" when {

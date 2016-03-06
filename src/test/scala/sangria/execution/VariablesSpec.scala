@@ -210,7 +210,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         "executes with complex input (scala input)" in {
           val args = Map("input" → Map("a" → "foo", "b" → List("bar"), "c" → "baz"))
 
-          Executor(schema).execute(testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
+          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
             "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
           )))
         }
@@ -218,7 +218,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         "executes with complex input (json input)" in {
           val args = """{"input": {"a": "foo", "b": ["bar"], "c": "baz"}}""".parseJson
 
-          Executor(schema).execute(testQuery, variables = args).await should be (Map("data" → Map(
+          Executor.execute(schema, testQuery, variables = args).await should be (Map("data" → Map(
             "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
           )))
         }
@@ -238,7 +238,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         "properly coerces single value to array (scala input)" in {
           val args = Map("input" → Map("a" → "foo", "b" → "bar", "c" → "baz"))
 
-          Executor(schema).execute(testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
+          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
             "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
           )))
         }
@@ -246,13 +246,13 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         "properly coerces single value to array (json input)" in {
           val args = """{"input": {"a": "foo", "b": "bar", "c": "baz"}}""".parseJson
 
-          Executor(schema).execute(testQuery, variables = args).await should be (Map("data" → Map(
+          Executor.execute(schema, testQuery, variables = args).await should be (Map("data" → Map(
             "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
           )))
         }
 
         def assertErrorResult[T: InputUnmarshaller](args: T, expectedError: String) = {
-          val result = Executor(schema).execute(testQuery, variables = args).awaitAndRecoverQueryAnalysisScala.asInstanceOf[Map[String, AnyRef]]
+          val result = Executor.execute(schema, testQuery, variables = args).awaitAndRecoverQueryAnalysisScala.asInstanceOf[Map[String, AnyRef]]
 
           result("data") should equal (null)
 
@@ -331,7 +331,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """)
 
-        Executor(schema).execute(query, variables = args).await should be (Map("data" → Map(
+        Executor.execute(schema, query, variables = args).await should be (Map("data" → Map(
           "fieldWithNullableStringInput" → null
         )))
       }
@@ -346,7 +346,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """)
 
-        Executor(schema).execute(query, variables = args).await should be (Map("data" → Map(
+        Executor.execute(schema, query, variables = args).await should be (Map("data" → Map(
           "fieldWithNullableStringInput" → "\"a\""
         )))
       }

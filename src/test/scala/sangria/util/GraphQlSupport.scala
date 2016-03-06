@@ -23,13 +23,15 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
     }
 
-    Executor(
+    Executor.execute(
       schema.asInstanceOf[Schema[Any, T]],
+      doc.copy(sourceMapper = None),
+      userContext,
       data,
+      variables = args,
       exceptionHandler = exceptionHandler,
-      userContext = userContext,
       queryValidator = if (validateQuery) QueryValidator.default else QueryValidator.empty,
-      deferredResolver = resolver).execute(doc.copy(sourceMapper = None), variables = args).awaitAndRecoverQueryAnalysisScala
+      deferredResolver = resolver).awaitAndRecoverQueryAnalysisScala
   }
 
   def check[T](schema: Schema[_, _], data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {

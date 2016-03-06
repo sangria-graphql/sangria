@@ -67,24 +67,24 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
     var metrics: MutableMap[String, List[Long]] = MutableMap()
   }
 
-  class FieldMetrics extends Middleware[Any] with MiddlewareAfterField[Any] with MiddlewareErrorField[Any] {
+  class FieldMetrics extends Middleware[Count] with MiddlewareAfterField[Count] with MiddlewareErrorField[Count] {
     type QueryVal = MutableMap[String, List[Long]]
     type FieldVal = Long
 
-    def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) =
+    def beforeQuery(context: MiddlewareQueryContext[Count, _, _]) =
       MutableMap()
 
-    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = {
-      context.executor.userContext.asInstanceOf[Count].metrics = queryVal
+    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Count, _, _]) = {
+      context.ctx.metrics = queryVal
     }
 
-    def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = {
+    def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[Count, _, _], ctx: Context[Count, _]) = {
       if (ctx.field.name == "errorInBefore") throw new IllegalStateException("oops!")
 
       continue(System.currentTimeMillis())
     }
 
-    def afterField(queryVal: QueryVal, fieldVal: FieldVal, value: Any, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = {
+    def afterField(queryVal: QueryVal, fieldVal: FieldVal, value: Any, mctx: MiddlewareQueryContext[Count, _, _], ctx: Context[Count, _]) = {
       if (ctx.field.name == "errorInAfter") throw new IllegalStateException("oops!")
 
       queryVal.synchronized {
@@ -97,7 +97,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
       }
     }
 
-    def fieldError(queryVal: QueryVal, fieldVal: FieldVal, error: Throwable, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) =
+    def fieldError(queryVal: QueryVal, fieldVal: FieldVal, error: Throwable, mctx: MiddlewareQueryContext[Count, _, _], ctx: Context[Count, _]) =
       queryVal.synchronized {
         val key = ctx.parentType.name + "." + ctx.field.name
         val list = queryVal.getOrElse(key, Nil)

@@ -105,7 +105,7 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val ctx = new Ctx
 
-      Executor(schema, userContext = ctx, deferredResolver = new ProductResolver).execute(query).await should be (
+      Executor.execute(schema, query, ctx, deferredResolver = new ProductResolver).await should be (
         Map("data" →
           Map(
             "projectAll" →

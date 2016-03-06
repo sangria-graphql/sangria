@@ -35,7 +35,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         }
         """)
 
-        Executor(schema).execute(doc).await should be  (
+        Executor.execute(schema, doc).await should be  (
           Map(
             "data" → Map(
               "success" → "Yay",
@@ -73,7 +73,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
-      Executor(schema, exceptionHandler = exceptionHandler).execute(doc).await should be  (
+      Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (
         Map(
           "data" → Map(
             "error" → null,
@@ -103,7 +103,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
             Map("foo" → m.arrayNode(Vector(m.stringNode("bar"), m.intNode(1234))), "baz" → m.stringNode("Test")))
       }
 
-      Executor(schema, exceptionHandler = exceptionHandler).execute(doc).await should be  (
+      Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (
         Map(
           "data" → Map(
             "error" → null,

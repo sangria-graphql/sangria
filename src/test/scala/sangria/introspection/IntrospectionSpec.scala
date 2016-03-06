@@ -15,7 +15,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
     "executes an introspection query" in {
       val schema = Schema(ObjectType[Unit, Unit]("QueryRoot", Nil))
 
-      Executor(schema).execute(introspectionQuery).await should be (Map(
+      Executor.execute(schema, introspectionQuery).await should be (Map(
         "data" → Map(
           "__schema" → Map(
             "queryType" → Map(
@@ -864,7 +864,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         )
       )
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "__schema" → Map(
             "types" → (List(
@@ -922,7 +922,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         """
       )
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "__type" → Map(
             "name" → "TestType"
@@ -954,7 +954,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         """
       )
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "__type" → Map(
             "name" → "TestType",
@@ -1002,7 +1002,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         """
       )
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "__type" → Map(
             "name" → "TestType",
@@ -1056,7 +1056,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         """
       )
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "__type" → Map(
             "name" → "TestEnum",
@@ -1113,7 +1113,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         """
       )
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "__type" → Map(
             "name" → "TestEnum",
@@ -1166,7 +1166,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         """
       )
 
-      val result = Executor(schema, queryValidator = QueryValidator.empty).execute(query).await.asInstanceOf[Map[String, Any]]
+      val result = Executor.execute(schema, query, queryValidator = QueryValidator.empty).await.asInstanceOf[Map[String, Any]]
 
       result("data") should be (Map("__type" → null))
       result("errors").asInstanceOf[Seq[Map[String, Any]]](0)("message").asInstanceOf[String] should include (
@@ -1190,7 +1190,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
           }
         """)
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "schemaType" → Map(
             "name" → "__Schema",
@@ -1246,7 +1246,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
           }
         """)
 
-      Executor(schema).execute(query).await should be (Map(
+      Executor.execute(schema, query).await should be (Map(
         "data" → Map(
           "typeKindType" → Map(
             "name" → "__TypeKind",
