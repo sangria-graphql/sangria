@@ -1,4 +1,4 @@
-![Scagria Logo](https://raw.githubusercontent.com/sangria-graphql/sangria-logo/master/sangria-logo.png)
+![Scagria Logo](http://sangria-graphql.org/assets/img/sangria-logo.svg)
 
 [Sangria](http://sangria-graphql.org/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
