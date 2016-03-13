@@ -48,8 +48,9 @@ class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with FutureR
 
       val args = graphqlInput"""{someId: "1000"}"""
 
-      val result = Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver)
-        .execute(query, variables = args).await
+      val result = Executor.execute(StarWarsSchema, query, new CharacterRepo,
+        variables = args,
+        deferredResolver = new FriendsResolver).await
 
       QueryRenderer.render(result, QueryRenderer.PrettyInput) should be (
         """{

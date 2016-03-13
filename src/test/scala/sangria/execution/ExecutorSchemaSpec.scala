@@ -154,7 +154,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with FutureResultSupport
         }
       }
 
-      Executor(BlogSchema, deferredResolver = resolver, queryValidator = QueryValidator.empty).execute(doc).await should be (expected)
+      Executor.execute(BlogSchema, doc, deferredResolver = resolver, queryValidator = QueryValidator.empty).await should be (expected)
     }
 
     "execute using subscription type" in {

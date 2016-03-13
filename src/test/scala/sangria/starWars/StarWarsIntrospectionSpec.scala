@@ -23,7 +23,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__schema" → Map(
@@ -65,7 +65,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__schema" → Map(
@@ -86,7 +86,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__type" → Map(
@@ -106,7 +106,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__type" → Map(
@@ -127,7 +127,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__type" → Map(
@@ -154,7 +154,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__type" → Map(
@@ -221,7 +221,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__type" → Map(
@@ -309,7 +309,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__schema" → Map(
@@ -386,7 +386,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         }
         """)
 
-      Executor(StarWarsSchema, userContext = new CharacterRepo, deferredResolver = new FriendsResolver).execute(query).await should be (
+      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
           "data" → Map(
             "__type" → Map(

@@ -88,7 +88,7 @@ class Resolver[Ctx](
 
                 def resolveError(e: Throwable) = {
                   try {
-                    newUc map (_.onError(e))
+                    newUc foreach (_.onError(e))
                   } catch {
                     case NonFatal(ee) ⇒ ee.printStackTrace()
                   }
@@ -430,7 +430,14 @@ class Resolver[Ctx](
     Result(errorReg, if (canceled) None else Some(marshaller.arrayNode(listBuilder.result())))
   }
 
-  def resolveField(userCtx: Ctx, tpe: ObjectType[Ctx, _], path: Vector[String], value: Any, errors: ErrorRegistry, name: String, astFields: Vector[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[MappedCtxUpdate[Ctx, Any, Any]]) = {
+  def resolveField(
+      userCtx: Ctx,
+      tpe: ObjectType[Ctx, _],
+      path: Vector[String],
+      value: Any,
+      errors: ErrorRegistry,
+      name: String,
+      astFields: Vector[ast.Field]): (ErrorRegistry, Option[LeafAction[Ctx, Any]], Option[MappedCtxUpdate[Ctx, Any, Any]]) = {
     val astField = astFields.head
     val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Any]]]
     val field = allFields.head

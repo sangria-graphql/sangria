@@ -42,7 +42,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       val Success(query) = QueryParser.parse("{ nonDeprecated }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor(schema, deprecationTracker = deprecationTracker).execute(query).await
+      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be (0)
       deprecationTracker.ctx should be (None)
@@ -58,7 +58,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor(schema, deprecationTracker = deprecationTracker).execute(query).await
+      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be (1)
       deprecationTracker.ctx.get.path should be (List("deprecated"))
@@ -129,7 +129,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
 
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor(schema, deprecationTracker = deprecationTracker).execute(query).await
+      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be (1)
       deprecationTracker.enum should be (Some("TestEnum"))
@@ -160,7 +160,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
 
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor(schema, deprecationTracker = deprecationTracker).execute(query).await
+      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be (0)
       deprecationTracker.enum should be (None)
@@ -178,7 +178,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated }")
 
-      Executor(schema, deprecationTracker = DeprecationTracker.empty).execute(query).await
+      Executor.execute(schema, query, deprecationTracker = DeprecationTracker.empty).await
     }
   }
 
@@ -205,9 +205,8 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
           }
         """)
 
-
       val out = captureConsoleOut {
-        Executor(schema, deprecationTracker = DeprecationTracker.print).execute(query).await
+        Executor.execute(schema, query, deprecationTracker = DeprecationTracker.print).await
       }
 
       out should include ("Deprecated enum value '2' used of enum 'TestEnum'.")
@@ -223,7 +222,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
 
       val out = captureConsoleOut {
-        Executor(schema, deprecationTracker = DeprecationTracker.print).execute(query).await
+        Executor.execute(schema, query, deprecationTracker = DeprecationTracker.print).await
       }
 
       out should include ("Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
