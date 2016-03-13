@@ -1,5 +1,7 @@
 ## Upcoming
 
+* TODO: Prepared Queries (#118)
+* TODO: some of the arguments are moved from the Executor to the `execute` and `prepare` methods.
 * `Executor.execute` now returns `Future` with failure if error happened before query execution (#109). It can be extremely helpful when you need to take some action or produce different result in case of error. Typical example is returning different HTTP status code.     
 
   **CAUTION: breaking change and action needed!** Since things like validation errors and errors in query reducers are now explicitly returned in `Future` failure and not as a successful result, you need to take some action to handle them. In order to migrate, all you need to do is following:
