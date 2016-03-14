@@ -1,5 +1,6 @@
 ## Upcoming
 
+* TODO: derive macro
 * TODO: Prepared Queries (#118)
 * TODO: some of the arguments are moved from the Executor to the `execute` and `prepare` methods.
 * `Executor.execute` now returns `Future` with failure if error happened before query execution (#109). It can be extremely helpful when you need to take some action or produce different result in case of error. Typical example is returning different HTTP status code.     

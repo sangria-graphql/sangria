@@ -10,12 +10,46 @@ class DeriveMacro(context: blackbox.Context) extends {
 
   import c.universe._
 
-  def deriveObjectTypeNoArg[Ctx : WeakTypeTag, Val : WeakTypeTag] =
-    deriveObjectType[Ctx, Val]()
+  def deriveEnumType[T : WeakTypeTag](config: Tree*) = {
+    val t = weakTypeTag[T]
+
+    if (t.tpe <:< typeOf[Enumeration#Value]) {
+      println("aaa " + collectEnumValues(t.tpe))
+    } else {
+      collectKnownEnumSubtypes(t.tpe.typeSymbol) match {
+        case Left(error) ⇒ reportErrors(error :: Nil)
+        case Right(set) ⇒ println(set)
+      }
+    }
+
+
+
+    q"2"
+  }
+
+  private def collectEnumValues(tpe: Type): Set[Symbol] =
+    tpe.asInstanceOf[TypeRef].pre.members.filter(s ⇒ s.isTerm && !(s.isMethod || s.isModule || s.isClass)).toSet
+
+  private def collectKnownEnumSubtypes(s: Symbol): Either[(Position, String), Set[Symbol]] =
+    if (s.isModule || s.isModuleClass) Right(Set(s))
+    else if (s.isClass) {
+      val cs = s.asClass
+
+      if ((cs.isTrait || cs.isAbstract) && cs.isSealed)
+        cs.knownDirectSubclasses.foldLeft(Right(Set.empty): Either[(Position, String), Set[Symbol]]) {
+          case (Left(error), _) ⇒ Left(error)
+          case (Right(set), knownSubclass) ⇒
+            collectKnownEnumSubtypes(knownSubclass) match {
+              case Left(error) ⇒ Left(error)
+              case Right(subset) ⇒ Right(set ++ subset)
+            }
+        }
+      else Left(cs.pos → "Only `Enumeration` and sealed hierarchies or case objects are supported for GraphQL EnumType derivation.")
+    } else Right(Set.empty)
 
   def deriveObjectType[Ctx : WeakTypeTag, Val : WeakTypeTag](config: Tree*) = {
-    val ctx = implicitly[WeakTypeTag[Ctx]]
-    val v = implicitly[WeakTypeTag[Val]]
+    val ctx = weakTypeTag[Ctx]
+    val v = weakTypeTag[Val]
 
     val validatedConfig = validateConfig(config)
 
@@ -52,7 +86,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
-  def collectFields(config: Seq[MacroDeriveConfig], ctxType: Type, valType: Type): Either[List[(Position, String)], List[Tree]] = {
+  private def collectFields(config: Seq[MacroDeriveOutConfig], ctxType: Type, valType: Type): Either[List[(Position, String)], List[Tree]] = {
     val knownMembers = findKnownMembers(valType)
 
     validateFieldConfig(knownMembers, config) match {
@@ -99,12 +133,12 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
-  def findKnownMembers(tpe: Type): List[KnownMember] =
+  private def findKnownMembers(tpe: Type): List[KnownMember] =
     tpe.members.collect {
       case m: MethodSymbol if m.isCaseAccessor ⇒ KnownMember(tpe, m, findCaseClassAccessorAnnotations(tpe, m))
     }.toList.reverse
 
-  def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol): List[Annotation] =
+  private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol): List[Annotation] =
     if (tpe.companion =:= NoType) Nil
     else {
       val applyMethods = tpe.companion.members.collect {
@@ -121,7 +155,7 @@ class DeriveMacro(context: blackbox.Context) extends {
       annotations.toList.flatten
     }
 
-  def extractFields(knownMembers: List[KnownMember], config: Seq[MacroDeriveConfig]) = {
+  private def extractFields(knownMembers: List[KnownMember], config: Seq[MacroDeriveOutConfig]) = {
     val included = config.foldLeft(Set.empty[String]){
       case (acc, MacroIncludeFields(fields, _)) ⇒ acc ++ fields
       case (acc, _) ⇒ acc
@@ -129,6 +163,7 @@ class DeriveMacro(context: blackbox.Context) extends {
 
     val excluded = config.foldLeft(Set.empty[String]){
       case (acc, MacroExcludeFields(fields, _)) ⇒ acc ++ fields
+      case (acc, MacroOverrideField(fieldName, _, _)) ⇒ acc + fieldName
       case (acc, _) ⇒ acc
     }
 
@@ -141,7 +176,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     knownMembers.filter(m ⇒ actualFields.contains(m.name) && !memberExcluded(m))
   }
 
-  def validateFieldConfig(knownMembers: List[KnownMember], config: Seq[MacroDeriveConfig]) = {
+  private def validateFieldConfig(knownMembers: List[KnownMember], config: Seq[MacroDeriveOutConfig]) = {
     val knownMembersSet = knownMembers.map(_.name).toSet
 
     def unknownMember(pos: Position, name: String) =
@@ -170,22 +205,26 @@ class DeriveMacro(context: blackbox.Context) extends {
       case MacroDeprecateField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
         unknownMember(pos, fieldName) :: Nil
 
+      case MacroOverrideField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
+        unknownMember(pos, fieldName) :: Nil
+
       case _ ⇒ Nil
     }
   }
 
-  def additionalFields(config: Seq[MacroDeriveConfig]) =
+  private def additionalFields(config: Seq[MacroDeriveOutConfig]) =
     config.foldLeft(List[Tree]()){
-      case (acc, fields: MacroAddFields) ⇒ acc ++ fields.fields
+      case (acc, MacroAddFields(fields)) ⇒ acc ++ fields
+      case (acc, MacroOverrideField(_, field, _)) ⇒ acc :+ field
       case (acc, _) ⇒ acc
     }
 
-  def validateConfig(config: Seq[Tree]) = config.map {
-    case q"Description.apply[$_, $_]($description)" ⇒
-      Right(MacroDescription(description))
-
-    case q"Name.apply[$_, $_]($name)" ⇒
+  private def validateConfig(config: Seq[Tree]) = config.map {
+    case q"ObjectTypeName.apply[$_, $_]($name)" ⇒
       Right(MacroName(name))
+
+    case q"ObjectTypeDescription.apply[$_, $_]($description)" ⇒
+      Right(MacroDescription(description))
 
     case q"Interfaces.apply[$_, $_](..$ints)" ⇒
       Right(MacroInterfaces(ints))
@@ -211,12 +250,15 @@ class DeriveMacro(context: blackbox.Context) extends {
     case q"AddFields.apply[$_, $_](..$fields)" ⇒
       Right(MacroAddFields(fields))
 
+    case tree @ q"OverrideField.apply[$_, $_](${fieldName: String}, $field)" ⇒
+      Right(MacroOverrideField(fieldName, field, tree.pos))
+
     case tree ⇒ Left(tree.pos,
       "Unsupported shape of derivation config. " +
           "Please define subclasses of `DeriveConfig` directly in the argument list of the macro.")
   }
 
-  def reportErrors(errors: Seq[(Position, String)]) = {
+  private def reportErrors(errors: Seq[(Position, String)]) = {
     require(errors.nonEmpty)
 
     val (lastPos, lastError) = errors.last
@@ -226,25 +268,25 @@ class DeriveMacro(context: blackbox.Context) extends {
     c.abort(lastPos, lastError)
   }
 
-  def symbolName(annotations: List[Annotation]): Option[Tree] =
+  private def symbolName(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
       .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] ⇒ arg}
       .headOption
 
-  def symbolDescription(annotations: List[Annotation]): Option[Tree] =
+  private def symbolDescription(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
       .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] ⇒ arg}
       .headOption
 
-  def symbolDeprecation(annotations: List[Annotation]): Option[Tree] =
+  private def symbolDeprecation(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
       .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDeprecated] ⇒ arg}
       .headOption
 
-  def symbolFieldTags(annotations: List[Annotation]): Tree =
+  private def symbolFieldTags(annotations: List[Annotation]): Tree =
     annotations
       .map (_.tree)
       .foldLeft(q"List[sangria.execution.FieldTag]()") {
@@ -253,25 +295,26 @@ class DeriveMacro(context: blackbox.Context) extends {
         case (acc, _) ⇒ acc
       }
 
-  def memberExcluded(member: KnownMember): Boolean =
+  private def memberExcluded(member: KnownMember): Boolean =
     member.annotations.find(_.tree.tpe =:= typeOf[GraphQLExclude]).fold(false)(_ ⇒ true)
 
-  case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation]) {
+  private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation]) {
     lazy val name = method.name.decodedName.toString
   }
 
-  sealed trait MacroDeriveConfig
+  sealed trait MacroDeriveOutConfig
 
-  case class MacroName(name: Tree) extends MacroDeriveConfig
-  case class MacroDescription(description: Tree) extends MacroDeriveConfig
-  case class MacroInterfaces(interfaces: Seq[Tree]) extends MacroDeriveConfig
+  case class MacroName(name: Tree) extends MacroDeriveOutConfig
+  case class MacroDescription(description: Tree) extends MacroDeriveOutConfig
+  case class MacroInterfaces(interfaces: Seq[Tree]) extends MacroDeriveOutConfig
 
-  case class MacroDocumentField(fieldName: String, description: Tree, deprecationReason: Tree, pos: Position) extends MacroDeriveConfig
-  case class MacroRenameField(fieldName: String, graphqlName: Tree, pos: Position) extends MacroDeriveConfig
-  case class MacroFieldTags(fieldName: String, tags: Seq[Tree], pos: Position) extends MacroDeriveConfig
-  case class MacroDeprecateField(fieldName: String, deprecationReason: Tree, pos: Position) extends MacroDeriveConfig
+  case class MacroDocumentField(fieldName: String, description: Tree, deprecationReason: Tree, pos: Position) extends MacroDeriveOutConfig
+  case class MacroRenameField(fieldName: String, graphqlName: Tree, pos: Position) extends MacroDeriveOutConfig
+  case class MacroFieldTags(fieldName: String, tags: Seq[Tree], pos: Position) extends MacroDeriveOutConfig
+  case class MacroDeprecateField(fieldName: String, deprecationReason: Tree, pos: Position) extends MacroDeriveOutConfig
 
-  case class MacroIncludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveConfig
-  case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveConfig
-  case class MacroAddFields(fields: List[Tree]) extends MacroDeriveConfig
+  case class MacroIncludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveOutConfig
+  case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveOutConfig
+  case class MacroAddFields(fields: List[Tree]) extends MacroDeriveOutConfig
+  case class MacroOverrideField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveOutConfig
 }

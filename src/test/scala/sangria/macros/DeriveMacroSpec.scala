@@ -57,8 +57,8 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
     "allow to change name and description with config" in {
       val tpe = deriveObjectType[Unit, TestSubject](
-        Name("Foo"),
-        Description("my desc"))
+        ObjectTypeName("Foo"),
+        ObjectTypeDescription("my desc"))
 
       tpe.name should be ("Foo")
       tpe.description should be (Some("my desc"))
@@ -73,8 +73,8 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
     "prioritize config over annotation for name and description" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated](
-        Name("Foo"),
-        Description("my desc"))
+        ObjectTypeName("Foo"),
+        ObjectTypeDescription("my desc"))
 
       tpe.name should be ("Foo")
       tpe.description should be (Some("my desc"))
@@ -152,6 +152,23 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       tpe.fields(0).fieldType should be (StringType)
 
       tpe.fields(1).name should be ("foo")
+      tpe.fields(1).fieldType should be (ListType(StringType))
+
+      tpe.fields(2).name should be ("bar")
+      tpe.fields(2).fieldType should be (BooleanType)
+    }
+
+    "allow to override fields" in {
+      val tpe = deriveObjectType[Unit, TestSubject](
+        OverrideField("id", Field("id", ListType(StringType), resolve = _.value.list)),
+        OverrideField("list", Field("bar", BooleanType, resolve = _ ⇒ true)))
+
+      tpe.fields should have size 3
+
+      tpe.fields(0).name should be ("excluded")
+      tpe.fields(0).fieldType should be (IntType)
+
+      tpe.fields(1).name should be ("id")
       tpe.fields(1).fieldType should be (ListType(StringType))
 
       tpe.fields(2).name should be ("bar")
@@ -285,6 +302,27 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
       articleIntro.fields(3).name should be ("comments")
       articleIntro.fields(3).tpe should be (IntrospectionListTypeRef(IntrospectionNamedTypeRef(TypeKind.Object, "Comment")))
+    }
+  }
+
+  "Singleton Enum derivation" should {
+    "foo" in {
+      sealed trait Foo
+
+      case object A extends Foo
+      case object B extends Foo
+      case object C extends Foo
+
+      sealed abstract class D(val name: String) extends Foo
+
+      case object E extends D("I'm E")
+
+      object Bar extends Enumeration {
+        val AA, BB, CC = Value
+      }
+
+      deriveEnum[Foo]()
+      deriveEnum[Bar.Value]()
     }
   }
 }
