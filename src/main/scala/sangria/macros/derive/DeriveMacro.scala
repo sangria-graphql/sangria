@@ -39,10 +39,10 @@ class DeriveMacro(context: blackbox.Context) extends {
           val configDesc = validConfig.collect{case MacroEnumTypeDescription(name) ⇒ name}.lastOption
 
           q"""
-           sangria.schema.EnumType(
-             ${configName orElse annotationName getOrElse tpeName},
-             ${configDesc orElse annotationDesc},
-             Nil)
+            sangria.schema.EnumType(
+              ${configName orElse annotationName getOrElse tpeName},
+              ${configDesc orElse annotationDesc},
+              Nil)
           """
       }
     }
@@ -97,11 +97,11 @@ class DeriveMacro(context: blackbox.Context) extends {
           }
 
           q"""
-           sangria.schema.ObjectType(
-             ${configName orElse annotationName getOrElse tpeName},
-             ${configDesc orElse annotationDesc},
-             () ⇒ ${fields map c.untypecheck},
-             $interfaces)
+            sangria.schema.ObjectType(
+              ${configName orElse annotationName getOrElse tpeName},
+              ${configDesc orElse annotationDesc},
+              () ⇒ ${fields map c.untypecheck},
+              $interfaces)
           """
       }
     }
