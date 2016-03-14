@@ -12,9 +12,7 @@ class DeriveMacro(context: blackbox.Context) extends {
 
   def deriveEnumType[T : WeakTypeTag](config: Tree*) = {
     val t = weakTypeTag[T]
-
     val validatedConfig = validateEnumConfig(config)
-
     val errors = validatedConfig.collect {case Left(error) ⇒ error}
 
     if (errors.nonEmpty) reportErrors(errors)
@@ -23,41 +21,48 @@ class DeriveMacro(context: blackbox.Context) extends {
 
       val (tpe, validatedValues) =
         if (t.tpe <:< typeOf[Enumeration#Value])
-          t.tpe.asInstanceOf[TypeRef].pre → Right(collectEnumValues(t.tpe))
+          t.tpe.asInstanceOf[TypeRef].pre → Right(collectEnumerationValues(t.tpe))
         else
           t.tpe → collectKnownEnumSubtypes(t.tpe.typeSymbol)
 
       validatedValues match {
         case Left(error) ⇒ reportErrors(error :: Nil)
         case Right(values) ⇒
-          val tpeName = q"${tpe.typeSymbol.name.decodedName.toString}"
+          validateEnumValueConfig(values, validConfig) match {
+            case Nil ⇒
+              val tpeName = q"${tpe.typeSymbol.name.decodedName.toString}"
 
-          val annotationName = symbolName(tpe.typeSymbol.annotations)
-          val configName = validConfig.collect{case MacroEnumTypeName(name) ⇒ name}.lastOption
+              val annotationName = symbolName(tpe.typeSymbol.annotations)
+              val configName = validConfig.collect{case MacroEnumTypeName(name) ⇒ name}.lastOption
 
-          val annotationDesc = symbolDescription(tpe.typeSymbol.annotations)
-          val configDesc = validConfig.collect{case MacroEnumTypeDescription(name) ⇒ name}.lastOption
+              val annotationDesc = symbolDescription(tpe.typeSymbol.annotations)
+              val configDesc = validConfig.collect{case MacroEnumTypeDescription(name) ⇒ name}.lastOption
 
-          q"""
-            sangria.schema.EnumType(
-              ${configName orElse annotationName getOrElse tpeName},
-              ${configDesc orElse annotationDesc},
-              Nil)
-          """
+              val enumValues = collectEnumValues(values, validConfig, t.tpe)
+
+              q"""
+                sangria.schema.EnumType(
+                  ${configName orElse annotationName getOrElse tpeName},
+                  ${configDesc orElse annotationDesc},
+                  $enumValues)
+              """
+            case configErrors ⇒ reportErrors(configErrors)
+          }
+
       }
     }
   }
 
-  private def collectEnumValues(tpe: Type): Set[Symbol] =
-    tpe.asInstanceOf[TypeRef].pre.members.filter(s ⇒ s.isTerm && !(s.isMethod || s.isModule || s.isClass)).toSet
+  private def collectEnumerationValues(tpe: Type): List[Symbol] =
+    tpe.asInstanceOf[TypeRef].pre.members.filter(s ⇒ s.isTerm && !(s.isMethod || s.isModule || s.isClass)).toList
 
-  private def collectKnownEnumSubtypes(s: Symbol): Either[(Position, String), Set[Symbol]] =
-    if (s.isModule || s.isModuleClass) Right(Set(s))
+  private def collectKnownEnumSubtypes(s: Symbol): Either[(Position, String), List[Symbol]] =
+    if (s.isModule || s.isModuleClass) Right(List(s))
     else if (s.isClass) {
       val cs = s.asClass
 
       if ((cs.isTrait || cs.isAbstract) && cs.isSealed)
-        cs.knownDirectSubclasses.foldLeft(Right(Set.empty): Either[(Position, String), Set[Symbol]]) {
+        cs.knownDirectSubclasses.foldLeft(Right(Nil): Either[(Position, String), List[Symbol]]) {
           case (Left(error), _) ⇒ Left(error)
           case (Right(set), knownSubclass) ⇒
             collectKnownEnumSubtypes(knownSubclass) match {
@@ -66,7 +71,7 @@ class DeriveMacro(context: blackbox.Context) extends {
             }
         }
       else Left(cs.pos → "Only `Enumeration` and sealed hierarchies or case objects are supported for GraphQL EnumType derivation.")
-    } else Right(Set.empty)
+    } else Left(c.enclosingPosition → "Only `Enumeration` and sealed hierarchies or case objects are supported for GraphQL EnumType derivation.")
 
   def deriveObjectType[Ctx : WeakTypeTag, Val : WeakTypeTag](config: Tree*) = {
     val ctx = weakTypeTag[Ctx]
@@ -154,6 +159,39 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
+  private def collectEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig], t: Type): List[Tree] =
+    extractEnumValues(values, config) map { value ⇒
+      val name = value.name.decodedName.toString.trim
+      val annotationName = symbolName(value.annotations)
+      val configName = config.collect{case MacroRenameValue(`name`, tree, _) ⇒ tree}.lastOption
+      val actualName =
+        if (config.exists(_.isInstanceOf[MacroUppercaseValues]))
+          q"sangria.util.StringUtil.camelCaseToUpperCase(${configName orElse annotationName getOrElse q"$name"})"
+        else
+          q"${configName orElse annotationName getOrElse q"$name"}"
+
+      val annotationDescr = symbolDescription(value.annotations)
+      val configDescr = config.collect{case MacroDocumentValue(`name`, tree, _, _) ⇒ tree}.lastOption
+
+      val annotationDepr = symbolDeprecation(value.annotations)
+      val configDocDepr = config.collect{case MacroDocumentValue(`name`, _, reason, _) ⇒ reason}.lastOption getOrElse q"None"
+      val configDepr = config.collect{case MacroDeprecateValue(`name`, reason, _) ⇒ reason}.lastOption getOrElse q"None"
+
+      val actualValue =
+        if (value.isModuleClass) q"${value.name.toTermName}"
+        else q"${t.asInstanceOf[TypeRef].pre.typeSymbol.name.toTermName}.${value.asTerm.getter}"
+
+      q"""
+        EnumValue[$t](
+          $actualName,
+          ${configDescr orElse annotationDescr},
+          $actualValue,
+          $configDocDepr orElse $configDepr orElse $annotationDepr)
+      """
+    }
+
+  private def upperCaseName(name: String) = name // TODO
+
   private def findKnownMembers(tpe: Type): List[KnownMember] =
     tpe.members.collect {
       case m: MethodSymbol if m.isCaseAccessor ⇒ KnownMember(tpe, m, findCaseClassAccessorAnnotations(tpe, m))
@@ -194,7 +232,27 @@ class DeriveMacro(context: blackbox.Context) extends {
 
     val actualFields = actualIncluded -- excluded
 
-    knownMembers.filter(m ⇒ actualFields.contains(m.name) && !memberExcluded(m))
+    knownMembers.filter(m ⇒ actualFields.contains(m.name) && !memberExcluded(m.annotations))
+  }
+
+  private def extractEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig]) = {
+    val included = config.foldLeft(Set.empty[String]){
+      case (acc, MacroIncludeValues(vals, _)) ⇒ acc ++ vals
+      case (acc, _) ⇒ acc
+    }
+
+    val excluded = config.foldLeft(Set.empty[String]){
+      case (acc, MacroExcludeValues(vals, _)) ⇒ acc ++ vals
+      case (acc, _) ⇒ acc
+    }
+
+    val actualIncluded =
+      if (included.nonEmpty) included
+      else values.map(m ⇒ m.name.decodedName.toString.trim).toSet
+
+    val actualFields = actualIncluded -- excluded
+
+    values.filter(m ⇒ actualFields.contains(m.name.decodedName.toString.trim) && !memberExcluded(m.annotations))
   }
 
   private def validateFieldConfig(knownMembers: List[KnownMember], config: Seq[MacroDeriveObjectConfig]) = {
@@ -233,8 +291,8 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
-  private def validateEnumConfig(knownMembers: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig]) = {
-    val knownMembersSet = knownMembers.map(_.name.decodedName.toString).toSet
+  private def validateEnumValueConfig(knownMembers: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig]) = {
+    val knownMembersSet = knownMembers.map(_.name.decodedName.toString.trim).toSet
 
     def unknownMember(pos: Position, name: String) =
       pos → s"Unknown enum value '$name'. Known members are: ${knownMembers map (_.name.decodedName.toString) mkString ", "}"
@@ -336,10 +394,10 @@ class DeriveMacro(context: blackbox.Context) extends {
       Right(MacroDeprecateValue(value, q"Some($deprecationReason)", tree.pos))
 
     case tree @ q"IncludeValues.apply(..${values: List[String]})" ⇒
-      Right(MacroIncludeFields(values.toSet, tree.pos))
+      Right(MacroIncludeValues(values.toSet, tree.pos))
 
     case tree @ q"ExcludeValues.apply(..${values: List[String]})" ⇒
-      Right(MacroExcludeFields(values.toSet, tree.pos))
+      Right(MacroExcludeValues(values.toSet, tree.pos))
 
     case tree ⇒ Left(tree.pos,
       "Unsupported shape of derivation config. " +
@@ -383,8 +441,8 @@ class DeriveMacro(context: blackbox.Context) extends {
         case (acc, _) ⇒ acc
       }
 
-  private def memberExcluded(member: KnownMember): Boolean =
-    member.annotations.find(_.tree.tpe =:= typeOf[GraphQLExclude]).fold(false)(_ ⇒ true)
+  private def memberExcluded(annotations: List[Annotation]): Boolean =
+    annotations.find(_.tree.tpe =:= typeOf[GraphQLExclude]).fold(false)(_ ⇒ true)
 
   private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation]) {
     lazy val name = method.name.decodedName.toString
