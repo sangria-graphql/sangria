@@ -329,8 +329,7 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
           "comments" → List(
             Map("author" → "bob", "text" → null, "color" → "NormalRed"),
             null,
-            Map("author" → "jane", "text" → "yay!", "color" → "NormalRed"))))
-      )
+            Map("author" → "jane", "text" → "yay!", "color" → "NormalRed")))))
 
       import sangria.marshalling.queryAst._
       import sangria.parser.DeliveryScheme.Throw
@@ -358,6 +357,26 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
       articleIntro.fields(4).name should be ("fruit")
       articleIntro.fields(4).tpe should be (IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "MyFruit")))
+    }
+
+    "be able handle recursive types with field overrides" in {
+      case class A(id: Int, b: B)
+      case class B(name: String, a: A, b: B)
+
+      implicit lazy val AType = deriveObjectType[Unit, A](
+        OverrideField("b", Field("b", BType, resolve = _.value.b)))
+
+      implicit lazy val BType: ObjectType[Unit, B] = deriveObjectType(
+        OverrideField("a", Field("a", AType, resolve = _.value.a)),
+        OverrideField("b", Field("b", BType, resolve = _.value.b)))
+
+      val schema = Schema(AType)
+
+      val query =
+        graphql"{id, b {name, a {id}, b {name}} }"
+
+      Executor.execute(schema, query, root = A(1, B("foo", A(2, null), B("bar", null, null)))).await should be (Map(
+        "data" → Map("id" → 1, "b" → Map("name" → "foo", "a" → Map("id" → 2), "b" → Map("name" → "bar")))))
     }
   }
 
