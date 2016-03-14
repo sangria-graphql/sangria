@@ -41,50 +41,50 @@ sealed trait Named {
 object Named {
   private val NameRegexp = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
 
-  private[schema] def doCheckNonEmptyFields(fields: Seq[Named]): Unit =
+  private[sangria] def doCheckNonEmptyFields(fields: Seq[Named]): Unit =
     if (fields.isEmpty)
       throw new IllegalArgumentException("No fields provided! You need to provide at least one field to a Type.")
 
-  private[schema] def doCheckUniqueFields(fields: Seq[Named]): Unit =
+  private[sangria] def doCheckUniqueFields(fields: Seq[Named]): Unit =
     if (fields.map(_.name).toSet.size != fields.size)
       throw new IllegalArgumentException("All fields within a Type should have unique names!")
 
-  private[schema] def doCheckFieldNames(fields: Seq[Named]): Unit =
+  private[sangria] def doCheckFieldNames(fields: Seq[Named]): Unit =
     fields.foreach(f ⇒ checkName(f.name))
 
-  private[schema] def checkObjFields[T <: Seq[Named]](fields: T): T = {
+  private[sangria] def checkObjFields[T <: Seq[Named]](fields: T): T = {
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     fields
   }
 
-  private[schema] def checkIntFields[T <: Seq[Named]](fields: T): T = {
+  private[sangria] def checkIntFields[T <: Seq[Named]](fields: T): T = {
     doCheckNonEmptyFields(fields)
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     fields
   }
 
-  private[schema] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
+  private[sangria] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     () ⇒ fields
   }
 
-  private[schema] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
+  private[sangria] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckNonEmptyFields(fields)
     doCheckFieldNames(fields)
     () ⇒ fields
   }
 
-  private[schema] def checkObjFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+  private[sangria] def checkObjFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
     () ⇒ checkObjFields(fieldsFn())
 
-  private[schema] def checkIntFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+  private[sangria] def checkIntFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
     () ⇒ checkIntFields(fieldsFn())
 
-  private[schema] def checkName(name: String) = {
+  private[sangria] def checkName(name: String) = {
     if (!NameRegexp.pattern.matcher(name).matches())
       throw new IllegalArgumentException(s"Name '$name' is not valid GraphQL name! Valid name should satisfy following regex: /$NameRegexp/.")
 
@@ -129,7 +129,7 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
     else fieldsByName.getOrElse(fieldName, Vector.empty)
 }
 
-case class ObjectType[Ctx, Val: ClassTag] private[schema] (
+case class ObjectType[Ctx, Val: ClassTag] private[sangria] (
   name: String,
   description: Option[String],
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
@@ -161,7 +161,7 @@ object ObjectType {
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
 }
 
-case class InterfaceType[Ctx, Val] private[schema] (
+case class InterfaceType[Ctx, Val] private[sangria] (
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
@@ -232,7 +232,7 @@ case class UnionType[Ctx](
   description: Option[String] = None,
   types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType
 
-case class Field[Ctx, Val] private[schema] (
+case class Field[Ctx, Val] private[sangria] (
     name: String,
     fieldType: OutputType[_],
     description: Option[String],
@@ -283,7 +283,7 @@ trait InputValue[T] {
   def defaultValue: Option[(_, ToInput[_, _])]
 }
 
-case class Argument[T] private[schema] (
+case class Argument[T] private[sangria] (
     name: String,
     argumentType: InputType[_],
     description: Option[String],
@@ -459,7 +459,7 @@ case class EnumValue[+T](
   value: T,
   deprecationReason: Option[String] = None) extends Named
 
-case class InputObjectType[T] private[schema] (
+case class InputObjectType[T] private[sangria] (
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[InputField[_]]
@@ -498,7 +498,7 @@ trait InputObjectDefaultResultLowPrio {
   }
 }
 
-case class InputField[T] private[schema] (
+case class InputField[T] private[sangria] (
     name: String,
     fieldType: InputType[T],
     description: Option[String],

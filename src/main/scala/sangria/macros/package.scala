@@ -1,58 +1,27 @@
 package sangria
 
+import sangria.execution.FieldTag
+import sangria.macros._
+import sangria.schema._
+
+import scala.annotation.StaticAnnotation
 import scala.language.experimental.{macros ⇒ `scalac, please just let me do it!`}
 
 import sangria.ast.{Document, Value}
-import sangria.parser.{SyntaxError, QueryParser}
-
-import scala.reflect.macros.blackbox
 
 package object macros {
   implicit class LiteralGraphQLStringContext(val sc: StringContext) extends AnyVal {
-    def graphql(): Document = macro Macro.impl
-    def graphqlInput(): Value = macro Macro.implInput
+    def graphql(): Document = macro ParseMacro.impl
+    def graphqlInput(): Value = macro ParseMacro.implInput
   }
 
-  class Macro(context: blackbox.Context) extends {
-    val c = context
-  } with MacroAstLiftable {
 
-    import c.universe._
+  def deriveObjectType[Ctx, Val](config: DeriveConfig[Ctx, Val]*): ObjectType[Ctx, Val] = macro DeriveMacro.deriveObjectType[Ctx, Val]
 
-    def impl() = {
-      c.prefix.tree match {
-        // Expects a string interpolation that doesn't contain any
-        // expressions, thus containing only a single tree
-        case Apply(_, List(Apply(_, t :: Nil))) ⇒
-          val q"${gql: String}" = t
-
-          try {
-            q"${QueryParser.parse(gql.stripMargin).get}"
-          } catch {
-            case syntaxError: SyntaxError ⇒
-              c.abort(c.enclosingPosition, syntaxError.getMessage)
-          }
-        case _ ⇒
-          c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
-      }
-    }
-
-    def implInput() = {
-      c.prefix.tree match {
-        // Expects a string interpolation that doesn't contain any
-        // expressions, thus containing only a single tree
-        case Apply(_, List(Apply(_, t :: Nil))) ⇒
-          val q"${gql: String}" = t
-
-          try {
-            q"${QueryParser.parseInput(gql.stripMargin).get}"
-          } catch {
-            case syntaxError: SyntaxError ⇒
-              c.abort(c.enclosingPosition, syntaxError.getMessage)
-          }
-        case _ ⇒
-          c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
-      }
-    }
-  }
+  class GraphQLName(name: String) extends StaticAnnotation
+  class GraphQLDescription(description: String) extends StaticAnnotation
+  class GraphQLDeprecated(deprecationReason: String) extends StaticAnnotation
+  class GraphQLFieldTags(fieldTags: FieldTag*) extends StaticAnnotation
+  class GraphQLExclude extends StaticAnnotation
 }
+
