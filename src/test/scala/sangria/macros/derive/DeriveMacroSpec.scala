@@ -162,6 +162,7 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       """deriveObjectType[Unit, TestSubject](RenameField("id1", "foo"))""" shouldNot compile
       """deriveObjectType[Unit, TestSubject](FieldTags("id1", CachedTag))""" shouldNot compile
       """deriveObjectType[Unit, TestSubject](DeprecateField("id1", "test"))""" shouldNot compile
+      """deriveObjectType[Unit, TestSubjectAnnotated](ExcludeFields("id", "list", "excluded"))""" shouldNot compile
     }
 
     "respect whitelist and blacklist provided via config" in {
@@ -455,6 +456,7 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       """deriveEnumType[Fruit](DeprecateValue("Test", "Fooo"))""" shouldNot compile
       """deriveEnumType[Fruit](RenameValue("Test", "Fooo"))""" shouldNot compile
       """deriveEnumType[Fruit](UppercaseValues, RenameValue("RedApple", "Fooo"))""" shouldNot compile
+      """deriveEnumType[Fruit](ExcludeValues("RedApple", "SuperBanana", "MegaOrange", "Guave"))""" shouldNot compile
     }
 
     "respect whitelist and blacklist provided via config" in {

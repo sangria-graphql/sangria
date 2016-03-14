@@ -154,41 +154,49 @@ class DeriveMacro(context: blackbox.Context) extends {
           """
         }
 
-        Right(classFields ++ additionalFields(config))
+        val allFields = classFields ++ additionalFields(config)
+
+        if (allFields.nonEmpty) Right(allFields)
+        else Left(List(c.enclosingPosition → "Field list is empty"))
       case errors ⇒ Left(errors)
     }
   }
 
-  private def collectEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig], t: Type): List[Tree] =
-    extractEnumValues(values, config) map { value ⇒
-      val name = value.name.decodedName.toString.trim
-      val annotationName = symbolName(value.annotations)
-      val configName = config.collect{case MacroRenameValue(`name`, tree, _) ⇒ tree}.lastOption
-      val actualName =
-        if (config.exists(_.isInstanceOf[MacroUppercaseValues]))
-          q"sangria.util.StringUtil.camelCaseToUpperCase(${configName orElse annotationName getOrElse q"$name"})"
-        else
-          q"${configName orElse annotationName getOrElse q"$name"}"
+  private def collectEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig], t: Type): List[Tree] = {
+    val extractedValues = extractEnumValues(values, config)
 
-      val annotationDescr = symbolDescription(value.annotations)
-      val configDescr = config.collect{case MacroDocumentValue(`name`, tree, _, _) ⇒ tree}.lastOption
+    if (extractedValues.isEmpty) reportErrors(List(c.enclosingPosition → "Enum value list is empty"))
+    else
+      extractedValues map { value ⇒
+        val name = value.name.decodedName.toString.trim
+        val annotationName = symbolName(value.annotations)
+        val configName = config.collect{case MacroRenameValue(`name`, tree, _) ⇒ tree}.lastOption
+        val actualName =
+          if (config.exists(_.isInstanceOf[MacroUppercaseValues]))
+            q"sangria.util.StringUtil.camelCaseToUpperCase(${configName orElse annotationName getOrElse q"$name"})"
+          else
+            q"${configName orElse annotationName getOrElse q"$name"}"
 
-      val annotationDepr = symbolDeprecation(value.annotations)
-      val configDocDepr = config.collect{case MacroDocumentValue(`name`, _, reason, _) ⇒ reason}.lastOption getOrElse q"None"
-      val configDepr = config.collect{case MacroDeprecateValue(`name`, reason, _) ⇒ reason}.lastOption getOrElse q"None"
+        val annotationDescr = symbolDescription(value.annotations)
+        val configDescr = config.collect{case MacroDocumentValue(`name`, tree, _, _) ⇒ tree}.lastOption
 
-      val actualValue =
-        if (value.isModuleClass) q"${value.name.toTermName}"
-        else q"${t.asInstanceOf[TypeRef].pre.typeSymbol.name.toTermName}.${value.asTerm.getter}"
+        val annotationDepr = symbolDeprecation(value.annotations)
+        val configDocDepr = config.collect{case MacroDocumentValue(`name`, _, reason, _) ⇒ reason}.lastOption getOrElse q"None"
+        val configDepr = config.collect{case MacroDeprecateValue(`name`, reason, _) ⇒ reason}.lastOption getOrElse q"None"
 
-      q"""
-        EnumValue[$t](
-          $actualName,
-          ${configDescr orElse annotationDescr},
-          $actualValue,
-          $configDocDepr orElse $configDepr orElse $annotationDepr)
-      """
-    }
+        val actualValue =
+          if (value.isModuleClass) q"${value.name.toTermName}"
+          else q"${t.asInstanceOf[TypeRef].pre.typeSymbol.name.toTermName}.${value.asTerm.getter}"
+
+        q"""
+          EnumValue[$t](
+            $actualName,
+            ${configDescr orElse annotationDescr},
+            $actualValue,
+            $configDocDepr orElse $configDepr orElse $annotationDepr)
+        """
+      }
+  }
 
   private def upperCaseName(name: String) = name // TODO
 
