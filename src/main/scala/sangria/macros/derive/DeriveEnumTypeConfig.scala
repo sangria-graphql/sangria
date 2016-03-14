@@ -1,4 +1,4 @@
-package sangria.macros
+package sangria.macros.derive
 
 sealed trait DeriveEnumTypeConfig
 

@@ -1,4 +1,4 @@
-package sangria.macros
+package sangria.macros.derive
 
 import sangria.execution.FieldTag
 import sangria.schema.{PossibleInterface, Field}

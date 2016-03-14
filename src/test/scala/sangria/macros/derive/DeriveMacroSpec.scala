@@ -1,12 +1,12 @@
-package sangria.macros
+package sangria.macros.derive
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.execution.{FieldTag, Executor}
+import sangria.execution.{Executor, FieldTag}
 import sangria.introspection._
 import sangria.schema._
-import sangria.starWars.TestData.Human
-import sangria.starWars.TestSchema
+import sangria.macros._
 import sangria.util.FutureResultSupport
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
@@ -282,8 +282,8 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
             Map("author" → "jane", "text" → "yay!"))))
       )
 
-      import sangria.parser.DeliveryScheme.Throw
       import sangria.marshalling.queryAst._
+      import sangria.parser.DeliveryScheme.Throw
 
       val intro = IntrospectionParser.parse(Executor.execute(schema, sangria.introspection.introspectionQuery, root = testArticle).await)
 
@@ -305,24 +305,102 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
     }
   }
 
+
   "Singleton Enum derivation" should {
-    "foo" in {
-      sealed trait Foo
+    sealed trait Fruit
 
-      case object A extends Foo
-      case object B extends Foo
-      case object C extends Foo
+    case object RedApple extends Fruit
+    case object SuperBanana extends Fruit
+    case object MegaOrange extends Fruit
 
-      sealed abstract class D(val name: String) extends Foo
+    sealed abstract class ExoticFruit(val score: Int) extends Fruit
 
-      case object E extends D("I'm E")
+    case object Guave extends ExoticFruit(123)
 
-      object Bar extends Enumeration {
-        val AA, BB, CC = Value
-      }
+    object Color extends Enumeration {
+      val Red, LightGreen, DarkBlue = Value
+    }
 
-      deriveEnum[Foo]()
-      deriveEnum[Bar.Value]()
+    @GraphQLName("MyFruit")
+    @GraphQLDescription("Very tasty fruit")
+    sealed trait FruitAnnotated
+
+    @GraphQLName("JustApple")
+    @GraphQLDescription("The red one")
+    case object RedAppleAnnotated extends FruitAnnotated
+
+    @GraphQLDescription("It's yellow!")
+    case object SuperBananaAnnotated extends FruitAnnotated
+
+    @GraphQLDeprecated("Not tasty anymore")
+    case object MegaOrangeAnnotated extends FruitAnnotated
+
+    @GraphQLName("MyColor")
+    @GraphQLDescription("Very nice color")
+    object ColorAnnotated extends Enumeration {
+      @GraphQLName("NormalRed")
+      @GraphQLDescription("The red one")
+      val Red = Value
+
+      @GraphQLDescription("For green apples")
+      val LightGreen = Value
+
+      @GraphQLDeprecated("Don't like blue")
+      val DarkBlue = Value
+    }
+
+    "use enum name and have no description by default" in {
+      val singletonEnum = deriveEnum[Fruit]()
+      val enum = deriveEnum[Color.Value]()
+
+      singletonEnum.name should be ("Fruit")
+      singletonEnum.description should be (None)
+
+      enum.name should be ("Color")
+      enum.description should be (None)
+    }
+
+    "allow to change name and description with config" in {
+      val singletonEnum = deriveEnum[Fruit](
+        EnumTypeName("Foo"),
+        EnumTypeDescription("It's foo"))
+
+      val enum = deriveEnum[Color.Value](
+        EnumTypeName("Bar"),
+        EnumTypeDescription("It's bar"))
+
+      singletonEnum.name should be ("Foo")
+      singletonEnum.description should be (Some("It's foo"))
+
+      enum.name should be ("Bar")
+      enum.description should be (Some("It's bar"))
+    }
+
+    "allow to change name and description with annotations" in {
+      val singletonEnum = deriveEnum[FruitAnnotated]()
+      val enum = deriveEnum[ColorAnnotated.Value]()
+
+      singletonEnum.name should be ("MyFruit")
+      singletonEnum.description should be (Some("Very tasty fruit"))
+
+      enum.name should be ("MyColor")
+      enum.description should be (Some("Very nice color"))
+    }
+
+    "prioritize config over annotation for name and description" in {
+      val singletonEnum = deriveEnum[FruitAnnotated](
+        EnumTypeName("Foo"),
+        EnumTypeDescription("It's foo"))
+
+      val enum = deriveEnum[ColorAnnotated.Value](
+        EnumTypeName("Bar"),
+        EnumTypeDescription("It's bar"))
+
+      singletonEnum.name should be ("Foo")
+      singletonEnum.description should be (Some("It's foo"))
+
+      enum.name should be ("Bar")
+      enum.description should be (Some("It's bar"))
     }
   }
 }
