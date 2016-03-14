@@ -21,30 +21,30 @@ class DeriveMacro(context: blackbox.Context) extends {
     else {
       val validConfig = validatedConfig.collect {case Right(cfg) ⇒ cfg}
 
-      val (tpe, values) =
-        if (t.tpe <:< typeOf[Enumeration#Value]) {
-          t.tpe.asInstanceOf[TypeRef].pre → collectEnumValues(t.tpe)
-        } else {
-          t.tpe → (collectKnownEnumSubtypes(t.tpe.typeSymbol) match {
-            case Left(error) ⇒ reportErrors(error :: Nil)
-            case Right(set) ⇒ set
-          })
-        }
+      val (tpe, validatedValues) =
+        if (t.tpe <:< typeOf[Enumeration#Value])
+          t.tpe.asInstanceOf[TypeRef].pre → Right(collectEnumValues(t.tpe))
+        else
+          t.tpe → collectKnownEnumSubtypes(t.tpe.typeSymbol)
 
-      val tpeName = q"${tpe.typeSymbol.name.decodedName.toString}"
+      validatedValues match {
+        case Left(error) ⇒ reportErrors(error :: Nil)
+        case Right(values) ⇒
+          val tpeName = q"${tpe.typeSymbol.name.decodedName.toString}"
 
-      val annotationName = symbolName(tpe.typeSymbol.annotations)
-      val configName = validConfig.collect{case MacroEnumTypeName(name) ⇒ name}.lastOption
+          val annotationName = symbolName(tpe.typeSymbol.annotations)
+          val configName = validConfig.collect{case MacroEnumTypeName(name) ⇒ name}.lastOption
 
-      val annotationDesc = symbolDescription(tpe.typeSymbol.annotations)
-      val configDesc = validConfig.collect{case MacroEnumTypeDescription(name) ⇒ name}.lastOption
+          val annotationDesc = symbolDescription(tpe.typeSymbol.annotations)
+          val configDesc = validConfig.collect{case MacroEnumTypeDescription(name) ⇒ name}.lastOption
 
-      q"""
-       sangria.schema.EnumType(
-         ${configName orElse annotationName getOrElse tpeName},
-         ${configDesc orElse annotationDesc},
-         Nil)
-      """
+          q"""
+           sangria.schema.EnumType(
+             ${configName orElse annotationName getOrElse tpeName},
+             ${configDesc orElse annotationDesc},
+             Nil)
+          """
+      }
     }
   }
 
@@ -233,6 +233,43 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
+  private def validateEnumConfig(knownMembers: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig]) = {
+    val knownMembersSet = knownMembers.map(_.name.decodedName.toString).toSet
+
+    def unknownMember(pos: Position, name: String) =
+      pos → s"Unknown enum value '$name'. Known members are: ${knownMembers map (_.name.decodedName.toString) mkString ", "}"
+
+    val valueValidations = config.toList.flatMap {
+      case MacroIncludeValues(values, pos) if !values.forall(knownMembersSet.contains) ⇒
+        val unknown = values.diff(knownMembersSet)
+
+        unknown.toList.map(unknownMember(pos, _))
+
+      case MacroExcludeValues(values, pos) if !values.forall(knownMembersSet.contains) ⇒
+        val unknown = values.diff(knownMembersSet)
+
+        unknown.toList.map(unknownMember(pos, _))
+
+      case MacroDocumentValue(value, _, _, pos) if !knownMembersSet.contains(value) ⇒
+        unknownMember(pos, value) :: Nil
+
+      case MacroRenameValue(value, _, pos) if !knownMembersSet.contains(value) ⇒
+        unknownMember(pos, value) :: Nil
+
+      case MacroDeprecateValue(value, _, pos) if !knownMembersSet.contains(value) ⇒
+        unknownMember(pos, value) :: Nil
+
+      case _ ⇒ Nil
+    }
+
+    config.collect{case MacroUppercaseValues(pos) ⇒ pos}.lastOption match {
+      case Some(pos) if config.exists(_.isInstanceOf[MacroRenameValue]) ⇒
+        valueValidations :+ (pos → "`UppercaseValues` is used together with `RenameValue` which is not allowed.")
+      case _ ⇒
+        valueValidations
+    }
+  }
+
   private def additionalFields(config: Seq[MacroDeriveObjectConfig]) =
     config.foldLeft(List[Tree]()){
       case (acc, MacroAddFields(fields)) ⇒ acc ++ fields
@@ -286,8 +323,8 @@ class DeriveMacro(context: blackbox.Context) extends {
     case q"EnumTypeDescription.apply($description)" ⇒
       Right(MacroEnumTypeDescription(description))
 
-    case q"UppercaseValues" ⇒
-      Right(MacroUppercaseValues)
+    case tree @ q"UppercaseValues" ⇒
+      Right(MacroUppercaseValues(tree.pos))
 
     case tree @ q"DocumentValue.apply(${value: String}, $description, $deprecationReason)" ⇒
       Right(MacroDocumentValue(value, description, deprecationReason, tree.pos))
@@ -374,12 +411,12 @@ class DeriveMacro(context: blackbox.Context) extends {
   case class MacroEnumTypeName(name: Tree) extends MacroDeriveEnumTypeConfig
   case class MacroEnumTypeDescription(description: Tree) extends MacroDeriveEnumTypeConfig
 
-  case object MacroUppercaseValues extends MacroDeriveEnumTypeConfig
+  case class MacroUppercaseValues(pos: Position) extends MacroDeriveEnumTypeConfig
 
   case class MacroDocumentValue(value: String, description: Tree, deprecationReason: Tree, pos: Position) extends MacroDeriveEnumTypeConfig
   case class MacroDeprecateValue(value: String, deprecationReason: Tree, pos: Position) extends MacroDeriveEnumTypeConfig
   case class MacroRenameValue(value: String, graphqlName: Tree, pos: Position) extends MacroDeriveEnumTypeConfig
 
-  case class MacroIncludeValues(values: Seq[String], pos: Position) extends MacroDeriveEnumTypeConfig
-  case class MacroExcludeValues(fieldNames: Seq[String], pos: Position) extends MacroDeriveEnumTypeConfig
+  case class MacroIncludeValues(values: Set[String], pos: Position) extends MacroDeriveEnumTypeConfig
+  case class MacroExcludeValues(fieldNames: Set[String], pos: Position) extends MacroDeriveEnumTypeConfig
 }

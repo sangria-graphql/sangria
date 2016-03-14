@@ -47,6 +47,48 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
   val Parent2Type = InterfaceType("Parent2", fields[Unit, Parent2](
     Field("list", ListType(StringType), resolve = _.value.list)))
 
+  sealed trait Fruit
+
+  case object RedApple extends Fruit
+  case object SuperBanana extends Fruit
+  case object MegaOrange extends Fruit
+
+  sealed abstract class ExoticFruit(val score: Int) extends Fruit
+
+  case object Guave extends ExoticFruit(123)
+
+  object Color extends Enumeration {
+    val Red, LightGreen, DarkBlue = Value
+  }
+
+  @GraphQLName("MyFruit")
+  @GraphQLDescription("Very tasty fruit")
+  sealed trait FruitAnnotated
+
+  @GraphQLName("JustApple")
+  @GraphQLDescription("The red one")
+  case object RedAppleAnnotated extends FruitAnnotated
+
+  @GraphQLDescription("It's yellow!")
+  case object SuperBananaAnnotated extends FruitAnnotated
+
+  @GraphQLDeprecated("Not tasty anymore")
+  case object MegaOrangeAnnotated extends FruitAnnotated
+
+  @GraphQLName("MyColor")
+  @GraphQLDescription("Very nice color")
+  object ColorAnnotated extends Enumeration {
+    @GraphQLName("NormalRed")
+    @GraphQLDescription("The red one")
+    val Red = Value
+
+    @GraphQLDescription("For green apples")
+    val LightGreen = Value
+
+    @GraphQLDeprecated("Don't like blue")
+    val DarkBlue = Value
+  }
+
   "ObjectType derivation" should {
     "use class name and have no description by default" in {
       val tpe = deriveObjectType[Unit, TestSubject]()
@@ -307,48 +349,6 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
 
   "Singleton Enum derivation" should {
-    sealed trait Fruit
-
-    case object RedApple extends Fruit
-    case object SuperBanana extends Fruit
-    case object MegaOrange extends Fruit
-
-    sealed abstract class ExoticFruit(val score: Int) extends Fruit
-
-    case object Guave extends ExoticFruit(123)
-
-    object Color extends Enumeration {
-      val Red, LightGreen, DarkBlue = Value
-    }
-
-    @GraphQLName("MyFruit")
-    @GraphQLDescription("Very tasty fruit")
-    sealed trait FruitAnnotated
-
-    @GraphQLName("JustApple")
-    @GraphQLDescription("The red one")
-    case object RedAppleAnnotated extends FruitAnnotated
-
-    @GraphQLDescription("It's yellow!")
-    case object SuperBananaAnnotated extends FruitAnnotated
-
-    @GraphQLDeprecated("Not tasty anymore")
-    case object MegaOrangeAnnotated extends FruitAnnotated
-
-    @GraphQLName("MyColor")
-    @GraphQLDescription("Very nice color")
-    object ColorAnnotated extends Enumeration {
-      @GraphQLName("NormalRed")
-      @GraphQLDescription("The red one")
-      val Red = Value
-
-      @GraphQLDescription("For green apples")
-      val LightGreen = Value
-
-      @GraphQLDeprecated("Don't like blue")
-      val DarkBlue = Value
-    }
-
     "use enum name and have no description by default" in {
       val singletonEnum = deriveEnum[Fruit]()
       val enum = deriveEnum[Color.Value]()
