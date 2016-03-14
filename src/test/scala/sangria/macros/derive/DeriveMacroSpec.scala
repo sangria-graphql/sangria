@@ -350,8 +350,8 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
   "Singleton Enum derivation" should {
     "use enum name and have no description by default" in {
-      val singletonEnum = deriveEnum[Fruit]()
-      val enum = deriveEnum[Color.Value]()
+      val singletonEnum = deriveEnumType[Fruit]()
+      val enum = deriveEnumType[Color.Value]()
 
       singletonEnum.name should be ("Fruit")
       singletonEnum.description should be (None)
@@ -361,11 +361,11 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
     }
 
     "allow to change name and description with config" in {
-      val singletonEnum = deriveEnum[Fruit](
+      val singletonEnum = deriveEnumType[Fruit](
         EnumTypeName("Foo"),
         EnumTypeDescription("It's foo"))
 
-      val enum = deriveEnum[Color.Value](
+      val enum = deriveEnumType[Color.Value](
         EnumTypeName("Bar"),
         EnumTypeDescription("It's bar"))
 
@@ -377,8 +377,8 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
     }
 
     "allow to change name and description with annotations" in {
-      val singletonEnum = deriveEnum[FruitAnnotated]()
-      val enum = deriveEnum[ColorAnnotated.Value]()
+      val singletonEnum = deriveEnumType[FruitAnnotated]()
+      val enum = deriveEnumType[ColorAnnotated.Value]()
 
       singletonEnum.name should be ("MyFruit")
       singletonEnum.description should be (Some("Very tasty fruit"))
@@ -388,11 +388,11 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
     }
 
     "prioritize config over annotation for name and description" in {
-      val singletonEnum = deriveEnum[FruitAnnotated](
+      val singletonEnum = deriveEnumType[FruitAnnotated](
         EnumTypeName("Foo"),
         EnumTypeDescription("It's foo"))
 
-      val enum = deriveEnum[ColorAnnotated.Value](
+      val enum = deriveEnumType[ColorAnnotated.Value](
         EnumTypeName("Bar"),
         EnumTypeDescription("It's bar"))
 

@@ -10,7 +10,7 @@ import scala.annotation.StaticAnnotation
 package object derive {
   def deriveObjectType[Ctx, Val](config: DeriveObjectTypeConfig[Ctx, Val]*): ObjectType[Ctx, Val] = macro DeriveMacro.deriveObjectType[Ctx, Val]
 
-  def deriveEnum[T](config: DeriveEnumTypeConfig*): EnumType[T] = macro DeriveMacro.deriveEnumType[T]
+  def deriveEnumType[T](config: DeriveEnumTypeConfig*): EnumType[T] = macro DeriveMacro.deriveEnumType[T]
 
   class GraphQLName(name: String) extends StaticAnnotation
   class GraphQLDescription(description: String) extends StaticAnnotation
