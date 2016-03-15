@@ -3,9 +3,11 @@ package sangria.macros.derive
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.{Executor, FieldTag}
 import sangria.introspection._
+import sangria.marshalling.FromInput.CoercedScalaResult
 import sangria.schema._
 import sangria.macros._
 import sangria.util.FutureResultSupport
+import sangria.util.tag.@@
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -92,6 +94,25 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
   }
 
   "ObjectType derivation" should {
+    "foo" in {
+      implicit val c = deriveEnumType[Color.Value]()
+
+      class FooBar {
+        @GraphQLField
+        @GraphQLName("foo")
+        def hello(id: Int, songs: Seq[String])(colors: Seq[Color.Value]) = s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}"
+      }
+
+      val tpe = deriveObjectType[Unit, FooBar](IncludeMethods("hello"))
+
+      val schema = Schema(tpe)
+
+      Executor.execute(schema, graphql"""{foo(id: 2, songs: ["a", "b"], colors: [Red, LightGreen])}""", root = new FooBar).await should be (Map(
+        "data" → Map("hello" → "4")))
+
+      // TODO: name and description tags, complexity config, default argument values, Context argument → then input type derivation should be easy as well
+    }
+
     "use class name and have no description by default" in {
       val tpe = deriveObjectType[Unit, TestSubject]()
 
@@ -107,6 +128,7 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       tpe.name should be ("Foo")
       tpe.description should be (Some("my desc"))
     }
+
 
     "allow to change name and description with annotations" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated]()

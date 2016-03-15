@@ -77,7 +77,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     val ctx = weakTypeTag[Ctx]
     val v = weakTypeTag[Val]
 
-    val validatedConfig = validateObjectConfig(config)
+    val validatedConfig = validateObjectConfig(config, v.tpe)
 
     val errors = validatedConfig.collect {case Left(error) ⇒ error}
 
@@ -113,14 +113,22 @@ class DeriveMacro(context: blackbox.Context) extends {
   }
 
   private def collectFields(config: Seq[MacroDeriveObjectConfig], ctxType: Type, valType: Type): Either[List[(Position, String)], List[Tree]] = {
-    val knownMembers = findKnownMembers(valType)
+    val knownMembers = findKnownMembers(valType, config.foldLeft(Set.empty[String]) {
+      case (acc, MacroIncludeMethods(methods)) ⇒ acc ++ methods
+      case (acc, _) ⇒ acc
+    })
 
     validateFieldConfig(knownMembers, config) match {
       case Nil ⇒
         val fields = extractFields(knownMembers, config)
 
         val classFields = fields map { field ⇒
-          val fieldName = field.method.name
+          val (args, resolve) =
+            if (field.accessor)
+              Nil → q"(c: Context[$ctxType, $valType]) ⇒ c.value.${field.method.name}"
+            else
+              fieldWithArguments(field, ctxType, valType)
+
           val fieldType = field.method.returnType
 
           val name = field.name
@@ -145,8 +153,8 @@ class DeriveMacro(context: blackbox.Context) extends {
               ${configName orElse annotationName getOrElse q"$name"},
               implicitly[GraphQLOutputTypeLookup[$fieldType]].graphqlType,
               ${configDescr orElse annotationDescr},
-              Nil,
-              (c: Context[$ctxType, $valType]) ⇒ c.value.$fieldName,
+              $args,
+              $resolve,
               Nil,
               $configTags ++ $annotationTags,
               None,
@@ -161,6 +169,25 @@ class DeriveMacro(context: blackbox.Context) extends {
       case errors ⇒ Left(errors)
     }
   }
+
+  private def fieldWithArguments(member: KnownMember, ctxType: Type, valType: Type) = {
+    val args = member.method.paramLists.map(list ⇒ list map createArg)
+
+    args.flatten.map(_.tree) →
+      q"(c: Context[$ctxType, $valType]) ⇒ c.value.${member.method.name}(...${args map (_ map (a ⇒ q"c.arg[${a.tpe}](${a.name})"))})"
+  }
+
+  private def createArg(arg: Symbol) = arg match {
+    case term: TermSymbol ⇒
+      val tpe = term.typeSignature.resultType
+      val name = term.name.decodedName.toString
+
+      val ast = q"sangria.schema.Argument($name, GraphQLInputTypeLookup.foo[$tpe]().graphqlType)"
+
+      Arg(name, tpe, ast)
+  }
+
+  private case class Arg(name: String, tpe: Type, tree: Tree)
 
   private def collectEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig], t: Type): List[Tree] = {
     val extractedValues = extractEnumValues(values, config)
@@ -198,11 +225,12 @@ class DeriveMacro(context: blackbox.Context) extends {
       }
   }
 
-  private def upperCaseName(name: String) = name // TODO
-
-  private def findKnownMembers(tpe: Type): List[KnownMember] =
+  private def findKnownMembers(tpe: Type, includeMethods: Set[String]): List[KnownMember] =
     tpe.members.collect {
-      case m: MethodSymbol if m.isCaseAccessor ⇒ KnownMember(tpe, m, findCaseClassAccessorAnnotations(tpe, m))
+      case m: MethodSymbol if m.isCaseAccessor ⇒
+        KnownMember(tpe, m, findCaseClassAccessorAnnotations(tpe, m), accessor = true)
+      case m: MethodSymbol if memberField(m.annotations) || includeMethods.contains(m.name.decodedName.toString) ⇒
+        KnownMember(tpe, m, m.annotations, accessor = false)
     }.toList.reverse
 
   private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol): List[Annotation] =
@@ -343,7 +371,7 @@ class DeriveMacro(context: blackbox.Context) extends {
       case (acc, _) ⇒ acc
     }
 
-  private def validateObjectConfig(config: Seq[Tree]) = config.map {
+  private def validateObjectConfig(config: Seq[Tree], tpe: Type) = config.map {
     case q"ObjectTypeName.apply[$_, $_]($name)" ⇒
       Right(MacroName(name))
 
@@ -367,6 +395,13 @@ class DeriveMacro(context: blackbox.Context) extends {
 
     case tree @ q"IncludeFields.apply[$_, $_](..${fields: List[String]})" ⇒
       Right(MacroIncludeFields(fields.toSet, tree.pos))
+
+    case tree @ q"IncludeMethods.apply[$_, $_](..${methods: List[String]})" ⇒
+      val known = tpe.members.collect {case m: MethodSymbol ⇒ m.name.decodedName.toString}.toSet
+      val unknown = methods filterNot known.contains
+
+      if (unknown.isEmpty) Right(MacroIncludeMethods(methods.toSet))
+      else Left(tree.pos → s"Unknown members: ${unknown mkString ", "}. Known members are: ${known mkString ", "}")
 
     case tree @ q"ExcludeFields.apply[$_, $_](..${fields: List[String]})" ⇒
       Right(MacroExcludeFields(fields.toSet, tree.pos))
@@ -452,7 +487,10 @@ class DeriveMacro(context: blackbox.Context) extends {
   private def memberExcluded(annotations: List[Annotation]): Boolean =
     annotations.find(_.tree.tpe =:= typeOf[GraphQLExclude]).fold(false)(_ ⇒ true)
 
-  private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation]) {
+  private def memberField(annotations: List[Annotation]): Boolean =
+    annotations.find(_.tree.tpe =:= typeOf[GraphQLField]).fold(false)(_ ⇒ true)
+
+  private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation], accessor: Boolean) {
     lazy val name = method.name.decodedName.toString
   }
 
@@ -468,6 +506,7 @@ class DeriveMacro(context: blackbox.Context) extends {
   case class MacroDeprecateField(fieldName: String, deprecationReason: Tree, pos: Position) extends MacroDeriveObjectConfig
 
   case class MacroIncludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectConfig
+  case class MacroIncludeMethods(methodNames: Set[String]) extends MacroDeriveObjectConfig
   case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectConfig
   case class MacroAddFields(fields: List[Tree]) extends MacroDeriveObjectConfig
   case class MacroOverrideField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectConfig

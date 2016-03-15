@@ -15,6 +15,7 @@ case class RenameField[Ctx, Val](fieldName: String, graphqlName: String) extends
 case class FieldTags[Ctx, Val](fieldName: String, tags: FieldTag*) extends DeriveObjectTypeConfig[Ctx, Val]
 
 case class IncludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectTypeConfig[Ctx, Val]
+case class IncludeMethods[Ctx, Val](methodNames: String*) extends DeriveObjectTypeConfig[Ctx, Val]
 case class ExcludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectTypeConfig[Ctx, Val]
 case class OverrideField[Ctx, Val](fieldName: String, field: Field[Ctx, Val]) extends DeriveObjectTypeConfig[Ctx, Val]
 case class AddFields[Ctx, Val](fields: Field[Ctx, Val]*) extends DeriveObjectTypeConfig[Ctx, Val]
