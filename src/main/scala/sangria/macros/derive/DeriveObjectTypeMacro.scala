@@ -125,9 +125,13 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       ContextArg
     case term: TermSymbol ⇒
       val tpe = term.typeSignature.resultType
-      val name = term.name.decodedName.toString
+      val name = symbolName(term.annotations).collect {case q"${s: String}" ⇒ s} getOrElse term.name.decodedName.toString
+      val description = symbolDescription(term.annotations)
 
-      val ast = q"sangria.schema.Argument($name, GraphQLInputTypeLookup.foo[$tpe]().graphqlType)"
+      val ast = description match{
+        case Some(descr) ⇒ q"sangria.schema.Argument($name, GraphQLInputTypeLookup.foo[$tpe]().graphqlType, $descr)"
+        case None ⇒ q"sangria.schema.Argument($name, GraphQLInputTypeLookup.foo[$tpe]().graphqlType)"
+      }
 
       NormalArg(name, tpe, ast)
   }

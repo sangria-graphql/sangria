@@ -100,15 +100,27 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       class FooBar {
         @GraphQLField
         @GraphQLName("foo")
-        def hello(id: Int, songs: Seq[String])(ctx: Context[Unit, FooBar], colors: Seq[Color.Value]) = s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}"
+        def hello(
+          id: Int,
+          songs: Seq[String]
+        )(
+          ctx: Context[Unit, FooBar],
+          @GraphQLName("aaa") @GraphQLDescription("bbbb") colors: Seq[Color.Value]
+        ) =
+          s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}"
       }
 
       val tpe = deriveObjectType[Unit, FooBar](IncludeMethods("hello"))
 
       val schema = Schema(tpe)
 
-//      Executor.execute(schema, graphql"""{foo(id: 2, songs: ["a", "b"], colors: [Red, LightGreen])}""", root = new FooBar).await should be (Map(
-//        "data" → Map("hello" → "4")))
+      println(Executor.execute(schema, graphql"""{foo(id: 2, songs: ["a", "b"], aaa: [Red, LightGreen])}""", root = new FooBar).await)
+
+      import sangria.parser.DeliveryScheme.Throw
+      import sangria.marshalling.queryAst._
+
+      println(IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, root = new FooBar).await).types.find(_.name == "FooBar")
+        .get.asInstanceOf[IntrospectionObjectType].fields.find(_.name == "foo").get.args)
 
       // TODO: name and description tags, default argument values → then input type derivation should be easy as well
     }
