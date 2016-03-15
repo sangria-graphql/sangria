@@ -112,7 +112,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
-  private def collectFields(config: Seq[MacroDeriveObjectConfig], ctxType: Type, valType: Type): Either[List[(Position, String)], List[Tree]] = {
+  private def collectFields(config: Seq[MacroDeriveObjectSetting], ctxType: Type, valType: Type): Either[List[(Position, String)], List[Tree]] = {
     val knownMembers = findKnownMembers(valType, config.foldLeft(Set.empty[String]) {
       case (acc, MacroIncludeMethods(methods)) ⇒ acc ++ methods
       case (acc, _) ⇒ acc
@@ -142,6 +142,8 @@ class DeriveMacro(context: blackbox.Context) extends {
           val configDocDepr = config.collect{case MacroDocumentField(`name`, _, reason, _) ⇒ reason}.lastOption getOrElse q"None"
           val configDepr = config.collect{case MacroDeprecateField(`name`, reason, _) ⇒ reason}.lastOption getOrElse q"None"
 
+          val complexity = config.collect{case MacroFieldComplexity(`name`, c, _) ⇒ c}.lastOption
+
           val annotationTags = symbolFieldTags(field.annotations)
           val configTags = config.foldLeft(q"List[sangria.execution.FieldTag]()") {
             case (acc, MacroFieldTags(`name`, tree, _)) ⇒ q"$acc ++ ${tree.toList}"
@@ -157,7 +159,7 @@ class DeriveMacro(context: blackbox.Context) extends {
               $resolve,
               Nil,
               $configTags ++ $annotationTags,
-              None,
+              $complexity,
               $configDocDepr orElse $configDepr orElse $annotationDepr)
           """
         }
@@ -189,7 +191,7 @@ class DeriveMacro(context: blackbox.Context) extends {
 
   private case class Arg(name: String, tpe: Type, tree: Tree)
 
-  private def collectEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig], t: Type): List[Tree] = {
+  private def collectEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumSetting], t: Type): List[Tree] = {
     val extractedValues = extractEnumValues(values, config)
 
     if (extractedValues.isEmpty) reportErrors(List(c.enclosingPosition → "Enum value list is empty"))
@@ -250,7 +252,7 @@ class DeriveMacro(context: blackbox.Context) extends {
       annotations.toList.flatten
     }
 
-  private def extractFields(knownMembers: List[KnownMember], config: Seq[MacroDeriveObjectConfig]) = {
+  private def extractFields(knownMembers: List[KnownMember], config: Seq[MacroDeriveObjectSetting]) = {
     val included = config.foldLeft(Set.empty[String]){
       case (acc, MacroIncludeFields(fields, _)) ⇒ acc ++ fields
       case (acc, _) ⇒ acc
@@ -271,7 +273,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     knownMembers.filter(m ⇒ actualFields.contains(m.name) && !memberExcluded(m.annotations))
   }
 
-  private def extractEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig]) = {
+  private def extractEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumSetting]) = {
     val included = config.foldLeft(Set.empty[String]){
       case (acc, MacroIncludeValues(vals, _)) ⇒ acc ++ vals
       case (acc, _) ⇒ acc
@@ -291,7 +293,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     values.filter(m ⇒ actualFields.contains(m.name.decodedName.toString.trim) && !memberExcluded(m.annotations))
   }
 
-  private def validateFieldConfig(knownMembers: List[KnownMember], config: Seq[MacroDeriveObjectConfig]) = {
+  private def validateFieldConfig(knownMembers: List[KnownMember], config: Seq[MacroDeriveObjectSetting]) = {
     val knownMembersSet = knownMembers.map(_.name).toSet
 
     def unknownMember(pos: Position, name: String) =
@@ -320,6 +322,9 @@ class DeriveMacro(context: blackbox.Context) extends {
       case MacroDeprecateField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
         unknownMember(pos, fieldName) :: Nil
 
+      case MacroFieldComplexity(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
+        unknownMember(pos, fieldName) :: Nil
+
       case MacroOverrideField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
         unknownMember(pos, fieldName) :: Nil
 
@@ -327,7 +332,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
-  private def validateEnumValueConfig(knownMembers: List[Symbol], config: Seq[MacroDeriveEnumTypeConfig]) = {
+  private def validateEnumValueConfig(knownMembers: List[Symbol], config: Seq[MacroDeriveEnumSetting]) = {
     val knownMembersSet = knownMembers.map(_.name.decodedName.toString.trim).toSet
 
     def unknownMember(pos: Position, name: String) =
@@ -364,7 +369,7 @@ class DeriveMacro(context: blackbox.Context) extends {
     }
   }
 
-  private def additionalFields(config: Seq[MacroDeriveObjectConfig]) =
+  private def additionalFields(config: Seq[MacroDeriveObjectSetting]) =
     config.foldLeft(List[Tree]()){
       case (acc, MacroAddFields(fields)) ⇒ acc ++ fields
       case (acc, MacroOverrideField(_, field, _)) ⇒ acc :+ field
@@ -392,6 +397,9 @@ class DeriveMacro(context: blackbox.Context) extends {
 
     case tree @ q"DeprecateField.apply[$_, $_](${fieldName: String}, $deprecationReason)" ⇒
       Right(MacroDeprecateField(fieldName, q"Some($deprecationReason)", tree.pos))
+
+    case tree @ q"FieldComplexity.apply[$_, $_](${fieldName: String}, $complexity)" ⇒
+      Right(MacroFieldComplexity(fieldName, complexity, tree.pos))
 
     case tree @ q"IncludeFields.apply[$_, $_](..${fields: List[String]})" ⇒
       Right(MacroIncludeFields(fields.toSet, tree.pos))
@@ -494,34 +502,35 @@ class DeriveMacro(context: blackbox.Context) extends {
     lazy val name = method.name.decodedName.toString
   }
 
-  sealed trait MacroDeriveObjectConfig
+  sealed trait MacroDeriveObjectSetting
 
-  case class MacroName(name: Tree) extends MacroDeriveObjectConfig
-  case class MacroDescription(description: Tree) extends MacroDeriveObjectConfig
-  case class MacroInterfaces(interfaces: Seq[Tree]) extends MacroDeriveObjectConfig
+  case class MacroName(name: Tree) extends MacroDeriveObjectSetting
+  case class MacroDescription(description: Tree) extends MacroDeriveObjectSetting
+  case class MacroInterfaces(interfaces: Seq[Tree]) extends MacroDeriveObjectSetting
 
-  case class MacroDocumentField(fieldName: String, description: Tree, deprecationReason: Tree, pos: Position) extends MacroDeriveObjectConfig
-  case class MacroRenameField(fieldName: String, graphqlName: Tree, pos: Position) extends MacroDeriveObjectConfig
-  case class MacroFieldTags(fieldName: String, tags: Seq[Tree], pos: Position) extends MacroDeriveObjectConfig
-  case class MacroDeprecateField(fieldName: String, deprecationReason: Tree, pos: Position) extends MacroDeriveObjectConfig
+  case class MacroDocumentField(fieldName: String, description: Tree, deprecationReason: Tree, pos: Position) extends MacroDeriveObjectSetting
+  case class MacroRenameField(fieldName: String, graphqlName: Tree, pos: Position) extends MacroDeriveObjectSetting
+  case class MacroFieldTags(fieldName: String, tags: Seq[Tree], pos: Position) extends MacroDeriveObjectSetting
+  case class MacroDeprecateField(fieldName: String, deprecationReason: Tree, pos: Position) extends MacroDeriveObjectSetting
+  case class MacroFieldComplexity(fieldName: String, complexity: Tree, pos: Position) extends MacroDeriveObjectSetting
 
-  case class MacroIncludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectConfig
-  case class MacroIncludeMethods(methodNames: Set[String]) extends MacroDeriveObjectConfig
-  case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectConfig
-  case class MacroAddFields(fields: List[Tree]) extends MacroDeriveObjectConfig
-  case class MacroOverrideField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectConfig
+  case class MacroIncludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectSetting
+  case class MacroIncludeMethods(methodNames: Set[String]) extends MacroDeriveObjectSetting
+  case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectSetting
+  case class MacroAddFields(fields: List[Tree]) extends MacroDeriveObjectSetting
+  case class MacroOverrideField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectSetting
 
-  sealed trait MacroDeriveEnumTypeConfig
+  sealed trait MacroDeriveEnumSetting
 
-  case class MacroEnumTypeName(name: Tree) extends MacroDeriveEnumTypeConfig
-  case class MacroEnumTypeDescription(description: Tree) extends MacroDeriveEnumTypeConfig
+  case class MacroEnumTypeName(name: Tree) extends MacroDeriveEnumSetting
+  case class MacroEnumTypeDescription(description: Tree) extends MacroDeriveEnumSetting
 
-  case class MacroUppercaseValues(pos: Position) extends MacroDeriveEnumTypeConfig
+  case class MacroUppercaseValues(pos: Position) extends MacroDeriveEnumSetting
 
-  case class MacroDocumentValue(value: String, description: Tree, deprecationReason: Tree, pos: Position) extends MacroDeriveEnumTypeConfig
-  case class MacroDeprecateValue(value: String, deprecationReason: Tree, pos: Position) extends MacroDeriveEnumTypeConfig
-  case class MacroRenameValue(value: String, graphqlName: Tree, pos: Position) extends MacroDeriveEnumTypeConfig
+  case class MacroDocumentValue(value: String, description: Tree, deprecationReason: Tree, pos: Position) extends MacroDeriveEnumSetting
+  case class MacroDeprecateValue(value: String, deprecationReason: Tree, pos: Position) extends MacroDeriveEnumSetting
+  case class MacroRenameValue(value: String, graphqlName: Tree, pos: Position) extends MacroDeriveEnumSetting
 
-  case class MacroIncludeValues(values: Set[String], pos: Position) extends MacroDeriveEnumTypeConfig
-  case class MacroExcludeValues(fieldNames: Set[String], pos: Position) extends MacroDeriveEnumTypeConfig
+  case class MacroIncludeValues(values: Set[String], pos: Position) extends MacroDeriveEnumSetting
+  case class MacroExcludeValues(fieldNames: Set[String], pos: Position) extends MacroDeriveEnumSetting
 }

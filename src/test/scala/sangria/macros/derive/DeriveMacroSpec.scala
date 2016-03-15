@@ -129,7 +129,6 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       tpe.description should be (Some("my desc"))
     }
 
-
     "allow to change name and description with annotations" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated]()
 
@@ -184,6 +183,7 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       """deriveObjectType[Unit, TestSubject](RenameField("id1", "foo"))""" shouldNot compile
       """deriveObjectType[Unit, TestSubject](FieldTags("id1", CachedTag))""" shouldNot compile
       """deriveObjectType[Unit, TestSubject](DeprecateField("id1", "test"))""" shouldNot compile
+      """deriveObjectType[Unit, TestSubject](FieldComplexity("id1", (_, _, _) ⇒ 1.0))""" shouldNot compile
       """deriveObjectType[Unit, TestSubjectAnnotated](ExcludeFields("id", "list", "excluded"))""" shouldNot compile
     }
 
@@ -240,6 +240,13 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
       tpe.fields(2).name should be ("bar")
       tpe.fields(2).fieldType should be (BooleanType)
+    }
+
+    "allow to set field complexity with config" in {
+      val tpe = deriveObjectType[Unit, TestSubject](
+        FieldComplexity("id", (_, _, child) ⇒ child * 123.0))
+
+      tpe.fields(0).complexity.get((), Args(Map.empty), 2D) should be (246.0)
     }
 
     "allow to set name, description, deprecationReason and fieldTags with config" in {
