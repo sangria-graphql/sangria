@@ -100,7 +100,7 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
       class FooBar {
         @GraphQLField
         @GraphQLName("foo")
-        def hello(id: Int, songs: Seq[String])(colors: Seq[Color.Value]) = s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}"
+        def hello(id: Int, songs: Seq[String])(ctx: Context[Unit, FooBar], colors: Seq[Color.Value]) = s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}"
       }
 
       val tpe = deriveObjectType[Unit, FooBar](IncludeMethods("hello"))
@@ -110,7 +110,7 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 //      Executor.execute(schema, graphql"""{foo(id: 2, songs: ["a", "b"], colors: [Red, LightGreen])}""", root = new FooBar).await should be (Map(
 //        "data" → Map("hello" → "4")))
 
-      // TODO: name and description tags, complexity config, default argument values, Context argument → then input type derivation should be easy as well
+      // TODO: name and description tags, default argument values → then input type derivation should be easy as well
     }
 
     "use class name and have no description by default" in {

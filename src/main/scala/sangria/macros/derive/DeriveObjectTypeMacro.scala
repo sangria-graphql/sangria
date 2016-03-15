@@ -1,6 +1,7 @@
 package sangria.macros.derive
 
 import sangria.macros._
+import sangria.schema.Context
 
 import scala.reflect.macros.blackbox
 
@@ -110,22 +111,26 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
 
   private def fieldWithArguments(member: KnownMember, ctxType: Type, valType: Type) = {
     val args = member.method.paramLists.map(list ⇒ list map createArg)
+    val argsAst = args map (_ map {
+      case NormalArg(name, tpe, _) ⇒ q"c.arg[$tpe]($name)"
+      case ContextArg ⇒ q"c"
+    })
 
-    args.flatten.map(_.tree) →
-      q"(c: Context[$ctxType, $valType]) ⇒ c.value.${member.method.name}(...${args map (_ map (a ⇒ q"c.arg[${a.tpe}](${a.name})"))})"
+    args.flatten.collect{case na: NormalArg ⇒ na.tree} →
+      q"(c: Context[$ctxType, $valType]) ⇒ c.value.${member.method.name}(...$argsAst)"
   }
 
   private def createArg(arg: Symbol) = arg match {
+    case term: TermSymbol if term.typeSignature.resultType.erasure =:= typeOf[Context[_, _]].erasure ⇒
+      ContextArg
     case term: TermSymbol ⇒
       val tpe = term.typeSignature.resultType
       val name = term.name.decodedName.toString
 
       val ast = q"sangria.schema.Argument($name, GraphQLInputTypeLookup.foo[$tpe]().graphqlType)"
 
-      Arg(name, tpe, ast)
+      NormalArg(name, tpe, ast)
   }
-
-  private case class Arg(name: String, tpe: Type, tree: Tree)
 
   private def findKnownMembers(tpe: Type, includeMethods: Set[String]): List[KnownMember] =
     tpe.members.collect {
@@ -271,6 +276,11 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation], accessor: Boolean) {
     lazy val name = method.name.decodedName.toString
   }
+
+  sealed trait Arg
+
+  case object ContextArg extends Arg
+  case class NormalArg(name: String, tpe: Type, tree: Tree) extends Arg
 
   sealed trait MacroDeriveObjectSetting
 
