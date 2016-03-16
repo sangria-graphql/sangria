@@ -243,47 +243,47 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     }
 
   private def validateObjectConfig(config: Seq[Tree], tpe: Type) = config.map {
-    case q"ObjectTypeName.apply[$_, $_]($name)" ⇒
+    case q"$setting.apply[$_, $_]($name)" if checkSetting[ObjectTypeName.type](setting) ⇒
       Right(MacroName(name))
 
-    case q"ObjectTypeDescription.apply[$_, $_]($description)" ⇒
+    case q"$setting.apply[$_, $_]($description)" if checkSetting[ObjectTypeDescription.type](setting) ⇒
       Right(MacroDescription(description))
 
-    case q"Interfaces.apply[$_, $_](..$ints)" ⇒
+    case q"$setting.apply[$_, $_](..$ints)" if checkSetting[Interfaces.type](setting) ⇒
       Right(MacroInterfaces(ints))
 
-    case tree @ q"DocumentField.apply[$_, $_](${fieldName: String}, $description, $deprecationReason)" ⇒
+    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, $description, $deprecationReason)" if checkSetting[DocumentField.type](setting) ⇒
       Right(MacroDocumentField(fieldName, description, deprecationReason, tree.pos))
 
-    case tree @ q"RenameField.apply[$_, $_](${fieldName: String}, $graphqlName)" ⇒
+    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, $graphqlName)" if checkSetting[RenameField.type](setting) ⇒
       Right(MacroRenameField(fieldName, graphqlName, tree.pos))
 
-    case tree @ q"FieldTags.apply[$_, $_](${fieldName: String}, ..$fieldTags)" ⇒
+    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, ..$fieldTags)" if checkSetting[FieldTags.type](setting) ⇒
       Right(MacroFieldTags(fieldName, fieldTags, tree.pos))
 
-    case tree @ q"DeprecateField.apply[$_, $_](${fieldName: String}, $deprecationReason)" ⇒
+    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, $deprecationReason)" if checkSetting[DeprecateField.type](setting) ⇒
       Right(MacroDeprecateField(fieldName, q"Some($deprecationReason)", tree.pos))
 
-    case tree @ q"FieldComplexity.apply[$_, $_](${fieldName: String}, $complexity)" ⇒
+    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, $complexity)" if checkSetting[FieldComplexity.type](setting) ⇒
       Right(MacroFieldComplexity(fieldName, complexity, tree.pos))
 
-    case tree @ q"IncludeFields.apply[$_, $_](..${fields: List[String]})" ⇒
+    case tree @ q"$setting.apply[$_, $_](..${fields: List[String]})" if checkSetting[IncludeFields.type](setting) ⇒
       Right(MacroIncludeFields(fields.toSet, tree.pos))
 
-    case tree @ q"IncludeMethods.apply[$_, $_](..${methods: List[String]})" ⇒
+    case tree @ q"$setting.apply[$_, $_](..${methods: List[String]})" if checkSetting[IncludeMethods.type](setting) ⇒
       val known = tpe.members.collect {case m: MethodSymbol ⇒ m.name.decodedName.toString}.toSet
       val unknown = methods filterNot known.contains
 
       if (unknown.isEmpty) Right(MacroIncludeMethods(methods.toSet))
       else Left(tree.pos → s"Unknown members: ${unknown mkString ", "}. Known members are: ${known mkString ", "}")
 
-    case tree @ q"ExcludeFields.apply[$_, $_](..${fields: List[String]})" ⇒
+    case tree @ q"$setting.apply[$_, $_](..${fields: List[String]})" if checkSetting[ExcludeFields.type](setting) ⇒
       Right(MacroExcludeFields(fields.toSet, tree.pos))
 
-    case q"AddFields.apply[$_, $_](..$fields)" ⇒
+    case q"$setting.apply[$_, $_](..$fields)" if checkSetting[AddFields.type](setting) ⇒
       Right(MacroAddFields(fields))
 
-    case tree @ q"OverrideField.apply[$_, $_](${fieldName: String}, $field)" ⇒
+    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, $field)" if checkSetting[OverrideField.type](setting) ⇒
       Right(MacroOverrideField(fieldName, field, tree.pos))
 
     case tree ⇒ Left(tree.pos,

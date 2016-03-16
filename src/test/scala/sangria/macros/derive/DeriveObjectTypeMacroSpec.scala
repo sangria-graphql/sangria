@@ -206,7 +206,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       val tpe = deriveObjectType[Unit, TestSubject](
         DocumentField("id", "the object ID", deprecationReason = Some("foo")),
         RenameField("id", "identifier"),
-        RenameField("list", "colors"),
+        sangria.macros.derive.RenameField("list", "colors"),
         DocumentField("list", "my colors"),
         DeprecateField("excluded", "bar"),
         FieldTags("list", CachedTag, AuthorizedTag))
@@ -252,7 +252,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
     "prioritize field config name, description, deprecationReason and merge fieldTags" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated](
-        RenameField("list", "fooBar"),
+        sangria.macros.derive.RenameField("list", "fooBar"),
         DocumentField("id", "new descr", Some("new depr")),
         FieldTags("id", FooTag),
         FieldTags("list", FooTag))
@@ -281,7 +281,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         DocumentField("text", "Comment text"))
 
       val ArticleType = deriveObjectType[Unit, Article](
-        RenameField("tags", "myTags"))
+        sangria.macros.derive.RenameField("tags", "myTags"))
 
       val testArticle = Article("My First Article", Some("foo bar"), None,
         Some(Vector(Some(Comment("bob", None)), None, Some(Comment("jane", Some("yay!"))))))
@@ -367,10 +367,10 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
       val schema = Schema(CompanionA.graphqlType)
 
-      val query = graphql"{b {c {e}}}"
+      val query = graphql"{b {myC {e}}}"
 
       Executor.execute(schema, query, root = CompanionA(CompanionB(CompanionC(CompanionEnum1)))).await should be (Map(
-        "data" → Map("b" → Map("c" → Map("e" → "CompanionEnum1")))))
+        "data" → Map("b" → Map("myC" → Map("e" → "first")))))
     }
   }
 }

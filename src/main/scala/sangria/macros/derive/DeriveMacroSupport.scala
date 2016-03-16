@@ -65,4 +65,5 @@ trait DeriveMacroSupport {
     defs.nme.defaultGetterName(defs.newTermName(method), pos)
   }
 
+  def checkSetting[T : WeakTypeTag](setting: Tree) = weakTypeTag[T].tpe =:= c.typecheck(setting).tpe
 }

@@ -166,28 +166,28 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
   }
 
   private def validateEnumConfig(config: Seq[Tree]) = config.map {
-    case q"EnumTypeName.apply($name)" ⇒
+    case q"$setting.apply($name)" if checkSetting[EnumTypeName.type](setting) ⇒
       Right(MacroEnumTypeName(name))
 
-    case q"EnumTypeDescription.apply($description)" ⇒
+    case q"$setting.apply($description)" if checkSetting[EnumTypeDescription.type](setting) ⇒
       Right(MacroEnumTypeDescription(description))
 
-    case tree @ q"UppercaseValues" ⇒
+    case tree @ q"$setting" if checkSetting[UppercaseValues.type](setting) ⇒
       Right(MacroUppercaseValues(tree.pos))
 
-    case tree @ q"DocumentValue.apply(${value: String}, $description, $deprecationReason)" ⇒
+    case tree @ q"$setting.apply(${value: String}, $description, $deprecationReason)" if checkSetting[DocumentValue.type](setting) ⇒
       Right(MacroDocumentValue(value, description, deprecationReason, tree.pos))
 
-    case tree @ q"RenameValue.apply(${value: String}, $graphqlName)" ⇒
+    case tree @ q"$setting.apply(${value: String}, $graphqlName)" if checkSetting[RenameValue.type](setting) ⇒
       Right(MacroRenameValue(value, graphqlName, tree.pos))
 
-    case tree @ q"DeprecateValue.apply(${value: String}, $deprecationReason)" ⇒
+    case tree @ q"$setting.apply(${value: String}, $deprecationReason)" if checkSetting[DeprecateValue.type](setting) ⇒
       Right(MacroDeprecateValue(value, q"Some($deprecationReason)", tree.pos))
 
-    case tree @ q"IncludeValues.apply(..${values: List[String]})" ⇒
+    case tree @ q"$setting.apply(..${values: List[String]})" if checkSetting[IncludeValues.type](setting) ⇒
       Right(MacroIncludeValues(values.toSet, tree.pos))
 
-    case tree @ q"ExcludeValues.apply(..${values: List[String]})" ⇒
+    case tree @ q"$setting.apply(..${values: List[String]})" if checkSetting[ExcludeValues.type](setting) ⇒
       Right(MacroExcludeValues(values.toSet, tree.pos))
 
     case tree ⇒ Left(tree.pos,
