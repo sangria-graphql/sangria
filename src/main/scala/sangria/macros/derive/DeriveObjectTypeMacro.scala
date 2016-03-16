@@ -110,7 +110,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   }
 
   private def fieldWithArguments(member: KnownMember, ctxType: Type, valType: Type) = {
-    val args = member.method.paramLists.map(list ⇒ list map createArg)
+    val args = member.method.paramLists.map(_ map createArg)
     val argsAst = args map (_ map {
       case NormalArg(name, tpe, _) ⇒ q"c.arg[$tpe]($name)"
       case ContextArg ⇒ q"c"
@@ -127,10 +127,24 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       val tpe = term.typeSignature.resultType
       val name = symbolName(term.annotations).collect {case q"${s: String}" ⇒ s} getOrElse term.name.decodedName.toString
       val description = symbolDescription(term.annotations)
+      val default = symbolDefault(term.annotations)
 
-      val ast = description match{
-        case Some(descr) ⇒ q"sangria.schema.Argument($name, GraphQLInputTypeLookup.foo[$tpe]().graphqlType, $descr)"
-        case None ⇒ q"sangria.schema.Argument($name, GraphQLInputTypeLookup.foo[$tpe]().graphqlType)"
+      val ast = default match {
+        case Some(defaultValue) ⇒
+          q"""
+            sangria.schema.Argument.createWithDefault(
+              $name,
+              sangria.schema.OptionInputType(GraphQLInputTypeLookup.foo[$tpe]().graphqlType),
+              $description,
+              $defaultValue)
+          """
+        case None ⇒
+          q"""
+            sangria.schema.Argument.createWithoutDefault(
+              $name,
+              GraphQLInputTypeLookup.foo[$tpe]().graphqlType,
+              $description)
+          """
       }
 
       NormalArg(name, tpe, ast)

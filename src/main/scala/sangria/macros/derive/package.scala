@@ -1,5 +1,6 @@
 package sangria.macros
 
+import language.existentials
 import scala.language.experimental.{macros ⇒ `scalac, please just let me do it!`}
 
 import sangria.execution.FieldTag
@@ -18,4 +19,5 @@ package object derive {
   class GraphQLFieldTags(fieldTags: FieldTag*) extends StaticAnnotation
   class GraphQLExclude extends StaticAnnotation
   class GraphQLField extends StaticAnnotation
+  class GraphQLDefault(defaultValue: T forSome {type T}) extends StaticAnnotation
 }

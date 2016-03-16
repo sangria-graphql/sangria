@@ -4,6 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.{Executor, FieldTag}
 import sangria.introspection._
 import sangria.marshalling.FromInput.CoercedScalaResult
+import sangria.marshalling.ScalaInput
 import sangria.schema._
 import sangria.macros._
 import sangria.util.FutureResultSupport
@@ -97,15 +98,21 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
     "foo" in {
       implicit val c = deriveEnumType[Color.Value]()
 
+
       class FooBar {
         @GraphQLField
         @GraphQLName("foo")
         def hello(
+          @GraphQLDefault(123)
           id: Int,
           songs: Seq[String]
         )(
           ctx: Context[Unit, FooBar],
-          @GraphQLName("aaa") @GraphQLDescription("bbbb") colors: Seq[Color.Value]
+
+          @GraphQLName("aaa")
+          @GraphQLDescription("bbbb")
+          @GraphQLDefault(ScalaInput.scalaInput(List(Color.Red)))
+          colors: Seq[Color.Value]
         ) =
           s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}"
       }
@@ -114,15 +121,13 @@ class DeriveMacroSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(tpe)
 
-      println(Executor.execute(schema, graphql"""{foo(id: 2, songs: ["a", "b"], aaa: [Red, LightGreen])}""", root = new FooBar).await)
+      println(Executor.execute(schema, graphql"""{foo(songs: ["a", "b"])}""", root = new FooBar).await)
 
       import sangria.parser.DeliveryScheme.Throw
       import sangria.marshalling.queryAst._
 
       println(IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, root = new FooBar).await).types.find(_.name == "FooBar")
         .get.asInstanceOf[IntrospectionObjectType].fields.find(_.name == "foo").get.args)
-
-      // TODO: name and description tags, default argument values → then input type derivation should be easy as well
     }
 
     "use class name and have no description by default" in {

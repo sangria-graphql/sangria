@@ -1,5 +1,6 @@
 package sangria.macros.derive
 
+import scala.reflect.internal.{StdNames, SymbolTable, Definitions}
 import scala.reflect.macros.blackbox
 
 trait DeriveMacroSupport {
@@ -30,6 +31,12 @@ trait DeriveMacroSupport {
       .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] ⇒ arg}
       .headOption
 
+  protected def symbolDefault(annotations: List[Annotation]): Option[Tree] =
+    annotations
+      .map (_.tree)
+      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDefault] ⇒ arg}
+      .headOption
+
   protected def symbolDeprecation(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
@@ -50,5 +57,12 @@ trait DeriveMacroSupport {
 
   protected def memberField(annotations: List[Annotation]): Boolean =
     annotations.find(_.tree.tpe =:= typeOf[GraphQLField]).fold(false)(_ ⇒ true)
+
+  // TODO: most probably not needed, so should be removed in future
+  protected def defaultMethodArgValue(method: String, pos: Int) = {
+    val defs = c.universe.asInstanceOf[Definitions with SymbolTable with StdNames]
+
+    defs.nme.defaultGetterName(defs.newTermName(method), pos)
+  }
 
 }

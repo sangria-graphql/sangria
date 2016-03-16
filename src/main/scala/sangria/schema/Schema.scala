@@ -320,6 +320,19 @@ object Argument {
       name: String,
       argumentType: InputType[T])(implicit fromInput: FromInput[T], res: WithoutInputTypeTags[T]): Argument[res.Res] =
     Argument(Named.checkName(name), argumentType, None, None, fromInput)
+
+  def createWithoutDefault[T](
+      name: String,
+      argumentType: InputType[T],
+      description: Option[String])(implicit fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, description, None, fromInput)
+
+  def createWithDefault[T, Default](
+      name: String,
+      argumentType: InputType[T],
+      description: Option[String],
+      defaultValue: Default)(implicit toInput: ToInput[Default, _], fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, description, Some(defaultValue → toInput), fromInput)
 }
 
 trait WithoutInputTypeTags[T] {
@@ -499,11 +512,11 @@ trait InputObjectDefaultResultLowPrio {
 }
 
 case class InputField[T] private[sangria] (
-    name: String,
-    fieldType: InputType[T],
-    description: Option[String],
-    defaultValue: Option[(_, ToInput[_, _])]) extends InputValue[T] with Named {
-
+  name: String,
+  fieldType: InputType[T],
+  description: Option[String],
+  defaultValue: Option[(_, ToInput[_, _])]
+) extends InputValue[T] with Named {
   if (!fieldType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
     throw new IllegalArgumentException(s"Input field '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this fields nullable or remove the default value.")
 
