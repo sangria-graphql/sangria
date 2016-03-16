@@ -39,11 +39,11 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           }
 
           q"""
-            sangria.schema.ObjectType(
+            sangria.schema.ObjectType.createFromMacro(
               ${configName orElse annotationName getOrElse tpeName},
               ${configDesc orElse annotationDesc},
-              () ⇒ ${fields map c.untypecheck},
-              $interfaces)
+              $interfaces,
+              () ⇒ ${fields map c.untypecheck})
           """
       }
     }
@@ -62,7 +62,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
         val classFields = fields map { field ⇒
           val (args, resolve) =
             if (field.accessor)
-              Nil → q"(c: Context[$ctxType, $valType]) ⇒ c.value.${field.method.name}"
+              Nil → q"(c: sangria.schema.Context[$ctxType, $valType]) ⇒ c.value.${field.method.name}"
             else
               fieldWithArguments(field, ctxType, valType)
 
@@ -88,9 +88,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           }
 
           q"""
-            Field[$ctxType, $valType, $fieldType, $fieldType](
+            sangria.schema.Field[$ctxType, $valType, $fieldType, $fieldType](
               ${configName orElse annotationName getOrElse q"$name"},
-              implicitly[GraphQLOutputTypeLookup[$fieldType]].graphqlType,
+              implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$fieldType]].graphqlType,
               ${configDescr orElse annotationDescr},
               $args,
               $resolve,
@@ -117,7 +117,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     })
 
     args.flatten.collect{case na: NormalArg ⇒ na.tree} →
-      q"(c: Context[$ctxType, $valType]) ⇒ c.value.${member.method.name}(...$argsAst)"
+      q"(c: sangria.schema.Context[$ctxType, $valType]) ⇒ c.value.${member.method.name}(...$argsAst)"
   }
 
   private def createArg(arg: Symbol) = arg match {
@@ -134,7 +134,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           q"""
             sangria.schema.Argument.createWithDefault(
               $name,
-              sangria.schema.OptionInputType(GraphQLInputTypeLookup.foo[$tpe]().graphqlType),
+              sangria.schema.OptionInputType(sangria.macros.derive.GraphQLInputTypeLookup.foo[$tpe]().graphqlType),
               $description,
               $defaultValue)
           """
@@ -142,7 +142,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           q"""
             sangria.schema.Argument.createWithoutDefault(
               $name,
-              GraphQLInputTypeLookup.foo[$tpe]().graphqlType,
+              sangria.macros.derive.GraphQLInputTypeLookup.foo[$tpe]().graphqlType,
               $description)
           """
       }

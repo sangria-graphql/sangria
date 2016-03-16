@@ -99,7 +99,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
           else q"${t.asInstanceOf[TypeRef].pre.typeSymbol.name.toTermName}.${value.asTerm.getter}"
 
         q"""
-          EnumValue[$t](
+          sangria.schema.EnumValue[$t](
             $actualName,
             ${configDescr orElse annotationDescr},
             $actualValue,

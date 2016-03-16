@@ -157,6 +157,9 @@ object ObjectType {
   def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
 
+  def createFromMacro[Ctx, Val: ClassTag](name: String, description: Option[String], interfaces: List[InterfaceType[Ctx, _]], fieldsFn: () ⇒ List[Field[Ctx, Val]]) =
+    ObjectType(Named.checkName(name), description, Named.checkObjFields(fieldsFn), interfaces)
+
   implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
 }
