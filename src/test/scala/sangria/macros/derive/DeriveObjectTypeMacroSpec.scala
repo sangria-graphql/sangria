@@ -7,8 +7,11 @@ import sangria.marshalling.ScalaInput
 import sangria.schema._
 import sangria.macros._
 import sangria.util.FutureResultSupport
+import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Success, Try}
 
 class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResultSupport {
   import DeriveMacroTestModel._
@@ -31,41 +34,6 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
   case class Article(title: String, text: Option[String], tags: Option[Vector[String]], comments: Option[Vector[Option[Comment]]], fruit: FruitAnnotated = RedAppleAnnotated)
 
   "ObjectType derivation" should {
-    "foo" in {
-      implicit val c = deriveEnumType[Color.Value]()
-
-
-      class FooBar {
-        @GraphQLField
-        @GraphQLName("foo")
-        def hello(
-          @GraphQLDefault(123)
-          id: Int,
-          songs: Seq[String]
-        )(
-          ctx: Context[Unit, FooBar],
-
-          @GraphQLName("aaa")
-          @GraphQLDescription("bbbb")
-          @GraphQLDefault(ScalaInput.scalaInput(List(Color.Red)))
-          colors: Seq[Color.Value]
-        ) =
-          s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}"
-      }
-
-      val tpe = deriveObjectType[Unit, FooBar](IncludeMethods("hello"))
-
-      val schema = Schema(tpe)
-
-      println(Executor.execute(schema, graphql"""{foo(songs: ["a", "b"])}""", root = new FooBar).await)
-
-      import sangria.parser.DeliveryScheme.Throw
-      import sangria.marshalling.queryAst._
-
-      println(IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, root = new FooBar).await).types.find(_.name == "FooBar")
-        .get.asInstanceOf[IntrospectionObjectType].fields.find(_.name == "foo").get.args)
-    }
-
     "use class name and have no description by default" in {
       val tpe = deriveObjectType[Unit, TestSubject]()
 
@@ -371,6 +339,75 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, root = CompanionA(CompanionB(CompanionC(CompanionEnum1)))).await should be (Map(
         "data" → Map("b" → Map("myC" → Map("e" → "first")))))
+    }
+
+    "foo" in {
+      case class Pet(name: String, size: Option[Int])
+
+      object MyJsonProtocol extends DefaultJsonProtocol {
+        implicit val PetFormat = jsonFormat2(Pet.apply)
+      }
+
+      import MyJsonProtocol._
+      import sangria.marshalling.sprayJson._
+
+      implicit val PetType = InputObjectType[Pet]("Pet", List(
+        InputField("name", StringType),
+        InputField("size", OptionInputType(IntType))
+      ))
+
+      implicit val colorType = deriveEnumType[Color.Value]()
+
+      case class Ctx(num: Int, fooBar: FooBar)
+
+      case class MyDefer(id: Int) extends Deferred[Option[List[Int]]]
+
+      class FooBar {
+        @GraphQLField
+        @GraphQLName("foo")
+        def hello(
+          @GraphQLDefault(123)
+          id: Int,
+          songs: Seq[String]
+        )(
+          ctx: Context[Ctx, Unit],
+
+          @GraphQLDefault(Pet("xxx", Some(322)))
+          pet: Pet,
+
+          @GraphQLName("aaa")
+          @GraphQLDescription("bbbb")
+          @GraphQLDefault(ScalaInput.scalaInput(List(Color.Red)))
+          colors: Seq[Color.Value]
+        ) =
+          s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}, pet = $pet, ctx = ${ctx.ctx.num}"
+
+        @GraphQLField
+        def futureVal: Future[Option[List[Int]]] = Future.successful(Some(List(11, 22)))
+
+        @GraphQLField
+        def tryVal: Try[Option[List[Int]]] = Success(Some(List(33, 44)))
+
+        @GraphQLField
+        def deferVal = MyDefer(1)
+
+        @GraphQLField
+        def actionVal = DeferredFutureValue(Future.successful(MyDefer(1)))
+
+        @GraphQLField
+        val bar: Option[List[Int]] = Some(List(1, 2, 3))
+      }
+
+      val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar)
+
+      val schema = Schema(tpe)
+
+      println(Executor.execute(schema, graphql"""{foo(songs: ["a", "b"]), bar, futureVal, tryVal}""", Ctx(987, new FooBar)).await)
+
+      import sangria.parser.DeliveryScheme.Throw
+
+      println(IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await).types.find(_.name == "FooBar")
+        .get.asInstanceOf[IntrospectionObjectType].fields.find(_.name == "foo").get.args)
     }
   }
 }

@@ -1,8 +1,9 @@
 package sangria.macros.derive
 
 import sangria.macros._
-import sangria.schema.Context
+import sangria.schema.{Action, Deferred, Context}
 
+import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
 class DeriveObjectTypeMacro(context: blackbox.Context) extends {
@@ -10,11 +11,24 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
 } with DeriveMacroSupport {
   import c.universe._
 
-  def deriveObjectType[Ctx : WeakTypeTag, Val : WeakTypeTag](config: Tree*) = {
+  def deriveContextObjectType[Ctx : WeakTypeTag, CtxVal : WeakTypeTag, Val : WeakTypeTag](fn: Tree, config: Tree*) = {
+    val ctx = weakTypeTag[Ctx]
+    val ctxVal = weakTypeTag[CtxVal]
+    val v = weakTypeTag[Val]
+
+    deriveObjectType(ctx.tpe, Some(ctxVal.tpe → fn), v.tpe, config)
+  }
+
+  def deriveNormalObjectType[Ctx : WeakTypeTag, Val : WeakTypeTag](config: Tree*) = {
     val ctx = weakTypeTag[Ctx]
     val v = weakTypeTag[Val]
 
-    val validatedConfig = validateObjectConfig(config, v.tpe)
+    deriveObjectType(ctx.tpe, None, v.tpe, config)
+  }
+
+  def deriveObjectType(ctxType: Type, ctxValType: Option[(Type, Tree)], valType: Type, config: Seq[Tree]) = {
+    val targetType = ctxValType.fold(valType)(_._1)
+    val validatedConfig = validateObjectConfig(config, targetType)
 
     val errors = validatedConfig.collect {case Left(error) ⇒ error}
 
@@ -22,15 +36,15 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     else {
       val validConfig = validatedConfig.collect {case Right(cfg) ⇒ cfg}
 
-      collectFields(validConfig, ctx.tpe, v.tpe) match {
+      collectFields(validConfig, ctxType, targetType, valType, ctxValType.isDefined) match {
         case Left(errors) ⇒ reportErrors(errors)
         case Right(fields) ⇒
-          val tpeName = q"${v.tpe.typeSymbol.name.decodedName.toString}"
+          val tpeName = q"${targetType.typeSymbol.name.decodedName.toString}"
 
-          val annotationName = symbolName(v.tpe.typeSymbol.annotations)
+          val annotationName = symbolName(targetType.typeSymbol.annotations)
           val configName = validConfig.collect{case MacroName(name) ⇒ name}.lastOption
 
-          val annotationDesc = symbolDescription(v.tpe.typeSymbol.annotations)
+          val annotationDesc = symbolDescription(targetType.typeSymbol.annotations)
           val configDesc = validConfig.collect{case MacroDescription(name) ⇒ name}.lastOption
 
           val interfaces = validConfig.foldLeft(List[Tree]()) {
@@ -39,6 +53,8 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           }
 
           q"""
+            ${ctxValType.fold(q"")(cv ⇒ q"val valFn = ${cv._2}")}
+
             sangria.schema.ObjectType.createFromMacro(
               ${configName orElse annotationName getOrElse tpeName},
               ${configDesc orElse annotationDesc},
@@ -49,8 +65,8 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     }
   }
 
-  private def collectFields(config: Seq[MacroDeriveObjectSetting], ctxType: Type, valType: Type): Either[List[(Position, String)], List[Tree]] = {
-    val knownMembers = findKnownMembers(valType, config.foldLeft(Set.empty[String]) {
+  private def collectFields(config: Seq[MacroDeriveObjectSetting], ctxType: Type, targetType: Type, valType: Type, useFn: Boolean): Either[List[(Position, String)], List[Tree]] = {
+    val knownMembers = findKnownMembers(targetType, config.foldLeft(Set.empty[String]) {
       case (acc, MacroIncludeMethods(methods)) ⇒ acc ++ methods
       case (acc, _) ⇒ acc
     })
@@ -62,11 +78,12 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
         val classFields = fields map { field ⇒
           val (args, resolve) =
             if (field.accessor)
-              Nil → q"(c: sangria.schema.Context[$ctxType, $valType]) ⇒ c.value.${field.method.name}"
+              Nil → q"(c: sangria.schema.Context[$ctxType, $valType]) ⇒ ${if (useFn) q"valFn(c.ctx)" else q"c.value"}.${field.method.name}"
             else
-              fieldWithArguments(field, ctxType, valType)
+              fieldWithArguments(field, ctxType, valType, useFn)
 
           val fieldType = field.method.returnType
+          val actualFieldType = findActualFieldType(fieldType)
 
           val name = field.name
           val annotationName = symbolName(field.annotations)
@@ -88,9 +105,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           }
 
           q"""
-            sangria.schema.Field[$ctxType, $valType, $fieldType, $fieldType](
+            sangria.schema.Field[$ctxType, $valType, $actualFieldType, $actualFieldType](
               ${configName orElse annotationName getOrElse q"$name"},
-              implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$fieldType]].graphqlType,
+              implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$actualFieldType]].graphqlType,
               ${configDescr orElse annotationDescr},
               $args,
               $resolve,
@@ -109,7 +126,19 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     }
   }
 
-  private def fieldWithArguments(member: KnownMember, ctxType: Type, valType: Type) = {
+  private def findActualFieldType(fieldType: Type) =
+    if (fieldType.erasure <:< typeOf[Future[_]].erasure && fieldType.typeArgs.nonEmpty)
+      fieldType.typeArgs.head
+    else if (fieldType.erasure <:< typeOf[scala.util.Try[_]].erasure && fieldType.typeArgs.nonEmpty)
+      fieldType.typeArgs.head
+    else if (fieldType.erasure <:< typeOf[Deferred[_]].erasure && fieldType.baseType(typeOf[Deferred[_]].typeSymbol).typeArgs.nonEmpty)
+      fieldType.baseType(typeOf[Deferred[_]].typeSymbol).typeArgs.head
+    else if (fieldType.erasure <:< typeOf[Action[_, _]].erasure && fieldType.baseType(typeOf[Action[_, _]].typeSymbol).typeArgs.size == 2)
+      fieldType.baseType(typeOf[Action[_, _]].typeSymbol).typeArgs(1)
+    else
+      fieldType
+
+  private def fieldWithArguments(member: KnownMember, ctxType: Type, valType: Type, useFn: Boolean) = {
     val args = member.method.paramLists.map(_ map createArg)
     val argsAst = args map (_ map {
       case NormalArg(name, tpe, _) ⇒ q"c.arg[$tpe]($name)"
@@ -117,7 +146,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     })
 
     args.flatten.collect{case na: NormalArg ⇒ na.tree} →
-      q"(c: sangria.schema.Context[$ctxType, $valType]) ⇒ c.value.${member.method.name}(...$argsAst)"
+      q"(c: sangria.schema.Context[$ctxType, $valType]) ⇒ ${if (useFn) q"valFn(c.ctx)" else q"c.value"}.${member.method.name}(...$argsAst)"
   }
 
   private def createArg(arg: Symbol) = arg match {
@@ -134,7 +163,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           q"""
             sangria.schema.Argument.createWithDefault(
               $name,
-              sangria.schema.OptionInputType(sangria.macros.derive.GraphQLInputTypeLookup.foo[$tpe]().graphqlType),
+              sangria.schema.OptionInputType(sangria.macros.derive.GraphQLInputTypeLookup.finder[$tpe]().graphqlType),
               $description,
               $defaultValue)
           """
@@ -142,7 +171,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           q"""
             sangria.schema.Argument.createWithoutDefault(
               $name,
-              sangria.macros.derive.GraphQLInputTypeLookup.foo[$tpe]().graphqlType,
+              sangria.macros.derive.GraphQLInputTypeLookup.finder[$tpe]().graphqlType,
               $description)
           """
       }
@@ -156,6 +185,8 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
         KnownMember(tpe, m, findCaseClassAccessorAnnotations(tpe, m), accessor = true)
       case m: MethodSymbol if memberField(m.annotations) || includeMethods.contains(m.name.decodedName.toString) ⇒
         KnownMember(tpe, m, m.annotations, accessor = false)
+      case value: TermSymbol if value.isVal && (memberField(value.annotations) || includeMethods.contains(value.name.decodedName.toString)) ⇒
+        KnownMember(tpe, value.getter.asMethod, value.annotations, accessor = false)
     }.toList.reverse
 
   private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol): List[Annotation] =

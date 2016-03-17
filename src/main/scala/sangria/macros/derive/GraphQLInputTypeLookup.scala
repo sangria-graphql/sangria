@@ -27,9 +27,9 @@ object GraphQLInputTypeLookup extends GraphQLInputTypeLookupLowPrio {
     def graphqlType = OptionInputType(ev.graphqlType)
   }
 
-  def foo[T] = new Fooer[T]
+  def finder[T] = new Finder[T]
 
-  class Fooer[T] {
+  class Finder[T] {
     def apply[G]()(implicit ev: GraphQLInputTypeLookup[T, G]) = ev
   }
 }
