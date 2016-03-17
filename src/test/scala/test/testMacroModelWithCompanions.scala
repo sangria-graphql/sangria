@@ -1,5 +1,8 @@
 package test
 
+// these classes are in totally different package in order to ensure that macro generates correct identifiers that
+// can be accessed outside of the `sangria` package.
+
 import sangria.macros.derive._
 import sangria.schema.{OutputType, ObjectType}
 

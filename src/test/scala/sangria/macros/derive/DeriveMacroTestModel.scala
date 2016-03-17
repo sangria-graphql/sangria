@@ -57,4 +57,6 @@ object DeriveMacroTestModel {
   object Color extends Enumeration {
     val Red, LightGreen, DarkBlue = Value
   }
+
+  case class TestDefer(id: Int) extends Deferred[Option[List[Int]]]
 }

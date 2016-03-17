@@ -7,7 +7,7 @@ import sangria.marshalling.ScalaInput
 import sangria.schema._
 import sangria.macros._
 import sangria.util.FutureResultSupport
-import spray.json.DefaultJsonProtocol
+import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -240,6 +240,24 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       tpe.fields(1).fieldType should be (ListType(StringType))
     }
 
+    "shupport vals" in {
+      class MyTest {
+        @GraphQLField
+        @GraphQLName("foo")
+        @GraphQLDescription("test field")
+        val bar: Option[List[Int]] = Some(List(1, 2, 3))
+      }
+
+      val tpe = deriveObjectType[Unit, MyTest]()
+
+      tpe.fields should have size 1
+
+      tpe.fields(0).name should be ("foo")
+      tpe.fields(0).description should be (Some("test field"))
+      tpe.fields(0).deprecationReason should be (None)
+      tpe.fields(0).fieldType should be (OptionType(ListType(IntType)))
+    }
+
     "be able to find other types via implicit GraphQL types" in {
       implicit val FruitType = deriveEnumType[FruitAnnotated]()
       implicit val ColorType = deriveEnumType[ColorAnnotated.Value]()
@@ -341,7 +359,29 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         "data" → Map("b" → Map("myC" → Map("e" → "first")))))
     }
 
-    "foo" in {
+    "support `Future`, `Try`, `Defer` and `Action` return types" in {
+      case class MyTest(deferVal: TestDefer) {
+        @GraphQLField
+        def futureVal: Future[List[Int]] = Future.successful(List(11, 22))
+
+        @GraphQLField
+        def tryVal: Try[Option[List[Int]]] = Success(Some(List(33, 44)))
+
+        @GraphQLField
+        def actionVal = DeferredFutureValue(Future.successful(TestDefer(1)))
+      }
+
+      val tpe = deriveObjectType[Unit, MyTest]()
+
+      tpe.fields.sortBy(_.name).map(f ⇒ f.name → f.fieldType) should be (List(
+        "actionVal" → OptionType(ListType(IntType)),
+        "deferVal" → OptionType(ListType(IntType)),
+        "futureVal" → ListType(IntType),
+        "tryVal" → OptionType(ListType(IntType))
+      ))
+    }
+
+    "derive methods with arguments via annotations" in {
       case class Pet(name: String, size: Option[Int])
 
       object MyJsonProtocol extends DefaultJsonProtocol {
@@ -359,8 +399,6 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       implicit val colorType = deriveEnumType[Color.Value]()
 
       case class Ctx(num: Int, fooBar: FooBar)
-
-      case class MyDefer(id: Int) extends Deferred[Option[List[Int]]]
 
       class FooBar {
         @GraphQLField
@@ -381,33 +419,37 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
           colors: Seq[Color.Value]
         ) =
           s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}, pet = $pet, ctx = ${ctx.ctx.num}"
-
-        @GraphQLField
-        def futureVal: Future[Option[List[Int]]] = Future.successful(Some(List(11, 22)))
-
-        @GraphQLField
-        def tryVal: Try[Option[List[Int]]] = Success(Some(List(33, 44)))
-
-        @GraphQLField
-        def deferVal = MyDefer(1)
-
-        @GraphQLField
-        def actionVal = DeferredFutureValue(Future.successful(MyDefer(1)))
-
-        @GraphQLField
-        val bar: Option[List[Int]] = Some(List(1, 2, 3))
       }
 
       val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar)
 
       val schema = Schema(tpe)
 
-      println(Executor.execute(schema, graphql"""{foo(songs: ["a", "b"]), bar, futureVal, tryVal}""", Ctx(987, new FooBar)).await)
+      Executor.execute(schema, graphql"""{foo(songs: ["a", "b"]), foo1: foo(songs: ["a", "b"], pet: {name: "mypet", size: 156})}""", Ctx(987, new FooBar)).await should be (
+        JsObject("data" → JsObject(
+          "foo" → JsString("id = 123, songs = a,b, cc = Red, pet = Pet(xxx,Some(322)), ctx = 987"),
+          "foo1" → JsString("id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"))))
 
       import sangria.parser.DeliveryScheme.Throw
 
-      println(IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await).types.find(_.name == "FooBar")
-        .get.asInstanceOf[IntrospectionObjectType].fields.find(_.name == "foo").get.args)
+      val intro = IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
+      val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
+
+      introType.fields should have size 1
+
+      val field = introType.fields.head
+
+      field.name should be ("foo")
+
+      field.args should have size 4
+
+      field.args should be (List(
+        IntrospectionInputValue("id", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "Int"), Some("123")),
+        IntrospectionInputValue("songs", None,
+          IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),None),
+        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), Some("""{"name":"xxx","size":322}""")),
+        IntrospectionInputValue("aaa", Some("bbbb"), IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))), Some("[\"Red\"]")))
+      )
     }
   }
 }
