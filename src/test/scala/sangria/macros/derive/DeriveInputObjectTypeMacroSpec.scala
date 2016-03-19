@@ -2,6 +2,8 @@ package sangria.macros.derive
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
+import sangria.marshalling.FromInput
+import sangria.marshalling.ScalaInput._
 import sangria.schema._
 import sangria.macros._
 import sangria.util.FutureResultSupport
@@ -10,7 +12,7 @@ import spray.json._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureResultSupport {
-  case class TestInputObj(id: String, list: List[String] = Nil, excluded: Option[List[Option[Int]]] = Some(List(Some(123), Some(456))))
+  case class TestInputObj(id: String, list: List[String], excluded: Option[List[Option[Int]]])
 
   @GraphQLName("MyInput")
   @GraphQLDescription("My type!")
@@ -19,12 +21,28 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
     id: String,
 
     @GraphQLName("myList")
-    list: List[String] = Nil,
+    list: List[String],
 
     @GraphQLExclude
     excluded: Int = 123)
 
-  "ObjectType derivation" should {
+  case class A(id: Int, b: Option[B])
+  case class B(name: String, a: A, b: Option[B])
+
+  case class TestDeeper(s: String, @GraphQLDefault(123) foo: Int = 456)
+  case class TestNested(
+    stub: TestDeeper,
+    @GraphQLDefault(scalaInput(List(3, 4, 5)))
+    name: List[Int],
+    @GraphQLDefault(Some(List(TestDeeper("aa", 1))): Option[List[TestDeeper]])
+    deeper: Option[List[TestDeeper]])
+  case class TestDefaults(
+    id: String = "fgh",
+    list: Int = 324,
+    nested: TestNested,
+    nestedDef: Option[List[TestNested]] = Some(List(TestNested(TestDeeper("ee", 1), List(1), None), TestNested(TestDeeper("ff", 1), List(1), None))))
+
+  "InputObjectType derivation" should {
     "use class name and have no description by default" in {
       val tpe = deriveInputObjectType[TestInputObj]()
 
@@ -141,12 +159,8 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
     }
 
     "be able handle recursive input types with replaced fields" in {
-      case class A(id: Int, b: Option[B])
-      case class B(name: String, a: A, b: Option[B])
-
       class Query {
-        @GraphQLField
-        def foo(a: A) = "" + a
+        @GraphQLField def foo(a: A) = "" + a
       }
 
       object MyJsonProtocol extends DefaultJsonProtocol {
@@ -174,6 +188,45 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
       Executor.execute(schema, query, root = new Query).await should be (
         JsObject("data" → JsObject("foo" →
           JsString("A(21,Some(B(it's b,A(34,None),Some(B(another,A(56,None),None)))))"))))
+    }
+
+    "be able to use default values" in {
+      class Query {
+        @GraphQLField def foo(a: TestDefaults) = "" + a
+      }
+
+      object MyJsonProtocol extends DefaultJsonProtocol {
+        implicit val TestDeeperFormat = jsonFormat2(TestDeeper.apply)
+        implicit val TestNestedFormat = jsonFormat3(TestNested.apply)
+        implicit val TestDefaultsFormat = jsonFormat4(TestDefaults.apply)
+      }
+
+      import MyJsonProtocol._
+      import sangria.marshalling.sprayJson._
+
+      implicit lazy val TestDeeperType = deriveInputObjectType[TestDeeper]()
+      implicit lazy val TestNestedType = deriveInputObjectType[TestNested]()
+      implicit lazy val TestDefaultsType = deriveInputObjectType[TestDefaults]()
+
+      TestDeeperType.fields.sortBy(_.name).map(f ⇒ f.name → f.fieldType) should be (List(
+        "foo" → OptionInputType(IntType),
+        "s" → StringType))
+
+      TestNestedType.fields.sortBy(_.name).map(f ⇒ f.name → f.fieldType) should be (List(
+        "deeper" → OptionInputType(ListInputType(TestDeeperType)),
+        "name" → OptionInputType(ListInputType(IntType)),
+        "stub" → TestDeeperType))
+
+      val QueryType = deriveObjectType[Unit, Query]()
+
+      val schema = Schema(QueryType)
+
+      val query = graphql"""{foo(a: {nested: {stub: {s: "foo"}}})}"""
+
+      Executor.execute(schema, query, root = new Query).await should be (
+        JsObject("data" → JsObject("foo" →
+          JsString("TestDefaults(fgh,324,TestNested(TestDeeper(foo,123),List(3, 4, 5),Some(List(TestDeeper(aa,1)))),Some(List(TestNested(TestDeeper(ee,1),List(1),Some(List(TestDeeper(aa,1)))), TestNested(TestDeeper(ff,1),List(1),Some(List(TestDeeper(aa,1)))))))"))))
+
     }
   }
 }

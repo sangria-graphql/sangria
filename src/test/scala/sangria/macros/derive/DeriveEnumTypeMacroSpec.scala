@@ -30,7 +30,7 @@ class DeriveEnumTypeMacroSpec extends WordSpec with Matchers {
   @GraphQLDeprecated("Not tasty anymore")
   case object MegaOrangeAnnotated extends FruitAnnotated
 
-  "Singleton Enum derivation" should {
+  "Enum derivation" should {
     "use enum name and have no description by default" in {
       val singletonEnum = deriveEnumType[Fruit]()
       val enum = deriveEnumType[Color.Value]()

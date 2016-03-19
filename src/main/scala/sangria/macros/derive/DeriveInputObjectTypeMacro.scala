@@ -32,14 +32,16 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
             sangria.schema.InputObjectType.createFromMacro[$targetType](
               ${configName orElse annotationName getOrElse tpeName},
               ${configDesc orElse annotationDesc},
-              () ⇒ ${fields map c.untypecheck})
+              () ⇒ $fields)
           """
       }
     }
   }
 
   private def findApplyMethod(tpe: Type): Either[(Position, String), Option[(Type, MethodSymbol)]] =
-    if (tpe.companion =:= NoType) Right(None)
+    if (tpe.companion =:= NoType) {
+      Left(c.enclosingPosition → s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. Please consider defining it as a top-level object or directly inside of another class or object.")
+    }
     else {
       val applyMethods = tpe.companion.members.collect {
         case m: MethodSymbol if m.name.decodedName.toString == "apply" ⇒ m
@@ -70,12 +72,34 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
               val annotationDescr = symbolDescription(field.annotations)
               val configDescr = config.collect{case MacroDocumentField(`name`, tree, _) ⇒ tree}.lastOption
 
-              q"""
-                sangria.schema.InputField.createFromMacroWithoutDefault(
-                  ${configName orElse annotationName getOrElse q"$name"},
-                  sangria.macros.derive.GraphQLInputTypeLookup.finder[$fieldType]().graphqlType,
-                  ${configDescr orElse annotationDescr})
-              """
+              val defaultAnnotation = symbolDefault(field.annotations)
+              val defaultSig = field.defaultValue.map {case (comp, defaultName) ⇒ q"${comp.typeSymbol.name.toTermName}.$defaultName"}
+              val default = defaultAnnotation orElse defaultSig
+
+              default match {
+                case Some(d) ⇒
+                  val ft =
+                    if (fieldType.erasure <:< typeOf[Option[_]].erasure)
+                      q"sangria.macros.derive.GraphQLInputTypeLookup.finder[$fieldType]().graphqlType"
+                    else
+                      q"sangria.macros.derive.GraphQLInputTypeLookup.finder[Option[$fieldType]]().graphqlType"
+
+                  q"""
+                    sangria.schema.InputField.createFromMacroWithDefault(
+                      ${configName orElse annotationName getOrElse q"$name"},
+                      $ft,
+                      ${configDescr orElse annotationDescr},
+                      $d)
+                  """
+                case None ⇒
+                  q"""
+                    sangria.schema.InputField.createFromMacroWithoutDefault(
+                      ${configName orElse annotationName getOrElse q"$name"},
+                      sangria.macros.derive.GraphQLInputTypeLookup.finder[$fieldType]().graphqlType,
+                      ${configDescr orElse annotationDescr})
+                  """
+
+              }
             }
 
             val allFields = classFields ++ additionalFields(config)
@@ -95,16 +119,18 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
         KnownMember(tpe, m, annotations, default)
     }.toList.reverse
 
-  private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol, applyInfo: Option[(Type, MethodSymbol)]): (List[Annotation], Option[(Type, Tree)]) =
+  private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol, applyInfo: Option[(Type, MethodSymbol)]): (List[Annotation], Option[(Type, TermName)]) =
     applyInfo match {
       case Some((companion, apply)) ⇒
-        val annotations = for {
-          pl ← apply.paramLists
-          p ← pl
-          if p.name.decodedName.toString == member.name.decodedName.toString
-        } yield p.annotations
+        apply.paramLists.flatten.zipWithIndex.find(_._1.name.decodedName.toString == member.name.decodedName.toString) match {
+          case Some((param: TermSymbol, idx)) if param.isParamWithDefault ⇒
+            param.annotations → Some(companion → defaultMethodArgValue(apply.name.decodedName.toString, idx + 1).asInstanceOf[TermName])
+          case Some((param, idx)) ⇒
+            param.annotations → None
+          case None ⇒
+            Nil → None
+        }
 
-        annotations.toList.flatten → None // TODO: default
       case None ⇒
         Nil → None
     }
@@ -193,7 +219,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
         "Please define subclasses of `DeriveInputObjectTypeSetting` directly in the argument list of the macro.")
   }
 
-  private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation], defaultValue: Option[(Type, Tree)]) {
+  private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation], defaultValue: Option[(Type, TermName)]) {
     lazy val name = method.name.decodedName.toString
   }
 

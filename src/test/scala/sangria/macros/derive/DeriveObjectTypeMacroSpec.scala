@@ -33,6 +33,8 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
   case class Comment(author: String, text: Option[String], color: ColorAnnotated.Value = ColorAnnotated.Red)
   case class Article(title: String, text: Option[String], tags: Option[Vector[String]], comments: Option[Vector[Option[Comment]]], fruit: FruitAnnotated = RedAppleAnnotated)
 
+  case class Pet(name: String, size: Option[Int])
+
   "ObjectType derivation" should {
     "use class name and have no description by default" in {
       val tpe = deriveObjectType[Unit, TestSubject]()
@@ -382,8 +384,6 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
     }
 
     "derive methods with arguments via annotations" in {
-      case class Pet(name: String, size: Option[Int])
-
       object MyJsonProtocol extends DefaultJsonProtocol {
         implicit val PetFormat = jsonFormat2(Pet.apply)
       }
