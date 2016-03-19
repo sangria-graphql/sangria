@@ -41,50 +41,50 @@ sealed trait Named {
 object Named {
   private val NameRegexp = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
 
-  private[schema] def doCheckNonEmptyFields(fields: Seq[Named]): Unit =
+  private[sangria] def doCheckNonEmptyFields(fields: Seq[Named]): Unit =
     if (fields.isEmpty)
       throw new IllegalArgumentException("No fields provided! You need to provide at least one field to a Type.")
 
-  private[schema] def doCheckUniqueFields(fields: Seq[Named]): Unit =
+  private[sangria] def doCheckUniqueFields(fields: Seq[Named]): Unit =
     if (fields.map(_.name).toSet.size != fields.size)
       throw new IllegalArgumentException("All fields within a Type should have unique names!")
 
-  private[schema] def doCheckFieldNames(fields: Seq[Named]): Unit =
+  private[sangria] def doCheckFieldNames(fields: Seq[Named]): Unit =
     fields.foreach(f ⇒ checkName(f.name))
 
-  private[schema] def checkObjFields[T <: Seq[Named]](fields: T): T = {
+  private[sangria] def checkObjFields[T <: Seq[Named]](fields: T): T = {
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     fields
   }
 
-  private[schema] def checkIntFields[T <: Seq[Named]](fields: T): T = {
+  private[sangria] def checkIntFields[T <: Seq[Named]](fields: T): T = {
     doCheckNonEmptyFields(fields)
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     fields
   }
 
-  private[schema] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
+  private[sangria] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     () ⇒ fields
   }
 
-  private[schema] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
+  private[sangria] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckNonEmptyFields(fields)
     doCheckFieldNames(fields)
     () ⇒ fields
   }
 
-  private[schema] def checkObjFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+  private[sangria] def checkObjFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
     () ⇒ checkObjFields(fieldsFn())
 
-  private[schema] def checkIntFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+  private[sangria] def checkIntFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
     () ⇒ checkIntFields(fieldsFn())
 
-  private[schema] def checkName(name: String) = {
+  private[sangria] def checkName(name: String) = {
     if (!NameRegexp.pattern.matcher(name).matches())
       throw new IllegalArgumentException(s"Name '$name' is not valid GraphQL name! Valid name should satisfy following regex: /$NameRegexp/.")
 
@@ -129,7 +129,7 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
     else fieldsByName.getOrElse(fieldName, Vector.empty)
 }
 
-case class ObjectType[Ctx, Val: ClassTag] private[schema] (
+case class ObjectType[Ctx, Val: ClassTag] private[sangria] (
   name: String,
   description: Option[String],
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
@@ -157,11 +157,14 @@ object ObjectType {
   def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
     ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
 
+  def createFromMacro[Ctx, Val: ClassTag](name: String, description: Option[String], interfaces: List[InterfaceType[Ctx, _]], fieldsFn: () ⇒ List[Field[Ctx, Val]]) =
+    ObjectType(Named.checkName(name), description, Named.checkObjFields(fieldsFn), interfaces)
+
   implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
 }
 
-case class InterfaceType[Ctx, Val] private[schema] (
+case class InterfaceType[Ctx, Val] private[sangria] (
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
@@ -232,7 +235,7 @@ case class UnionType[Ctx](
   description: Option[String] = None,
   types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType
 
-case class Field[Ctx, Val] private[schema] (
+case class Field[Ctx, Val] private[sangria] (
     name: String,
     fieldType: OutputType[_],
     description: Option[String],
@@ -283,7 +286,7 @@ trait InputValue[T] {
   def defaultValue: Option[(_, ToInput[_, _])]
 }
 
-case class Argument[T] private[schema] (
+case class Argument[T] private[sangria] (
     name: String,
     argumentType: InputType[_],
     description: Option[String],
@@ -320,6 +323,19 @@ object Argument {
       name: String,
       argumentType: InputType[T])(implicit fromInput: FromInput[T], res: WithoutInputTypeTags[T]): Argument[res.Res] =
     Argument(Named.checkName(name), argumentType, None, None, fromInput)
+
+  def createWithoutDefault[T](
+      name: String,
+      argumentType: InputType[T],
+      description: Option[String])(implicit fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, description, None, fromInput)
+
+  def createWithDefault[T, Default](
+      name: String,
+      argumentType: InputType[T],
+      description: Option[String],
+      defaultValue: Default)(implicit toInput: ToInput[Default, _], fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
+    Argument(Named.checkName(name), argumentType, description, Some(defaultValue → toInput), fromInput)
 }
 
 trait WithoutInputTypeTags[T] {
@@ -459,7 +475,7 @@ case class EnumValue[+T](
   value: T,
   deprecationReason: Option[String] = None) extends Named
 
-case class InputObjectType[T] private[schema] (
+case class InputObjectType[T] private[sangria] (
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[InputField[_]]
@@ -480,6 +496,9 @@ object InputObjectType {
     InputObjectType(Named.checkName(name), None, Named.checkIntFields(fieldsFn))
   def apply[T](name: String, description: String, fieldsFn: () ⇒ List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
     InputObjectType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn))
+
+  def createFromMacro[T](name: String, description: Option[String] = None, fieldsFn: () ⇒ List[InputField[_]]) =
+    InputObjectType[T](Named.checkName(name), description, Named.checkIntFields(fieldsFn))
 }
 
 trait InputObjectDefaultResult[T] {
@@ -498,12 +517,12 @@ trait InputObjectDefaultResultLowPrio {
   }
 }
 
-case class InputField[T] private[schema] (
-    name: String,
-    fieldType: InputType[T],
-    description: Option[String],
-    defaultValue: Option[(_, ToInput[_, _])]) extends InputValue[T] with Named {
-
+case class InputField[T] private[sangria] (
+  name: String,
+  fieldType: InputType[T],
+  description: Option[String],
+  defaultValue: Option[(_, ToInput[_, _])]
+) extends InputValue[T] with Named {
   if (!fieldType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
     throw new IllegalArgumentException(s"Input field '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this fields nullable or remove the default value.")
 
@@ -517,11 +536,19 @@ object InputField {
   def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, None, Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
+  def apply[T](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, Some(description), None).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
+  def apply[T](name: String, fieldType: InputType[T])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, None, None).asInstanceOf[InputField[res.Res]]
+
+  def createFromMacroWithDefault[T, Default](
+    name: String, fieldType: InputType[T], description: Option[String], defaultValue: Default
+  )(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
+    InputField(name, fieldType, description, Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
+
+  def createFromMacroWithoutDefault[T](name: String, fieldType: InputType[T], description: Option[String])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
+    InputField(name, fieldType, description, None).asInstanceOf[InputField[res.Res]]
 }
 
 case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType
