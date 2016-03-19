@@ -496,6 +496,9 @@ object InputObjectType {
     InputObjectType(Named.checkName(name), None, Named.checkIntFields(fieldsFn))
   def apply[T](name: String, description: String, fieldsFn: () ⇒ List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
     InputObjectType(Named.checkName(name), Some(description), Named.checkIntFields(fieldsFn))
+
+  def createFromMacro[T](name: String, description: Option[String] = None, fieldsFn: () ⇒ List[InputField[_]]) =
+    InputObjectType[T](Named.checkName(name), description, Named.checkIntFields(fieldsFn))
 }
 
 trait InputObjectDefaultResult[T] {
@@ -533,11 +536,19 @@ object InputField {
   def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, None, Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
+  def apply[T](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, Some(description), None).asInstanceOf[InputField[res.Res]]
 
-  def apply[T, Default](name: String, fieldType: InputType[T])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
+  def apply[T](name: String, fieldType: InputType[T])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(name, fieldType, None, None).asInstanceOf[InputField[res.Res]]
+
+  def createFromMacroWithDefault[T, Default](
+    name: String, fieldType: InputType[T], description: Option[String], defaultValue: Default
+  )(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
+    InputField(name, fieldType, description, Some(defaultValue → toInput)).asInstanceOf[InputField[res.Res]]
+
+  def createFromMacroWithoutDefault[T](name: String, fieldType: InputType[T], description: Option[String])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
+    InputField(name, fieldType, description, None).asInstanceOf[InputField[res.Res]]
 }
 
 case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType

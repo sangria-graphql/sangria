@@ -214,7 +214,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
 
     val excluded = config.foldLeft(Set.empty[String]){
       case (acc, MacroExcludeFields(fields, _)) ⇒ acc ++ fields
-      case (acc, MacroOverrideField(fieldName, _, _)) ⇒ acc + fieldName
+      case (acc, MacroReplaceField(fieldName, _, _)) ⇒ acc + fieldName
       case (acc, _) ⇒ acc
     }
 
@@ -259,7 +259,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       case MacroFieldComplexity(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
         unknownMember(pos, fieldName) :: Nil
 
-      case MacroOverrideField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
+      case MacroReplaceField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
         unknownMember(pos, fieldName) :: Nil
 
       case _ ⇒ Nil
@@ -269,7 +269,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   private def additionalFields(config: Seq[MacroDeriveObjectSetting]) =
     config.foldLeft(List[Tree]()){
       case (acc, MacroAddFields(fields)) ⇒ acc ++ fields
-      case (acc, MacroOverrideField(_, field, _)) ⇒ acc :+ field
+      case (acc, MacroReplaceField(_, field, _)) ⇒ acc :+ field
       case (acc, _) ⇒ acc
     }
 
@@ -314,12 +314,12 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     case q"$setting.apply[$_, $_](..$fields)" if checkSetting[AddFields.type](setting) ⇒
       Right(MacroAddFields(fields))
 
-    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, $field)" if checkSetting[OverrideField.type](setting) ⇒
-      Right(MacroOverrideField(fieldName, field, tree.pos))
+    case tree @ q"$setting.apply[$_, $_](${fieldName: String}, $field)" if checkSetting[ReplaceField.type](setting) ⇒
+      Right(MacroReplaceField(fieldName, field, tree.pos))
 
     case tree ⇒ Left(tree.pos,
       "Unsupported shape of derivation config. " +
-          "Please define subclasses of `DeriveObjectTypeConfig` directly in the argument list of the macro.")
+          "Please define subclasses of `DeriveObjectTypeSetting` directly in the argument list of the macro.")
   }
 
   private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation], accessor: Boolean) {
@@ -347,5 +347,5 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   case class MacroIncludeMethods(methodNames: Set[String]) extends MacroDeriveObjectSetting
   case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectSetting
   case class MacroAddFields(fields: List[Tree]) extends MacroDeriveObjectSetting
-  case class MacroOverrideField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectSetting
+  case class MacroReplaceField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectSetting
 }

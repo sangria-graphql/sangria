@@ -18,5 +18,5 @@ case class FieldComplexity[Ctx, Val](fieldName: String, complexity: (Ctx, Args, 
 case class IncludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectSetting[Ctx, Val]
 case class IncludeMethods[Ctx, Val](methodNames: String*) extends DeriveObjectSetting[Ctx, Val]
 case class ExcludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectSetting[Ctx, Val]
-case class OverrideField[Ctx, Val](fieldName: String, field: Field[Ctx, Val]) extends DeriveObjectSetting[Ctx, Val]
+case class ReplaceField[Ctx, Val](fieldName: String, field: Field[Ctx, Val]) extends DeriveObjectSetting[Ctx, Val]
 case class AddFields[Ctx, Val](fields: Field[Ctx, Val]*) extends DeriveObjectSetting[Ctx, Val]

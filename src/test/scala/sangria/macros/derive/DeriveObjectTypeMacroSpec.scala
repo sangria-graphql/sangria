@@ -148,8 +148,8 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
     "allow to override fields" in {
       val tpe = deriveObjectType[Unit, TestSubject](
-        OverrideField("id", Field("id", ListType(StringType), resolve = _.value.list)),
-        OverrideField("list", Field("bar", BooleanType, resolve = _ ⇒ true)))
+        ReplaceField("id", Field("id", ListType(StringType), resolve = _.value.list)),
+        ReplaceField("list", Field("bar", BooleanType, resolve = _ ⇒ true)))
 
       tpe.fields should have size 3
 
@@ -333,11 +333,11 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       case class B(name: String, a: A, b: B)
 
       implicit lazy val AType = deriveObjectType[Unit, A](
-        OverrideField("b", Field("b", BType, resolve = _.value.b)))
+        ReplaceField("b", Field("b", BType, resolve = _.value.b)))
 
       implicit lazy val BType: ObjectType[Unit, B] = deriveObjectType(
-        OverrideField("a", Field("a", AType, resolve = _.value.a)),
-        OverrideField("b", Field("b", BType, resolve = _.value.b)))
+        ReplaceField("a", Field("a", AType, resolve = _.value.a)),
+        ReplaceField("b", Field("b", BType, resolve = _.value.b)))
 
       val schema = Schema(AType)
 
@@ -391,11 +391,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       import MyJsonProtocol._
       import sangria.marshalling.sprayJson._
 
-      implicit val PetType = InputObjectType[Pet]("Pet", List(
-        InputField("name", StringType),
-        InputField("size", OptionInputType(IntType))
-      ))
-
+      implicit val PetType = deriveInputObjectType[Pet]()
       implicit val colorType = deriveEnumType[Color.Value]()
 
       case class Ctx(num: Int, fooBar: FooBar)
