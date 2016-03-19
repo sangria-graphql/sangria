@@ -1,11 +1,10 @@
-## Upcoming
+## v0.6.0 (2016-03-19)
 
-* TODO: derive macro
-* TODO: Prepared Queries (#118)
-* TODO: some of the arguments are moved from the Executor to the `execute` and `prepare` methods.
+* Macro-Based GraphQL Type Derivation (#120). See ["Macro-Based GraphQL Type Derivation" section in the documentation](http://http://sangria-graphql.org/learn/#macro-based-graphql-type-derivation) for more info.
+* Prepared Queries (#118). See ["Prepared Queries" section in the documentation](http://http://sangria-graphql.org/learn/#prepared-queries) for more info. 
 * `Executor.execute` now returns `Future` with failure if error happened before query execution (#109). It can be extremely helpful when you need to take some action or produce different result in case of error. Typical example is returning different HTTP status code.     
 
-  **CAUTION: breaking change and action needed!** Since things like validation errors and errors in query reducers are now explicitly returned in `Future` failure and not as a successful result, you need to take some action to handle them. In order to migrate, all you need to do is following:
+  **CAUTION: breaking change and action needed!** Since things like validation errors and errors in query reducers are now explicitly returned as a `Future` failure and not as a successful result, you need to take some action to handle them. In order to migrate, all you need to do is to add following `recover`:
   
   ```scala
   Executor.execute(schema, query).recover {
@@ -50,6 +49,7 @@
   HTTP status code would be 401 for unauthorized users.
   
   If you have issues with the migration, please raise [an issue](https://github.com/sangria-graphql/sangria/issues/new) so that we can find a good solution together.
+* **Minor breaking change.** `userContext` and `root` arguments of `Executor` are moved in `Executor.execute` method. 
 * Detect name collisions with incompatible types during schema definition (#117)
 * Introduced a type alias `Executor.ExceptionHandler` for exception handler partial function 
 
