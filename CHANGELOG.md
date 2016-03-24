@@ -1,3 +1,7 @@
+## Upcoming
+
+* Directive `locations` field replaces `onOperation`, `onFragment` and `onField` (#119) (spec change).
+
 ## v0.6.0 (2016-03-19)
 
 * Macro-Based GraphQL Type Derivation (#120). See ["Macro-Based GraphQL Type Derivation" section of the documentation](http://sangria-graphql.org/learn/#macro-based-graphql-type-derivation) for more info.
