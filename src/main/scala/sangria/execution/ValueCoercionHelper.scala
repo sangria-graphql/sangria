@@ -34,7 +34,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       errors: VectorBuilder[Violation],
       pos: List[Position] = Nil,
       allowErrorsOnDefault: Boolean = false,
-      valueMap: Nothing ⇒ Any = defaultValueMapFn)(acc: marshaller.Node, value: Option[Either[Vector[Violation], Option[marshaller.Node]]]): marshaller.Node = {
+      valueMap: Nothing ⇒ Any = defaultValueMapFn)(acc: marshaller.MapBuilder, value: Option[Either[Vector[Violation], Option[marshaller.Node]]]): marshaller.MapBuilder = {
     val valueMapTyped = valueMap.asInstanceOf[Any ⇒ marshaller.Node]
 
     def getDefault = {
@@ -144,7 +144,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
     case (objTpe: InputObjectType[_], valueMap) if iu.isMapNode(valueMap) ⇒
       val errors = new VectorBuilder[Violation]
 
-      val res = objTpe.fields.foldLeft(firstKindMarshaller.emptyMapNode) {
+      val res = objTpe.fields.foldLeft(firstKindMarshaller.emptyMapNode(objTpe.fields.map(_.name))) {
         case (acc, field) ⇒ iu.getMapValue(valueMap, field.name) match {
           case Some(defined) if iu.isDefined(defined) ⇒
             resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(defined))(
@@ -159,7 +159,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       val errorRes = errors.result()
 
       if (errorRes.nonEmpty) Left(errorRes)
-      else Right(Some(res.asInstanceOf[marshaller.Node]))
+      else Right(Some(firstKindMarshaller.mapNode(res).asInstanceOf[marshaller.Node]))
 
     case (objTpe: InputObjectType[_], value) ⇒
       Left(Vector(InputObjectTypeMismatchViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), iu.render(value), sourceMapper, valuePosition(value))))

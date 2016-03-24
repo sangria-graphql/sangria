@@ -9,6 +9,7 @@ import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import InputUnmarshaller.mapVars
 
+import scala.collection.immutable.ListMap
 import scala.concurrent.Future
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -417,6 +418,35 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       Executor.execute(schema, doc, operationName = Some("Q")).await should be (Map("data" → Map("a" → "b")))
       Executor.execute(schema, doc, operationName = Some("M")).await should be (Map("data" → Map("c" → "d")))
       Executor.execute(schema, doc, operationName = Some("S")).await should be (Map("data" → Map("e" → "f")))
+    }
+
+    "correct field ordering despite execution order" in {
+      case class Sum(a: Int, b: Int) extends Deferred[Int]
+
+      class MyResolver extends DeferredResolver[Any] {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+          case Sum(a, b) ⇒ Future(a + b)
+        }
+      }
+
+      val schema = Schema(ObjectType("Type", fields[Unit, Unit](
+        Field("c", OptionType(StringType), resolve = _ ⇒ "c"),
+        Field("a", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(30); "a"}),
+        Field("d", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(5); "d"}),
+        Field("b", OptionType(IntType), resolve = _ ⇒ Sum(1, 2)),
+        Field("e", OptionType(StringType), resolve = _ ⇒ "e"))))
+
+      def keys(res: Any) =
+        res.asInstanceOf[Map[String, Any]]("data").asInstanceOf[Map[String, Any]].keys.toList
+
+      keys(Executor.execute(schema, graphql"query Q { a b c d e }", deferredResolver = new MyResolver).await) should be (
+        List("a", "b", "c", "d", "e"))
+
+      keys(Executor.execute(schema, graphql"query Q { e, d, c, b, a }", deferredResolver = new MyResolver).await) should be (
+        List("e", "d", "c", "b", "a"))
+
+      keys(Executor.execute(schema, graphql"query Q { e, a, d, c, b }", deferredResolver = new MyResolver).await) should be (
+        List("e", "a", "d", "c", "b"))
     }
 
     "avoid recursion" in {

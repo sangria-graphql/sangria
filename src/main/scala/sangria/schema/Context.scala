@@ -154,11 +154,13 @@ object DefaultValueRenderer {
       case io: InputObjectType[_] ⇒
         val mapValue = v.asInstanceOf[Map[String, Any]]
 
-        io.fields.foldLeft(m.emptyMapNode) {
+        val builder = io.fields.foldLeft(m.emptyMapNode(io.fields.map(_.name))) {
           case (acc, field) if mapValue contains field.name ⇒
             m.addMapNodeElem(acc, field.name, loop(field.fieldType, mapValue(field.name)), optional = false)
           case (acc, _) ⇒ acc
         }
+
+        m.mapNode(builder)
       case l: ListInputType[_] ⇒
         val listValue = v.asInstanceOf[Seq[Any]]
 
@@ -192,11 +194,13 @@ object DefaultValueRenderer {
     case io: InputObjectType[_] ⇒
       val mapValue = v.asInstanceOf[Map[String, Any]]
 
-      io.fields.foldLeft(m.emptyMapNode) {
+      val builder = io.fields.foldLeft(m.emptyMapNode(io.fields.map(_.name))) {
         case (acc, field) if mapValue contains field.name ⇒
           m.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name)), optional = false)
         case (acc, _) ⇒ acc
       }
+
+      m.mapNode(builder)
     case l: ListInputType[_] ⇒
       val listValue = v.asInstanceOf[Seq[Any]]
 

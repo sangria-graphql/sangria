@@ -68,6 +68,10 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
 
 class QueryAstResultMarshaller extends ResultMarshaller {
   type Node = ast.Value
+  type MapBuilder = ArrayMapBuilder[Node]
+
+  def emptyMapNode(keys: Seq[String]) = new ArrayMapBuilder[Node](keys)
+  def addMapNodeElem(builder: MapBuilder, key: String, value: Node, optional: Boolean) = builder.add(key, value)
 
   def booleanNode(value: Boolean) = ast.BooleanValue(value)
   def floatNode(value: Double) = ast.FloatValue(value)
@@ -82,15 +86,9 @@ class QueryAstResultMarshaller extends ResultMarshaller {
     case None ⇒ nullNode
   }
 
+  def mapNode(builder: MapBuilder) = mapNode(builder.toList)
   def mapNode(keyValues: Seq[(String, Node)]) =
     ast.ObjectValue(keyValues.toList.map{case (k, v) ⇒ ast.ObjectField(k, v)})
-
-  def emptyMapNode = ast.ObjectValue(Nil)
-  def addMapNodeElem(node: Node, key: String, value: Node, optional: Boolean) = {
-    val obj = node.asInstanceOf[ast.ObjectValue]
-
-    obj.copy(fields = obj.fields :+ ast.ObjectField(key, value))
-  }
 
   def nullNode = ast.NullValue()
 

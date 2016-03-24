@@ -17,12 +17,12 @@ libraryDependencies ++= Seq(
   "org.parboiled" %% "parboiled" % "2.1.2",
 
   // marshalling
-  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.1.1",
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.0",
 
   // testing
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.1.2" % "test",
-  "org.sangria-graphql" %% "sangria-spray-json" % "0.2.0" % "test"
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.0" % "test",
+  "org.sangria-graphql" %% "sangria-spray-json" % "0.3.0" % "test"
 )
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"

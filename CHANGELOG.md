@@ -1,6 +1,8 @@
 ## Upcoming
 
+* Field order in the result now reflects field order in the query (according to the spec) for all marshalling libraries that support field ordering (#99) (spec change). 
 * Directive `locations` field replaces `onOperation`, `onFragment` and `onField` (#119) (spec change).
+
 
 ## v0.6.0 (2016-03-19)
 

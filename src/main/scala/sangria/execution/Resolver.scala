@@ -6,7 +6,7 @@ import sangria.marshalling.ResultMarshaller
 import sangria.parser.SourceMapper
 import sangria.schema._
 
-import scala.collection.immutable.VectorBuilder
+import scala.collection.immutable.{ListMap, VectorBuilder}
 import scala.concurrent.{ExecutionContext, Promise, Future}
 import scala.util.control.NonFatal
 import scala.util.{Success, Failure, Try}
@@ -31,19 +31,13 @@ class Resolver[Ctx](
   import resultResolver._
   import Resolver._
 
-  def resolveFieldsPar(
-       tpe: ObjectType[Ctx, _],
-       value: Any,
-       fields: Map[String, (ast.Field, Try[Vector[ast.Field]])]): Future[marshaller.Node] = {
+  def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields): Future[marshaller.Node] = {
     val actions = collectActionsPar(Vector.empty, tpe, value, fields, ErrorRegistry.empty, userContext)
 
-    processFinalResolve(resolveActionsPar(Vector.empty, tpe, actions, userContext))
+    processFinalResolve(resolveActionsPar(Vector.empty, tpe, actions, userContext, fields.namesOrdered))
   }
 
-  def resolveFieldsSeq(
-       tpe: ObjectType[Ctx, _],
-       value: Any,
-       fields: Map[String, (ast.Field, Try[Vector[ast.Field]])]): Future[marshaller.Node] = {
+  def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields): Future[marshaller.Node] = {
     val actions = resolveSeq(Vector.empty, tpe, value, fields, ErrorRegistry.empty)
 
     actions flatMap processFinalResolve
@@ -67,19 +61,21 @@ class Resolver[Ctx](
       path: Vector[String],
       tpe: ObjectType[Ctx, _],
       value: Any,
-      fields: Map[String, (ast.Field, Try[Vector[ast.Field]])],
+      fields: CollectedFields,
       errorReg: ErrorRegistry): Future[Result] = {
-    fields.foldLeft(Future.successful((Result(ErrorRegistry.empty, Some(marshaller.emptyMapNode)), userContext))) {
+    fields.fields.foldLeft(Future.successful((Result(ErrorRegistry.empty, Some(marshaller.emptyMapNode(fields.namesOrdered))), userContext))) {
       case (future, elem) ⇒ future.flatMap { resAndCtx ⇒
         (resAndCtx, elem) match {
           case (acc @ (Result(_, None), _), _) ⇒ Future.successful(acc)
-          case (acc, (name, (origField, _))) if tpe.getField(schema, origField.name).isEmpty ⇒ Future.successful(acc)
-          case ((Result(errors, s @ Some(acc)), uc), (name, (origField, Failure(error)))) ⇒
-            Future.successful(Result(errors.add(path :+ name, error), if (isOptional(tpe, origField.name)) Some(marshaller.addMapNodeElem(acc, origField.outputName, marshaller.nullNode, optional = true)) else None) → uc)
-          case ((accRes @ Result(errors, s @ Some(acc)), uc), (name, (origField, Success(fields)))) ⇒
+          case (acc, CollectedField(name, origField, _)) if tpe.getField(schema, origField.name).isEmpty ⇒ Future.successful(acc)
+          case ((Result(errors, s @ Some(acc)), uc), CollectedField(name, origField, Failure(error))) ⇒
+            Future.successful(Result(errors.add(path :+ name, error),
+              if (isOptional(tpe, origField.name)) Some(marshaller.addMapNodeElem(acc.asInstanceOf[marshaller.MapBuilder], origField.outputName, marshaller.nullNode, optional = true))
+              else None) → uc)
+          case ((accRes @ Result(errors, s @ Some(acc)), uc), CollectedField(name, origField, Success(fields))) ⇒
             resolveField(uc, tpe, path :+ name, value, errors, name, fields) match {
               case (updatedErrors, None, _) if isOptional(tpe, origField.name) ⇒
-                Future.successful(Result(updatedErrors, Some(marshaller.addMapNodeElem(acc, fields.head.outputName, marshaller.nullNode, optional = isOptional(tpe, origField.name)))) → uc)
+                Future.successful(Result(updatedErrors, Some(marshaller.addMapNodeElem(acc.asInstanceOf[marshaller.MapBuilder], fields.head.outputName, marshaller.nullNode, optional = isOptional(tpe, origField.name)))) → uc)
               case (updatedErrors, None, _) ⇒ Future.successful(Result(updatedErrors, None), uc)
               case (updatedErrors, Some(result), newUc) ⇒
                 val sfield = tpe.getField(schema, origField.name).head
@@ -152,22 +148,24 @@ class Resolver[Ctx](
             }
         }
       }
-    }.map(_._1)
+    } map {
+      case (res, ctx) ⇒ res.buildValue
+    }
   }
 
   def collectActionsPar(
       path: Vector[String],
       tpe: ObjectType[Ctx, _],
       value: Any,
-      fields: Map[String, (ast.Field, Try[Vector[ast.Field]])],
+      fields: CollectedFields,
       errorReg: ErrorRegistry,
       userCtx: Ctx): Actions =
-    fields.foldLeft((errorReg, Some(Vector.empty)): Actions) {
+    fields.fields.foldLeft((errorReg, Some(Vector.empty)): Actions) {
       case (acc @ (_, None), _) ⇒ acc
-      case (acc, (name, (origField, _))) if tpe.getField(schema, origField.name).isEmpty ⇒ acc
-      case ((errors, s @ Some(acc)), (name, (origField, Failure(error)))) ⇒
+      case (acc, CollectedField(name, origField, _)) if tpe.getField(schema, origField.name).isEmpty ⇒ acc
+      case ((errors, s @ Some(acc)), CollectedField(name, origField, Failure(error))) ⇒
         errors.add(path :+ name, error) → (if (isOptional(tpe, origField.name)) Some(acc :+ (Vector(origField), None)) else None)
-      case ((errors, s @ Some(acc)), (name, (origField, Success(fields)))) ⇒
+      case ((errors, s @ Some(acc)), CollectedField(name, origField, Success(fields))) ⇒
         resolveField(userCtx, tpe, path :+ name, value, errors, name, fields) match {
           case (updatedErrors, Some(result), updateCtx) ⇒ updatedErrors → Some(acc :+ (fields, Some((tpe.getField(schema, origField.name).head, updateCtx, result))))
           case (updatedErrors, None, _) if isOptional(tpe, origField.name) ⇒ updatedErrors → Some(acc :+ (Vector(origField), None))
@@ -175,7 +173,7 @@ class Resolver[Ctx](
         }
     }
 
-  def resolveActionsPar(path: Vector[String], tpe: ObjectType[Ctx, _], actions: Actions, userCtx: Ctx): Resolve = {
+  def resolveActionsPar(path: Vector[String], tpe: ObjectType[Ctx, _], actions: Actions, userCtx: Ctx, fieldsNamesOrdered: Vector[String]): Resolve = {
     val (errors, res) = actions
 
     def resolveUc(newUc: Option[MappedCtxUpdate[Ctx, Any, Any]], v: Any) = newUc map (_.ctxFn(v)) getOrElse userCtx
@@ -269,19 +267,19 @@ class Resolver[Ctx](
 
         val simpleRes = resolvedValues.collect {case (af, r: Result) ⇒ af → r}
 
-        val resSoFar = simpleRes.foldLeft(Result(errors, Some(marshaller.emptyMapNode))) {
+        val resSoFar = simpleRes.foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
           case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path :+ astField.outputName, astField.position)
         }
 
         val complexRes = resolvedValues.collect{case (af, r: DeferredResult) ⇒ af → r}
 
-        if (complexRes.isEmpty) resSoFar
+        if (complexRes.isEmpty) resSoFar.buildValue
         else {
           val allDeferred = complexRes.flatMap(_._2.deferred)
           val finalValue = Future.sequence(complexRes.map {case (astField, DeferredResult(_, future)) ⇒  future map (astField → _)}) map { results ⇒
             results.foldLeft(resSoFar) {
               case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path :+ astField.outputName, astField.position)
-            }
+            }.buildValue
           }
 
           DeferredResult(allDeferred, finalValue)
@@ -390,7 +388,7 @@ class Resolver[Ctx](
           case Success(fields) ⇒
             val actions = collectActionsPar(path, obj, value, fields, ErrorRegistry.empty, userCtx)
 
-            resolveActionsPar(path, obj, actions, userCtx)
+            resolveActionsPar(path, obj, actions, userCtx, fields.namesOrdered)
           case Failure(error) ⇒ Result(ErrorRegistry(path, error), None)
         }
       case abst: AbstractType ⇒
@@ -417,7 +415,7 @@ class Resolver[Ctx](
       else if (res.errors.errorList.nonEmpty)
         errorReg = errorReg.add(res.errors)
 
-      res.value match {
+      res.nodeValue match {
         case node if optional ⇒
           listBuilder += marshaller.optionalArrayNodeValue(node)
         case Some(other) ⇒
@@ -591,8 +589,8 @@ class Resolver[Ctx](
         case objTpe: ObjectType[Ctx, _] ⇒
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) ⇒
-              ff.values.toVector collect {
-                case (_, Success(fields)) if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe.getField(schema, fields.head.name).head.tags.contains(ProjectionExclude) ⇒
+              ff.fields collect {
+                case CollectedField(_, _, Success(fields)) if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe.getField(schema, fields.head.name).head.tags.contains(ProjectionExclude) ⇒
                   val astField = fields.head
                   val field = objTpe.getField(schema, astField.name).head
                   val projectedName =
@@ -626,7 +624,7 @@ class Resolver[Ctx](
 
   case class DeferredResult(deferred: Vector[Future[Vector[Defer]]], futureValue: Future[Result]) extends Resolve
   case class Defer(promise: Promise[Any], deferred: Deferred[Any])
-  case class Result(errors: ErrorRegistry, value: Option[marshaller.Node]) extends Resolve {
+  case class Result(errors: ErrorRegistry, value: Option[Any /* Either marshaller.Node or marshaller.MapBuilder */]) extends Resolve {
     def addToMap(other: Result, key: String, optional: Boolean, path: Vector[String], position: Option[Position]) =
       copy(
         errors =
@@ -636,9 +634,13 @@ class Resolver[Ctx](
               errors.add(other.errors),
         value =
             if (optional && other.value.isEmpty)
-              value map (marshaller.addMapNodeElem(_, key, marshaller.nullNode, optional = false))
+              value map (v ⇒ marshaller.addMapNodeElem(v.asInstanceOf[marshaller.MapBuilder], key, marshaller.nullNode, optional = false))
             else
-              for {myVal ← value; otherVal ← other.value} yield marshaller.addMapNodeElem(myVal, key, otherVal, optional = false))
+              for {myVal ← value; otherVal ← other.value} yield marshaller.addMapNodeElem(myVal.asInstanceOf[marshaller.MapBuilder], key, otherVal.asInstanceOf[marshaller.Node], optional = false))
+
+    def nodeValue = value.asInstanceOf[Option[marshaller.Node]]
+    def builderValue = value.asInstanceOf[Option[marshaller.MapBuilder]]
+    def buildValue = copy(value = builderValue map marshaller.mapNode)
   }
 }
 

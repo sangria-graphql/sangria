@@ -6,8 +6,7 @@ import sangria.schema._
 import sangria.ast
 
 import scala.collection.concurrent.TrieMap
-import scala.collection.immutable.ListMap
-import scala.collection.mutable.{Set ⇒ MutableSet}
+import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap, ArrayBuffer}
 
 import scala.util.{Try, Failure, Success}
 
@@ -19,15 +18,20 @@ class FieldCollector[Ctx, Val](
     valueCollector: ValueCollector[Ctx, _],
     exceptionHandler: Executor.ExceptionHandler) {
 
-  private val resultCache = TrieMap[(Vector[String], String), Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]]]()
+  private val resultCache = TrieMap[(Vector[String], String), Try[CollectedFields]]()
 
-  def collectFields(path: Vector[String], tpe: ObjectType[Ctx, _], selections: Vector[ast.SelectionContainer]): Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]] =
-    resultCache.getOrElseUpdate(path → tpe.name,
-      selections.foldLeft(Success(ListMap.empty): Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]]) {
+  def collectFields(path: Vector[String], tpe: ObjectType[Ctx, _], selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
+    resultCache.getOrElseUpdate(path → tpe.name, {
+      val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
+
+      selections.foldLeft(builder) {
         case (acc, s) ⇒ collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
-      })
+      }
 
-  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String], initial: Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]]): Try[Map[String, (ast.Field, Try[Vector[ast.Field]])]] =
+      builder map (_.build)
+    })
+
+  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String], initial: Try[CollectedFieldsBuilder]): Try[CollectedFieldsBuilder] =
     selections.foldLeft(initial) {
       case (f @ Failure(_), selection) ⇒ f
       case (s @ Success(acc), selection) ⇒
@@ -36,13 +40,13 @@ class FieldCollector[Ctx, Val](
             val name = field.outputName
 
             shouldIncludeNode(dirs, selection) match {
-              case Success(true) ⇒ acc.get(name) match {
-                case Some((f, Success(list))) ⇒ Success(acc.updated(name, f → Success(list :+ field)))
-                case Some((_, Failure(_))) ⇒ s
-                case None ⇒ Success(acc.updated(name, field → Success(Vector(field))))
-              }
+              case Success(true) ⇒
+                acc.add(name, field)
+                s
               case Success(false) ⇒ s
-              case Failure(error) ⇒ Success(acc.updated(name, field → Failure(error)))
+              case Failure(error) ⇒
+                acc.addError(name, field, error)
+                s
             }
           case fragment @ ast.InlineFragment(_, dirs, fragmentSelections, _) ⇒
             for {
@@ -118,4 +122,59 @@ class FieldCollector[Ctx, Val](
           .getOrElse(Failure(new ExecutionError(s"Unknown type '${tc.name}'.", exceptionHandler, sourceMapper, conditional.position.toList)))
       case None ⇒ Success(true)
     }
+}
+
+case class CollectedFields(namesOrdered: Vector[String], fields: Vector[CollectedField])
+case class CollectedField(name: String, field: ast.Field, allFields: Try[Vector[ast.Field]])
+
+// Imperative builder to minimize intermediate object creation
+class CollectedFieldsBuilder {
+  private val indexLookup = MutableMap[String, Int]()
+  private val names = ArrayBuffer[String]()
+  private val firstFields = ArrayBuffer[ast.Field]()
+  private val fields = ArrayBuffer[Try[ArrayBuffer[ast.Field]]]()
+
+  def contains(name: String) = indexLookup contains name
+  def add(name: String, field: ast.Field) = {
+    indexLookup.get(name) match {
+      case Some(idx) ⇒
+        fields(idx) match {
+          case s @ Success(list) ⇒ list += field
+          case _ ⇒ // do nothing because there is already an error
+        }
+      case None ⇒
+        indexLookup(name) = fields.size
+        firstFields += field
+        names += name
+        fields += Success(ArrayBuffer(field))
+    }
+
+    this
+  }
+
+  def addError(name: String, field: ast.Field, error: Throwable) = {
+    indexLookup.get(name) match {
+      case Some(idx) ⇒
+        fields(idx) match {
+          case s @ Success(list) ⇒
+            fields(idx) = Failure(error)
+          case _ ⇒ // do nothing because there is already an error
+        }
+      case None ⇒
+        indexLookup(name) = fields.size
+        firstFields += field
+        names += name
+        fields += Failure(error)
+    }
+
+    this
+  }
+
+  def build = {
+    val builtFields = firstFields.toVector.zipWithIndex map {
+      case (f, idx) ⇒ CollectedField(names(idx), f, fields(idx) map (_.toVector))
+    }
+
+    CollectedFields(names.toVector, builtFields)
+  }
 }

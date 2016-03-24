@@ -41,8 +41,8 @@ case class Executor[Ctx, Root](
         tpe ← getOperationRootType(operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(Vector.empty, tpe, Vector(operation))
       } yield {
-        val preparedFields = fields.toVector.flatMap {
-          case (_, (astField, Success(_))) ⇒
+        val preparedFields = fields.fields.flatMap {
+          case CollectedField(_, astField, Success(_)) ⇒
             val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
             val field = allFields.head
             val args = valueCollector.getFieldArgumentValues(Vector(astField.name), field.arguments, astField.arguments, unmarshalledVariables)
@@ -129,7 +129,7 @@ case class Executor[Ctx, Root](
         marshaller: ResultMarshaller,
         variables: Map[String, VariableValue],
         tpe: ObjectType[Ctx, Root],
-        fields: Map[String, (ast.Field, Try[Vector[ast.Field]])],
+        fields: CollectedFields,
         ctx: Ctx,
         root: Root): Future[marshaller.Node] = {
       val middlewareCtx = MiddlewareQueryContext(ctx, this, queryAst, operationName, inputVariables, inputUnmarshaller)
@@ -190,7 +190,7 @@ case class Executor[Ctx, Root](
       valueCollector: ValueCollector[Ctx, _],
       variables: Map[String, VariableValue],
       rootTpe: ObjectType[Ctx, Root],
-      fields: Map[String, (ast.Field, Try[Vector[ast.Field]])],
+      fields: CollectedFields,
       userContext: Ctx): Any =
     if (queryReducers.nonEmpty)
       reduceQuery(fieldCollector, valueCollector, variables, rootTpe, fields, queryReducers.toVector, userContext) match {
@@ -207,7 +207,7 @@ case class Executor[Ctx, Root](
       valueCollector: ValueCollector[Ctx, _],
       variables: Map[String, VariableValue],
       rootTpe: ObjectType[_, _],
-      fields: Map[String, (ast.Field, Try[Vector[ast.Field]])],
+      fields: CollectedFields,
       reducers: Vector[QueryReducer[Ctx, _]],
       userContext: Ctx): Any = {
     // Using mutability here locally in order to reduce footprint
@@ -225,8 +225,8 @@ case class Executor[Ctx, Root](
         case objTpe: ObjectType[Ctx, _] ⇒
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) ⇒
-              ff.values.toVector.foldLeft(ListBuffer(initialValues: _*)) {
-                case (acc, (_, Success(fields))) if objTpe.getField(schema, fields.head.name).nonEmpty ⇒
+              ff.fields.foldLeft(ListBuffer(initialValues: _*)) {
+                case (acc, CollectedField(_, _, Success(fields))) if objTpe.getField(schema, fields.head.name).nonEmpty ⇒
                   val astField = fields.head
                   val field = objTpe.getField(schema, astField.name).head
                   val newPath = path :+ astField.outputName
@@ -263,8 +263,8 @@ case class Executor[Ctx, Root](
         case _ ⇒ initialValues
       }
 
-    val reduced = fields.values.toVector.foldLeft(ListBuffer(initialValues: _*)) {
-      case (acc, (_, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty =>
+    val reduced = fields.fields.foldLeft(ListBuffer(initialValues: _*)) {
+      case (acc, CollectedField(_, _, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty =>
         val astField = astFields.head
         val field = rootTpe.getField(schema, astField.name).head
         val path = Vector(astField.outputName)

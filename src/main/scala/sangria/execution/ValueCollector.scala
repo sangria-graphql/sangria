@@ -76,7 +76,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       val marshaller = CoercedScalaResultMarshaller.default
       val errors = new VectorBuilder[Violation]
 
-      val res = argumentDefs.foldLeft(marshaller.emptyMapNode: marshaller.Node) {
+      val res = argumentDefs.foldLeft(marshaller.emptyMapNode(argumentDefs.map(_.name)): marshaller.MapBuilder) {
         case (acc, argDef) ⇒
           val argPath = argDef.name :: Nil
           val astValue = astArgMap get argDef.name map (_.value)
@@ -97,7 +97,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       val errorRes = errors.result()
 
       if (errorRes.nonEmpty) Failure(AttributeCoercionError(errorRes, exceptionHandler))
-      else Success(Args(res.asInstanceOf[Map[String, Any]]))
+      else Success(Args(marshaller.mapNode(res).asInstanceOf[Map[String, Any]]))
     }
 }
 
