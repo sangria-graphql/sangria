@@ -28,13 +28,13 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
   }
 
   "Execute: handles directives" when {
-    "directives are not used" should {
-      "execute basic query" in {
+    "works without directives" should {
+      "basic query works" in {
         executeTestQuery("{ a, b }") should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
     }
 
-    "used with scalar values" should {
+    "works on scalars" should {
       "if true includes scalar" in {
         executeTestQuery("{ a, b @include(if: true) }") should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
@@ -52,7 +52,7 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
       }
     }
 
-    "used on fragment spread" should {
+    "works on fragment spreads" should {
       "if false omits fragment spread" in {
         executeTestQuery(
           """
@@ -106,7 +106,7 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
       }
     }
 
-    "used on inline fragment" should {
+    "works on inline fragment" should {
       "if false omits inline fragment" in {
         executeTestQuery(
           """
@@ -168,85 +168,136 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
       }
     }
 
-    "used on fragments" should {
-      "if false omits fragment" in {
+    "works on anonymous inline fragment" should {
+      "if false omits anonymous inline fragment" in {
         executeTestQuery(
           """
              query Q {
                a
-               ...Frag
-             }
-             fragment Frag on TestType @include(if: false) {
-               b
-             }
-          """) should be (Map("data" → Map("a" → "a")))
-      }
-
-      "if true includes fragment" in {
-        executeTestQuery(
-          """
-             query Q {
-               a
-               ...Frag
-             }
-             fragment Frag on TestType @include(if: true) {
-               b
-             }
-          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
-      }
-
-      "unless false includes fragment" in {
-        executeTestQuery(
-          """
-             query Q {
-               a
-               ...Frag
-             }
-             fragment Frag on TestType @skip(if: false) {
-               b
-             }
-          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
-      }
-
-      "unless true omits fragment" in {
-        executeTestQuery(
-          """
-             query Q {
-               a
-               ...Frag
-             }
-             fragment Frag on TestType @skip(if: true) {
-               b
-             }
-          """) should be (Map("data" → Map("a" → "a")))
-      }
-
-      "include `true` includes inline fragments without type condition" in {
-        executeTestQuery(
-          """
-             query Q {
-               ... {
-                 a
+               ... @include(if: false) {
+                 b
                }
+             }
+          """) should be (Map("data" → Map("a" → "a")))
+      }
+
+      "if true includes anonymous inline fragment" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
                ... @include(if: true) {
                  b
                }
              }
           """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
-      "include `false` omits inline fragments without type condition" in {
+
+      "unless false includes anonymous inline fragment" in {
         executeTestQuery(
           """
              query Q {
-               ... {
-                 a
-               }
-               ... @include(if: false) {
+               a
+               ... @skip(if: false) {
                  b
                }
              }
-          """) should be(Map("data" → Map("a" → "a")))
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
+      }
+
+      "unless true includes anonymous inline fragment" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
+               ... @skip(if: true) {
+                 b
+               }
+             }
+          """) should be (Map("data" → Map("a" → "a")))
       }
     }
+
+    // TODO: clarify fragment definition location for `include` and `skip` directives: https://github.com/graphql/graphql-js/pull/317#discussion_r57322168
+//    "works on fragment" should {
+//      "if false omits fragment" in {
+//        executeTestQuery(
+//          """
+//             query Q {
+//               a
+//               ...Frag
+//             }
+//             fragment Frag on TestType @include(if: false) {
+//               b
+//             }
+//          """) should be (Map("data" → Map("a" → "a")))
+//      }
+//
+//      "if true includes fragment" in {
+//        executeTestQuery(
+//          """
+//             query Q {
+//               a
+//               ...Frag
+//             }
+//             fragment Frag on TestType @include(if: true) {
+//               b
+//             }
+//          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
+//      }
+//
+//      "unless false includes fragment" in {
+//        executeTestQuery(
+//          """
+//             query Q {
+//               a
+//               ...Frag
+//             }
+//             fragment Frag on TestType @skip(if: false) {
+//               b
+//             }
+//          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
+//      }
+//
+//      "unless true omits fragment" in {
+//        executeTestQuery(
+//          """
+//             query Q {
+//               a
+//               ...Frag
+//             }
+//             fragment Frag on TestType @skip(if: true) {
+//               b
+//             }
+//          """) should be (Map("data" → Map("a" → "a")))
+//      }
+//
+//      "include `true` includes inline fragments without type condition" in {
+//        executeTestQuery(
+//          """
+//             query Q {
+//               ... {
+//                 a
+//               }
+//               ... @include(if: true) {
+//                 b
+//               }
+//             }
+//          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
+//      }
+//      "include `false` omits inline fragments without type condition" in {
+//        executeTestQuery(
+//          """
+//             query Q {
+//               ... {
+//                 a
+//               }
+//               ... @include(if: false) {
+//                 b
+//               }
+//             }
+//          """) should be(Map("data" → Map("a" → "a")))
+//      }
+//    }
   }
 }

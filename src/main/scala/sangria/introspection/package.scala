@@ -46,6 +46,25 @@ package object introspection {
       "`ofType` is a valid field."))
   ))
 
+  val __DirectiveLocation = EnumType("__DirectiveLocation",
+    Some("A Directive can be adjacent to many parts of the GraphQL language, a " +
+         "__DirectiveLocation describes one such possible adjacencies."),
+    List(
+      EnumValue("QUERY", value = DirectiveLocation.Query,
+        description = Some("Location adjacent to a query operation.")),
+      EnumValue("MUTATION", value = DirectiveLocation.Mutation,
+        description = Some("Location adjacent to a mutation operation.")),
+      EnumValue("SUBSCRIPTION", value = DirectiveLocation.Subscription,
+        description = Some("Location adjacent to a subscription operation.")),
+      EnumValue("FIELD", value = DirectiveLocation.Field,
+        description = Some("Location adjacent to a field.")),
+      EnumValue("FRAGMENT_DEFINITION", value = DirectiveLocation.FragmentDefinition,
+        description = Some("Location adjacent to a fragment definition.")),
+      EnumValue("FRAGMENT_SPREAD", value = DirectiveLocation.FragmentSpread,
+        description = Some("Location adjacent to a fragment spread.")),
+      EnumValue("INLINE_FRAGMENT", value = DirectiveLocation.InlineFragment,
+        description = Some("Location adjacent to an inline fragment."))))
+
   val __Field = ObjectType(
     name = "__Field",
     description =
@@ -207,10 +226,23 @@ package object introspection {
     fields = fields[Unit, Directive](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
+      Field("locations", ListType(__DirectiveLocation), resolve = _.value.locations.toVector.sortBy(_.toString)),
       Field("args", ListType(__InputValue), resolve = _.value.arguments),
-      Field("onOperation", BooleanType, resolve = _.value.onOperation),
-      Field("onFragment", BooleanType, resolve = _.value.onFragment),
-      Field("onField", BooleanType, resolve = _.value.onField)
+      Field("onOperation", BooleanType,
+        deprecationReason = Some("Use `locations`."),
+        resolve = c ⇒
+          c.value.locations.contains(DirectiveLocation.Query) ||
+          c.value.locations.contains(DirectiveLocation.Mutation) ||
+          c.value.locations.contains(DirectiveLocation.Subscription)),
+      Field("onFragment", BooleanType,
+        deprecationReason = Some("Use `locations`."),
+        resolve = c ⇒
+          c.value.locations.contains(DirectiveLocation.FragmentDefinition) ||
+          c.value.locations.contains(DirectiveLocation.FragmentSpread) ||
+          c.value.locations.contains(DirectiveLocation.InlineFragment)),
+      Field("onField", BooleanType,
+        deprecationReason = Some("Use `locations`."),
+        resolve = _.value.locations.contains(DirectiveLocation.Field))
     ))
 
 
@@ -256,7 +288,7 @@ package object introspection {
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 
   val IntrospectionTypes: List[Type with Named] =
-    __Schema :: __TypeKind :: __Type :: __Field :: __InputValue :: __EnumValue :: __Directive :: Nil
+    __Schema :: __TypeKind :: __DirectiveLocation :: __Type :: __Field :: __InputValue :: __EnumValue :: __Directive :: Nil
 
   val IntrospectionTypesByName: Map[String, Type with Named] =
     IntrospectionTypes.groupBy(_.name).mapValues(_.head)
@@ -274,12 +306,10 @@ package object introspection {
       |    directives {
       |      name
       |      description
+      |      locations
       |      args {
       |        ...InputValue
       |      }
-      |      onOperation
-      |      onFragment
-      |      onField
       |    }
       |  }
       |}

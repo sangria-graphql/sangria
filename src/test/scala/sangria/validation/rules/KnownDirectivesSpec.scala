@@ -82,7 +82,7 @@ class KnownDirectivesSpec extends WordSpec with ValidationSupport {
         }
       """,
     List(
-      "Directive 'include' may not be used on operation." → Some(Pos(2, 19))
+      "Directive 'include' may not be used on query operation." → Some(Pos(2, 19))
     ))
   }
 }

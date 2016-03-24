@@ -68,17 +68,13 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
       defaultValue = buildDefault(value.defaultValue))
 
   private def buildDirective(directive: IntrospectionDirective) =
-    BuiltinDirectives.find(_.name == directive.name) getOrElse {
+    BuiltinDirectives.find(_.name == directive.name) getOrElse
       Directive(
         name = directive.name,
         description = directive.description,
+        locations = directive.locations,
         arguments = directive.args.toList map buildArgument,
-        shouldInclude = Function.const(true),
-        onOperation = directive.onOperation,
-        onFragment = directive.onFragment,
-        onField = directive.onField
-      )
-    }
+        shouldInclude = Function.const(true))
 
   private def getObjectType(typeRef: IntrospectionTypeRef): ObjectType[Ctx, Any] =
     getOutputType(typeRef, false) match {

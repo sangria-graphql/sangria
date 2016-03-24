@@ -6,13 +6,13 @@ import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 import sangria.macros._
-import sangria.util.FutureResultSupport
+import sangria.util.{StringMatchers, FutureResultSupport}
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 
-class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport {
+class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
   def renderForTest[T: InputUnmarshaller](res: T) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
   def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 
@@ -384,71 +384,81 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport {
       val schema = Schema(ObjectType[Unit, Unit]("Root", Nil))
       val rendered = SchemaRenderer.renderIntrospectionSchema(Executor.execute(schema, introspectionQuery).await)
 
-
-        ("\n" + rendered + "\n") should be ("""
-          |type __Directive {
-          |  name: String!
-          |  description: String
-          |  args: [__InputValue!]!
-          |  onOperation: Boolean!
-          |  onFragment: Boolean!
-          |  onField: Boolean!
-          |}
-          |
-          |type __EnumValue {
-          |  name: String!
-          |  description: String
-          |  isDeprecated: Boolean!
-          |  deprecationReason: String
-          |}
-          |
-          |type __Field {
-          |  name: String!
-          |  description: String
-          |  args: [__InputValue!]!
-          |  type: __Type!
-          |  isDeprecated: Boolean!
-          |  deprecationReason: String
-          |}
-          |
-          |type __InputValue {
-          |  name: String!
-          |  description: String
-          |  type: __Type!
-          |  defaultValue: String
-          |}
-          |
-          |type __Schema {
-          |  types: [__Type!]!
-          |  queryType: __Type!
-          |  mutationType: __Type
-          |  subscriptionType: __Type
-          |  directives: [__Directive!]!
-          |}
-          |
-          |type __Type {
-          |  kind: __TypeKind!
-          |  name: String
-          |  description: String
-          |  fields(includeDeprecated: Boolean = false): [__Field!]
-          |  interfaces: [__Type!]
-          |  possibleTypes: [__Type!]
-          |  enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
-          |  inputFields: [__InputValue!]
-          |  ofType: __Type
-          |}
-          |
-          |enum __TypeKind {
-          |  SCALAR
-          |  OBJECT
-          |  INTERFACE
-          |  UNION
-          |  ENUM
-          |  INPUT_OBJECT
-          |  LIST
-          |  NON_NULL
-          |}
-          |""".stripMargin)
+      ("\n" + rendered + "\n") should equal ("""
+        |type __Directive {
+        |  name: String!
+        |  description: String
+        |  locations: [__DirectiveLocation!]!
+        |  args: [__InputValue!]!
+        |  onOperation: Boolean!
+        |  onFragment: Boolean!
+        |  onField: Boolean!
+        |}
+        |
+        |enum __DirectiveLocation {
+        |  QUERY
+        |  MUTATION
+        |  SUBSCRIPTION
+        |  FIELD
+        |  FRAGMENT_DEFINITION
+        |  FRAGMENT_SPREAD
+        |  INLINE_FRAGMENT
+        |}
+        |
+        |type __EnumValue {
+        |  name: String!
+        |  description: String
+        |  isDeprecated: Boolean!
+        |  deprecationReason: String
+        |}
+        |
+        |type __Field {
+        |  name: String!
+        |  description: String
+        |  args: [__InputValue!]!
+        |  type: __Type!
+        |  isDeprecated: Boolean!
+        |  deprecationReason: String
+        |}
+        |
+        |type __InputValue {
+        |  name: String!
+        |  description: String
+        |  type: __Type!
+        |  defaultValue: String
+        |}
+        |
+        |type __Schema {
+        |  types: [__Type!]!
+        |  queryType: __Type!
+        |  mutationType: __Type
+        |  subscriptionType: __Type
+        |  directives: [__Directive!]!
+        |}
+        |
+        |type __Type {
+        |  kind: __TypeKind!
+        |  name: String
+        |  description: String
+        |  fields(includeDeprecated: Boolean = false): [__Field!]
+        |  interfaces: [__Type!]
+        |  possibleTypes: [__Type!]
+        |  enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
+        |  inputFields: [__InputValue!]
+        |  ofType: __Type
+        |}
+        |
+        |enum __TypeKind {
+        |  SCALAR
+        |  OBJECT
+        |  INTERFACE
+        |  UNION
+        |  ENUM
+        |  INPUT_OBJECT
+        |  LIST
+        |  NON_NULL
+        |}
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
   }
 }

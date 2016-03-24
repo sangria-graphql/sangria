@@ -1,5 +1,7 @@
 package sangria.introspection
 
+import sangria.schema.DirectiveLocation
+
 case class IntrospectionSchema(
   queryType: IntrospectionNamedTypeRef,
   mutationType: Option[IntrospectionNamedTypeRef],
@@ -93,7 +95,5 @@ case class IntrospectionNonNullTypeRef(ofType: IntrospectionTypeRef) extends Int
 case class IntrospectionDirective(
   name: String,
   description: Option[String],
-  args: Seq[IntrospectionInputValue],
-  onOperation: Boolean,
-  onFragment: Boolean,
-  onField: Boolean)
+  locations: Set[DirectiveLocation.Value],
+  args: Seq[IntrospectionInputValue])

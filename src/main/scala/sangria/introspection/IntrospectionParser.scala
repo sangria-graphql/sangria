@@ -2,6 +2,7 @@ package sangria.introspection
 
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.DeliveryScheme
+import sangria.schema.DirectiveLocation
 
 object IntrospectionParser {
   def parse[In](introspectionResult: In)(implicit iu: InputUnmarshaller[In], scheme: DeliveryScheme[IntrospectionSchema]): scheme.Result =
@@ -80,10 +81,8 @@ object IntrospectionParser {
     IntrospectionDirective(
       name = mapStringField(directive, "name", path),
       description = mapStringFieldOpt(directive, "description"),
-      args = mapFieldOpt(directive, "args") map um.getListValue getOrElse Vector.empty map (arg ⇒ parseInputValue(arg, path :+ "args")),
-      onOperation = mapBooleanField(directive, "onOperation", path),
-      onFragment = mapBooleanField(directive, "onFragment", path),
-      onField = mapBooleanField(directive, "onField", path))
+      locations = um.getListValue(mapField(directive, "locations")).map(v ⇒ DirectiveLocation.fromString(stringValue(v, path :+ "locations"))).toSet,
+      args = mapFieldOpt(directive, "args") map um.getListValue getOrElse Vector.empty map (arg ⇒ parseInputValue(arg, path :+ "args")))
 
   private def parseType[In : InputUnmarshaller](tpe: In, path: Vector[String]) =
     mapStringField(tpe, "kind", path) match {

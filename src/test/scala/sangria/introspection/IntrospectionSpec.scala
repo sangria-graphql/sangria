@@ -64,7 +64,24 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                       "name" → "String",
                       "ofType" → null)),
                   Map(
-                    "name" → "args",
+                    "name" → "locations",
+                    "description" → null,
+                    "isDeprecated" → false,
+                    "deprecationReason" → null,
+                    "args" → Nil,
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "LIST",
+                        "name" → null,
+                        "ofType" → Map(
+                          "kind" → "NON_NULL",
+                          "name" → null,
+                          "ofType" → Map(
+                            "kind" → "ENUM",
+                            "name" → "__DirectiveLocation"))))),
+                  Map("name" → "args",
                     "description" → null,
                     "isDeprecated" → false,
                     "deprecationReason" → null,
@@ -84,8 +101,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                   Map(
                     "name" → "onOperation",
                     "description" → null,
-                    "isDeprecated" → false,
-                    "deprecationReason" → null,
+                    "isDeprecated" → true,
+                    "deprecationReason" → "Use `locations`.",
                     "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
@@ -97,8 +114,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                   Map(
                     "name" → "onFragment",
                     "description" → null,
-                    "isDeprecated" → false,
-                    "deprecationReason" → null,
+                    "isDeprecated" → true,
+                    "deprecationReason" → "Use `locations`.",
                     "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
@@ -110,8 +127,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                   Map(
                     "name" → "onField",
                     "description" → null,
-                    "isDeprecated" → false,
-                    "deprecationReason" → null,
+                    "isDeprecated" → true,
+                    "deprecationReason" → "Use `locations`.",
                     "args" → Nil,
                     "type" → Map(
                       "kind" → "NON_NULL",
@@ -119,9 +136,52 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                       "ofType" → Map(
                         "kind" → "SCALAR",
                         "name" → "Boolean",
-                        "ofType" → null)))
-                ),
+                        "ofType" → null)))),
                 "kind" → "OBJECT",
+                "possibleTypes" → null),
+              Map(
+                "inputFields" → null,
+                "name" → "__DirectiveLocation",
+                "description" → "A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.",
+                "interfaces" → null,
+                "enumValues" → Vector(
+                  Map(
+                    "name" → "QUERY",
+                    "description" → "Location adjacent to a query operation.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "MUTATION",
+                    "description" → "Location adjacent to a mutation operation.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "SUBSCRIPTION",
+                    "description" → "Location adjacent to a subscription operation.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "FIELD",
+                    "description" → "Location adjacent to a field.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "FRAGMENT_DEFINITION",
+                    "description" → "Location adjacent to a fragment definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "FRAGMENT_SPREAD",
+                    "description" → "Location adjacent to a fragment spread.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "INLINE_FRAGMENT",
+                    "description" → "Location adjacent to an inline fragment.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null)),
+                "fields" → null,
+                "kind" → "ENUM",
                 "possibleTypes" → null),
               Map(
                 "inputFields" → null,
@@ -697,9 +757,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
               Map(
                 "name" → "include",
                 "description" → "Directs the executor to include this field or fragment only when the `if` argument is true.",
-                "onOperation" → false,
-                "onFragment" → true,
-                "onField" → true,
+                "locations" → Vector("FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"),
                 "args" → Vector(
                   Map(
                     "name" → "if",
@@ -715,9 +773,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
               Map(
                 "name" → "skip",
                 "description" → "Directs the executor to skip this field or fragment when the `if` argument is true.",
-                "onOperation" → false,
-                "onFragment" → true,
-                "onField" → true,
+                "locations" → Vector("FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"),
                 "args" → Vector(
                   Map(
                     "name" → "if",
@@ -790,6 +846,11 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
         Map(
           "kind" → "OBJECT",
           "name" → "__Directive",
+          "inputFields" → null
+        ),
+        Map(
+          "kind" → "ENUM",
+          "name" → "__DirectiveLocation",
           "inputFields" → null
         ),
         Map(

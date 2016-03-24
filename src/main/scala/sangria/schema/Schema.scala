@@ -561,14 +561,26 @@ sealed trait HasArguments {
   def arguments: List[Argument[_]]
 }
 
+object DirectiveLocation extends Enumeration {
+  val  Query, Mutation, Subscription, Field, FragmentDefinition, FragmentSpread, InlineFragment = Value
+
+  def fromString(location: String): DirectiveLocation.Value = location match {
+    case "QUERY" ⇒ Query
+    case "MUTATION" ⇒ Mutation
+    case "SUBSCRIPTION" ⇒ Subscription
+    case "FIELD" ⇒ Field
+    case "FRAGMENT_DEFINITION" ⇒ FragmentDefinition
+    case "FRAGMENT_SPREAD" ⇒ FragmentSpread
+    case "INLINE_FRAGMENT" ⇒ InlineFragment
+  }
+}
+
 case class Directive(
   name: String,
   description: Option[String] = None,
   arguments: List[Argument[_]] = Nil,
-  shouldInclude: DirectiveContext ⇒ Boolean,
-  onOperation: Boolean,
-  onFragment: Boolean,
-  onField: Boolean) extends HasArguments
+  locations: Set[DirectiveLocation.Value] = Set.empty,
+  shouldInclude: DirectiveContext ⇒ Boolean) extends HasArguments
 
 case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],

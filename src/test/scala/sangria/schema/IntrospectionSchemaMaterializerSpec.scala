@@ -222,9 +222,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
             resolve = _ ⇒ None))),
         directives = List(Directive("customDirective", Some("This is a custom directive"),
           shouldInclude = _ ⇒ true,
-          onField = true,
-          onFragment = false,
-          onOperation = false))))
+          locations = Set(DirectiveLocation.Field)))))
 
     "builds a schema aware of deprecation" in testSchema(
       Schema(ObjectType("Simple", "This is a simple type", fields[Unit, Unit](

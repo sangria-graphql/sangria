@@ -34,6 +34,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
                 Map("name" → "Human"),
                 Map("name" → "Query"),
                 Map("name" → "__Directive"),
+                Map("name" → "__DirectiveLocation"),
                 Map("name" → "__EnumValue"),
                 Map("name" → "__Field"),
                 Map("name" → "__InputValue"),

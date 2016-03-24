@@ -1,5 +1,6 @@
 package sangria.execution
 
+import sangria.ast.OperationType
 import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.ast
@@ -82,11 +83,20 @@ class FieldCollector[Ctx, Val](
         .map(d ⇒ schema.directivesByName
           .get(d.name)
           .map(dd ⇒ selection match {
-            case _: ast.Field if !dd.onField ⇒ Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", exceptionHandler, sourceMapper, d.position.toList))
-            case _: ast.InlineFragment | _: ast.FragmentSpread | _: ast.FragmentDefinition if !dd.onFragment ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment", exceptionHandler, sourceMapper, d.position.toList))
-            case _: ast.OperationDefinition if !dd.onOperation ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on operation", exceptionHandler, sourceMapper, d.position.toList))
+            case _: ast.Field if !dd.locations.contains(DirectiveLocation.Field) ⇒
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", exceptionHandler, sourceMapper, d.position.toList))
+            case _: ast.InlineFragment if !dd.locations.contains(DirectiveLocation.InlineFragment) ⇒
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on inline fragment", exceptionHandler, sourceMapper, d.position.toList))
+            case _: ast.FragmentSpread if !dd.locations.contains(DirectiveLocation.FragmentSpread) ⇒
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment spread", exceptionHandler, sourceMapper, d.position.toList))
+            case _: ast.FragmentDefinition if !dd.locations.contains(DirectiveLocation.FragmentDefinition) ⇒
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment definition", exceptionHandler, sourceMapper, d.position.toList))
+            case op: ast.OperationDefinition if op.operationType == OperationType.Query && !dd.locations.contains(DirectiveLocation.Query) ⇒
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on query operation", exceptionHandler, sourceMapper, d.position.toList))
+            case op: ast.OperationDefinition if op.operationType == OperationType.Mutation && !dd.locations.contains(DirectiveLocation.Mutation) ⇒
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on mutation operation", exceptionHandler, sourceMapper, d.position.toList))
+            case op: ast.OperationDefinition if op.operationType == OperationType.Subscription && !dd.locations.contains(DirectiveLocation.Subscription) ⇒
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on subscription operation", exceptionHandler, sourceMapper, d.position.toList))
             case _ ⇒ Success(d → dd)
           })
           .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", exceptionHandler, sourceMapper, d.position.toList))))
