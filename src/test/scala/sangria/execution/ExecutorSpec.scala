@@ -449,6 +449,76 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         List("e", "a", "d", "c", "b"))
     }
 
+    "correct field ordering despite execution order (fragments & directives)" in {
+      case class Sum(a: Int, b: Int) extends Deferred[Int]
+
+      class MyResolver extends DeferredResolver[Any] {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+          case Sum(a, b) ⇒ Future(a + b)
+        }
+      }
+
+      val schema = Schema(ObjectType("Query", fields[Unit, Unit](
+        Field("qux", OptionType(StringType), resolve = _ ⇒ "c"),
+        Field("bar", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(30); "a"}),
+        Field("foo", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(5); "d"}),
+        Field("baz", OptionType(IntType), resolve = _ ⇒ Sum(1, 2)))))
+
+      import sangria.marshalling.queryAst._
+      import sangria.ast
+
+      def keys(res: ast.Value) =
+        res.asInstanceOf[ast.ObjectValue].fieldsByName("data").asInstanceOf[ast.ObjectValue].fields.map(_.name)
+
+      val withFragment =
+        graphql"""
+          {
+            foo
+            ...Frag
+            qux
+          }
+
+          fragment Frag on Query {
+            bar
+            baz
+          }
+        """
+
+      keys(Executor.execute(schema, withFragment, deferredResolver = new MyResolver).await) should be (
+        List("foo", "bar", "baz", "qux"))
+
+      val withComplexFragment =
+        graphql"""
+          {
+            foo
+            ...Matching
+            bar
+          }
+
+          fragment Matching on Query {
+            bar
+            qux
+            foo
+          }
+        """
+
+      keys(Executor.execute(schema, withComplexFragment, deferredResolver = new MyResolver).await) should be (
+        List("foo", "bar", "qux"))
+
+      val withDirectives =
+        graphql"""
+          {
+            foo @skip(if: true)
+            bar
+            foo
+          }
+        """
+
+      keys(Executor.execute(schema, withDirectives, deferredResolver = new MyResolver).await) should be (
+        List("bar", "foo"))
+
+    }
+
     "avoid recursion" in {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
