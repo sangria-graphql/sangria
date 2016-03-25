@@ -77,7 +77,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      renderForTest(Executor.execute(schema, introspectionQuery).await) should be ("""
+      render(schema) should be ("""
         |type Foo {
         |  str: String
         |}
@@ -182,7 +182,8 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
       ))
 
-      val bar = ObjectType("Bar", interfaces[Unit, Unit](foo), Nil)
+      val bar = ObjectType("Bar", interfaces[Unit, Unit](foo), fields[Unit, Unit](
+        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")))
 
       val root = ObjectType("Root", fields[Unit, Unit](
         Field("bar", OptionType(bar), resolve = _ ⇒ ())
@@ -190,7 +191,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      renderForTest(Executor.execute(schema, introspectionQuery).await) should be ("""
+      render(schema) should be ("""
         |type Bar implements Foo {
         |  str: String
         |}
@@ -222,7 +223,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      renderForTest(Executor.execute(schema, introspectionQuery).await) should be ("""
+      render(schema) should be ("""
         |interface Baaz {
         |  int: Int
         |}
@@ -261,7 +262,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      renderForTest(Executor.execute(schema, introspectionQuery).await) should be ("""
+      render(schema) should be ("""
         |type Bar {
         |  str: String
         |}
@@ -294,7 +295,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      renderForTest(Executor.execute(schema, introspectionQuery).await) should be ("""
+      render(schema) should be ("""
         |input InputType {
         |  int: Int
         |}
@@ -325,7 +326,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      renderForTest(Executor.execute(schema, introspectionQuery).await) should be ("""
+      render(schema) should be ("""
         |scalar Odd
         |
         |type Root {
@@ -346,7 +347,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      renderForTest(Executor.execute(schema, introspectionQuery).await) should be ("""
+      render(schema) should be ("""
         |enum RGB {
         |  RED
         |  GREEN

@@ -109,7 +109,7 @@ object SchemaRenderer {
     s"type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe.fields)}\n}"
 
   private def renderObject(tpe: ObjectType[_, _])(implicit m: ResultMarshaller) =
-    s"type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe.fields)}\n}"
+    s"type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe.uniqueFields)}\n}"
 
   private def renderEnum(tpe: IntrospectionEnumType) =
     s"enum ${tpe.name} {\n${renderEnumValuesI(tpe.enumValues)}\n}"
