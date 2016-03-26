@@ -163,13 +163,13 @@ package object schema {
     description = Some("Directs the executor to include this field or fragment only when the `if` argument is true."),
     arguments = IfArg :: Nil,
     locations = Set(DirectiveLocation.Field, DirectiveLocation.FragmentSpread, DirectiveLocation.InlineFragment),
-    shouldInclude = ctx ⇒ ctx.arg[Boolean](IfArg))
+    shouldInclude = ctx ⇒ ctx.arg(IfArg))
 
   val SkipDirective = Directive("skip",
     description = Some("Directs the executor to skip this field or fragment when the `if` argument is true."),
     arguments = IfArg :: Nil,
     locations = Set(DirectiveLocation.Field, DirectiveLocation.FragmentSpread, DirectiveLocation.InlineFragment),
-    shouldInclude = ctx ⇒ !ctx.arg[Boolean](IfArg))
+    shouldInclude = ctx ⇒ !ctx.arg(IfArg))
 
   val BuiltinDirectives = IncludeDirective :: SkipDirective :: Nil
 

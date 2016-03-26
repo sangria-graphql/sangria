@@ -14,10 +14,16 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
 
   case class TestSubject(a: Option[String], b: Option[String])
 
+  val FragDefIncludeDirective = Directive("fragDefInclude",
+    description = Some("Directs the executor to include this fragment definition only when the `if` argument is true."),
+    arguments = IfArg :: Nil,
+    locations = Set(DirectiveLocation.FragmentDefinition),
+    shouldInclude = ctx ⇒ ctx.arg(IfArg))
+
   val schema = Schema(ObjectType("TestType", fields[Unit, TestSubject](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b)
-  )))
+  )), directives = BuiltinDirectives :+ FragDefIncludeDirective)
 
   val data = TestSubject(Some("a"), Some("b"))
 
@@ -218,86 +224,84 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
       }
     }
 
-    // TODO: clarify fragment definition location for `include` and `skip` directives: https://github.com/graphql/graphql-js/pull/317#discussion_r57322168
-//    "works on fragment" should {
-//      "if false omits fragment" in {
-//        executeTestQuery(
-//          """
-//             query Q {
-//               a
-//               ...Frag
-//             }
-//             fragment Frag on TestType @include(if: false) {
-//               b
-//             }
-//          """) should be (Map("data" → Map("a" → "a")))
-//      }
-//
-//      "if true includes fragment" in {
-//        executeTestQuery(
-//          """
-//             query Q {
-//               a
-//               ...Frag
-//             }
-//             fragment Frag on TestType @include(if: true) {
-//               b
-//             }
-//          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
-//      }
-//
-//      "unless false includes fragment" in {
-//        executeTestQuery(
-//          """
-//             query Q {
-//               a
-//               ...Frag
-//             }
-//             fragment Frag on TestType @skip(if: false) {
-//               b
-//             }
-//          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
-//      }
-//
-//      "unless true omits fragment" in {
-//        executeTestQuery(
-//          """
-//             query Q {
-//               a
-//               ...Frag
-//             }
-//             fragment Frag on TestType @skip(if: true) {
-//               b
-//             }
-//          """) should be (Map("data" → Map("a" → "a")))
-//      }
-//
-//      "include `true` includes inline fragments without type condition" in {
-//        executeTestQuery(
-//          """
-//             query Q {
-//               ... {
-//                 a
-//               }
-//               ... @include(if: true) {
-//                 b
-//               }
-//             }
-//          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
-//      }
-//      "include `false` omits inline fragments without type condition" in {
-//        executeTestQuery(
-//          """
-//             query Q {
-//               ... {
-//                 a
-//               }
-//               ... @include(if: false) {
-//                 b
-//               }
-//             }
-//          """) should be(Map("data" → Map("a" → "a")))
-//      }
-//    }
+    "works on fragment" should {
+      "if false omits fragment" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
+               ...Frag
+             }
+             fragment Frag on TestType @fragDefInclude(if: false) {
+               b
+             }
+          """) should be (Map("data" → Map("a" → "a")))
+      }
+
+      "if true includes fragment" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
+               ...Frag
+             }
+             fragment Frag on TestType @fragDefInclude(if: true) {
+               b
+             }
+          """) should be (Map("data" → Map("a" → "a", "b" → "b")))
+      }
+
+      "if false omits fragment (unsupported location)" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
+               ...Frag
+             }
+             fragment Frag on TestType @include(if: false) {
+               b
+             }
+          """) should be (Map("data" → Map("a" → "a")))
+      }
+
+      "if true omits fragment (unsupported location)" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
+               ...Frag
+             }
+             fragment Frag on TestType @include(if: true) {
+               b
+             }
+          """) should be (Map("data" → Map("a" → "a")))
+      }
+
+      "unless false omits fragment (unsupported location)" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
+               ...Frag
+             }
+             fragment Frag on TestType @skip(if: false) {
+               b
+             }
+          """) should be (Map("data" → Map("a" → "a")))
+      }
+
+      "unless true omits fragment (unsupported location)" in {
+        executeTestQuery(
+          """
+             query Q {
+               a
+               ...Frag
+             }
+             fragment Frag on TestType @skip(if: true) {
+               b
+             }
+          """) should be (Map("data" → Map("a" → "a")))
+      }
+    }
   }
 }
