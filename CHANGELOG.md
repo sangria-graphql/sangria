@@ -7,7 +7,6 @@ A minor maintenance release to keep up with the spec changes.
 * Low-level marshalling API is improved: it's now possible to use efficient map builders (which also able to preserver an order of the fields). This improves serialization performance and minimizes memory footprint. All marshalling libraries already take advantage of this API.
 * `SchemaRenderer` prints duplicated fields for a type that implements an interface (#122)
 
-
 ## v0.6.0 (2016-03-19)
 
 * Macro-Based GraphQL Type Derivation (#120). See ["Macro-Based GraphQL Type Derivation" section of the documentation](http://sangria-graphql.org/learn/#macro-based-graphql-type-derivation) for more info.
