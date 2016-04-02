@@ -1,8 +1,10 @@
-## Upcoming
+## v0.6.1 (2016-04-02)
+
+A minor maintenance release to keep up with the spec changes. 
 
 * Field order in the result now reflects field order in the query (according to the spec) for all marshalling libraries that support field ordering (#99) (spec change). 
 * Directive `locations` field replaces `onOperation`, `onFragment` and `onField` (#119) (spec change).
-* Low-level marshalling API is improved: it now possible to use efficient map builders (which also able to preserver an order of the fields). This improves serialization performance and minimizes memory footprint. All marshalling libraries already take advantage of this API.
+* Low-level marshalling API is improved: it's now possible to use efficient map builders (which also able to preserver an order of the fields). This improves serialization performance and minimizes memory footprint. All marshalling libraries already take advantage of this API.
 * `SchemaRenderer` prints duplicated fields for a type that implements an interface (#122)
 
 
