@@ -415,37 +415,59 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
           colors: Seq[Color.Value]
         ) =
           s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}, pet = $pet, ctx = ${ctx.ctx.num}"
+
+        @GraphQLField
+        def opt(str: Option[String], color: Option[Color.Value])(pet: Option[Pet]) =
+          s"str = $str, color = $color, pet = $pet"
       }
 
       val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar)
 
       val schema = Schema(tpe)
 
-      Executor.execute(schema, graphql"""{foo(songs: ["a", "b"]), foo1: foo(songs: ["a", "b"], pet: {name: "mypet", size: 156})}""", Ctx(987, new FooBar)).await should be (
+      val query =
+        graphql"""
+          {
+            foo(songs: ["a", "b"])
+            foo1: foo(songs: ["a", "b"], pet: {name: "mypet", size: 156})
+            opt
+            opt1: opt(str: "test", color: Red, pet: {name: "anotherPet", size: 321})
+          }
+        """
+
+      Executor.execute(schema, query, Ctx(987, new FooBar)).await should be (
         JsObject("data" → JsObject(
           "foo" → JsString("id = 123, songs = a,b, cc = Red, pet = Pet(xxx,Some(322)), ctx = 987"),
-          "foo1" → JsString("id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"))))
+          "foo1" → JsString("id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"),
+          "opt" → JsString("str = None, color = None, pet = None"),
+          "opt1" → JsString("str = Some(test), color = Some(Red), pet = Some(Pet(anotherPet,Some(321)))"))))
 
       import sangria.parser.DeliveryScheme.Throw
 
       val intro = IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
       val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
 
-      introType.fields should have size 1
+      introType.fields should have size 2
 
-      val field = introType.fields.head
+      val Some(helloField) = introType.fields.find(_.name == "foo")
 
-      field.name should be ("foo")
+      helloField.args should have size 4
 
-      field.args should have size 4
-
-      field.args should be (List(
+      helloField.args should be (List(
         IntrospectionInputValue("id", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "Int"), Some("123")),
         IntrospectionInputValue("songs", None,
           IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),None),
         IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), Some("""{"name":"xxx","size":322}""")),
-        IntrospectionInputValue("aaa", Some("bbbb"), IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))), Some("[\"Red\"]")))
-      )
+        IntrospectionInputValue("aaa", Some("bbbb"), IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))), Some("[\"Red\"]"))))
+
+      val Some(optField) = introType.fields.find(_.name == "opt")
+
+      optField.args should have size 3
+
+      optField.args should be (List(
+        IntrospectionInputValue("str", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
+        IntrospectionInputValue("color", None, IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
+        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
     }
   }
 }

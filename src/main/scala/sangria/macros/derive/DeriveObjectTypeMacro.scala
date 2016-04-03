@@ -127,21 +127,25 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   }
 
   private def findActualFieldType(fieldType: Type) =
-    if (fieldType.erasure <:< typeOf[Future[_]].erasure && fieldType.typeArgs.nonEmpty)
+    if (isSupertype[Future[_]](fieldType) && fieldType.typeArgs.nonEmpty)
       fieldType.typeArgs.head
-    else if (fieldType.erasure <:< typeOf[scala.util.Try[_]].erasure && fieldType.typeArgs.nonEmpty)
+    else if (isSupertype[scala.util.Try[_]](fieldType)  && fieldType.typeArgs.nonEmpty)
       fieldType.typeArgs.head
-    else if (fieldType.erasure <:< typeOf[Deferred[_]].erasure && fieldType.baseType(typeOf[Deferred[_]].typeSymbol).typeArgs.nonEmpty)
+    else if (isSupertype[Deferred[_]](fieldType) && fieldType.baseType(typeOf[Deferred[_]].typeSymbol).typeArgs.nonEmpty)
       fieldType.baseType(typeOf[Deferred[_]].typeSymbol).typeArgs.head
-    else if (fieldType.erasure <:< typeOf[Action[_, _]].erasure && fieldType.baseType(typeOf[Action[_, _]].typeSymbol).typeArgs.size == 2)
+    else if (isSupertype[Action[_, _]](fieldType) && fieldType.baseType(typeOf[Action[_, _]].typeSymbol).typeArgs.size == 2)
       fieldType.baseType(typeOf[Action[_, _]].typeSymbol).typeArgs(1)
     else
       fieldType
 
+  private def isSupertype[T : TypeTag](subtype: Type) =
+    subtype.erasure <:< typeTag[T].tpe.erasure
+
   private def fieldWithArguments(member: KnownMember, ctxType: Type, valType: Type, useFn: Boolean) = {
     val args = member.method.paramLists.map(_ map createArg)
     val argsAst = args map (_ map {
-      case NormalArg(name, tpe, _) ⇒ q"c.arg[$tpe]($name)"
+      case NormalArg(name, tpe, _, false) ⇒ q"c.arg[$tpe]($name)"
+      case NormalArg(name, tpe, _, true) ⇒ q"c.argOpt[$tpe]($name)"
       case ContextArg ⇒ q"c"
     })
 
@@ -176,7 +180,15 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           """
       }
 
-      NormalArg(name, tpe, ast)
+      val optional = default.isEmpty && isSupertype[Option[_]](tpe)
+
+      val targetType =
+        if (optional)
+          tpe.baseType(typeOf[Option[_]].typeSymbol).typeArgs.head
+        else
+          tpe
+
+      NormalArg(name, targetType, ast, optional)
   }
 
   private def findKnownMembers(tpe: Type, includeMethods: Set[String]): List[KnownMember] =
@@ -329,7 +341,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   sealed trait Arg
 
   case object ContextArg extends Arg
-  case class NormalArg(name: String, tpe: Type, tree: Tree) extends Arg
+  case class NormalArg(name: String, tpe: Type, tree: Tree, optional : Boolean) extends Arg
 
   sealed trait MacroDeriveObjectSetting
 
