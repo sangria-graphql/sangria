@@ -1,3 +1,9 @@
+## v0.6.2 (2016-04-10)
+
+TODO: compatibility with the latest GraphQL spec
+
+* `deriveContextObjectType`/`deriveObjectType` do not work with Option arguments in some cases (#123)
+
 ## v0.6.1 (2016-04-02)
 
 A minor maintenance release to keep up with the spec changes. 

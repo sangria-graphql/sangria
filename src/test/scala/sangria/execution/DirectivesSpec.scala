@@ -303,5 +303,19 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
           """) should be (Map("data" → Map("a" → "a")))
       }
     }
+
+    "works with skip and include directives" should {
+      "include and no skip" in {
+        executeTestQuery("{ a, b @include(if: true) @skip(if: false) }") should be (Map("data" → Map("a" → "a", "b" → "b")))
+      }
+
+      "include and skip" in {
+        executeTestQuery("{ a, b @include(if: true) @skip(if: true) }") should be (Map("data" → Map("a" → "a")))
+      }
+
+      "no include or skip" in {
+        executeTestQuery("{ a, b @include(if: false) @skip(if: false) }") should be (Map("data" → Map("a" → "a")))
+      }
+    }
   }
 }
