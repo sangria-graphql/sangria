@@ -21,7 +21,7 @@ sealed trait InputType[+T] extends Type
 
 sealed trait OutputType[+T] extends Type
 
-sealed trait LeafType extends Type
+sealed trait LeafType extends Type with Named
 sealed trait CompositeType[T] extends Type with Named with OutputType[T]
 sealed trait AbstractType extends Type with Named {
   def name: String

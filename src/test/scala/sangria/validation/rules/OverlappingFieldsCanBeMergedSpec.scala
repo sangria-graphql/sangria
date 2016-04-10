@@ -295,16 +295,27 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       ))
 
     "return types must be unambiguous" should {
-      val SomeBox = InterfaceType("SomeBox", fields[Unit, Unit](
+      lazy val SomeBox: InterfaceType[Unit, Unit] = InterfaceType("SomeBox", () ⇒ fields[Unit, Unit](
+        Field("deepBox", OptionType(SomeBox), resolve = _ ⇒ None),
         Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None)
       ))
 
-      val StringBox = ObjectType("StringBox", interfaces[Unit, Unit](SomeBox), fields[Unit, Unit](
-        Field("scalar", OptionType(StringType), resolve = _ ⇒ None)
+      lazy val StringBox: ObjectType[Unit, Unit] = ObjectType("StringBox", interfaces[Unit, Unit](SomeBox), () ⇒ fields[Unit, Unit](
+        Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deepBox", OptionType(StringBox), resolve = _ ⇒ None),
+        Field("scalar", OptionType(StringType), resolve = _ ⇒ None),
+        Field("listStringBox", OptionType(ListType(OptionType(StringBox))), resolve = _ ⇒ None),
+        Field("stringBox", OptionType(StringBox), resolve = _ ⇒ None),
+        Field("intBox", OptionType(IntBox), resolve = _ ⇒ None)
       ))
 
-      val IntBox = ObjectType("IntBox", interfaces[Unit, Unit](SomeBox), fields[Unit, Unit](
-        Field("scalar", OptionType(IntType), resolve = _ ⇒ None)
+      lazy val IntBox: ObjectType[Unit, Unit] = ObjectType("IntBox", interfaces[Unit, Unit](SomeBox), () ⇒ fields[Unit, Unit](
+        Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deepBox", OptionType(IntBox), resolve = _ ⇒ None),
+        Field("scalar", OptionType(IntType), resolve = _ ⇒ None),
+        Field("listStringBox", OptionType(ListType(OptionType(StringBox))), resolve = _ ⇒ None),
+        Field("stringBox", OptionType(StringBox), resolve = _ ⇒ None),
+        Field("intBox", OptionType(IntBox), resolve = _ ⇒ None)
       ))
 
       val NonNullStringBox1 = InterfaceType("NonNullStringBox1", fields[Unit, Unit](
@@ -312,7 +323,9 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       ))
 
       val NonNullStringBox1Impl = ObjectType("NonNullStringBox1Impl", interfaces[Unit, Unit](SomeBox, NonNullStringBox1), fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ ⇒ "")
+        Field("scalar", StringType, resolve = _ ⇒ ""),
+        Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deepBox", OptionType(SomeBox), resolve = _ ⇒ None)
       ))
 
       val NonNullStringBox2 = InterfaceType("NonNullStringBox2", fields[Unit, Unit](
@@ -320,7 +333,9 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       ))
 
       val NonNullStringBox2Impl = ObjectType("NonNullStringBox2Impl", interfaces[Unit, Unit](SomeBox, NonNullStringBox2), fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ ⇒ "")
+        Field("scalar", StringType, resolve = _ ⇒ ""),
+        Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
+        Field("deepBox", OptionType(SomeBox), resolve = _ ⇒ None)
       ))
 
       val Connection = ObjectType("NonNullStringBox2", fields[Unit, Unit](
@@ -359,7 +374,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'scalar' conflict because they return differing types 'Int' and 'String!'." →
+          "Field 'scalar' conflict because they return conflicting types 'Int' and 'String!'." →
             List(Pos(5, 17), Pos(8, 17))
         ))
 
@@ -377,14 +392,14 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           }
         """)
 
-      "'allows differing return types which cannot overlap" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "allows non-conflicting overlaping types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
-              ...on IntBox {
-                scalar
+              ... on IntBox {
+                scalar: unrelatedField
               }
-              ...on StringBox {
+              ... on StringBox {
                 scalar
               }
             }
@@ -430,6 +445,135 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
             }
           }
         """)
+
+      // In this case `deepBox` returns `SomeBox` in the first usage, and
+      // `StringBox` in the second usage. These return types are not the same!
+      // however this is valid because the return *shapes* are compatible.
+      "compatible return shapes on different return types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on SomeBox {
+                deepBox {
+                  unrelatedField
+                }
+              }
+              ... on StringBox {
+                deepBox {
+                  unrelatedField
+                }
+              }
+            }
+          }
+        """)
+
+      "disallows differing return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on IntBox {
+                scalar
+              }
+              ... on StringBox {
+                scalar
+              }
+            }
+          }
+        """,
+        List("Field 'scalar' conflict because they return conflicting types 'Int' and 'String'" → List(Pos(5, 17), Pos(8, 17))))
+
+      "disallows differing return type nullability despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on NonNullStringBox1 {
+                scalar
+              }
+              ... on StringBox {
+                scalar
+              }
+            }
+          }
+        """,
+        List("Field 'scalar' conflict because they return conflicting types 'String!' and 'String'" → List(Pos(5, 17), Pos(8, 17))))
+
+      "disallows differing return type list despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on IntBox {
+                box: listStringBox {
+                  scalar
+                }
+              }
+              ... on StringBox {
+                box: stringBox {
+                  scalar
+                }
+              }
+            }
+          }
+        """,
+        List("Field 'box' conflict because they return conflicting types '[StringBox]' and 'StringBox'" → List(Pos(5, 17), Pos(10, 17))))
+
+      "disallows differing return type list despite no overlap (reverse)" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on IntBox {
+                box: stringBox {
+                  scalar
+                }
+              }
+              ... on StringBox {
+                box: listStringBox {
+                  scalar
+                }
+              }
+            }
+          }
+        """,
+        List("Field 'box' conflict because they return conflicting types 'StringBox' and '[StringBox]'" → List(Pos(5, 17), Pos(10, 17))))
+
+      "disallows differing subfields" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on IntBox {
+                box: stringBox {
+                  val: scalar
+                  val: unrelatedField
+                }
+              }
+              ... on StringBox {
+                box: stringBox {
+                  val: scalar
+                }
+              }
+            }
+          }
+        """,
+        List("Field 'val' conflict because 'scalar' and 'unrelatedField' are different fields." → List(Pos(6, 19), Pos(7, 19))))
+
+      "disallows differing deep return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on IntBox {
+                box: stringBox {
+                  scalar
+                }
+              }
+              ... on StringBox {
+                box: intBox {
+                  scalar
+                }
+              }
+            }
+          }
+        """,
+        List("Field 'box' conflict because subfields 'scalar' conflict because they return conflicting types 'String' and 'Int'" →
+          List(Pos(5, 17), Pos(10, 17), Pos(6, 19), Pos(11, 19))))
     }
   }
 }
