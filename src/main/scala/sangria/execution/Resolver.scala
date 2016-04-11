@@ -76,7 +76,7 @@ class Resolver[Ctx](
             resolveField(uc, tpe, path :+ name, value, errors, name, fields) match {
               case (updatedErrors, None, _) if isOptional(tpe, origField.name) ⇒
                 Future.successful(Result(updatedErrors, Some(marshaller.addMapNodeElem(acc.asInstanceOf[marshaller.MapBuilder], fields.head.outputName, marshaller.nullNode, optional = isOptional(tpe, origField.name)))) → uc)
-              case (updatedErrors, None, _) ⇒ Future.successful(Result(updatedErrors, None), uc)
+              case (updatedErrors, None, _) ⇒ Future.successful(Result(updatedErrors, None) → uc)
               case (updatedErrors, Some(result), newUc) ⇒
                 val sfield = tpe.getField(schema, origField.name).head
 
@@ -164,11 +164,11 @@ class Resolver[Ctx](
       case (acc @ (_, None), _) ⇒ acc
       case (acc, CollectedField(name, origField, _)) if tpe.getField(schema, origField.name).isEmpty ⇒ acc
       case ((errors, s @ Some(acc)), CollectedField(name, origField, Failure(error))) ⇒
-        errors.add(path :+ name, error) → (if (isOptional(tpe, origField.name)) Some(acc :+ (Vector(origField), None)) else None)
+        errors.add(path :+ name, error) → (if (isOptional(tpe, origField.name)) Some(acc :+ (Vector(origField) → None)) else None)
       case ((errors, s @ Some(acc)), CollectedField(name, origField, Success(fields))) ⇒
         resolveField(userCtx, tpe, path :+ name, value, errors, name, fields) match {
-          case (updatedErrors, Some(result), updateCtx) ⇒ updatedErrors → Some(acc :+ (fields, Some((tpe.getField(schema, origField.name).head, updateCtx, result))))
-          case (updatedErrors, None, _) if isOptional(tpe, origField.name) ⇒ updatedErrors → Some(acc :+ (Vector(origField), None))
+          case (updatedErrors, Some(result), updateCtx) ⇒ updatedErrors → Some(acc :+ (fields → Some((tpe.getField(schema, origField.name).head, updateCtx, result))))
+          case (updatedErrors, None, _) if isOptional(tpe, origField.name) ⇒ updatedErrors → Some(acc :+ (Vector(origField) → None))
           case (updatedErrors, None, _) ⇒ updatedErrors → None
         }
     }

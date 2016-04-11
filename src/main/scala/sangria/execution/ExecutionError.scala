@@ -6,7 +6,7 @@ import sangria.parser.SourceMapper
 import sangria.validation.{AstNodeLocation, Violation}
 
 trait UserFacingError {
-  def getMessage: String
+  def getMessage(): String
 }
 
 trait WithViolations extends UserFacingError{
@@ -24,7 +24,7 @@ trait ErrorWithResolver {
 
 class ExecutionError(message: String, val exceptionHandler: Executor.ExceptionHandler, val sourceMapper: Option[SourceMapper] = None, val positions: List[Position] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError with ErrorWithResolver {
   override def simpleErrorMessage = super.getMessage
-  override def getMessage = super.getMessage + astLocation
+  override def getMessage() = super.getMessage + astLocation
 }
 
 trait QueryAnalysisError extends ErrorWithResolver {

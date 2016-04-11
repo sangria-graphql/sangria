@@ -214,9 +214,8 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
     case tree @ q"$setting.apply(..${fields: List[String]})" if checkSetting[ExcludeInputFields.type](setting) ⇒
       Right(MacroExcludeFields(fields.toSet, tree.pos))
 
-    case tree ⇒ Left(tree.pos,
-      "Unsupported shape of derivation config. " +
-        "Please define subclasses of `DeriveInputObjectTypeSetting` directly in the argument list of the macro.")
+    case tree ⇒ Left(tree.pos →
+      "Unsupported shape of derivation config. Please define subclasses of `DeriveInputObjectTypeSetting` directly in the argument list of the macro.")
   }
 
   private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation], defaultValue: Option[(Type, TermName)]) {

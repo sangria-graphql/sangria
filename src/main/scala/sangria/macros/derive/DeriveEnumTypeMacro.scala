@@ -190,9 +190,8 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
     case tree @ q"$setting.apply(..${values: List[String]})" if checkSetting[ExcludeValues.type](setting) ⇒
       Right(MacroExcludeValues(values.toSet, tree.pos))
 
-    case tree ⇒ Left(tree.pos,
-      "Unsupported shape of derivation config. " +
-          "Please define subclasses of `DeriveEnumTypeConfig` directly in the argument list of the macro.")
+    case tree ⇒ Left(tree.pos →
+        "Unsupported shape of derivation config. Please define subclasses of `DeriveEnumTypeConfig` directly in the argument list of the macro.")
   }
 
   sealed trait MacroDeriveEnumSetting

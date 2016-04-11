@@ -219,12 +219,12 @@ object PossibleObject {
     PossibleObject[Ctx, Abstract](obj.asInstanceOf[ObjectType[Ctx, Concrete]])
 }
 
-trait PossibleType[AbstractType, ConcreteType]
+trait PossibleType[AbstrType, ConcreteType]
 
 object PossibleType {
   private object SingletonPossibleType extends PossibleType[AnyRef, AnyRef]
 
-  def create[AbstractType, ConcreteType] = SingletonPossibleType.asInstanceOf[PossibleType[AbstractType, ConcreteType]]
+  def create[AbstrType, ConcreteType] = SingletonPossibleType.asInstanceOf[PossibleType[AbstrType, ConcreteType]]
 
   implicit def InheritanceBasedPossibleType[Abstract, Concrete](implicit ev: Concrete <:< Abstract): PossibleType[Abstract, Concrete] =
     create[Abstract, Concrete]
@@ -656,9 +656,9 @@ case class Schema[Ctx, Val](
       }
     }
 
-    val schemaTypes = collectTypes("a '__Schema' type", 30, introspection.__Schema, Map(BuiltinScalars map (s ⇒ s.name → (40, s)): _*))
+    val schemaTypes = collectTypes("a '__Schema' type", 30, introspection.__Schema, Map(BuiltinScalars map (s ⇒ s.name → (40 → s)): _*))
     val queryTypes = collectTypes("a query type", 20, query, schemaTypes)
-    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t ⇒ t.name → (10, t))
+    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t ⇒ t.name → (10 → t))
     val queryAndSubTypes = mutation map (collectTypes("a mutation type", 10, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
     val queryAndSubAndMutTypes = subscription map (collectTypes("a subscription type", 10, _, queryAndSubTypes)) getOrElse queryAndSubTypes
 
