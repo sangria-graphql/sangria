@@ -1,3 +1,7 @@
+## Upcoming
+
+* Interface hierarchies are not correctly rendered with `SchemaRenderer` (#125).
+
 ## v0.6.2 (2016-04-10)
 
 This release is fully compatible with ["April 2016"](https://github.com/facebook/graphql/releases/tag/April2016) version of the GraphQL specification.

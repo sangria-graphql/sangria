@@ -29,8 +29,8 @@ object SchemaRenderer {
       ""
 
   private def renderImplementedInterfaces(tpe: ObjectLikeType[_, _])(implicit m: ResultMarshaller) =
-    if (tpe.interfaces.nonEmpty)
-      tpe.interfaces map (_.name) mkString (" implements ", ", ", "")
+    if (tpe.allInterfaces.nonEmpty)
+      tpe.allInterfaces map (_.name) mkString (" implements ", ", ", "")
     else
       ""
 
@@ -145,7 +145,7 @@ object SchemaRenderer {
     s"interface ${tpe.name} {\n${renderFields(tpe.fields)}\n}"
 
   private def renderInterface(tpe: InterfaceType[_, _])(implicit m: ResultMarshaller) =
-    s"interface ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe.fields)}\n}"
+    s"interface ${tpe.name} {\n${renderFields(tpe.uniqueFields)}\n}"
 
   private def renderUnion(tpe: IntrospectionUnionType) =
     if (tpe.possibleTypes.nonEmpty)

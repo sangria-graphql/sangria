@@ -114,6 +114,9 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
       case ((visited, acc), e) ⇒ (visited :+ valueFn(e), acc :+ e)
     }._2
 
+  lazy val allInterfaces: Vector[InterfaceType[Ctx, _]] =
+    removeDuplicates(interfaces.toVector.flatMap(i ⇒ i +: i.allInterfaces), (i: InterfaceType[Ctx, _]) ⇒ i.name)
+
   lazy val fields: Vector[Field[Ctx, _]] = ownFields ++ interfaces.flatMap(i ⇒ i.fields.asInstanceOf[Vector[Field[Ctx, _]]])
 
   lazy val uniqueFields: Vector[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) ⇒ e.name)

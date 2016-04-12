@@ -243,6 +243,44 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |""".stripMargin)
     }
 
+    "Print Multiple Interface (with interface hierarchy)" in {
+      val foo = InterfaceType("Foo", fields[Unit, Unit](
+        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
+      ))
+
+      val baz = InterfaceType("Baaz", fields[Unit, Unit](
+        Field("int", OptionType(IntType), resolve = _ ⇒ 1)
+      ), interfaces[Unit, Unit](foo))
+
+      val bar = ObjectType("Bar", interfaces[Unit, Unit](baz), Nil)
+
+      val root = ObjectType("Root", fields[Unit, Unit](
+        Field("bar", OptionType(bar), resolve = _ ⇒ ())
+      ))
+
+      val schema = Schema(root)
+
+      render(schema) should be ("""
+        |interface Baaz {
+        |  int: Int
+        |  str: String
+        |}
+        |
+        |type Bar implements Baaz, Foo {
+        |  int: Int
+        |  str: String
+        |}
+        |
+        |interface Foo {
+        |  str: String
+        |}
+        |
+        |type Root {
+        |  bar: Bar
+        |}
+        |""".stripMargin)
+    }
+
     "Print Unions" in {
       val foo = ObjectType("Foo", fields[Unit, Unit](
         Field("bool", OptionType(BooleanType), resolve = _ ⇒ true)
