@@ -23,9 +23,8 @@ object GraphQLOutputTypeLookup extends GraphQLOutputTypeLookupLowPrio {
 
 trait GraphQLOutputTypeLookupLowPrio {
   implicit def seqLookup[T : GraphQLOutputTypeLookup, Coll[_] <: Seq[_]] = new GraphQLOutputTypeLookup[Coll[T]] {
-    def graphqlType = {
+    def graphqlType =
       ListType(implicitly[GraphQLOutputTypeLookup[T]].graphqlType).asInstanceOf[OutputType[Coll[T]]]
-    }
   }
 }
 
