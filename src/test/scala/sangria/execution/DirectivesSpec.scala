@@ -122,9 +122,6 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
                  b
                }
              }
-             fragment Frag on TestType {
-               b
-             }
           """) should be (Map("data" → Map("a" → "a")))
       }
 
@@ -136,9 +133,6 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
                ... on TestType @include(if: true) {
                  b
                }
-             }
-             fragment Frag on TestType {
-               b
              }
           """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
@@ -152,9 +146,6 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
                  b
                }
              }
-             fragment Frag on TestType {
-               b
-             }
           """) should be (Map("data" → Map("a" → "a", "b" → "b")))
       }
 
@@ -166,9 +157,6 @@ class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
                ... on TestType @skip(if: true) {
                  b
                }
-             }
-             fragment Frag on TestType {
-               b
              }
           """) should be (Map("data" → Map("a" → "a")))
       }
