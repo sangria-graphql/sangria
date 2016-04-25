@@ -363,6 +363,22 @@ package object introspection {
       |      ofType {
       |        kind
       |        name
+      |        ofType {
+      |          kind
+      |          name
+      |          ofType {
+      |            kind
+      |            name
+      |            ofType {
+      |              kind
+      |              name
+      |              ofType {
+      |                kind
+      |                name
+      |              }
+      |            }
+      |          }
+      |        }
       |      }
       |    }
       |  }

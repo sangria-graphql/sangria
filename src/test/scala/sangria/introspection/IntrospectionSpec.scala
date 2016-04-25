@@ -80,7 +80,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "ENUM",
-                            "name" → "__DirectiveLocation"))))),
+                            "name" → "__DirectiveLocation",
+                            "ofType" → null))))),
                   Map("name" → "args",
                     "description" → null,
                     "isDeprecated" → false,
@@ -97,7 +98,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__InputValue"))))),
+                            "name" → "__InputValue",
+                            "ofType" → null))))),
                   Map(
                     "name" → "onOperation",
                     "description" → null,
@@ -287,7 +289,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__InputValue"))))),
+                            "name" → "__InputValue",
+                            "ofType" → null))))),
                   Map(
                     "name" → "type",
                     "description" → null,
@@ -409,7 +412,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__Type"))))),
+                            "name" → "__Type",
+                            "ofType" → null))))),
                   Map(
                     "name" → "queryType",
                     "description" → "The type that query operations will be rooted at.",
@@ -460,7 +464,8 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                           "name" → null,
                           "ofType" → Map(
                             "kind" → "OBJECT",
-                            "name" → "__Directive")))))
+                            "name" → "__Directive",
+                            "ofType" → null)))))
                 ),
                 "kind" → "OBJECT",
                 "possibleTypes" → null
