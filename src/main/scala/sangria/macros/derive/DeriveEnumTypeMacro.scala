@@ -83,7 +83,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
         val configName = config.collect{case MacroRenameValue(`name`, tree, _) ⇒ tree}.lastOption
         val actualName =
           if (config.exists(_.isInstanceOf[MacroUppercaseValues]))
-            q"sangria.util.StringUtil.camelCaseToUpperCase(${configName orElse annotationName getOrElse q"$name"})"
+            q"sangria.util.StringUtil.camelCaseToUnderscore(${configName orElse annotationName getOrElse q"$name"}).toUpperCase"
           else
             q"${configName orElse annotationName getOrElse q"$name"}"
 
