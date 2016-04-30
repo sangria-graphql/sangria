@@ -61,7 +61,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'meowVolume' on type 'Dog'." → Some(Pos(3, 11))
+        "Cannot query field 'meowVolume' on type 'Dog'. Did you mean 'barkVolume'?" → Some(Pos(3, 11))
       ))
 
     "Field not defined deeply, only reports first" in expectFails(
@@ -97,7 +97,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'meowVolume' on type 'Dog'." → Some(Pos(4, 13))
+        "Cannot query field 'meowVolume' on type 'Dog'. Did you mean 'barkVolume'?" → Some(Pos(4, 13))
       ))
 
     "Aliased field target not defined" in expectFails(
@@ -107,7 +107,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'mooVolume' on type 'Dog'." → Some(Pos(3, 11))
+        "Cannot query field 'mooVolume' on type 'Dog'. Did you mean 'barkVolume'?" → Some(Pos(3, 11))
       ))
 
     "Aliased lying field target not defined" in expectFails(
@@ -117,7 +117,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'kawVolume' on type 'Dog'." → Some(Pos(3, 11))
+        "Cannot query field 'kawVolume' on type 'Dog'. Did you mean 'barkVolume'?" → Some(Pos(3, 11))
       ))
 
     "Not defined on interface" in expectFails(
@@ -137,7 +137,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'nickname' on type 'Pet'. However, this field exists on 'Cat', 'Dog'. Perhaps you meant to use an inline fragment?" → Some(Pos(3, 11))
+        "Cannot query field 'nickname' on type 'Pet'. Did you mean to use an inline fragment on 'Cat' or 'Dog'?" → Some(Pos(3, 11))
       ))
 
     "Meta field selection on union" in expectPasses(
@@ -164,7 +164,7 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Cannot query field 'name' on type 'CatOrDog'. However, this field exists on 'Being', 'Pet', 'Canine', 'Cat', 'Dog'. Perhaps you meant to use an inline fragment?" → Some(Pos(3, 11))
+        "Cannot query field 'name' on type 'CatOrDog'. Did you mean to use an inline fragment on 'Being', 'Pet', 'Canine', 'Cat' or 'Dog'?" → Some(Pos(3, 11))
       ))
 
     "valid field in inline fragment" in expectPasses(
@@ -194,18 +194,33 @@ class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
 
   "Fields on correct type error message" should {
     "Works with no suggestions" in {
-      UndefinedFieldViolation("T", "f", Nil, None, Nil).simpleErrorMessage should be (
-        "Cannot query field 'T' on type 'f'.")
+      UndefinedFieldViolation("f", "T", Nil, Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'f' on type 'T'.")
     }
 
-    "Works with no small numbers of suggestions" in {
-      UndefinedFieldViolation("T", "f", "A" :: "B" :: Nil, None, Nil).simpleErrorMessage should be (
-        "Cannot query field 'T' on type 'f'. However, this field exists on 'A', 'B'. Perhaps you meant to use an inline fragment?")
+    "Works with no small numbers of type suggestions" in {
+      UndefinedFieldViolation("f", "T", "A" :: "B" :: Nil, Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'f' on type 'T'. Did you mean to use an inline fragment on 'A' or 'B'?")
     }
 
-    "Works with lots of suggestions" in {
-      UndefinedFieldViolation("T", "f", "A" :: "B" :: "C" :: "D" :: "E" :: "F" :: Nil, None, Nil).simpleErrorMessage should be (
-        "Cannot query field 'T' on type 'f'. However, this field exists on 'A', 'B', 'C', 'D', 'E', and 1 other types. Perhaps you meant to use an inline fragment?")
+    "Works with no small numbers of field suggestions" in {
+      UndefinedFieldViolation("f", "T", Nil, "z" :: "y" :: Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'f' on type 'T'. Did you mean 'z' or 'y'?")
+    }
+
+    "Only shows one set of suggestions at a time, preferring types" in {
+      UndefinedFieldViolation("f", "T", "A" :: "B" :: Nil, "z" :: "y" :: Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'f' on type 'T'. Did you mean to use an inline fragment on 'A' or 'B'?")
+    }
+
+    "Limits lots of type suggestions" in {
+      UndefinedFieldViolation("f", "T", "A" :: "B" :: "C" :: "D" :: "E" :: "F" :: Nil, Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'f' on type 'T'. Did you mean to use an inline fragment on 'A', 'B', 'C', 'D' or 'E'?")
+    }
+
+    "Limits lots of field suggestions" in {
+      UndefinedFieldViolation("f", "T", Nil, "z" :: "y" :: "x" :: "w" :: "v" :: "u" :: Nil, None, Nil).simpleErrorMessage should be (
+        "Cannot query field 'f' on type 'T'. Did you mean 'z', 'y', 'x', 'w' or 'v'?")
     }
   }
 }

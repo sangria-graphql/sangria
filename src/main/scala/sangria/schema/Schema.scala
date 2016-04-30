@@ -669,6 +669,7 @@ case class Schema[Ctx, Val](
   }
 
   lazy val typeList = types.values.toList.sortBy(t ⇒ t._1 + t._2.name).map(_._2)
+  lazy val availableTypeNames = typeList map (_.name)
 
   lazy val allTypes = types collect {case (name, (_, tpe)) ⇒ name → tpe}
   lazy val inputTypes = types collect {case (name, (_, tpe: InputType[_])) ⇒ name → tpe}

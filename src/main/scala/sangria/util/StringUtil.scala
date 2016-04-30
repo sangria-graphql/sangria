@@ -15,7 +15,7 @@ object StringUtil {
     if (items.isEmpty)
       throw new IllegalArgumentException("List is empty")
     else {
-      val quoted = items map ("\"" + _ + "\"") take limit
+      val quoted = items map ("'" + _ + "'") take limit
       val start = quoted dropRight 1
       val last = quoted.last
 

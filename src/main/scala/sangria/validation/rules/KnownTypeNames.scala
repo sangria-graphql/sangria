@@ -2,6 +2,7 @@ package sangria.validation.rules
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand._
+import sangria.util.StringUtil
 import sangria.validation._
 
 import scala.language.postfixOps
@@ -18,7 +19,11 @@ class KnownTypeNames extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case ast.NamedType(name, pos) ⇒
         if (!ctx.schema.allTypes.contains(name))
-          Left(Vector(UnknownTypeViolation(name, ctx.sourceMapper, pos.toList)))
+          Left(Vector(UnknownTypeViolation(
+            name,
+            StringUtil.suggestionList(name, ctx.schema.availableTypeNames),
+            ctx.sourceMapper,
+            pos.toList)))
         else
           Right(Continue)
     }

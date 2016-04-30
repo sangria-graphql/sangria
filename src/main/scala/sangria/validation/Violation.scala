@@ -2,10 +2,19 @@ package sangria.validation
 
 import org.parboiled2.Position
 import sangria.parser.SourceMapper
+import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
 
 trait Violation {
   def errorMessage: String
+}
+
+object Violation {
+  def didYouMean(suggestions: Seq[String], text: String = "Did you mean"): String =
+    if (suggestions.nonEmpty)
+      s" $text ${StringUtil.quotedOrList(suggestions)}?"
+    else
+      ""
 }
 
 abstract class BaseViolation(val errorMessage: String) extends Violation
@@ -136,23 +145,22 @@ case class DefaultForNonNullArgViolation(varName: String, typeName: String, gues
   lazy val simpleErrorMessage = s"Variable '$$$varName' of type '$typeName' is required and will never use the default value. Perhaps you meant to use type '$guessTypeName'."
 }
 
-case class UndefinedFieldViolation(fieldName: String, typeName: String, suggestedTypes: Seq[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  import UndefinedFieldViolation.MaxSuggestions
-
+case class UndefinedFieldViolation(
+  fieldName: String,
+  typeName: String,
+  suggestedTypeNames: Seq[String],
+  suggestedFieldNames: Seq[String],
+  sourceMapper: Option[SourceMapper],
+  positions: List[Position]
+) extends AstNodeViolation {
   lazy val simpleErrorMessage = {
     val message = s"Cannot query field '$fieldName' on type '$typeName'."
+    val didYouMean =
+      if (suggestedTypeNames.nonEmpty) Violation.didYouMean(suggestedTypeNames, "Did you mean to use an inline fragment on")
+      else Violation.didYouMean(suggestedFieldNames)
 
-    if (suggestedTypes.nonEmpty) {
-      val list = suggestedTypes take MaxSuggestions map ("'" + _ + "'") mkString ", "
-      val more = if (suggestedTypes.size > MaxSuggestions) s", and ${suggestedTypes.size- MaxSuggestions} other types" else ""
-
-      message + s" However, this field exists on $list$more. Perhaps you meant to use an inline fragment?"
-    } else message
+    message + didYouMean
   }
-}
-
-object UndefinedFieldViolation {
-  val MaxSuggestions = 5
 }
 
 case class InlineFragmentOnNonCompositeErrorViolation(typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
@@ -163,12 +171,12 @@ case class FragmentOnNonCompositeErrorViolation(fragName: String, typeName: Stri
   lazy val simpleErrorMessage = s"Fragment '$fragName' cannot condition on non composite type '$typeName'."
 }
 
-case class UnknownArgViolation(argName: String, fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Unknown argument '$argName' on field '$fieldName' of type '$typeName'."
+case class UnknownArgViolation(argName: String, fieldName: String, typeName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Unknown argument '$argName' on field '$fieldName' of type '$typeName'.${Violation.didYouMean(suggestedArgs)}"
 }
 
-case class UnknownDirectiveArgViolation(argName: String, dirName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Unknown argument '$argName' on directive '$dirName'."
+case class UnknownDirectiveArgViolation(argName: String, dirName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Unknown argument '$argName' on directive '$dirName'.${Violation.didYouMean(suggestedArgs)}"
 }
 
 case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
@@ -183,8 +191,8 @@ case class UnknownFragmentViolation(name: String, sourceMapper: Option[SourceMap
   lazy val simpleErrorMessage = s"Unknown fragment '$name'."
 }
 
-case class UnknownTypeViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Unknown type '$name'."
+case class UnknownTypeViolation(name: String, suggestedTypes: Seq[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Unknown type '$name'.${Violation.didYouMean(suggestedTypes)}"
 }
 
 case class CycleErrorViolation(fragmentName: String, spreadNames: List[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {

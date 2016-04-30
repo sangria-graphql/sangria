@@ -3,6 +3,7 @@ package sangria.validation.rules
 import sangria.ast
 import sangria.ast.AstVisitorCommand._
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
+import sangria.util.StringUtil
 import sangria.validation._
 
 /**
@@ -23,6 +24,7 @@ class KnownArgumentNames extends ValidationRule {
                   name,
                   field.name,
                   ctx.typeInfo.previousParentType.fold("")(SchemaRenderer.renderTypeName(_, topLevel = true)),
+                  StringUtil.suggestionList(name, field.arguments map (_.name)),
                   ctx.sourceMapper,
                   pos.toList)))
               case _ ⇒
@@ -35,6 +37,7 @@ class KnownArgumentNames extends ValidationRule {
                 Left(Vector(UnknownDirectiveArgViolation(
                   name,
                   dir.name,
+                  StringUtil.suggestionList(name, dir.arguments map (_.name)),
                   ctx.sourceMapper,
                   pos.toList)))
               case _ ⇒

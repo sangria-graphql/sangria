@@ -19,19 +19,19 @@ class StringUtilSpec extends WordSpec with Matchers {
     }
 
     "Returns single quoted item" in {
-      quotedOrList(Seq("A")) should be ("\"A\"")
+      quotedOrList(Seq("A")) should be ("'A'")
     }
 
     "Returns two item list" in {
-      quotedOrList(Seq("A", "B")) should be ("\"A\" or \"B\"")
+      quotedOrList(Seq("A", "B")) should be ("'A' or 'B'")
     }
 
     "Returns comma separated many item list" in {
-      quotedOrList(Seq("A", "B", "C")) should be ("\"A\", \"B\" or \"C\"")
+      quotedOrList(Seq("A", "B", "C")) should be ("'A', 'B' or 'C'")
     }
 
     "Limits to five items" in {
-      quotedOrList(Seq("A", "B", "C", "D", "E", "F")) should be ("\"A\", \"B\", \"C\", \"D\" or \"E\"")
+      quotedOrList(Seq("A", "B", "C", "D", "E", "F")) should be ("'A', 'B', 'C', 'D' or 'E'")
     }
   }
 
