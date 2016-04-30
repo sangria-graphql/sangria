@@ -34,4 +34,18 @@ class StringUtilSpec extends WordSpec with Matchers {
       quotedOrList(Seq("A", "B", "C", "D", "E", "F")) should be ("\"A\", \"B\", \"C\", \"D\" or \"E\"")
     }
   }
+
+  "suggestionList" should {
+    "Returns results when input is empty" in {
+      suggestionList("", Seq("a")) should be (Seq("a"))
+    }
+
+    "Returns empty array when there are no options" in {
+      suggestionList("input", Seq.empty) should be (Seq.empty)
+    }
+    
+    "Returns options sorted based on similarity" in {
+      suggestionList("abc", Seq("a", "ab", "abc")) should be (Seq("abc", "ab"))
+    }
+  }
 }
