@@ -236,7 +236,7 @@ case class MissingFieldArgViolation(fieldName: String, argName: String, typeName
 }
 
 case class FieldsConflictViolation(outputName: String, reason: Either[String, Vector[ConflictReason]], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Field '$outputName' conflict because ${reasonMessage(reason)}."
+  lazy val simpleErrorMessage = s"Field '$outputName' conflict because ${reasonMessage(reason)}. Use different aliases on the fields to fetch both if this was intentional."
 
   private def reasonMessage(reason: Either[String, Vector[ConflictReason]]): String = reason match {
     case Left(message) ⇒ message
