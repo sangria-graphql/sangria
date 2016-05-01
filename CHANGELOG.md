@@ -32,6 +32,7 @@
 * Deepen introspection query from 3 levels to 7 (#128).
 * Improve validation error message when field names conflict (#130).
 * Interface hierarchies are not correctly rendered with `SchemaRenderer` (#125).
+* Updated parboiled to v2.1.3
 
 ## v0.6.2 (2016-04-10)
 

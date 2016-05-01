@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "0.6.3-SNAPSHOT"
+version := "0.6.3"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
   // parsing
-  "org.parboiled" %% "parboiled" % "2.1.2",
+  "org.parboiled" %% "parboiled" % "2.1.3",
 
   // marshalling
   "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.1",
