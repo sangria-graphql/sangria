@@ -1,5 +1,36 @@
-## Upcoming
+## v0.6.2 (2016-05-01)
 
+* Marshaling for [Amazon Ion](http://amznlabs.github.io/ion-docs/index.html) data format is introduced. Amazon Ion is a richly-typed, self-describing, hierarchical data serialization format offering interchangeable binary and text representations.
+
+  You need following dependency to use it:
+   
+  ```scala
+  "org.sangria-graphql" %% "sangria-ion" % "0.1.0"
+  ```
+  
+  In order to use Ion marshalling, you need an implicit instance of `IonSystem` in scope as well:
+  
+  ```scala
+  import sangria.marshalling.ion._
+  
+  implicit val ionSystem = IonSystemBuilder.standard().build()
+  
+  val result: Future[IonValue] = Executor.execute(schema, query)
+  ```
+* Marshalling API is updated to v0.2.1. It introduces a minor breaking change. This change introduces performance improvements to scalar value marshalling and gives much more flexibility in terms of the type of marshaled values. 
+   
+  `ResultMarshaller` now able to communicate it's natively supported capabilities to a `ScalarType` via `MarshallerCapability`. A set of standard marshaller capabilities were introduced:
+  
+  * `DateSupport` - Marshaller supports `java.util.Date` natively.
+  * `CalendarSupport` - Marshaller supports `java.util.Calendar` natively.
+  * `BlobSupport` - Marshaller supports large binary objects in form of `Array[Byte]` natively. 
+
+  This still requires you you create a custom scalar types (for dates, blobs, etc.), but it gives you an ability to generically use native features of underlying data format. 
+  
+  `ScalarType` now also able to communicate back to marshaller via `ScalarValueInfo`. This can be used, for instance, to represent an `Array[Byte]` as a `clob` type instead of `blob` in formats that support both of them (like Amazon Ion).
+* Include possible field, argument, type names when validation fails (#126).
+* Deepen introspection query from 3 levels to 7 (#128).
+* Improve validation error message when field names conflict (#130).
 * Interface hierarchies are not correctly rendered with `SchemaRenderer` (#125).
 
 ## v0.6.2 (2016-04-10)
