@@ -57,7 +57,7 @@ class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with FutureR
           |  data: {
           |    human: {
           |      name: "Luke Skywalker"
-          |      appearsIn: ["NEWHOPE", "EMPIRE", "JEDI"]
+          |      appearsIn: [NEWHOPE, EMPIRE, JEDI]
           |      friends: [{
           |        id: "1002"
           |        name: "Han Solo"

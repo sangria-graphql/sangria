@@ -100,7 +100,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
       val exceptionHandler: Executor.ExceptionHandler = {
         case (m, e: IllegalStateException) ⇒
           HandledException(e.getMessage,
-            Map("foo" → m.arrayNode(Vector(m.stringNode("bar"), m.intNode(1234))), "baz" → m.stringNode("Test")))
+            Map("foo" → m.arrayNode(Vector(m.scalarNode("bar", "String", Set.empty), m.scalarNode(1234, "Int", Set.empty))), "baz" → m.scalarNode("Test", "String", Set.empty)))
       }
 
       Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (

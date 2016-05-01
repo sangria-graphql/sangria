@@ -3,7 +3,7 @@ package sangria.schema
 import sangria.ast
 import sangria.execution.{FieldTag, UserFacingError}
 import sangria.introspection._
-import sangria.marshalling.{InputParser, ToInput, FromInput, InputUnmarshaller}
+import sangria.marshalling._
 import sangria.parser.DeliveryScheme.Throw
 import sangria.renderer.SchemaRenderer
 import sangria.validation.Violation
@@ -173,7 +173,7 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
       name = logic.rewriteTypeName(tpe.kind, tpe.name),
       description = tpe.description,
       coerceUserInput = value ⇒ logic.coerceScalarUserInput(tpe.name, value),
-      coerceOutput = coerced ⇒ logic.coerceScalarOutput(tpe.name, coerced),
+      coerceOutput = (coerced, caps) ⇒ logic.coerceScalarOutput(tpe.name, coerced, caps),
       coerceInput = value ⇒ logic.coerceScalarInput(tpe.name, value))
 
   private def buildEnumDef(tpe: IntrospectionEnumType) =
@@ -225,9 +225,9 @@ object IntrospectionSchemaMaterializer {
 trait MaterializationLogic[Ctx] {
   def resolveField(ctx: Context[Ctx, _]): Action[Ctx, _]
 
-  def coerceScalarUserInput(scalarName:String, value: Any): Either[Violation, Any]
-  def coerceScalarInput(scalarName:String, value: ast.Value): Either[Violation, Any]
-  def coerceScalarOutput(scalarName:String, coerced: Any): ast.Value
+  def coerceScalarUserInput(scalarName: String, value: Any): Either[Violation, Any]
+  def coerceScalarInput(scalarName: String, value: ast.Value): Either[Violation, Any]
+  def coerceScalarOutput(scalarName: String, coerced: Any, capabilities: Set[MarshallerCapability]): Any
 
   def rewriteTypeName(kind: TypeKind.Value, name: String): String
 
@@ -251,7 +251,7 @@ class DefaultMaterializationLogic[Ctx] extends MaterializationLogic[Ctx] {
   def resolveField(ctx: Context[Ctx, _]): Action[Ctx, _] = throw MaterializedSchemaException
 
   def coerceScalarUserInput(scalarName: String, value: Any): Either[Violation, Any] = Left(MaterializedSchemaViolation)
-  def coerceScalarOutput(scalarName: String, coerced: Any): ast.Value = throw MaterializedSchemaException
+  def coerceScalarOutput(scalarName: String, coerced: Any, caps: Set[MarshallerCapability]): ast.Value = throw MaterializedSchemaException
   def coerceScalarInput(scalarName: String, value: ast.Value): Either[Violation, Any] = Left(MaterializedSchemaViolation)
 
   def rewriteTypeName(kind: TypeKind.Value, name: String) = name

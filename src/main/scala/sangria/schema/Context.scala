@@ -149,8 +149,8 @@ object DefaultValueRenderer {
   def renderInputValue[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx])(implicit m: ResultMarshaller): m.Node = {
     def loop(t: InputType[_], v: Any): m.Node = t match {
       case _ if v == null ⇒ m.nullNode
-      case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalValue(s.coerceOutput(v), m)
-      case e: EnumType[Any @unchecked] ⇒ Resolver.marshalValue(e.coerceOutput(v), m)
+      case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, m.capabilities), m, s.name, s.scalarInfo)
+      case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), m, e.name)
       case io: InputObjectType[_] ⇒
         val mapValue = v.asInstanceOf[Map[String, Any]]
 
@@ -189,8 +189,8 @@ object DefaultValueRenderer {
 
   def renderCoercedInputValue(t: InputType[_], v: Any)(implicit m: ResultMarshaller): m.Node = t match {
     case _ if v == null ⇒ m.nullNode
-    case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalValue(s.coerceOutput(v), m)
-    case e: EnumType[Any @unchecked] ⇒ Resolver.marshalValue(e.coerceOutput(v), m)
+    case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, m.capabilities), m, s.name, s.scalarInfo)
+    case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), m, e.name)
     case io: InputObjectType[_] ⇒
       val mapValue = v.asInstanceOf[Map[String, Any]]
 

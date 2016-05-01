@@ -1,6 +1,7 @@
 package sangria.schema
 
 import sangria.ast
+import sangria.marshalling.MarshallerCapability
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.validation.IntCoercionViolation
 
@@ -61,7 +62,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
 
   val CustomScalar = ScalarType[Int]("Custom",
     description = Some("Some custom"),
-    coerceOutput = i ⇒ ast.IntValue(i),
+    coerceOutput = (i, _) ⇒ ast.IntValue(i),
     coerceUserInput = {
       case i: Int ⇒ Right(i)
       case _ ⇒ Left(IntCoercionViolation)
@@ -289,9 +290,9 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
           case _ ⇒ super.coerceScalarUserInput(scalarName, value)
         }
 
-        override def coerceScalarOutput(scalarName: String, coerced: Any) = scalarName match {
+        override def coerceScalarOutput(scalarName: String, coerced: Any, caps: Set[MarshallerCapability]) = scalarName match {
           case "Custom" ⇒ ast.IntValue(coerced.asInstanceOf[Int])
-          case _ ⇒ super.coerceScalarOutput(scalarName, coerced)
+          case _ ⇒ super.coerceScalarOutput(scalarName, coerced, caps)
         }
 
         override def coerceScalarInput(scalarName: String, value: ast.Value) = scalarName match {

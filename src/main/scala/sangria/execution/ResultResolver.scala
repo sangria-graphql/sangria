@@ -28,24 +28,24 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
   def handleSupportedError(e: Throwable) = {
     val handeled = exceptionHandler(marshaller → e)
 
-    Seq("message" → marshaller.stringNode(handeled.message)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
+    Seq("message" → marshaller.scalarNode(handeled.message, "String", Set.empty)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
   }
 
   def handleException(exception: Throwable) = exception match {
     case e: UserFacingError ⇒
-      Seq("message" → marshaller.stringNode(e.getMessage))
+      Seq("message" → marshaller.scalarNode(e.getMessage, "String", Set.empty))
     case e if exceptionHandler isDefinedAt (marshaller → e) ⇒
       handleSupportedError(e)
     case QueryReducingError(cause, _) if exceptionHandler isDefinedAt (marshaller → cause) ⇒
       handleSupportedError(cause)
     case e ⇒
       e.printStackTrace() // todo proper logging?
-      Seq("message" → marshaller.stringNode("Internal server error"))
+      Seq("message" → marshaller.scalarNode("Internal server error", "String", Set.empty))
   }
 
   case class ErrorRegistry(errorList: Vector[marshaller.Node]) {
     def add(path: Vector[String], error: String) =
-      copy(errorList:+ errorNode(path, None, Seq("message" → marshaller.stringNode(error))))
+      copy(errorList:+ errorNode(path, None, Seq("message" → marshaller.scalarNode(error, "String", Set.empty))))
 
     def add(path: Vector[String], error: Throwable) =
       copy(errorList ++ createErrorPaths(path, error))
@@ -59,7 +59,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
     def createErrorPaths(path: Vector[String], e: Throwable) = e match {
       case e: WithViolations if e.violations.nonEmpty ⇒
         e.violations map { v ⇒
-          errorNode(path, getLocations(v), Seq("message" → marshaller.stringNode(v.errorMessage)))
+          errorNode(path, getLocations(v), Seq("message" → marshaller.scalarNode(v.errorMessage, "String", Set.empty)))
         }
       case other ⇒
         errorNode(path, getLocations(other), handleException(other)) :: Nil
@@ -83,8 +83,8 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
 
 
     def createLocation(pos: Position) = marshaller.mapNode(Seq(
-      "line" → marshaller.intNode(pos.line),
-      "column" → marshaller.intNode(pos.column)))
+      "line" → marshaller.scalarNode(pos.line, "Int", Set.empty),
+      "column" → marshaller.scalarNode(pos.column, "Int", Set.empty)))
 
     def singleLocation(pos: Position) = marshaller.arrayNode(Vector(createLocation(pos)))
   }
@@ -108,7 +108,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
 
     val builderWithPath =
       if (path.nonEmpty)
-        marshaller.addMapNodeElem(builder, "field", marshaller.stringNode(path mkString "."), optional = false)
+        marshaller.addMapNodeElem(builder, "field", marshaller.scalarNode(path mkString ".", "String", Set.empty), optional = false)
       else
         builder
 

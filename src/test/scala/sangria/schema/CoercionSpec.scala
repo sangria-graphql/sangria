@@ -9,37 +9,37 @@ class CoercionSpec extends WordSpec with Matchers {
   "Type System: Scalar coercion" when {
     "coerces output" should {
       "Int" in {
-        IntType.coerceOutput(1) should be (IntValue(1))
-        IntType.coerceOutput(Integer.MAX_VALUE) should be (IntValue(Integer.MAX_VALUE))
-        IntType.coerceOutput(Integer.MIN_VALUE) should be (IntValue(Integer.MIN_VALUE))
+        IntType.coerceOutput(1, Set.empty) should be (1)
+        IntType.coerceOutput(Integer.MAX_VALUE, Set.empty) should be (Integer.MAX_VALUE)
+        IntType.coerceOutput(Integer.MIN_VALUE, Set.empty) should be (Integer.MIN_VALUE)
       }
 
       "Long" in {
-        LongType.coerceOutput(1111111111111L) should be (BigIntValue(1111111111111L))
-        LongType.coerceOutput(Long.MaxValue) should be (BigIntValue(Long.MaxValue))
-        LongType.coerceOutput(Long.MinValue) should be (BigIntValue(Long.MinValue))
+        LongType.coerceOutput(1111111111111L, Set.empty) should be (1111111111111L)
+        LongType.coerceOutput(Long.MaxValue, Set.empty) should be (Long.MaxValue)
+        LongType.coerceOutput(Long.MinValue, Set.empty) should be (Long.MinValue)
       }
 
       "BigInt" in {
-        BigIntType.coerceOutput(BigInt("89493264763287")) should be (BigIntValue(BigInt("89493264763287")))
+        BigIntType.coerceOutput(BigInt("89493264763287"), Set.empty) should be (BigInt("89493264763287"))
       }
 
       "Float" in {
-        FloatType.coerceOutput(123.456) should be (FloatValue(123.456))
+        FloatType.coerceOutput(123.456, Set.empty) should be (123.456)
       }
 
       "BigDecimal" in {
-        BigDecimalType.coerceOutput(BigDecimal("467356453726547623.37467823648763238479823")) should be (
-          BigDecimalValue(BigDecimal("467356453726547623.37467823648763238479823")))
+        BigDecimalType.coerceOutput(BigDecimal("467356453726547623.37467823648763238479823"), Set.empty) should be (
+          BigDecimal("467356453726547623.37467823648763238479823"))
       }
 
       "Boolean" in {
-        BooleanType.coerceOutput(true) should be (BooleanValue(true))
-        BooleanType.coerceOutput(false) should be (BooleanValue(false))
+        BooleanType.coerceOutput(true, Set.empty) should be (true: Any)
+        BooleanType.coerceOutput(false, Set.empty) should be (false: Any)
       }
 
       "String" in {
-        StringType.coerceOutput("foo") should be (StringValue("foo"))
+        StringType.coerceOutput("foo", Set.empty) should be ("foo")
       }
     }
 

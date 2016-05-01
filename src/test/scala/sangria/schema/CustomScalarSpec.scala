@@ -25,7 +25,7 @@ class CustomScalarSpec extends WordSpec with Matchers {
 
       val DateType = ScalarType[Date]("Date",
         description = Some("An example of date scalar type"),
-        coerceOutput = d ⇒ ast.StringValue(dateFormat.format(d)),
+        coerceOutput = (d, _) ⇒ dateFormat.format(d),
         coerceUserInput = {
           case s: String ⇒ parseDate(s)
           case _ ⇒ Left(DateCoercionViolation)

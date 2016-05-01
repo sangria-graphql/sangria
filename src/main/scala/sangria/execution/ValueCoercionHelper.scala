@@ -175,7 +175,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         v ⇒ {
           val prepared = firstKindMarshaller match {
             case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
-            case standard ⇒ Resolver.marshalValue(scalar.coerceOutput(v), standard)
+            case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(v, standard.capabilities), standard, scalar.name, scalar.scalarInfo)
           }
 
           Right(Some(prepared.asInstanceOf[marshaller.Node]))
@@ -196,7 +196,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
 
           val prepared = firstKindMarshaller match {
             case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
-            case standard ⇒ Resolver.marshalValue(enum.coerceOutput(v), standard)
+            case standard ⇒ Resolver.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
           }
 
           Right(Some(prepared.asInstanceOf[marshaller.Node]))

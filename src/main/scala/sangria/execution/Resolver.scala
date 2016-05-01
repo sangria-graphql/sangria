@@ -2,7 +2,7 @@ package sangria.execution
 
 import org.parboiled2.Position
 import sangria.ast
-import sangria.marshalling.ResultMarshaller
+import sangria.marshalling.{ScalarValueInfo, ResultMarshaller}
 import sangria.parser.SourceMapper
 import sangria.schema._
 
@@ -373,13 +373,13 @@ class Resolver[Ctx](
         }
       case scalar: ScalarType[Any @unchecked] ⇒
         try {
-          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(scalar.coerceOutput(value), marshaller)))
+          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalScalarValue(scalar.coerceOutput(value, marshaller.capabilities), marshaller, scalar.name, scalar.scalarInfo)))
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
       case enum: EnumType[Any @unchecked] ⇒
         try {
-          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalValue(enum.coerceOutput(value), marshaller)))
+          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalEnumValue(enum.coerceOutput(value), marshaller, enum.name)))
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
@@ -649,17 +649,26 @@ case class MappedCtxUpdate[Ctx, Val, NewVal](ctxFn: Val ⇒ Ctx, mapFn: Val ⇒ 
 object Resolver {
   val DefaultComplexity = 1.0D
 
-  def marshalValue(value: ast.Value, marshaller: ResultMarshaller): marshaller.Node = value match {
-    case ast.StringValue(str, _) ⇒ marshaller.stringNode(str)
-    case ast.IntValue(i, _) ⇒ marshaller.intNode(i)
-    case ast.BigIntValue(i, _) ⇒ marshaller.bigIntNode(i)
-    case ast.FloatValue(f, _) ⇒ marshaller.floatNode(f)
-    case ast.BigDecimalValue(f, _) ⇒ marshaller.bigDecimalNode(f)
-    case ast.BooleanValue(b, _) ⇒ marshaller.booleanNode(b)
+  def marshalEnumValue(value: String, marshaller: ResultMarshaller, typeName: String): marshaller.Node =
+    marshaller.enumNode(value, typeName)
+
+  def marshalScalarValue(value: Any, marshaller: ResultMarshaller, typeName: String, scalarInfo: Set[ScalarValueInfo]): marshaller.Node =
+    value match {
+      case astValue: ast.Value ⇒ marshalAstValue(astValue, marshaller, typeName, scalarInfo)
+      case v ⇒ marshaller.scalarNode(value, typeName, scalarInfo)
+    }
+
+  def marshalAstValue(value: ast.Value, marshaller: ResultMarshaller, typeName: String, scalarInfo: Set[ScalarValueInfo]): marshaller.Node = value match {
+    case ast.StringValue(str, _) ⇒ marshaller.scalarNode(str, typeName, scalarInfo)
+    case ast.IntValue(i, _) ⇒ marshaller.scalarNode(i, typeName, scalarInfo)
+    case ast.BigIntValue(i, _) ⇒ marshaller.scalarNode(i, typeName, scalarInfo)
+    case ast.FloatValue(f, _) ⇒ marshaller.scalarNode(f, typeName, scalarInfo)
+    case ast.BigDecimalValue(f, _) ⇒ marshaller.scalarNode(f, typeName, scalarInfo)
+    case ast.BooleanValue(b, _) ⇒ marshaller.scalarNode(b, typeName, scalarInfo)
     case ast.NullValue(_) ⇒ marshaller.nullNode
-    case ast.EnumValue(enum, _) ⇒ marshaller.stringNode(enum)
-    case ast.ListValue(values, _) ⇒ marshaller.arrayNode(values.toVector map (marshalValue(_, marshaller)))
-    case ast.ObjectValue(values, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalValue(v.value, marshaller)))
-    case ast.VariableValue(_, _) ⇒ throw new IllegalStateException("Can't marshall variable values!")
+    case ast.EnumValue(enum, _) ⇒ marshaller.enumNode(enum, typeName)
+    case ast.ListValue(values, _) ⇒ marshaller.arrayNode(values.toVector map (marshalAstValue(_, marshaller, typeName, scalarInfo)))
+    case ast.ObjectValue(values, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalAstValue(v.value, marshaller, typeName, scalarInfo)))
+    case ast.VariableValue(name, _) ⇒ marshaller.enumNode(name, typeName)
   }
 }

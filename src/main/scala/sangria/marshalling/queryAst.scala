@@ -73,12 +73,19 @@ class QueryAstResultMarshaller extends ResultMarshaller {
   def emptyMapNode(keys: Seq[String]) = new ArrayMapBuilder[Node](keys)
   def addMapNodeElem(builder: MapBuilder, key: String, value: Node, optional: Boolean) = builder.add(key, value)
 
-  def booleanNode(value: Boolean) = ast.BooleanValue(value)
-  def floatNode(value: Double) = ast.FloatValue(value)
-  def stringNode(value: String) = ast.StringValue(value)
-  def intNode(value: Int) = ast.IntValue(value)
-  def bigIntNode(value: BigInt) = ast.BigIntValue(value)
-  def bigDecimalNode(value: BigDecimal) = ast.BigDecimalValue(value)
+  def scalarNode(value: Any, typeName: String, info: Set[ScalarValueInfo]) = value match {
+    case v: String ⇒ ast.StringValue(v)
+    case v: Boolean ⇒ ast.BooleanValue(v)
+    case v: Int ⇒ ast.IntValue(v)
+    case v: Long ⇒ ast.BigIntValue(v)
+    case v: Float ⇒ ast.FloatValue(v)
+    case v: Double ⇒ ast.FloatValue(v)
+    case v: BigInt ⇒ ast.BigIntValue(v)
+    case v: BigDecimal ⇒ ast.BigDecimalValue(v)
+    case v ⇒ throw new IllegalArgumentException("Unsupported scalar value: " + v)
+  }
+
+  def enumNode(value: String, typeName: String) = ast.EnumValue(value)
 
   def arrayNode(values: Vector[Node]) = ast.ListValue(values.toList)
   def optionalArrayNodeValue(value: Option[Node]) = value match {

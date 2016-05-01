@@ -18,7 +18,7 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
   
   val TestScalar = ScalarType[String]("TestScalar",
     complexity = 2.5D,
-    coerceOutput = s ⇒ ast.StringValue(s),
+    coerceOutput = valueOutput,
     coerceUserInput = {
       case s: String ⇒ Right(s)
       case _ ⇒ Left(StringCoercionViolation)

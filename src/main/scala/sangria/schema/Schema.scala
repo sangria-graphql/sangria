@@ -2,7 +2,7 @@ package sangria.schema
 
 import sangria.execution.FieldTag
 import sangria.marshalling.FromInput.{InputObjectResult, CoercedScalaResult}
-import sangria.marshalling.{InputUnmarshaller, FromInput, ToInput}
+import sangria.marshalling._
 
 import language.{implicitConversions, existentials}
 
@@ -93,13 +93,33 @@ object Named {
 
 }
 
+/**
+  * Defines a GraphQL scalar value type.
+  *
+  * `coerceOutput` is allowed to return following scala values:
+  *
+  *   - String
+  *   - Boolean
+  *   - Int
+  *   - Long
+  *   - Float
+  *   - Double
+  *   - scala.BigInt
+  *   - scala.BigDecimal
+  *   - sangria.ast.Value (it would be converted to raw scala value before given to a marshalling API)
+  *
+  * It may also return other values as well as long as underlying marshalling library supports them.
+  *
+  * You can provide additional meta-information to marshalling API with `scalarInfo`.
+  */
 case class ScalarType[T](
   name: String,
   description: Option[String] = None,
   coerceUserInput: Any ⇒ Either[Violation, T],
-  coerceOutput: T ⇒ ast.Value,
+  coerceOutput: (T, Set[MarshallerCapability]) ⇒ Any,
   coerceInput: ast.Value ⇒ Either[Violation, T],
-  complexity: Double = 0.0D) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+  complexity: Double = 0.0D,
+  scalarInfo: Set[ScalarValueInfo] = Set.empty) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
@@ -469,7 +489,7 @@ case class EnumType[T](
     case _ ⇒ Left(EnumCoercionViolation)
   }
 
-  def coerceOutput(value: T) = ast.EnumValue(byValue(value).name)
+  def coerceOutput(value: T): String = byValue(value).name
 }
 
 case class EnumValue[+T](
@@ -624,7 +644,7 @@ case class Schema[Ctx, Val](
         case ListType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
         case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
-        case t @ ScalarType(name, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
+        case t @ ScalarType(name, _, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
         case t @ EnumType(name, _, _) ⇒ updated(priority, name, t, result, parentInfo)
         case t @ InputObjectType(name, _, _) ⇒
           t.fields.foldLeft(updated(priority, name, t, result, parentInfo)) {

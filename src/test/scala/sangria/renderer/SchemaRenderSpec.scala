@@ -346,7 +346,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Custom Scalar" in {
       val odd = ScalarType[Int]("Odd",
-        coerceOutput = ast.IntValue(_),
+        coerceOutput = valueOutput,
         coerceUserInput = {
           case i: Int if i % 2 != 0 ⇒ Right(i)
           case i: BigInt if i.isValidInt && i % 2 != BigInt(0) ⇒ Right(i.intValue)

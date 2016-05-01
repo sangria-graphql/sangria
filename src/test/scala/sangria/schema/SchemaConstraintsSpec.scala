@@ -33,7 +33,7 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
         InputField("y", FloatType)))
 
       val scalarType = ScalarType[String]("Point",
-        coerceOutput = s ⇒ ast.StringValue(s),
+        coerceOutput = valueOutput,
         coerceUserInput = {
           case s: String ⇒ Right(s)
           case _ ⇒ Left(StringCoercionViolation)
