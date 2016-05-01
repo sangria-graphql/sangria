@@ -25,7 +25,7 @@
   * `CalendarSupport` - Marshaller supports `java.util.Calendar` natively.
   * `BlobSupport` - Marshaller supports large binary objects in form of `Array[Byte]` natively. 
 
-  This still requires you you create a custom scalar types (for dates, blobs, etc.), but it gives you an ability to generically use native features of underlying data format. 
+  This still requires you to create a custom scalar types (for dates, blobs, etc.), but it gives you an ability to generically use native features of underlying data format. 
   
   `ScalarType` now also able to communicate back to marshaller via `ScalarValueInfo`. This can be used, for instance, to represent an `Array[Byte]` as a `clob` type instead of `blob` in formats that support both of them (like Amazon Ion).
 * Include possible field, argument, type names when validation fails (#126).
