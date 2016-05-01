@@ -1,4 +1,4 @@
-## v0.6.2 (2016-05-01)
+## v0.6.3 (2016-05-01)
 
 * Marshaling for [Amazon Ion](http://amznlabs.github.io/ion-docs/index.html) data format is introduced. Amazon Ion is a richly-typed, self-describing, hierarchical data serialization format offering interchangeable binary and text representations.
 
