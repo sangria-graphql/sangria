@@ -42,6 +42,9 @@ class DeriveEnumTypeMacroSpec extends WordSpec with Matchers {
     "support nested enum instances"  in {
       val enum = deriveEnumType[Difficulty]()
       enum.name should be ("Difficulty")
+      enum.values.map(_.name).sorted should be (List(
+        "Easy", "Hard", "Medium"
+      ))
     }
 
     "use enum name and have no description by default" in {
