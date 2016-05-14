@@ -94,9 +94,15 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
         val configDocDepr = config.collect{case MacroDocumentValue(`name`, _, reason, _) ⇒ reason}.lastOption getOrElse q"None"
         val configDepr = config.collect{case MacroDeprecateValue(`name`, reason, _) ⇒ reason}.lastOption getOrElse q"None"
 
-        val actualValue =
-          if (value.isModuleClass) q"${value.name.toTermName}"
-          else q"${t.asInstanceOf[TypeRef].pre.typeSymbol.name.toTermName}.${value.asTerm.getter}"
+        val actualValue = {
+          if (value.isModuleClass) {
+            if (value.owner.isModuleClass) {
+              q"${value.owner.name.toTermName}.${value.name.toTermName}"
+            } else {
+              q"${value.name.toTermName}"
+            }
+          } else q"${t.asInstanceOf[TypeRef].pre.typeSymbol.name.toTermName}.${value.asTerm.getter}"
+        }
 
         q"""
           sangria.schema.EnumValue[$t](

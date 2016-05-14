@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
   case class ATag(num: Int) extends FieldTag
   case object BTag extends FieldTag
-  
+
   val TestScalar = ScalarType[String]("TestScalar",
     complexity = 2.5D,
     coerceOutput = valueOutput,
@@ -74,7 +74,7 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
       arguments = Argument("size", IntType) :: Nil,
       complexity = Some((_, args, c) ⇒ 3.5D + args.arg[Int]("size") * c),
       resolve = _ ⇒ List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))),
-    Field("a", StringType, 
+    Field("a", StringType,
       tags = ATag(1) :: Nil,
       resolve = _ ⇒ "testa"),
     Field("b", StringType,

@@ -6,6 +6,14 @@ import sangria.schema._
 class DeriveEnumTypeMacroSpec extends WordSpec with Matchers {
   import DeriveMacroTestModel._
 
+  sealed trait Difficulty
+
+  object Difficulty {
+    case object Easy extends Difficulty
+    case object Medium extends Difficulty
+    case object Hard extends Difficulty
+  }
+
   sealed trait Fruit
 
   case object RedApple extends Fruit
@@ -31,6 +39,14 @@ class DeriveEnumTypeMacroSpec extends WordSpec with Matchers {
   case object MegaOrangeAnnotated extends FruitAnnotated
 
   "Enum derivation" should {
+    "support nested enum instances"  in {
+      val enum = deriveEnumType[Difficulty]()
+      enum.name should be ("Difficulty")
+      enum.values.map(_.name).sorted should be (List(
+        "Easy", "Hard", "Medium"
+      ))
+    }
+
     "use enum name and have no description by default" in {
       val singletonEnum = deriveEnumType[Fruit]()
       val enum = deriveEnumType[Color.Value]()
