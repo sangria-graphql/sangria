@@ -50,13 +50,13 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
   def isScalarNode(node: ast.Value) = node.isInstanceOf[ast.ScalarValue]
   def getScalarValue(node: ast.Value) = node
   def getScalaScalarValue(node: ast.Value) = node match {
-    case ast.BooleanValue(b, _) ⇒ b
-    case ast.BigIntValue(i, _) ⇒ i
-    case ast.BigDecimalValue(d, _) ⇒ d
-    case ast.FloatValue(f, _) ⇒ f
-    case ast.IntValue(i, _) ⇒ i
-    case ast.StringValue(s, _) ⇒ s
-    case ast.EnumValue(s, _) ⇒ s
+    case ast.BooleanValue(b, _, _) ⇒ b
+    case ast.BigIntValue(i, _, _) ⇒ i
+    case ast.BigDecimalValue(d, _, _) ⇒ d
+    case ast.FloatValue(f, _, _) ⇒ f
+    case ast.IntValue(i, _, _) ⇒ i
+    case ast.StringValue(s, _, _) ⇒ s
+    case ast.EnumValue(s, _, _) ⇒ s
     case node ⇒ throw new IllegalStateException("Unsupported scalar node: " + node)
   }
 

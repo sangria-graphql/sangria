@@ -68,7 +68,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
       case _ ⇒ Left(IntCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _) ⇒ Right(i)
+      case ast.IntValue(i, _, _) ⇒ Right(i)
       case _ ⇒ Left(IntCoercionViolation)
     })
 
@@ -297,8 +297,8 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
 
         override def coerceScalarInput(scalarName: String, value: ast.Value) = scalarName match {
           case "Custom" ⇒ value match {
-            case ast.IntValue(i, _) ⇒ Right(i)
-            case ast.BigIntValue(i, _) ⇒ Right(i.intValue)
+            case ast.IntValue(i, _, _) ⇒ Right(i)
+            case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
             case _ ⇒ Left(IntCoercionViolation)
           }
           case _ ⇒ super.coerceScalarInput(scalarName, value)

@@ -39,6 +39,7 @@ sealed trait ConditionalFragment extends AstNode {
 
 sealed trait SelectionContainer extends AstNode {
   def selections: List[Selection]
+  def comment: Option[Comment]
   def position: Option[Position]
 }
 
@@ -50,6 +51,7 @@ case class OperationDefinition(
   variables: List[VariableDefinition] = Nil,
   directives: List[Directive] = Nil,
   selections: List[Selection],
+  comment: Option[Comment] = None,
   position: Option[Position] = None) extends Definition with WithDirectives with SelectionContainer
 
 case class FragmentDefinition(
@@ -57,6 +59,7 @@ case class FragmentDefinition(
     typeCondition: NamedType,
     directives: List[Directive],
     selections: List[Selection],
+    comment: Option[Comment] = None,
     position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer {
   lazy val typeConditionOpt = Some(typeCondition)
 }
@@ -73,6 +76,7 @@ case class VariableDefinition(
   name: String,
   tpe: Type,
   defaultValue: Option[Value],
+  comment: Option[Comment] = None,
   position: Option[Position] = None) extends AstNode
 
 sealed trait Type extends AstNode
@@ -89,6 +93,7 @@ case class Field(
     arguments: List[Argument],
     directives: List[Directive],
     selections: List[Selection],
+    comment: Option[Comment] = None,
     position: Option[Position] = None) extends Selection with SelectionContainer {
   lazy val outputName = alias getOrElse name
 }
@@ -96,12 +101,14 @@ case class Field(
 case class FragmentSpread(
   name: String,
   directives: List[Directive],
+  comment: Option[Comment] = None,
   position: Option[Position] = None) extends Selection
 
 case class InlineFragment(
     typeCondition: Option[NamedType],
     directives: List[Directive],
     selections: List[Selection],
+    comment: Option[Comment] = None,
     position: Option[Position] = None) extends Selection with ConditionalFragment with SelectionContainer {
   def typeConditionOpt = typeCondition
 }
@@ -115,30 +122,32 @@ sealed trait WithDirectives {
   def directives: List[Directive]
 }
 
-case class Directive(name: String, arguments: List[Argument], position: Option[Position] = None) extends AstNode
-case class Argument(name: String, value: Value, position: Option[Position] = None) extends NameValue
+case class Directive(name: String, arguments: List[Argument], comment: Option[Comment] = None, position: Option[Position] = None) extends AstNode
+case class Argument(name: String, value: Value, comment: Option[Comment] = None, position: Option[Position] = None) extends NameValue
 
 sealed trait Value extends AstNode
 sealed trait ScalarValue extends Value
 
-case class IntValue(value: Int, position: Option[Position] = None) extends ScalarValue
-case class BigIntValue(value: BigInt, position: Option[Position] = None) extends ScalarValue
-case class FloatValue(value: Double, position: Option[Position] = None) extends ScalarValue
-case class BigDecimalValue(value: BigDecimal, position: Option[Position] = None) extends ScalarValue
-case class StringValue(value: String, position: Option[Position] = None) extends ScalarValue
-case class BooleanValue(value: Boolean, position: Option[Position] = None) extends ScalarValue
-case class EnumValue(value: String, position: Option[Position] = None) extends Value
-case class ListValue(values: List[Value], position: Option[Position] = None) extends Value
-case class VariableValue(name: String, position: Option[Position] = None) extends Value
-case class NullValue(position: Option[Position] = None) extends Value
-case class ObjectValue(fields: List[ObjectField], position: Option[Position] = None) extends Value {
+case class IntValue(value: Int, comment: Option[Comment] = None, position: Option[Position] = None) extends ScalarValue
+case class BigIntValue(value: BigInt, comment: Option[Comment] = None, position: Option[Position] = None) extends ScalarValue
+case class FloatValue(value: Double, comment: Option[Comment] = None, position: Option[Position] = None) extends ScalarValue
+case class BigDecimalValue(value: BigDecimal, comment: Option[Comment] = None, position: Option[Position] = None) extends ScalarValue
+case class StringValue(value: String, comment: Option[Comment] = None, position: Option[Position] = None) extends ScalarValue
+case class BooleanValue(value: Boolean, comment: Option[Comment] = None, position: Option[Position] = None) extends ScalarValue
+case class EnumValue(value: String, comment: Option[Comment] = None, position: Option[Position] = None) extends Value
+case class ListValue(values: List[Value], comment: Option[Comment] = None, position: Option[Position] = None) extends Value
+case class VariableValue(name: String, comment: Option[Comment] = None, position: Option[Position] = None) extends Value
+case class NullValue(comment: Option[Comment] = None, position: Option[Position] = None) extends Value
+case class ObjectValue(fields: List[ObjectField], comment: Option[Comment] = None, position: Option[Position] = None) extends Value {
   lazy val fieldsByName =
     fields.foldLeft(ListMap.empty[String, Value]) {
       case (acc, field) ⇒ acc + (field.name → field.value)
     }
 }
 
-case class ObjectField(name: String, value: Value, position: Option[Position] = None) extends NameValue
+case class ObjectField(name: String, value: Value, comment: Option[Comment] = None, position: Option[Position] = None) extends NameValue
+
+case class Comment(lines: Seq[String], position: Option[Position] = None)
 
 sealed trait AstNode {
   def position: Option[Position]

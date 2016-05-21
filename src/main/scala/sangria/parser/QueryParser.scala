@@ -15,20 +15,22 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Punctuator = rule { PunctuatorChar | Ellipsis }
 
-  def Ellipsis = rule { 3 times '.' }
+  def Ellipsis = rule { quiet(str("...") ~ IgnoredNoComment.*) }
 
   val NameFirstChar = CharPredicate.Alpha ++ '_'
 
   val NameChar = NameFirstChar ++ CharPredicate.Digit
 
-  def Name = rule { capture(NameFirstChar ~ NameChar.*) ~ Ignored.* }
+  def NameStrict = rule { capture(NameFirstChar ~ NameChar.*) ~ IgnoredNoComment.* }
 
-  def NumberValue = rule { trackPos ~ IntegerValuePart ~ FloatValuePart.? ~ Ignored.* ~>
-      ((pos, intPart, floatPart) ⇒
-        floatPart map (f ⇒ ast.BigDecimalValue(BigDecimal(intPart + f), Some(pos))) getOrElse
-          ast.BigIntValue(BigInt(intPart), Some(pos))) }
+  def Name = rule { Ignored.* ~ NameStrict }
 
-  def FloatValuePart = rule { capture(FractionalPart ~ ExponentPart.? | ExponentPart) }
+  def NumberValue = rule { atomic(Comments ~ trackPos ~ IntegerValuePart ~ FloatValuePart.? ~ IgnoredNoComment.*) ~>
+      ((comment, pos, intPart, floatPart) ⇒
+        floatPart map (f ⇒ ast.BigDecimalValue(BigDecimal(intPart + f), comment, Some(pos))) getOrElse
+          ast.BigIntValue(BigInt(intPart), comment, Some(pos))) }
+
+  def FloatValuePart = rule { atomic(capture(FractionalPart ~ ExponentPart.? | ExponentPart)) }
 
   def FractionalPart = rule { '.' ~ Digit.+ }
 
@@ -48,7 +50,7 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Digit = rule { ch('0') | NonZeroDigit }
 
-  def StringValue = rule { trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ Ignored.* ~> ((pos, s) ⇒ ast.StringValue(s, Some(pos)))}
+  def StringValue = rule { atomic(Comments ~ trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ IgnoredNoComment.* ~> ((comment, pos, s) ⇒ ast.StringValue(s, comment, Some(pos))))}
 
   def Characters = rule { (NormalChar | '\\' ~ EscapedChar).* }
 
@@ -68,7 +70,7 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Unicode = rule { 'u' ~ capture(4 times HexDigit) ~> (Integer.parseInt(_, 16)) }
 
-  def Keyword(s: String) = rule { s ~ !NameChar ~ Ignored.* }
+  def Keyword(s: String) = rule { atomic(Ignored.* ~ s ~ !NameChar ~ IgnoredNoComment.*) }
 }
 
 trait Ignored extends PositionTracking { this: Parser ⇒
@@ -83,21 +85,29 @@ trait Ignored extends PositionTracking { this: Parser ⇒
 
   def Ignored = rule { quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',') }
 
+  def IgnoredNoComment = rule { quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | ',') }
+
+  def Comments = rule { trackPos ~ CommentCap.* ~ Ignored.* ~> ((pos, lines) ⇒ if (lines.nonEmpty) Some(ast.Comment(lines, Some(pos))) else None) }
+
+  def CommentCap = rule { "#" ~ capture(CommentChar.*) ~ IgnoredNoComment.* }
+
   def Comment = rule { "#" ~ CommentChar.* }
 
-  def CommentChar = rule { !LineTerminator ~ ANY }
+  def CommentChar = rule { !(CRLF | LineTerminator) ~ ANY }
 
-  def ws(char: Char): Rule0 = rule { ch(char) ~ Ignored.* }
+  def ws(char: Char): Rule0 = rule { quiet(Ignored.* ~ ch(char) ~ Ignored.*) }
 
-  def ws(s: String): Rule0 = rule { str(s) ~ Ignored.* }
+  def wsNoComment(char: Char): Rule0 = rule { quiet(Ignored.* ~ ch(char) ~ IgnoredNoComment.*) }
+
+  def ws(s: String): Rule0 = rule { quiet(Ignored.* ~ str(s) ~ Ignored.*) }
 
 }
 
 trait Document { this: Parser with Operations with Ignored with Fragments with Operations with Values ⇒
 
-  def Document = rule { Ignored.* ~ trackPos ~ Definition.+ ~ EOI ~> ((pos, d) ⇒ ast.Document(d.toList, Some(pos))) }
+  def Document = rule { IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ Ignored.* ~ EOI ~> ((pos, d) ⇒ ast.Document(d.toList, Some(pos))) }
 
-  def InputDocument = rule { Ignored.* ~ ValueConst ~ EOI }
+  def InputDocument = rule { Ignored.* ~ ValueConst ~ Ignored.* ~ EOI }
 
   def Definition = rule { OperationDefinition | FragmentDefinition }
 
@@ -106,9 +116,9 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
 trait Operations extends PositionTracking { this: Parser with Tokens with Ignored with Fragments with Values with Types with Directives ⇒
 
   def OperationDefinition = rule {
-    trackPos ~ SelectionSet ~> ((pos, s) ⇒ ast.OperationDefinition(selections = s, position = Some(pos))) |
-    trackPos ~ OperationType ~ OperationName.? ~ (VariableDefinitions.? ~> (_ getOrElse Nil)) ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
-        ((pos, opType, name, vars, dirs, sels) ⇒ ast.OperationDefinition(opType, name, vars, dirs, sels, Some(pos)))
+    Comments ~ trackPos ~ SelectionSet ~> ((comment, pos, s) ⇒ ast.OperationDefinition(selections = s, comment = comment, position = Some(pos))) |
+    Comments ~ trackPos ~ OperationType ~ OperationName.? ~ (VariableDefinitions.? ~> (_ getOrElse Nil)) ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
+        ((comment, pos, opType, name, vars, dirs, sels) ⇒ ast.OperationDefinition(opType, name, vars, dirs, sels, comment, Some(pos)))
   }
 
   def OperationName = rule { Name }
@@ -125,47 +135,47 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def Subscription = rule { Keyword("subscription") }
 
-  def VariableDefinitions = rule { ws('(') ~ VariableDefinition.+ ~ ws(')') ~> (_.toList)}
+  def VariableDefinitions = rule { wsNoComment('(') ~ VariableDefinition.+ ~ wsNoComment(')') ~> (_.toList)}
 
-  def VariableDefinition = rule { trackPos ~ Variable ~ ws(':') ~ Type ~ DefaultValue.? ~>
-      ((pos, name, tpe, defaultValue) ⇒ ast.VariableDefinition(name, tpe, defaultValue, Some(pos))) }
+  def VariableDefinition = rule { Comments ~ trackPos ~ Variable ~ ws(':') ~ Type ~ DefaultValue.? ~>
+      ((comment, pos, name, tpe, defaultValue) ⇒ ast.VariableDefinition(name, tpe, defaultValue, comment, Some(pos))) }
 
-  def Variable = rule { '$' ~ Name }
+  def Variable = rule { Ignored.* ~ '$' ~ NameStrict }
 
-  def DefaultValue = rule { ws('=') ~ ValueConst }
+  def DefaultValue = rule { wsNoComment('=') ~ ValueConst }
 
-  def SelectionSet: Rule1[List[ast.Selection]] = rule { ws('{') ~ Selection.+ ~ ws('}') ~> ((x: Seq[ast.Selection]) ⇒ x.toList) }
+  def SelectionSet: Rule1[List[ast.Selection]] = rule { wsNoComment('{') ~ Selection.+ ~ wsNoComment('}') ~> ((x: Seq[ast.Selection]) ⇒ x.toList) }
 
   def Selection = rule { Field | FragmentSpread | InlineFragment }
 
-  def Field = rule { trackPos ~ Alias.? ~ Name ~
+  def Field = rule { Comments ~ trackPos ~ Alias.? ~ Name ~
       (Arguments.? ~> (_ getOrElse Nil)) ~
       (Directives.? ~> (_ getOrElse Nil)) ~
       (SelectionSet.? ~> (_ getOrElse Nil)) ~>
-        ((pos, alias, name, args, dirs, sels) ⇒ ast.Field(alias, name, args, dirs, sels, Some(pos))) }
+        ((comment, pos, alias, name, args, dirs, sels) ⇒ ast.Field(alias, name, args, dirs, sels, comment, Some(pos))) }
 
   def Alias = rule { Name ~ ws(':') }
 
-  def Arguments = rule { ws('(') ~ Argument.+ ~ ws(')') ~> (_.toList) }
+  def Arguments = rule { Ignored.* ~ wsNoComment('(') ~ Argument.+ ~ wsNoComment(')') ~> (_.toList) }
 
-  def Argument = rule { trackPos ~ Name ~ ws(':') ~ Value ~> ((pos, name, value) ⇒ ast.Argument(name, value, Some(pos))) }
+  def Argument = rule { Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ Value ~> ((comment, pos, name, value) ⇒ ast.Argument(name, value, comment, Some(pos))) }
 
 }
 
 trait Fragments { this: Parser with Tokens with Ignored with Directives with Types with Operations ⇒
 
-  def FragmentSpread = rule { trackPos ~ Ellipsis ~ Ignored.* ~ FragmentName ~ (Directives.? ~> (_ getOrElse Nil)) ~>
-      ((pos, name, dirs) ⇒ ast.FragmentSpread(name, dirs, Some(pos))) }
+  def FragmentSpread = rule { Comments ~ trackPos ~ Ellipsis ~ FragmentName ~ (Directives.? ~> (_ getOrElse Nil)) ~>
+      ((comment, pos, name, dirs) ⇒ ast.FragmentSpread(name, dirs, comment, Some(pos))) }
 
-  def InlineFragment = rule { trackPos ~ Ellipsis ~ Ignored.* ~ TypeCondition.? ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
-      ((pos, typeCondition, dirs, sels) ⇒ ast.InlineFragment(typeCondition, dirs, sels, Some(pos))) }
+  def InlineFragment = rule { Comments ~ trackPos ~ Ellipsis ~ TypeCondition.? ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
+      ((comment, pos, typeCondition, dirs, sels) ⇒ ast.InlineFragment(typeCondition, dirs, sels, comment, Some(pos))) }
 
   def on = rule { Keyword("on") }
 
   def Fragment = rule { Keyword("fragment") }
 
-  def FragmentDefinition = rule { trackPos ~ Fragment ~ FragmentName ~ TypeCondition ~ (Directives.?  ~> (_ getOrElse Nil)) ~ SelectionSet ~>
-      ((pos, name, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels, Some(pos))) }
+  def FragmentDefinition = rule { Comments ~ trackPos ~ Fragment ~ FragmentName ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
+    ((comment, pos, name, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels, comment, Some(pos))) }
 
   def FragmentName = rule { !on ~ Name }
 
@@ -180,7 +190,7 @@ trait Values { this: Parser with Tokens with Ignored with Operations ⇒
   }
 
   def Value: Rule1[ast.Value] = rule {
-    trackPos ~ Variable ~> ((pos, name) ⇒ ast.VariableValue(name, Some(pos))) |
+    Comments ~ trackPos ~ Variable ~> ((comment, pos, name) ⇒ ast.VariableValue(name, comment, Some(pos))) |
     NumberValue |
     StringValue |
     BooleanValue |
@@ -191,8 +201,8 @@ trait Values { this: Parser with Tokens with Ignored with Operations ⇒
   }
 
   def BooleanValue = rule {
-    trackPos ~ True ~> (pos ⇒ ast.BooleanValue(true, Some(pos))) |
-    trackPos ~ False ~> (pos ⇒ ast.BooleanValue(false, Some(pos)))
+    Comments ~ trackPos ~ True ~> ((comment, pos) ⇒ ast.BooleanValue(true, comment, Some(pos))) |
+    Comments ~ trackPos ~ False ~> ((comment, pos) ⇒ ast.BooleanValue(false, comment, Some(pos)))
   }
 
   def True = rule { Keyword("true") }
@@ -201,30 +211,30 @@ trait Values { this: Parser with Tokens with Ignored with Operations ⇒
 
   def Null = rule { Keyword("null") }
 
-  def NullValue = rule { trackPos ~ Null ~> (pos ⇒ ast.NullValue(Some(pos))) }
+  def NullValue = rule { Comments ~ trackPos ~ Null ~> ((comment, pos) ⇒ ast.NullValue(comment, Some(pos))) }
 
-  def EnumValue = rule { !True ~ !False ~ trackPos ~ Name ~> ((pos, name) ⇒ ast.EnumValue(name, Some(pos))) }
+  def EnumValue = rule { Comments ~ !True ~ !False ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.EnumValue(name, comment, Some(pos))) }
 
-  def ListValueConst = rule { trackPos ~ ws('[') ~ ValueConst.* ~ ws(']')  ~> ((pos, v) ⇒ ast.ListValue(v.toList, Some(pos))) }
+  def ListValueConst = rule { Comments ~ trackPos ~ wsNoComment('[') ~ ValueConst.* ~ wsNoComment(']')  ~> ((comment, pos, v) ⇒ ast.ListValue(v.toList, comment, Some(pos))) }
 
-  def ListValue = rule { trackPos ~ ws('[') ~ Value.* ~ ws(']') ~> ((pos, v) ⇒ ast.ListValue(v.toList, Some(pos))) }
+  def ListValue = rule { Comments ~ trackPos ~ wsNoComment('[') ~ Value.* ~ wsNoComment(']') ~> ((comment, pos, v) ⇒ ast.ListValue(v.toList, comment, Some(pos))) }
 
-  def ObjectValueConst = rule { trackPos ~ ws('{') ~ ObjectFieldConst.* ~ ws('}') ~> ((pos, f) ⇒ ast.ObjectValue(f.toList, Some(pos))) }
+  def ObjectValueConst = rule { Comments ~ trackPos ~ wsNoComment('{') ~ ObjectFieldConst.* ~ wsNoComment('}') ~> ((comment, pos, f) ⇒ ast.ObjectValue(f.toList, comment, Some(pos))) }
 
-  def ObjectValue = rule { trackPos ~ ws('{') ~ ObjectField.* ~ ws('}') ~> ((pos, f) ⇒ ast.ObjectValue(f.toList, Some(pos))) }
+  def ObjectValue = rule { Comments ~ trackPos ~ wsNoComment('{') ~ ObjectField.* ~ wsNoComment('}') ~> ((comment, pos, f) ⇒ ast.ObjectValue(f.toList, comment, Some(pos))) }
 
-  def ObjectFieldConst = rule { trackPos ~ Name ~ ws(':') ~ ValueConst ~> ((pos, name, value) ⇒ ast.ObjectField(name, value, Some(pos))) }
+  def ObjectFieldConst = rule { Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ ValueConst ~> ((comment, pos, name, value) ⇒ ast.ObjectField(name, value, comment, Some(pos))) }
 
-  def ObjectField = rule { trackPos ~ Name ~ ws(':') ~ Value ~> ((pos, name, value) ⇒ ast.ObjectField(name, value, Some(pos))) }
+  def ObjectField = rule { Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ Value ~> ((comment, pos, name, value) ⇒ ast.ObjectField(name, value, comment, Some(pos))) }
 
 }
 
-trait Directives { this: Parser with Tokens with Operations ⇒
+trait Directives { this: Parser with Tokens with Operations with Ignored ⇒
 
   def Directives = rule { Directive.+ ~> (_.toList) }
 
-  def Directive = rule { trackPos ~ '@' ~ Name ~ (Arguments.? ~> (_ getOrElse Nil)) ~>
-      ((pos, name, args) ⇒ ast.Directive(name, args, Some(pos))) }
+  def Directive = rule { Comments ~ trackPos ~ '@' ~ NameStrict ~ (Arguments.? ~> (_ getOrElse Nil)) ~>
+      ((comment, pos, name, args) ⇒ ast.Directive(name, args, comment, Some(pos))) }
 
 }
 
@@ -233,7 +243,7 @@ trait Types { this: Parser with Tokens with Ignored ⇒
 
   def TypeName = rule { Name }
 
-  def NamedType = rule { trackPos ~ TypeName ~> ((pos, name) ⇒ ast.NamedType(name, Some(pos)))}
+  def NamedType = rule { Ignored.* ~ trackPos ~ TypeName ~> ((pos, name) ⇒ ast.NamedType(name, Some(pos)))}
 
   def ListType = rule { trackPos ~ ws('[') ~ Type ~ ws(']') ~> ((pos, tpe) ⇒ ast.ListType(tpe, Some(pos))) }
 

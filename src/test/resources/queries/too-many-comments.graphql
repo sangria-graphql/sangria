@@ -1,0 +1,353 @@
+# Copyright (c) 2015, Facebook, Inc.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree. An additional grant
+# of patent rights can be found in the PATENTS file in the same directory.
+
+query
+# comment 1
+# comment 2
+queryName
+# comment 3
+# comment 4
+(
+# comment 5
+# comment 6
+$foo
+# comment 7
+# comment 8
+:
+# comment 9
+# comment 10
+ComplexType
+# comment 11
+# comment 12
+,
+
+# comment 13
+# comment 14
+$site
+# comment 15
+# comment 16
+:
+# comment 16.1
+# comment 16.2
+Site
+# comment 16.3
+# comment 16.4
+=
+# comment 16.5
+# comment 16.6
+MOBILE
+# comment 17
+# comment 18
+,
+# comment 18.1
+# comment 18.2
+$foo: ComplexType
+# comment 18.3
+# comment 18.4
+=
+# comment 18.5
+# comment 18.6
+{
+# comment 18.7
+# comment 18.8
+field1
+# comment 18.9
+# comment 18.10
+:
+# comment 18.11
+# comment 18.12
+"val"
+# comment 18.13
+# comment 18.14
+,
+# comment 18.15
+# comment 18.16
+list
+# comment 18.17
+# comment 18.18
+:
+# comment 18.19
+# comment 18.20
+[
+# comment 18.21
+# comment 18.22
+1,
+# comment 18.23
+# comment 18.24
+2,
+# comment 18.25
+# comment 18.26
+3
+# comment 18.27
+# comment 18.28
+]
+# comment 18.29
+# comment 18.30
+,
+# comment 18.31
+# comment 18.32
+field2
+# comment 18.33
+# comment 18.34
+:
+# comment 18.35
+# comment 18.36
+true
+# comment 18.37
+# comment 18.38
+}
+# comment 18.39
+# comment 18.40
+)
+ # comment 19
+ # comment 20
+ {
+ # comment 21
+ # comment 22
+  whoever123is
+  # comment 23
+  # comment 24
+  :
+  # comment 25
+  # comment 26
+  node
+  # comment 27
+  # comment 28
+  (
+  # comment 29
+  # comment 30
+  id
+  # comment 31
+  # comment 32
+  :
+  # comment 33
+  # comment 34
+  [
+  # comment 35
+  # comment 36
+  123
+  # comment 37
+  # comment 38
+  456
+  # comment 39
+  # comment 40
+  ]
+  # comment 40
+  # comment 41
+  )
+  # comment 42
+   # comment 43
+   {
+   # comment 44
+   # comment 45
+    id ,
+    # comment 46
+    # comment 47
+    ...
+    # comment 48
+    # comment 49
+    on
+    # comment 50
+    # comment 51
+    User
+    # comment 52
+    # comment 53
+    @defer
+    # comment 54
+    # comment 55
+    {
+      field2
+      # comment 56
+      # comment 57
+      {
+      # comment 58
+      # comment 59
+        alias
+        # comment 60
+        # comment 61
+        :
+        # comment 62
+        # comment 63
+        field1
+        # comment 64
+        # comment 65
+        (
+        # comment 66
+        # comment 67
+        first
+        # comment 68
+        # comment 69
+        :
+        # comment 70
+        # comment 71
+        10,
+        # comment 72
+        # comment 73
+        after
+        # comment 74
+        # comment 75
+        :
+        # comment 76
+        # comment 77
+        $foo,
+        # comment 78
+        # comment 79
+        )
+        # comment 80
+        # comment 81
+        @include
+        # comment 82
+        # comment 83
+        (
+        # comment 84
+        # comment 85
+        if
+        # comment 86
+        # comment 87
+        :
+         # comment 88
+         # comment 89
+         $foo
+         # comment 90
+         # comment 91
+         )
+         # comment 92
+         # comment 93
+         {
+          # comment 94
+          # comment 95
+          id,
+          # comment 96
+          # comment 97
+
+          ...
+          # comment 98
+          # comment 99
+          frag
+          # comment 100
+          # comment 101
+        }
+        # comment 102
+        # comment 103
+      }
+      # comment 104
+      # comment 105
+    }
+    # comment 106
+    # comment 107
+  }
+  # comment 108
+  # comment 109
+}
+
+   # comment 110
+   # comment 111
+mutation
+# comment 112
+# comment 113
+likeStory
+# comment 114
+# comment 115
+{
+# comment 116
+# comment 117
+  like
+  # comment 118
+  # comment 119
+  (
+  # comment 120
+  # comment 121
+  story
+  # comment 122
+  # comment 123
+  :
+  # comment 124
+  # comment 125
+  123
+  # comment 126
+  # comment 127
+  )
+  # comment 128
+  # comment 129
+  @defer
+  # comment 130
+  # comment 131
+  {
+  # comment 132
+  # comment 133
+    story
+    # comment 134
+    # comment 135
+    {
+    # comment 136
+    # comment 137
+
+    # comment 138
+    # comment 139
+      id
+      # comment 140
+      # comment 141
+    }
+    # comment 142
+    # comment 143
+  }
+  # comment 144
+  # comment 145
+} # comment 146
+# comment 147
+
+fragment
+# comment 148
+# comment 149
+frag
+# comment 150
+# comment 151
+on
+# comment 152
+# comment 153
+Friend
+# comment 154
+# comment 155
+{
+# comment 156
+# comment 157
+
+# comment 158
+# comment 159
+  ...
+  # comment 160
+  # comment 161
+  @skip
+  # comment 162
+  # comment 163
+  (
+  # comment 164
+  # comment 165
+  unless
+  # comment 166
+  # comment 167
+  :
+  # comment 168
+  # comment 169
+  $foo
+  # comment 170
+  # comment 171
+  )
+  # comment 172
+  # comment 173
+  {
+  # comment 174
+  # comment 175
+    id
+    # comment 176
+    # comment 177
+  }
+  # comment 178
+  # comment 179
+}
+# comment 180
+# comment 181

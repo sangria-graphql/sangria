@@ -353,8 +353,8 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           case _ ⇒ Left(IntCoercionViolation)
         },
         coerceInput = {
-          case ast.IntValue(i, _) if i % 2 != 0 ⇒ Right(i)
-          case ast.BigIntValue(i, _) if i.isValidInt && i % 2 != BigInt(0) ⇒ Right(i.intValue)
+          case ast.IntValue(i, _, _) if i % 2 != 0 ⇒ Right(i)
+          case ast.BigIntValue(i, _, _) if i.isValidInt && i % 2 != BigInt(0) ⇒ Right(i.intValue)
           case _ ⇒ Left(IntCoercionViolation)
         })
 
