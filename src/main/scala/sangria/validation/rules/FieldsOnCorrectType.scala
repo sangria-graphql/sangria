@@ -17,7 +17,7 @@ import sangria.validation._
 class FieldsOnCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.Field(_, name, _, _, _, pos) ⇒
+      case ast.Field(_, name, _, _, _, _, pos) ⇒
         (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
           case (Some(parent), None) ⇒
             val suggestedTypeNames = collectSuggestedTypes(parent, name)

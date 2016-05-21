@@ -17,7 +17,7 @@ import scala.language.postfixOps
 class ProvidedNonNullArguments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onLeave: ValidationVisit = {
-      case ast.Field(_, name, args, _, _, pos) ⇒
+      case ast.Field(_, name, args, _, _, _, pos) ⇒
         ctx.typeInfo.fieldDef match {
           case None ⇒ Right(Continue)
           case Some(fieldDef) ⇒
@@ -31,7 +31,7 @@ class ProvidedNonNullArguments extends ValidationRule {
             if (errors.nonEmpty) Left(errors) else Right(Continue)
         }
 
-      case ast.Directive(name, args, pos) ⇒
+      case ast.Directive(name, args, _, pos) ⇒
         ctx.typeInfo.directive match {
           case None ⇒ Right(Continue)
           case Some(dirDef) ⇒

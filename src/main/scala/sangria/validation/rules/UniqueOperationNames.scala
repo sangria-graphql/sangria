@@ -16,7 +16,7 @@ class UniqueOperationNames extends ValidationRule {
     val knownOpNames = MutableSet[String]()
 
     override val onEnter: ValidationVisit = {
-      case ast.OperationDefinition(_, Some(name), _, _, _, pos) ⇒
+      case ast.OperationDefinition(_, Some(name), _, _, _, _, pos) ⇒
         if (knownOpNames contains name)
           Left(Vector(DuplicateOperationNameViolation(name, ctx.sourceMapper, pos.toList)))
         else {

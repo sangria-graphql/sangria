@@ -485,7 +485,7 @@ case class EnumType[T](
   }
 
   def coerceInput(value: ast.Value): Either[Violation, (T, Boolean)] = value match {
-    case ast.EnumValue(name, _) ⇒ byName get name map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
+    case ast.EnumValue(name, _, _) ⇒ byName get name map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
     case _ ⇒ Left(EnumCoercionViolation)
   }
 

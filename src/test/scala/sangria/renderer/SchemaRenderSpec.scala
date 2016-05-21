@@ -27,43 +27,43 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
   def `default schema renderer`(implicit render: Schema[Unit, Unit] ⇒ String): Unit = {
     "Prints String Field" in {
-      renderSingleFieldSchema(OptionType(StringType)) should be ("""
+      renderSingleFieldSchema(OptionType(StringType)) should equal ("""
         |type Root {
         |  singleField: String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints [String] Field" in {
-      renderSingleFieldSchema(OptionType(ListType(OptionType(StringType)))) should be ("""
+      renderSingleFieldSchema(OptionType(ListType(OptionType(StringType)))) should equal ("""
         |type Root {
         |  singleField: [String]
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String! Field" in {
-      renderSingleFieldSchema(StringType) should be ("""
+      renderSingleFieldSchema(StringType) should equal ("""
         |type Root {
         |  singleField: String!
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints [String]! Field" in {
-      renderSingleFieldSchema(ListType(OptionType(StringType))) should be ("""
+      renderSingleFieldSchema(ListType(OptionType(StringType))) should equal ("""
         |type Root {
         |  singleField: [String]!
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints [String!] Field" in {
-      renderSingleFieldSchema(OptionType(ListType(StringType))) should be ("""
+      renderSingleFieldSchema(OptionType(ListType(StringType))) should equal ("""
         |type Root {
         |  singleField: [String!]
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Print Object Field" in {
@@ -77,7 +77,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |type Foo {
         |  str: String
         |}
@@ -85,51 +85,51 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |type Root {
         |  foo: Foo
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String Field With Int Arg" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType)) :: Nil
-      ) should be ("""
+      ) should equal ("""
         |type Root {
         |  singleField(argOne: Int): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String Field With Int Arg With Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType), 2) :: Nil
-      ) should be ("""
+      ) should equal ("""
         |type Root {
         |  singleField(argOne: Int = 2): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String Field With Int! Arg" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", IntType) :: Nil
-      ) should be ("""
+      ) should equal ("""
         |type Root {
         |  singleField(argOne: Int!): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String Field With Multiple Args" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType)) :: Argument("argTwo", OptionInputType(StringType)) :: Nil
-      ) should be ("""
+      ) should equal ("""
         |type Root {
         |  singleField(argOne: Int, argTwo: String): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String Field With Multiple Args, First is Default" in {
@@ -140,11 +140,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           Argument("argTwo", OptionInputType(StringType)) ::
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
-      ) should be ("""
+      ) should equal ("""
         |type Root {
         |  singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String Field With Multiple Args, Second is Default" in {
@@ -155,11 +155,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           Argument("argTwo", OptionInputType(StringType), defaultValue = "foo") ::
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
-      ) should be ("""
+      ) should equal ("""
         |type Root {
         |  singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Prints String Field With Multiple Args, Last is Default" in {
@@ -170,11 +170,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           Argument("argTwo", OptionInputType(StringType)) ::
           Argument("argThree", OptionInputType(BooleanType), false) ::
           Nil
-      ) should be ("""
+      ) should equal ("""
         |type Root {
         |  singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Print Interface" in {
@@ -191,7 +191,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |type Bar implements Foo {
         |  str: String
         |}
@@ -203,7 +203,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Print Multiple Interface" in {
@@ -223,7 +223,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |interface Baaz {
         |  int: Int
         |}
@@ -240,7 +240,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Print Multiple Interface (with interface hierarchy)" in {
@@ -260,7 +260,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |interface Baaz {
         |  int: Int
         |  str: String
@@ -278,7 +278,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Print Unions" in {
@@ -300,7 +300,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |type Bar {
         |  str: String
         |}
@@ -317,7 +317,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |}
         |
         |union SingleUnion = Foo
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Print Input Type" in {
@@ -333,7 +333,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |input InputType {
         |  int: Int
         |}
@@ -341,7 +341,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |type Root {
         |  str(argOne: InputType): String
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Custom Scalar" in {
@@ -364,13 +364,13 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |scalar Odd
         |
         |type Root {
         |  odd: Odd
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "Enum" in {
@@ -385,7 +385,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should be ("""
+      render(schema) should equal ("""
         |enum RGB {
         |  RED
         |  GREEN
@@ -395,7 +395,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |type Root {
         |  rgb: RGB
         |}
-        |""".stripMargin)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
     }
   }
 

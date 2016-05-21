@@ -58,10 +58,10 @@ object QueryRenderer {
     node match {
       case Document(defs, _, _) ⇒ defs map (render(_, config, indentLevel)) mkString config.definitionSeparator
 
-      case OperationDefinition(OperationType.Query, None, Nil, Nil, sels, _) ⇒
+      case OperationDefinition(OperationType.Query, None, Nil, Nil, sels, _, _) ⇒
         indent + renderSelections(sels, indent, indentLevel, config)
 
-      case OperationDefinition(opType, name, vars, dirs, sels, _) ⇒
+      case OperationDefinition(opType, name, vars, dirs, sels, _, _) ⇒
         indent + renderOpType(opType) + config.mandatorySeparator +
           (name getOrElse "") +
           (if (vars.nonEmpty) "(" + (vars map (render(_, config)) mkString ("," + config.separator)) + ")" else "") +
@@ -69,12 +69,12 @@ object QueryRenderer {
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case FragmentDefinition(name, typeCondition, dirs, sels, _) ⇒
+      case FragmentDefinition(name, typeCondition, dirs, sels, _, _) ⇒
         indent + "fragment" + config.mandatorySeparator + name + config.mandatorySeparator + "on" + config.mandatorySeparator + typeCondition.name + config.separator +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case VariableDefinition(name, tpe, defaultValue, _) ⇒
+      case VariableDefinition(name, tpe, defaultValue, _, _) ⇒
         indent + "$" + name + ":" + config.separator +
           render(tpe, config) +
           (defaultValue map (v ⇒ config.separator + "=" + config.separator + render(v, config)) getOrElse "")
@@ -88,43 +88,43 @@ object QueryRenderer {
       case NamedType(name, _) ⇒
         name
 
-      case Field(alias, name, args, dirs, sels, _) ⇒
+      case Field(alias, name, args, dirs, sels, _, _) ⇒
         indent + (alias map (_ + ":" + config.separator) getOrElse "") + name +
           renderArgs(args, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config, withSep = sels.nonEmpty) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case FragmentSpread(name, dirs, _) ⇒
+      case FragmentSpread(name, dirs, _, _) ⇒
         indent + "..." + name + renderDirs(dirs, config, frontSep = true)
 
-      case InlineFragment(typeCondition, dirs, sels, _) ⇒
+      case InlineFragment(typeCondition, dirs, sels, _, _) ⇒
         indent + "..." + config.mandatorySeparator + typeCondition.fold("")("on" + config.mandatorySeparator + _.name) + config.separator +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case Directive(name, args, _) ⇒
+      case Directive(name, args, _, _) ⇒
         indent + "@" + name + renderArgs(args, config, withSep = false)
 
-      case Argument(name, value, _) ⇒
+      case Argument(name, value, _, _) ⇒
         indent + name + ":" + config.separator + render(value, config)
 
-      case IntValue(value, _) ⇒ "" + value
-      case BigIntValue(value, _) ⇒ value.toString
-      case FloatValue(value, _) ⇒ value.toString
-      case BigDecimalValue(value, _) ⇒ value.toString
-      case StringValue(value, _) ⇒ '"' + escapeString(value) + '"'
-      case BooleanValue(value, _) ⇒ value.toString
-      case NullValue(_) ⇒ "null"
-      case EnumValue(value, _) ⇒ value
-      case ListValue(value, _) ⇒
+      case IntValue(value, _, _) ⇒ "" + value
+      case BigIntValue(value, _, _) ⇒ value.toString
+      case FloatValue(value, _, _) ⇒ value.toString
+      case BigDecimalValue(value, _, _) ⇒ value.toString
+      case StringValue(value, _, _) ⇒ '"' + escapeString(value) + '"'
+      case BooleanValue(value, _, _) ⇒ value.toString
+      case NullValue(_, _) ⇒ "null"
+      case EnumValue(value, _, _) ⇒ value
+      case ListValue(value, _, _) ⇒
         "[" + (value map (render(_, config, indentLevel)) mkString config.inputListSeparator) + "]"
-      case ObjectValue(value, _) ⇒
+      case ObjectValue(value, _, _) ⇒
         "{" + inputLineBreak(config) +
             (value map (render(_, config, inputFieldIndent(config, indentLevel))) mkString config.inputFieldSeparator) +
             inputLineBreak(config) + inputIndent(config, indent) + "}"
-      case VariableValue(name, _) ⇒ indent + "$" + name
-      case ObjectField(name, value, _) ⇒ indent + name + ":" + config.separator + render(value, config, indentLevel)
+      case VariableValue(name, _, _) ⇒ indent + "$" + name
+      case ObjectField(name, value, _, _) ⇒ indent + name + ":" + config.separator + render(value, config, indentLevel)
     }
   }
 

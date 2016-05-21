@@ -19,9 +19,9 @@ package object schema {
       case _ ⇒ Left(IntCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _) ⇒ Right(i)
-      case ast.BigIntValue(i, _) if !i.isValidInt ⇒ Left(BigIntCoercionViolation)
-      case ast.BigIntValue(i, _) ⇒ Right(i.intValue)
+      case ast.IntValue(i, _, _) ⇒ Right(i)
+      case ast.BigIntValue(i, _, _) if !i.isValidInt ⇒ Left(BigIntCoercionViolation)
+      case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
       case _ ⇒ Left(IntCoercionViolation)
     })
 
@@ -38,9 +38,9 @@ package object schema {
       case _ ⇒ Left(LongCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _) ⇒ Right(i: Long)
-      case ast.BigIntValue(i, _) if !i.isValidLong ⇒ Left(BigLongCoercionViolation)
-      case ast.BigIntValue(i, _) ⇒ Right(i.longValue)
+      case ast.IntValue(i, _, _) ⇒ Right(i: Long)
+      case ast.BigIntValue(i, _, _) if !i.isValidLong ⇒ Left(BigLongCoercionViolation)
+      case ast.BigIntValue(i, _, _) ⇒ Right(i.longValue)
       case _ ⇒ Left(LongCoercionViolation)
     })
 
@@ -56,8 +56,8 @@ package object schema {
       case _ ⇒ Left(IntCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _) ⇒ Right(i)
-      case ast.BigIntValue(i, _) ⇒ Right(i)
+      case ast.IntValue(i, _, _) ⇒ Right(i)
+      case ast.BigIntValue(i, _, _) ⇒ Right(i)
       case _ ⇒ Left(IntCoercionViolation)
     })
 
@@ -77,12 +77,12 @@ package object schema {
       case _ ⇒ Left(FloatCoercionViolation)
     },
     coerceInput = {
-      case ast.FloatValue(d, _) ⇒ Right(d)
-      case ast.BigDecimalValue(d, _) if !d.isDecimalDouble ⇒ Left(BigDecimalCoercionViolation)
-      case ast.BigDecimalValue(d, _) ⇒ Right(d.doubleValue)
-      case ast.IntValue(i, _) ⇒ Right(i)
-      case ast.BigIntValue(i, _) if !i.isValidDouble ⇒ Left(BigDecimalCoercionViolation)
-      case ast.BigIntValue(i, _) ⇒ Right(i.doubleValue)
+      case ast.FloatValue(d, _, _) ⇒ Right(d)
+      case ast.BigDecimalValue(d, _, _) if !d.isDecimalDouble ⇒ Left(BigDecimalCoercionViolation)
+      case ast.BigDecimalValue(d, _, _) ⇒ Right(d.doubleValue)
+      case ast.IntValue(i, _, _) ⇒ Right(i)
+      case ast.BigIntValue(i, _, _) if !i.isValidDouble ⇒ Left(BigDecimalCoercionViolation)
+      case ast.BigIntValue(i, _, _) ⇒ Right(i.doubleValue)
       case _ ⇒ Left(FloatCoercionViolation)
     })
 
@@ -98,10 +98,10 @@ package object schema {
       case _ ⇒ Left(FloatCoercionViolation)
     },
     coerceInput = {
-      case ast.BigDecimalValue(d, _) ⇒ Right(d)
-      case ast.FloatValue(d, _) ⇒ Right(BigDecimal(d))
-      case ast.IntValue(i, _) ⇒ Right(BigDecimal(i))
-      case ast.BigIntValue(i, _) ⇒ Right(BigDecimal(i))
+      case ast.BigDecimalValue(d, _, _) ⇒ Right(d)
+      case ast.FloatValue(d, _, _) ⇒ Right(BigDecimal(d))
+      case ast.IntValue(i, _, _) ⇒ Right(BigDecimal(i))
+      case ast.BigIntValue(i, _, _) ⇒ Right(BigDecimal(i))
       case _ ⇒ Left(FloatCoercionViolation)
     })
 
@@ -113,7 +113,7 @@ package object schema {
       case _ ⇒ Left(BooleanCoercionViolation)
     },
     coerceInput = {
-      case ast.BooleanValue(b, _) ⇒ Right(b)
+      case ast.BooleanValue(b, _, _) ⇒ Right(b)
       case _ ⇒ Left(BooleanCoercionViolation)
     })
 
@@ -128,7 +128,7 @@ package object schema {
       case _ ⇒ Left(StringCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(s, _) ⇒ Right(s)
+      case ast.StringValue(s, _, _) ⇒ Right(s)
       case _ ⇒ Left(StringCoercionViolation)
     })
 
@@ -148,9 +148,9 @@ package object schema {
       case _ ⇒ Left(IDCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(id, _) ⇒ Right(id)
-      case ast.IntValue(id, _) ⇒ Right(id.toString)
-      case ast.BigIntValue(id, _) ⇒ Right(id.toString)
+      case ast.StringValue(id, _, _) ⇒ Right(id)
+      case ast.IntValue(id, _, _) ⇒ Right(id.toString)
+      case ast.BigIntValue(id, _, _) ⇒ Right(id.toString)
       case _ ⇒ Left(IDCoercionViolation)
     })
 

@@ -19,11 +19,11 @@ class UniqueInputFieldNames extends ValidationRule {
     val knownNames = MutableMap[String, Option[Position]]()
 
     override val onEnter: ValidationVisit = {
-      case ast.ObjectValue(fields, _) ⇒
+      case ast.ObjectValue(fields, _, _) ⇒
         knownNames.clear()
         Right(Continue)
 
-      case ast.ObjectField(name, _, pos) ⇒
+      case ast.ObjectField(name, _, _, pos) ⇒
         if (knownNames contains name)
           Left(Vector(DuplicateInputFieldViolation(name, ctx.sourceMapper, knownNames(name).toList ++ pos.toList)))
         else {

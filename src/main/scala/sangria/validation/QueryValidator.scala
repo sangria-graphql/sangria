@@ -225,13 +225,13 @@ object ValidationContext {
     case (OptionInputType(ofType), _: ast.NullValue) ⇒ Vector.empty
     case (OptionInputType(ofType), v) ⇒
       isValidLiteralValue(ofType, v, sourceMapper)
-    case (ListInputType(ofType), ast.ListValue(values, pos)) ⇒
+    case (ListInputType(ofType), ast.ListValue(values, _, pos)) ⇒
       values.zipWithIndex.toVector.flatMap {
         case (elem, idx) ⇒ isValidLiteralValue(ofType, elem, sourceMapper) map (ListValueViolation(idx, _, sourceMapper, pos.toList))
       }
     case (ListInputType(ofType), v) ⇒
       isValidLiteralValue(ofType, v, sourceMapper) map (ListValueViolation(0, _, sourceMapper, v.position.toList))
-    case (io: InputObjectType[_], ast.ObjectValue(fields, pos)) ⇒
+    case (io: InputObjectType[_], ast.ObjectValue(fields, _, pos)) ⇒
       val unknownFields = fields.toVector.collect {
         case f if !io.fieldsByName.contains(f.name) ⇒
           UnknownInputObjectFieldViolation(SchemaRenderer.renderTypeName(io, true), f.name, sourceMapper, f.position.toList)
@@ -299,15 +299,15 @@ class TypeInfo(schema: Schema[_, _]) {
         typeStack push fieldType
 
         pushParent()
-      case ast.Directive(name, _, _) ⇒
+      case ast.Directive(name, _, _, _) ⇒
         directive = schema.directivesByName get name
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _) ⇒
         typeStack push Some(schema.query)
         pushParent()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _) ⇒
         typeStack push schema.mutation
         pushParent()
-      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _) ⇒
         typeStack push schema.subscription
         pushParent()
       case fd: ast.FragmentDefinition ⇒
@@ -323,7 +323,7 @@ class TypeInfo(schema: Schema[_, _]) {
           withArgs.arguments find (_.name == a.name)
         }
         inputTypeStack push argument.map(_.inputValueType)
-      case ast.ListValue(values, _) ⇒
+      case ast.ListValue(values, _, _) ⇒
         inputType match {
           case Some(it) ⇒ getNotNullType(it) match {
             case it: ListInputType[_] ⇒ inputTypeStack push Some(it.ofType)
@@ -331,7 +331,7 @@ class TypeInfo(schema: Schema[_, _]) {
           }
           case None ⇒ inputTypeStack push None
         }
-      case ast.ObjectField(name, value, _) ⇒
+      case ast.ObjectField(name, value, _, _) ⇒
         val fieldType = inputType flatMap (it ⇒ getNamedType(it) match {
           case obj: InputObjectType[_] ⇒ obj.fieldsByName.get(name) map (_.inputValueType)
           case _ ⇒ None
@@ -358,15 +358,15 @@ class TypeInfo(schema: Schema[_, _]) {
         fieldDefStack.pop()
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.Directive(name, _, _) ⇒
+      case ast.Directive(name, _, _, _) ⇒
         directive = None
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
       case fd: ast.FragmentDefinition ⇒
@@ -380,9 +380,9 @@ class TypeInfo(schema: Schema[_, _]) {
       case a: ast.Argument ⇒
         argument = None
         inputTypeStack.pop()
-      case ast.ListValue(values, _) ⇒
+      case ast.ListValue(values, _, _) ⇒
         inputTypeStack.pop()
-      case ast.ObjectField(name, value, _) ⇒
+      case ast.ObjectField(name, value, _, _) ⇒
         inputTypeStack.pop()
       case _ ⇒ // ignore
     }

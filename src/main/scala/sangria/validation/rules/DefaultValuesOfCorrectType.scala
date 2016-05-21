@@ -16,7 +16,7 @@ import sangria.validation._
 class DefaultValuesOfCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.VariableDefinition(name, _, default, _) ⇒
+      case ast.VariableDefinition(name, _, default, _, _) ⇒
         (ctx.typeInfo.inputType, default) match {
           case (Some(it), Some(d)) if !it.isInstanceOf[OptionInputType[_]] ⇒
             Left(Vector(DefaultForNonNullArgViolation(

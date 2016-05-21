@@ -659,16 +659,16 @@ object Resolver {
     }
 
   def marshalAstValue(value: ast.Value, marshaller: ResultMarshaller, typeName: String, scalarInfo: Set[ScalarValueInfo]): marshaller.Node = value match {
-    case ast.StringValue(str, _) ⇒ marshaller.scalarNode(str, typeName, scalarInfo)
-    case ast.IntValue(i, _) ⇒ marshaller.scalarNode(i, typeName, scalarInfo)
-    case ast.BigIntValue(i, _) ⇒ marshaller.scalarNode(i, typeName, scalarInfo)
-    case ast.FloatValue(f, _) ⇒ marshaller.scalarNode(f, typeName, scalarInfo)
-    case ast.BigDecimalValue(f, _) ⇒ marshaller.scalarNode(f, typeName, scalarInfo)
-    case ast.BooleanValue(b, _) ⇒ marshaller.scalarNode(b, typeName, scalarInfo)
-    case ast.NullValue(_) ⇒ marshaller.nullNode
-    case ast.EnumValue(enum, _) ⇒ marshaller.enumNode(enum, typeName)
-    case ast.ListValue(values, _) ⇒ marshaller.arrayNode(values.toVector map (marshalAstValue(_, marshaller, typeName, scalarInfo)))
-    case ast.ObjectValue(values, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalAstValue(v.value, marshaller, typeName, scalarInfo)))
-    case ast.VariableValue(name, _) ⇒ marshaller.enumNode(name, typeName)
+    case ast.StringValue(str, _, _) ⇒ marshaller.scalarNode(str, typeName, scalarInfo)
+    case ast.IntValue(i, _, _) ⇒ marshaller.scalarNode(i, typeName, scalarInfo)
+    case ast.BigIntValue(i, _, _) ⇒ marshaller.scalarNode(i, typeName, scalarInfo)
+    case ast.FloatValue(f, _, _) ⇒ marshaller.scalarNode(f, typeName, scalarInfo)
+    case ast.BigDecimalValue(f, _, _) ⇒ marshaller.scalarNode(f, typeName, scalarInfo)
+    case ast.BooleanValue(b, _, _) ⇒ marshaller.scalarNode(b, typeName, scalarInfo)
+    case ast.NullValue(_, _) ⇒ marshaller.nullNode
+    case ast.EnumValue(enum, _, _) ⇒ marshaller.enumNode(enum, typeName)
+    case ast.ListValue(values, _, _) ⇒ marshaller.arrayNode(values.toVector map (marshalAstValue(_, marshaller, typeName, scalarInfo)))
+    case ast.ObjectValue(values, _, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalAstValue(v.value, marshaller, typeName, scalarInfo)))
+    case ast.VariableValue(name, _, _) ⇒ marshaller.enumNode(name, typeName)
   }
 }

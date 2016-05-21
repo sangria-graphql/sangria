@@ -23,7 +23,7 @@ class UniqueArgumentNames extends ValidationRule {
       case _: ast.Directive ⇒
         knownArgNames.clear()
         Right(Continue)
-      case ast.Argument(name, _, pos) ⇒
+      case ast.Argument(name, _, _, pos) ⇒
         if (knownArgNames contains name)
           Left(Vector(DuplicateArgNameViolation(name, ctx.sourceMapper, pos.toList)))
         else {

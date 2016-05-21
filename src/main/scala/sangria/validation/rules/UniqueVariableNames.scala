@@ -24,7 +24,7 @@ class UniqueVariableNames extends ValidationRule {
         knownVariableNames.clear()
         Right(Continue)
 
-      case ast.VariableDefinition(name, _, _, pos) ⇒
+      case ast.VariableDefinition(name, _, _, _, pos) ⇒
         knownVariableNames get name match {
           case Some(otherPos) ⇒
             Left(Vector(DuplicateVariableViolation(name, ctx.sourceMapper, otherPos ++ pos.toList)))

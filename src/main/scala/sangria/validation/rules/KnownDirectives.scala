@@ -18,7 +18,7 @@ import sangria.validation._
 class KnownDirectives extends ValidationRule {
    override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
      override val onEnter: ValidationVisit = {
-       case ast.Directive(name, _, pos) ⇒
+       case ast.Directive(name, _, _, pos) ⇒
          ctx.schema.directivesByName.get(name) match {
            case None ⇒
              Left(Vector(UnknownDirectiveViolation(name, ctx.sourceMapper, pos.toList)))

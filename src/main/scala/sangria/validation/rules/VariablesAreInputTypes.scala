@@ -17,7 +17,7 @@ import scala.language.postfixOps
 class VariablesAreInputTypes extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.VariableDefinition(name, tpe, _, pos) ⇒
+      case ast.VariableDefinition(name, tpe, _, _, pos) ⇒
         ctx.schema.getInputType(tpe) match {
           case Some(_) ⇒ Right(Continue)
           case None ⇒ Left(Vector(
