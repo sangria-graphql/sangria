@@ -11,8 +11,7 @@ import scala.util.Success
 class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
   "QueryRenderer" should {
 
-    // IGNORED: will be fixed with comments support in rendering
-    "render kitchen sink" ignore {
+    "render kitchen sink" in {
       val Success(ast) = QueryParser.parse(FileUtil loadQuery "kitchen-sink.graphql")
 
       val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
@@ -22,7 +21,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
       val Success(compactParsed) = QueryParser.parse(compactRendered)
 
       AstNode.withoutPosition(ast) should be (AstNode.withoutPosition(prettyParsed))
-      AstNode.withoutPosition(ast) should be (AstNode.withoutPosition(compactParsed))
+      AstNode.withoutPosition(ast, stripComments = true) should be (
+        AstNode.withoutPosition(compactParsed, stripComments = true))
 
       compactRendered should be (
         "query queryName($foo:ComplexType,$site:Site=MOBILE){whoever123is:node(id:[123,456]){" +
@@ -33,7 +33,13 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             "{key:\"value\"})}{unnamed(truthy:true,falsey:false) query ... @skip(unless:$foo){id} ... {id}}")
 
       prettyRendered should equal (
-        """query queryName($foo: ComplexType, $site: Site = MOBILE) {
+        """# Copyright (c) 2015, Facebook, Inc.
+         |# All rights reserved.
+         |#
+         |# This source code is licensed under the BSD-style license found in the
+         |# LICENSE file in the root directory of this source tree. An additional grant
+         |# of patent rights can be found in the PATENTS file in the same directory.
+         |query queryName($foo: ComplexType, $site: Site = MOBILE) {
          |  whoever123is: node(id: [123, 456]) {
          |    id
          |    ... on User @defer {
@@ -119,6 +125,159 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
           |  id
           |  name
           |}""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "preserve comments on definitions and fields" in {
+      val ast =
+        graphql"""
+          # comment 1
+          mutation ($$foo: TestType)
+              # comment 2
+              # comment 3
+              @testDirective {
+            # comment 4
+            id,
+            # comment 5
+            name
+          }
+
+          # fooo
+          fragment Foo on Comment {
+            # c1
+            # c2
+            a, b
+          }
+        """
+
+      QueryRenderer.render(ast) should equal (
+        """# comment 1
+          |mutation ($foo: TestType) @testDirective {
+          |  # comment 4
+          |  id
+          |
+          |  # comment 5
+          |  name
+          |}
+          |
+          |# fooo
+          |fragment Foo on Comment {
+          |  # c1
+          |  # c2
+          |  a
+          |  b
+          |}""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "correctly render input values and preserve comments on values and fields" in {
+
+      val input =
+        graphqlInput"""
+          # root
+          # comment!
+
+          {
+            # data field!
+            data: {
+              human: {
+                #just a name
+                name: "Luke Skywalker"
+                appearsIn: [
+                  #first enum
+                  NEWHOPE,
+                  EMPIRE,
+                  #last one
+                  JEDI
+                ]
+                # foo bar
+
+                # baz
+
+                friends:
+                # comment here!
+                [{
+                  id: "1002"
+                  name: "Han Solo"
+                },
+
+                # value comment
+                {
+                  id: "1003"
+                  # name comment
+                  name: "Leia Organa"
+                }, {
+                  id: "2000"
+                  name: "C-3PO"
+                }, {
+                  id: "2001"
+                  name: "R2-D2"
+                }]
+
+                obj:
+                  # another value comment
+                  {a: b, c: "d"}
+
+                one:
+                  # value one
+
+                  # yay
+                  1
+              }
+            }
+          }
+        """
+
+      QueryRenderer.render(input, QueryRenderer.PrettyInput) should equal (
+        """# root
+          |# comment!
+          |{
+          |  # data field!
+          |  data: {
+          |    human: {
+          |      # just a name
+          |      name: "Luke Skywalker"
+          |      appearsIn: [
+          |        # first enum
+          |        NEWHOPE, EMPIRE,
+          |
+          |        # last one
+          |        JEDI]
+          |
+          |      # foo bar
+          |      # baz
+          |      friends:
+          |        # comment here!
+          |        [{
+          |          id: "1002"
+          |          name: "Han Solo"
+          |        },
+          |
+          |        # value comment
+          |        {
+          |          id: "1003"
+          |
+          |          # name comment
+          |          name: "Leia Organa"
+          |        }, {
+          |          id: "2000"
+          |          name: "C-3PO"
+          |        }, {
+          |          id: "2001"
+          |          name: "R2-D2"
+          |        }]
+          |      obj:
+          |        # another value comment
+          |        {
+          |          a: b
+          |          c: "d"
+          |        }
+          |      one:
+          |        # value one
+          |        # yay
+          |        1
+          |    }
+          |  }
+          |}""".stripMargin) (after being strippedOfCarriageReturns)
+
     }
   }
 }

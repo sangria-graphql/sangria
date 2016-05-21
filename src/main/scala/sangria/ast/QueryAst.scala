@@ -85,7 +85,9 @@ case class NamedType(name: String, position: Option[Position] = None) extends Ty
 case class NotNullType(ofType: Type, position: Option[Position] = None) extends Type
 case class ListType(ofType: Type, position: Option[Position] = None) extends Type
 
-sealed trait Selection extends AstNode with WithDirectives
+sealed trait Selection extends AstNode with WithDirectives {
+  def comment: Option[Comment]
+}
 
 case class Field(
     alias: Option[String],
@@ -125,7 +127,10 @@ sealed trait WithDirectives {
 case class Directive(name: String, arguments: List[Argument], comment: Option[Comment] = None, position: Option[Position] = None) extends AstNode
 case class Argument(name: String, value: Value, comment: Option[Comment] = None, position: Option[Position] = None) extends NameValue
 
-sealed trait Value extends AstNode
+sealed trait Value extends AstNode {
+  def comment: Option[Comment]
+}
+
 sealed trait ScalarValue extends Value
 
 case class IntValue(value: Int, comment: Option[Comment] = None, position: Option[Position] = None) extends ScalarValue
@@ -147,7 +152,7 @@ case class ObjectValue(fields: List[ObjectField], comment: Option[Comment] = Non
 
 case class ObjectField(name: String, value: Value, comment: Option[Comment] = None, position: Option[Position] = None) extends NameValue
 
-case class Comment(lines: Seq[String], position: Option[Position] = None)
+case class Comment(lines: Seq[String], position: Option[Position] = None) extends AstNode
 
 sealed trait AstNode {
   def position: Option[Position]
@@ -155,63 +160,111 @@ sealed trait AstNode {
 }
 
 object AstNode {
-  def withoutPosition[T <: AstNode](node: T): T = node match {
-    case n: Document ⇒ n.copy(definitions = n.definitions map withoutPosition, position = None, sourceMapper = None).asInstanceOf[T]
+  def withoutPosition[T <: AstNode](node: T, stripComments: Boolean = false): T = node match {
+    case n: Document ⇒ n.copy(definitions = n.definitions map (withoutPosition(_, stripComments)), position = None, sourceMapper = None).asInstanceOf[T]
     case n: OperationDefinition ⇒
       n.copy(
-        variables = n.variables map withoutPosition,
-        directives = n.directives map withoutPosition,
-        selections = n.selections map withoutPosition,
+        variables = n.variables map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        selections = n.selections map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
     case n: FragmentDefinition ⇒
       n.copy(
         typeCondition = withoutPosition(n.typeCondition),
-        directives = n.directives map withoutPosition,
-        selections = n.selections map withoutPosition,
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        selections = n.selections map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
     case n: VariableDefinition ⇒
       n.copy(
-        tpe = withoutPosition(n.tpe),
-        defaultValue = n.defaultValue map withoutPosition,
+        tpe = withoutPosition(n.tpe, stripComments),
+        defaultValue = n.defaultValue map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
     case n: NamedType ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: NotNullType ⇒ n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
-    case n: ListType ⇒ n.copy(ofType = withoutPosition(n.ofType), position = None).asInstanceOf[T]
+    case n: NotNullType ⇒ n.copy(ofType = withoutPosition(n.ofType, stripComments), position = None).asInstanceOf[T]
+    case n: ListType ⇒ n.copy(ofType = withoutPosition(n.ofType, stripComments), position = None).asInstanceOf[T]
     case n: Field ⇒
       n.copy(
-        arguments = n.arguments map withoutPosition,
-        directives = n.directives map withoutPosition,
-        selections = n.selections map withoutPosition,
+        arguments = n.arguments map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        selections = n.selections map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
     case n: FragmentSpread ⇒
       n.copy(
-        directives = n.directives map withoutPosition,
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
     case n: InlineFragment ⇒
       n.copy(
-        typeCondition = n.typeCondition map withoutPosition,
-        directives = n.directives map withoutPosition,
-        selections = n.selections map withoutPosition,
+        typeCondition = n.typeCondition map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        selections = n.selections map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
     case n: Directive ⇒
       n.copy(
-        arguments = n.arguments map withoutPosition,
+        arguments = n.arguments map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
-    case n: Argument ⇒ n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
-    case n: IntValue ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: BigIntValue ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: FloatValue ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: BigDecimalValue ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: StringValue ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: BooleanValue ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: NullValue ⇒ n.copy(position = None).asInstanceOf[T]
-    case n: EnumValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: Argument ⇒
+      n.copy(
+        value = withoutPosition(n.value, stripComments),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: IntValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: BigIntValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: FloatValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: BigDecimalValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: StringValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: BooleanValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: NullValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: EnumValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
     case n: ListValue ⇒
       n.copy(
-        values = n.values map withoutPosition,
+        values = n.values map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
         position = None).asInstanceOf[T]
-    case n: ObjectValue ⇒ n.copy(fields = n.fields map withoutPosition, position = None).asInstanceOf[T]
-    case n: ObjectField ⇒ n.copy(value = withoutPosition(n.value), position = None).asInstanceOf[T]
-    case n: VariableValue ⇒ n.copy(position = None).asInstanceOf[T]
+    case n: ObjectValue ⇒
+      n.copy(
+        fields = n.fields map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: ObjectField ⇒
+      n.copy(
+        value = withoutPosition(n.value, stripComments),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: VariableValue ⇒ 
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
+        position = None).asInstanceOf[T]
+    case n: Comment ⇒ n.copy(position = None).asInstanceOf[T]
   }
 }

@@ -107,7 +107,7 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
 
   def Document = rule { IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ Ignored.* ~ EOI ~> ((pos, d) ⇒ ast.Document(d.toList, Some(pos))) }
 
-  def InputDocument = rule { Ignored.* ~ ValueConst ~ Ignored.* ~ EOI }
+  def InputDocument = rule { IgnoredNoComment.* ~ ValueConst ~ Ignored.* ~ EOI }
 
   def Definition = rule { OperationDefinition | FragmentDefinition }
 
