@@ -9,6 +9,7 @@ import sangria.renderer.SchemaRenderer
 import sangria.validation.Violation
 
 import scala.collection.concurrent.TrieMap
+import scala.reflect.ClassTag
 import scala.util.{Try, Failure, Success}
 
 class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (introspectionResult: T, logic: MaterializationLogic[Ctx]) {
@@ -146,7 +147,8 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
       name = logic.rewriteTypeName(tpe.kind, tpe.name),
       description = tpe.description,
       fieldsFn = () ⇒ tpe.fields.toList map buildField,
-      interfaces = tpe.interfaces.toList map getInterfaceType)
+      interfaces = tpe.interfaces.toList map getInterfaceType
+      )(logic.classForType(tpe.name) map ClassTag.apply[Any] getOrElse ClassTag.Any)
 
   private def buildInterfaceDef(tpe: IntrospectionInterfaceType) =
     InterfaceType[Ctx, Any](
@@ -234,6 +236,8 @@ trait MaterializationLogic[Ctx] {
   def fieldTags(fieldName: String): List[FieldTag]
 
   def defaultValueParser: Option[String ⇒ Try[(Any, InputUnmarshaller[Any])]]
+
+  def classForType(name: String): Option[Class[_]]
 }
 
 object MaterializationLogic {
@@ -262,6 +266,8 @@ class DefaultMaterializationLogic[Ctx] extends MaterializationLogic[Ctx] {
     * By default all default values are ignored because there is no knowledge how to parse them
     */
   def defaultValueParser: Option[String ⇒ Try[(Any, InputUnmarshaller[Any])]] = None
+
+  def classForType(name: String): Option[Class[_]] = None
 }
 
 object DefaultMaterializationLogic {
