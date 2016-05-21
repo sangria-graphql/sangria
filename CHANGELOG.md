@@ -1,3 +1,8 @@
+## Upcoming
+
+# Preserve comments during the AST parsing (#105). Most of the AST classes got comment `Option[Comment]`. It can be very useful for query formatting because `QueryRenderer` also got support for comments and able to render them.
+# Added support for case objects defined in companion object (#135). Big thanks to @joprice for contributing this improvement!
+
 ## v0.6.3 (2016-05-01)
 
 * Marshaling for [Amazon Ion](http://amznlabs.github.io/ion-docs/index.html) data format is introduced. Amazon Ion is a richly-typed, self-describing, hierarchical data serialization format offering interchangeable binary and text representations.
