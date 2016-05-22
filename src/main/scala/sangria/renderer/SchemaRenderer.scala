@@ -5,6 +5,7 @@ import sangria.introspection._
 import sangria.marshalling.{ResultMarshaller, InputUnmarshaller}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.schema._
+import sangria.util.StringUtil.escapeString
 
 object SchemaRenderer {
   def renderTypeName(tpe: Type, topLevel: Boolean = false) = {
@@ -57,6 +58,15 @@ object SchemaRenderer {
     argDef + default
   }
 
+  def spaceOpt(show: Boolean) = if (show) " " else ""
+
+  def renderDeprecation(isDeprecated: Boolean, reason: Option[String], frontSep: Boolean = true) = (isDeprecated, reason) match {
+    case (true, Some(r)) if r.trim == DefaultDeprecationReason ⇒ spaceOpt(frontSep) + "@deprecated"
+    case (true, Some(r)) if r.trim.nonEmpty ⇒ spaceOpt(frontSep) + "@deprecated(reason: \"" + escapeString(r.trim) + "\")"
+    case (true, _) ⇒ spaceOpt(frontSep) + "@deprecated"
+    case _ ⇒ ""
+  }
+
   def renderArgs(args: Seq[IntrospectionInputValue])=
     if (args.nonEmpty)
       args map renderArg mkString ("(", ", ", ")")
@@ -94,10 +104,10 @@ object SchemaRenderer {
       ""
 
   private def renderField(field: IntrospectionField) =
-    s"${field.name}${renderArgs(field.args)}: ${renderTypeName(field.tpe)}"
+    s"${field.name}${renderArgs(field.args)}: ${renderTypeName(field.tpe)}${renderDeprecation(field.isDeprecated, field.deprecationReason)}"
 
   private def renderField(field: Field[_, _])(implicit m: ResultMarshaller) =
-    s"${field.name}${renderArgs(field.arguments)}: ${renderTypeName(field.fieldType)}"
+    s"${field.name}${renderArgs(field.arguments)}: ${renderTypeName(field.fieldType)}${renderDeprecation(field.deprecationReason.isDefined, field.deprecationReason)}"
 
   private def renderInputField(field: IntrospectionInputValue) =
     s"${field.name}: ${renderTypeName(field.tpe)}"
@@ -119,13 +129,13 @@ object SchemaRenderer {
 
   private def renderEnumValuesI(values: Seq[IntrospectionEnumValue]) =
     if (values.nonEmpty)
-      values map (Indention + _.name) mkString "\n"
+      values map (v ⇒ Indention + v.name + renderDeprecation(v.isDeprecated, v.deprecationReason)) mkString "\n"
     else
       ""
 
   private def renderEnumValues(values: Seq[EnumValue[_]]) =
     if (values.nonEmpty)
-      values map (Indention + _.name) mkString "\n"
+      values map (v ⇒ Indention + v.name + renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason)) mkString "\n"
     else
       ""
 

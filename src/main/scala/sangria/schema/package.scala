@@ -174,7 +174,22 @@ package object schema {
     locations = Set(DirectiveLocation.Field, DirectiveLocation.FragmentSpread, DirectiveLocation.InlineFragment),
     shouldInclude = ctx ⇒ !ctx.arg(IfArg))
 
-  val BuiltinDirectives = IncludeDirective :: SkipDirective :: Nil
+  val DefaultDeprecationReason = "No longer supported"
+
+  val ReasonArg = Argument("reason", OptionInputType(StringType),
+    description =
+      "Explains why this element was deprecated, usually also including a " +
+      "suggestion for how to access supported similar data. Formatted" +
+      "in [Markdown](https://daringfireball.net/projects/markdown/).",
+    defaultValue = DefaultDeprecationReason)
+
+  val DeprecatedDirective = Directive("deprecated",
+    description = Some("Marks an element of a GraphQL schema as no longer supported."),
+    arguments = ReasonArg :: Nil,
+    locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.EnumValue),
+    shouldInclude = ctx ⇒ !ctx.arg(IfArg))
+
+  val BuiltinDirectives = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
 
   def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
 

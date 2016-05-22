@@ -429,9 +429,9 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  description: String
         |  locations: [__DirectiveLocation!]!
         |  args: [__InputValue!]!
-        |  onOperation: Boolean!
-        |  onFragment: Boolean!
-        |  onField: Boolean!
+        |  onOperation: Boolean! @deprecated(reason: "Use `locations`.")
+        |  onFragment: Boolean! @deprecated(reason: "Use `locations`.")
+        |  onField: Boolean! @deprecated(reason: "Use `locations`.")
         |}
         |
         |enum __DirectiveLocation {

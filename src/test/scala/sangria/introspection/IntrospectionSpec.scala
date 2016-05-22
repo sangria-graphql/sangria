@@ -845,7 +845,17 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                         "kind" → "SCALAR",
                         "name" → "Boolean",
                         "ofType" → null)),
-                    "defaultValue" → null))))))))
+                    "defaultValue" → null))),
+              Map(
+                "name" → "deprecated",
+                "description" → "Marks an element of a GraphQL schema as no longer supported.",
+                "locations" → Vector("ENUM_VALUE", "FIELD_DEFINITION"),
+                "args" → Vector(
+                  Map(
+                    "name" → "reason",
+                    "description" → "Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formattedin [Markdown](https://daringfireball.net/projects/markdown/).",
+                    "type" → Map("kind" → "SCALAR", "name" → "String", "ofType" → null),
+                    "defaultValue" → "No longer supported"))))))))
     }
 
     "introspects on input object" in {

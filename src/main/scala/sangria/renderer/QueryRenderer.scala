@@ -1,6 +1,6 @@
 package sangria.renderer
 
-import java.util.Locale
+import sangria.util.StringUtil.escapeString
 
 import sangria.ast._
 
@@ -351,29 +351,6 @@ object QueryRenderer {
   def inputIndent(config: QueryRendererConfig, indent: String) =
     if (config.formatInputValues) indent
     else ""
-
-  def escapeString(str: String) =
-    str flatMap {
-      case ch if ch > 0xfff ⇒ "\\u" + charHex(ch)
-      case ch if ch > 0xff ⇒ "\\u0" + charHex(ch)
-      case ch if ch > 0x7f ⇒ "\\u00" + charHex(ch)
-      case ch if ch < 32 ⇒
-        ch match {
-          case '\b' ⇒ "\\b"
-          case '\n' ⇒ "\\n"
-          case '\t' ⇒ "\\t"
-          case '\f' ⇒ "\\f"
-          case '\r' ⇒ "\\r"
-          case ch if ch > 0xf ⇒ "\\u00" + charHex(ch)
-          case ch ⇒ "\\u000" + charHex(ch)
-        }
-      case '"' ⇒ "\\\""
-      case '\\' ⇒ "\\\\"
-      case ch ⇒ ch.toString
-    }
-
-  def charHex(ch: Char): String =
-    Integer.toHexString(ch).toUpperCase(Locale.ENGLISH)
 }
 
 case class QueryRendererConfig(
