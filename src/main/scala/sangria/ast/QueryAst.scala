@@ -365,5 +365,87 @@ object AstNode {
         comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)), 
         position = None).asInstanceOf[T]
     case n: Comment ⇒ n.copy(position = None).asInstanceOf[T]
+
+    case n: ScalarTypeDefinition ⇒
+      n.copy(
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: FieldDefinition ⇒
+      n.copy(
+        fieldType = withoutPosition(n.fieldType, stripComments),
+        arguments = n.arguments map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: InputValueDefinition ⇒
+      n.copy(
+        valueType = withoutPosition(n.valueType, stripComments),
+        defaultValue = n.defaultValue map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: ObjectTypeDefinition ⇒
+      n.copy(
+        interfaces = n.interfaces map (withoutPosition(_, stripComments)),
+        fields = n.fields map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: InterfaceTypeDefinition ⇒
+      n.copy(
+        fields = n.fields map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: UnionTypeDefinition ⇒
+      n.copy(
+        types = n.types map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: EnumTypeDefinition ⇒
+      n.copy(
+        values = n.values map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: EnumValueDefinition ⇒
+      n.copy(
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: InputObjectTypeDefinition ⇒
+      n.copy(
+        fields = n.fields map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: TypeExtensionDefinition ⇒
+      n.copy(
+        definition = withoutPosition(n.definition, stripComments),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: DirectiveDefinition ⇒
+      n.copy(
+        arguments = n.arguments map (withoutPosition(_, stripComments)),
+        locations = n.locations map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: DirectiveLocation ⇒
+      n.copy(
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: SchemaDefinition ⇒
+      n.copy(
+        operationTypes = n.operationTypes map (withoutPosition(_, stripComments)),
+        directives = n.directives map (withoutPosition(_, stripComments)),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
+    case n: OperationTypeDefinition ⇒
+      n.copy(
+        tpe = withoutPosition(n.tpe, stripComments),
+        comment = if (stripComments) None else n.comment map (withoutPosition(_, stripComments)),
+        position = None).asInstanceOf[T]
   }
 }
