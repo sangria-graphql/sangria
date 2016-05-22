@@ -2,7 +2,7 @@ package sangria.parser
 
 import language.postfixOps
 
-import org.parboiled2.{ParserInput, Position}
+import org.parboiled2.Position
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
 import sangria.util.{StringMatchers, FileUtil}

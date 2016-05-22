@@ -6,8 +6,7 @@ import sangria.ast._
 import sangria.util.{FileUtil, StringMatchers}
 
 import scala.language.postfixOps
-import scala.reflect.ClassTag
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
 
