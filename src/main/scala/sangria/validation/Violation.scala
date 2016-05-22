@@ -183,8 +183,8 @@ case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMa
   lazy val simpleErrorMessage = s"Unknown directive '$name'."
 }
 
-case class MisplacedDirectiveViolation(name: String, placement: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Directive '$name' may not be used on $placement."
+case class MisplacedDirectiveViolation(name: String, placement: Option[String], sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Directive '$name' may not be used ${placement.fold("here")("on " + _)}."
 }
 
 case class UnknownFragmentViolation(name: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
