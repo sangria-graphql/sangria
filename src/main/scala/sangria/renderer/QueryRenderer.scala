@@ -59,8 +59,16 @@ object QueryRenderer {
       (dirs map (render(_, config)) mkString config.separator) +
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
-  def renderArgs(args: List[Argument], config: QueryRendererConfig, withSep: Boolean = true) =
-    if (args.nonEmpty) "(" + (args map (render(_, config)) mkString ("," + config.separator)) + ")" + (if (withSep) config.separator else "") else ""
+  def renderArgs(args: List[Argument], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
+    if (args.nonEmpty) {
+      val argsRendered = args.zipWithIndex map { case (a, idx) ⇒
+        (if (idx != 0 && shouldRenderComment(a.comment, config)) config.lineBreak else "") +
+            (if (shouldRenderComment(a.comment, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
+            render(a, config, if (shouldRenderComment(a.comment, config)) indentLevel + 1 else 0)
+      }
+
+      "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
+    } else ""
 
   def renderInputValueDefs(args: List[InputValueDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
     if (args.nonEmpty) {
@@ -70,7 +78,18 @@ object QueryRenderer {
           render(a, config, if (shouldRenderComment(a.comment, config)) indentLevel + 1 else 0)
       }
 
-      "(" + (argsRendered mkString (",")) + ")" + (if (withSep) config.separator else "")
+      "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
+    } else ""
+
+  def renderVarDefs(vars: List[VariableDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
+    if (vars.nonEmpty) {
+      val varsRendered = vars.zipWithIndex map { case (v, idx) ⇒
+        (if (idx != 0 && shouldRenderComment(v.comment, config)) config.lineBreak else "") +
+          (if (shouldRenderComment(v.comment, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
+          render(v, config, if (shouldRenderComment(v.comment, config)) indentLevel + 2 else 0)
+      }
+
+      "(" + (varsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
     } else ""
 
   def renderInputObjectFieldDefs(fields: List[InputValueDefinition], indentLevel: Int, config: QueryRendererConfig) = {
@@ -124,7 +143,7 @@ object QueryRenderer {
         renderComment(comment, indent, config) +
           indent + renderOpType(opType) + config.mandatorySeparator +
           (name getOrElse "") +
-          (if (vars.nonEmpty) "(" + (vars map (render(_, config)) mkString ("," + config.separator)) + ")" else "") +
+          renderVarDefs(vars, indentLevel, config, withSep = false) +
           config.separator +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
@@ -136,8 +155,9 @@ object QueryRenderer {
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case VariableDefinition(name, tpe, defaultValue, _, _) ⇒
-        indent + "$" + name + ":" + config.separator +
+      case VariableDefinition(name, tpe, defaultValue, comment, _) ⇒
+        renderComment(comment, indent, config) +
+          indent + "$" + name + ":" + config.separator +
           render(tpe, config) +
           (defaultValue map (v ⇒ config.separator + "=" + config.separator + render(v, config)) getOrElse "")
 
@@ -153,24 +173,27 @@ object QueryRenderer {
       case Field(alias, name, args, dirs, sels, comment, _) ⇒
         renderComment(comment, indent, config) +
           indent + (alias map (_ + ":" + config.separator) getOrElse "") + name +
-          renderArgs(args, config, withSep = false) +
+          renderArgs(args, indentLevel, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config, withSep = sels.nonEmpty) +
           renderSelections(sels, indent, indentLevel, config)
 
-      case FragmentSpread(name, dirs, _, _) ⇒
-        indent + "..." + name + renderDirs(dirs, config, frontSep = true)
+      case FragmentSpread(name, dirs, comment, _) ⇒
+        renderComment(comment, indent, config) +
+          indent + "..." + name + renderDirs(dirs, config, frontSep = true)
 
-      case InlineFragment(typeCondition, dirs, sels, _, _) ⇒
-        indent + "..." + config.mandatorySeparator + typeCondition.fold("")("on" + config.mandatorySeparator + _.name) + config.separator +
+      case InlineFragment(typeCondition, dirs, sels, comment, _) ⇒
+        renderComment(comment, indent, config) +
+          indent + "..." + config.mandatorySeparator + typeCondition.fold("")("on" + config.mandatorySeparator + _.name) + config.separator +
           renderDirs(dirs, config) +
           renderSelections(sels, indent, indentLevel, config)
 
       case Directive(name, args, _, _) ⇒
-        indent + "@" + name + renderArgs(args, config, withSep = false)
+        indent + "@" + name + renderArgs(args, indentLevel, config.copy(renderComments = false), withSep = false)
 
-      case Argument(name, value, _, _) ⇒
-        indent + name + ":" + config.separator + render(value, config)
+      case Argument(name, value, comment, _) ⇒
+        renderComment(comment, indent, config) +
+          indent + name + ":" + config.separator + render(value, config)
 
       case IntValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
       case BigIntValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
@@ -193,7 +216,6 @@ object QueryRenderer {
               render(v, config, indentLevel + (if (addIdent(v)) 1 else 0))
           else
             (if (idx != 0) config.separator else "") + render(v, config, indentLevel)
-
 
         renderInputComment(comment, indent, config) +
           "[" + (value.zipWithIndex map {case (v, idx) ⇒ renderValue(v, idx)} mkString config.inputListSeparator) + "]"

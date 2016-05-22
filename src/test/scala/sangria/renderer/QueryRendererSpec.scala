@@ -170,6 +170,114 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |}""".stripMargin) (after being strippedOfCarriageReturns)
       }
 
+      "preserve comments on fragment spreads and inline fragments" in {
+        val ast =
+          graphql"""
+            # comment 1
+            query MyQuery($$foo: TestType){
+              # comment 4
+              id,
+              # comment1
+              # comment2
+
+              ... {
+                c, d
+              }
+              # comment3
+              # comment4
+              ... on Cat {
+                c, d
+              }
+              # comment5
+              # comment6
+              ...Foo
+            }
+
+            # fooo
+            fragment Foo on Comment {
+              a, b
+            }
+          """
+
+        QueryRenderer.render(ast) should equal (
+          """# comment 1
+            |query MyQuery($foo: TestType) {
+            |  # comment 4
+            |  id
+            |
+            |  # comment1
+            |  # comment2
+            |  ...  {
+            |    c
+            |    d
+            |  }
+            |
+            |  # comment3
+            |  # comment4
+            |  ... on Cat {
+            |    c
+            |    d
+            |  }
+            |
+            |  # comment5
+            |  # comment6
+            |  ...Foo
+            |}
+            |
+            |# fooo
+            |fragment Foo on Comment {
+            |  a
+            |  b
+            |}""".stripMargin) (after being strippedOfCarriageReturns)
+      }
+
+      "preserve comments on arguments and variables" in {
+        val ast =
+          graphql"""
+            # comment 1
+            query MyQuery(
+            # foo
+            #bar
+            $$foo: TestType, $$second: Int = 1,
+            ## aaa
+            ## bbbb
+            $$third: String = "hello") {
+
+              id(first: 1,
+                #hello
+                #world
+                second:$$foo, third: 1,
+
+                # 111111
+                # 12345
+
+
+                last: {a: b, c: [1,2]}),
+            }
+          """
+
+        QueryRenderer.render(ast) should equal (
+          """# comment 1
+            |query MyQuery(
+            |    # foo
+            |    # bar
+            |    $foo: TestType, $second: Int = 1,
+            |
+            |    ## aaa
+            |    ## bbbb
+            |    $third: String = "hello") {
+            |  id(first: 1,
+            |
+            |    # hello
+            |    # world
+            |    second: $foo, third: 1,
+            |
+            |    # 111111
+            |    # 12345
+            |    last: {a: b, c: [1, 2]})
+            |}""".stripMargin) (after being strippedOfCarriageReturns)
+      }
+
       "correctly render input values and preserve comments on values and fields" in {
         val input =
           graphqlInput"""
