@@ -202,7 +202,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
       (comment, pos, name, args, locations) ⇒ ast.DirectiveDefinition(name, args, locations, comment, Some(pos)))
   }
 
-  def DirectiveLocations = rule { DirectiveLocation.+(ws('|')) ~> (_.toList) }
+  def DirectiveLocations = rule { DirectiveLocation.+(wsNoComment('|')) ~> (_.toList) }
 
   def DirectiveLocation = rule { Comments ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
 
@@ -350,11 +350,11 @@ trait Types { this: Parser with Tokens with Ignored ⇒
 
   def NamedType = rule { Ignored.* ~ trackPos ~ TypeName ~> ((pos, name) ⇒ ast.NamedType(name, Some(pos)))}
 
-  def ListType = rule { trackPos ~ ws('[') ~ Type ~ ws(']') ~> ((pos, tpe) ⇒ ast.ListType(tpe, Some(pos))) }
+  def ListType = rule { trackPos ~ ws('[') ~ Type ~ wsNoComment(']') ~> ((pos, tpe) ⇒ ast.ListType(tpe, Some(pos))) }
 
   def NonNullType = rule {
-    trackPos ~ TypeName ~ ws('!')  ~> ((pos, name) ⇒ ast.NotNullType(ast.NamedType(name, Some(pos)), Some(pos))) |
-    trackPos ~ ListType ~ ws('!') ~> ((pos, tpe) ⇒ ast.NotNullType(tpe, Some(pos)))
+    trackPos ~ TypeName ~ wsNoComment('!')  ~> ((pos, name) ⇒ ast.NotNullType(ast.NamedType(name, Some(pos)), Some(pos))) |
+    trackPos ~ ListType ~ wsNoComment('!') ~> ((pos, tpe) ⇒ ast.NotNullType(tpe, Some(pos)))
   }
 }
 
