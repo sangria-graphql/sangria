@@ -154,10 +154,109 @@ case class ObjectField(name: String, value: Value, comment: Option[Comment] = No
 
 case class Comment(lines: Seq[String], position: Option[Position] = None) extends AstNode
 
+// Schema Definition
+
+case class ScalarTypeDefinition(
+  name: String,
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeDefinition
+
+case class FieldDefinition(
+  name: String,
+  fieldType: Type,
+  arguments: List[InputValueDefinition],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends SchemaAstNode
+
+case class InputValueDefinition(
+  name: String,
+  valueType: Type,
+  defaultValue: Option[Value],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends SchemaAstNode
+
+case class ObjectTypeDefinition(
+  name: String,
+  interfaces: List[NamedType],
+  fields: List[FieldDefinition],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeDefinition
+
+case class InterfaceTypeDefinition(
+  name: String,
+  fields: List[FieldDefinition],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeDefinition
+
+case class UnionTypeDefinition(
+  name: String,
+  types: List[NamedType],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeDefinition
+
+case class EnumTypeDefinition(
+  name: String,
+  values: List[EnumValueDefinition],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeDefinition
+
+case class EnumValueDefinition(
+  name: String,
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends SchemaAstNode
+
+case class InputObjectTypeDefinition(
+  name: String,
+  fields: List[InputValueDefinition],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeDefinition
+
+case class TypeExtensionDefinition(
+  definition: ObjectTypeDefinition,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeSystemDefinition
+
+case class DirectiveDefinition(
+  name: String,
+  arguments: List[InputValueDefinition],
+  locations: List[DirectiveLocation],
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeSystemDefinition
+
+case class DirectiveLocation(
+  name: String,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends SchemaAstNode
+
+case class SchemaDefinition(
+  operationTypes: List[OperationTypeDefinition],
+  directives: List[Directive] = Nil,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends TypeSystemDefinition
+
+case class OperationTypeDefinition(
+  operation: OperationType,
+  tpe: NamedType,
+  comment: Option[Comment] = None,
+  position: Option[Position] = None) extends SchemaAstNode
+
 sealed trait AstNode {
   def position: Option[Position]
   def cacheKeyHash: Int = System.identityHashCode(this)
 }
+
+sealed trait SchemaAstNode extends AstNode
+sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
+sealed trait TypeDefinition extends TypeSystemDefinition
 
 object AstNode {
   def withoutPosition[T <: AstNode](node: T, stripComments: Boolean = false): T = node match {
