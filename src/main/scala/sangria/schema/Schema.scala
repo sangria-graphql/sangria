@@ -585,7 +585,29 @@ sealed trait HasArguments {
 }
 
 object DirectiveLocation extends Enumeration {
-  val  Query, Mutation, Subscription, Field, FragmentDefinition, FragmentSpread, InlineFragment = Value
+
+  // Operations
+  val Query = Value
+  val Mutation = Value
+  val Subscription = Value
+  val Field = Value
+  val FragmentDefinition = Value
+  val FragmentSpread = Value
+  val InlineFragment = Value
+
+  // Schema Definitions
+
+  val Schema = Value
+  val Scalar = Value
+  val Object = Value
+  val FieldDefinition = Value
+  val ArgumentDefinition = Value
+  val Interface = Value
+  val Union = Value
+  val Enum = Value
+  val EnumValue = Value
+  val InputObject = Value
+  val InputFieldDefinition = Value
 
   def fromString(location: String): DirectiveLocation.Value = location match {
     case "QUERY" ⇒ Query
@@ -595,6 +617,18 @@ object DirectiveLocation extends Enumeration {
     case "FRAGMENT_DEFINITION" ⇒ FragmentDefinition
     case "FRAGMENT_SPREAD" ⇒ FragmentSpread
     case "INLINE_FRAGMENT" ⇒ InlineFragment
+
+    case "SCHEMA" ⇒ Schema
+    case "SCALAR" ⇒ Scalar
+    case "OBJECT" ⇒ Object
+    case "FIELD_DEFINITION" ⇒ FieldDefinition
+    case "ARGUMENT_DEFINITION" ⇒ ArgumentDefinition
+    case "INTERFACE" ⇒ Interface
+    case "UNION" ⇒ Union
+    case "ENUM" ⇒ Enum
+    case "ENUM_VALUE" ⇒ EnumValue
+    case "INPUT_OBJECT" ⇒ InputObject
+    case "INPUT_FIELD_DEFINITION" ⇒ InputFieldDefinition
   }
 }
 
