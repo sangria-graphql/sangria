@@ -11,6 +11,7 @@ import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
+import sangria.marshalling.ScalaInput.scalaInput
 
 class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
   def renderForTest[T: InputUnmarshaller](res: T) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
@@ -397,6 +398,30 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |}
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }
+
+    "Directive" in {
+      val myDirective = Directive("myDirective",
+        description = Some("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum. \nNunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis."),
+        arguments =
+          Argument("first", OptionInputType(ListInputType(StringType)), "Some descr", scalaInput(List("foo", "bar", "baz"))) ::
+          Argument("last", OptionInputType(IntType), "Another descr") ::
+          Nil,
+        locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.InputFieldDefinition),
+        shouldInclude = _ ⇒ true)
+
+      val root = ObjectType("Root", fields[Unit, Unit](
+        Field("foo", OptionType(StringType), resolve = _ ⇒ None)))
+
+      val schema = Schema(root, directives = BuiltinDirectives :+ myDirective)
+
+      render(schema) should equal ("""
+        |type Root {
+        |  foo: String
+        |}
+        |
+        |directive @myDirective(first: [String!] = ["foo","bar","baz"], last: Int) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
   }
 
   "Introspection-based Schema Renderer" should {
@@ -508,6 +533,12 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  LIST
         |  NON_NULL
         |}
+        |
+        |directive @deprecated(reason: String = "No longer supported") on ENUM_VALUE | FIELD_DEFINITION
+        |
+        |directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+        |
+        |directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }
   }

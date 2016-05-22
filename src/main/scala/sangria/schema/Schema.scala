@@ -780,6 +780,9 @@ object Schema {
   def isBuiltInType(typeName: String) =
     BuiltinScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
 
+  def isBuiltInDirective(directiveName: String) =
+    BuiltinDirectivesByName.contains(directiveName)
+
   def isIntrospectionType(typeName: String) =
     IntrospectionTypesByName.contains(typeName)
 

@@ -191,6 +191,9 @@ package object schema {
 
   val BuiltinDirectives = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
 
+  val BuiltinDirectivesByName: Map[String, Directive] =
+    BuiltinDirectives.groupBy(_.name).mapValues(_.head)
+
   def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
 
   def interfaces[Ctx, Concrete](interfaces: PossibleInterface[Ctx, Concrete]*): List[PossibleInterface[Ctx, Concrete]] =

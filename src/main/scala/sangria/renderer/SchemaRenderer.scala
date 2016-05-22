@@ -6,6 +6,7 @@ import sangria.marshalling.{ResultMarshaller, InputUnmarshaller}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.schema._
 import sangria.util.StringUtil.escapeString
+import sangria.introspection.__DirectiveLocation
 
 object SchemaRenderer {
   def renderTypeName(tpe: Type, topLevel: Boolean = false) = {
@@ -60,14 +61,14 @@ object SchemaRenderer {
 
   def spaceOpt(show: Boolean) = if (show) " " else ""
 
-  def renderDeprecation(isDeprecated: Boolean, reason: Option[String], frontSep: Boolean = true) = (isDeprecated, reason) match {
+  private def renderDeprecation(isDeprecated: Boolean, reason: Option[String], frontSep: Boolean = true) = (isDeprecated, reason) match {
     case (true, Some(r)) if r.trim == DefaultDeprecationReason ⇒ spaceOpt(frontSep) + "@deprecated"
     case (true, Some(r)) if r.trim.nonEmpty ⇒ spaceOpt(frontSep) + "@deprecated(reason: \"" + escapeString(r.trim) + "\")"
     case (true, _) ⇒ spaceOpt(frontSep) + "@deprecated"
     case _ ⇒ ""
   }
 
-  def renderArgs(args: Seq[IntrospectionInputValue])=
+  def renderArgs(args: Seq[IntrospectionInputValue]) =
     if (args.nonEmpty)
       args map renderArg mkString ("(", ", ", ")")
     else
@@ -191,17 +192,38 @@ object SchemaRenderer {
       case _ ⇒ throw new IllegalArgumentException(s"Unsupported type: $tpe")
     }
 
-  def renderSchema(introspectionSchema: IntrospectionSchema): String =
-    introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map renderType mkString TypeSeparator
+  private def renderDirectiveLocation(loc: DirectiveLocation.Value) =
+    __DirectiveLocation.byValue(loc).name
+
+  private def renderDirective(dir: Directive)(implicit m: ResultMarshaller) =
+    s"directive @${dir.name}${renderArgs(dir.arguments)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
+
+  private def renderDirective(dir: IntrospectionDirective) =
+    s"directive @${dir.name}${renderArgs(dir.args)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
+
+  def renderSchema(introspectionSchema: IntrospectionSchema): String = {
+    val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map renderType
+    val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
+
+    (types ++ directives) mkString TypeSeparator
+  }
 
   def renderSchema[T: InputUnmarshaller](introspectionResult: T): String =
     renderSchema(IntrospectionParser parse introspectionResult)
 
-  def renderSchema(schema: Schema[_, _])(implicit m: ResultMarshaller): String =
-    schema.typeList filterNot isBuiltInType sortBy (_.name) map renderType mkString TypeSeparator
+  def renderSchema(schema: Schema[_, _])(implicit m: ResultMarshaller): String = {
+    val types = schema.typeList filterNot isBuiltInType sortBy (_.name) map renderType
+    val directives = schema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
 
-  def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String =
-    introspectionSchema.types filter (tpe ⇒ Schema.isIntrospectionType(tpe.name)) sortBy (_.name) map renderType mkString TypeSeparator
+    (types ++ directives) mkString TypeSeparator
+  }
+
+  def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String = {
+    val types = introspectionSchema.types filter (tpe ⇒ Schema.isIntrospectionType(tpe.name)) sortBy (_.name) map renderType
+    val directives = introspectionSchema.directives filter (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
+
+    (types ++ directives) mkString TypeSeparator
+  }
 
   def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T): String =
     renderIntrospectionSchema(IntrospectionParser parse introspectionResult)
