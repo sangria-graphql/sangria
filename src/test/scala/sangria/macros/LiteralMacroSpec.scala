@@ -262,6 +262,303 @@ class LiteralMacroSpec extends WordSpec with Matchers {
           None))
     }
 
+    "parse schema kitchen sink" in {
+      val ast =
+        graphql"""
+          # Copyright (c) 2015, Facebook, Inc.
+          # All rights reserved.
+          #
+          # This source code is licensed under the BSD-style license found in the
+          # LICENSE file in the root directory of this source tree. An additional grant
+          # of patent rights can be found in the PATENTS file in the same directory.
+
+          schema {
+            query: QueryType
+            mutation: MutationType
+          }
+
+          type Foo implements Bar {
+            one: Type
+            two(argument: InputType!): Type
+            three(argument: InputType, other: String): Int
+            four(argument: String = "string"): String
+            five(argument: [String] = ["string", "string"]): String
+            six(argument: InputType = {key: "value"}): Type
+          }
+
+          type AnnotatedObject @onObject(arg: "value") {
+            annotatedField(arg: Type = "default" @onArg): Type @onField
+          }
+
+          # It's an interface!
+          interface Bar {
+            one: Type
+            four(argument: String = "string"): String
+          }
+
+          interface AnnotatedInterface @onInterface {
+            annotatedField(arg: Type @onArg): Type @onField
+          }
+
+          union Feed = Story | Article | Advert
+
+          union AnnotatedUnion @onUnion = A | B
+
+          scalar CustomScalar
+
+          scalar AnnotatedScalar @onScalar
+
+          enum Site {
+            # value 1
+            DESKTOP
+            # value 2
+            MOBILE
+          }
+
+          enum AnnotatedEnum @onEnum {
+            ANNOTATED_VALUE @onEnumValue
+            OTHER_VALUE
+          }
+
+          input InputType {
+            key: String!
+            answer: Int = 42
+          }
+
+          input AnnotatedInput @onInputObjectType {
+            # field comment
+            annotatedField: Type @onField
+          }
+
+          extend type Foo {
+            seven(argument: [String]): Type
+          }
+
+          extend type Foo @onType {}
+
+          type NoFields {}
+
+          directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+          directive @include(if: Boolean!)
+            on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+        """
+
+      ast.sourceMapper should not be ('empty)
+
+      ast.copy(sourceMapper = None) should be (
+        Document(
+          List(
+            SchemaDefinition(
+              List(
+                OperationTypeDefinition(OperationType.Query,
+                  NamedType("QueryType", Some(Position(387, 10, 20))),
+                  None, Some(Position(380, 10, 13))),
+                OperationTypeDefinition(OperationType.Mutation,
+                  NamedType("MutationType", Some(Position(419, 11, 23))),
+                  None, Some(Position(409, 11, 13)))),
+              Nil,
+              Some(Comment(
+                Vector(
+                  " Copyright (c) 2015, Facebook, Inc.",
+                  " All rights reserved.",
+                  "",
+                  " This source code is licensed under the BSD-style license found in the",
+                  " LICENSE file in the root directory of this source tree. An additional grant",
+                  " of patent rights can be found in the PATENTS file in the same directory."),
+                Some(Position(11, 2, 11)))),
+              Some(Position(359, 9, 11))),
+
+            ObjectTypeDefinition("Foo",
+              List(NamedType("Bar", Some(Position(475, 14, 31)))),
+              List(
+                FieldDefinition("one", NamedType("Type", Some(Position(498, 15, 18))),
+                  Nil, Nil, None, Some(Position(493, 15, 13))),
+                FieldDefinition("two", NamedType("Type", Some(Position(542, 16, 40))),
+                  List(
+                    InputValueDefinition("argument",
+                      NotNullType(NamedType("InputType", Some(Position(529, 16, 27))), Some(Position(529, 16, 27))),
+                      None, Nil, None, Some(Position(519, 16, 17)))),
+                  Nil, None, Some(Position(515, 16, 13))),
+                FieldDefinition("three",
+                  NamedType("Int", Some(Position(602, 17, 56))),
+                  List(
+                    InputValueDefinition("argument", NamedType("InputType", Some(Position(575, 17, 29))),
+                      None, Nil, None, Some(Position(565, 17, 19))),
+                    InputValueDefinition("other", NamedType("String", Some(Position(593, 17, 47))),
+                      None, Nil, None, Some(Position(586, 17, 40)))),
+                  Nil, None, Some(Position(559, 17, 13))),
+                FieldDefinition("four", NamedType("String", Some(Position(653, 18, 48))),
+                  List(
+                    InputValueDefinition("argument", NamedType("String", Some(Position(633, 18, 28))),
+                      Some(StringValue("string", None, Some(Position(642, 18, 37)))),
+                      Nil, None, Some(Position(623, 18, 18)))),
+                  Nil, None, Some(Position(618, 18, 13))),
+                FieldDefinition("five", NamedType("String", Some(Position(721, 19, 62))),
+                  List(
+                    InputValueDefinition("argument",
+                      ListType(NamedType("String", Some(Position(688, 19, 29))), Some(Position(687, 19, 28))),
+                      Some(ListValue(List(
+                        StringValue("string", None, Some(Position(699, 19, 40))),
+                        StringValue("string", None, Some(Position(709, 19, 50)))),
+                        None, Some(Position(698, 19, 39)))),
+                      Nil, None, Some(Position(677, 19, 18)))),
+                  Nil, None, Some(Position(672, 19, 13))),
+                FieldDefinition("six", NamedType("Type", Some(Position(783, 20, 56))),
+                  List(
+                    InputValueDefinition("argument", NamedType("InputType", Some(Position(754, 20, 27))),
+                      Some(ObjectValue(List(
+                        ObjectField("key",
+                          StringValue("value", None, Some(Position(772, 20, 45))),
+                          None, Some(Position(767, 20, 40)))),
+                        None, Some(Position(766, 20, 39)))),
+                      Nil, None, Some(Position(744, 20, 17)))),
+                  Nil, None, Some(Position(740, 20, 13)))),
+              Nil, None, Some(Position(455, 14, 11))),
+
+            ObjectTypeDefinition("AnnotatedObject", Nil,
+              List(
+                FieldDefinition("annotatedField", NamedType("Type", Some(Position(916, 24, 59))),
+                  List(
+                    InputValueDefinition("arg", NamedType("Type", Some(Position(890, 24, 33))),
+                      Some(StringValue("default", None, Some(Position(897, 24, 40)))),
+                      List(Directive("onArg", Nil, None, Some(Position(907, 24, 50)))),
+                      None, Some(Position(885, 24, 28)))),
+                  List(Directive("onField", Nil, None, Some(Position(921, 24, 64)))),
+                  None, Some(Position(870, 24, 13)))),
+              List(Directive("onObject",
+                List(
+                  Argument("arg", StringValue("value", None, Some(Position(847, 23, 47))), None, Some(Position(842, 23, 42)))),
+                None, Some(Position(832, 23, 32)))),
+              None, Some(Position(811, 23, 11))),
+
+            InterfaceTypeDefinition("Bar",
+              List(
+                FieldDefinition("one", NamedType("Type", Some(Position(1017, 29, 18))), Nil, Nil, None, Some(Position(1012, 29, 13))),
+                FieldDefinition("four", NamedType("String", Some(Position(1069, 30, 48))),
+                  List(
+                    InputValueDefinition("argument", NamedType("String", Some(Position(1049, 30, 28))),
+                      Some(StringValue("string", None, Some(Position(1058, 30, 37)))),
+                      Nil, None, Some(Position(1039, 30, 18)))),
+                  Nil, None, Some(Position(1034, 30, 13)))),
+              Nil,
+              Some(Comment(Vector(" It's an interface!"), Some(Position(953, 27, 11)))),
+              Some(Position(984, 28, 11))),
+
+            InterfaceTypeDefinition("AnnotatedInterface",
+              List(
+                FieldDefinition("annotatedField", NamedType("Type", Some(Position(1189, 34, 47))),
+                  List(
+                    InputValueDefinition("arg", NamedType("Type", Some(Position(1175, 34, 33))), None,
+                      List(
+                        Directive("onArg", Nil, None, Some(Position(1180, 34, 38)))),
+                      None, Some(Position(1170, 34, 28)))),
+                  List(
+                    Directive("onField", Nil, None, Some(Position(1194, 34, 52)))),
+                  None, Some(Position(1155, 34, 13)))),
+              List(
+                Directive("onInterface", Nil, None, Some(Position(1128, 33, 40)))),
+              None, Some(Position(1099, 33, 11))),
+
+            UnionTypeDefinition("Feed",
+              List(
+                NamedType("Story", Some(Position(1239, 37, 24))),
+                NamedType("Article", Some(Position(1247, 37, 32))),
+                NamedType("Advert", Some(Position(1257, 37, 42)))),
+              Nil, None, Some(Position(1226, 37, 11))),
+
+            UnionTypeDefinition("AnnotatedUnion",
+              List(
+                NamedType("A", Some(Position(1307, 39, 43))),
+                NamedType("B", Some(Position(1311, 39, 47)))),
+              List(Directive("onUnion", Nil, None, Some(Position(1296, 39, 32)))),
+              None, Some(Position(1275, 39, 11))),
+
+            ScalarTypeDefinition("CustomScalar", Nil, None, Some(Position(1324, 41, 11))),
+
+            ScalarTypeDefinition("AnnotatedScalar",
+              List(Directive("onScalar", Nil, None, Some(Position(1378, 43, 34)))),
+              None, Some(Position(1355, 43, 11))),
+
+            EnumTypeDefinition("Site",
+              List(
+                EnumValueDefinition("DESKTOP", Nil,
+                  Some(Comment(Vector(" value 1"), Some(Position(1423, 46, 13)))),
+                  Some(Position(1445, 47, 13))),
+                EnumValueDefinition("MOBILE", Nil,
+                  Some(Comment(Vector(" value 2"), Some(Position(1465, 48, 13)))),
+                  Some(Position(1487, 49, 13)))),
+              Nil, None, Some(Position(1399, 45, 11))),
+
+            EnumTypeDefinition("AnnotatedEnum",
+              List(
+                EnumValueDefinition("ANNOTATED_VALUE",
+                  List(Directive("onEnumValue", Nil, None, Some(Position(1574, 53, 29)))),
+                  None, Some(Position(1558, 53, 13))),
+                EnumValueDefinition("OTHER_VALUE", Nil, None, Some(Position(1599, 54, 13)))),
+              List(Directive("onEnum", Nil, None, Some(Position(1536, 52, 30)))),
+              None, Some(Position(1517, 52, 11))),
+
+            InputObjectTypeDefinition("InputType",
+              List(
+                InputValueDefinition("key", NotNullType(NamedType("String", Some(Position(1669, 58, 18))), Some(Position(1669, 58, 18))),
+                  None, Nil, None, Some(Position(1664, 58, 13))),
+                InputValueDefinition("answer", NamedType("Int", Some(Position(1697, 59, 21))),
+                  Some(BigIntValue(42, None, Some(Position(1703, 59, 27)))),
+                  Nil, None, Some(Position(1689, 59, 13)))),
+              Nil, None, Some(Position(1634, 57, 11))),
+
+            InputObjectTypeDefinition("AnnotatedInput",
+              List(
+                InputValueDefinition("annotatedField", NamedType("Type", Some(Position(1827, 64, 29))), None,
+                  List(Directive("onField", Nil, None, Some(Position(1832, 64, 34)))),
+                  Some(Comment(Vector(" field comment"), Some(Position(1783, 63, 13)))),
+                  Some(Position(1811, 64, 13)))),
+              List(Directive("onInputObjectType", Nil, None, Some(Position(1750, 62, 32)))),
+              None, Some(Position(1729, 62, 11))),
+
+            TypeExtensionDefinition(
+              ObjectTypeDefinition("Foo", Nil,
+                List(FieldDefinition("seven", NamedType("Type", Some(Position(1921, 68, 40))),
+                  List(
+                    InputValueDefinition("argument", ListType(NamedType("String", Some(Position(1911, 68, 30))), Some(Position(1910, 68, 29))),
+                      None, Nil, None, Some(Position(1900, 68, 19)))),
+                  Nil, None, Some(Position(1894, 68, 13)))),
+                Nil, None, Some(Position(1871, 67, 18))),
+              None, Some(Position(1864, 67, 11))),
+
+            TypeExtensionDefinition(
+              ObjectTypeDefinition("Foo", Nil, Nil,
+                List(Directive("onType", Nil, None, Some(Position(1965, 71, 27)))),
+                None, Some(Position(1956, 71, 18))),
+              None, Some(Position(1949, 71, 11))),
+
+            ObjectTypeDefinition("NoFields", Nil, Nil, Nil, None, Some(Position(1987, 73, 11))),
+
+            DirectiveDefinition("skip",
+              List(
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(2035, 75, 31))), Some(Position(2035, 75, 31))),
+                  None, Nil, None, Some(Position(2031, 75, 27)))),
+              List(
+                DirectiveLocation("FIELD", None, Some(Position(2048, 75, 44))),
+                DirectiveLocation("FRAGMENT_SPREAD", None, Some(Position(2056, 75, 52))),
+                DirectiveLocation("INLINE_FRAGMENT", None, Some(Position(2074, 75, 70)))),
+              None, Some(Position(2015, 75, 11))),
+
+            DirectiveDefinition("include",
+              List(
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(2124, 77, 34))), Some(Position(2124, 77, 34))),
+                  None, Nil, None, Some(Position(2120, 77, 30)))),
+              List(
+                DirectiveLocation("FIELD", None, Some(Position(2149, 78, 16))),
+                DirectiveLocation("FRAGMENT_SPREAD", None, Some(Position(2157, 78, 24))),
+                DirectiveLocation("INLINE_FRAGMENT", None, Some(Position(2175, 78, 42)))),
+              None, Some(Position(2101, 77, 11)))),
+          Some(Position(11, 2, 11)),
+          None))
+    }
+
     "parse input values with macro independently" in {
       val ast = graphqlInput"""
         {

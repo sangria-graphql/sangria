@@ -45,11 +45,56 @@ trait AstLiftable {
       q"_root_.sangria.ast.VariableDefinition($n, $t, $d, $c, $p)"
   }
 
+  implicit def liftInpValDef: Liftable[InputValueDefinition] = Liftable {
+    case InputValueDefinition(n, v, de, di, c, p) ⇒
+      q"_root_.sangria.ast.InputValueDefinition($n, $v, $de, $di, $c, $p)"
+  }
+
+  implicit def liftInpOpTpeDef: Liftable[OperationTypeDefinition] = Liftable {
+    case OperationTypeDefinition(o, t, c, p) ⇒
+      q"_root_.sangria.ast.OperationTypeDefinition($o, $t, $c, $p)"
+  }
+
+  implicit def liftEnumValDef: Liftable[EnumValueDefinition] = Liftable {
+    case EnumValueDefinition(n, d, c, p) ⇒
+      q"_root_.sangria.ast.EnumValueDefinition($n, $d, $c, $p)"
+  }
+
+  implicit def liftFieldDef: Liftable[FieldDefinition] = Liftable {
+    case FieldDefinition(n, f, a, d, c, p) ⇒
+      q"_root_.sangria.ast.FieldDefinition($n, $f, $a, $d, $c, $p)"
+  }
+
+  implicit def liftDirLocDef: Liftable[DirectiveLocation] = Liftable {
+    case DirectiveLocation(n, c, p) ⇒
+      q"_root_.sangria.ast.DirectiveLocation($n, $c, $p)"
+  }
+
   implicit def liftDefinition[T <: Definition]: Liftable[T] = Liftable {
     case OperationDefinition(o, n, v, d, s, c, p) ⇒
       q"_root_.sangria.ast.OperationDefinition($o, $n, $v, $d, $s, $c, $p)"
     case FragmentDefinition(n, t, d, s, c, p) ⇒
       q"_root_.sangria.ast.FragmentDefinition($n, $t, $d, $s, $c, $p)"
+
+    case DirectiveDefinition(n, a, l, c, p) ⇒
+      q"_root_.sangria.ast.DirectiveDefinition($n, $a, $l, $c, $p)"
+    case SchemaDefinition(o, d, c, p) ⇒
+      q"_root_.sangria.ast.SchemaDefinition($o, $d, $c, $p)"
+    case TypeExtensionDefinition(d, c, p) ⇒
+      q"_root_.sangria.ast.TypeExtensionDefinition($d, $c, $p)"
+
+    case EnumTypeDefinition(n, v, d, c, p) ⇒
+      q"_root_.sangria.ast.EnumTypeDefinition($n, $v, $d, $c, $p)"
+    case InputObjectTypeDefinition(n, f, d, c, p) ⇒
+      q"_root_.sangria.ast.InputObjectTypeDefinition($n, $f, $d, $c, $p)"
+    case InterfaceTypeDefinition(n, f, d, c, p) ⇒
+      q"_root_.sangria.ast.InterfaceTypeDefinition($n, $f, $d, $c, $p)"
+    case ObjectTypeDefinition(n, i, f, d, c, p) ⇒
+      q"_root_.sangria.ast.ObjectTypeDefinition($n, $i, $f, $d, $c, $p)"
+    case ScalarTypeDefinition(n, d, c, p) ⇒
+      q"_root_.sangria.ast.ScalarTypeDefinition($n, $d, $c, $p)"
+    case UnionTypeDefinition(n, t, d, c, p) ⇒
+      q"_root_.sangria.ast.UnionTypeDefinition($n, $t, $d, $c, $p)"
   }
 
   implicit def liftNamedValue[T <: NameValue]: Liftable[T] = Liftable {

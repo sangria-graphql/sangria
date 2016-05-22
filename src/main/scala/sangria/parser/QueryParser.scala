@@ -144,9 +144,10 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
       (comment, pos, name, dirs) ⇒ ast.ScalarTypeDefinition(name, dirs, comment, Some(pos)))
   }
 
+  // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
   def ObjectTypeDefinition = rule {
     Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Nil)) ~
-      (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.+ ~ wsNoComment('}') ~> (
+      (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.* ~ wsNoComment('}') ~> (
         (comment, pos, name, interfaces, dirs, fields) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toList, dirs, comment, Some(pos)))
   }
 
@@ -185,8 +186,9 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
     EnumValue ~ (Directives.? ~> (_ getOrElse Nil)) ~> ((v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, v.comment, v.position))
   }
 
+  // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
   def InputObjectTypeDefinition = rule {
-    Comments ~ trackPos ~ inputType ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ InputValueDefinition.+ ~ wsNoComment('}') ~> (
+    Comments ~ trackPos ~ inputType ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ InputValueDefinition.* ~ wsNoComment('}') ~> (
       (comment, pos, name, dirs, fields) ⇒ ast.InputObjectTypeDefinition(name, fields.toList, dirs, comment, Some(pos)))
   }
 
