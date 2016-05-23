@@ -1,16 +1,11 @@
 package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.ast
-import sangria.execution.Executor
-import sangria.introspection.introspectionQuery
 import sangria.parser.QueryParser
-import sangria.renderer.{SchemaRenderer, QueryRenderer}
+import sangria.renderer.SchemaRenderer
 import sangria.util.{StringMatchers, FutureResultSupport}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.macros._
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
 
