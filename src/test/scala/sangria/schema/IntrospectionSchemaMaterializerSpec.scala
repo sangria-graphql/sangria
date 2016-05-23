@@ -1,18 +1,17 @@
 package sangria.schema
 
+import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
+import sangria.execution.Executor
+import sangria.introspection.introspectionQuery
 import sangria.marshalling.MarshallerCapability
 import sangria.marshalling.ScalaInput.scalaInput
+import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
+import sangria.util.{FutureResultSupport, Pos}
 import sangria.validation.IntCoercionViolation
+import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-
-import org.scalatest.{Matchers, WordSpec}
-import sangria.execution.Executor
-import sangria.util.{Pos, FutureResultSupport}
-import sangria.introspection.introspectionQuery
-import sangria.util.SimpleGraphQlSupport.{checkContainsErrors, check}
-import spray.json._
 
 class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport {
 
@@ -38,27 +37,31 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
     Field("recur", OptionType(RecursiveType), resolve = _ ⇒ None)
   ))
 
-  lazy val DogType: ObjectType[Unit, Unit] = ObjectType("Dog", () ⇒ fields(
-    Field("bestFriend", OptionType(HumanType), resolve = _ ⇒ None)
-  ))
+  lazy val DogType: ObjectType[Unit, Unit] = ObjectType("Dog", fieldsFn = () ⇒ fields(
+    Field("bestFriend", OptionType(HumanType), resolve = _ ⇒ None),
+    Field("name", OptionType(StringType), resolve = _ ⇒ None)
+  ), interfaces = FriendlyType :: Nil)
 
-  lazy val HumanType: ObjectType[Unit, Unit] = ObjectType("Human", () ⇒ fields(
-    Field("bestFriend", OptionType(DogType), resolve = _ ⇒ None)
-  ))
+  lazy val HumanType: ObjectType[Unit, Unit] = ObjectType("Human", fieldsFn = () ⇒ fields(
+    Field("bestFriend", OptionType(DogType), resolve = _ ⇒ None),
+    Field("firstName", OptionType(StringType), resolve = _ ⇒ None)
+  ), interfaces = FriendlyType :: Nil)
 
-  lazy val FriendlyType: InterfaceType[Unit, Unit] = InterfaceType("Friendly", () ⇒ fields(
+  lazy val FriendlyType: InterfaceType[Unit, Unit] = InterfaceType("FriendlyInterface", () ⇒ fields(
     Field("bestFriend", OptionType(FriendlyType), Some("The best friend of this friendly thing"), resolve = _ ⇒ None)
   ))
 
-  lazy val DogUnionType: ObjectType[Unit, Unit] = ObjectType("Dog", () ⇒ fields(
-    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ ⇒ None)
+  lazy val DogUnionType: ObjectType[Unit, Unit] = ObjectType("DogUnion", () ⇒ fields(
+    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ ⇒ None),
+    Field("name", OptionType(StringType), resolve = _ ⇒ None)
   ))
 
-  lazy val HumanUnionType: ObjectType[Unit, Unit] = ObjectType("Human", () ⇒ fields(
-    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ ⇒ None)
+  lazy val HumanUnionType: ObjectType[Unit, Unit] = ObjectType("HumanUnion", () ⇒ fields(
+    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ ⇒ None),
+    Field("firstName", OptionType(StringType), resolve = _ ⇒ None)
   ))
 
-  lazy val FriendlyUnionType = UnionType("Friendly", types = DogUnionType :: HumanUnionType :: Nil)
+  lazy val FriendlyUnionType = UnionType("FriendlyUnion", types = DogUnionType :: HumanUnionType :: Nil)
 
   val CustomScalar = ScalarType[Int]("Custom",
     description = Some("Some custom"),
@@ -261,24 +264,37 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
     "can use client schema for general execution with custom materializer logic" in {
       import sangria.marshalling.sprayJson._
 
+      case class Dog(name: String, bestFriend: Option[Human])
+      case class Human(firstName: String, bestFriend: Option[Dog])
+
+      lazy val dog: Dog = Dog("spot", None)
+      lazy val human: Human = Human("bob", None)
+
       val serverSchema = Schema(ObjectType("Query", fields[Unit, Unit](
         Field("foo", OptionType(IntType),
           arguments =
             Argument("custom1", OptionInputType(CustomScalar)) ::
             Argument("custom2", OptionInputType(CustomScalar)) ::
             Nil,
-          resolve = _ ⇒ None))))
+          resolve = _ ⇒ None),
+        Field("friendlyInterface", OptionType(FriendlyType), resolve = _ ⇒ None),
+        Field("friendlyUnion", OptionType(FriendlyUnionType), resolve = _ ⇒ None)
+      )), additionalTypes = DogType :: HumanType :: Nil)
 
       val initialIntrospection = Executor.execute(serverSchema, introspectionQuery).await
 
       val customLogic = new DefaultMaterializationLogic[Unit] {
-        override def resolveField(ctx: Context[Unit, _]) = (ctx.parentType.name, ctx.field.name) match {
-          case ("Query", "foo") ⇒
+        override def resolveField(ctx: Context[Unit, _]) = (ctx.parentType.name, ctx.field.name, ctx.value) match {
+          case ("Query", "foo", _) ⇒
             for {
               a ← ctx.argOpt[Int]("custom1")
               b ← ctx.argOpt[Int]("custom2")
             } yield a + b
-          case _ ⇒ super.resolveField(ctx)
+          case ("Query", "friendlyInterface", _)                    ⇒ dog
+          case ("Query", "friendlyUnion", _)                        ⇒ human
+          case ("Dog" | "DogUnion", "name", dog: Dog)               ⇒ dog.name
+          case ("Human" | "HumanUnion", "firstName", human: Human)  ⇒ human.firstName
+          case _                                                    ⇒ super.resolveField(ctx)
         }
 
         override def coerceScalarUserInput(scalarName: String, value: Any) = scalarName match {
@@ -303,13 +319,32 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
           }
           case _ ⇒ super.coerceScalarInput(scalarName, value)
         }
+
+        override def classForType(name: String): Option[Class[_]] = name match {
+          case "Dog" | "DogUnion"     ⇒ Some(classOf[Dog])
+          case "Human" | "HumanUnion" ⇒ Some(classOf[Human])
+          case _                      ⇒ None
+        }
+
       }
 
       val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection, customLogic)
 
       check(clientSchema, (),
-        "query Yeah($v: Custom) { foo(custom1: 123, custom2: $v) }",
-        Map("data" → Map("foo" → 579)),
+        "query Yeah($v: Custom) { " +
+          "foo(custom1: 123, custom2: $v) " +
+          "friendlyInterface { ...dogFields ...humanFields } " +
+          "friendlyUnion { ...dogUnionFields ...humanUnionFields } " +
+          "} " +
+          "fragment dogFields on Dog { name } " +
+          "fragment humanFields on Human { firstName }" +
+          "fragment dogUnionFields on DogUnion { name } " +
+          "fragment humanUnionFields on HumanUnion { firstName }",
+        Map("data" → Map(
+          "foo" → 579,
+          "friendlyInterface" → Map("name" → "spot"),
+          "friendlyUnion" → Map("firstName" → "bob")
+        )),
         """{"v": 456}""".parseJson
       )
     }
