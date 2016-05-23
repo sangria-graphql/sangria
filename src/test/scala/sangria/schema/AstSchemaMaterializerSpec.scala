@@ -717,10 +717,6 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
               field3: String
               field4: String
             }
-
-            extend type Baz {
-              mul: Int
-            }
           """
 
         val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
@@ -729,10 +725,6 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         query.ownFields.map(_.name) should be (List("field1", "field2", "field3", "field4"))
         query.interfaces.map(_.name) should be (List("Foo", "Bar"))
-
-        val baz = schema.outputTypes("Baz").asInstanceOf[InterfaceType[_, _]]
-
-        baz.ownFields.map(_.name) should be (List("add", "mul"))
       }
 
       "don't allow to extend the same interface twice" in {
@@ -762,37 +754,6 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         error.getMessage should be ("Type 'Query' already implements 'Foo'. It cannot also be implemented in this type extension.")
       }
 
-      "don't allow to extend interface on interface" in {
-        val ast =
-          graphql"""
-            schema {
-              query: Query
-            }
-
-            interface Foo {
-              field1: String
-            }
-
-            interface Bar {
-              field1: String
-            }
-
-            type Query implements Foo {
-              field1: String
-              field2: Int
-            }
-
-            extend type Foo implements Bar {
-              field3: String
-              field4: String
-            }
-          """
-
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
-
-        error.getMessage should be ("Extension of interface type 'Foo' implements interfaces which is not allowed.")
-      }
-
       "don't allow to have duplicate fields in the extension" in {
         val ast =
           graphql"""
@@ -814,6 +775,56 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
 
         error.getMessage should be ("Field 'Query.field1' already exists in the schema. It cannot also be defined in this type extension.")
+      }
+
+      "don't allow to have extensions on non-existing types" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            type Query {
+              field1: String
+              field2: Int
+            }
+
+            extend type Foo {
+              field1: String
+              field4: String
+            }
+          """
+
+        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should be ("Cannot extend type 'Foo' because it does not exist in the existing schema.")
+      }
+
+      "don't allow to have extensions on non-object types" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            interface Foo {
+              foo: Int
+            }
+
+            type Query {
+              field1: String
+              field2: Int
+            }
+
+            extend type Foo {
+              field1: String
+              field4: String
+            }
+          """
+
+        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should be ("Cannot extend non-object type 'Foo'.")
       }
     }
 

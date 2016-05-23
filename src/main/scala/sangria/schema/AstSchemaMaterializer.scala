@@ -25,6 +25,9 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     case d: ast.DirectiveDefinition ⇒ d
   } ++ builder.additionalDirectiveDefs
 
+  private lazy val directiveDefsMap = directiveDefs.groupBy(_.name)
+  private lazy val typeDefsMap = typeDefs.groupBy(_.name)
+
   lazy val schemaInfo: SchemaInfo = {
     val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
 
@@ -53,12 +56,32 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   }
 
   lazy val build: Schema[Ctx, Unit] = {
+    validateDefinitions()
+
     val queryType = getObjectType(schemaInfo.query)
     val mutationType = schemaInfo.mutation map getObjectType
     val subscriptionType = schemaInfo.subscription map getObjectType
     val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
 
     builder.buildSchema(schemaInfo.definition, queryType, mutationType, subscriptionType, findUnusedTypes(), BuiltinDirectives ++ directives, this)
+  }
+
+  def validateDefinitions(): Unit = {
+    typeDefsMap.find(_._2.size > 1) foreach { case (name, _) ⇒
+      throw new SchemaMaterializationException(s"Type '$name' is defined more than once.")
+    }
+
+    directiveDefsMap.find(_._2.size > 1) foreach { case (name, _) ⇒
+      throw new SchemaMaterializationException(s"Directive '$name' is defined more than once.")
+    }
+
+    typeExtensionDefs.foreach { ext ⇒
+      typeDefsMap.get(ext.definition.name).map(_.head) match {
+        case Some(tpe: ast.ObjectTypeDefinition) ⇒ // everything is fine
+        case Some(tpe) ⇒ throw new SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
+        case None ⇒ throw new SchemaMaterializationException(s"Cannot extend type '${ext.definition.name}' because it does not exist in the existing schema.")
+      }
+    }
   }
 
   def findUnusedTypes(): List[Type with Named] = {
