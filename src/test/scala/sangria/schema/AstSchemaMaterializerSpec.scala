@@ -688,6 +688,135 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
       }
     }
 
+    "Schema Builder contains extension types" should {
+      "allow extending fields and interfaces" in {
+        val schemaDef =
+          """
+            schema {
+              query: Query
+            }
+
+            interface Foo {
+              field1: String
+            }
+
+            interface Bar {
+              field3: String
+            }
+
+            interface Baz {
+              add: Int
+            }
+
+            type Query implements Foo {
+              field1: String
+              field2: Int
+            }
+
+            extend type Query implements Bar {
+              field3: String
+              field4: String
+            }
+
+            extend type Baz {
+              mul: Int
+            }
+          """
+
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+
+        val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
+
+        query.ownFields.map(_.name) should be (List("field1", "field2", "field3", "field4"))
+        query.interfaces.map(_.name) should be (List("Foo", "Bar"))
+
+        val baz = schema.outputTypes("Baz").asInstanceOf[InterfaceType[_, _]]
+
+        baz.ownFields.map(_.name) should be (List("add", "mul"))
+      }
+
+      "don't allow to extend the same interface twice" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            interface Foo {
+              field1: String
+            }
+
+            type Query implements Foo {
+              field1: String
+              field2: Int
+            }
+
+            extend type Query implements Foo {
+              field3: String
+              field4: String
+            }
+          """
+
+        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should be ("Type 'Query' already implements 'Foo'. It cannot also be implemented in this type extension.")
+      }
+
+      "don't allow to extend interface on interface" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            interface Foo {
+              field1: String
+            }
+
+            interface Bar {
+              field1: String
+            }
+
+            type Query implements Foo {
+              field1: String
+              field2: Int
+            }
+
+            extend type Foo implements Bar {
+              field3: String
+              field4: String
+            }
+          """
+
+        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should be ("Extension of interface type 'Foo' implements interfaces which is not allowed.")
+      }
+
+      "don't allow to have duplicate fields in the extension" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            type Query {
+              field1: String
+              field2: Int
+            }
+
+            extend type Query {
+              field1: String
+              field4: String
+            }
+          """
+
+        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should be ("Field 'Query.field1' already exists in the schema. It cannot also be defined in this type extension.")
+      }
+    }
+
     "Schema Builder contains descriptions" should {
       "Use comments for descriptions" in {
         val schemaDef =
@@ -815,7 +944,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             else
               _.value.asInstanceOf[Map[String, Any]](definition.name)
 
-          override def objectTypeInstanceCheck(definition: ObjectTypeDefinition) =
+          override def objectTypeInstanceCheck(definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
             Some((value, _) ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name)
 
           override def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition) =

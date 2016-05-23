@@ -3,7 +3,7 @@ package sangria.schema
 import language.postfixOps
 
 import sangria.ast
-import sangria.ast.{DirectiveDefinition, TypeDefinition, OperationType}
+import sangria.ast.{TypeDefinition, OperationType}
 import sangria.renderer.QueryRenderer
 
 import scala.collection.concurrent.TrieMap
@@ -13,11 +13,15 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   private val typeDefCache = TrieMap[String, Type with Named]()
 
-  private lazy val typeDefs: List[TypeDefinition] = document.definitions.collect {
+  private lazy val typeDefs: List[ast.TypeDefinition] = document.definitions.collect {
     case d: ast.TypeDefinition ⇒ d
   } ++ builder.additionalTypeDefs
 
-  private lazy val directiveDefs: List[DirectiveDefinition] = document.definitions.collect {
+  private lazy val typeExtensionDefs: List[ast.TypeExtensionDefinition] = document.definitions.collect {
+    case d: ast.TypeExtensionDefinition ⇒ d
+  } ++ builder.additionalTypeExtensionDefs
+
+  private lazy val directiveDefs: List[ast.DirectiveDefinition] = document.definitions.collect {
     case d: ast.DirectiveDefinition ⇒ d
   } ++ builder.additionalDirectiveDefs
 
@@ -135,15 +139,52 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def buildField(typeDef: ast.TypeDefinition, field: ast.FieldDefinition) =
     builder.buildField(typeDef, field, getOutputType(field.fieldType), field.arguments flatMap (buildArgument(typeDef, Some(field), _)), this)
 
-  def buildObjectDef(tpe: ast.ObjectTypeDefinition) =
+  def buildObjectDef(tpe: ast.ObjectTypeDefinition) = {
+    val extensions = findExtensions(tpe.name)
+
     builder.buildObjectType(
       tpe,
-      () ⇒ tpe.fields flatMap (buildField(tpe, _)),
-      tpe.interfaces map getInterfaceType,
+      extensions,
+      () ⇒ buildFields(tpe, tpe.fields, extensions),
+      buildInterfaces(tpe, tpe.interfaces, extensions),
       this)
+  }
 
-  def buildInterfaceDef(tpe: ast.InterfaceTypeDefinition) =
-    builder.buildInterfaceType(tpe, () ⇒ tpe.fields flatMap (buildField(tpe, _)), this)
+  def buildInterfaceDef(tpe: ast.InterfaceTypeDefinition) = {
+    val extensions = findExtensions(tpe.name)
+
+    if (extensions.exists(_.definition.interfaces.nonEmpty))
+      throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
+
+    builder.buildInterfaceType(tpe, extensions, () ⇒ buildFields(tpe, tpe.fields, extensions), this)
+  }
+
+  def buildInterfaces(tpe: ast.ObjectTypeDefinition, interfaces: List[ast.NamedType], extensions: List[ast.TypeExtensionDefinition]) = {
+    val extraInts = extensions.flatMap(_.definition.interfaces)
+
+    val allInts = extraInts.foldLeft(interfaces) {
+      case (acc, interface) if acc.exists(_.name == interface.name) ⇒
+        throw new SchemaMaterializationException(s"Type '${tpe.name}' already implements '${interface.name}'. It cannot also be implemented in this type extension.")
+      case (acc, interface) ⇒ acc :+ interface
+    }
+
+    allInts map getInterfaceType
+  }
+
+  def buildFields(tpe: TypeDefinition, fieldDefs: List[ast.FieldDefinition], extensions: List[ast.TypeExtensionDefinition]) = {
+    val extraFields = extensions.flatMap(_.definition.fields)
+
+    val allFields = extraFields.foldLeft(fieldDefs) {
+      case (acc, field) if acc.exists(_.name == field.name) ⇒
+        throw new SchemaMaterializationException(s"Field '${tpe.name}.${field.name}' already exists in the schema. It cannot also be defined in this type extension.")
+      case (acc, field) ⇒ acc :+ field
+    }
+
+    allFields flatMap (buildField(tpe, _))
+  }
+
+  def findExtensions(typeName: String) =
+    typeExtensionDefs.filter(_.definition.name == typeName)
 
   def buildUnionDef(tpe: ast.UnionTypeDefinition) =
     builder.buildUnionType(tpe, tpe.types map getObjectType, this)

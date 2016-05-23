@@ -8,6 +8,7 @@ import sangria.validation.Violation
 
 trait AstSchemaBuilder[Ctx] {
   def additionalTypeDefs: List[ast.TypeDefinition]
+  def additionalTypeExtensionDefs: List[ast.TypeExtensionDefinition]
   def additionalDirectiveDefs: List[ast.DirectiveDefinition]
 
   def buildSchema(
@@ -21,6 +22,7 @@ trait AstSchemaBuilder[Ctx] {
 
   def buildObjectType(
     definition: ast.ObjectTypeDefinition,
+    extensions: List[ast.TypeExtensionDefinition],
     fields: () ⇒ List[Field[Ctx, Any]],
     interfaces: List[InterfaceType[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): Option[ObjectType[Ctx, Any]]
@@ -32,6 +34,7 @@ trait AstSchemaBuilder[Ctx] {
 
   def buildInterfaceType(
     definition: ast.InterfaceTypeDefinition,
+    extensions: List[ast.TypeExtensionDefinition],
     fields: () ⇒ List[Field[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): Option[InterfaceType[Ctx, Any]]
 
@@ -99,6 +102,7 @@ object AstSchemaBuilder {
 
 class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def additionalDirectiveDefs = Nil
+  def additionalTypeExtensionDefs = Nil
   def additionalTypeDefs = Nil
 
   def buildSchema(
@@ -118,11 +122,12 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
 
   def buildObjectType(
       definition: ast.ObjectTypeDefinition,
+      extensions: List[ast.TypeExtensionDefinition],
       fields: () ⇒ List[Field[Ctx, Any]],
       interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) = {
     val objectType =
-      objectTypeInstanceCheck(definition) match {
+      objectTypeInstanceCheck(definition, extensions) match {
         case Some(fn) ⇒
           new ObjectType[Ctx, Any](
               name = typeName(definition),
@@ -153,6 +158,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
 
   def buildInterfaceType(
       definition: ast.InterfaceTypeDefinition,
+      extensions: List[ast.TypeExtensionDefinition],
       fields: () ⇒ List[Field[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(InterfaceType[Ctx, Any](
@@ -257,7 +263,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       arguments = arguments,
       shouldInclude = directiveShouldInclude(definition)))
 
-  def objectTypeInstanceCheck(definition: ast.ObjectTypeDefinition): Option[(Any, Class[_]) ⇒ Boolean] =
+  def objectTypeInstanceCheck(definition: ast.ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] =
     None
 
   def directiveShouldInclude(definition: ast.DirectiveDefinition): DirectiveContext ⇒ Boolean =
