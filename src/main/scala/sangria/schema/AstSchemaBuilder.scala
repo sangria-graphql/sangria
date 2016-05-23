@@ -86,8 +86,15 @@ trait AstSchemaBuilder[Ctx] {
 object AstSchemaBuilder {
   def default[Ctx] = new DefaultAstSchemaBuilder[Ctx]
 
-  def extractDescription(comment: Seq[String]): Option[String] =
-    None // TODO
+  def extractDescription(comment: Seq[String]): Option[String] = {
+    val descrLines = comment.filter(_.startsWith("#"))
+
+    if (descrLines.nonEmpty)
+      Some(descrLines.map(_.substring(1).trim) mkString "\n")
+    else
+      None
+  }
+
 }
 
 class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
