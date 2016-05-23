@@ -52,39 +52,39 @@ object Named {
   private[sangria] def doCheckFieldNames(fields: Seq[Named]): Unit =
     fields.foreach(f ⇒ checkName(f.name))
 
-  private[sangria] def checkObjFields[T <: Seq[Named]](fields: T): T = {
+  def checkObjFields[T <: Seq[Named]](fields: T): T = {
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     fields
   }
 
-  private[sangria] def checkIntFields[T <: Seq[Named]](fields: T): T = {
+  def checkIntFields[T <: Seq[Named]](fields: T): T = {
     doCheckNonEmptyFields(fields)
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     fields
   }
 
-  private[sangria] def checkObjFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
+  def checkObjFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
     () ⇒ fields
   }
 
-  private[sangria] def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
+  def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
     doCheckNonEmptyFields(fields)
     doCheckFieldNames(fields)
     () ⇒ fields
   }
 
-  private[sangria] def checkObjFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+  def checkObjFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
     () ⇒ checkObjFields(fieldsFn())
 
-  private[sangria] def checkIntFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
+  def checkIntFields[T <: Seq[Named]](fieldsFn: () ⇒ T): () ⇒ T =
     () ⇒ checkIntFields(fieldsFn())
 
-  private[sangria] def checkName(name: String) = {
+  def checkName(name: String) = {
     if (!NameRegexp.pattern.matcher(name).matches())
       throw new IllegalArgumentException(s"Name '$name' is not valid GraphQL name! Valid name should satisfy following regex: /$NameRegexp/.")
 
@@ -152,7 +152,7 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
     else fieldsByName.getOrElse(fieldName, Vector.empty)
 }
 
-case class ObjectType[Ctx, Val: ClassTag] private[sangria] (
+case class ObjectType[Ctx, Val: ClassTag] (
   name: String,
   description: Option[String],
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
@@ -187,7 +187,7 @@ object ObjectType {
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
 }
 
-case class InterfaceType[Ctx, Val] private[sangria] (
+case class InterfaceType[Ctx, Val](
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
@@ -258,7 +258,7 @@ case class UnionType[Ctx](
   description: Option[String] = None,
   types: List[ObjectType[Ctx, _]]) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType
 
-case class Field[Ctx, Val] private[sangria] (
+case class Field[Ctx, Val](
     name: String,
     fieldType: OutputType[_],
     description: Option[String],
@@ -309,7 +309,7 @@ trait InputValue[T] {
   def defaultValue: Option[(_, ToInput[_, _])]
 }
 
-case class Argument[T] private[sangria] (
+case class Argument[T](
     name: String,
     argumentType: InputType[_],
     description: Option[String],
@@ -498,7 +498,7 @@ case class EnumValue[+T](
   value: T,
   deprecationReason: Option[String] = None) extends Named
 
-case class InputObjectType[T] private[sangria] (
+case class InputObjectType[T](
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[InputField[_]]
@@ -540,7 +540,7 @@ trait InputObjectDefaultResultLowPrio {
   }
 }
 
-case class InputField[T] private[sangria] (
+case class InputField[T](
   name: String,
   fieldType: InputType[T],
   description: Option[String],
@@ -823,4 +823,10 @@ object Schema {
     */
   def buildFromIntrospection[Ctx, T : InputUnmarshaller](introspectionResult: T, logic: MaterializationLogic[Ctx]) =
     IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, logic)
+
+  def buildFromAst(document: ast.Document) =
+    AstSchemaMaterializer.buildSchema(document)
+
+  def buildFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
+    AstSchemaMaterializer.buildSchema[Ctx](document, builder)
 }

@@ -256,7 +256,11 @@ sealed trait AstNode {
 
 sealed trait SchemaAstNode extends AstNode
 sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
-sealed trait TypeDefinition extends TypeSystemDefinition
+sealed trait TypeDefinition extends TypeSystemDefinition {
+  def name: String
+  def comment: Option[Comment]
+  def directives: List[Directive]
+}
 
 object AstNode {
   def withoutPosition[T <: AstNode](node: T, stripComments: Boolean = false): T = node match {
