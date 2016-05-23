@@ -113,12 +113,27 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       definition: ast.ObjectTypeDefinition,
       fields: () ⇒ List[Field[Ctx, Any]],
       interfaces: List[InterfaceType[Ctx, Any]],
-      mat: AstSchemaMaterializer[Ctx]) =
-    Some(ObjectType[Ctx, Any](
-      name = extractName(definition),
-      description = extractDescription(definition),
-      fieldsFn = Named.checkObjFields(fields),
-      interfaces = interfaces))
+      mat: AstSchemaMaterializer[Ctx]) = {
+    val objectType =
+      objectTypeInstanceCheck(definition) match {
+        case Some(fn) ⇒
+          new ObjectType[Ctx, Any](
+              name = extractName(definition),
+              description = extractDescription(definition),
+              fieldsFn = Named.checkObjFields(fields),
+              interfaces = interfaces) {
+            override def isInstanceOf(value: Any) = fn(value, valClass)
+          }
+        case None ⇒
+          ObjectType[Ctx, Any](
+            name = extractName(definition),
+            description = extractDescription(definition),
+            fieldsFn = Named.checkObjFields(fields),
+            interfaces = interfaces)
+      }
+
+    Some(objectType)
+  }
 
   def buildInputObjectType(
       definition: ast.InputObjectTypeDefinition,
@@ -234,6 +249,9 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       locations = locations,
       arguments = arguments,
       shouldInclude = directiveShouldInclude(definition)))
+
+  def objectTypeInstanceCheck(definition: ast.ObjectTypeDefinition): Option[(Any, Class[_]) ⇒ Boolean] =
+    None
 
   def directiveShouldInclude(definition: ast.DirectiveDefinition): DirectiveContext ⇒ Boolean =
     Function.const(true)

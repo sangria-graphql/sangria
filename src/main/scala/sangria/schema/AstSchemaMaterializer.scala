@@ -3,17 +3,10 @@ package sangria.schema
 import language.postfixOps
 
 import sangria.ast
-import sangria.ast.{DirectiveDefinition, TypeDefinition, SchemaDefinition, OperationType}
-import sangria.execution.{FieldTag, UserFacingError}
-import sangria.introspection._
-import sangria.marshalling._
-import sangria.parser.DeliveryScheme.Throw
-import sangria.parser.QueryParser
-import sangria.renderer.{QueryRenderer, SchemaRenderer}
-import sangria.validation.Violation
+import sangria.ast.{DirectiveDefinition, TypeDefinition, OperationType}
+import sangria.renderer.QueryRenderer
 
 import scala.collection.concurrent.TrieMap
-import scala.util.{Try, Failure, Success}
 
 class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
   import AstSchemaMaterializer.SchemaInfo

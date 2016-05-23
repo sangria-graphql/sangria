@@ -158,7 +158,9 @@ case class ObjectType[Ctx, Val: ClassTag] (
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
 ) extends ObjectLikeType[Ctx, Val] {
-  def isInstanceOf(value: Any) = implicitly[ClassTag[Val]].runtimeClass.isAssignableFrom(value.getClass)
+  protected lazy val valClass = implicitly[ClassTag[Val]].runtimeClass
+
+  def isInstanceOf(value: Any) = valClass.isAssignableFrom(value.getClass)
 }
 
 object ObjectType {
