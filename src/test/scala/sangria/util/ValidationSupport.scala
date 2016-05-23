@@ -153,7 +153,27 @@ trait ValidationSupport extends Matchers {
     Field("complicatedArgs", OptionType(ComplicatedArgs), resolve = _ ⇒ None)
   ))
 
-  val schema = Schema(QueryRoot)
+  private def alwaysInclude(ctx: DirectiveContext): Boolean = true
+
+  val schema = Schema(QueryRoot, directives = BuiltinDirectives ++ List(
+    Directive("onQuery", locations = Set(DirectiveLocation.Query), shouldInclude = alwaysInclude),
+    Directive("onMutation", locations = Set(DirectiveLocation.Mutation), shouldInclude = alwaysInclude),
+    Directive("onSubscription", locations = Set(DirectiveLocation.Subscription), shouldInclude = alwaysInclude),
+    Directive("onField", locations = Set(DirectiveLocation.Field), shouldInclude = alwaysInclude),
+    Directive("onFragmentDefinition", locations = Set(DirectiveLocation.FragmentDefinition), shouldInclude = alwaysInclude),
+    Directive("onFragmentSpread", locations = Set(DirectiveLocation.FragmentSpread), shouldInclude = alwaysInclude),
+    Directive("onInlineFragment", locations = Set(DirectiveLocation.InlineFragment), shouldInclude = alwaysInclude),
+    Directive("onSchema", locations = Set(DirectiveLocation.Schema), shouldInclude = alwaysInclude),
+    Directive("onScalar", locations = Set(DirectiveLocation.Scalar), shouldInclude = alwaysInclude),
+    Directive("onObject", locations = Set(DirectiveLocation.Object), shouldInclude = alwaysInclude),
+    Directive("onFieldDefinition", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = alwaysInclude),
+    Directive("onArgumentDefinition", locations = Set(DirectiveLocation.ArgumentDefinition), shouldInclude = alwaysInclude),
+    Directive("onInterface", locations = Set(DirectiveLocation.Interface), shouldInclude = alwaysInclude),
+    Directive("onUnion", locations = Set(DirectiveLocation.Union), shouldInclude = alwaysInclude),
+    Directive("onEnum", locations = Set(DirectiveLocation.Enum), shouldInclude = alwaysInclude),
+    Directive("onEnumValue", locations = Set(DirectiveLocation.EnumValue), shouldInclude = alwaysInclude),
+    Directive("onInputObject", locations = Set(DirectiveLocation.InputObject), shouldInclude = alwaysInclude),
+    Directive("onInputFieldDefinition", locations = Set(DirectiveLocation.InputFieldDefinition), shouldInclude = alwaysInclude)))
 
   def defaultRule: Option[ValidationRule] = None
 

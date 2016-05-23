@@ -181,6 +181,61 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                     "name" → "INLINE_FRAGMENT",
                     "description" → "Location adjacent to an inline fragment.",
                     "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "SCHEMA",
+                    "description" → "Location adjacent to a schema definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "SCALAR",
+                    "description" → "Location adjacent to a scalar definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "OBJECT",
+                    "description" → "Location adjacent to an object type definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "FIELD_DEFINITION",
+                    "description" → "Location adjacent to a field definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "ARGUMENT_DEFINITION",
+                    "description" → "Location adjacent to an argument definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "INTERFACE",
+                    "description" → "Location adjacent to an interface definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "UNION",
+                    "description" → "Location adjacent to a union definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "ENUM",
+                    "description" → "Location adjacent to an enum definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "ENUM_VALUE",
+                    "description" → "Location adjacent to an enum value definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "INPUT_OBJECT",
+                    "description" → "INPUT_OBJECT",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
+                    "name" → "INPUT_FIELD_DEFINITION",
+                    "description" → "Location adjacent to an input object field definition.",
+                    "isDeprecated" → false,
                     "deprecationReason" → null)),
                 "fields" → null,
                 "kind" → "ENUM",
@@ -790,7 +845,17 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                         "kind" → "SCALAR",
                         "name" → "Boolean",
                         "ofType" → null)),
-                    "defaultValue" → null))))))))
+                    "defaultValue" → null))),
+              Map(
+                "name" → "deprecated",
+                "description" → "Marks an element of a GraphQL schema as no longer supported.",
+                "locations" → Vector("ENUM_VALUE", "FIELD_DEFINITION"),
+                "args" → Vector(
+                  Map(
+                    "name" → "reason",
+                    "description" → "Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formattedin [Markdown](https://daringfireball.net/projects/markdown/).",
+                    "type" → Map("kind" → "SCALAR", "name" → "String", "ofType" → null),
+                    "defaultValue" → "No longer supported"))))))))
     }
 
     "introspects on input object" in {

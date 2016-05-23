@@ -63,7 +63,30 @@ package object introspection {
       EnumValue("FRAGMENT_SPREAD", value = DirectiveLocation.FragmentSpread,
         description = Some("Location adjacent to a fragment spread.")),
       EnumValue("INLINE_FRAGMENT", value = DirectiveLocation.InlineFragment,
-        description = Some("Location adjacent to an inline fragment."))))
+        description = Some("Location adjacent to an inline fragment.")),
+
+      EnumValue("SCHEMA", value = DirectiveLocation.Schema,
+        description = Some("Location adjacent to a schema definition.")),
+      EnumValue("SCALAR", value = DirectiveLocation.Scalar,
+        description = Some("Location adjacent to a scalar definition.")),
+      EnumValue("OBJECT", value = DirectiveLocation.Object,
+        description = Some("Location adjacent to an object type definition.")),
+      EnumValue("FIELD_DEFINITION", value = DirectiveLocation.FieldDefinition,
+        description = Some("Location adjacent to a field definition.")),
+      EnumValue("ARGUMENT_DEFINITION", value = DirectiveLocation.ArgumentDefinition,
+        description = Some("Location adjacent to an argument definition.")),
+      EnumValue("INTERFACE", value = DirectiveLocation.Interface,
+        description = Some("Location adjacent to an interface definition.")),
+      EnumValue("UNION", value = DirectiveLocation.Union,
+        description = Some("Location adjacent to a union definition.")),
+      EnumValue("ENUM", value = DirectiveLocation.Enum,
+        description = Some("Location adjacent to an enum definition.")),
+      EnumValue("ENUM_VALUE", value = DirectiveLocation.EnumValue,
+        description = Some("Location adjacent to an enum value definition.")),
+      EnumValue("INPUT_OBJECT", value = DirectiveLocation.InputObject,
+        description = Some("INPUT_OBJECT")),
+      EnumValue("INPUT_FIELD_DEFINITION", value = DirectiveLocation.InputFieldDefinition,
+        description = Some("Location adjacent to an input object field definition."))))
 
   val __Field = ObjectType(
     name = "__Field",

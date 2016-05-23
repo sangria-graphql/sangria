@@ -1,10 +1,10 @@
 package sangria.schema
 
 import sangria.execution.{FieldTag, DeprecationTracker, ValueCoercionHelper, Resolver}
-import sangria.marshalling.{CoercedScalaResultMarshaller, InputUnmarshaller, ToInput, ResultMarshaller}
+import sangria.marshalling._
 import sangria.parser.SourceMapper
 
-import language.implicitConversions
+import language.{implicitConversions, existentials}
 
 import sangria.ast
 
@@ -137,6 +137,13 @@ trait WithInputTypeRendering[Ctx] {
 
   def renderCoercedInputValuePretty[T](value: Any, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
     DefaultValueRenderer.renderCoercedInputValuePretty(value, tpe)(m)
+}
+
+case class DefaultValueParser[T](schema: Schema[_, _], parser: InputParser[T], toInput: ToInput[T, _])
+
+object DefaultValueParser {
+  def forType[T](schema: Schema[_, _])(implicit parser: InputParser[T], toInput: ToInput[T, _]) =
+    DefaultValueParser[T](schema, parser, toInput)
 }
 
 object DefaultValueRenderer {

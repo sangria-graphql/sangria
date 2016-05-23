@@ -39,7 +39,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
     case QueryReducingError(cause, _) if exceptionHandler isDefinedAt (marshaller → cause) ⇒
       handleSupportedError(cause)
     case e ⇒
-      e.printStackTrace() // todo proper logging?
+      e.printStackTrace()
       Seq("message" → marshaller.scalarNode("Internal server error", "String", Set.empty))
   }
 

@@ -103,13 +103,118 @@ trait Ignored extends PositionTracking { this: Parser ⇒
 
 }
 
-trait Document { this: Parser with Operations with Ignored with Fragments with Operations with Values ⇒
+trait Document { this: Parser with Operations with Ignored with Fragments with Operations with Values with TypeSystemDefinitions ⇒
 
   def Document = rule { IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ Ignored.* ~ EOI ~> ((pos, d) ⇒ ast.Document(d.toList, Some(pos))) }
 
   def InputDocument = rule { IgnoredNoComment.* ~ ValueConst ~ Ignored.* ~ EOI }
 
-  def Definition = rule { OperationDefinition | FragmentDefinition }
+  def Definition = rule { OperationDefinition | FragmentDefinition | TypeSystemDefinition }
+
+}
+
+trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directives with Types with Operations with Values with Fragments ⇒
+
+  def scalar = rule { Keyword("scalar") }
+  def `type` = rule { Keyword("type") }
+  def interface = rule { Keyword("interface") }
+  def union = rule { Keyword("union") }
+  def enum = rule { Keyword("enum") }
+  def inputType = rule { Keyword("input") }
+  def implements = rule { Keyword("implements") }
+  def extend = rule { Keyword("extend") }
+  def directive = rule { Keyword("directive") }
+  def schema = rule { Keyword("schema") }
+
+  def TypeSystemDefinition = rule {
+    SchemaDefinition | TypeDefinition | TypeExtensionDefinition | DirectiveDefinition
+  }
+
+  def TypeDefinition = rule {
+    ScalarTypeDefinition |
+    ObjectTypeDefinition |
+    InterfaceTypeDefinition |
+    UnionTypeDefinition |
+    EnumTypeDefinition |
+    InputObjectTypeDefinition
+  }
+
+  def ScalarTypeDefinition = rule {
+    Comments ~ trackPos ~ scalar ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~> (
+      (comment, pos, name, dirs) ⇒ ast.ScalarTypeDefinition(name, dirs, comment, Some(pos)))
+  }
+
+  // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
+  def ObjectTypeDefinition = rule {
+    Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Nil)) ~
+      (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.* ~ wsNoComment('}') ~> (
+        (comment, pos, name, interfaces, dirs, fields) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toList, dirs, comment, Some(pos)))
+  }
+
+  def ImplementsInterfaces = rule { implements ~ NamedType.+ ~> (_.toList) }
+
+  def FieldDefinition = rule {
+    Comments ~ trackPos ~ Name ~ (ArgumentsDefinition.? ~> (_ getOrElse Nil)) ~ ws(':') ~ Type ~ (Directives.? ~> (_ getOrElse Nil)) ~> (
+      (comment, pos, name, args, fieldType, dirs) ⇒ ast.FieldDefinition(name, fieldType, args, dirs, comment, Some(pos)))
+  }
+
+  def ArgumentsDefinition = rule { wsNoComment('(') ~ InputValueDefinition.+ ~ wsNoComment(')') ~> (_.toList) }
+
+  def InputValueDefinition = rule {
+    Comments ~ trackPos ~ Name ~ ws(':') ~ Type ~ DefaultValue.? ~ (Directives.? ~> (_ getOrElse Nil)) ~> (
+      (comment, pos, name, valueType, default, dirs) ⇒ ast.InputValueDefinition(name, valueType, default, dirs, comment, Some(pos)))
+  }
+
+  def InterfaceTypeDefinition = rule {
+    Comments ~ trackPos ~ interface ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.+ ~ wsNoComment('}') ~> (
+      (comment, pos, name, dirs, fields) ⇒ ast.InterfaceTypeDefinition(name, fields.toList, dirs, comment, Some(pos)))
+  }
+
+  def UnionTypeDefinition = rule {
+    Comments ~ trackPos ~ union ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('=') ~ UnionMembers ~> (
+        (comment, pos, name, dirs, members) ⇒ ast.UnionTypeDefinition(name, members, dirs, comment, Some(pos)))
+  }
+
+  def UnionMembers = rule { NamedType.+(ws('|')) ~> (_.toList) }
+
+  def EnumTypeDefinition = rule {
+    Comments ~ trackPos ~ enum ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ wsNoComment('}') ~> (
+      (comment, pos, name, dirs, values) ⇒ ast.EnumTypeDefinition(name, values.toList, dirs, comment, Some(pos)))
+  }
+
+  def EnumValueDefinition = rule {
+    EnumValue ~ (Directives.? ~> (_ getOrElse Nil)) ~> ((v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, v.comment, v.position))
+  }
+
+  // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
+  def InputObjectTypeDefinition = rule {
+    Comments ~ trackPos ~ inputType ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ InputValueDefinition.* ~ wsNoComment('}') ~> (
+      (comment, pos, name, dirs, fields) ⇒ ast.InputObjectTypeDefinition(name, fields.toList, dirs, comment, Some(pos)))
+  }
+
+  def TypeExtensionDefinition = rule {
+    Comments ~ trackPos ~ extend ~ ObjectTypeDefinition ~> (
+      (comment, pos, definition) ⇒ ast.TypeExtensionDefinition(definition, comment, Some(pos)))
+  }
+
+  def DirectiveDefinition = rule {
+    Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_ getOrElse Nil)) ~ on ~ DirectiveLocations ~> (
+      (comment, pos, name, args, locations) ⇒ ast.DirectiveDefinition(name, args, locations, comment, Some(pos)))
+  }
+
+  def DirectiveLocations = rule { DirectiveLocation.+(wsNoComment('|')) ~> (_.toList) }
+
+  def DirectiveLocation = rule { Comments ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
+
+  def SchemaDefinition = rule {
+    Comments ~ trackPos ~ schema ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ wsNoComment('}') ~> (
+      (comment, pos, dirs, ops) ⇒ ast.SchemaDefinition(ops.toList, dirs, comment, Some(pos)))
+  }
+
+  def OperationTypeDefinition = rule {
+    Comments ~ trackPos ~ OperationType ~ ws(':') ~ NamedType ~> (
+      (comment, pos, opType, tpe) ⇒ ast.OperationTypeDefinition(opType, tpe, comment, Some(pos)))
+  }
 
 }
 
@@ -245,16 +350,16 @@ trait Types { this: Parser with Tokens with Ignored ⇒
 
   def NamedType = rule { Ignored.* ~ trackPos ~ TypeName ~> ((pos, name) ⇒ ast.NamedType(name, Some(pos)))}
 
-  def ListType = rule { trackPos ~ ws('[') ~ Type ~ ws(']') ~> ((pos, tpe) ⇒ ast.ListType(tpe, Some(pos))) }
+  def ListType = rule { trackPos ~ ws('[') ~ Type ~ wsNoComment(']') ~> ((pos, tpe) ⇒ ast.ListType(tpe, Some(pos))) }
 
   def NonNullType = rule {
-    trackPos ~ TypeName ~ ws('!')  ~> ((pos, name) ⇒ ast.NotNullType(ast.NamedType(name, Some(pos)), Some(pos))) |
-    trackPos ~ ListType ~ ws('!') ~> ((pos, tpe) ⇒ ast.NotNullType(tpe, Some(pos)))
+    trackPos ~ TypeName ~ wsNoComment('!')  ~> ((pos, name) ⇒ ast.NotNullType(ast.NamedType(name, Some(pos)), Some(pos))) |
+    trackPos ~ ListType ~ wsNoComment('!') ~> ((pos, tpe) ⇒ ast.NotNullType(tpe, Some(pos)))
   }
 }
 
 class QueryParser private (val input: ParserInput) 
-    extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types
+    extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types with TypeSystemDefinitions
 
 object QueryParser {
   def parse(input: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =

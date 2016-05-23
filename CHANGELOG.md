@@ -2,6 +2,8 @@
 
 * Preserve comments during the AST parsing (#105). Most of the AST classes got comment `Option[Comment]`. It can be very useful for query formatting because `QueryRenderer` also got support for comments and able to render them.
 * Added support for case objects defined in companion object (#135). Big thanks to @joprice for contributing this improvement!
+* `SchemaRenderer` now renders directives as well
+* `SchemaRenderer` now has improved default value rendering
 
 ## v0.6.3 (2016-05-01)
 

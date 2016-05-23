@@ -14,9 +14,13 @@ import scala.language.postfixOps
  * variable definitions and fragment conditions) are defined by the type schema.
  */
 class KnownTypeNames extends ValidationRule {
-  // todo: ignore type definitions when support is added: https://github.com/graphql/graphql-js/commit/812e09d681c2f10d4e5d09f75314e47953eeb7d4
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
+      case _: ast.ObjectTypeDefinition | _: ast.InterfaceTypeDefinition | _: ast.UnionTypeDefinition | _: ast.InputObjectTypeDefinition ⇒
+        // TODO: when validating IDL, re-enable these. Experimental version does not
+        // add unreferenced types, resulting in false-positive errors. Squelched
+        // errors for now.
+        Right(Skip)
       case ast.NamedType(name, pos) ⇒
         if (!ctx.schema.allTypes.contains(name))
           Left(Vector(UnknownTypeViolation(

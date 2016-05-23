@@ -8,7 +8,7 @@ import language.{implicitConversions, existentials}
 
 import sangria.{introspection, ast}
 import sangria.validation.{ConflictingTypeDefinitionViolation, EnumValueCoercionViolation, EnumCoercionViolation, Violation}
-import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField, IntrospectionTypesByName}
+import sangria.introspection._
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -585,7 +585,29 @@ sealed trait HasArguments {
 }
 
 object DirectiveLocation extends Enumeration {
-  val  Query, Mutation, Subscription, Field, FragmentDefinition, FragmentSpread, InlineFragment = Value
+
+  // Operations
+  val Query = Value
+  val Mutation = Value
+  val Subscription = Value
+  val Field = Value
+  val FragmentDefinition = Value
+  val FragmentSpread = Value
+  val InlineFragment = Value
+
+  // Schema Definitions
+
+  val Schema = Value
+  val Scalar = Value
+  val Object = Value
+  val FieldDefinition = Value
+  val ArgumentDefinition = Value
+  val Interface = Value
+  val Union = Value
+  val Enum = Value
+  val EnumValue = Value
+  val InputObject = Value
+  val InputFieldDefinition = Value
 
   def fromString(location: String): DirectiveLocation.Value = location match {
     case "QUERY" ⇒ Query
@@ -595,6 +617,18 @@ object DirectiveLocation extends Enumeration {
     case "FRAGMENT_DEFINITION" ⇒ FragmentDefinition
     case "FRAGMENT_SPREAD" ⇒ FragmentSpread
     case "INLINE_FRAGMENT" ⇒ InlineFragment
+
+    case "SCHEMA" ⇒ Schema
+    case "SCALAR" ⇒ Scalar
+    case "OBJECT" ⇒ Object
+    case "FIELD_DEFINITION" ⇒ FieldDefinition
+    case "ARGUMENT_DEFINITION" ⇒ ArgumentDefinition
+    case "INTERFACE" ⇒ Interface
+    case "UNION" ⇒ Union
+    case "ENUM" ⇒ Enum
+    case "ENUM_VALUE" ⇒ EnumValue
+    case "INPUT_OBJECT" ⇒ InputObject
+    case "INPUT_FIELD_DEFINITION" ⇒ InputFieldDefinition
   }
 }
 
@@ -706,6 +740,12 @@ case class Schema[Ctx, Val](
     case ast.ListType(ofType, _) ⇒ getInputType(ofType) map (t ⇒ OptionInputType(ListInputType(t)))
   }
 
+  def getInputType(tpe: IntrospectionTypeRef): Option[InputType[_]] = tpe match {
+    case IntrospectionNamedTypeRef(_, name) ⇒ inputTypes get name map (OptionInputType(_))
+    case IntrospectionNonNullTypeRef(ofType) ⇒ getInputType(ofType) collect {case OptionInputType(ot) ⇒ ot}
+    case IntrospectionListTypeRef(ofType) ⇒ getInputType(ofType) map (t ⇒ OptionInputType(ListInputType(t)))
+  }
+
   def getOutputType(tpe: ast.Type, topLevel: Boolean = false): Option[OutputType[_]] = tpe match {
     case ast.NamedType(name, _) ⇒ outputTypes get name map (ot ⇒ if (topLevel) ot else OptionType(ot))
     case ast.NotNullType(ofType, _) ⇒ getOutputType(ofType) collect {case OptionType(ot) ⇒ ot}
@@ -745,6 +785,9 @@ case class Schema[Ctx, Val](
 object Schema {
   def isBuiltInType(typeName: String) =
     BuiltinScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
+
+  def isBuiltInDirective(directiveName: String) =
+    BuiltinDirectivesByName.contains(directiveName)
 
   def isIntrospectionType(typeName: String) =
     IntrospectionTypesByName.contains(typeName)
