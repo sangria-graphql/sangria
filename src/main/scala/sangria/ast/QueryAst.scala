@@ -33,6 +33,19 @@ case class Document(definitions: List[Definition], position: Option[Position] = 
     Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
 }
 
+object Document {
+  /**
+    * Provided a collection of ASTs, presumably each from different files,
+    * concatenate the ASTs together into batched AST, useful for validating many
+    * GraphQL source files which together represent one conceptual application.
+    *
+    * The result of the merge will loose the `sourceMapper` and `position` since
+    * connection to the original string source is lost.
+    */
+  def merge(documents: Traversable[Document]): Document =
+    Document(documents.toList.flatMap(_.definitions))
+}
+
 sealed trait ConditionalFragment extends AstNode {
   def typeConditionOpt: Option[NamedType]
 }
