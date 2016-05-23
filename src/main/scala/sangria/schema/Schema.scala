@@ -823,8 +823,8 @@ object Schema {
     * @param introspectionResult the result of introspection query
     * @param logic custom schema logic that would be used for all materialized fields. By default `MaterializedSchemaException` would be thrown.
     */
-  def buildFromIntrospection[Ctx, T : InputUnmarshaller](introspectionResult: T, logic: MaterializationLogic[Ctx]) =
-    IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, logic)
+  def buildFromIntrospection[Ctx, T : InputUnmarshaller](introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]) =
+    IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, builder)
 
   def buildFromAst(document: ast.Document) =
     AstSchemaMaterializer.buildSchema(document)

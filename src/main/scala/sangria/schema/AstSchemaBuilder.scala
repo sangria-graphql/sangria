@@ -125,16 +125,16 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       objectTypeInstanceCheck(definition) match {
         case Some(fn) ⇒
           new ObjectType[Ctx, Any](
-              name = extractName(definition),
-              description = extractDescription(definition),
+              name = typeName(definition),
+              description = typeDescription(definition),
               fieldsFn = Named.checkObjFields(fields),
               interfaces = interfaces) {
             override def isInstanceOf(value: Any) = fn(value, valClass)
           }
         case None ⇒
           ObjectType[Ctx, Any](
-            name = extractName(definition),
-            description = extractDescription(definition),
+            name = typeName(definition),
+            description = typeDescription(definition),
             fieldsFn = Named.checkObjFields(fields),
             interfaces = interfaces)
       }
@@ -147,8 +147,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       fields: () ⇒ List[InputField[_]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(InputObjectType(
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = typeName(definition),
+      description = typeDescription(definition),
       fieldsFn = Named.checkIntFields(fields)))
 
   def buildInterfaceType(
@@ -156,8 +156,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       fields: () ⇒ List[Field[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(InterfaceType[Ctx, Any](
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = typeName(definition),
+      description = typeDescription(definition),
       fieldsFn = Named.checkIntFields(fields),
       interfaces = Nil,
       manualPossibleTypes = () ⇒ Nil))
@@ -167,16 +167,16 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       types: List[ObjectType[Ctx, _]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(UnionType[Ctx](
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = typeName(definition),
+      description = typeDescription(definition),
       types = types))
 
   def buildScalarType(
       definition: ast.ScalarTypeDefinition,
       mat: AstSchemaMaterializer[Ctx]) =
     Some(ScalarType[Any](
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = typeName(definition),
+      description = typeDescription(definition),
       coerceUserInput = scalarCoerceUserInput(definition),
       coerceOutput = scalarCoerceOutput(definition),
       coerceInput = scalarCoerceInput(definition),
@@ -188,8 +188,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       values: List[EnumValue[Any]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(EnumType[Any](
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = typeName(definition),
+      description = typeDescription(definition),
       values = values))
 
   def buildEnumValue(
@@ -197,10 +197,10 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       definition: ast.EnumValueDefinition,
       mat: AstSchemaMaterializer[Ctx]) =
     Some(EnumValue[String](
-      name = extractName(definition),
-      description = extractDescription(definition),
-      value = definition.name,
-      deprecationReason = deprecationReason(definition)))
+      name = enumValueName(definition),
+      description = enumValueDescription(definition),
+      value = enumValue(definition),
+      deprecationReason = enumValueDeprecationReason(definition)))
 
   def buildField(
       typeDefinition: ast.TypeDefinition,
@@ -209,13 +209,13 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       arguments: List[Argument[_]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(Field[Ctx, Any](
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = fieldName(definition),
+      description = fieldDescription(definition),
       fieldType = fieldType,
       arguments = arguments,
       resolve = resolveField(typeDefinition, definition),
       tags = fieldTags(typeDefinition, definition),
-      deprecationReason = deprecationReason(definition),
+      deprecationReason = fieldDeprecationReason(definition),
       complexity = fieldComplexity(typeDefinition, definition),
       manualPossibleTypes = () ⇒ Nil))
 
@@ -226,8 +226,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       defaultValue: Option[(_, ToInput[_, _])],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(InputField(
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = inputFieldName(definition),
+      description = inputFieldDescription(definition),
       fieldType = tpe,
       defaultValue = defaultValue))
 
@@ -239,8 +239,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       defaultValue: Option[(_, ToInput[_, _])],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(Argument(
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = argumentName(definition),
+      description = argumentDescription(definition),
       argumentType = tpe,
       defaultValue = defaultValue,
       fromInput = argumentFromInput(typeDefinition, fieldDefinition, definition)))
@@ -251,8 +251,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       locations: Set[DirectiveLocation.Value],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(Directive(
-      name = extractName(definition),
-      description = extractDescription(definition),
+      name = directiveName(definition),
+      description = directiveDescription(definition),
       locations = locations,
       arguments = arguments,
       shouldInclude = directiveShouldInclude(definition)))
@@ -270,19 +270,19 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     FromInput.defaultInput[Any]
 
   def resolveField(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): Context[Ctx, _] ⇒ Action[Ctx, _] =
-    (ctx) ⇒ throw DefaultMaterializationLogic.MaterializedSchemaException
+    (ctx) ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
   def fieldTags(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): List[FieldTag] =
     Nil
 
   def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition): Any ⇒ Either[Violation, Any] =
-    _ ⇒ Left(DefaultMaterializationLogic.MaterializedSchemaViolation)
+    _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
 
   def scalarCoerceInput(definition: ast.ScalarTypeDefinition): ast.Value ⇒ Either[Violation, Any] =
-    _ ⇒ Left(DefaultMaterializationLogic.MaterializedSchemaViolation)
+    _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
 
   def scalarCoerceOutput(definition: ast.ScalarTypeDefinition): (Any, Set[MarshallerCapability]) ⇒ Any =
-    (_, _) ⇒ throw DefaultMaterializationLogic.MaterializedSchemaException
+    (_, _) ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
   def scalarValueInfo(definition: ast.ScalarTypeDefinition): Set[ScalarValueInfo] =
     Set.empty
@@ -293,10 +293,10 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def fieldComplexity(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): Option[(Ctx, Args, Double) ⇒ Double] =
     None
 
-  def deprecationReason(definition: ast.EnumValueDefinition): Option[String] =
+  def enumValueDeprecationReason(definition: ast.EnumValueDefinition): Option[String] =
     deprecationReason(definition.directives)
 
-  def deprecationReason(definition: ast.FieldDefinition): Option[String] =
+  def fieldDeprecationReason(definition: ast.FieldDefinition): Option[String] =
     deprecationReason(definition.directives)
 
   def deprecationReason(dirs: List[ast.Directive]): Option[String] =
@@ -311,36 +311,45 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       }
     }
 
-  def extractName(definition: ast.TypeDefinition): String =
+  def typeName(definition: ast.TypeDefinition): String =
     Named.checkName(definition.name)
 
-  def extractName(definition: ast.FieldDefinition): String =
+  def fieldName(definition: ast.FieldDefinition): String =
     Named.checkName(definition.name)
 
-  def extractName(definition: ast.EnumValueDefinition): String =
+  def enumValueName(definition: ast.EnumValueDefinition): String =
     Named.checkName(definition.name)
 
-  def extractName(definition: ast.InputValueDefinition): String =
+  def argumentName(definition: ast.InputValueDefinition): String =
     Named.checkName(definition.name)
 
-  def extractName(definition: ast.DirectiveDefinition): String =
+  def inputFieldName(definition: ast.InputValueDefinition): String =
     Named.checkName(definition.name)
 
-  def extractDescription(comment: Option[ast.Comment]): Option[String] =
+  def directiveName(definition: ast.DirectiveDefinition): String =
+    Named.checkName(definition.name)
+
+  def commentDescription(comment: Option[ast.Comment]): Option[String] =
     comment flatMap (c ⇒ AstSchemaBuilder.extractDescription(c.lines))
 
-  def extractDescription(definition: ast.TypeDefinition): Option[String] =
-    extractDescription(definition.comment)
+  def typeDescription(definition: ast.TypeDefinition): Option[String] =
+    commentDescription(definition.comment)
 
-  def extractDescription(definition: ast.FieldDefinition): Option[String] =
-    extractDescription(definition.comment)
+  def fieldDescription(definition: ast.FieldDefinition): Option[String] =
+    commentDescription(definition.comment)
 
-  def extractDescription(definition: ast.InputValueDefinition): Option[String] =
-    extractDescription(definition.comment)
+  def argumentDescription(definition: ast.InputValueDefinition): Option[String] =
+    commentDescription(definition.comment)
 
-  def extractDescription(definition: ast.EnumValueDefinition): Option[String] =
-    extractDescription(definition.comment)
+  def inputFieldDescription(definition: ast.InputValueDefinition): Option[String] =
+    commentDescription(definition.comment)
 
-  def extractDescription(definition: ast.DirectiveDefinition): Option[String] =
-    extractDescription(definition.comment)
+  def enumValueDescription(definition: ast.EnumValueDefinition): Option[String] =
+    commentDescription(definition.comment)
+
+  def directiveDescription(definition: ast.DirectiveDefinition): Option[String] =
+    commentDescription(definition.comment)
+
+  def enumValue(definition: ast.EnumValueDefinition): String =
+    definition.name
 }

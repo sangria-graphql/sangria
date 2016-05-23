@@ -1,17 +1,14 @@
 package sangria.schema
 
-import sangria.ast
-import sangria.execution.{FieldTag, UserFacingError}
 import sangria.introspection._
 import sangria.marshalling._
 import sangria.parser.DeliveryScheme.Throw
 import sangria.renderer.SchemaRenderer
-import sangria.validation.Violation
 
 import scala.collection.concurrent.TrieMap
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success}
 
-class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (introspectionResult: T, logic: MaterializationLogic[Ctx]) {
+class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]) {
   private val typeDefCache = TrieMap[String, Type with Named]()
 
   private lazy val schemaDef = IntrospectionParser.parse(introspectionResult)
@@ -20,17 +17,15 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
     val queryType = getObjectType(schemaDef.queryType)
     val mutationType = schemaDef.mutationType map getObjectType
     val subscriptionType = schemaDef.subscriptionType map getObjectType
-    val directives = schemaDef.directives.toList map buildDirective
+    val directives = (schemaDef.directives.toList ++ builder.additionalDirectiveDefs) filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
 
-    Schema[Ctx, Any](
-      query = queryType,
-      mutation = mutationType,
-      subscription = subscriptionType,
-      additionalTypes = findUnusedTypes(schemaDef.types),
-      directives = directives).asInstanceOf[Schema[Ctx, Unit]]
+    builder.buildSchema(schemaDef, queryType, mutationType, subscriptionType,
+      findUnusedTypes(schemaDef.types ++ builder.additionalTypeDefs),
+      BuiltinDirectives ++ directives,
+      this)
   }
 
-  private def findUnusedTypes(allTypes: Seq[IntrospectionType]): List[Type with Named] = {
+  def findUnusedTypes(allTypes: Seq[IntrospectionType]): List[Type with Named] = {
     // first init all lazy fields. TODO: think about better solution
     typeDefCache.values.foreach {
       case o: ObjectLikeType[_, _] ⇒ o.fields
@@ -44,51 +39,23 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
     notReferenced.toList map (tpe ⇒ getNamedType(tpe.name))
   }
 
-  private def buildDefault(defaultValue: Option[String]) =
-    defaultValue flatMap (dv ⇒ logic.defaultValueParser flatMap { parser ⇒
-      parser(dv) match {
-        case Success((parsed, unmarshaller)) ⇒ Some(parsed → DefaultMaterializationLogic.ConstantToInput(unmarshaller))
-        case Failure(error) ⇒ throw new SchemaMaterializationException(s"Unable to parse default value '$dv'.", error)
-      }
-    })
+  def buildDirective(directive: IntrospectionDirective) =
+    BuiltinDirectives.find(_.name == directive.name) orElse
+      builder.buildDirective(directive, directive.args.toList flatMap (buildArgument(None, _)), this)
 
-  private def buildArgument(value: IntrospectionInputValue) =
-    Argument(
-      name = value.name,
-      argumentType = getInputType(value.tpe),
-      description = value.description,
-      defaultValue = buildDefault(value.defaultValue),
-      fromInput = FromInput.defaultInput[Any])
-
-  private def buildInputField(value: IntrospectionInputValue) =
-    InputField(
-      name = value.name,
-      fieldType = getInputType(value.tpe),
-      description = value.description,
-      defaultValue = buildDefault(value.defaultValue))
-
-  private def buildDirective(directive: IntrospectionDirective) =
-    BuiltinDirectives.find(_.name == directive.name) getOrElse
-      Directive(
-        name = directive.name,
-        description = directive.description,
-        locations = directive.locations,
-        arguments = directive.args.toList map buildArgument,
-        shouldInclude = Function.const(true))
-
-  private def getObjectType(typeRef: IntrospectionTypeRef): ObjectType[Ctx, Any] =
+  def getObjectType(typeRef: IntrospectionTypeRef): ObjectType[Ctx, Any] =
     getOutputType(typeRef, false) match {
       case obj: ObjectType[_, _] ⇒ obj.asInstanceOf[ObjectType[Ctx, Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${SchemaRenderer.renderTypeName(typeRef)}' is not an object type.")
     }
 
-  private def getInterfaceType(typeRef: IntrospectionTypeRef) =
+  def getInterfaceType(typeRef: IntrospectionTypeRef) =
     getOutputType(typeRef, false) match {
       case obj: InterfaceType[_, _] ⇒ obj.asInstanceOf[InterfaceType[Ctx, Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${SchemaRenderer.renderTypeName(typeRef)}' is not an interface type.")
     }
 
-  private def getInputType(typeRef: IntrospectionTypeRef, optional: Boolean = true): InputType[_] =
+  def getInputType(typeRef: IntrospectionTypeRef, optional: Boolean = true): InputType[_] =
     typeRef match {
       case IntrospectionListTypeRef(ofType) if optional ⇒ OptionInputType(ListInputType(getInputType(ofType, true)))
       case IntrospectionListTypeRef(ofType) ⇒ ListInputType(getInputType(ofType, true))
@@ -101,7 +68,7 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
         }
     }
 
-  private def getOutputType(typeRef: IntrospectionTypeRef, optional: Boolean = true): OutputType[_] =
+  def getOutputType(typeRef: IntrospectionTypeRef, optional: Boolean = true): OutputType[_] =
     typeRef match {
       case IntrospectionListTypeRef(ofType) if optional ⇒ OptionType(ListType(getOutputType(ofType, true)))
       case IntrospectionListTypeRef(ofType) ⇒ ListType(getOutputType(ofType, true))
@@ -114,13 +81,13 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
         }
     }
 
-  private def getNamedType(typeName: String): Type with Named =
+  def getNamedType(typeName: String): Type with Named =
     typeDefCache.getOrElseUpdate(typeName, Schema.getBuiltInType(typeName) getOrElse (
-      schemaDef.types.find(_.name == typeName) map buildType getOrElse (
+      schemaDef.types.find(_.name == typeName) flatMap buildType getOrElse (
         throw new SchemaMaterializationException(
           s"Invalid or incomplete schema, unknown type: $typeName. Ensure that a full introspection query is used in order to build a client schema."))))
 
-  private def buildType(tpe: IntrospectionType) = tpe match {
+  def buildType(tpe: IntrospectionType): Option[Type with Named] = tpe match {
     case o: IntrospectionObjectType ⇒ buildObjectDef(o)
     case i: IntrospectionInterfaceType ⇒ buildInterfaceDef(i)
     case u: IntrospectionUnionType ⇒ buildUnionDef(u)
@@ -129,65 +96,43 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
     case e: IntrospectionEnumType ⇒ buildEnumDef(e)
   }
 
-  private def buildField(field: IntrospectionField) =
-    Field[Ctx, Any](
-      name = field.name,
-      fieldType = getOutputType(field.tpe),
-      description = field.description,
-      arguments = field.args.toList map buildArgument,
-      resolve = logic.resolveField,
-      tags = logic.fieldTags(field.name),
-      deprecationReason = field.deprecationReason orElse (if (field.isDeprecated) Some("") else None),
-      complexity = None,
-      manualPossibleTypes = () ⇒ Nil)
+  def buildField(typeDef: IntrospectionType, field: IntrospectionField) =
+    builder.buildField(typeDef, field, getOutputType(field.tpe), field.args.toList flatMap (buildArgument(Some(field), _)), this)
 
-  private def buildObjectDef(tpe: IntrospectionObjectType) =
-    ObjectType[Ctx, Any](
-      name = logic.rewriteTypeName(tpe.kind, tpe.name),
-      description = tpe.description,
-      fieldsFn = () ⇒ tpe.fields.toList map buildField,
-      interfaces = tpe.interfaces.toList map getInterfaceType)
+  def buildObjectDef(tpe: IntrospectionObjectType) =
+    builder.buildObjectType(tpe, () ⇒ tpe.fields.toList flatMap (buildField(tpe, _)), tpe.interfaces.toList map getInterfaceType, this)
 
-  private def buildInterfaceDef(tpe: IntrospectionInterfaceType) =
-    InterfaceType[Ctx, Any](
-      name = logic.rewriteTypeName(tpe.kind, tpe.name),
-      description = tpe.description,
-      fieldsFn = () ⇒ tpe.fields.toList map buildField,
-      interfaces = Nil,
-      manualPossibleTypes = () ⇒ Nil)
+  def buildInterfaceDef(tpe: IntrospectionInterfaceType) =
+    builder.buildInterfaceType(tpe, () ⇒ tpe.fields.toList flatMap (buildField(tpe, _)), this)
 
-  private def buildUnionDef(tpe: IntrospectionUnionType) =
-    UnionType[Ctx](
-      name = logic.rewriteTypeName(tpe.kind, tpe.name),
-      description = tpe.description,
-      types = tpe.possibleTypes.toList map getObjectType)
+  def buildUnionDef(tpe: IntrospectionUnionType) =
+    builder.buildUnionType(tpe, tpe.possibleTypes.toList map getObjectType, this)
 
-  private def buildInputObjectDef(tpe: IntrospectionInputObjectType) =
-    InputObjectType(
-      name = logic.rewriteTypeName(tpe.kind, tpe.name),
-      description = tpe.description,
-      fieldsFn = () ⇒ tpe.inputFields.toList map buildInputField)
+  def buildInputObjectDef(tpe: IntrospectionInputObjectType) =
+    builder.buildInputObjectType(tpe, () ⇒ tpe.inputFields.toList flatMap (buildInputField(tpe, _)), this)
 
-  private def buildScalarDef(tpe: IntrospectionScalarType): ScalarType[_] =
-    ScalarType[Any](
-      name = logic.rewriteTypeName(tpe.kind, tpe.name),
-      description = tpe.description,
-      coerceUserInput = value ⇒ logic.coerceScalarUserInput(tpe.name, value),
-      coerceOutput = (coerced, caps) ⇒ logic.coerceScalarOutput(tpe.name, coerced, caps),
-      coerceInput = value ⇒ logic.coerceScalarInput(tpe.name, value))
+  def buildScalarDef(tpe: IntrospectionScalarType) =
+    builder.buildScalarType(tpe, this)
 
-  private def buildEnumDef(tpe: IntrospectionEnumType) =
-    EnumType[String](
-      name = logic.rewriteTypeName(tpe.kind, tpe.name),
-      description = tpe.description,
-      values = tpe.enumValues.toList map buildEnumValue)
+  def buildEnumDef(tpe: IntrospectionEnumType) =
+    builder.buildEnumType(tpe, tpe.enumValues.toList flatMap (buildEnumValue(tpe, _)), this)
 
-  private def buildEnumValue(value: IntrospectionEnumValue) =
-    EnumValue[String](
-      name = value.name,
-      description = value.description,
-      value = value.name,
-      deprecationReason = value.deprecationReason orElse (if (value.isDeprecated) Some("") else None))
+  def buildEnumValue(tpe: IntrospectionEnumType, value: IntrospectionEnumValue) =
+    builder.buildEnumValue(tpe, value, this)
+
+  def buildDefault(defaultValue: Option[String]) =
+    defaultValue flatMap (dv ⇒ builder.defaultValueParser flatMap { parser ⇒
+      parser(dv) match {
+        case Success((parsed, unmarshaller)) ⇒ Some(parsed → DefaultIntrospectionSchemaBuilder.ConstantToInput(unmarshaller))
+        case Failure(error) ⇒ throw new SchemaMaterializationException(s"Unable to parse default value '$dv'.", error)
+      }
+    })
+
+  def buildArgument(fieldDef: Option[IntrospectionField], value: IntrospectionInputValue) =
+    builder.buildArgument(fieldDef, value, getInputType(value.tpe), buildDefault(value.defaultValue), this)
+
+  def buildInputField(tpe: IntrospectionInputObjectType, value: IntrospectionInputValue) =
+    builder.buildInputField(tpe, value, getInputType(value.tpe), buildDefault(value.defaultValue), this)
 }
 
 object IntrospectionSchemaMaterializer {
@@ -203,7 +148,7 @@ object IntrospectionSchemaMaterializer {
     * @param introspectionResult the result of introspection query
     */
   def buildSchema[T : InputUnmarshaller](introspectionResult: T): Schema[Unit, Unit] = {
-    buildSchema[Unit, T](introspectionResult, MaterializationLogic.default)
+    buildSchema[Unit, T](introspectionResult, IntrospectionSchemaBuilder.default)
   }
 
   /**
@@ -216,8 +161,8 @@ object IntrospectionSchemaMaterializer {
     * server-internal mechanisms.
     *
     * @param introspectionResult the result of introspection query
-    * @param logic custom schema logic that would be used for all materialized fields. By default `MaterializedSchemaException` would be thrown.
+    * @param builder custom schema construction logic. By default `MaterializedSchemaException` would be thrown from a `resolve` function.
     */
-  def buildSchema[Ctx, T : InputUnmarshaller](introspectionResult: T, logic: MaterializationLogic[Ctx]): Schema[Ctx, Unit] =
-    new IntrospectionSchemaMaterializer[Ctx, T](introspectionResult, logic).build
+  def buildSchema[Ctx, T : InputUnmarshaller](introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]): Schema[Ctx, Unit] =
+    new IntrospectionSchemaMaterializer[Ctx, T](introspectionResult, builder).build
 }
