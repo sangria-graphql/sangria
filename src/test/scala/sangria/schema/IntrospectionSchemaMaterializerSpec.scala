@@ -1,7 +1,6 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.marshalling.MarshallerCapability
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.validation.IntCoercionViolation
 
@@ -10,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.util.{Pos, FutureResultSupport}
-import sangria.introspection.introspectionQuery
+import sangria.introspection.{IntrospectionScalarType, IntrospectionField, IntrospectionType, introspectionQuery}
 import sangria.util.SimpleGraphQlSupport.{checkContainsErrors, check}
 import spray.json._
 
@@ -26,7 +25,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
     import sangria.marshalling.queryAst._
 
     val initialIntrospection = Executor.execute(serverSchema, introspectionQuery).await
-    val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection, MaterializationLogic.withDefaultValues[Unit, ast.Value])
+    val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection, IntrospectionSchemaBuilder.withDefaultValues[Unit, ast.Value])
     val secondIntrospection = Executor.execute(clientSchema, introspectionQuery).await
 
     initialIntrospection should be (secondIntrospection)
@@ -221,7 +220,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
         query = ObjectType("Simple", "This is a simple type", fields[Unit, Unit](
           Field("string", OptionType(StringType), Some("This is a string field"),
             resolve = _ ⇒ None))),
-        directives = List(Directive("customDirective", Some("This is a custom directive"),
+        directives = BuiltinDirectives ++ List(Directive("customDirective", Some("This is a custom directive"),
           shouldInclude = _ ⇒ true,
           locations = Set(DirectiveLocation.Field)))))
 
@@ -271,41 +270,45 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
 
       val initialIntrospection = Executor.execute(serverSchema, introspectionQuery).await
 
-      val customLogic = new DefaultMaterializationLogic[Unit] {
-        override def resolveField(ctx: Context[Unit, _]) = (ctx.parentType.name, ctx.field.name) match {
-          case ("Query", "foo") ⇒
-            for {
-              a ← ctx.argOpt[Int]("custom1")
-              b ← ctx.argOpt[Int]("custom2")
-            } yield a + b
-          case _ ⇒ super.resolveField(ctx)
-        }
-
-        override def coerceScalarUserInput(scalarName: String, value: Any) = scalarName match {
-          case "Custom" ⇒ value match {
-            case i: Int ⇒ Right(i)
-            case i: BigInt ⇒ Right(i.intValue)
-            case _ ⇒ Left(IntCoercionViolation)
+      val customBuilder = new DefaultIntrospectionSchemaBuilder[Unit] {
+        override def resolveField(typeDefinition: IntrospectionType, definition: IntrospectionField) =
+          ctx ⇒ (ctx.parentType.name, ctx.field.name) match {
+            case ("Query", "foo") ⇒
+              for {
+                a ← ctx.argOpt[Int]("custom1")
+                b ← ctx.argOpt[Int]("custom2")
+              } yield a + b
+            case _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
           }
-          case _ ⇒ super.coerceScalarUserInput(scalarName, value)
-        }
 
-        override def coerceScalarOutput(scalarName: String, coerced: Any, caps: Set[MarshallerCapability]) = scalarName match {
-          case "Custom" ⇒ ast.IntValue(coerced.asInstanceOf[Int])
-          case _ ⇒ super.coerceScalarOutput(scalarName, coerced, caps)
-        }
-
-        override def coerceScalarInput(scalarName: String, value: ast.Value) = scalarName match {
-          case "Custom" ⇒ value match {
-            case ast.IntValue(i, _, _) ⇒ Right(i)
-            case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
-            case _ ⇒ Left(IntCoercionViolation)
+        override def scalarCoerceUserInput(definition: IntrospectionScalarType) =
+          value ⇒ definition.name match {
+            case "Custom" ⇒ value match {
+              case i: Int ⇒ Right(i)
+              case i: BigInt ⇒ Right(i.intValue)
+              case _ ⇒ Left(IntCoercionViolation)
+            }
+            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
           }
-          case _ ⇒ super.coerceScalarInput(scalarName, value)
-        }
+
+        override def scalarCoerceInput(definition: IntrospectionScalarType) =
+          value ⇒ definition.name match {
+            case "Custom" ⇒ value match {
+              case ast.IntValue(i, _, _) ⇒ Right(i)
+              case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
+              case _ ⇒ Left(IntCoercionViolation)
+            }
+            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+          }
+
+        override def scalarCoerceOutput(definition: IntrospectionScalarType) =
+          (coerced, _) ⇒ definition.name match {
+            case "Custom" ⇒ ast.IntValue(coerced.asInstanceOf[Int])
+            case _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+          }
       }
 
-      val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection, customLogic)
+      val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection, customBuilder)
 
       check(clientSchema, (),
         "query Yeah($v: Custom) { foo(custom1: 123, custom2: $v) }",
