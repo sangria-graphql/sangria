@@ -687,5 +687,87 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         error.getMessage should be ("Invalid or incomplete schema, unknown type: Foo.")
       }
     }
+
+    "Schema Builder contains descriptions" should {
+      "Use comments for descriptions" in {
+        val schemaDef =
+          """schema {
+            |  query: Query
+            |}
+            |
+            |## fooo bar
+            |## baz
+            |enum MyEnum {
+            |  ## value1
+            |  VALUE
+            |
+            |  ## value 2
+            |  ## line 2
+            |  OLD_VALUE @deprecated
+            |
+            |  ## value 3
+            |  OTHER_VALUE @deprecated(reason: "Terrible reasons")
+            |}
+            |
+            |## My super query!
+            |type Query {
+            |  field1: String @deprecated
+            |
+            |  ## the second field!
+            |  field2: Int @deprecated(reason: "Because I said so")
+            |  enum: MyEnum
+            |}""".stripMargin
+
+        cycleOutput(schemaDef) should equal (schemaDef) (after being strippedOfCarriageReturns)
+
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+
+        val myEnum = schema.inputTypes("MyEnum").asInstanceOf[EnumType[_]]
+
+        myEnum.description should be (Some("fooo bar\nbaz"))
+        myEnum.values(0).description should be (Some("value1"))
+        myEnum.values(1).description should be (Some("value 2\nline 2"))
+        myEnum.values(2).description should be (Some("value 3"))
+
+        val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
+
+        query.description should be (Some("My super query!"))
+        query.fields(1).description should be (Some("the second field!"))
+      }
+
+      "Use comments for descriptions on arguments" in {
+        val schemaDef =
+          """schema {
+            |  query: Query
+            |}
+            |
+            |## My super query!
+            |type Query {
+            |
+            |  # not a description!
+            |  field1(
+            |    ## first arg
+            |    arg1: Int = 101,
+            |
+            |    ## secnd arg
+            |    ## line 2
+            |
+            |    arg1: String!
+            |  ): String
+            |}""".stripMargin
+
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+
+        val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
+
+        query.description should be (Some("My super query!"))
+
+        val field = query.fields(0)
+
+        field.description should be (None)
+        field.arguments(0).description should be (Some("first arg"))
+        field.arguments(1).description should be (Some("secnd arg\nline 2"))
+      }
+    }
   }
 }
