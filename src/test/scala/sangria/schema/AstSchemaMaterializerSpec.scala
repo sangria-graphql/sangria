@@ -1,11 +1,16 @@
 package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.ast
+import sangria.ast.{ObjectTypeDefinition, FieldDefinition, TypeDefinition}
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
 import sangria.util.{StringMatchers, FutureResultSupport}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.macros._
+import sangria.validation.IntCoercionViolation
+import sangria.util.SimpleGraphQlSupport.check
+import spray.json._
 
 class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
 
@@ -762,6 +767,144 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         field.description should be (None)
         field.arguments(0).description should be (Some("first arg"))
         field.arguments(1).description should be (Some("secnd arg\nline 2"))
+      }
+    }
+
+    "Execution" should {
+      "can use client schema for general execution with custom materializer logic" in {
+        val schemaAst =
+          graphql"""
+            schema {
+              query: Root
+            }
+
+            scalar Custom
+
+            interface Animal {
+              name: String!
+            }
+
+            type Dog implements Animal {
+              name: String!
+              nickname: String
+            }
+
+            type Cat implements Animal {
+              name: String!
+              age: Int
+            }
+
+            type Root {
+              add(a: Custom!, b: Custom = 10): Custom!
+              animal1: Animal @returnDog
+              animal2: Animal @returnCat
+            }
+          """
+
+        val ReturnCat = Directive("returnCat", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ ⇒ true)
+        val ReturnDog = Directive("returnDog", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ ⇒ true)
+
+        val customBuilder = new DefaultAstSchemaBuilder[Unit] {
+          override def resolveField(typeDefinition: TypeDefinition, definition: FieldDefinition) =
+            if (definition.directives.exists(_.name == ReturnCat.name))
+              _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
+            else if (definition.directives.exists(_.name == ReturnDog.name))
+              _ ⇒ Map("type" → "Dog", "name" → "bar", "nickname" → Some("baz"))
+            else if (definition.name == "add")
+              ctx ⇒ ctx.arg[Int]("a") + ctx.arg[Int]("b")
+            else
+              _.value.asInstanceOf[Map[String, Any]](definition.name)
+
+          override def objectTypeInstanceCheck(definition: ObjectTypeDefinition) =
+            Some((value, _) ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name)
+
+          override def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition) =
+            value ⇒ definition.name match {
+              case "Custom" ⇒ value match {
+                case i: Int ⇒ Right(i)
+                case i: BigInt ⇒ Right(i.intValue)
+                case _ ⇒ Left(IntCoercionViolation)
+              }
+              case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+            }
+
+          override def scalarCoerceInput(definition: ast.ScalarTypeDefinition) =
+            value ⇒ definition.name match {
+              case "Custom" ⇒ value match {
+                case ast.IntValue(i, _, _) ⇒ Right(i)
+                case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
+                case _ ⇒ Left(IntCoercionViolation)
+              }
+              case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+            }
+
+          override def scalarCoerceOutput(definition: ast.ScalarTypeDefinition) =
+            (coerced, _) ⇒ definition.name match {
+              case "Custom" ⇒ ast.IntValue(coerced.asInstanceOf[Int])
+              case _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+            }
+        }
+
+        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+
+        check(schema, (),
+          """
+            query Yay($v: Custom!) {
+              add1: add(a: 123)
+              add2: add(a: 123, b: 30)
+              add3: add(a: $v, b: $v)
+
+              a1: animal1 {name, __typename}
+              a2: animal2 {name, __typename}
+
+              a3: animal1 {
+                __typename
+                name
+
+                ... on Cat {
+                  age
+                }
+
+                ... on Dog {
+                  nickname
+                }
+              }
+
+              a4: animal2 {
+                __typename
+                name
+
+                ... on Cat {
+                  age
+                }
+
+                ... on Dog {
+                  nickname
+                }
+              }
+            }
+          """,
+          Map("data" →
+            Map(
+              "add1" → 133,
+              "add2" → 153,
+              "add3" → 912,
+              "a1" → Map(
+                "name" → "bar",
+                "__typename" → "Dog"),
+              "a2" → Map(
+                "name" → "foo",
+                "__typename" → "Cat"),
+              "a3" → Map(
+                "__typename" → "Dog",
+                "name" → "bar",
+                "nickname" → "baz"),
+              "a4" → Map(
+                "__typename" → "Cat",
+                "name" → "foo",
+                "age" → 10))),
+          """{"v": 456}""".parseJson
+        )
       }
     }
   }
