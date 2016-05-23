@@ -42,7 +42,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         throw new SchemaMaterializationException("Must provide only one mutation type in schema.")
 
       if (subscriptions.size > 1)
-        throw new SchemaMaterializationException("Must provide only one mutation type in schema.")
+        throw new SchemaMaterializationException("Must provide only one subscription type in schema.")
 
       SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, schema)
     }
@@ -52,9 +52,9 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     val queryType = getObjectType(schemaInfo.query)
     val mutationType = schemaInfo.mutation map getObjectType
     val subscriptionType = schemaInfo.subscription map getObjectType
-    val directives = directiveDefs flatMap buildDirective
+    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
 
-    builder.buildSchema(schemaInfo.definition, queryType, mutationType, subscriptionType, findUnusedTypes(), directives, this)
+    builder.buildSchema(schemaInfo.definition, queryType, mutationType, subscriptionType, findUnusedTypes(), BuiltinDirectives ++ directives, this)
   }
 
   def findUnusedTypes(): List[Type with Named] = {

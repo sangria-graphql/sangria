@@ -32,6 +32,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
   def `default schema renderer`(implicit render: Schema[Unit, Unit] ⇒ String): Unit = {
     "Prints String Field" in {
       renderSingleFieldSchema(OptionType(StringType)) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField: String
         |}
@@ -40,6 +44,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Prints [String] Field" in {
       renderSingleFieldSchema(OptionType(ListType(OptionType(StringType)))) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField: [String]
         |}
@@ -48,6 +56,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Prints String! Field" in {
       renderSingleFieldSchema(StringType) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField: String!
         |}
@@ -56,6 +68,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Prints [String]! Field" in {
       renderSingleFieldSchema(ListType(OptionType(StringType))) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField: [String]!
         |}
@@ -64,6 +80,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Prints [String!] Field" in {
       renderSingleFieldSchema(OptionType(ListType(StringType))) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField: [String!]
         |}
@@ -82,6 +102,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Foo {
         |  str: String
         |}
@@ -97,6 +121,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType)) :: Nil
       ) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField(argOne: Int): String
         |}
@@ -108,6 +136,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType), 2) :: Nil
       ) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField(argOne: Int = 2): String
         |}
@@ -119,6 +151,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         tpe = OptionType(StringType),
         args = Argument("argOne", IntType) :: Nil
       ) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField(argOne: Int!): String
         |}
@@ -130,6 +166,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType)) :: Argument("argTwo", OptionInputType(StringType)) :: Nil
       ) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField(argOne: Int, argTwo: String): String
         |}
@@ -145,6 +185,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
       ) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
         |}
@@ -160,6 +204,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
       ) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
         |}
@@ -175,6 +223,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           Argument("argThree", OptionInputType(BooleanType), false) ::
           Nil
       ) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
         |}
@@ -196,6 +248,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Bar implements Foo {
         |  str: String
         |}
@@ -232,6 +288,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |interface Baaz {
         |  int: Int
         |}
@@ -269,6 +329,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |interface Baaz {
         |  int: Int
         |  str: String
@@ -309,6 +373,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Bar {
         |  str: String
         |}
@@ -348,6 +416,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |## Blog article
         |input Article {
         |  ## The most important field
@@ -400,6 +472,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |## My
         |## description
         |scalar Odd
@@ -425,6 +501,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |## My
         |## description
         |enum RGB {
@@ -457,6 +537,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root, directives = BuiltinDirectives :+ myDirective)
 
       render(schema) should equal ("""
+        |schema {
+        |  query: Root
+        |}
+        |
         |type Root {
         |  foo: String
         |}

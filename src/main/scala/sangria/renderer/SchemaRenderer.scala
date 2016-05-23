@@ -220,6 +220,22 @@ object SchemaRenderer {
     else
       ""
 
+  private def renderSchemaDefinition(schema: IntrospectionSchema) = {
+    val withQuery = (Indention + "query: " + renderTypeName(schema.queryType)) :: Nil
+    val withMutation = schema.mutationType.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t)))
+    val withSubs = schema.subscriptionType.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t)))
+
+    s"schema {\n${withSubs mkString "\n"}\n}"
+  }
+
+  private def renderSchemaDefinition(schema: Schema[_, _]) = {
+    val withQuery = (Indention + "query: " + renderTypeName(schema.query, true)) :: Nil
+    val withMutation = schema.mutation.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t, true)))
+    val withSubs = schema.subscription.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t, true)))
+
+    s"schema {\n${withSubs mkString "\n"}\n}"
+  }
+
   private def renderType(tpe: IntrospectionType, defParser: Option[DefaultValueParser[_]]) =
     tpe match {
       case o: IntrospectionObjectType ⇒ renderObject(o, defParser)
@@ -252,20 +268,22 @@ object SchemaRenderer {
     s"${renderDescription(dir.description)}directive @${dir.name}${renderArgs(dir.args, defParser)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
 
   def renderSchema(introspectionSchema: IntrospectionSchema, defParser: Option[DefaultValueParser[_]]): String = {
+    val schemaDef = renderSchemaDefinition(introspectionSchema)
     val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map (renderType(_, defParser))
     val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_, defParser))
 
-    (types ++ directives) mkString TypeSeparator
+    schemaDef +: (types ++ directives) mkString TypeSeparator
   }
 
   def renderSchema[T: InputUnmarshaller](introspectionResult: T, defParser: Option[DefaultValueParser[_]]): String =
     renderSchema(IntrospectionParser parse introspectionResult, defParser)
 
   def renderSchema(schema: Schema[_, _]): String = {
+    val schemaDef = renderSchemaDefinition(schema)
     val types = schema.typeList filterNot isBuiltInType sortBy (_.name) map renderType
     val directives = schema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
 
-    (types ++ directives) mkString TypeSeparator
+    schemaDef +: (types ++ directives) mkString TypeSeparator
   }
 
   def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema, defParser: Option[DefaultValueParser[_]]): String = {
