@@ -635,5 +635,22 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
                 "field" → "defFutFail",
                 "locations" → List(Map("line" → 4, "column" → 11))))))
     }
+
+    "fails to execute a query containing a type definition" in {
+      val Success(doc) = QueryParser.parse(
+        """
+          { a }
+
+          type Query { foo: String }
+        """)
+
+      val schema = Schema(DataType)
+
+      val error = intercept[ExecutionError] {
+        Executor.execute(schema, doc, root = new TestSubject,userContext = Ctx()).await
+      }
+
+      error.getMessage should be ("GraphQL cannot execute a request containing a ObjectTypeDefinition.")
+    }
   }
 }
