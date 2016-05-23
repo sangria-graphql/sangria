@@ -102,25 +102,37 @@ object SchemaRenderer {
 
   private def renderFields(fields: Seq[IntrospectionField], defParser: Option[DefaultValueParser[_]]) =
     if (fields.nonEmpty)
-      fields map (renderField(_, defParser)) mkString "\n"
+      fields.zipWithIndex map { case (f, idx) ⇒
+        (if (idx != 0 && f.description.isDefined) "\n" else "") +
+          renderField(f, defParser)
+      } mkString "\n"
     else
       ""
 
   private def renderFields(fields: Seq[Field[_, _]]) =
     if (fields.nonEmpty)
-      fields map (renderField(_)) mkString "\n"
+      fields.zipWithIndex map { case (f, idx) ⇒
+        (if (idx != 0 && f.description.isDefined) "\n" else "") +
+          renderField(f)
+      } mkString "\n"
     else
       ""
 
   private def renderInputFieldsI(fields: Seq[IntrospectionInputValue], defParser: Option[DefaultValueParser[_]]) =
     if (fields.nonEmpty)
-      fields map (renderInputField(_, defParser)) mkString "\n"
+      fields.zipWithIndex map { case (f, idx) ⇒
+        (if (idx != 0 && f.description.isDefined) "\n" else "") +
+          renderInputField(f, defParser)
+      } mkString "\n"
     else
       ""
 
   private def renderInputFields(fields: Seq[InputField[_]]) =
     if (fields.nonEmpty)
-      fields map (renderInputField(_)) mkString "\n"
+      fields.zipWithIndex map { case (f, idx) ⇒
+        (if (idx != 0 && f.description.isDefined) "\n" else "") +
+          renderInputField(f)
+      } mkString "\n"
     else
       ""
 
@@ -162,13 +174,19 @@ object SchemaRenderer {
 
   private def renderEnumValuesI(values: Seq[IntrospectionEnumValue]) =
     if (values.nonEmpty)
-      values map (v ⇒ renderDescription(v.description, prefix = Indention) + Indention + v.name + renderDeprecation(v.isDeprecated, v.deprecationReason)) mkString "\n"
+      values.zipWithIndex map { case (v, idx) ⇒
+        (if (idx != 0 && v.description.isDefined) "\n" else "") +
+          renderDescription(v.description, prefix = Indention) + Indention + v.name + renderDeprecation(v.isDeprecated, v.deprecationReason)
+      } mkString "\n"
     else
       ""
 
   private def renderEnumValues(values: Seq[EnumValue[_]]) =
     if (values.nonEmpty)
-      values map (v ⇒ renderDescription(v.description, prefix = Indention) + Indention + v.name + renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason)) mkString "\n"
+      values.zipWithIndex map { case (v, idx) ⇒
+        (if (idx != 0 && v.description.isDefined) "\n" else "") +
+          renderDescription(v.description, prefix = Indention) + Indention + v.name + renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason)
+      } mkString "\n"
     else
       ""
 

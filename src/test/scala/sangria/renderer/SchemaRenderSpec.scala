@@ -347,15 +347,15 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      println(render(schema))
-
       render(schema) should equal ("""
         |## Blog article
         |input Article {
         |  ## The most important field
         |  title: String!
+        |
         |  ## The author of the article
         |  author: String = "Anonymous"
+        |
         |  ## comments!
         |  comments: [String!]!
         |}
@@ -367,6 +367,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  ## field
         |  ## description
         |  int: Int
+        |
         |  ## has a default!
         |  article: Article = {title:"Hello",author:"Anonymous",comments:["first!","looks good!"]}
         |}
@@ -509,38 +510,55 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |enum __DirectiveLocation {
         |  ## Location adjacent to a query operation.
         |  QUERY
+        |
         |  ## Location adjacent to a mutation operation.
         |  MUTATION
+        |
         |  ## Location adjacent to a subscription operation.
         |  SUBSCRIPTION
+        |
         |  ## Location adjacent to a field.
         |  FIELD
+        |
         |  ## Location adjacent to a fragment definition.
         |  FRAGMENT_DEFINITION
+        |
         |  ## Location adjacent to a fragment spread.
         |  FRAGMENT_SPREAD
+        |
         |  ## Location adjacent to an inline fragment.
         |  INLINE_FRAGMENT
+        |
         |  ## Location adjacent to a schema definition.
         |  SCHEMA
+        |
         |  ## Location adjacent to a scalar definition.
         |  SCALAR
+        |
         |  ## Location adjacent to an object type definition.
         |  OBJECT
+        |
         |  ## Location adjacent to a field definition.
         |  FIELD_DEFINITION
+        |
         |  ## Location adjacent to an argument definition.
         |  ARGUMENT_DEFINITION
+        |
         |  ## Location adjacent to an interface definition.
         |  INTERFACE
+        |
         |  ## Location adjacent to a union definition.
         |  UNION
+        |
         |  ## Location adjacent to an enum definition.
         |  ENUM
+        |
         |  ## Location adjacent to an enum value definition.
         |  ENUM_VALUE
+        |
         |  ## INPUT_OBJECT
         |  INPUT_OBJECT
+        |
         |  ## Location adjacent to an input object field definition.
         |  INPUT_FIELD_DEFINITION
         |}
@@ -568,6 +586,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  name: String!
         |  description: String
         |  type: __Type!
+        |
         |  ## A GraphQL-formatted string representing the default value for this input value.
         |  defaultValue: String
         |}
@@ -576,12 +595,16 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |type __Schema {
         |  ## A list of all types supported by this server.
         |  types: [__Type!]!
+        |
         |  ## The type that query operations will be rooted at.
         |  queryType: __Type!
+        |
         |  ## If this server supports mutation, the type that mutation operations will be rooted at.
         |  mutationType: __Type
+        |
         |  ## If this server support subscription, the type that subscription operations will be rooted at.
         |  subscriptionType: __Type
+        |
         |  ## A list of all directives supported by this server.
         |  directives: [__Directive!]!
         |}
@@ -605,18 +628,25 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |enum __TypeKind {
         |  ## Indicates this type is a scalar.
         |  SCALAR
+        |
         |  ## Indicates this type is an object. `fields` and `interfaces` are valid fields.
         |  OBJECT
+        |
         |  ## Indicates this type is an interface. `fields` and `possibleTypes` are valid fields.
         |  INTERFACE
+        |
         |  ## Indicates this type is a union. `possibleTypes` is a valid field.
         |  UNION
+        |
         |  ## Indicates this type is an enum. `enumValues` is a valid field.
         |  ENUM
+        |
         |  ## Indicates this type is an input object. `inputFields` is a valid field.
         |  INPUT_OBJECT
+        |
         |  ## Indicates this type is a list. `ofType` is a valid field.
         |  LIST
+        |
         |  ## Indicates this type is a non-null. `ofType` is a valid field.
         |  NON_NULL
         |}
