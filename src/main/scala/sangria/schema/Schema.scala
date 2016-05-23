@@ -8,7 +8,7 @@ import language.{implicitConversions, existentials}
 
 import sangria.{introspection, ast}
 import sangria.validation.{ConflictingTypeDefinitionViolation, EnumValueCoercionViolation, EnumCoercionViolation, Violation}
-import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField, IntrospectionTypesByName}
+import sangria.introspection._
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -738,6 +738,12 @@ case class Schema[Ctx, Val](
     case ast.NamedType(name, _) ⇒ inputTypes get name map (OptionInputType(_))
     case ast.NotNullType(ofType, _) ⇒ getInputType(ofType) collect {case OptionInputType(ot) ⇒ ot}
     case ast.ListType(ofType, _) ⇒ getInputType(ofType) map (t ⇒ OptionInputType(ListInputType(t)))
+  }
+
+  def getInputType(tpe: IntrospectionTypeRef): Option[InputType[_]] = tpe match {
+    case IntrospectionNamedTypeRef(_, name) ⇒ inputTypes get name map (OptionInputType(_))
+    case IntrospectionNonNullTypeRef(ofType) ⇒ getInputType(ofType) collect {case OptionInputType(ot) ⇒ ot}
+    case IntrospectionListTypeRef(ofType) ⇒ getInputType(ofType) map (t ⇒ OptionInputType(ListInputType(t)))
   }
 
   def getOutputType(tpe: ast.Type, topLevel: Boolean = false): Option[OutputType[_]] = tpe match {
