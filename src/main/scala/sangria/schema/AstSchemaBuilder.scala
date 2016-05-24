@@ -18,7 +18,7 @@ trait AstSchemaBuilder[Ctx] {
     subscriptionType: Option[ObjectType[Ctx, Any]],
     additionalTypes: List[Type with Named],
     directives: List[Directive],
-    mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Unit]
+    mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Any]
 
   def buildObjectType(
     definition: ast.ObjectTypeDefinition,
@@ -97,7 +97,6 @@ object AstSchemaBuilder {
     else
       None
   }
-
 }
 
 class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
@@ -118,7 +117,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       mutation = mutationType,
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
-      directives = directives).asInstanceOf[Schema[Ctx, Unit]]
+      directives = directives)
 
   def buildObjectType(
       definition: ast.ObjectTypeDefinition,

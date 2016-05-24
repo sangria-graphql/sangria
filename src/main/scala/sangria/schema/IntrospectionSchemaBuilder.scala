@@ -19,7 +19,7 @@ trait IntrospectionSchemaBuilder[Ctx] {
     subscriptionType: Option[ObjectType[Ctx, Any]],
     additionalTypes: List[Type with Named],
     directives: List[Directive],
-    mat: IntrospectionSchemaMaterializer[Ctx, _]): Schema[Ctx, Unit]
+    mat: IntrospectionSchemaMaterializer[Ctx, _]): Schema[Ctx, Any]
 
   def buildObjectType(
     definition: IntrospectionObjectType,
@@ -111,7 +111,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       mutation = mutationType,
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
-      directives = directives).asInstanceOf[Schema[Ctx, Unit]]
+      directives = directives)
 
   def buildObjectType(
       definition: IntrospectionObjectType,

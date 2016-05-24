@@ -11,7 +11,7 @@ tests:
     when:
       validate: [DefaultValuesOfCorrectType]
     then:
-      passes: true
+      passes:
 
   - name: required variables without default values
     given:
@@ -22,7 +22,7 @@ tests:
     when:
       validate: [DefaultValuesOfCorrectType]
     then:
-      passes: true
+      passes:
 
   - name: variables with valid default values
     given:
@@ -37,7 +37,7 @@ tests:
     when:
       validate: [DefaultValuesOfCorrectType]
     then:
-      passes: true
+      passes:
 
   - name: no required variables with default values
     given:
