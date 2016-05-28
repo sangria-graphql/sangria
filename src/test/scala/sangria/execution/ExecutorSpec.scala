@@ -652,5 +652,40 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       error.getMessage should be ("GraphQL cannot execute a request containing a ObjectTypeDefinition.")
     }
+
+    "handles partial values" in {
+      val Success(doc) = QueryParser.parse("{eager, future}")
+
+      case class MyListError(message: String) extends Exception(message)
+
+      val QueryType = ObjectType("Query", fields[Unit, Unit](
+        Field("eager", ListType(StringType), resolve =
+          _ ⇒ PartialValue(List("a", "c"), Vector(MyListError("error 1"), MyListError("error 2")))),
+        Field("future", ListType(StringType), resolve =
+          _ ⇒ PartialFutureValue(
+            Future.successful(
+              PartialValue[Unit, List[String]](List("d", "f"), Vector(MyListError("error 3"), MyListError("error 4"))))))))
+
+      val schema = Schema(QueryType)
+
+      val exceptionHandler: Executor.ExceptionHandler = {
+        case (m, e: MyListError) ⇒ HandledException(e.getMessage)
+      }
+
+      val result = Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await.asInstanceOf[Map[String, Any]]
+
+      result("data") should be (Map(
+        "eager" → Vector("a", "c"),
+        "future" → Vector("d", "f")))
+
+      val errors = result("errors").asInstanceOf[Seq[Any]]
+
+      errors should (
+        have(size(4)) and
+        contain(Map("message" → "error 1", "field" → "eager", "locations" → Vector(Map("line" → 1, "column" → 2)))) and
+        contain(Map("message" → "error 2", "field" → "eager", "locations" → Vector(Map("line" → 1, "column" → 2)))) and
+        contain(Map("message" → "error 3", "field" → "future", "locations" → Vector(Map("line" → 1, "column" → 9)))) and
+        contain(Map("message" → "error 4", "field" → "future", "locations" → Vector(Map("line" → 1, "column" → 9)))))
+    }
   }
 }

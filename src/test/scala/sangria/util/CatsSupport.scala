@@ -90,6 +90,10 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         c ⇒ correctValue(c.field.fieldType, replacePlaceholders(template, c.args))
       },
 
+      "resolveEmptyObject" → { (dir, _) ⇒
+        c ⇒ correctValue(c.field.fieldType, JsObject.empty)
+      },
+
       "resolveTestData" → { (dir, _) ⇒
         val name = directiveStringArg(dir, "name")
 

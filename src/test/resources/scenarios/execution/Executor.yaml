@@ -105,3 +105,81 @@ tests:
             - null
             - a: Apple
               b: Banana
+
+  - name: merges parallel fragments
+    given:
+      schema: |
+        type Type {
+          a: String @resolveString(value: "Apple")
+          b: String @resolveString(value: "Banana")
+          c: String @resolveString(value: "Cherry")
+          deep: Type @resolveEmptyObject
+        }
+
+        schema {
+          query: Type
+        }
+      query: |
+        { a, ...FragOne, ...FragTwo }
+
+        fragment FragOne on Type {
+          b
+          deep { b, deeper: deep { b } }
+        }
+
+        fragment FragTwo on Type {
+          c
+          deep { c, deeper: deep { c } }
+        }
+    when:
+      execute:
+    then:
+      data:
+        a: Apple
+        b: Banana
+        c: Cherry
+        deep:
+          b: Banana
+          c: Cherry
+          deeper:
+            b: Banana
+            c: Cherry
+
+  - name: nulls out error subtrees
+    given:
+      schema: |
+        type Type {
+          a: String @resolveString(value: "Apple")
+          b: String @resolveString(value: "Banana")
+          c: String @resolveString(value: "Cherry")
+          deep: Type @resolveEmptyObject
+        }
+
+        schema {
+          query: Type
+        }
+      query: |
+        { a, ...FragOne, ...FragTwo }
+
+        fragment FragOne on Type {
+          b
+          deep { b, deeper: deep { b } }
+        }
+
+        fragment FragTwo on Type {
+          c
+          deep { c, deeper: deep { c } }
+        }
+    when:
+      execute:
+    then:
+      data:
+        a: Apple
+        b: Banana
+        c: Cherry
+        deep:
+          b: Banana
+          c: Cherry
+          deeper:
+            b: Banana
+            c: Cherry

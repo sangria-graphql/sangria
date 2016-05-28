@@ -9,7 +9,8 @@ import language.{implicitConversions, existentials}
 import sangria.ast
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Try}
+import scala.util.control.NonFatal
 
 sealed trait Action[+Ctx, +Val] {
   def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): Action[Ctx, NewVal]
@@ -37,8 +38,10 @@ object Action {
 }
 
 case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): Value[Ctx, NewVal] =
-    Value(fn(value))
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
+    try Value(fn(value)) catch {
+      case NonFatal(e) ⇒ TryValue(Failure(e))
+    }
 }
 
 case class TryValue[Ctx, Val](value: Try[Val]) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
@@ -46,9 +49,25 @@ case class TryValue[Ctx, Val](value: Try[Val]) extends LeafAction[Ctx, Val] with
     TryValue(value map fn)
 }
 
+case class PartialValue[Ctx, Val](value: Val, errors: Vector[Throwable]) extends LeafAction[Ctx, Val] {
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
+    try PartialValue(fn(value), errors) catch {
+      case NonFatal(e) ⇒ TryValue(Failure(e))
+    }
+}
+
 case class FutureValue[Ctx, Val](value: Future[Val]) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): FutureValue[Ctx, NewVal] =
     FutureValue(value map fn)
+}
+
+case class PartialFutureValue[Ctx, Val](value: Future[PartialValue[Ctx, Val]]) extends LeafAction[Ctx, Val] {
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): PartialFutureValue[Ctx, NewVal] =
+    PartialFutureValue(value map (_.map(fn) match {
+      case v: PartialValue[Ctx, NewVal] ⇒ v
+      case TryValue(Failure(e)) ⇒ throw e
+      case v ⇒ throw new IllegalStateException("Unexpected result from `PartialValue.map`: " + v)
+    }))
 }
 
 case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val] {
