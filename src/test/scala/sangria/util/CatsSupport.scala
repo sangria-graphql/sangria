@@ -14,6 +14,7 @@ import spray.json._
 import sangria.marshalling.sprayJson._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Try, Success, Failure}
 
 trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
   implicit class YamlOps(value: YamlValue) {
@@ -238,6 +239,8 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
       .orElse(value.get("error-count").map(v ⇒ ErrorsCount(v.intValue)))
       .orElse(value.get("error").map(v ⇒ ErrorsContain(Left(v.stringValue), getErrorLocations(value).toList)))
       .orElse(value.get("error-regex").map(v ⇒ ErrorsContain(Right(v.stringValue.r.pattern), getErrorLocations(value).toList)))
+      .orElse(value.get("exception").map(v ⇒ ExceptionContain(Left(v.stringValue))))
+      .orElse(value.get("exception-regex").map(v ⇒ ExceptionContain(Right(v.stringValue.r.pattern))))
       .orElse(value.get("data").map(v ⇒ Data(convertToJson(v))))
       .orElse(value.get("syntax-error").map(_ ⇒ SyntaxError))
       .getOrElse(throw new IllegalStateException(s"Can't find the assertion: $testName"))
@@ -279,12 +282,12 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
 
       val validator = if (validate) QueryValidator.default else QueryValidator.empty
 
-      ExecutionResult(Executor.execute(given.schema, QueryParser.parse(given.query),
+      ExecutionResult(Try(Executor.execute(given.schema, QueryParser.parse(given.query),
         root = value,
         queryValidator = validator,
         variables = vars,
         operationName = op,
-        exceptionHandler = ExceptionHandler).await)
+        exceptionHandler = ExceptionHandler).await))
     case a ⇒
       throw new IllegalStateException(s"Not yet supported action: $a")
   }
@@ -334,7 +337,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     case (ValidationResult(violations), ErrorsCount(count)) ⇒
       violations should have size count
     case (ExecutionResult(value), ErrorsCount(count)) ⇒
-      value.get("errors").map(_.arrayValue).getOrElse(Vector.empty) should have size count
+      value.get.get("errors").map(_.arrayValue).getOrElse(Vector.empty) should have size count
     case (ValidationResult(violations), ErrorsContain(message, locations)) ⇒
       message match {
         case Left(text) ⇒
@@ -357,8 +360,22 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           assetLocations(v.get, locations)
       }
 
+    case (ExecutionResult(res), ExceptionContain(message)) ⇒
+      res match {
+        case Failure(error) ⇒
+          message match {
+            case Left(text) ⇒ error.getMessage should include (text)
+            case Right(pattern) ⇒
+              withClue(s"Message '${error.getMessage}' does not match the pattern: $pattern") {
+                pattern.matcher(error.getMessage).matches should be ("true")
+              }
+          }
+        case Success(res) ⇒
+          fail("Execution was successful: " + res)
+      }
+
     case (ExecutionResult(value), ErrorsContain(message, locations)) ⇒
-      val errors = value.get("errors") map (_.arrayValue) getOrElse Vector.empty
+      val errors = value.get.get("errors") map (_.arrayValue) getOrElse Vector.empty
 
       message match {
         case Left(text) ⇒
@@ -383,7 +400,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
 
     case (ExecutionResult(actual), Data(expected)) ⇒
       withClue("Result: " + actual) {
-        actual("data") should be (expected)
+        actual.get("data") should be (expected)
       }
 
     case a ⇒ throw new IllegalStateException(s"Not yet supported assertion: $a")
@@ -442,7 +459,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
   sealed trait Result
 
   case class ValidationResult(violations: Vector[Violation]) extends Result
-  case class ExecutionResult(value: JsValue) extends Result
+  case class ExecutionResult(value: Try[JsValue]) extends Result
   case class ParsingResult(document: Either[SyntaxError, ast.Document]) extends Result
 
   sealed trait Assertion
@@ -452,6 +469,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
   case class Data(json: JsValue) extends Assertion
   case class ErrorsCount(count: Int) extends Assertion
   case class ErrorsContain(message: Either[String, Pattern], locations: List[ErrorLocation]) extends Assertion
+  case class ExceptionContain(message: Either[String, Pattern]) extends Assertion
 
   case class ErrorLocation(line: Int, column: Int)
 }

@@ -206,3 +206,129 @@ tests:
         loc: {line: 10, column: 3}
       - error: Error getting asyncRejectListError3
         loc: {line: 10, column: 3}
+
+  - name: uses the inline operation if no operation name is provided
+    given:
+      schema: |
+        type Type {
+          a: String
+        }
+
+        schema {
+          query: Type
+        }
+      test-data:
+        data:
+          a: b
+      query: "{ a }"
+    when:
+      execute:
+        test-value: data
+    then:
+      - data:
+          a: b
+
+  - name: uses the only operation if no operation name is provided
+    given:
+      schema: |
+        type Type {
+          a: String
+        }
+
+        schema {
+          query: Type
+        }
+      test-data:
+        data:
+          a: b
+      query: "query Example { a }"
+    when:
+      execute:
+        test-value: data
+    then:
+      - data:
+          a: b
+
+  - name: uses the named operation if operation name is provided
+    given:
+      schema: |
+        type Type {
+          a: String
+        }
+
+        schema {
+          query: Type
+        }
+      test-data:
+        data:
+          a: b
+      query: "query Example { first: a } query OtherExample { second: a }"
+    when:
+      execute:
+        operation-name: OtherExample
+        test-value: data
+    then:
+      - data:
+          second: b
+
+  - name: throws if no operation is provided
+    given:
+      schema: |
+        type Type {
+          a: String
+        }
+
+        schema {
+          query: Type
+        }
+      test-data:
+        data:
+          a: b
+      query: "fragment Example on Type { a }"
+    when:
+      execute:
+        validate-query: false
+        test-value: data
+    then:
+      exception: Must provide operation
+
+  - name: throws if no operation name is provided with multiple operations
+    given:
+      schema: |
+        type Type {
+          a: String
+        }
+
+        schema {
+          query: Type
+        }
+      test-data:
+        data:
+          a: b
+      query: "query Example { a } query OtherExample { a }"
+    when:
+      execute:
+        test-value: data
+    then:
+      exception: Must provide operation name if query contains multiple operations
+
+  - name: throws if unknown operation name is provided
+    given:
+      schema: |
+        type Type {
+          a: String
+        }
+
+        schema {
+          query: Type
+        }
+      test-data:
+        data:
+          a: b
+      query: "query Example { a } query OtherExample { a }"
+    when:
+      execute:
+        operation-name: UnknownExample
+        test-value: data
+    then:
+      exception: Unknown operation named "UnknownExample"

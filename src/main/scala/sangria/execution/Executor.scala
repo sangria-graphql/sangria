@@ -118,9 +118,13 @@ case class Executor[Ctx, Root](
         case Some(unexpected) ⇒
           Failure(new ExecutionError(s"GraphQL cannot execute a request containing a ${unexpected.getClass.getSimpleName}.", exceptionHandler))
         case None ⇒
-          val operation = operationName flatMap (opName ⇒ document.operations get Some(opName)) orElse document.operations.values.headOption
-
-          operation map (Success(_)) getOrElse Failure(OperationSelectionError(s"Unknown operation name: ${operationName.get}", exceptionHandler))
+          operationName match {
+            case Some(opName) ⇒
+              document.operations get Some(opName) map (Success(_)) getOrElse
+                Failure(new ExecutionError("Unknown operation named \"" + opName + "\"", exceptionHandler))
+            case None ⇒
+              Success(document.operations.values.head)
+          }
       }
     }
 
