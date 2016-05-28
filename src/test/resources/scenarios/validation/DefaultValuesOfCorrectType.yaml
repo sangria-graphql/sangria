@@ -1,6 +1,6 @@
 scenario: "Validate: Variable default values of correct type"
 background:
-  schema-file: ../validation.scema.graphql
+  schema-file: validation.schema.graphql
 tests:
   - name: variables with no default values
     given:

@@ -54,12 +54,12 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     case t ⇒ throw new IllegalStateException(s"Builder for type '$t' is not supported yet.")
   }
 
-  def schemaBuilder(testData: JsValue) = new DefaultAstSchemaBuilder[Any] {
+  def schemaBuilder(testData: JsValue): AstSchemaBuilder[Any] = new DefaultAstSchemaBuilder[Any] {
     override def resolveField(typeDefinition: TypeDefinition, definition: FieldDefinition) =
       c ⇒ extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name))
 
     override def objectTypeInstanceCheck(definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
-      Some((value, _) ⇒ value.asInstanceOf[JsValue].get("type").map(_.stringValue == definition.name) getOrElse false)
+      Some((value, _) ⇒ value.asInstanceOf[JsValue].get("type").exists(_.stringValue == definition.name))
   }
 
   def getSchema(value: Option[YamlValue], path: String): Option[ast.Document] =
@@ -70,8 +70,14 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
       .map(v ⇒ QueryParser.parse(v.stringValue))
       .orElse(value.get("schema-file").map(f ⇒ FileUtil.loadSchema(path + "/" + f.stringValue)))
 
-  def getTestData(value: Option[YamlValue]) =
-    value flatMap (_.get("test-data") map convertToJson) getOrElse JsObject.empty
+  def getTestData(value: Option[YamlValue], path: String) =
+    value
+      .flatMap(_.get("test-data") map convertToJson)
+      .orElse(
+        value.flatMap(_.get("test-data-file")).map(f ⇒ FileUtil.loadTestData(path + "/" + f.stringValue) match {
+          case Right(json) ⇒ json
+          case Left(yaml) ⇒ convertToJson(yaml)
+        }))
 
   def getAction(value: YamlValue, testName: String, testData: JsValue): Action = {
     val when = value("when")
@@ -168,7 +174,6 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         ErrorLocation(pos.line, pos.column) should be(locations(idx))
       }
     }
-
   }
 
   def assertResult(result: Result, assertion: Assertion) = (result, assertion) match {
@@ -214,15 +219,27 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
       val scenario = file.scenario
 
       scenario("scenario").stringValue should {
-        val testData = getTestData(scenario.get("background"))
-        val builder = schemaBuilder(testData)
-        val schema = getSchema(scenario.get("background"), file.folder) map (Schema.buildFromAst(_, builder))
+        val bgTestData = getTestData(scenario.get("background"), file.folder)
+        val bgBuilder = schemaBuilder(bgTestData getOrElse JsObject.empty)
+        val bgSchema = getSchema(scenario.get("background"), file.folder) map (Schema.buildFromAst(_, bgBuilder))
 
         scenario("tests").arrayValue foreach { test ⇒
           val testName = test("name").stringValue
 
           testName in {
-            val given = getGiven(test, schema, file.folder, builder)
+            val testTestData = getTestData(test.get("query"), file.folder)
+            val testBuilder = testTestData map schemaBuilder getOrElse bgBuilder
+            val testSchema =
+              getSchema(test.get("query"), file.folder) map (Schema.buildFromAst(_, testBuilder)) orElse {
+                testTestData match {
+                  case Some(newTestData) ⇒ getSchema(scenario.get("background"), file.folder) map (Schema.buildFromAst(_, testBuilder))
+                  case None ⇒ bgSchema
+                }
+              }
+
+            val testData = testTestData orElse bgTestData getOrElse JsObject.empty
+
+            val given = getGiven(test, testSchema, file.folder, testBuilder)
             val action = getAction(test, testName, testData)
             val assertions = getAssertions(test, testName)
 
