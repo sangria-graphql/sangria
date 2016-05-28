@@ -100,6 +100,24 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         c ⇒ correctValue(c.field.fieldType, replacePlaceholders(template, c.args))
       },
 
+      "argumentsJson" → { (dir, _) ⇒
+        c ⇒ {
+          def handleValue(v: Any) = v match {
+            case v: String ⇒ JsString(v)
+            case v: Boolean ⇒ JsBoolean(v)
+            case v: Int ⇒ JsNumber(v)
+          }
+
+          val argsJson = c.args.raw flatMap {
+            case (k, Some(v)) ⇒ Some(k → handleValue(v))
+            case (k, None) ⇒ None
+            case (k, v) ⇒ Some(k → handleValue(v))
+          }
+
+          correctValue(c.field.fieldType, JsObject(argsJson).compactPrint)
+        }
+      },
+
       "resolvePromiseString" → { (dir, _) ⇒
         val template = directiveStringArg(dir, "value")
 

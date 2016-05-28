@@ -332,3 +332,193 @@ tests:
         test-value: data
     then:
       exception: Unknown operation named "UnknownExample"
+
+  - name: uses the query schema for queries
+    given:
+      schema: |
+        type Q {
+          a: String
+        }
+
+        type M {
+          c: String
+        }
+
+        type S {
+          a: String
+        }
+
+        schema {
+          query: Q
+          mutation: M
+          subscription: S
+        }
+      test-data:
+        data:
+          a: b
+          c: d
+      query: "query Q { a } mutation M { c } subscription S { a }"
+    when:
+      execute:
+        operation-name: Q
+        test-value: data
+    then:
+      data:
+        a: b
+
+  - name: uses the mutation schema for mutations
+    given:
+      schema: |
+        type Q {
+          a: String
+        }
+
+        type M {
+          c: String
+        }
+
+        schema {
+          query: Q
+          mutation: M
+        }
+      test-data:
+        data:
+          a: b
+          c: d
+      query: "query Q { a } mutation M { c }"
+    when:
+      execute:
+        operation-name: M
+        test-value: data
+    then:
+      data:
+        c: d
+
+  - name: uses the subscription schema for subscriptions
+    given:
+      schema: |
+        type Q {
+          a: String
+        }
+
+        type S {
+          c: String
+        }
+
+        schema {
+          query: Q
+          subscription: S
+        }
+      test-data:
+        data:
+          a: b
+          c: d
+      query: "query Q { a } subscription S { c }"
+    when:
+      execute:
+        operation-name: S
+        test-value: data
+    then:
+      data:
+        c: d
+
+  - name: Avoids recursion
+    given:
+      schema: |
+        type Type {
+          a: String
+        }
+
+        schema {
+          query: Type
+        }
+      test-data:
+        data:
+          a: b
+      query: |
+        query Q {
+          a
+          ...Frag
+          ...Frag
+        }
+
+        fragment Frag on Type {
+          a,
+          ...Frag
+        }
+    when:
+      execute:
+        operation-name: Q
+        validate-query: false
+        test-value: data
+    then:
+      data:
+        a: b
+
+  - name: does not include illegal fields in output
+    given:
+      schema: |
+        type Q {
+          a: String
+        }
+
+        type M {
+          c: String
+        }
+
+        schema {
+          query: Q
+          mutation: M
+        }
+      test-data:
+        data:
+          a: b
+          c: d
+          thisIsIllegalDontIncludeMe: Dangerous
+      query: |
+        mutation M {
+          thisIsIllegalDontIncludeMe
+        }
+    when:
+      execute:
+        operation-name: M
+        validate-query: false
+        test-value: data
+    then:
+      data: {}
+
+  - name: does not include arguments that were not set
+    given:
+      schema: |
+        type Type {
+          field(a: Boolean, b: Boolean, c: Boolean, d: Int, e: Int): String @argumentsJson
+        }
+
+        schema {
+          query: Type
+        }
+      query: "{ field(a: true, c: false, e: 0) }"
+    when:
+      execute:
+    then:
+      data:
+        field: '{"a":true,"c":false,"e":0}'
+
+  - name: fails to execute a query containing a type definition
+    given:
+      schema: |
+        type Type {
+          foo: String
+        }
+
+        schema {
+          query: Type
+        }
+      query: |
+        { foo }
+
+        type Query { foo: String }
+    when:
+      execute:
+    then:
+      exception: GraphQL cannot execute a request containing a ObjectTypeDefinition.
