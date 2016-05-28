@@ -27,8 +27,9 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
 
   def handleSupportedError(e: Throwable) = {
     val handeled = exceptionHandler(marshaller → e)
+    val message = if (handeled.message == null) "" else handeled.message
 
-    Seq("message" → marshaller.scalarNode(handeled.message, "String", Set.empty)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
+    Seq("message" → marshaller.scalarNode(message, "String", Set.empty)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
   }
 
   def handleException(exception: Throwable) = exception match {

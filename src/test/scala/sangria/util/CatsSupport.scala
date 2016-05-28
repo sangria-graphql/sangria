@@ -6,7 +6,7 @@ import net.jcazevedo.moultingyaml._
 import org.scalatest.{Matchers, WordSpec}
 import sangria.{schema, ast}
 import sangria.ast.{ObjectTypeDefinition, FieldDefinition, TypeDefinition}
-import sangria.execution.Executor
+import sangria.execution.{HandledException, Executor}
 import sangria.parser.{SyntaxError, QueryParser}
 import sangria.schema._
 import sangria.validation._
@@ -73,6 +73,13 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     }
     .getOrElse(throw new IllegalStateException(s"Can't find a directive argument $name"))
 
+  def directiveStringListArg(d: ast.Directive, name: String) =
+    d.arguments.collectFirst {
+      case ast.Argument(`name`, ast.ListValue(values, _, _), _, _) ⇒
+        values.collect {case ast.StringValue(v, _, _) ⇒ v}
+    }
+    .getOrElse(throw new IllegalStateException(s"Can't find a directive argument $name"))
+
   def replacePlaceholders(template: String, args: Args) =
     args.raw.keys.foldLeft(template) {
       case (acc, key) ⇒ acc.replaceAll("\\$" + key, args.arg[Any](key) match {
@@ -82,12 +89,23 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
       })
     }
 
+  case class ResolveError(message: String) extends Exception(message)
+
   def schemaBuilder(testData: JsValue): AstSchemaBuilder[Any] = new DefaultAstSchemaBuilder[Any] {
     val directiveMapping = Map[String, (ast.Directive, FieldDefinition) ⇒ Context[Any, _] ⇒ schema.Action[Any, _]](
       "resolveString" → { (dir, _) ⇒
         val template = directiveStringArg(dir, "value")
 
         c ⇒ correctValue(c.field.fieldType, replacePlaceholders(template, c.args))
+      },
+
+      "resolvePromiseString" → { (dir, _) ⇒
+        val template = directiveStringArg(dir, "value")
+
+        c ⇒ Future {
+          Thread.sleep((math.random * 50).toLong)
+          correctValue(c.field.fieldType, replacePlaceholders(template, c.args))
+        }
       },
 
       "resolveEmptyObject" → { (dir, _) ⇒
@@ -108,10 +126,31 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           correctValue(c.field.fieldType, testData(name))
         }
       },
+
       "resolvePromise" → { (dir, definition) ⇒ c ⇒ Future {
         Thread.sleep((math.random * 50).toLong)
         extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name), testData)
-      }})
+      }},
+
+      "resolveError" → ((dir, _) ⇒ c ⇒
+        throw ResolveError(directiveStringArg(dir, "message"))),
+
+      "resolvePromiseReject" → ((dir, _) ⇒ c ⇒
+        Future.failed[Any](ResolveError(directiveStringArg(dir, "message")))),
+
+      "resolveErrorList" → {(dir, _) ⇒
+        val values = directiveStringListArg(dir, "values")
+        val errors = directiveStringListArg(dir, "messages") map ResolveError.apply
+
+        c ⇒ PartialValue(correctValue(c.field.fieldType, values), errors.toVector)
+      },
+
+      "resolvePromiseRejectList" → {(dir, _) ⇒
+        val values = directiveStringListArg(dir, "values")
+        val errors = directiveStringListArg(dir, "messages") map ResolveError.apply
+
+        c ⇒ PartialFutureValue(Future.successful(PartialValue[Any, Any](correctValue(c.field.fieldType, values), errors.toVector)))
+      })
 
     override def resolveField(typeDefinition: TypeDefinition, definition: FieldDefinition) =
       definition.directives.find(d ⇒ directiveMapping contains d.name) match {
@@ -222,6 +261,10 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     Given(query, schema)
   }
 
+  val ExceptionHandler: Executor.ExceptionHandler = {
+    case (m, e: ResolveError) ⇒ HandledException(e.getMessage)
+  }
+
   def executeAction(given: Given[Any, Any], action: Action) = action match {
     case Parse ⇒
       import sangria.parser.DeliveryScheme.Either
@@ -240,7 +283,8 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         root = value,
         queryValidator = validator,
         variables = vars,
-        operationName = op).await)
+        operationName = op,
+        exceptionHandler = ExceptionHandler).await)
     case a ⇒
       throw new IllegalStateException(s"Not yet supported action: $a")
   }
@@ -262,6 +306,20 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     }
   }
 
+  def assetLocations(error: JsValue, locations: List[ErrorLocation]) = {
+    val actualLocs = error.get("locations") map (_.arrayValue) getOrElse Vector.empty
+
+    withClue(s"Violation does not have all positions: ${error("message").stringValue}") {
+      actualLocs should have size locations.size
+    }
+
+    actualLocs.zipWithIndex foreach { case (pos, idx) ⇒
+      withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(idx).column}): ${error("message").stringValue}") {
+        ErrorLocation(pos("line").intValue, pos("column").intValue) should be(locations(idx))
+      }
+    }
+  }
+
   def assertResult(result: Result, assertion: Assertion) = (result, assertion) match {
     case (ValidationResult(violations), Passes) ⇒
       violations should have size 0
@@ -275,6 +333,8 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
       }
     case (ValidationResult(violations), ErrorsCount(count)) ⇒
       violations should have size count
+    case (ExecutionResult(value), ErrorsCount(count)) ⇒
+      value.get("errors").map(_.arrayValue).getOrElse(Vector.empty) should have size count
     case (ValidationResult(violations), ErrorsContain(message, locations)) ⇒
       message match {
         case Left(text) ⇒
@@ -297,12 +357,33 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           assetLocations(v.get, locations)
       }
 
+    case (ExecutionResult(value), ErrorsContain(message, locations)) ⇒
+      val errors = value.get("errors") map (_.arrayValue) getOrElse Vector.empty
+
+      message match {
+        case Left(text) ⇒
+          val v = withClue(s"Can't find error message: $text") {
+            val v = errors.find(_("message").stringValue.contains(text))
+
+            v should not be ('empty)
+            v
+          }
+
+          assetLocations(v.get, locations)
+        case Right(pattern) ⇒
+          val v = withClue(s"Can't find error pattern: $pattern") {
+            val v = errors.find(v ⇒ pattern.matcher(v("message").stringValue).matches)
+
+            v should not be ('empty)
+            v
+          }
+
+          assetLocations(v.get, locations)
+      }
+
     case (ExecutionResult(actual), Data(expected)) ⇒
-      actual.get("errors") match {
-        case Some(_) ⇒
-         fail("Errors detected: " + actual)
-        case None ⇒
-          actual("data") should be (expected)
+      withClue("Result: " + actual) {
+        actual("data") should be (expected)
       }
 
     case a ⇒ throw new IllegalStateException(s"Not yet supported assertion: $a")
@@ -374,6 +455,3 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
 
   case class ErrorLocation(line: Int, column: Int)
 }
-
-// {"e":"Egg","x":"Cookie","f":"Fish","a":"Apple","b":"Banana","deep":{"a":"Already Been Done","b":"Boring","c":["Contrived",null,"Confusing"],"deeper":{"a":"Apple","b":"Banana"}},"pic":"Pic of size: 100","promise":{"a":"Apple"},"d":"Donut"}
-// {"e":"Egg","x":"Cookie","f":"Fish","a":"Apple","b":"Banana","deep":{"b":"Boring","deeper":[{"b":"Banana","a":"Apple"},null,{"b":"Banana","a":"Apple"}],"c":["Contrived",null,"Confusing"],"a":"Already Been Done"},"pic":"Pic of size: 100","promise":{"a":"Apple"},"d":"Donut"}

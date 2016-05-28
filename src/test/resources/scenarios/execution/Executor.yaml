@@ -149,37 +149,60 @@ tests:
     given:
       schema: |
         type Type {
-          a: String @resolveString(value: "Apple")
-          b: String @resolveString(value: "Banana")
-          c: String @resolveString(value: "Cherry")
-          deep: Type @resolveEmptyObject
+          sync: String @resolveString(value: "sync")
+
+          syncError: String @resolveError(message: "Error getting syncError")
+          syncErrorList: [String] @resolveErrorList(
+            values: ["sync0", "sync2"],
+            messages: ["Error getting syncErrorList1", "Error getting syncErrorList3"])
+
+          async: String @resolvePromiseString(value: "async")
+
+          asyncRejectError: String @resolvePromiseReject(message: "Error getting asyncRejectError")
+          asyncRejectListError: [String] @resolvePromiseRejectList(
+            values: ["async0", "async2"],
+            messages: ["Error getting asyncRejectListError1", "Error getting asyncRejectListError3"])
         }
 
         schema {
           query: Type
         }
       query: |
-        { a, ...FragOne, ...FragTwo }
+        {
+          sync
 
-        fragment FragOne on Type {
-          b
-          deep { b, deeper: deep { b } }
-        }
+          syncError
+          syncErrorList
 
-        fragment FragTwo on Type {
-          c
-          deep { c, deeper: deep { c } }
+          async
+
+          asyncRejectError
+          asyncRejectListError
         }
     when:
       execute:
     then:
-      data:
-        a: Apple
-        b: Banana
-        c: Cherry
-        deep:
-          b: Banana
-          c: Cherry
-          deeper:
-            b: Banana
-            c: Cherry
+      - data:
+          sync: sync
+          syncError: null
+          syncErrorList:
+            - sync0
+            - sync2
+          async: async
+          asyncRejectError: null
+          asyncRejectListError:
+            - async0
+            - async2
+      - error-count: 6
+      - error: Error getting syncError
+        loc: {line: 4, column: 3}
+      - error: Error getting syncErrorList1
+        loc: {line: 5, column: 3}
+      - error: Error getting syncErrorList3
+        loc: {line: 5, column: 3}
+      - error: Error getting asyncRejectError
+        loc: {line: 9, column: 3}
+      - error: Error getting asyncRejectListError1
+        loc: {line: 10, column: 3}
+      - error: Error getting asyncRejectListError3
+        loc: {line: 10, column: 3}
