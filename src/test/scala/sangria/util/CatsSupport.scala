@@ -4,16 +4,16 @@ import java.util.regex.Pattern
 
 import net.jcazevedo.moultingyaml._
 import org.scalatest.{Matchers, WordSpec}
-import sangria.ast
+import sangria.{schema, ast}
 import sangria.ast.{ObjectTypeDefinition, FieldDefinition, TypeDefinition}
 import sangria.execution.Executor
-import sangria.parser.QueryParser
+import sangria.parser.{SyntaxError, QueryParser}
 import sangria.schema._
 import sangria.validation._
 import spray.json._
-import sangria.parser.DeliveryScheme.Throw
 import sangria.marshalling.sprayJson._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
   implicit class YamlOps(value: YamlValue) {
@@ -43,20 +43,80 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     def intValue = value.asInstanceOf[JsNumber].value.intValue
   }
 
-  def extractCorrectValue(tpe: OutputType[_], value: Option[JsValue]): Any = tpe match {
-    case OptionType(ofType) ⇒ Option(extractCorrectValue(ofType, value))
+  def resolveRef(value: JsValue, testData: JsValue) = value match {
+    case JsObject(fields) if fields.keySet == Set("$ref") ⇒
+      val name = fields("$ref").stringValue
+
+      testData(name)
+    case v ⇒ v
+  }
+
+  def extractCorrectValue(tpe: OutputType[_], value: Option[JsValue], testData: JsValue): Any = tpe match {
+    case OptionType(ofType) ⇒ Option(extractCorrectValue(ofType, value, testData))
     case _ if value.isEmpty || value.get == JsNull ⇒ null
-    case ListType(ofType) ⇒ value.get.arrayValue map (v ⇒ extractCorrectValue(ofType, Option(v)))
-    case t: ScalarType[_] if t eq BooleanType ⇒ value.get.booleanValue
-    case t: ScalarType[_] if t eq StringType ⇒ value.get.stringValue
-    case t: ScalarType[_] if t eq IntType ⇒ value.get.intValue
-    case t: CompositeType[_] ⇒ value.get.asJsObject
+    case ListType(ofType) ⇒ value.get.arrayValue map (v ⇒ extractCorrectValue(ofType, Option(v), testData))
+    case t: ScalarType[_] if t eq BooleanType ⇒ resolveRef(value.get, testData).booleanValue
+    case t: ScalarType[_] if t eq StringType ⇒ resolveRef(value.get, testData).stringValue
+    case t: ScalarType[_] if t eq IntType ⇒ resolveRef(value.get, testData).intValue
+    case t: CompositeType[_] ⇒ resolveRef(value.get, testData).asJsObject
     case t ⇒ throw new IllegalStateException(s"Builder for type '$t' is not supported yet.")
   }
 
+  def correctValue(tpe: OutputType[_], value: Any): Any = tpe match {
+    case OptionType(_) ⇒ Option(value)
+    case _ ⇒ value
+  }
+
+  def directiveStringArg(d: ast.Directive, name: String) =
+    d.arguments.collectFirst {
+      case ast.Argument(`name`, ast.StringValue(str, _, _), _, _) ⇒ str
+    }
+    .getOrElse(throw new IllegalStateException(s"Can't find a directive argument $name"))
+
+  def replacePlaceholders(template: String, args: Args) =
+    args.raw.keys.foldLeft(template) {
+      case (acc, key) ⇒ acc.replaceAll("\\$" + key, args.arg[Any](key) match {
+        case Some(v) ⇒ "" + v
+        case None ⇒ ""
+        case v ⇒ "" + v
+      })
+    }
+
   def schemaBuilder(testData: JsValue): AstSchemaBuilder[Any] = new DefaultAstSchemaBuilder[Any] {
+    val directiveMapping = Map[String, (ast.Directive, FieldDefinition) ⇒ Context[Any, _] ⇒ schema.Action[Any, _]](
+      "resolveString" → { (dir, _) ⇒
+        val template = directiveStringArg(dir, "value")
+
+        c ⇒ correctValue(c.field.fieldType, replacePlaceholders(template, c.args))
+      },
+
+      "resolveTestData" → { (dir, _) ⇒
+        val name = directiveStringArg(dir, "name")
+
+        c ⇒ correctValue(c.field.fieldType, testData(name))
+      },
+
+      "resolvePromiseTestData" → { (dir, _) ⇒
+        val name = directiveStringArg(dir, "name")
+
+        c ⇒ Future {
+          Thread.sleep((math.random * 50).toLong)
+          correctValue(c.field.fieldType, testData(name))
+        }
+      },
+      "resolvePromise" → { (dir, definition) ⇒ c ⇒ Future {
+        Thread.sleep((math.random * 50).toLong)
+        extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name), testData)
+      }})
+
     override def resolveField(typeDefinition: TypeDefinition, definition: FieldDefinition) =
-      c ⇒ extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name))
+      definition.directives.find(d ⇒ directiveMapping contains d.name) match {
+        case Some(dir) ⇒
+          directiveMapping(dir.name)(dir, definition)
+        case None ⇒
+          c ⇒ extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name), testData)
+      }
+
 
     override def objectTypeInstanceCheck(definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
       Some((value, _) ⇒ value.asInstanceOf[JsValue].get("type").exists(_.stringValue == definition.name))
@@ -67,7 +127,11 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
 
   def getSchema(value: YamlValue, path: String): Option[ast.Document] =
     value.get("schema")
-      .map(v ⇒ QueryParser.parse(v.stringValue))
+      .map { v ⇒
+        import sangria.parser.DeliveryScheme.Throw
+
+        QueryParser.parse(v.stringValue)
+      }
       .orElse(value.get("schema-file").map(f ⇒ FileUtil.loadSchema(path + "/" + f.stringValue)))
 
   def getTestData(value: Option[YamlValue], path: String) =
@@ -88,9 +152,14 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         when.get("execute").map { e ⇒
           val validate = e.get("validate-query").map(_.booleanValue) getOrElse true
           val value = e.get("test-value").map(name ⇒ testData(name.stringValue)) getOrElse JsNull
+          val variables = e.get("variables") map convertToJson getOrElse JsObject.empty
+          val operationName = e.get("operation-name") map (_.stringValue)
 
-          Execute(validate, value)
+          Execute(validate, value, variables, operationName)
         }
+      }
+      .orElse {
+        when.get("parse").map(_ ⇒ Parse)
       }
       .getOrElse(throw new IllegalStateException(s"Can't find action: $testName"))
   }
@@ -127,6 +196,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
       .orElse(value.get("error").map(v ⇒ ErrorsContain(Left(v.stringValue), getErrorLocations(value).toList)))
       .orElse(value.get("error-regex").map(v ⇒ ErrorsContain(Right(v.stringValue.r.pattern), getErrorLocations(value).toList)))
       .orElse(value.get("data").map(v ⇒ Data(convertToJson(v))))
+      .orElse(value.get("syntax-error").map(_ ⇒ SyntaxError))
       .getOrElse(throw new IllegalStateException(s"Can't find the assertion: $testName"))
   }
 
@@ -141,22 +211,34 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     }
   }
 
-  def getGiven(value: YamlValue, schema: Option[Schema[Any, Any]], path: String, builder: AstSchemaBuilder[Any]) = {
+  def getGiven(value: YamlValue, schema: Option[Schema[Any, Any]]) = {
     val given = value("given")
+    val query = given("query").stringValue
 
-    val query = QueryParser.parse(given("query").stringValue)
-    val currSchema = getSchema(given, path) map (Schema.buildFromAst(_, builder)) orElse schema getOrElse (throw new IllegalStateException("No schema provided!"))
-
-    Given(query, currSchema)
+    Given(query, schema)
   }
 
   def executeAction(given: Given[Any, Any], action: Action) = action match {
-    case Validate(rules) ⇒ ValidationResult(new RuleBasedQueryValidator(rules.toList).validateQuery(given.schema, given.query))
-    case Execute(validate, value) ⇒
+    case Parse ⇒
+      import sangria.parser.DeliveryScheme.Either
+
+      ParsingResult(QueryParser.parse(given.query).left.map(_.asInstanceOf[SyntaxError]))
+    case Validate(rules) ⇒
+      import sangria.parser.DeliveryScheme.Throw
+
+      ValidationResult(new RuleBasedQueryValidator(rules.toList).validateQuery(given.schema, QueryParser.parse(given.query)))
+    case Execute(validate, value, vars, op) ⇒
+      import sangria.parser.DeliveryScheme.Throw
+
       val validator = if (validate) QueryValidator.default else QueryValidator.empty
 
-      ExecutionResult(Executor.execute(given.schema, given.query, root = value, queryValidator = validator).await)
-    case a ⇒ throw new IllegalStateException(s"Not yet supported action: $a")
+      ExecutionResult(Executor.execute(given.schema, QueryParser.parse(given.query),
+        root = value,
+        queryValidator = validator,
+        variables = vars,
+        operationName = op).await)
+    case a ⇒
+      throw new IllegalStateException(s"Not yet supported action: $a")
   }
 
   def assetLocations(violation: Violation, locations: List[ErrorLocation]) = {
@@ -179,6 +261,14 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
   def assertResult(result: Result, assertion: Assertion) = (result, assertion) match {
     case (ValidationResult(violations), Passes) ⇒
       violations should have size 0
+    case (ParsingResult(res), Passes) ⇒
+      withClue("Parsing result was not successful - query contains some syntax errors.") {
+        res.isRight should be (true)
+      }
+    case (ParsingResult(res), SyntaxError) ⇒
+      withClue("Parsing result was successful and does not contain syntax errors.") {
+        res.isLeft should be (true)
+      }
     case (ValidationResult(violations), ErrorsCount(count)) ⇒
       violations should have size count
     case (ValidationResult(violations), ErrorsContain(message, locations)) ⇒
@@ -227,19 +317,19 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           val testName = test("name").stringValue
 
           testName in {
-            val testTestData = getTestData(test.get("query"), file.folder)
+            val testTestData = getTestData(test.get("given"), file.folder)
             val testBuilder = testTestData map schemaBuilder getOrElse bgBuilder
             val testSchema =
-              getSchema(test.get("query"), file.folder) map (Schema.buildFromAst(_, testBuilder)) orElse {
+              getSchema(test.get("given"), file.folder) map (Schema.buildFromAst(_, testBuilder)) orElse {
                 testTestData match {
-                  case Some(newTestData) ⇒ getSchema(scenario.get("background"), file.folder) map (Schema.buildFromAst(_, testBuilder))
+                  case Some(newTestData) ⇒ getSchema(scenario.get("given"), file.folder) map (Schema.buildFromAst(_, testBuilder))
                   case None ⇒ bgSchema
                 }
               }
 
             val testData = testTestData orElse bgTestData getOrElse JsObject.empty
 
-            val given = getGiven(test, testSchema, file.folder, testBuilder)
+            val given = getGiven(test, testSchema)
             val action = getAction(test, testName, testData)
             val assertions = getAssertions(test, testName)
 
@@ -254,24 +344,32 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     }
   }
 
-  case class Given[Ctx, Val](query: ast.Document, schema: Schema[Ctx, Val])
+  case class Given[Ctx, Val](query: String, schemaOpt: Option[Schema[Ctx, Val]]) {
+    def schema = schemaOpt getOrElse (throw new IllegalStateException("No schema provided!"))
+  }
 
   sealed trait Action
 
+  case object Parse extends Action
   case class Validate(rules: List[ValidationRule]) extends Action
-  case class Execute(validate: Boolean, value: JsValue) extends Action
+  case class Execute(validate: Boolean, value: JsValue, variables: JsValue, operationName: Option[String]) extends Action
 
   sealed trait Result
 
   case class ValidationResult(violations: Vector[Violation]) extends Result
   case class ExecutionResult(value: JsValue) extends Result
+  case class ParsingResult(document: Either[SyntaxError, ast.Document]) extends Result
 
   sealed trait Assertion
 
   case object Passes extends Assertion
+  case object SyntaxError extends Assertion
   case class Data(json: JsValue) extends Assertion
   case class ErrorsCount(count: Int) extends Assertion
   case class ErrorsContain(message: Either[String, Pattern], locations: List[ErrorLocation]) extends Assertion
 
   case class ErrorLocation(line: Int, column: Int)
 }
+
+// {"e":"Egg","x":"Cookie","f":"Fish","a":"Apple","b":"Banana","deep":{"a":"Already Been Done","b":"Boring","c":["Contrived",null,"Confusing"],"deeper":{"a":"Apple","b":"Banana"}},"pic":"Pic of size: 100","promise":{"a":"Apple"},"d":"Donut"}
+// {"e":"Egg","x":"Cookie","f":"Fish","a":"Apple","b":"Banana","deep":{"b":"Boring","deeper":[{"b":"Banana","a":"Apple"},null,{"b":"Banana","a":"Apple"}],"c":["Contrived",null,"Confusing"],"a":"Already Been Done"},"pic":"Pic of size: 100","promise":{"a":"Apple"},"d":"Donut"}

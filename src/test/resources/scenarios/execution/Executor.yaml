@@ -1,0 +1,107 @@
+scenario: "Execute: Handles basic execution tasks"
+tests:
+  - name: executes arbitrary code
+    given:
+      schema: |
+        type DataType {
+          a: String
+          b: String
+          c: String
+          d: String
+          e: String
+          f: String
+          pic(size: Int = 50): String @resolveString(value: "Pic of size: $size")
+          deep: DeepDataType
+          promise: DataType @resolvePromise
+        }
+
+        type DeepDataType {
+          a: String
+          b: String
+          c: [String]
+          deeper: [DataType]
+        }
+
+        schema {
+          query: DataType
+        }
+      test-data:
+        data:
+          a: Apple
+          b: Banana
+          c: Cookie
+          c: Cookie
+          d: Donut
+          e: Egg
+          f: Fish
+          deep: {$ref: deepData}
+          promise: {$ref: data}
+        deepData:
+          a: Already Been Done
+          b: Boring
+          c:
+            - "Contrived"
+            - null
+            - Confusing
+          deeper:
+            - {$ref: data}
+            - null
+            - {$ref: data}
+      query: |
+        query Example($size: Int) {
+          a,
+          b,
+          x: c
+          ...c
+          f
+          ...on DataType {
+            pic(size: $size)
+            promise {
+              a
+            }
+          }
+          deep {
+            a
+            b
+            c
+            deeper {
+              a
+              b
+            }
+          }
+        }
+
+        fragment c on DataType {
+          d
+          e
+        }
+    when:
+      execute:
+        test-value: data
+        operation-name: Example
+        variables:
+          size: 100
+    then:
+      data:
+        a: Apple
+        b: Banana
+        x: Cookie
+        d: Donut
+        e: Egg
+        f: Fish
+        pic: "Pic of size: 100"
+        promise:
+          a: Apple
+        deep:
+          a: Already Been Done
+          b: Boring
+          c:
+            - Contrived
+            - null
+            - Confusing
+          deeper:
+            - a: Apple
+              b: Banana
+            - null
+            - a: Apple
+              b: Banana
