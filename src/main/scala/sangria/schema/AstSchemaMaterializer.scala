@@ -55,7 +55,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     }
   }
 
-  lazy val build: Schema[Ctx, Unit] = {
+  lazy val build: Schema[Ctx, Any] = {
     validateDefinitions()
 
     val queryType = getObjectType(schemaInfo.query)
@@ -244,10 +244,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 object AstSchemaMaterializer {
   case class SchemaInfo(query: ast.NamedType, mutation: Option[ast.NamedType], subscription: Option[ast.NamedType], definition: ast.SchemaDefinition)
 
-  def buildSchema(document: ast.Document): Schema[Unit, Unit] = {
-    buildSchema[Unit](document, AstSchemaBuilder.default)
+  def buildSchema(document: ast.Document): Schema[Any, Any] = {
+    buildSchema[Any](document, AstSchemaBuilder.default)
   }
 
-  def buildSchema[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Unit] =
+  def buildSchema[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     new AstSchemaMaterializer[Ctx](document, builder).build
 }

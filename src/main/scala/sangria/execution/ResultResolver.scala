@@ -27,8 +27,9 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
 
   def handleSupportedError(e: Throwable) = {
     val handeled = exceptionHandler(marshaller → e)
+    val message = if (handeled.message == null) "" else handeled.message
 
-    Seq("message" → marshaller.scalarNode(handeled.message, "String", Set.empty)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
+    Seq("message" → marshaller.scalarNode(message, "String", Set.empty)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
   }
 
   def handleException(exception: Throwable) = exception match {
@@ -50,6 +51,9 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
     def add(path: Vector[String], error: Throwable) =
       copy(errorList ++ createErrorPaths(path, error))
 
+    def append(path: Vector[String], errors: Vector[Throwable], position: Option[Position]) =
+      copy(errors.map(e ⇒ errorNode(path, position map singleLocation, handleException(e))) ++ errorList)
+
     def add(path: Vector[String], error: Throwable, position: Option[Position]) =
       copy(errorList :+ errorNode(path, position map singleLocation, handleException(error)))
 
@@ -62,7 +66,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
           errorNode(path, getLocations(v), Seq("message" → marshaller.scalarNode(v.errorMessage, "String", Set.empty)))
         }
       case other ⇒
-        errorNode(path, getLocations(other), handleException(other)) :: Nil
+        Vector(errorNode(path, getLocations(other), handleException(other)))
     }
 
     def getLocations(violation: Violation) = violation match {

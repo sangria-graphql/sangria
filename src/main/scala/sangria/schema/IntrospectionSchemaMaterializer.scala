@@ -13,7 +13,7 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
 
   private lazy val schemaDef = IntrospectionParser.parse(introspectionResult)
 
-  lazy val build: Schema[Ctx, Unit] = {
+  lazy val build: Schema[Ctx, Any] = {
     val queryType = getObjectType(schemaDef.queryType)
     val mutationType = schemaDef.mutationType map getObjectType
     val subscriptionType = schemaDef.subscriptionType map getObjectType
@@ -147,8 +147,8 @@ object IntrospectionSchemaMaterializer {
     *
     * @param introspectionResult the result of introspection query
     */
-  def buildSchema[T : InputUnmarshaller](introspectionResult: T): Schema[Unit, Unit] = {
-    buildSchema[Unit, T](introspectionResult, IntrospectionSchemaBuilder.default)
+  def buildSchema[T : InputUnmarshaller](introspectionResult: T): Schema[Any, Any] = {
+    buildSchema[Any, T](introspectionResult, IntrospectionSchemaBuilder.default)
   }
 
   /**
@@ -163,6 +163,6 @@ object IntrospectionSchemaMaterializer {
     * @param introspectionResult the result of introspection query
     * @param builder custom schema construction logic. By default `MaterializedSchemaException` would be thrown from a `resolve` function.
     */
-  def buildSchema[Ctx, T : InputUnmarshaller](introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]): Schema[Ctx, Unit] =
+  def buildSchema[Ctx, T : InputUnmarshaller](introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     new IntrospectionSchemaMaterializer[Ctx, T](introspectionResult, builder).build
 }
