@@ -26,10 +26,8 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-spray-json" % "0.3.1" % "test",
   "org.sangria-graphql" %% "sangria-ion" % "0.1.0" % "test",
 
-  // cats
+  // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.2" % "test",
-//  "org.reflections" % "reflections" % "0.9.10" % "test",
-//  "tv.cntt" %% "sclasner" % "1.7.0" % "test"
   "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
 )
 
