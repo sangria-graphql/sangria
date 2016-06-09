@@ -163,7 +163,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with FutureResultSupport 
           "views" → 12,
           "shares" → Map("twitter" → 78, "facebook" → 1),
           "comments" → List(Map("author" → "anonymous", "text" → "First! :P", "likes" → 1.5))),
-        expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
+        expectedDefault = "{title:\"Post #1\",text:\"Amazing!\",views:12,tags:[\"beginner\",\"scala\"],shares:{twitter:78,facebook:1},comments:[{author:\"anonymous\",text:\"First! :P\",likes:1.5}]}")
 
       "validate scalar default values" in {
         a [SchemaValidationException] should be thrownBy check(
@@ -234,7 +234,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with FutureResultSupport 
           "views" → 12,
           "shares" → Map("twitter" → 78, "facebook" → 1),
           "comments" → List(Map("author" → "anonymous", "text" → "First! :P", "likes" → 1.5))),
-        expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":78,\"facebook\":1},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"anonymous\",\"text\":\"First! :P\",\"likes\":1.5}]}")
+        expectedDefault = "{title:\"Post #1\",text:\"Amazing!\",views:12,tags:[\"beginner\",\"scala\"],shares:{twitter:78,facebook:1},comments:[{author:\"anonymous\",text:\"First! :P\",likes:1.5}]}")
 
       "manual typeclass-based serialisation" in {
         implicit object SharesToInput extends ToInput[Shares, JsValue] {
@@ -281,7 +281,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with FutureResultSupport 
             "comments" → List(
               Map("author" → "John Doe", "text" → "Nice post!", "likes" → 100),
               Map("author" → "Foo", "text" → "Bar", "likes" → 0.1))),
-          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
+          expectedDefault = "{title:\"Post #1\",text:\"Amazing!\",views:12,tags:[\"beginner\",\"scala\"],shares:{twitter:123,facebook:456},comments:[{author:\"John Doe\",text:\"Nice post!\",likes:100},{author:\"Foo\",text:\"Bar\",likes:0.1}]}")
       }
 
       "generated typeclass-based serialisation" in {
@@ -309,7 +309,7 @@ class DefaultValuesSpec extends WordSpec with Matchers with FutureResultSupport 
             "comments" → List(
               Map("author" → "John Doe", "text" → "Nice post!", "likes" → 100),
               Map("author" → "Foo", "text" → "Bar", "likes" → 0.1))),
-          expectedDefault = "{\"tags\":[\"beginner\",\"scala\"],\"text\":\"Amazing!\",\"shares\":{\"twitter\":123,\"facebook\":456},\"views\":12,\"title\":\"Post #1\",\"comments\":[{\"author\":\"John Doe\",\"text\":\"Nice post!\",\"likes\":100},{\"author\":\"Foo\",\"text\":\"Bar\",\"likes\":0.1}]}")
+          expectedDefault = "{title:\"Post #1\",text:\"Amazing!\",views:12,tags:[\"beginner\",\"scala\"],shares:{twitter:123,facebook:456},comments:[{author:\"John Doe\",text:\"Nice post!\",likes:100},{author:\"Foo\",text:\"Bar\",likes:0.1}]}")
       }
     }
   }

@@ -25,7 +25,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
     import sangria.marshalling.queryAst._
 
     val initialIntrospection = Executor.execute(serverSchema, introspectionQuery).await
-    val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection, IntrospectionSchemaBuilder.withDefaultValues[Any, ast.Value])
+    val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection)
     val secondIntrospection = Executor.execute(clientSchema, introspectionQuery).await
 
     initialIntrospection should be (secondIntrospection)

@@ -81,17 +81,10 @@ trait IntrospectionSchemaBuilder[Ctx] {
     definition: IntrospectionDirective,
     arguments: List[Argument[_]],
     mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[Directive]
-
-  def defaultValueParser: Option[String ⇒ Try[(Any, InputUnmarshaller[Any])]]
 }
 
 object IntrospectionSchemaBuilder {
   def default[Ctx] = new DefaultIntrospectionSchemaBuilder[Ctx]
-
-  def withDefaultValues[Ctx, T : InputUnmarshaller : InputParser] = new DefaultIntrospectionSchemaBuilder[Ctx] {
-    override val defaultValueParser =
-      Some((raw: String) ⇒ implicitly[InputParser[T]].parse(raw) map (_ → implicitly[InputUnmarshaller[T]].asInstanceOf[InputUnmarshaller[Any]]))
-  }
 }
 
 class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[Ctx] {
@@ -338,9 +331,5 @@ object DefaultIntrospectionSchemaBuilder {
   case object MaterializedSchemaException extends Exception("Schema was materialized and cannot be used for any queries except introspection queries.") with UserFacingError
   case object MaterializedSchemaViolation extends Violation {
     val errorMessage = "Schema was materialized and cannot be used for any queries except introspection queries."
-  }
-
-  case class ConstantToInput[T](iu: InputUnmarshaller[T]) extends ToInput[T, T] {
-    def toInput(value: T) = value → iu
   }
 } 

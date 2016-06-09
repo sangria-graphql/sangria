@@ -23,33 +23,31 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
     InputField("d", OptionInputType(ListInputType(StringType)))))
 
   val TestType = ObjectType("TestType", {
-    import sangria.marshalling.sprayJson.{SprayJsonResultMarshaller ⇒ SJM}
-
     fields[Unit, Unit](
       Field("fieldWithObjectInput", OptionType(StringType),
         arguments = Argument("input", OptionInputType(TestInputObject)) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(TestInputObject), SJM))),
+        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(TestInputObject)))),
       Field("fieldWithNullableStringInput", OptionType(StringType),
         arguments = Argument("input", OptionInputType(StringType)) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(StringType), SJM))),
+        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(StringType)))),
       Field("fieldWithNonNullableStringInput", OptionType(StringType),
         arguments = Argument("input", StringType) :: Nil,
-        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), StringType, SJM)),
+        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), StringType)),
       Field("fieldWithDefaultArgumentValue", OptionType(StringType),
         arguments = Argument("input", OptionInputType(StringType), defaultValue = "Hello World") :: Nil,
-        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), OptionInputType(StringType), SJM)),
+        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), OptionInputType(StringType))),
       Field("list", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(OptionInputType(StringType)))) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(OptionInputType(StringType))), SJM))),
+        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(OptionInputType(StringType)))))),
       Field("nnList", OptionType(StringType),
         arguments = Argument("input", ListInputType(OptionInputType(StringType))) :: Nil,
-        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(OptionInputType(StringType)), SJM)),
+        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(OptionInputType(StringType)))),
       Field("listNN", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(StringType))) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (ctx.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(StringType)), SJM))),
+        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(StringType))))),
       Field("nnListNN", OptionType(StringType),
         arguments = Argument("input", ListInputType(StringType)) :: Nil,
-        resolve = ctx ⇒ ctx.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(StringType), SJM))
+        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(StringType)))
     )
   })
 
@@ -78,7 +76,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
           ))
         )
 
@@ -90,7 +88,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":null,"b":["bar"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:null,b:["bar"],c:"baz"}"""
           ))
         )
 
@@ -102,7 +100,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar",null,"test"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:"foo",b:["bar",null,"test"],c:"baz"}"""
           ))
         )
 
@@ -170,8 +168,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           Map("data" → Map(
-            "fieldWithObjectInput" → """{"b":["bar"],"c":"baz"}"""
-          ))
+            "fieldWithObjectInput" → """{b:["bar"],c:"baz"}"""))
         )
 
         "properly coerces single value to array" in check(
@@ -182,8 +179,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
-          ))
+            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""))
         )
 
         "does not use incorrect value" in checkContainsErrors(
@@ -211,7 +207,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           val args = Map("input" → Map("a" → "foo", "b" → List("bar"), "c" → "baz"))
 
           Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 
@@ -219,7 +215,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           val args = """{"input": {"a": "foo", "b": ["bar"], "c": "baz"}}""".parseJson
 
           Executor.execute(schema, testQuery, variables = args).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 
@@ -231,7 +227,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
           ))
         )
 
@@ -239,7 +235,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           val args = Map("input" → Map("a" → "foo", "b" → "bar", "c" → "baz"))
 
           Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 
@@ -247,7 +243,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           val args = """{"input": {"a": "foo", "b": "bar", "c": "baz"}}""".parseJson
 
           Executor.execute(schema, testQuery, variables = args).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{"a":"foo","b":["bar"],"c":"baz"}"""
+            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 

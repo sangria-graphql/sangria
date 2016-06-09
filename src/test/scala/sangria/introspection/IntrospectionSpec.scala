@@ -855,7 +855,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                     "name" → "reason",
                     "description" → "Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formattedin [Markdown](https://daringfireball.net/projects/markdown/).",
                     "type" → Map("kind" → "SCALAR", "name" → "String", "ofType" → null),
-                    "defaultValue" → "No longer supported"))))))))
+                    "defaultValue" → "\"No longer supported\""))))))))
     }
 
     "introspects on input object" in {
@@ -1011,7 +1011,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                         "name" → "String",
                         "ofType" → null
                       ),
-                    "defaultValue" → "foo"
+                    "defaultValue" → "\"foo\""
                   ),
                   Map(
                     "name" → "b",

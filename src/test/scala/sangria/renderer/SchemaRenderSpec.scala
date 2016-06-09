@@ -15,9 +15,7 @@ import sangria.marshalling.sprayJson._
 import sangria.marshalling.ScalaInput.scalaInput
 
 class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
-  def defaultParser(schema: Schema[_, _]) = DefaultValueParser.forType[JsValue](schema)
-
-  def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) = "\n" + SchemaRenderer.renderSchema(res, Some(defaultParser(schema)))+ "\n"
+  def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
   def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 
   def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit render: Schema[Unit, Unit] ⇒ String) = {
@@ -563,7 +561,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val schema = Schema(root)
 
       an [IllegalArgumentException] should be thrownBy
-        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").awaitAndRecoverQueryAnalysis, Some(defaultParser(schema)))
+        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").awaitAndRecoverQueryAnalysis)
     }
   }
 
@@ -574,7 +572,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
   "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
       val schema = Schema(ObjectType[Unit, Unit]("Root", Nil))
-      val rendered = SchemaRenderer.renderIntrospectionSchema(Executor.execute(schema, introspectionQuery).await, Some(defaultParser(schema)))
+      val rendered = SchemaRenderer.renderIntrospectionSchema(Executor.execute(schema, introspectionQuery).await)
 
       ("\n" + rendered + "\n") should equal ("""
         |## A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.

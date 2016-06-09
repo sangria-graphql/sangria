@@ -121,11 +121,9 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (intro
     builder.buildEnumValue(tpe, value, this)
 
   def buildDefault(defaultValue: Option[String]) =
-    defaultValue flatMap (dv ⇒ builder.defaultValueParser flatMap { parser ⇒
-      parser(dv) match {
-        case Success((parsed, unmarshaller)) ⇒ Some(parsed → DefaultIntrospectionSchemaBuilder.ConstantToInput(unmarshaller))
-        case Failure(error) ⇒ throw new SchemaMaterializationException(s"Unable to parse default value '$dv'.", error)
-      }
+    defaultValue map (dv ⇒ sangria.marshalling.queryAst.QueryAstInputParser.parse(dv) match {
+      case Success(parsed) ⇒ parsed → sangria.marshalling.queryAst.queryAstToInput
+      case Failure(error) ⇒ throw new SchemaMaterializationException(s"Unable to parse default value '$dv'.", error)
     })
 
   def buildArgument(fieldDef: Option[IntrospectionField], value: IntrospectionInputValue) =

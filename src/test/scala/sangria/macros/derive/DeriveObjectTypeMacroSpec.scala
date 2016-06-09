@@ -457,8 +457,8 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IntrospectionInputValue("id", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "Int"), Some("123")),
         IntrospectionInputValue("songs", None,
           IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),None),
-        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), Some("""{"name":"xxx","size":322}""")),
-        IntrospectionInputValue("aaa", Some("bbbb"), IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))), Some("[\"Red\"]"))))
+        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), Some("""{name:"xxx",size:322}""")),
+        IntrospectionInputValue("aaa", Some("bbbb"), IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))), Some("[Red]"))))
 
       val Some(optField) = introType.fields.find(_.name == "opt")
 

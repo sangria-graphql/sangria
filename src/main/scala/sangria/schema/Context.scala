@@ -148,17 +148,8 @@ trait WithInputTypeRendering[Ctx] {
 
   private lazy val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(ctx))
 
-  def renderInputValueCompact[T](value: (_, ToInput[_, _]), tpe: InputType[T], m: ResultMarshaller = marshaller): String =
-    DefaultValueRenderer.renderInputValueCompact(value, tpe, coercionHelper)(m)
-
-  def renderInputValuePretty[T](value: (_, ToInput[_, _]), tpe: InputType[T], m: ResultMarshaller = marshaller): String =
-    DefaultValueRenderer.renderInputValuePretty(value, tpe, coercionHelper)(m)
-
-  def renderCoercedInputValueCompact[T](value: Any, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
-    DefaultValueRenderer.renderCoercedInputValueCompact(value, tpe)(m)
-
-  def renderCoercedInputValuePretty[T](value: Any, tpe: InputType[T], m: ResultMarshaller = marshaller): String =
-    DefaultValueRenderer.renderCoercedInputValuePretty(value, tpe)(m)
+  def renderInputValueCompact[T](value: (_, ToInput[_, _]), tpe: InputType[T]): String =
+    DefaultValueRenderer.renderInputValueCompact(value, tpe, coercionHelper)
 }
 
 case class DefaultValueParser[T](schema: Schema[_, _], parser: InputParser[T], toInput: ToInput[T, _])
@@ -169,34 +160,36 @@ object DefaultValueParser {
 }
 
 object DefaultValueRenderer {
-  def renderInputValueCompact[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx])(implicit m: ResultMarshaller): String =
-    m.renderCompact(renderInputValue(value, tpe, coercionHelper))
+  implicit val marshaller = sangria.marshalling.queryAst.queryAstResultMarshaller
 
-  def renderInputValuePretty[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx])(implicit m: ResultMarshaller): String =
-    m.renderPretty(renderInputValue(value, tpe, coercionHelper))
+  def renderInputValueCompact[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): String =
+    marshaller.renderCompact(renderInputValue(value, tpe, coercionHelper))
 
-  def renderInputValue[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx])(implicit m: ResultMarshaller): m.Node = {
-    def loop(t: InputType[_], v: Any): m.Node = t match {
-      case _ if v == null ⇒ m.nullNode
-      case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, m.capabilities), m, s.name, s.scalarInfo)
-      case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), m, e.name)
+  def renderInputValuePretty[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): String =
+    marshaller.renderPretty(renderInputValue(value, tpe, coercionHelper))
+
+  def renderInputValue[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): marshaller.Node = {
+    def loop(t: InputType[_], v: Any): marshaller.Node = t match {
+      case _ if v == null ⇒ marshaller.nullNode
+      case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, marshaller.capabilities), marshaller, s.name, s.scalarInfo)
+      case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), marshaller, e.name)
       case io: InputObjectType[_] ⇒
         val mapValue = v.asInstanceOf[Map[String, Any]]
 
-        val builder = io.fields.foldLeft(m.emptyMapNode(io.fields.map(_.name))) {
+        val builder = io.fields.foldLeft(marshaller.emptyMapNode(io.fields.map(_.name))) {
           case (acc, field) if mapValue contains field.name ⇒
-            m.addMapNodeElem(acc, field.name, loop(field.fieldType, mapValue(field.name)), optional = false)
+            marshaller.addMapNodeElem(acc, field.name, loop(field.fieldType, mapValue(field.name)), optional = false)
           case (acc, _) ⇒ acc
         }
 
-        m.mapNode(builder)
+        marshaller.mapNode(builder)
       case l: ListInputType[_] ⇒
         val listValue = v.asInstanceOf[Seq[Any]]
 
-        m.mapAndMarshal[Any](listValue, loop(l.ofType, _))
+        marshaller.mapAndMarshal[Any](listValue, loop(l.ofType, _))
       case o: OptionInputType[_] ⇒ v match {
         case Some(optVal) ⇒ loop(o.ofType, optVal)
-        case None ⇒ m.nullNode
+        case None ⇒ marshaller.nullNode
         case other ⇒ loop(o.ofType, other)
       }
     }
@@ -206,37 +199,37 @@ object DefaultValueRenderer {
 
     coercionHelper.coerceInputValue(tpe, Nil, inputValue, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default)(iu) match {
       case Right(Some(coerced)) ⇒ renderCoercedInputValue(tpe, coerced)
-      case _ ⇒ m.nullNode
+      case _ ⇒ marshaller.nullNode
     }
   }
 
-  def renderCoercedInputValueCompact[T](value: Any, tpe: InputType[T])(implicit m: ResultMarshaller): String =
-    m.renderCompact(renderCoercedInputValue(tpe, value))
+  def renderCoercedInputValueCompact[T](value: Any, tpe: InputType[T]): String =
+    marshaller.renderCompact(renderCoercedInputValue(tpe, value))
 
-  def renderCoercedInputValuePretty[T](value: Any, tpe: InputType[T])(implicit m: ResultMarshaller): String =
-    m.renderPretty(renderCoercedInputValue(tpe, value))
+  def renderCoercedInputValuePretty[T](value: Any, tpe: InputType[T]): String =
+    marshaller.renderPretty(renderCoercedInputValue(tpe, value))
 
-  def renderCoercedInputValue(t: InputType[_], v: Any)(implicit m: ResultMarshaller): m.Node = t match {
-    case _ if v == null ⇒ m.nullNode
-    case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, m.capabilities), m, s.name, s.scalarInfo)
-    case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), m, e.name)
+  def renderCoercedInputValue(t: InputType[_], v: Any): marshaller.Node = t match {
+    case _ if v == null ⇒ marshaller.nullNode
+    case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, marshaller.capabilities), marshaller, s.name, s.scalarInfo)
+    case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), marshaller, e.name)
     case io: InputObjectType[_] ⇒
       val mapValue = v.asInstanceOf[Map[String, Any]]
 
-      val builder = io.fields.foldLeft(m.emptyMapNode(io.fields.map(_.name))) {
+      val builder = io.fields.foldLeft(marshaller.emptyMapNode(io.fields.map(_.name))) {
         case (acc, field) if mapValue contains field.name ⇒
-          m.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name)), optional = false)
+          marshaller.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name)), optional = false)
         case (acc, _) ⇒ acc
       }
 
-      m.mapNode(builder)
+      marshaller.mapNode(builder)
     case l: ListInputType[_] ⇒
       val listValue = v.asInstanceOf[Seq[Any]]
 
-      m.mapAndMarshal[Any](listValue, renderCoercedInputValue(l.ofType, _))
+      marshaller.mapAndMarshal[Any](listValue, renderCoercedInputValue(l.ofType, _))
     case o: OptionInputType[_] ⇒ v match {
       case Some(optVal) ⇒ renderCoercedInputValue(o.ofType, optVal)
-      case None ⇒ m.nullNode
+      case None ⇒ marshaller.nullNode
       case other ⇒ renderCoercedInputValue(o.ofType, other)
     }
   }

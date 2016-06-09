@@ -2,7 +2,7 @@ package sangria.renderer
 
 import sangria.execution.ValueCoercionHelper
 import sangria.introspection._
-import sangria.marshalling.{ToInput, ResultMarshaller, InputUnmarshaller}
+import sangria.marshalling.{ToInput, InputUnmarshaller}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.schema._
 import sangria.util.StringUtil.escapeString
@@ -51,25 +51,19 @@ object SchemaRenderer {
       case IntrospectionNamedTypeRef(_, name) ⇒ name
     }
 
+  private def renderDefault(defaultValue: Option[String]) =
+    defaultValue.fold("")(d ⇒ s" = $d")
+
   private def renderDefault(value: (Any, ToInput[_, _]), tpe: InputType[_]) = {
     val coercionHelper = new ValueCoercionHelper[Any]
-
-    import sangria.marshalling.queryAst.queryAstResultMarshaller
 
     s" = ${DefaultValueRenderer.renderInputValueCompact(value, tpe, coercionHelper)}"
   }
 
-  private def renderArg(arg: IntrospectionInputValue, defParser: Option[DefaultValueParser[_]]) = {
+  private def renderArg(arg: IntrospectionInputValue) = {
     val argDef = s"${arg.name}: ${renderTypeName(arg.tpe)}"
-    val default =
-      for {
-        default ← arg.defaultValue
-        parser ← defParser
-        tpe ← parser.schema.getInputType(arg.tpe)
-        parsed ← parser.parser.parse(default).toOption
-      } yield renderDefault(parsed → parser.toInput, tpe)
 
-    argDef + (default getOrElse "")
+    argDef + renderDefault(arg.defaultValue)
   }
 
   private def renderArg(arg: Argument[_]) = {
@@ -88,9 +82,9 @@ object SchemaRenderer {
     case _ ⇒ ""
   }
 
-  def renderArgs(args: Seq[IntrospectionInputValue], defParser: Option[DefaultValueParser[_]]) =
+  def renderArgsI(args: Seq[IntrospectionInputValue]) =
     if (args.nonEmpty)
-      args map (renderArg(_, defParser)) mkString ("(", ", ", ")")
+      args map (renderArg(_)) mkString ("(", ", ", ")")
     else
       ""
 
@@ -100,11 +94,11 @@ object SchemaRenderer {
     else
       ""
 
-  private def renderFields(fields: Seq[IntrospectionField], defParser: Option[DefaultValueParser[_]]) =
+  private def renderFieldsI(fields: Seq[IntrospectionField]) =
     if (fields.nonEmpty)
       fields.zipWithIndex map { case (f, idx) ⇒
         (if (idx != 0 && f.description.isDefined) "\n" else "") +
-          renderField(f, defParser)
+          renderField(f)
       } mkString "\n"
     else
       ""
@@ -118,11 +112,11 @@ object SchemaRenderer {
     else
       ""
 
-  private def renderInputFieldsI(fields: Seq[IntrospectionInputValue], defParser: Option[DefaultValueParser[_]]) =
+  private def renderInputFieldsI(fields: Seq[IntrospectionInputValue]) =
     if (fields.nonEmpty)
       fields.zipWithIndex map { case (f, idx) ⇒
         (if (idx != 0 && f.description.isDefined) "\n" else "") +
-          renderInputField(f, defParser)
+          renderInputField(f)
       } mkString "\n"
     else
       ""
@@ -136,23 +130,14 @@ object SchemaRenderer {
     else
       ""
 
-  private def renderField(field: IntrospectionField, defParser: Option[DefaultValueParser[_]]) =
-    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}${renderArgs(field.args, defParser)}: ${renderTypeName(field.tpe)}${renderDeprecation(field.isDeprecated, field.deprecationReason)}"
+  private def renderField(field: IntrospectionField) =
+    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}${renderArgsI(field.args)}: ${renderTypeName(field.tpe)}${renderDeprecation(field.isDeprecated, field.deprecationReason)}"
 
   private def renderField(field: Field[_, _]) =
     s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}${renderArgs(field.arguments)}: ${renderTypeName(field.fieldType)}${renderDeprecation(field.deprecationReason.isDefined, field.deprecationReason)}"
 
-  private def renderInputField(field: IntrospectionInputValue, defParser: Option[DefaultValueParser[_]]) = {
-    val default =
-      for {
-        default ← field.defaultValue
-        parser ← defParser
-        tpe ← parser.schema.getInputType(field.tpe)
-        parsed ← parser.parser.parse(default).toOption
-      } yield renderDefault(parsed → parser.toInput, tpe)
-
-    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}: ${renderTypeName(field.tpe)}${default getOrElse ""}"
-  }
+  private def renderInputField(field: IntrospectionInputValue) =
+    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}: ${renderTypeName(field.tpe)}${renderDefault(field.defaultValue)}"
 
   private def renderInputField(field: InputField[_]) = {
     val default = field.defaultValue.fold("")(renderDefault(_, field.fieldType))
@@ -160,8 +145,8 @@ object SchemaRenderer {
     s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}: ${renderTypeName(field.fieldType)}$default"
   }
 
-  private def renderObject(tpe: IntrospectionObjectType, defParser: Option[DefaultValueParser[_]]) =
-    s"${renderDescription(tpe.description)}type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe.fields, defParser)}\n}"
+  private def renderObject(tpe: IntrospectionObjectType) =
+    s"${renderDescription(tpe.description)}type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFieldsI(tpe.fields)}\n}"
 
   private def renderObject(tpe: ObjectType[_, _]) =
     s"${renderDescription(tpe.description)}type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe.uniqueFields)}\n}"
@@ -196,14 +181,14 @@ object SchemaRenderer {
   private def renderScalar(tpe: ScalarType[_]) =
     s"${renderDescription(tpe.description)}scalar ${tpe.name}"
 
-  private def renderInputObject(tpe: IntrospectionInputObjectType, defParser: Option[DefaultValueParser[_]]) =
-    s"${renderDescription(tpe.description)}input ${tpe.name} {\n${renderInputFieldsI(tpe.inputFields, defParser)}\n}"
+  private def renderInputObject(tpe: IntrospectionInputObjectType) =
+    s"${renderDescription(tpe.description)}input ${tpe.name} {\n${renderInputFieldsI(tpe.inputFields)}\n}"
 
   private def renderInputObject(tpe: InputObjectType[_]) =
     s"${renderDescription(tpe.description)}input ${tpe.name} {\n${renderInputFields(tpe.fields)}\n}"
 
-  private def renderInterface(tpe: IntrospectionInterfaceType, defParser: Option[DefaultValueParser[_]]) =
-    s"${renderDescription(tpe.description)}interface ${tpe.name} {\n${renderFields(tpe.fields, defParser)}\n}"
+  private def renderInterface(tpe: IntrospectionInterfaceType) =
+    s"${renderDescription(tpe.description)}interface ${tpe.name} {\n${renderFieldsI(tpe.fields)}\n}"
 
   private def renderInterface(tpe: InterfaceType[_, _]) =
     s"${renderDescription(tpe.description)}interface ${tpe.name} {\n${renderFields(tpe.uniqueFields)}\n}"
@@ -236,12 +221,12 @@ object SchemaRenderer {
     s"schema {\n${withSubs mkString "\n"}\n}"
   }
 
-  private def renderType(tpe: IntrospectionType, defParser: Option[DefaultValueParser[_]]) =
+  private def renderType(tpe: IntrospectionType) =
     tpe match {
-      case o: IntrospectionObjectType ⇒ renderObject(o, defParser)
+      case o: IntrospectionObjectType ⇒ renderObject(o)
       case u: IntrospectionUnionType ⇒ renderUnion(u)
-      case i: IntrospectionInterfaceType ⇒ renderInterface(i, defParser)
-      case io: IntrospectionInputObjectType ⇒ renderInputObject(io, defParser)
+      case i: IntrospectionInterfaceType ⇒ renderInterface(i)
+      case io: IntrospectionInputObjectType ⇒ renderInputObject(io)
       case s: IntrospectionScalarType ⇒ renderScalar(s)
       case e: IntrospectionEnumType ⇒ renderEnum(e)
       case kind ⇒ throw new IllegalArgumentException(s"Unsupported kind: $kind")
@@ -264,19 +249,19 @@ object SchemaRenderer {
   private def renderDirective(dir: Directive) =
     s"${renderDescription(dir.description)}directive @${dir.name}${renderArgs(dir.arguments)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
 
-  private def renderDirective(dir: IntrospectionDirective, defParser: Option[DefaultValueParser[_]]) =
-    s"${renderDescription(dir.description)}directive @${dir.name}${renderArgs(dir.args, defParser)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
+  private def renderDirective(dir: IntrospectionDirective) =
+    s"${renderDescription(dir.description)}directive @${dir.name}${renderArgsI(dir.args)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
 
-  def renderSchema(introspectionSchema: IntrospectionSchema, defParser: Option[DefaultValueParser[_]]): String = {
+  def renderSchema(introspectionSchema: IntrospectionSchema): String = {
     val schemaDef = renderSchemaDefinition(introspectionSchema)
-    val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map (renderType(_, defParser))
-    val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_, defParser))
+    val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map (renderType(_))
+    val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_))
 
     schemaDef +: (types ++ directives) mkString TypeSeparator
   }
 
-  def renderSchema[T: InputUnmarshaller](introspectionResult: T, defParser: Option[DefaultValueParser[_]]): String =
-    renderSchema(IntrospectionParser parse introspectionResult, defParser)
+  def renderSchema[T: InputUnmarshaller](introspectionResult: T): String =
+    renderSchema(IntrospectionParser parse introspectionResult)
 
   def renderSchema(schema: Schema[_, _]): String = {
     val schemaDef = renderSchemaDefinition(schema)
@@ -286,15 +271,15 @@ object SchemaRenderer {
     schemaDef +: (types ++ directives) mkString TypeSeparator
   }
 
-  def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema, defParser: Option[DefaultValueParser[_]]): String = {
-    val types = introspectionSchema.types filter (tpe ⇒ Schema.isIntrospectionType(tpe.name)) sortBy (_.name) map (renderType(_, defParser))
-    val directives = introspectionSchema.directives filter (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_, defParser))
+  def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String = {
+    val types = introspectionSchema.types filter (tpe ⇒ Schema.isIntrospectionType(tpe.name)) sortBy (_.name) map (renderType(_))
+    val directives = introspectionSchema.directives filter (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_))
 
     (types ++ directives) mkString TypeSeparator
   }
 
-  def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T, defParser: Option[DefaultValueParser[_]]): String =
-    renderIntrospectionSchema(IntrospectionParser parse introspectionResult, defParser)
+  def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T): String =
+    renderIntrospectionSchema(IntrospectionParser parse introspectionResult)
 
   private def isBuiltIn(tpe: IntrospectionType) =
     Schema.isBuiltInType(tpe.name)
