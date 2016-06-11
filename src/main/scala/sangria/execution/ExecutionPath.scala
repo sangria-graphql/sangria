@@ -7,6 +7,8 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
   def +(fieldName: String) = new ExecutionPath(path :+ fieldName, cacheKey :+ fieldName)
   def +(field: ast.Field) = new ExecutionPath(path :+ field.outputName, cacheKey :+ field.outputName)
 
+  def withIndex(idx: Int) = new ExecutionPath(path :+ idx, cacheKey)
+
   def isEmpty = path.isEmpty
   def nonEmpty = path.nonEmpty
 

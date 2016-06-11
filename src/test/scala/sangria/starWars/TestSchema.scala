@@ -1,11 +1,14 @@
 package sangria.starWars
 
+import sangria.execution.UserFacingError
 import sangria.schema._
 import sangria.starWars.TestData._
 
 import scala.concurrent.Future
 
 object TestSchema {
+  case class PrivacyError(message: String) extends Exception(message) with UserFacingError
+
   val EpisodeEnum = EnumType(
     "Episode",
     Some("One of the films in the Star Wars Trilogy"),
@@ -36,7 +39,10 @@ object TestSchema {
           resolve = ctx ⇒ DeferFriends(ctx.value.friends)),
         Field("appearsIn", OptionType(ListType(OptionType(EpisodeEnum))),
           Some("Which movies they appear in."),
-          resolve = _.value.appearsIn map (e ⇒ Some(e)))
+          resolve = _.value.appearsIn map (e ⇒ Some(e))),
+        Field("secretBackstory", OptionType(StringType),
+          Some("Where are they from and how they came to be who they are."),
+          resolve = _ ⇒ throw PrivacyError("secretBackstory is secret."))
       ))
 
   val Human =

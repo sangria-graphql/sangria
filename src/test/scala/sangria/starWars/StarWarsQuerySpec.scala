@@ -5,10 +5,11 @@ import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.starWars.TestSchema.StarWarsSchema
+import sangria.starWars.TestSchema.{PrivacyError, StarWarsSchema}
 import sangria.starWars.TestData.{FriendsResolver, CharacterRepo}
 import sangria.util.FutureResultSupport
 import InputUnmarshaller.mapVars
+import sangria.validation.QueryValidator
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
@@ -378,6 +379,140 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
               "name" → "Luke Skywalker")
           )
         ))
+    }
+  }
+
+  "Reporting errors raised in resolvers" should {
+    "Correctly reports error on accessing secretBackstory" in {
+      val Success(query) = QueryParser.parse("""
+        query HeroNameQuery {
+          hero {
+            name
+            secretBackstory
+          }
+        }
+        """)
+
+      val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
+
+      res("data") should be (
+        Map("hero" → Map("name" → "R2-D2", "secretBackstory" → null)))
+
+      val errors = res("errors").asInstanceOf[Seq[Any]]
+
+      errors should (
+        have(size(1)) and
+        contain(Map(
+          "message" → "secretBackstory is secret.",
+          "path" → List("hero", "secretBackstory"),
+          "locations" → Vector(Map("line" → 5, "column" → 13)))))
+    }
+
+    "Correctly reports error on accessing secretBackstory in a list" in {
+      val Success(query) = QueryParser.parse("""
+        query HeroNameQuery {
+          hero {
+            name
+            friends {
+              name
+              secretBackstory
+            }
+          }
+        }
+        """)
+
+      val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
+
+      res("data") should be (
+        Map("hero" →
+            Map(
+              "name" → "R2-D2",
+              "friends" → Vector(
+                Map("name" → "Luke Skywalker", "secretBackstory" → null),
+                Map("name" → "Han Solo", "secretBackstory" → null),
+                Map("name" → "Leia Organa", "secretBackstory" → null)))))
+
+      val errors = res("errors").asInstanceOf[Seq[Any]]
+
+      errors should (
+        have(size(3)) and
+        contain(Map(
+          "message" → "secretBackstory is secret.",
+          "path" → Vector("hero", "friends", 0, "secretBackstory"),
+          "locations" → Vector(Map("line" → 7, "column" → 15)))) and
+        contain(Map(
+          "message" → "secretBackstory is secret.",
+          "path" → Vector("hero", "friends", 1, "secretBackstory"),
+          "locations" → Vector(Map("line" → 7, "column" → 15)))) and
+        contain(Map(
+          "message" → "secretBackstory is secret.",
+          "path" → Vector("hero", "friends", 2, "secretBackstory"),
+          "locations" → Vector(Map("line" → 7, "column" → 15)))))
+    }
+
+    "Correctly reports error on accessing through an alias" in {
+      val Success(query) = QueryParser.parse("""
+        query HeroNameQuery {
+          mainHero: hero {
+            name
+            story: secretBackstory
+          }
+        }
+        """)
+
+      val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
+
+      res("data") should be (
+        Map("mainHero" → Map("name" → "R2-D2", "story" → null)))
+
+      val errors = res("errors").asInstanceOf[Seq[Any]]
+
+      errors should (
+        have(size(1)) and
+        contain(Map(
+          "message" → "secretBackstory is secret.",
+          "path" → List("mainHero", "story"),
+          "locations" → Vector(Map("line" → 5, "column" → 13)))))
+    }
+
+    "Full response path is included when fields are non-nullable" in {
+      lazy val A: ObjectType[Unit, Any] = ObjectType("A", () ⇒ fields(
+        Field("nullableA", OptionType(A), resolve = _ ⇒ ""),
+        Field("nonNullA", A, resolve = _ ⇒ ""),
+        Field("throws", A, resolve = _ ⇒ throw PrivacyError("Catch me if you can"))))
+
+      val Query = ObjectType("Query", fields[Unit, Unit](
+        Field("nullableA", OptionType(A), resolve = _ ⇒ "")))
+
+      val schema = Schema(Query)
+
+      val Success(query) = QueryParser.parse("""
+        query {
+          nullableA {
+            nullableA {
+              nonNullA {
+                nonNullA {
+                  throws
+                }
+              }
+            }
+          }
+        }
+        """)
+
+      val res = Executor.execute(schema, query, queryValidator = QueryValidator.empty).await.asInstanceOf[Map[String, Any]]
+
+      res("data") should be (
+        Map("nullableA" → Map("nullableA" → null)))
+
+      val errors = res("errors").asInstanceOf[Seq[Any]]
+
+      errors should (
+        have(size(1)) and
+        contain(Map(
+          "message" → "Catch me if you can",
+          "path" → List("nullableA", "nullableA", "nonNullA", "nonNullA", "throws"),
+          "locations" → List(Map("line" → 7, "column" → 19)))))
     }
   }
 }

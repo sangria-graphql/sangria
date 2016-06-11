@@ -195,6 +195,13 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
                     "name" → "String",
                     "kind" → "SCALAR"
                   )
+                ),
+                Map(
+                  "name" → "secretBackstory",
+                  "type" → Map(
+                    "name" → "String",
+                    "kind" → "SCALAR"
+                  )
                 )
               )
             )
@@ -271,6 +278,14 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
                 ),
                 Map(
                   "name" → "primaryFunction",
+                  "type" → Map(
+                    "name" → "String",
+                    "kind" → "SCALAR",
+                    "ofType" → null
+                  )
+                ),
+                Map(
+                  "name" → "secretBackstory",
                   "type" → Map(
                     "name" → "String",
                     "kind" → "SCALAR",

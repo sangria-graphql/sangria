@@ -376,7 +376,10 @@ class Resolver[Ctx](
             case other ⇒ Seq(other)
           }
 
-          val res = actualValue map (resolveValue(path, astFields, listTpe, field, _, userCtx))
+          val res = actualValue.zipWithIndex map {
+            case (v, idx) ⇒ resolveValue(path withIndex idx, astFields, listTpe, field, v, userCtx)
+          }
+
           val simpleRes = res.collect { case r: Result ⇒ r}
           val optional = isOptional(listTpe)
 
