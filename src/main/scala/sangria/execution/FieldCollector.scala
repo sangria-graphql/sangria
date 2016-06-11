@@ -18,10 +18,10 @@ class FieldCollector[Ctx, Val](
     valueCollector: ValueCollector[Ctx, _],
     exceptionHandler: Executor.ExceptionHandler) {
 
-  private val resultCache = TrieMap[(Vector[String], String), Try[CollectedFields]]()
+  private val resultCache = TrieMap[(ExecutionPath.PathCacheKey, String), Try[CollectedFields]]()
 
-  def collectFields(path: Vector[String], tpe: ObjectType[Ctx, _], selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
-    resultCache.getOrElseUpdate(path → tpe.name, {
+  def collectFields(path: ExecutionPath, tpe: ObjectType[Ctx, _], selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
+    resultCache.getOrElseUpdate(path.cacheKey → tpe.name, {
       val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
 
       selections.foldLeft(builder) {

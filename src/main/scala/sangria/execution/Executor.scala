@@ -39,13 +39,13 @@ case class Executor[Ctx, Root](
         unmarshalledVariables ← valueCollector.getVariableValues(operation.variables)
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
         tpe ← getOperationRootType(operation, queryAst.sourceMapper)
-        fields ← fieldCollector.collectFields(Vector.empty, tpe, Vector(operation))
+        fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
       } yield {
         val preparedFields = fields.fields.flatMap {
           case CollectedField(_, astField, Success(_)) ⇒
             val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
             val field = allFields.head
-            val args = valueCollector.getFieldArgumentValues(Vector(astField.name), field.arguments, astField.arguments, unmarshalledVariables)
+            val args = valueCollector.getFieldArgumentValues(ExecutionPath.empty + astField, field.arguments, astField.arguments, unmarshalledVariables)
 
             args.toOption.map(PreparedField(field, _))
           case _ ⇒ None
@@ -91,7 +91,7 @@ case class Executor[Ctx, Root](
         unmarshalledVariables ← valueCollector.getVariableValues(operation.variables)
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
         tpe ← getOperationRootType(operation, queryAst.sourceMapper)
-        fields ← fieldCollector.collectFields(Vector.empty, tpe, Vector(operation))
+        fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
       } yield reduceQuerySafe(fieldCollector, valueCollector, unmarshalledVariables, tpe, fields, userContext) match {
         case fut: Future[Ctx] ⇒
           fut.flatMap(executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
@@ -224,12 +224,12 @@ case class Executor[Ctx, Root](
     // Using mutability here locally in order to reduce footprint
     import scala.collection.mutable.ListBuffer
 
-    val argumentValuesFn = (path: Vector[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument]) ⇒
+    val argumentValuesFn = (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument]) ⇒
       valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, variables)
 
     val initialValues: Vector[Any] = reducers map (_.initial)
 
-    def loop(path: Vector[String], tpe: OutputType[_], astFields: Vector[ast.Field]): Seq[Any] =
+    def loop(path: ExecutionPath, tpe: OutputType[_], astFields: Vector[ast.Field]): Seq[Any] =
       tpe match {
         case OptionType(ofType) ⇒ loop(path, ofType, astFields)
         case ListType(ofType) ⇒ loop(path, ofType, astFields)
@@ -240,7 +240,7 @@ case class Executor[Ctx, Root](
                 case (acc, CollectedField(_, _, Success(fields))) if objTpe.getField(schema, fields.head.name).nonEmpty ⇒
                   val astField = fields.head
                   val field = objTpe.getField(schema, astField.name).head
-                  val newPath = path :+ astField.outputName
+                  val newPath = path + astField
                   val childReduced = loop(newPath, field.fieldType, fields)
 
                   for (i ← reducers.indices) {
@@ -278,7 +278,7 @@ case class Executor[Ctx, Root](
       case (acc, CollectedField(_, _, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty =>
         val astField = astFields.head
         val field = rootTpe.getField(schema, astField.name).head
-        val path = Vector(astField.outputName)
+        val path = ExecutionPath.empty + astField
         val childReduced = loop(path, field.fieldType, astFields)
 
         for (i ← reducers.indices) {

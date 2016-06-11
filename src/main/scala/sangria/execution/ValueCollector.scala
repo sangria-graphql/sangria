@@ -16,7 +16,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   import coercionHelper._
 
-  private val argumentCache = TrieMap[(Vector[String], List[ast.Argument]), Try[Args]]()
+  private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, List[ast.Argument]), Try[Args]]()
 
   def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
@@ -62,11 +62,11 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   private val emptyArgs = Success(Args.empty)
 
-  def getFieldArgumentValues(path: Vector[String], argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
+  def getFieldArgumentValues(path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
     if(argumentDefs.isEmpty)
       emptyArgs
     else
-      argumentCache.getOrElseUpdate(path → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
+      argumentCache.getOrElseUpdate(path.cacheKey → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
   def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
     if (argumentDefs.isEmpty)

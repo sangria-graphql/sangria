@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.execution.{FieldTag, DeprecationTracker, ValueCoercionHelper, Resolver}
+import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper
 
@@ -246,7 +246,7 @@ case class Context[Ctx, Val](
   sourceMapper: Option[SourceMapper],
   deprecationTracker: DeprecationTracker,
   astFields: Vector[ast.Field],
-  path: Vector[String]) extends WithArguments with WithInputTypeRendering[Ctx]
+  path: ExecutionPath) extends WithArguments with WithInputTypeRendering[Ctx]
 
 case class Args(raw: Map[String, Any]) extends AnyVal {
   def arg[T](arg: Argument[T]): T = raw.get(arg.name).fold(None.asInstanceOf[T])(_.asInstanceOf[T])

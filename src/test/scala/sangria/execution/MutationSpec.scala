@@ -229,20 +229,20 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
       List(
         Map(
           "message" → "Cannot change the number",
-          "field" → "third",
+          "path" → List("third"),
           "locations" → List(Map("line" → 9, "column" → 11))), // todo fix duplicate errors
         Map(
           "message" → "Cannot change the number",
-          "field" → "third",
+          "path" → List("third"),
           "locations" → List(Map("line" → 9, "column" → 11))),
         Map("message" → "Cannot change the number",
-          "field" → "sixth",
+          "path" → List("sixth"),
           "locations" → List(Map("line" → 18, "column" → 11))),
         Map("message" → "error in resolver",
-          "field" → "defFail",
+          "path" → List("defFail"),
           "locations" → List(Map("line" → 24, "column" → 11))),
         Map("message" → "error in resolver",
-          "field" → "defFutFail",
+          "path" → List("defFutFail"),
           "locations" → List(Map("line" → 30, "column" → 11)))),
       userContext = UserContext(10),
       resolver = new Resolver

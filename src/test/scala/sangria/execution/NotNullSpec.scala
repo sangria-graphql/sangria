@@ -62,7 +62,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       """,
       Map(
         "data" → Map("sync" → null),
-        "errors" → List(Map("message" → "sync", "field" → "sync", "locations" → List(Map("line" → 3, "column" → 11))))))
+        "errors" → List(Map("message" → "sync", "path" → List("sync"), "locations" → List(Map("line" → 3, "column" → 11))))))
 
     "nulls a nullable field that throws in a promise" in check(
       new ThrowingSubject,
@@ -73,7 +73,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       """,
       Map(
         "data" → Map("promise" → null),
-        "errors" → List(Map("message" → "promise", "field" → "promise", "locations" → List(Map("line" → 3, "column" → 11))))))
+        "errors" → List(Map("message" → "promise", "path" → List("promise"), "locations" → List(Map("line" → 3, "column" → 11))))))
 
     "nulls a synchronously returned object that contains a non-nullable field that throws synchronously" in check(
       new ThrowingSubject,
@@ -86,7 +86,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       """,
       Map(
         "data" → Map("nest" → null),
-        "errors" → List(Map("message" → "nonNullSync", "field" → "nest.nonNullSync", "locations" → List(Map("line" → 4, "column" → 13))))))
+        "errors" → List(Map("message" → "nonNullSync", "path" → List("nest", "nonNullSync"), "locations" → List(Map("line" → 4, "column" → 13))))))
 
     "nulls a synchronously returned object that contains a non-nullable field that throws in a promise" in check(
       new ThrowingSubject,
@@ -99,7 +99,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       """,
       Map(
         "data" → Map("nest" → null),
-        "errors" → List(Map("message" → "nonNullPromise", "field" → "nest.nonNullPromise", "locations" → List(Map("line" → 4, "column" → 13))))))
+        "errors" → List(Map("message" → "nonNullPromise", "path" → List("nest", "nonNullPromise"), "locations" → List(Map("line" → 4, "column" → 13))))))
 
     "nulls an object returned in a promise that contains a non-nullable field that throws synchronously" in check(
       new ThrowingSubject,
@@ -112,7 +112,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       """,
       Map(
         "data" → Map("promiseNest" → null),
-        "errors" → List(Map("message" → "nonNullSync", "field" → "promiseNest.nonNullSync", "locations" → List(Map("line" → 4, "column" → 13))))))
+        "errors" → List(Map("message" → "nonNullSync", "path" → List("promiseNest", "nonNullSync"), "locations" → List(Map("line" → 4, "column" → 13))))))
 
     "nulls an object returned in a promise that contains a non-nullable field that throws in a promise" in check(
       new ThrowingSubject,
@@ -125,7 +125,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       """,
       Map(
         "data" → Map("promiseNest" → null),
-        "errors" → List(Map("message" → "nonNullPromise", "field" → "promiseNest.nonNullPromise", "locations" → List(Map("line" → 4, "column" → 13))))))
+        "errors" → List(Map("message" → "nonNullPromise", "path" → List("promiseNest", "nonNullPromise"), "locations" → List(Map("line" → 4, "column" → 13))))))
     
     "nulls a complex tree of nullable fields that throw" in checkErrors(
       new ThrowingSubject,
@@ -184,18 +184,18 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
         )
       ),
       List(
-        Map("message" → "sync", "field" → "nest.sync", "locations" → List(Map("line" → 4, "column" → 13))),
-        Map("message" → "sync", "field" → "nest.nest.sync", "locations" → List(Map("line" → 7, "column" → 15))),
-        Map("message" → "sync", "field" → "nest.promiseNest.sync", "locations" → List(Map("line" → 11, "column" → 15))),
-        Map("message" → "sync", "field" → "promiseNest.sync", "locations" → List(Map("line" → 16, "column" → 13))),
-        Map("message" → "sync", "field" → "promiseNest.nest.sync", "locations" → List(Map("line" → 19, "column" → 15))),
-        Map("message" → "sync", "field" → "promiseNest.promiseNest.sync", "locations" → List(Map("line" → 23, "column" → 15))),
-        Map("message" → "promise", "field" → "nest.promise", "locations" → List(Map("line" → 5, "column" → 13))),
-        Map("message" → "promise", "field" → "nest.nest.promise", "locations" → List(Map("line" → 8, "column" → 15))),
-        Map("message" → "promise", "field" → "nest.promiseNest.promise", "locations" → List(Map("line" → 12, "column" → 15))),
-        Map("message" → "promise", "field" → "promiseNest.promise", "locations" → List(Map("line" → 17, "column" → 13))),
-        Map("message" → "promise", "field" → "promiseNest.nest.promise", "locations" → List(Map("line" → 20, "column" → 15))),
-        Map("message" → "promise", "field" → "promiseNest.promiseNest.promise", "locations" → List(Map("line" → 24, "column" → 15)))
+        Map("message" → "sync", "path" → List("nest", "sync"), "locations" → List(Map("line" → 4, "column" → 13))),
+        Map("message" → "sync", "path" → List("nest", "nest", "sync"), "locations" → List(Map("line" → 7, "column" → 15))),
+        Map("message" → "sync", "path" → List("nest", "promiseNest", "sync"), "locations" → List(Map("line" → 11, "column" → 15))),
+        Map("message" → "sync", "path" → List("promiseNest", "sync"), "locations" → List(Map("line" → 16, "column" → 13))),
+        Map("message" → "sync", "path" → List("promiseNest", "nest", "sync"), "locations" → List(Map("line" → 19, "column" → 15))),
+        Map("message" → "sync", "path" → List("promiseNest", "promiseNest", "sync"), "locations" → List(Map("line" → 23, "column" → 15))),
+        Map("message" → "promise", "path" → List("nest", "promise"), "locations" → List(Map("line" → 5, "column" → 13))),
+        Map("message" → "promise", "path" → List("nest", "nest", "promise"), "locations" → List(Map("line" → 8, "column" → 15))),
+        Map("message" → "promise", "path" → List("nest", "promiseNest", "promise"), "locations" → List(Map("line" → 12, "column" → 15))),
+        Map("message" → "promise", "path" → List("promiseNest", "promise"), "locations" → List(Map("line" → 17, "column" → 13))),
+        Map("message" → "promise", "path" → List("promiseNest", "nest", "promise"), "locations" → List(Map("line" → 20, "column" → 15))),
+        Map("message" → "promise", "path" → List("promiseNest", "promiseNest", "promise"), "locations" → List(Map("line" → 24, "column" → 15)))
       ))
 
     "nulls the first nullable object after a field throws in a long chain of fields that are non-null" in checkErrors(
@@ -257,19 +257,19 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       List(
         Map(
           "message" → "nonNullSync",
-          "field" → "nest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullSync",
+          "path" → List("nest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullSync"),
           "locations" → List(Map("line" → 8, "column" → 21))),
         Map(
           "message" → "nonNullSync",
-          "field" → "promiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullSync",
+          "path" → List("promiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullSync"),
           "locations" → List(Map("line" → 19, "column" → 21))),
         Map(
           "message" → "nonNullPromise",
-          "field" → "anotherNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
+          "path" → List("anotherNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullPromise"),
           "locations" → List(Map("line" → 30, "column" → 21))),
         Map(
           "message" → "nonNullPromise",
-          "field" → "anotherPromiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
+          "path" → List("anotherPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullPromise"),
           "locations" → List(Map("line" → 41, "column" → 21)))
       ))
 
@@ -304,7 +304,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
         "data" → Map("nest" → null),
         "errors" → List(Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "nest.nonNullSync",
+          "path" → List("nest", "nonNullSync"),
           "locations" → List(Map("line" → 4, "column" → 13))))))
 
     "nulls a synchronously returned object that contains a non-nullable field that returns null in a promise" in check(
@@ -320,7 +320,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
         "data" → Map("nest" → null),
         "errors" → List(Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "nest.nonNullPromise",
+          "path" → List("nest", "nonNullPromise"),
           "locations" → List(Map("line" → 4, "column" → 13))))))
 
     "nulls an object returned in a promise that contains a non-nullable field that returns null synchronously" in check(
@@ -336,7 +336,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
         "data" → Map("promiseNest" → null),
         "errors" → List(Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "promiseNest.nonNullSync",
+          "path" → List("promiseNest", "nonNullSync"),
           "locations" → List(Map("line" → 4, "column" → 13))))))
 
     "nulls an object returned in a promise that contains a non-nullable field that returns null ina a promise" in check(
@@ -352,7 +352,7 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
         "data" → Map("promiseNest" → null),
         "errors" → List(Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "promiseNest.nonNullPromise",
+          "path" → List("promiseNest", "nonNullPromise"),
           "locations" → List(Map("line" → 4, "column" → 13))))))
 
     "nulls a complex tree of nullable fields that return null" in checkErrors(
@@ -472,19 +472,19 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       List(
         Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "nest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullSync",
+          "path" → List("nest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullSync"),
           "locations" → List(Map("line" → 8, "column" → 21))),
         Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "promiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullSync",
+          "path" → List("promiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullSync"),
           "locations" → List(Map("line" → 19, "column" → 21))),
         Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "anotherNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
+          "path" → List("anotherNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullPromise"),
           "locations" → List(Map("line" → 30, "column" → 21))),
         Map(
           "message" → "Cannot return null for non-nullable type",
-          "field" → "anotherPromiseNest.nonNullNest.nonNullPromiseNest.nonNullNest.nonNullPromiseNest.nonNullPromise",
+          "path" → List("anotherPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullNest", "nonNullPromiseNest", "nonNullPromise"),
           "locations" → List(Map("line" → 41, "column" → 21)))
       ))
 
@@ -493,27 +493,27 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       "query Q { nonNullSync }",
       Map(
         "data" → null,
-        "errors" → List(Map("message" → "nonNullSync", "field" → "nonNullSync", "locations" → List(Map("line" → 1, "column" → 11))))))
+        "errors" → List(Map("message" → "nonNullSync", "path" → List("nonNullSync"), "locations" → List(Map("line" → 1, "column" → 11))))))
 
     "nulls the top level if async non-nullable field errors" in check(
       new ThrowingSubject,
       "query Q { nonNullPromise }",
       Map(
         "data" → null,
-        "errors" → List(Map("message" → "nonNullPromise", "field" → "nonNullPromise", "locations" → List(Map("line" → 1, "column" → 11))))))
+        "errors" → List(Map("message" → "nonNullPromise", "path" → List("nonNullPromise"), "locations" → List(Map("line" → 1, "column" → 11))))))
 
     "nulls the top level if sync non-nullable field returns null" in check(
       new NullingSubject,
       "query Q { nonNullSync }",
       Map(
         "data" → null,
-        "errors" → List(Map("message" → "Cannot return null for non-nullable type", "field" → "nonNullSync", "locations" → List(Map("line" → 1, "column" → 11))))))
+        "errors" → List(Map("message" → "Cannot return null for non-nullable type", "path" → List("nonNullSync"), "locations" → List(Map("line" → 1, "column" → 11))))))
 
     "nulls the top level if async non-nullable field resolves null" in check(
       new NullingSubject,
       "query Q { nonNullPromise }",
       Map(
         "data" → null,
-        "errors" → List(Map("message" → "Cannot return null for non-nullable type", "field" → "nonNullPromise", "locations" → List(Map("line" → 1, "column" → 11))))))
+        "errors" → List(Map("message" → "Cannot return null for non-nullable type", "path" → List("nonNullPromise"), "locations" → List(Map("line" → 1, "column" → 11))))))
   }
 }

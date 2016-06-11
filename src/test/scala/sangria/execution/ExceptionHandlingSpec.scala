@@ -46,15 +46,15 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
             "errors" → List(
               Map(
                 "message" → "Internal server error",
-                "field" → "error",
+                "path" → List("error"),
                 "locations" → List(Map("line" → 6, "column" → 11))),
               Map(
                 "message" → "Internal server error",
-                "field" → "tryError",
+                "path" → List("tryError"),
                 "locations" → List(Map("line" → 4, "column" → 11))),
               Map(
                 "message" → "Internal server error",
-                "field" → "futureError",
+                "path" → List("futureError"),
                 "locations" → List(Map("line" → 7, "column" → 11))))))
       }
 
@@ -81,11 +81,11 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
           "errors" → List(
             Map(
               "message" → "Boom!",
-              "field" → "error",
+              "path" → List("error"),
               "locations" → List(Map("line" → 3, "column" → 11))),
             Map(
               "message" → "Boom!",
-              "field" → "futureError",
+              "path" → List("futureError"),
               "locations" → List(Map("line" → 4, "column" → 11))))))
     }
 
@@ -111,13 +111,13 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
           "errors" → List(
             Map(
               "message" → "Boom!",
-              "field" → "error",
+              "path" → List("error"),
               "foo" → List("bar", 1234),
               "baz" → "Test",
               "locations" → List(Map("line" → 3, "column" → 11))),
             Map(
               "message" → "Boom!",
-              "field" → "futureError",
+              "path" → List("futureError"),
               "foo" → List("bar", 1234),
               "baz" → "Test",
               "locations" → List(Map("line" → 4, "column" → 11))))))

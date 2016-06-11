@@ -65,7 +65,7 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
           Map(
             "data" → Map("nest" → Map("test" → null)),
-            "errors" → List(Map("message" → "Boom", "field" → "nest.test", "locations" → List(Map("line" → 1, "column" → 10))))))
+            "errors" → List(Map("message" → "Boom", "path" → List("nest", "test"), "locations" → List(Map("line" → 1, "column" → 10))))))
       }
     }
 
@@ -80,7 +80,7 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
           "data" → Map("nest" → null),
           "errors" → List(Map(
             "message" → "Cannot return null for non-nullable type",
-            "field" → "nest.test",
+            "path" → List("nest", "test"),
             "locations" → List(Map("line" → 1, "column" → 10))))))
       }
 
@@ -98,7 +98,7 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
           "data" → Map("nest" → null),
           "errors" → List(Map(
             "message" → "Cannot return null for non-nullable type",
-            "field" → "nest.test",
+            "path" → List("nest", "test"),
             "locations" → List(Map("line" → 1, "column" → 10))))))
         "Rejected" in check(tpe,
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
@@ -106,7 +106,7 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
             "data" → Map("nest" → null),
             "errors" → List(Map(
               "message" → "Boom",
-              "field" → "nest.test",
+              "path" → List("nest", "test"),
               "locations" → List(Map("line" → 1, "column" → 10))))))
       }
     }
@@ -120,7 +120,7 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
           "data" → Map("nest" → Map("test" → null)),
           "errors" → List(Map(
             "message" → "Cannot return null for non-nullable type",
-            "field" → "nest.test",
+            "path" → List("nest", "test"),
             "locations" → List(Map("line" → 1, "column" → 10))))))
         "Returns null" in check(tpe, Value(null), Map("data" → Map("nest" → Map("test" → null))))
       }
@@ -135,14 +135,14 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
             "data" → Map("nest" → Map("test" → null)),
             "errors" → List(Map(
               "message" → "Cannot return null for non-nullable type",
-              "field" → "nest.test",
+              "path" → List("nest", "test"),
               "locations" → List(Map("line" → 1, "column" → 10))))))
         "Returns null" in check(tpe, FutureValue(success(null)), Map("data" → Map("nest" → Map("test" → null))))
         "Rejected" in check(tpe,
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
           Map(
             "data" → Map("nest" → Map("test" → null)),
-            "errors" → List(Map("message" → "Boom", "field" → "nest.test", "locations" → List(Map("line" → 1, "column" → 10))))))
+            "errors" → List(Map("message" → "Boom", "path" → List("nest", "test"), "locations" → List(Map("line" → 1, "column" → 10))))))
       }
     }
 
@@ -155,13 +155,13 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
           "data" → Map("nest" → null),
           "errors" → List(Map(
             "message" → "Cannot return null for non-nullable type",
-            "field" → "nest.test",
+            "path" → List("nest", "test"),
             "locations" → List(Map("line" → 1, "column" → 10))))))
         "Returns null" in check(tpe, Value(null), Map(
           "data" → Map("nest" → null),
           "errors" → List(Map(
             "message" → "Cannot return null for non-nullable type",
-            "field" → "nest.test",
+            "path" → List("nest", "test"),
             "locations" → List(Map("line" → 1, "column" → 10))))))
       }
 
@@ -175,19 +175,19 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
             "data" → Map("nest" → null),
             "errors" → List(Map(
               "message" → "Cannot return null for non-nullable type",
-              "field" → "nest.test",
+              "path" → List("nest", "test"),
               "locations" → List(Map("line" → 1, "column" → 10))))))
         "Returns null" in check(tpe, FutureValue(success(null)), Map(
           "data" → Map("nest" → null),
           "errors" → List(Map(
             "message" → "Cannot return null for non-nullable type",
-            "field" → "nest.test",
+            "path" → List("nest", "test"),
             "locations" → List(Map("line" → 1, "column" → 10))))))
         "Rejected" in check(tpe,
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
           Map(
             "data" → Map("nest" → null),
-            "errors" → List(Map("message" → "Boom", "field" → "nest.test", "locations" → List(Map("line" → 1, "column" → 10))))))
+            "errors" → List(Map("message" → "Boom", "path" → List("nest", "test"), "locations" → List(Map("line" → 1, "column" → 10))))))
       }
     }
   }

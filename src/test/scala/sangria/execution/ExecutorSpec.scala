@@ -218,17 +218,17 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         "errors" → List(
           Map(
             "message" → "Max query depth 6 is reached.",
-            "field" → "d1.deep.deep.deep.deep.deep.b",
+            "path" → List("d1", "deep", "deep", "deep", "deep", "deep", "b"),
             "locations" → List(Map("line" → 10, "column" → 23))
           ),
           Map(
             "message" → "Max query depth 6 is reached.",
-            "field" → "d2.deep.deep.deep.deep.deep.b",
+            "path" → List("d2", "deep", "deep", "deep", "deep", "deep", "b"),
             "locations" → List(Map("line" → 24, "column" → 23))
           ),
           Map(
             "message" → "Max query depth 6 is reached.",
-            "field" → "d2.deep.deep.deep.deep.deep.d",
+            "path" → List("d2", "deep", "deep", "deep", "deep", "deep", "d"),
             "locations" → List(Map("line" → 25, "column" → 23))
           )
         )
@@ -360,23 +360,23 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       errors should (have(size(5)) and
           contain(Map(
-            "field" → "syncError",
+            "path" → List("syncError"),
             "locations" → List(Map("line" → 4, "column" → 14)),
             "message" → "Error getting syncError")) and
           contain(Map(
-            "field" → "asyncReject",
+            "path" → List("asyncReject"),
             "locations" → List(Map("line" → 6, "column" → 11)),
             "message" → "Error getting asyncReject")) and
           contain(Map(
             "message" → "Error getting asyncDeferError",
-            "field" → "asyncDeferError",
+            "path" → List("asyncDeferError"),
             "locations" → List(Map("line" → 7, "column" → 12)))) and
           contain(Map(
             "message" → "Error getting syncDeferError",
-            "field" → "syncDeferError",
+            "path" → List("syncDeferError"),
             "locations" → List(Map("line" → 9, "column" → 15)))) and
           contain(Map(
-            "field" → "asyncError",
+            "path" → List("asyncError"),
             "locations" → List(Map("line" → 8, "column" → 15)),
             "message" → "Error getting asyncError")))
     }
@@ -628,11 +628,11 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
             "errors" → List(
               Map(
                 "message" → "error in resolver",
-                "field" → "defFail",
+                "path" → List("defFail"),
                 "locations" → List(Map("line" → 3, "column" → 11))),
               Map(
                 "message" → "error in resolver",
-                "field" → "defFutFail",
+                "path" → List("defFutFail"),
                 "locations" → List(Map("line" → 4, "column" → 11))))))
     }
 
@@ -682,10 +682,10 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       errors should (
         have(size(4)) and
-        contain(Map("message" → "error 1", "field" → "eager", "locations" → Vector(Map("line" → 1, "column" → 2)))) and
-        contain(Map("message" → "error 2", "field" → "eager", "locations" → Vector(Map("line" → 1, "column" → 2)))) and
-        contain(Map("message" → "error 3", "field" → "future", "locations" → Vector(Map("line" → 1, "column" → 9)))) and
-        contain(Map("message" → "error 4", "field" → "future", "locations" → Vector(Map("line" → 1, "column" → 9)))))
+        contain(Map("message" → "error 1", "path" → List("eager"), "locations" → Vector(Map("line" → 1, "column" → 2)))) and
+        contain(Map("message" → "error 2", "path" → List("eager"), "locations" → Vector(Map("line" → 1, "column" → 2)))) and
+        contain(Map("message" → "error 3", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))) and
+        contain(Map("message" → "error 4", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))))
     }
   }
 }

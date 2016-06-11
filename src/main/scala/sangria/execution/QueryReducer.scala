@@ -16,20 +16,20 @@ trait QueryReducer[-Ctx, +Out] {
   def reduceField[Val](
     fieldAcc: Acc,
     childrenAcc: Acc,
-    path: Vector[String],
+    path: ExecutionPath,
     ctx: Ctx,
     astFields: Vector[ast.Field],
     parentType: ObjectType[Out, Val] @uncheckedVariance,
     field: Field[Ctx, Val] @uncheckedVariance,
-    argumentValuesFn: (Vector[String], List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc
+    argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc
 
   def reduceScalar[T](
-    path: Vector[String],
+    path: ExecutionPath,
     ctx: Ctx,
     tpe: ScalarType[T]): Acc
 
   def reduceEnum[T](
-    path: Vector[String],
+    path: ExecutionPath,
     ctx: Ctx,
     tpe: EnumType[T]): Acc
 
@@ -60,12 +60,12 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) e
   def reduceField[Val](
       fieldAcc: Acc,
       childrenAcc: Acc,
-      path: Vector[String],
+      path: ExecutionPath,
       ctx: Ctx,
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (Vector[String], List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc = {
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc = {
     val estimate = field.complexity match {
       case Some(fn) ⇒
         argumentValuesFn(path, field.arguments, astFields.head.arguments) match {
@@ -79,12 +79,12 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) e
   }
 
   def reduceScalar[T](
-    path: Vector[String],
+    path: ExecutionPath,
     ctx: Ctx,
     tpe: ScalarType[T]): Acc = tpe.complexity
 
   def reduceEnum[T](
-    path: Vector[String],
+    path: ExecutionPath,
     ctx: Ctx,
     tpe: EnumType[T]): Acc = initial
 
@@ -106,21 +106,21 @@ class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Se
   def reduceField[Val](
       fieldAcc: Acc,
       childrenAcc: Acc,
-      path: Vector[String],
+      path: ExecutionPath,
       ctx: Ctx,
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (Vector[String], List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc =
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc =
     fieldAcc ++ childrenAcc ++ field.tags.collect {case t if tagMatcher.isDefinedAt(t) ⇒ tagMatcher(t)}
 
   def reduceScalar[ST](
-    path: Vector[String],
+    path: ExecutionPath,
     ctx: Ctx,
     tpe: ScalarType[ST]): Acc = initial
 
   def reduceEnum[ET](
-    path: Vector[String],
+    path: ExecutionPath,
     ctx: Ctx,
     tpe: EnumType[ET]): Acc = initial
 

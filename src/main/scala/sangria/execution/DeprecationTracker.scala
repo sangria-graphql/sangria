@@ -19,7 +19,7 @@ object NilDeprecationTracker extends DeprecationTracker {
 
 object PrintingDeprecationTracker extends DeprecationTracker {
   def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]) =
-    println(s"Deprecated field '${ctx.parentType.name}.${ctx.field.name}' used at path '${ctx.path mkString "."}'.")
+    println(s"Deprecated field '${ctx.parentType.name}.${ctx.field.name}' used at path '${ctx.path}'.")
 
   def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx) =
     println(s"Deprecated enum value '$value' used of enum '${enum.name}'.")

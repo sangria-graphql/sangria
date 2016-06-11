@@ -61,7 +61,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be (1)
-      deprecationTracker.ctx.get.path should be (List("deprecated"))
+      deprecationTracker.ctx.get.path should be (ExecutionPath.empty + "deprecated")
       deprecationTracker.ctx.get.field.name should be ("deprecated")
     }
 
@@ -79,7 +79,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be (1)
-      deprecationTracker.ctx.get.path should be ("nested" :: "aa" :: "bb" :: Nil)
+      deprecationTracker.ctx.get.path should be (ExecutionPath.empty + "nested" + "aa" + "bb")
       deprecationTracker.ctx.get.field.name should be ("deprecated")
       deprecationTracker.ctx.get.parentType.name should be ("TestType")
     }
@@ -100,7 +100,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be (1)
-      deprecationTracker.ctx.get.path should be ("foo" :: Nil)
+      deprecationTracker.ctx.get.path should be (ExecutionPath.empty + "foo")
       deprecationTracker.ctx.get.field.name should be ("foo")
       deprecationTracker.ctx.get.parentType.name should be ("TestType")
     }
