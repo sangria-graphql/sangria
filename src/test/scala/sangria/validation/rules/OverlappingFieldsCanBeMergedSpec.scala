@@ -214,8 +214,8 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       """,
       List(
         "Field 'x' conflict because 'a' and 'b' are different fields." → List(Pos(18, 11), Pos(21, 11)),
-        "Field 'x' conflict because 'a' and 'c' are different fields." → List(Pos(18, 11), Pos(14, 13)),
-        "Field 'x' conflict because 'b' and 'c' are different fields." → List(Pos(21, 11), Pos(14, 13))
+        "Field 'x' conflict because 'c' and 'a' are different fields." → List(Pos(14, 13), Pos(18, 11)),
+        "Field 'x' conflict because 'c' and 'b' are different fields." → List(Pos(14, 13), Pos(21, 11))
       ))
 
     "deep conflict" in expectFailsPosList(
@@ -230,7 +230,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." → List(Pos(3, 11), Pos(6, 11), Pos(4, 13), Pos(7, 13))
+        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." → List(Pos(3, 11), Pos(4, 13), Pos(6, 11), Pos(7, 13))
       ))
 
     "deep conflict with multiple issues" in expectFailsPosList(
@@ -248,7 +248,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       """,
       List(
         "Field 'field' conflict because subfields 'y' conflict because 'c' and 'd' are different fields and subfields 'x' conflict because 'a' and 'b' are different fields." →
-          List(Pos(3, 11), Pos(7, 11), Pos(5, 13), Pos(9, 13), Pos(4, 13), Pos(8, 13))
+          List(Pos(3, 11), Pos(5, 13), Pos(4, 13), Pos(7, 11), Pos(9, 13), Pos(8, 13))
       ))
 
     "very deep conflict" in expectFailsPosList(
@@ -268,7 +268,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       """,
       List(
         "Field 'field' conflict because subfields 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." →
-          List(Pos(3, 11), Pos(8, 11), Pos(4, 13), Pos(9, 13), Pos(5, 15), Pos(10, 15))
+          List(Pos(3, 11), Pos(4, 13), Pos(5, 15), Pos(8, 11), Pos(9, 13), Pos(10, 15))
       ))
 
     "reports deep conflict to nearest common ancestor" in expectFailsPosList(
@@ -291,8 +291,83 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
       """,
       List(
         "Field 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." →
-          List(Pos(4, 13), Pos(7, 13), Pos(5, 15), Pos(8, 15))
+          List(Pos(4, 13), Pos(5, 15), Pos(7, 13), Pos(8, 15))
       ))
+
+    "reports deep conflict to nearest common ancestor in fragments" in expectFailsPosList(
+      """
+        {
+          field {
+            ...F
+          }
+          field {
+            ...F
+          }
+        }
+        fragment F on T {
+          deepField {
+            deeperField {
+              x: a
+            }
+            deeperField {
+              x: b
+            }
+          },
+          deepField {
+            deeperField {
+              y
+            }
+          }
+        }
+      """,
+      List(
+        "Field 'deeperField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." →
+          List(Pos(12, 13), Pos(13, 15), Pos(15, 13), Pos(16, 15))
+      ))
+
+    "reports deep conflict in nested fragments" in expectFailsPosList(
+      """
+        {
+          field {
+            ...F
+          }
+          field {
+            ...I
+          }
+        }
+        fragment F on T {
+          x: a
+          ...G
+        }
+        fragment G on T {
+          y: c
+        }
+        fragment I on T {
+          y: d
+          ...J
+        }
+        fragment J on T {
+          x: b
+        }
+      """,
+      List(
+        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields and subfields 'y' conflict because 'c' and 'd' are different fields." →
+          List(Pos(3, 11), Pos(11, 11), Pos(15, 11), Pos(6, 11), Pos(22, 11), Pos(18, 11))
+      ))
+
+    "ignores unknown fragments" in expectPasses(
+      """
+        {
+          field
+          ...Unknown
+          ...Known
+        }
+
+        fragment Known on T {
+          field
+          ...OtherUnknown
+        }
+      """)
 
     "return types must be unambiguous" should {
       lazy val SomeBox: InterfaceType[Unit, Unit] = InterfaceType("SomeBox", () ⇒ fields[Unit, Unit](
@@ -428,8 +503,8 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'edges' conflict because subfields 'node' conflict because subfields 'id' conflict because 'id' and 'name' are different fields." →
-            List(Pos(14, 13), Pos(5, 15), Pos(15, 15), Pos(6, 17), Pos(16, 17), Pos(7, 19))
+          "Field 'edges' conflict because subfields 'node' conflict because subfields 'id' conflict because 'name' and 'id' are different fields." →
+            List(Pos(5, 15), Pos(6, 17), Pos(7, 19), Pos(14, 13), Pos(15, 15), Pos(16, 17))
         ))
 
       "ignores unknown types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
@@ -481,6 +556,54 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           }
         """,
         List("Field 'scalar' conflict because they return conflicting types 'Int' and 'String'" → List(Pos(5, 17), Pos(8, 17))))
+
+      "reports correctly when a non-exclusive follows an exclusive" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+        """
+          {
+            someBox {
+              ... on IntBox {
+                deepBox {
+                  ...X
+                }
+              }
+            }
+            someBox {
+              ... on StringBox {
+                deepBox {
+                  ...Y
+                }
+              }
+            }
+            memoed: someBox {
+              ... on IntBox {
+                deepBox {
+                  ...X
+                }
+              }
+            }
+            memoed: someBox {
+              ... on StringBox {
+                deepBox {
+                  ...Y
+                }
+              }
+            }
+            other: someBox {
+              ...X
+            }
+            other: someBox {
+              ...Y
+            }
+          }
+          fragment X on SomeBox {
+            scalar
+          }
+          fragment Y on SomeBox {
+            scalar: unrelatedField
+          }
+        """,
+        List("Field 'other' conflict because subfields 'scalar' conflict because 'scalar' and 'unrelatedField' are different fields." →
+          List(Pos(31, 13), Pos(39, 13), Pos(34, 13), Pos(42, 13))))
 
       "disallows differing return type nullability despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
@@ -553,7 +676,8 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
             }
           }
         """,
-        List("Field 'val' conflict because 'scalar' and 'unrelatedField' are different fields." → List(Pos(6, 19), Pos(7, 19))))
+        List(
+          "Field 'val' conflict because 'scalar' and 'unrelatedField' are different fields." → List(Pos(6, 19), Pos(7, 19))))
 
       "disallows differing deep return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
@@ -573,7 +697,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
           }
         """,
         List("Field 'box' conflict because subfields 'scalar' conflict because they return conflicting types 'String' and 'Int'" →
-          List(Pos(5, 17), Pos(10, 17), Pos(6, 19), Pos(11, 19))))
+          List(Pos(5, 17), Pos(6, 19), Pos(10, 17), Pos(11, 19))))
     }
   }
 }
