@@ -1,9 +1,20 @@
 ## v0.7.0 (2016-06-12)
 
-* Preserve comments during the AST parsing (#105). Most of the AST classes got comment `Option[Comment]`. It can be very useful for query formatting because `QueryRenderer` also got support for comments and able to render them.
+* Initial [CATs (Compatibility Acceptance Tests)](https://github.com/graphql-cats/graphql-cats) support (#142). The test suite itself is still work-in-progress, but sangria includes an integration which executes all currently available test cases. 
+* [IDL (schema definition)](https://github.com/facebook/graphql/pull/90) syntax parsing and rendering (#137, #62)
+* AST-based schema materializer (#139, #115). This feature may be very useful for different tools that need to create an executable schema based on IDL definitions. Almost any aspect of generated in-memory schema representation can be customized via custom implementation of `AstSchemaBuilder`. This feature is already used in sangria itself for CATs (Compatibility Acceptance Tests) integration. At the moment default implementation of `AstSchemaBuilder` treats comments that start with `##` as a field/object/argument description.        
+* Partial resolve `Action`s (#140). This change introduces 2 new `Action`s that can be returned back from a `resolve` function: `PartialValue` and `PartialFutureValue`. This allows you to return a list of errors in addition to a successfully resolved value (which may contain only partial result due to the errors). 
+* Preserve comments during the AST parsing (#105). Most of the AST classes got comment `Option[Comment]` field. It can be very useful for query formatting because `QueryRenderer` also got support for comments and able to render them.
+* Include execution path in error objects (#143). This may be helpful for client side tools that would like to analyze error messages and programmatically use them in some way. This is a minor braking change since `field` property on error is removed in favor of new `path` property which is a list.   
+* Introspection-based schema materializer now also uses more advanced `IntrospectionSchemaBuilder` (similar to the AST-based one) instead of `MaterializationLogic`, which is now removed. This introduces a minor breaking change, but in a long run `IntrospectionSchemaBuilder` will provide much more flexibility.    
+* Add comment/directive support in the introspection-based schema renderer (#136).
+* Validation: improving overlapping fields quality (#133)  
+* Deprecated directive (#132)
+* New directive locations (#131)
+* Default values should be in GraphQL format (introspection) (#141)
 * Added support for case objects defined in companion object (#135). Big thanks to @joprice for contributing this improvement!
-* `SchemaRenderer` now renders directives as well
 * `SchemaRenderer` now has improved default value rendering
+* Execution `path` now got it's own class `ExecutionPath` (which is now used instead of simple `Vector[String]`). This introduces a minor breaking change.
 
 ## v0.6.3 (2016-05-01)
 
