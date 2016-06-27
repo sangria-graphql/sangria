@@ -5,10 +5,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
-import sangria.util.{GraphQlSupport, FutureResultSupport}
+import sangria.util.{SimpleGraphQlSupport, GraphQlSupport, FutureResultSupport}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Success
 
 class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
   case class SuccessfulDefer(num: NumberHolder) extends Deferred[NumberHolder]
@@ -71,28 +72,28 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
     Some(ObjectType("Mutation", fields[UserContext, Root](
       Field("immediatelyChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get()))),
+        resolve = ctx ⇒ UpdateCtx(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))),
       Field("deferChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(SuccessfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get()))),
+        resolve = ctx ⇒ UpdateCtx(SuccessfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))),
       Field("deferFailChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(FailedDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get()))),
+        resolve = ctx ⇒ UpdateCtx(FailedDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))),
       Field("deferFutChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(DeferredFutureValue(Future.successful(SuccessfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get()))),
+        resolve = ctx ⇒ UpdateCtx(DeferredFutureValue(Future.successful(SuccessfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))),
       Field("deferFutFailChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(DeferredFutureValue(Future.successful(FailedDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get()))),
+        resolve = ctx ⇒ UpdateCtx(DeferredFutureValue(Future.successful(FailedDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))),
       Field("promiseToChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(ctx.value.promiseToChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get()))),
+        resolve = ctx ⇒ UpdateCtx(ctx.value.promiseToChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))),
       Field("failToChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(ctx.value.failToChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get()))),
+        resolve = ctx ⇒ UpdateCtx(ctx.value.failToChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))),
       Field("promiseAndFailToChangeTheNumber", OptionType(NumberHolderType),
         arguments = NewNumberArg :: Nil,
-        resolve = ctx ⇒ UpdateCtx(ctx.value.promiseAndFailToChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = 10 + v.theNumber.get())))
+        resolve = ctx ⇒ UpdateCtx(ctx.value.promiseAndFailToChangeTheNumber(ctx.arg(NewNumberArg)))(v ⇒ ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get())))
     )))
   )
 
@@ -135,25 +136,25 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
         "data" → Map(
           "first"  → Map(
             "theNumber" → 1,
-            "userCtx" → 10),
+            "userCtx" → 11),
           "second" → Map(
             "theNumber" → 2,
-            "userCtx" → 11),
+            "userCtx" → 13),
           "third"  → Map(
             "theNumber" → 3,
-            "userCtx" → 12),
+            "userCtx" → 16),
           "fourth" → Map(
             "theNumber" → 4,
-            "userCtx" → 13),
+            "userCtx" → 20),
           "fifth"  → Map(
             "theNumber" → 5,
-            "userCtx" → 14),
+            "userCtx" → 25),
           "def"  → Map(
             "theNumber" → 6,
-            "userCtx" → 15),
+            "userCtx" → 31),
           "defFut"  → Map(
             "theNumber" → 7,
-            "userCtx" → 16)
+            "userCtx" → 38)
         )
       ),
       userContext = UserContext(10),
@@ -202,29 +203,29 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
       Map(
         "first"  → Map(
           "theNumber" → 1,
-          "userCtx" → 10),
+          "userCtx" → 11),
         "second" → Map(
           "theNumber" → 2,
-          "userCtx" → 11),
+          "userCtx" → 13),
         "third"  → null,
         "fourth" → Map(
           "theNumber" → 4,
-          "userCtx" → 12),
+          "userCtx" → 17),
         "fifth"  → Map(
           "theNumber" → 5,
-          "userCtx" → 14),
+          "userCtx" → 22),
         "sixth"  → null,
         "def"  → Map(
           "theNumber" → 7,
-          "userCtx" → 15),
+          "userCtx" → 29),
         "defFail"  → null,
         "defFut"  → Map(
           "theNumber" → 9,
-          "userCtx" → 17),
+          "userCtx" → 38),
         "defFutFail"  → null,
         "def1"  → Map(
           "theNumber" → 11,
-          "userCtx" → 19)
+          "userCtx" → 49)
       ),
       List(
         Map(
@@ -247,5 +248,62 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
       userContext = UserContext(10),
       resolver = new Resolver
     )
+
+    "propagates updated context to siblings and children" in {
+      val child = ObjectType("Child", fields[String, String](
+        Field("ctx", StringType, resolve = _.ctx),
+        Field("val", StringType, resolve = _.value)
+      ))
+
+      val AddArg = Argument("add", StringType)
+
+      val mutation = ObjectType("Mutation", fields[String, Unit](
+        Field("updateSimple", child,
+          arguments = AddArg :: Nil,
+          resolve = c ⇒ UpdateCtx(c.ctx + " " + c.arg(AddArg))(v ⇒ v + " ctx ").map(v ⇒ v + " map")),
+        Field("updateFuture", child,
+          arguments = AddArg :: Nil,
+          resolve = c ⇒ UpdateCtx(Future.successful(c.ctx + " " + c.arg(AddArg)))(v ⇒ v + " ctx ").map(v ⇒ v + " map")),
+        Field("updateTry", child,
+          arguments = AddArg :: Nil,
+          resolve = c ⇒ UpdateCtx(Success(c.ctx + " " + c.arg(AddArg)))(v ⇒ v + " ctx ").map(v ⇒ v + " map"))
+      ))
+
+      val schema = Schema(mutation, Some(mutation))
+
+      SimpleGraphQlSupport.check(
+        schema,
+        (),
+        """
+        mutation M {
+          a: updateSimple(add: "a") {ctx, val}
+          b: updateFuture(add: "b") {ctx, val}
+          c: updateTry(add: "c") {ctx, val}
+        }
+        """,
+        Map("data" →
+            Map(
+              "a" → Map("ctx" → "root a ctx ", "val" → "root a map"),
+              "b" → Map("ctx" → "root a ctx  b ctx ", "val" → "root a ctx  b map"),
+              "c" → Map("ctx" → "root a ctx  b ctx  c ctx ", "val" → "root a ctx  b ctx  c map"))),
+        userContext = "root")
+
+      SimpleGraphQlSupport.check(
+        schema,
+        (),
+        """
+        query Q {
+          a: updateSimple(add: "a") {ctx, val}
+          b: updateFuture(add: "b") {ctx, val}
+          c: updateTry(add: "c") {ctx, val}
+        }
+        """,
+        Map("data" →
+            Map(
+              "a" → Map("ctx" → "root a ctx ", "val" → "root a map"),
+              "b" → Map("ctx" → "root b ctx ", "val" → "root b map"),
+              "c" → Map("ctx" → "root c ctx ", "val" → "root c map"))),
+        userContext = "root")
+    }
   }
 }
