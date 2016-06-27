@@ -18,18 +18,29 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
 
   val VariantType = ObjectType("Variant", () ⇒ fields[Unit, Variant](
     Field("id", IDType, resolve = _.value.id),
+    Field("mixed", StringType,
+      tags = ProjectionName("mixed1") :: ProjectionName("mixed2") :: Nil,
+      resolve = _.value.id),
     Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ ⇒ "variant"),
-    Field("relatedProducts", ListType(ProductType), tags = ProjectionName("rp") :: Nil, resolve = Projector(1, (ctx, projected) ⇒ projected match {
-      case Vector(ProjectedName("id", _)) ⇒ Value(ctx.value.relatedProductIds map (Left(_)))
-      case _ ⇒ ProductDefer(ctx.value.relatedProductIds)
-    }))
+    Field("relatedProducts", ListType(ProductType),
+      tags = ProjectionName("rp") :: Nil,
+      resolve = Projector(1, (ctx, projected) ⇒ projected match {
+        case Vector(ProjectedName("id", _)) ⇒ Value(ctx.value.relatedProductIds map (Left(_)))
+        case _ ⇒ ProductDefer(ctx.value.relatedProductIds)
+      }))
   ))
 
   val ProductType: ObjectType[Unit, Either[String, Product]] =
     ObjectType("Product", List[Field[Unit, Either[String, Product]]](
       Field("id", IDType, resolve = _.value.fold(identity, _.id)),
+      Field("variantIds", ListType(IDType),
+        tags = ProjectionName("masterVariant.id") :: ProjectionName("variants.id") :: Nil,
+        resolve = _ ⇒ Nil),
       Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ ⇒ "product"),
-      Field("variants", ListType(VariantType), resolve = _.value.right.get.variants)
+      Field("masterVariant", VariantType,
+        tags = ProjectionName("master1") :: ProjectionName("master2") :: Nil,
+        resolve = _.value.right.get.variants.head),
+      Field("variants", ListType(VariantType), resolve = _.value.right.get.variants.tail)
     ))
 
   val QueryType = ObjectType("Query", fields[Ctx, Unit](
@@ -115,10 +126,6 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
                   "typeId" → "product",
                   "variants" → List(
                     Map(
-                      "id" → "1",
-                      "typeId" → "variant",
-                      "relatedProducts" → Nil),
-                    Map(
                       "id" → "2",
                       "typeId" → "variant",
                       "relatedProducts" → List(
@@ -126,21 +133,15 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
                           "id" → "1",
                           "typeId" → "product",
                           "variants" → List(
-                            Map("id" → "1"),
                             Map("id" → "2"))),
                         Map(
                           "id" → "2",
                           "typeId" → "product",
-                          "variants" → List(
-                            Map("id" → "1"))))))),
+                          "variants" → Nil))))),
                 Map(
                   "id" → "2",
                   "typeId" → "product",
-                  "variants" → List(
-                    Map(
-                      "id" → "1",
-                      "typeId" → "variant",
-                      "relatedProducts" → Nil)))),
+                  "variants" → Nil)),
           "projectOne" →
             List(
               Map(
@@ -148,18 +149,12 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
                 "typeId" → "product",
                 "variants" → List(
                   Map(
-                    "id" → "1",
-                    "typeId" → "variant"),
-                  Map(
                     "id" → "2",
                     "typeId" → "variant"))),
               Map(
                 "id" → "2",
                 "typeId" → "product",
-                "variants" → List(
-                  Map(
-                    "id" → "1",
-                    "typeId" → "variant")))))))
+                "variants" → Nil)))))
 
       ctx.allProjections should be (
         Vector(
@@ -174,6 +169,91 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
       ctx.oneLevelprojections should be (
         Vector(
           ProjectedName("id", Vector.empty),
+          ProjectedName("variants", Vector.empty)))
+    }
+
+    "handle multiple projected names" in {
+      val Success(query) = QueryParser.parse(
+        """
+          {
+            projectAll {
+              id
+              variantIds
+              masterVariant {
+                mixed
+              }
+              variants {
+                id
+                mixed
+              }
+            }
+
+            projectOne {
+              id
+              variantIds
+              masterVariant {
+                mixed
+              }
+              variants {
+                id
+                mixed
+              }
+            }
+          }
+        """)
+
+      val ctx = new Ctx
+
+      Executor.execute(schema, query, ctx, deferredResolver = new ProductResolver).await should be (
+        Map("data" →
+          Map(
+            "projectAll" → Vector(
+              Map(
+                "id" → "1",
+                "variantIds" → Nil,
+                "masterVariant" → Map("mixed" → "1"),
+                "variants" → Vector(Map("id" → "2", "mixed" → "2"))),
+              Map(
+                "id" → "2",
+                "variantIds" → Nil,
+                "masterVariant" → Map("mixed" → "1"),
+                "variants" → Nil)),
+            "projectOne" → Vector(
+              Map(
+                "id" → "1",
+                "variantIds" → Nil,
+                "masterVariant" → Map("mixed" → "1"),
+                "variants" → Vector(Map("id" → "2", "mixed" → "2"))),
+              Map(
+                "id" → "2",
+                "variantIds" → Nil,
+                "masterVariant" → Map("mixed" → "1"),
+                "variants" → Nil)))))
+
+      ctx.allProjections should be (
+        Vector(
+          ProjectedName("id", Vector.empty),
+          ProjectedName("masterVariant.id", Vector.empty),
+          ProjectedName("variants.id", Vector.empty),
+          ProjectedName("master1", Vector(
+              ProjectedName("mixed1", Vector.empty),
+              ProjectedName("mixed2", Vector.empty))),
+          ProjectedName("master2", Vector(
+              ProjectedName("mixed1", Vector.empty),
+              ProjectedName("mixed2", Vector.empty))),
+          ProjectedName("variants",
+            Vector(
+              ProjectedName("id", Vector.empty),
+              ProjectedName("mixed1", Vector.empty),
+              ProjectedName("mixed2", Vector.empty)))))
+
+      ctx.oneLevelprojections should be (
+        Vector(
+          ProjectedName("id", Vector.empty),
+          ProjectedName("masterVariant.id", Vector.empty),
+          ProjectedName("variants.id", Vector.empty),
+          ProjectedName("master1", Vector.empty),
+          ProjectedName("master2", Vector.empty),
           ProjectedName("variants", Vector.empty)))
     }
   }

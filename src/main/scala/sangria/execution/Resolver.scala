@@ -657,18 +657,21 @@ class Resolver[Ctx](
         case objTpe: ObjectType[Ctx, _] ⇒
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) ⇒
-              ff.fields collect {
-                case CollectedField(_, _, Success(fields)) if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe.getField(schema, fields.head.name).head.tags.contains(ProjectionExclude) ⇒
-                  val astField = fields.head
-                  val field = objTpe.getField(schema, astField.name).head
-                  val projectedName =
-                    field.tags collect {case ProjectionName(name) ⇒ name} match {
-                    case name :: _ ⇒ name
-                    case _ ⇒ field.name
-                  }
+              ff.fields
+                .collect {
+                  case CollectedField(_, _, Success(fields)) if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe.getField(schema, fields.head.name).head.tags.contains(ProjectionExclude) ⇒
+                    val astField = fields.head
+                    val field = objTpe.getField(schema, astField.name).head
+                    val projectionNames = field.tags collect {case ProjectionName(name) ⇒ name}
 
-                  ProjectedName(projectedName, loop(path + projectedName, field.fieldType, fields, currLevel + 1))
-              }
+                    val projectedName =
+                      if (projectionNames.nonEmpty) projectionNames.toVector
+                      else Vector(field.name)
+
+                    projectedName.map (name ⇒
+                      ProjectedName(name, loop(path + name, field.fieldType, fields, currLevel + 1)))
+                }
+                .flatten
             case Failure(_) ⇒ Vector.empty
           }
         case abst: AbstractType ⇒
