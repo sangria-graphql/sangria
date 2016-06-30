@@ -587,8 +587,8 @@ sealed trait HasArguments {
 }
 
 object DirectiveLocation extends Enumeration {
-
   // Operations
+
   val Query = Value
   val Mutation = Value
   val Subscription = Value
@@ -648,6 +648,9 @@ case class Schema[Ctx, Val](
     additionalTypes: List[Type with Named] = Nil,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default) {
+  def extendSchema(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
+    new AstSchemaMaterializer[Ctx](document, builder).extend[Val](this)
+
   lazy val types: Map[String, (Int, Type with Named)] = {
     def sameType(t1: Type, t2: Type) =
       t1.getClass.getSimpleName == t2.getClass.getSimpleName

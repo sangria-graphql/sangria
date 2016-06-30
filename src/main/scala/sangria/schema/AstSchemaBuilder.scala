@@ -1,7 +1,6 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.ast.SchemaDefinition
 import sangria.execution.FieldTag
 import sangria.marshalling.{FromInput, ToInput, MarshallerCapability, ScalarValueInfo}
 import sangria.validation.Violation
@@ -12,12 +11,13 @@ trait AstSchemaBuilder[Ctx] {
   def additionalDirectiveDefs: List[ast.DirectiveDefinition]
 
   def buildSchema(
-    definition: ast.SchemaDefinition,
+    definition: Option[ast.SchemaDefinition],
     queryType: ObjectType[Ctx, Any],
     mutationType: Option[ObjectType[Ctx, Any]],
     subscriptionType: Option[ObjectType[Ctx, Any]],
     additionalTypes: List[Type with Named],
     directives: List[Directive],
+    validationRules: List[SchemaValidationRule],
     mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Any]
 
   def buildObjectType(
@@ -105,19 +105,21 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def additionalTypeDefs = Nil
 
   def buildSchema(
-      definition: ast.SchemaDefinition,
+      definition: Option[ast.SchemaDefinition],
       queryType: ObjectType[Ctx, Any],
       mutationType: Option[ObjectType[Ctx, Any]],
       subscriptionType: Option[ObjectType[Ctx, Any]],
       additionalTypes: List[Type with Named],
       directives: List[Directive],
+      validationRules: List[SchemaValidationRule],
       mat: AstSchemaMaterializer[Ctx]) =
     Schema[Ctx, Any](
       query = queryType,
       mutation = mutationType,
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
-      directives = directives)
+      directives = directives,
+      validationRules = validationRules)
 
   def buildObjectType(
       definition: ast.ObjectTypeDefinition,

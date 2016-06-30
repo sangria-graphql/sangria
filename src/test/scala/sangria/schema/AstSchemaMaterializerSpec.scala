@@ -797,7 +797,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Cannot extend type 'Foo' because it does not exist in the existing schema.")
+        error.getMessage should be ("Cannot extend type 'Foo' because it does not exist.")
       }
 
       "don't allow to have extensions on non-object types" in {

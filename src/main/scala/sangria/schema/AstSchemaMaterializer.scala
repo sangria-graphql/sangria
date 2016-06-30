@@ -8,7 +8,7 @@ import sangria.renderer.QueryRenderer
 
 import scala.collection.concurrent.TrieMap
 
-class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
+class AstSchemaMaterializer[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
   import AstSchemaMaterializer.SchemaInfo
 
   private val typeDefCache = TrieMap[String, Type with Named]()
@@ -55,6 +55,29 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     }
   }
 
+  def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
+    validateExtensions(schema)
+
+    if (typeDefs.isEmpty && typeExtensionDefs.isEmpty)
+      schema
+    else {
+      val queryType = getTypeFromDef(schema.query)
+      val mutationType = schema.mutation map getTypeFromDef
+      val subscriptionType = schema.subscription map getTypeFromDef
+      val directives = directiveDefs flatMap buildDirective
+
+      builder.buildSchema(
+        None,
+        queryType.asInstanceOf[ObjectType[Ctx, Any]],
+        mutationType.asInstanceOf[Option[ObjectType[Ctx, Any]]],
+        subscriptionType.asInstanceOf[Option[ObjectType[Ctx, Any]]],
+        findUnusedTypes() ++ findUnusedTypes(schema),
+        schema.directives ++ directives,
+        schema.validationRules,
+        this).asInstanceOf[Schema[Ctx, Val]]
+    }
+  }
+
   lazy val build: Schema[Ctx, Any] = {
     validateDefinitions()
 
@@ -63,7 +86,45 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     val subscriptionType = schemaInfo.subscription map getObjectType
     val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
 
-    builder.buildSchema(schemaInfo.definition, queryType, mutationType, subscriptionType, findUnusedTypes(), BuiltinDirectives ++ directives, this)
+    builder.buildSchema(
+      Some(schemaInfo.definition),
+      queryType,
+      mutationType,
+      subscriptionType,
+      findUnusedTypes(),
+      BuiltinDirectives ++ directives,
+      SchemaValidationRule.default,
+      this)
+  }
+
+  def validateExtensions(schema: Schema[Ctx, _]): Unit = {
+    typeDefsMap foreach {
+      case (name, defs) if defs.size > 1 ⇒
+        throw new SchemaMaterializationException(s"Type '$name' is defined more than once.")
+      case (name, _) if schema.allTypes contains name ⇒
+        throw new SchemaMaterializationException(
+          s"Type '$name' already exists in the schema. It cannot also be defined in this type definition.")
+    }
+
+    directiveDefsMap foreach {
+      case (name, defs) if defs.size > 1 ⇒
+        throw new SchemaMaterializationException(s"Directive '$name' is defined more than once.")
+      case (name, _) if schema.directivesByName contains name ⇒
+        throw new SchemaMaterializationException(s"Directive '$name' already exists in the schema.")
+    }
+
+    typeExtensionDefs.foreach { ext ⇒
+      typeDefsMap.get(ext.definition.name).map(_.head) match {
+        case Some(tpe: ast.ObjectTypeDefinition) ⇒ // everything is fine
+        case Some(tpe) ⇒ throw new SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
+        case None ⇒
+          schema.allTypes.get(ext.definition.name) match {
+            case Some(tpe: ObjectType[_, _]) ⇒ // everything is fine
+            case Some(tpe) ⇒ throw new SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
+            case None ⇒ throw new SchemaMaterializationException(s"Cannot extend type '${ext.definition.name}' because it does not exist.")
+          }
+      }
+    }
   }
 
   def validateDefinitions(): Unit = {
@@ -79,24 +140,39 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       typeDefsMap.get(ext.definition.name).map(_.head) match {
         case Some(tpe: ast.ObjectTypeDefinition) ⇒ // everything is fine
         case Some(tpe) ⇒ throw new SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
-        case None ⇒ throw new SchemaMaterializationException(s"Cannot extend type '${ext.definition.name}' because it does not exist in the existing schema.")
+        case None ⇒ throw new SchemaMaterializationException(s"Cannot extend type '${ext.definition.name}' because it does not exist.")
       }
     }
   }
 
   def findUnusedTypes(): List[Type with Named] = {
-    // first init all lazy fields. TODO: think about better solution
-    typeDefCache.values.foreach {
-      case o: ObjectLikeType[_, _] ⇒ o.fields
-      case o: InputObjectType[_] ⇒ o.fields
-      case _ ⇒ // do nothing
-    }
+    resolveAllLazyFields()
 
     val referenced = typeDefCache.keySet
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
     notReferenced map (tpe ⇒ getNamedType(tpe.name))
   }
+
+  def findUnusedTypes(schema: Schema[_, _]): List[Type with Named] = {
+    resolveAllLazyFields()
+
+    val referenced = typeDefCache.keySet
+    val notReferenced = schema.typeList.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
+
+    notReferenced map (tpe ⇒ getTypeFromDef(tpe))
+  }
+
+  // TODO: think about better solution
+  def resolveAllLazyFields(): Unit =  {
+    typeDefCache.values.foreach {
+      case o: ObjectLikeType[_, _] ⇒ o.fields
+      case o: InputObjectType[_] ⇒ o.fields
+      case _ ⇒ // do nothing
+    }
+  }
+
+  def getTypeFromDef[T <: Type](tpe: T): T = tpe // TODO
 
   def buildDirective(directive: ast.DirectiveDefinition) =
     BuiltinDirectives.find(_.name == directive.name) orElse
