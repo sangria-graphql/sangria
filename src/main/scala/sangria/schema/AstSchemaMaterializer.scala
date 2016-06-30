@@ -162,7 +162,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     BuiltinDirectives.find(_.name == directive.name) orElse
       builder.buildDirective(
         directive,
-        directive.arguments flatMap (buildArgument(Left(directive), None, _)),
+        directive.arguments flatMap (buildArgument(directive, None, _)),
         directive.locations map buildDirectiveLocation toSet,
         this)
 
@@ -227,7 +227,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     case tpe: ObjectType[Ctx, _] ⇒ extendObjectType(tpe)
   }
 
-  def buildField(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], field: ast.FieldDefinition) =
+  def buildField(typeDefinition: ast.TypeDefinition, field: ast.FieldDefinition) =
     builder.buildField(
       typeDefinition,
       field,
@@ -305,19 +305,19 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case (acc, field) ⇒ acc :+ field
     }
 
-    allFields flatMap (buildField(Left(tpe), _))
+    allFields flatMap (buildField(tpe, _))
   }
 
   def extendFields(tpe: ObjectLikeType[Ctx, _], extensions: List[ast.TypeExtensionDefinition]) = {
-    val extraFields = extensions.flatMap(_.definition.fields)
+    val extraFields = extensions.flatMap(e ⇒ e.definition.fields map (e → _))
 
-    val extensionFields = extraFields.foldLeft(List.empty[ast.FieldDefinition]) {
-      case (acc, field) if tpe.fieldsByName.contains(field.name) || acc.exists(_.name == field.name) ⇒
-        throw new SchemaMaterializationException(s"Field '${tpe.name}.${field.name}' already exists in the schema. It cannot also be defined in this type extension.")
+    val extensionFields = extraFields.foldLeft(List.empty[(ast.TypeExtensionDefinition, ast.FieldDefinition)]) {
+      case (acc, field) if tpe.fieldsByName.contains(field._2.name) || acc.exists(_._2.name == field._2.name) ⇒
+        throw new SchemaMaterializationException(s"Field '${tpe.name}.${field._2.name}' already exists in the schema. It cannot also be defined in this type extension.")
       case (acc, field) ⇒ acc :+ field
     }
 
-    val ef = extensionFields flatMap (buildField(Right(tpe), _))
+    val ef = extensionFields flatMap (f ⇒ buildField(f._1.definition, f._2))
     val of = tpe.fields.toList map (extendField(tpe, _))
 
     of ++ ef
@@ -347,7 +347,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def buildDefault(defaultValue: Option[ast.Value]) =
     defaultValue map (dv ⇒ dv → sangria.marshalling.queryAst.queryAstToInput)
 
-  def buildArgument(typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]], fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) =
+  def buildArgument(typeDefinition: ast.TypeSystemDefinition, fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) =
     builder.buildArgument(typeDefinition, fieldDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
 
   def buildInputField(typeDef: ast.InputObjectTypeDefinition, value: ast.InputValueDefinition) =

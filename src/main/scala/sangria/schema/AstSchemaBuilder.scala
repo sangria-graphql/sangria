@@ -85,7 +85,7 @@ trait AstSchemaBuilder[Ctx] {
     mat: AstSchemaMaterializer[Ctx]): EnumType[T]
 
   def buildField(
-    typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
+    typeDefinition: ast.TypeDefinition,
     definition: ast.FieldDefinition,
     fieldType: OutputType[_],
     arguments: List[Argument[_]],
@@ -105,7 +105,7 @@ trait AstSchemaBuilder[Ctx] {
     mat: AstSchemaMaterializer[Ctx]): Option[InputField[Any]]
 
   def buildArgument(
-    typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]],
+    typeDefinition: ast.TypeSystemDefinition,
     fieldDefinition: Option[ast.FieldDefinition],
     definition: ast.InputValueDefinition,
     tpe: InputType[_],
@@ -291,7 +291,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       deprecationReason = enumValueDeprecationReason(definition)))
 
   def buildField(
-      typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
+      typeDefinition: ast.TypeDefinition,
       definition: ast.FieldDefinition,
       fieldType: OutputType[_],
       arguments: List[Argument[_]],
@@ -327,7 +327,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       defaultValue = defaultValue))
 
   def buildArgument(
-      typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]],
+      typeDefinition: ast.TypeSystemDefinition,
       fieldDefinition: Option[ast.FieldDefinition],
       definition: ast.InputValueDefinition,
       tpe: InputType[_],
@@ -378,15 +378,15 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Function.const(true)
 
   def argumentFromInput(
-      typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]],
+      typeDefinition: ast.TypeSystemDefinition,
       fieldDefinition: Option[ast.FieldDefinition],
       definition: ast.InputValueDefinition) =
     FromInput.defaultInput[Any]
 
-  def resolveField(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): Context[Ctx, _] ⇒ Action[Ctx, _] =
+  def resolveField(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): Context[Ctx, _] ⇒ Action[Ctx, _] =
     (ctx) ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
-  def fieldTags(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): List[FieldTag] =
+  def fieldTags(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): List[FieldTag] =
     Nil
 
   def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition): Any ⇒ Either[Violation, Any] =
@@ -404,7 +404,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def scalarComplexity(definition: ast.ScalarTypeDefinition): Double =
     0.0D
 
-  def fieldComplexity(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): Option[(Ctx, Args, Double) ⇒ Double] =
+  def fieldComplexity(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): Option[(Ctx, Args, Double) ⇒ Double] =
     None
 
   def enumValueDeprecationReason(definition: ast.EnumValueDefinition): Option[String] =
