@@ -11,14 +11,22 @@ trait AstSchemaBuilder[Ctx] {
   def additionalDirectiveDefs: List[ast.DirectiveDefinition]
 
   def buildSchema(
-    definition: Option[ast.SchemaDefinition],
+    definition: ast.SchemaDefinition,
     queryType: ObjectType[Ctx, Any],
     mutationType: Option[ObjectType[Ctx, Any]],
     subscriptionType: Option[ObjectType[Ctx, Any]],
     additionalTypes: List[Type with Named],
     directives: List[Directive],
-    validationRules: List[SchemaValidationRule],
     mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Any]
+
+  def buildSchema[Val](
+    originalSchema: Schema[Ctx, Val],
+    queryType: ObjectType[Ctx, Val],
+    mutationType: Option[ObjectType[Ctx, Val]],
+    subscriptionType: Option[ObjectType[Ctx, Val]],
+    additionalTypes: List[Type with Named],
+    directives: List[Directive],
+    mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Val]
 
   def buildObjectType(
     definition: ast.ObjectTypeDefinition,
@@ -105,21 +113,35 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def additionalTypeDefs = Nil
 
   def buildSchema(
-      definition: Option[ast.SchemaDefinition],
+      definition: ast.SchemaDefinition,
       queryType: ObjectType[Ctx, Any],
       mutationType: Option[ObjectType[Ctx, Any]],
       subscriptionType: Option[ObjectType[Ctx, Any]],
       additionalTypes: List[Type with Named],
       directives: List[Directive],
-      validationRules: List[SchemaValidationRule],
       mat: AstSchemaMaterializer[Ctx]) =
     Schema[Ctx, Any](
       query = queryType,
       mutation = mutationType,
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
+      directives = directives)
+
+  def buildSchema[Val](
+      originalSchema: Schema[Ctx, Val],
+      queryType: ObjectType[Ctx, Val],
+      mutationType: Option[ObjectType[Ctx, Val]],
+      subscriptionType: Option[ObjectType[Ctx, Val]],
+      additionalTypes: List[Type with Named],
+      directives: List[Directive],
+      mat: AstSchemaMaterializer[Ctx]) =
+    Schema[Ctx, Val](
+      query = queryType,
+      mutation = mutationType,
+      subscription = subscriptionType,
+      additionalTypes = additionalTypes,
       directives = directives,
-      validationRules = validationRules)
+      validationRules = originalSchema.validationRules)
 
   def buildObjectType(
       definition: ast.ObjectTypeDefinition,

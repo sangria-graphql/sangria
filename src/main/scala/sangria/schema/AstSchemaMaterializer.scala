@@ -66,15 +66,14 @@ class AstSchemaMaterializer[Ctx](document: ast.Document, builder: AstSchemaBuild
       val subscriptionType = schema.subscription map getTypeFromDef
       val directives = directiveDefs flatMap buildDirective
 
-      builder.buildSchema(
-        None,
-        queryType.asInstanceOf[ObjectType[Ctx, Any]],
-        mutationType.asInstanceOf[Option[ObjectType[Ctx, Any]]],
-        subscriptionType.asInstanceOf[Option[ObjectType[Ctx, Any]]],
+      builder.buildSchema[Val](
+        schema,
+        queryType,
+        mutationType,
+        subscriptionType,
         findUnusedTypes() ++ findUnusedTypes(schema),
         schema.directives ++ directives,
-        schema.validationRules,
-        this).asInstanceOf[Schema[Ctx, Val]]
+        this)
     }
   }
 
@@ -87,13 +86,12 @@ class AstSchemaMaterializer[Ctx](document: ast.Document, builder: AstSchemaBuild
     val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
 
     builder.buildSchema(
-      Some(schemaInfo.definition),
+      schemaInfo.definition,
       queryType,
       mutationType,
       subscriptionType,
       findUnusedTypes(),
       BuiltinDirectives ++ directives,
-      SchemaValidationRule.default,
       this)
   }
 
