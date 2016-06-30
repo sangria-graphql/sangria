@@ -9,7 +9,7 @@ import sangria.renderer.QueryRenderer
 import scala.collection.concurrent.TrieMap
 
 class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
-  import AstSchemaMaterializer.{SchemaInfo, extractSchemaInfo}
+  import AstSchemaMaterializer.extractSchemaInfo
 
   private val typeDefCache = TrieMap[String, Type with Named]()
 
@@ -81,6 +81,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case (name, _) if schema.allTypes contains name ⇒
         throw new SchemaMaterializationException(
           s"Type '$name' already exists in the schema. It cannot also be defined in this type definition.")
+      case _ ⇒ // everything is fine
     }
 
     directiveDefsMap foreach {
@@ -88,6 +89,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         throw new SchemaMaterializationException(s"Directive '$name' is defined more than once.")
       case (name, _) if schema.directivesByName contains name ⇒
         throw new SchemaMaterializationException(s"Directive '$name' already exists in the schema.")
+      case _ ⇒ // everything is fine
     }
 
     typeExtensionDefs.foreach { ext ⇒
@@ -328,7 +330,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     }
 
     val ef = extensionFields flatMap (f ⇒ buildField(f._1.definition, f._2))
-    val of = tpe.fields.toList map (extendField(tpe, _))
+    val of = tpe.uniqueFields.toList map (extendField(tpe, _))
 
     of ++ ef
   }

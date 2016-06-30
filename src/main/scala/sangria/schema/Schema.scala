@@ -648,7 +648,7 @@ case class Schema[Ctx, Val](
     additionalTypes: List[Type with Named] = Nil,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default) {
-  def extendSchema(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
+  def extend(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
     AstSchemaMaterializer.extendSchema(this, document, builder)
 
   lazy val types: Map[String, (Int, Type with Named)] = {
