@@ -171,7 +171,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         c ⇒ PartialFutureValue(Future.successful(PartialValue[Any, Any](correctValue(c.field.fieldType, values), errors.toVector)))
       })
 
-    override def resolveField(typeDefinition: TypeDefinition, definition: FieldDefinition) =
+    override def resolveField(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Any, _]], definition: FieldDefinition) =
       definition.directives.find(d ⇒ directiveMapping contains d.name) match {
         case Some(dir) ⇒
           directiveMapping(dir.name)(dir, definition)

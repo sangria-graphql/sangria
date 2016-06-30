@@ -141,7 +141,7 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
 
   lazy val uniqueFields: Vector[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) ⇒ e.name)
 
-  private lazy val fieldsByName = fields groupBy (_.name)
+  lazy val fieldsByName = fields groupBy (_.name)
 
   def getField(schema: Schema[_, _], fieldName: String): Vector[Field[Ctx, _]] =
     if (sangria.introspection.MetaFieldNames contains fieldName)
@@ -649,7 +649,7 @@ case class Schema[Ctx, Val](
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default) {
   def extendSchema(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
-    new AstSchemaMaterializer[Ctx](document, builder).extend[Val](this)
+    AstSchemaMaterializer.extendSchema(this, document, builder)
 
   lazy val types: Map[String, (Int, Type with Named)] = {
     def sameType(t1: Type, t2: Type) =
