@@ -179,7 +179,6 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           c ⇒ extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name), testData)
       }
 
-
     override def objectTypeInstanceCheck(definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
       Some((value, _) ⇒ value.asInstanceOf[JsValue].get("type").exists(_.stringValue == definition.name))
   }

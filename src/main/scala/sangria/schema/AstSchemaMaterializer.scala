@@ -225,6 +225,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     case tpe: InputObjectType[_] ⇒ builder.transformInputObjectType(tpe, this)
     case tpe: UnionType[Ctx] ⇒ extendUnionType(tpe)
     case tpe: ObjectType[Ctx, _] ⇒ extendObjectType(tpe)
+    case tpe: InterfaceType[Ctx, _] ⇒ extendInterfaceType(tpe)
   }
 
   def buildField(typeDefinition: ast.TypeDefinition, field: ast.FieldDefinition) =
@@ -267,6 +268,15 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
 
     builder.buildInterfaceType(tpe, extensions, () ⇒ buildFields(tpe, tpe.fields, extensions), this)
+  }
+
+  def extendInterfaceType(tpe: InterfaceType[Ctx, _]) = {
+    val extensions = findExtensions(tpe.name)
+
+    if (extensions.exists(_.definition.interfaces.nonEmpty))
+      throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
+
+    builder.extendInterfaceType(tpe, extensions, () ⇒ extendFields(tpe, extensions), this)
   }
 
   def buildInterfaces(tpe: ast.ObjectTypeDefinition, interfaces: List[ast.NamedType], extensions: List[ast.TypeExtensionDefinition]) = {

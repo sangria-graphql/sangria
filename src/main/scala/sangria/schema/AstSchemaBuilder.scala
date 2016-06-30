@@ -57,6 +57,12 @@ trait AstSchemaBuilder[Ctx] {
     fields: () ⇒ List[Field[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): Option[InterfaceType[Ctx, Any]]
 
+  def extendInterfaceType(
+    existing: InterfaceType[Ctx, _],
+    extensions: List[ast.TypeExtensionDefinition],
+    fields: () ⇒ List[Field[Ctx, Any]],
+    mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any]
+
   def buildUnionType(
     definition: ast.UnionTypeDefinition,
     types: List[ObjectType[Ctx, _]],
@@ -243,6 +249,13 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       fieldsFn = Named.checkIntFields(fields),
       interfaces = Nil,
       manualPossibleTypes = () ⇒ Nil))
+
+  def extendInterfaceType(
+      existing: InterfaceType[Ctx, _],
+      extensions: List[ast.TypeExtensionDefinition],
+      fields: () ⇒ List[Field[Ctx, Any]],
+      mat: AstSchemaMaterializer[Ctx]) =
+    existing.copy(fieldsFn = fields, manualPossibleTypes = () ⇒ Nil, interfaces = Nil)
 
   def buildUnionType(
       definition: ast.UnionTypeDefinition,
