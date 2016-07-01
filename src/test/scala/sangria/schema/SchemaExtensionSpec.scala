@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition}
+import sangria.ast.{TypeExtensionDefinition, FieldDefinition, ObjectTypeDefinition}
 import sangria.macros._
 import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
@@ -14,21 +14,29 @@ import spray.json._
 
 class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
 
-  val SomeInterfaceType: InterfaceType[Unit, Unit] = InterfaceType("SomeInterface", () ⇒ fields(
-    Field("name", OptionType(StringType), resolve = _ ⇒ None),
-    Field("some", OptionType(SomeInterfaceType), resolve = _ ⇒ Some(()))
+  trait SomeInterface {
+    def name: Option[String]
+    def some: Option[SomeInterface]
+  }
+
+  case class Foo(name: Option[String], some: Option[SomeInterface], tree: List[Option[Foo]]) extends SomeInterface
+  case class Bar(name: Option[String], some: Option[SomeInterface], foo: Option[Foo]) extends SomeInterface
+
+  val SomeInterfaceType: InterfaceType[Unit, SomeInterface] = InterfaceType("SomeInterface", () ⇒ fields(
+    Field("name", OptionType(StringType), resolve = _.value.name),
+    Field("some", OptionType(SomeInterfaceType), resolve = _.value.some)
   ))
 
-  val FooType: ObjectType[Unit, Unit] = ObjectType("Foo", interfaces = interfaces(SomeInterfaceType), () ⇒ fields(
-    Field("name", OptionType(StringType), resolve = _ ⇒ None),
-    Field("some", OptionType(SomeInterfaceType), resolve = _ ⇒ Some(())),
-    Field("tree", ListType(OptionType(FooType)), resolve = _ ⇒ List(Some(()), None, Some(())))
+  val FooType: ObjectType[Unit, Foo] = ObjectType("Foo", interfaces = interfaces(SomeInterfaceType), () ⇒ fields(
+    Field("name", OptionType(StringType), resolve = _.value.name),
+    Field("some", OptionType(SomeInterfaceType), resolve = _.value.some),
+    Field("tree", ListType(OptionType(FooType)), resolve = _.value.tree)
   ))
 
-  val BarType: ObjectType[Unit, Unit] = ObjectType("Bar", interfaces = interfaces(SomeInterfaceType), () ⇒ fields(
-    Field("name", OptionType(StringType), resolve = _ ⇒ None),
-    Field("some", OptionType(SomeInterfaceType), resolve = _ ⇒ Some(())),
-    Field("foo", OptionType(FooType), resolve = _ ⇒ Some(()))
+  val BarType: ObjectType[Unit, Bar] = ObjectType("Bar", interfaces = interfaces(SomeInterfaceType), () ⇒ fields(
+    Field("name", OptionType(StringType), resolve = _.value.name),
+    Field("some", OptionType(SomeInterfaceType), resolve = _.value.some),
+    Field("foo", OptionType(FooType), resolve = _.value.foo)
   ))
 
   val BizType = ObjectType("Biz", () ⇒ fields[Unit, Unit](
@@ -44,12 +52,12 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
   val schema = Schema(
     query = ObjectType("Query", fields[Unit, Unit](
-      Field("foo", OptionType(FooType), resolve = _ ⇒ Some(())),
+      Field("foo", OptionType(FooType), resolve = _ ⇒ Some(Foo(Some("foo"), None, Nil))),
       Field("someUnion", OptionType(SomeUnionType), resolve = _ ⇒ None),
       Field("someEnum", OptionType(SomeEnumType), resolve = _ ⇒ None),
       Field("someInterface", OptionType(SomeInterfaceType),
         arguments = Argument("id", IDType) :: Nil,
-        resolve = _ ⇒ None)
+        resolve = _ ⇒ Some(Foo(Some("a"), Some(Bar(Some("b"), None, Some(Foo(Some("c"), None, Nil)))), List(None, Some(Foo(Some("d"), None, Nil))))))
     )),
     additionalTypes = BarType :: Nil)
 
@@ -776,6 +784,140 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       val error = intercept[SchemaMaterializationException](schema.extend(ast))
 
       error.message should include ("Cannot extend non-object type 'String'.")
+    }
+
+    "be able to resolve existing fields and use builder logic for new fields" in {
+      val schemaAst =
+        graphql"""
+          extend type Foo {
+            animal1: Animal!
+            animal2: Animal!
+          }
+
+          type Hello implements SomeInterface {
+            name: String
+            some: SomeInterface
+            custom: Custom!
+          }
+
+          scalar Custom
+
+          interface Animal {
+            name: String!
+          }
+
+          type Dog implements Animal {
+            name: String!
+            nickname: String
+          }
+
+          type Cat implements Animal {
+            name: String!
+            age: Int
+          }
+
+          extend type Query {
+            special: SomeInterface
+          }
+        """
+
+      val customBuilder = new DefaultAstSchemaBuilder[Unit] {
+        override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
+          if (definition.name == "animal1")
+            _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
+          else if (definition.name == "animal2")
+            _ ⇒ Map("type" → "Dog", "name" → "bar", "nickname" → Some("baz"))
+          else if (definition.name == "special")
+            _ ⇒ Map("name" → "Fooo", "some" → None, "custom" → 123)
+          else
+            _.value.asInstanceOf[Map[String, Any]](definition.name)
+
+        override def objectTypeInstanceCheck(definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
+          Some((value, clazz) ⇒ value match {
+            case v: Map[_, _] if definition.name == "Hello" ⇒ true
+            case v : Map[String, _] @unchecked if v contains "type" ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name
+            case _ ⇒ false
+          })
+
+        override def extendedObjectTypeInstanceCheck(tpe: ObjectType[Unit, _], extensions: List[TypeExtensionDefinition]) =
+          Some((value, clazz) ⇒ value match {
+            case v: Map[_, _] if tpe.name == "Hello" ⇒ true
+            case v if clazz.isAssignableFrom(v.getClass) ⇒ true
+            case _ ⇒ false
+          })
+
+        override def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition) =
+          value ⇒ definition.name match {
+            case "Custom" ⇒ value match {
+              case i: Int ⇒ Right(i)
+              case i: BigInt ⇒ Right(i.intValue)
+              case _ ⇒ Left(IntCoercionViolation)
+            }
+            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+          }
+
+        override def scalarCoerceInput(definition: ast.ScalarTypeDefinition) =
+          value ⇒ definition.name match {
+            case "Custom" ⇒ value match {
+              case ast.IntValue(i, _, _) ⇒ Right(i)
+              case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
+              case _ ⇒ Left(IntCoercionViolation)
+            }
+            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+          }
+
+        override def scalarCoerceOutput(definition: ast.ScalarTypeDefinition) =
+          (coerced, _) ⇒ definition.name match {
+            case "Custom" ⇒ ast.IntValue(coerced.asInstanceOf[Int])
+            case _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+          }
+      }
+
+      val extendedSchema = schema.extend(schemaAst, customBuilder)
+
+      check(extendedSchema, (),
+        """
+          query {
+            foo { name }
+            someInterface(id: "123") {
+              ...MyInt
+            }
+
+            special {
+              __typename
+              ...MyInt
+            }
+          }
+
+          fragment MyInt on SomeInterface {
+            name
+            some {name}
+
+            ... on Foo {
+              tree {name}
+              animal1 {__typename name}
+              animal2 {__typename name}
+            }
+
+            ... on Hello {
+              custom
+            }
+          }
+        """,
+        Map("data" →
+            Map(
+              "foo" → Map("name" → "foo"),
+              "someInterface" → Map(
+                "name" → "a",
+                "some" → Map("name" → "b"),
+                "tree" → Vector(null, Map("name" → "d")),
+                "animal1" → Map("__typename" → "Cat", "name" → "foo"),
+                "animal2" → Map("__typename" → "Dog", "name" → "bar")),
+              "special" → Map(
+                "__typename" → "Hello",
+                "name" → "Fooo",
+                "some" → null,
+                "custom" → 123))))
     }
   }
 }

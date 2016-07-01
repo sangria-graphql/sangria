@@ -5,6 +5,8 @@ import sangria.execution.FieldTag
 import sangria.marshalling.{FromInput, ToInput, MarshallerCapability, ScalarValueInfo}
 import sangria.validation.Violation
 
+import scala.reflect.ClassTag
+
 trait AstSchemaBuilder[Ctx] {
   def additionalTypeDefs: List[ast.TypeDefinition]
   def additionalTypeExtensionDefs: List[ast.TypeExtensionDefinition]
@@ -223,10 +225,10 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
             description = existing.description,
             fieldsFn = Named.checkObjFields(fields),
             interfaces = interfaces) {
-          override def isInstanceOf(value: Any) = fn(value, valClass)
+          override def isInstanceOf(value: Any) = fn(value, existing.valClass)
         }
       case None ⇒
-        existing.copy(fieldsFn = Named.checkObjFields(fields), interfaces = interfaces)
+        existing.copy(fieldsFn = Named.checkObjFields(fields), interfaces = interfaces)(ClassTag(existing.valClass))
     }
 
   def buildInputObjectType(
