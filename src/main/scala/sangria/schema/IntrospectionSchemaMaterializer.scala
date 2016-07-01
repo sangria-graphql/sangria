@@ -8,7 +8,7 @@ import sangria.renderer.SchemaRenderer
 import scala.collection.concurrent.TrieMap
 import scala.util.{Failure, Success}
 
-class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller] private (introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]) {
+class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller](introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]) {
   private val typeDefCache = TrieMap[String, Type with Named]()
 
   private lazy val schemaDef = IntrospectionParser.parse(introspectionResult)

@@ -797,7 +797,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Cannot extend type 'Foo' because it does not exist in the existing schema.")
+        error.getMessage should be ("Cannot extend type 'Foo' because it does not exist.")
       }
 
       "don't allow to have extensions on non-object types" in {
@@ -945,7 +945,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         val ReturnDog = Directive("returnDog", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ ⇒ true)
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-          override def resolveField(typeDefinition: TypeDefinition, definition: FieldDefinition) =
+          override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
             if (definition.directives.exists(_.name == ReturnCat.name))
               _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
             else if (definition.directives.exists(_.name == ReturnDog.name))

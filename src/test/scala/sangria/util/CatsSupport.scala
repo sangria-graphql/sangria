@@ -171,14 +171,13 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         c ⇒ PartialFutureValue(Future.successful(PartialValue[Any, Any](correctValue(c.field.fieldType, values), errors.toVector)))
       })
 
-    override def resolveField(typeDefinition: TypeDefinition, definition: FieldDefinition) =
+    override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
       definition.directives.find(d ⇒ directiveMapping contains d.name) match {
         case Some(dir) ⇒
           directiveMapping(dir.name)(dir, definition)
         case None ⇒
           c ⇒ extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name), testData)
       }
-
 
     override def objectTypeInstanceCheck(definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
       Some((value, _) ⇒ value.asInstanceOf[JsValue].get("type").exists(_.stringValue == definition.name))

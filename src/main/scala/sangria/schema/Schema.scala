@@ -141,7 +141,7 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
 
   lazy val uniqueFields: Vector[Field[Ctx, _]] = removeDuplicates(fields, (e: Field[Ctx, _]) ⇒ e.name)
 
-  private lazy val fieldsByName = fields groupBy (_.name)
+  lazy val fieldsByName = fields groupBy (_.name)
 
   def getField(schema: Schema[_, _], fieldName: String): Vector[Field[Ctx, _]] =
     if (sangria.introspection.MetaFieldNames contains fieldName)
@@ -158,7 +158,7 @@ case class ObjectType[Ctx, Val: ClassTag] (
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]]
 ) extends ObjectLikeType[Ctx, Val] {
-  protected lazy val valClass = implicitly[ClassTag[Val]].runtimeClass
+  lazy val valClass = implicitly[ClassTag[Val]].runtimeClass
 
   def isInstanceOf(value: Any) = valClass.isAssignableFrom(value.getClass)
 }
@@ -587,8 +587,8 @@ sealed trait HasArguments {
 }
 
 object DirectiveLocation extends Enumeration {
-
   // Operations
+
   val Query = Value
   val Mutation = Value
   val Subscription = Value
@@ -648,6 +648,9 @@ case class Schema[Ctx, Val](
     additionalTypes: List[Type with Named] = Nil,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default) {
+  def extend(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
+    AstSchemaMaterializer.extendSchema(this, document, builder)
+
   lazy val types: Map[String, (Int, Type with Named)] = {
     def sameType(t1: Type, t2: Type) =
       t1.getClass.getSimpleName == t2.getClass.getSimpleName

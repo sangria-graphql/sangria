@@ -328,8 +328,10 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
 }
 
 object DefaultIntrospectionSchemaBuilder {
-  case object MaterializedSchemaException extends Exception("Schema was materialized and cannot be used for any queries except introspection queries.") with UserFacingError
+  val MaterializedSchemaErrorMessage = "Schema was materialized and cannot be used for any queries except introspection queries."
+
+  case object MaterializedSchemaException extends Exception(MaterializedSchemaErrorMessage) with UserFacingError
   case object MaterializedSchemaViolation extends Violation {
-    val errorMessage = "Schema was materialized and cannot be used for any queries except introspection queries."
+    val errorMessage = MaterializedSchemaErrorMessage
   }
 } 

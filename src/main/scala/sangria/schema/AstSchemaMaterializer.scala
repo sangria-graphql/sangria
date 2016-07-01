@@ -9,7 +9,7 @@ import sangria.renderer.QueryRenderer
 import scala.collection.concurrent.TrieMap
 
 class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
-  import AstSchemaMaterializer.SchemaInfo
+  import AstSchemaMaterializer.extractSchemaInfo
 
   private val typeDefCache = TrieMap[String, Type with Named]()
 
@@ -28,42 +28,82 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   private lazy val directiveDefsMap = directiveDefs.groupBy(_.name)
   private lazy val typeDefsMap = typeDefs.groupBy(_.name)
 
-  lazy val schemaInfo: SchemaInfo = {
-    val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
+  // maybe it would work an effort to find more elegant way
+  private var existingSchema: Option[Schema[_, _]] = None
 
-    if (schemas.isEmpty)
-      throw new SchemaMaterializationException("Must provide a schema definition.")
-    else if (schemas.size > 1)
-      throw new SchemaMaterializationException("Must provide only one schema definition.")
+  def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
+    validateExtensions(schema)
+
+    if (typeDefs.isEmpty && typeExtensionDefs.isEmpty)
+      schema
     else {
-      val schema = schemas.head
+      existingSchema = Some(schema)
 
-      val queries = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Query, tpe, _, _) ⇒ tpe}
-      val mutations = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Mutation, tpe, _, _) ⇒ tpe}
-      val subscriptions = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Subscription, tpe, _, _) ⇒ tpe}
+      val queryType = getTypeFromDef(schema.query)
+      val mutationType = schema.mutation map getTypeFromDef
+      val subscriptionType = schema.subscription map getTypeFromDef
+      val directives = directiveDefs flatMap buildDirective
 
-      if (queries.size != 1)
-        throw new SchemaMaterializationException("Must provide one query type in schema.")
-
-      if (mutations.size > 1)
-        throw new SchemaMaterializationException("Must provide only one mutation type in schema.")
-
-      if (subscriptions.size > 1)
-        throw new SchemaMaterializationException("Must provide only one subscription type in schema.")
-
-      SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, schema)
+      builder.extendSchema[Val](
+        schema,
+        queryType,
+        mutationType,
+        subscriptionType,
+        findUnusedTypes() ++ findUnusedTypes(schema),
+        schema.directives.map(builder.transformDirective(_, this)) ++ directives,
+        this)
     }
   }
 
   lazy val build: Schema[Ctx, Any] = {
     validateDefinitions()
 
+    val schemaInfo = extractSchemaInfo(document)
     val queryType = getObjectType(schemaInfo.query)
     val mutationType = schemaInfo.mutation map getObjectType
     val subscriptionType = schemaInfo.subscription map getObjectType
     val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
 
-    builder.buildSchema(schemaInfo.definition, queryType, mutationType, subscriptionType, findUnusedTypes(), BuiltinDirectives ++ directives, this)
+    builder.buildSchema(
+      schemaInfo.definition,
+      queryType,
+      mutationType,
+      subscriptionType,
+      findUnusedTypes(),
+      BuiltinDirectives ++ directives,
+      this)
+  }
+
+  def validateExtensions(schema: Schema[Ctx, _]): Unit = {
+    typeDefsMap foreach {
+      case (name, defs) if defs.size > 1 ⇒
+        throw new SchemaMaterializationException(s"Type '$name' is defined more than once.")
+      case (name, _) if schema.allTypes contains name ⇒
+        throw new SchemaMaterializationException(
+          s"Type '$name' already exists in the schema. It cannot also be defined in this type definition.")
+      case _ ⇒ // everything is fine
+    }
+
+    directiveDefsMap foreach {
+      case (name, defs) if defs.size > 1 ⇒
+        throw new SchemaMaterializationException(s"Directive '$name' is defined more than once.")
+      case (name, _) if schema.directivesByName contains name ⇒
+        throw new SchemaMaterializationException(s"Directive '$name' already exists in the schema.")
+      case _ ⇒ // everything is fine
+    }
+
+    typeExtensionDefs.foreach { ext ⇒
+      typeDefsMap.get(ext.definition.name).map(_.head) match {
+        case Some(tpe: ast.ObjectTypeDefinition) ⇒ // everything is fine
+        case Some(tpe) ⇒ throw new SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
+        case None ⇒
+          schema.allTypes.get(ext.definition.name) match {
+            case Some(tpe: ObjectType[_, _]) ⇒ // everything is fine
+            case Some(tpe) ⇒ throw new SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
+            case None ⇒ throw new SchemaMaterializationException(s"Cannot extend type '${ext.definition.name}' because it does not exist.")
+          }
+      }
+    }
   }
 
   def validateDefinitions(): Unit = {
@@ -79,24 +119,46 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       typeDefsMap.get(ext.definition.name).map(_.head) match {
         case Some(tpe: ast.ObjectTypeDefinition) ⇒ // everything is fine
         case Some(tpe) ⇒ throw new SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
-        case None ⇒ throw new SchemaMaterializationException(s"Cannot extend type '${ext.definition.name}' because it does not exist in the existing schema.")
+        case None ⇒ throw new SchemaMaterializationException(s"Cannot extend type '${ext.definition.name}' because it does not exist.")
       }
     }
   }
 
   def findUnusedTypes(): List[Type with Named] = {
-    // first init all lazy fields. TODO: think about better solution
-    typeDefCache.values.foreach {
-      case o: ObjectLikeType[_, _] ⇒ o.fields
-      case o: InputObjectType[_] ⇒ o.fields
-      case _ ⇒ // do nothing
-    }
+    resolveAllLazyFields()
 
     val referenced = typeDefCache.keySet
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
     notReferenced map (tpe ⇒ getNamedType(tpe.name))
   }
+
+  def findUnusedTypes(schema: Schema[_, _]): List[Type with Named] = {
+    resolveAllLazyFields()
+
+    val referenced = typeDefCache.keySet
+    val notReferenced = schema.typeList.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
+
+    notReferenced map (tpe ⇒ getTypeFromDef(tpe))
+  }
+
+  // TODO: think about better solution
+  def resolveAllLazyFields(): Unit =  {
+    typeDefCache.values.foreach {
+      case o: ObjectLikeType[_, _] ⇒ o.fields
+      case o: InputObjectType[_] ⇒ o.fields
+      case _ ⇒ // do nothing
+    }
+  }
+
+  def getTypeFromExistingType(tpe: OutputType[_]): OutputType[Any] = tpe match {
+    case ListType(ofType) ⇒ ListType(getTypeFromExistingType(ofType))
+    case OptionType(ofType) ⇒ OptionType(getTypeFromExistingType(ofType))
+    case t: Named ⇒ getTypeFromDef(t)
+  }
+
+  def getTypeFromDef[T <: Type with Named](tpe: T): T =
+    getNamedType(tpe.name).asInstanceOf[T]
 
   def buildDirective(directive: ast.DirectiveDefinition) =
     BuiltinDirectives.find(_.name == directive.name) orElse
@@ -146,7 +208,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   def getNamedType(typeName: String): Type with Named =
     typeDefCache.getOrElseUpdate(typeName, Schema.getBuiltInType(typeName) getOrElse (
-      typeDefs.find(_.name == typeName) flatMap buildType getOrElse (
+      existingSchema.flatMap(_.allTypes.get(typeName)).map(extendType) orElse typeDefs.find(_.name == typeName).flatMap(buildType) getOrElse (
         throw new SchemaMaterializationException(
           s"Invalid or incomplete schema, unknown type: $typeName."))))
 
@@ -159,8 +221,25 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     case d: ast.EnumTypeDefinition ⇒ buildEnumDef(d)
   }
 
-  def buildField(typeDef: ast.TypeDefinition, field: ast.FieldDefinition) =
-    builder.buildField(typeDef, field, getOutputType(field.fieldType), field.arguments flatMap (buildArgument(typeDef, Some(field), _)), this)
+  def extendType(existingType: Type with Named): Type with Named = existingType match {
+    case tpe: ScalarType[_] ⇒ builder.transformScalarType(tpe, this)
+    case tpe: EnumType[_] ⇒ builder.transformEnumType(tpe, this)
+    case tpe: InputObjectType[_] ⇒ builder.transformInputObjectType(tpe, this)
+    case tpe: UnionType[Ctx] ⇒ extendUnionType(tpe)
+    case tpe: ObjectType[Ctx, _] ⇒ extendObjectType(tpe)
+    case tpe: InterfaceType[Ctx, _] ⇒ extendInterfaceType(tpe)
+  }
+
+  def buildField(typeDefinition: ast.TypeDefinition, field: ast.FieldDefinition) =
+    builder.buildField(
+      typeDefinition,
+      field,
+      getOutputType(field.fieldType),
+      field.arguments flatMap (buildArgument(typeDefinition, Some(field), _)),
+      this)
+
+  def extendField(tpe: ObjectLikeType[Ctx, _], field: Field[Ctx, _]) =
+    builder.extendField(tpe, field.asInstanceOf[Field[Ctx, Any]], getTypeFromExistingType(field.fieldType), this)
 
   def buildObjectDef(tpe: ast.ObjectTypeDefinition) = {
     val extensions = findExtensions(tpe.name)
@@ -173,6 +252,17 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       this)
   }
 
+  def extendObjectType(tpe: ObjectType[Ctx, _]) = {
+    val extensions = findExtensions(tpe.name)
+
+    builder.extendObjectType(
+      tpe,
+      extensions,
+      () ⇒ extendFields(tpe, extensions),
+      extendInterfaces(tpe, extensions),
+      this)
+  }
+
   def buildInterfaceDef(tpe: ast.InterfaceTypeDefinition) = {
     val extensions = findExtensions(tpe.name)
 
@@ -180,6 +270,15 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
 
     builder.buildInterfaceType(tpe, extensions, () ⇒ buildFields(tpe, tpe.fields, extensions), this)
+  }
+
+  def extendInterfaceType(tpe: InterfaceType[Ctx, _]) = {
+    val extensions = findExtensions(tpe.name)
+
+    if (extensions.exists(_.definition.interfaces.nonEmpty))
+      throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
+
+    builder.extendInterfaceType(tpe, extensions, () ⇒ extendFields(tpe, extensions), this)
   }
 
   def buildInterfaces(tpe: ast.ObjectTypeDefinition, interfaces: List[ast.NamedType], extensions: List[ast.TypeExtensionDefinition]) = {
@@ -194,6 +293,21 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     allInts map getInterfaceType
   }
 
+  def extendInterfaces(tpe: ObjectType[Ctx, _], extensions: List[ast.TypeExtensionDefinition]) = {
+    val extraInts = extensions.flatMap(_.definition.interfaces)
+
+    val allInts = extraInts.foldLeft(List.empty[ast.NamedType]) {
+      case (acc, interface) if tpe.allInterfaces.exists(_.name == interface.name) || acc.exists(_.name == interface.name) ⇒
+        throw new SchemaMaterializationException(s"Type '${tpe.name}' already implements '${interface.name}'. It cannot also be implemented in this type extension.")
+      case (acc, interface) ⇒ acc :+ interface
+    }
+
+    val ei = allInts map getInterfaceType
+    val oi = tpe.interfaces map (getTypeFromDef(_).asInstanceOf[InterfaceType[Ctx, Any]])
+
+    ei ++ oi
+  }
+
   def buildFields(tpe: TypeDefinition, fieldDefs: List[ast.FieldDefinition], extensions: List[ast.TypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(_.definition.fields)
 
@@ -206,11 +320,29 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     allFields flatMap (buildField(tpe, _))
   }
 
+  def extendFields(tpe: ObjectLikeType[Ctx, _], extensions: List[ast.TypeExtensionDefinition]) = {
+    val extraFields = extensions.flatMap(e ⇒ e.definition.fields map (e → _))
+
+    val extensionFields = extraFields.foldLeft(List.empty[(ast.TypeExtensionDefinition, ast.FieldDefinition)]) {
+      case (acc, field) if tpe.fieldsByName.contains(field._2.name) || acc.exists(_._2.name == field._2.name) ⇒
+        throw new SchemaMaterializationException(s"Field '${tpe.name}.${field._2.name}' already exists in the schema. It cannot also be defined in this type extension.")
+      case (acc, field) ⇒ acc :+ field
+    }
+
+    val ef = extensionFields flatMap (f ⇒ buildField(f._1.definition, f._2))
+    val of = tpe.uniqueFields.toList map (extendField(tpe, _))
+
+    of ++ ef
+  }
+
   def findExtensions(typeName: String) =
     typeExtensionDefs.filter(_.definition.name == typeName)
 
   def buildUnionDef(tpe: ast.UnionTypeDefinition) =
     builder.buildUnionType(tpe, tpe.types map getObjectType, this)
+
+  def extendUnionType(tpe: UnionType[Ctx]) =
+    builder.extendUnionType(tpe, tpe.types map getTypeFromDef, this)
 
   def buildInputObjectDef(tpe: ast.InputObjectTypeDefinition) =
     builder.buildInputObjectType(tpe, () ⇒ tpe.fields flatMap (buildInputField(tpe, _)), this)
@@ -227,8 +359,8 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def buildDefault(defaultValue: Option[ast.Value]) =
     defaultValue map (dv ⇒ dv → sangria.marshalling.queryAst.queryAstToInput)
 
-  def buildArgument(typeDef: ast.TypeSystemDefinition, fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) =
-    builder.buildArgument(typeDef, fieldDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
+  def buildArgument(typeDefinition: ast.TypeSystemDefinition, fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) =
+    builder.buildArgument(typeDefinition, fieldDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
 
   def buildInputField(typeDef: ast.InputObjectTypeDefinition, value: ast.InputValueDefinition) =
     builder.buildInputField(typeDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
@@ -244,10 +376,40 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 object AstSchemaMaterializer {
   case class SchemaInfo(query: ast.NamedType, mutation: Option[ast.NamedType], subscription: Option[ast.NamedType], definition: ast.SchemaDefinition)
 
+  def extractSchemaInfo(document: ast.Document): SchemaInfo = {
+    val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
+
+    if (schemas.isEmpty)
+      throw new SchemaMaterializationException("Must provide a schema definition.")
+    else if (schemas.size > 1)
+      throw new SchemaMaterializationException("Must provide only one schema definition.")
+    else {
+      val schema = schemas.head
+
+      val queries = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Query, tpe, _, _) ⇒ tpe}
+      val mutations = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Mutation, tpe, _, _) ⇒ tpe}
+      val subscriptions = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Subscription, tpe, _, _) ⇒ tpe}
+
+      if (queries.size != 1)
+        throw new SchemaMaterializationException("Must provide one query type in schema.")
+
+      if (mutations.size > 1)
+        throw new SchemaMaterializationException("Must provide only one mutation type in schema.")
+
+      if (subscriptions.size > 1)
+        throw new SchemaMaterializationException("Must provide only one subscription type in schema.")
+
+      SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, schema)
+    }
+  }
+
   def buildSchema(document: ast.Document): Schema[Any, Any] = {
     buildSchema[Any](document, AstSchemaBuilder.default)
   }
 
   def buildSchema[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     new AstSchemaMaterializer[Ctx](document, builder).build
+
+  def extendSchema[Ctx, Val](schema: Schema[Ctx, Val], document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default): Schema[Ctx, Val] =
+    new AstSchemaMaterializer[Ctx](document, builder).extend(schema)
 }
