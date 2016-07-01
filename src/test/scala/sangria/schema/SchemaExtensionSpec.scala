@@ -107,7 +107,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -165,7 +164,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -230,7 +228,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -292,7 +289,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -349,7 +345,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -432,7 +427,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -518,7 +512,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -592,7 +585,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
-      SchemaRenderer.renderSchema(schema) should not include "newField"
       SchemaRenderer.renderSchema(extendedSchema) should equal (
         """schema {
           |  query: Query
@@ -641,6 +633,149 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           |}
           |
           |union SomeUnion = Foo | Biz""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "may extend mutations and subscriptions" in {
+      val mutationSchema = Schema(
+        query = ObjectType("Query", fields[Unit, Unit](
+          Field("queryField", StringType, resolve = _ ⇒ ""))),
+        mutation = Some(ObjectType("Mutation", fields[Unit, Unit](
+          Field("mutationField", StringType, resolve = _ ⇒ "")))),
+        subscription = Some(ObjectType("Subscription", fields[Unit, Unit](
+          Field("subscriptionField", StringType, resolve = _ ⇒ "")))))
+
+      val ast =
+        graphql"""
+          extend type Query {
+            newQueryField: Int
+          }
+
+          extend type Mutation {
+            newMutationField: Int
+          }
+
+          extend type Subscription {
+            newSubscriptionField: Int
+          }
+        """
+
+      val originalRender = SchemaRenderer.renderSchema(schema)
+      val extendedSchema = mutationSchema.extend(ast)
+
+      extendedSchema should not be theSameInstanceAs (schema)
+      SchemaRenderer.renderSchema(schema) should be (originalRender)
+      SchemaRenderer.renderSchema(extendedSchema) should equal (
+        """schema {
+          |  query: Query
+          |  mutation: Mutation
+          |  subscription: Subscription
+          |}
+          |
+          |type Mutation {
+          |  mutationField: String!
+          |  newMutationField: Int
+          |}
+          |
+          |type Query {
+          |  queryField: String!
+          |  newQueryField: Int
+          |}
+          |
+          |type Subscription {
+          |  subscriptionField: String!
+          |  newSubscriptionField: Int
+          |}""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "does not allow replacing an existing type" in {
+      val ast =
+        graphql"""
+          type Bar {
+            baz: String
+          }
+        """
+
+      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+
+      error.message should include ("Type 'Bar' already exists in the schema.")
+    }
+
+    "does not allow replacing an existing field" in {
+      val ast =
+        graphql"""
+          extend type Bar {
+            foo: Foo
+          }
+        """
+
+      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+
+      error.message should include ("Field 'Bar.foo' already exists in the schema.")
+    }
+
+    "does not allow implementing an existing interface" in {
+      val ast =
+        graphql"""
+          extend type Foo implements SomeInterface {
+            otherField: String
+          }
+        """
+
+      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+
+      error.message should include ("Type 'Foo' already implements 'SomeInterface'.")
+    }
+
+    "does not allow referencing an unknown type" in {
+      val ast =
+        graphql"""
+          extend type Bar {
+            quix: Quix
+          }
+        """
+
+      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+
+      error.message should include ("Invalid or incomplete schema, unknown type: Quix.")
+    }
+
+    "does not allow extending an unknown type" in {
+      val ast =
+        graphql"""
+          extend type UnknownType {
+            baz: String
+          }
+        """
+
+      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+
+      error.message should include ("Cannot extend type 'UnknownType' because it does not exist.")
+    }
+
+    "does not allow extending a non-object type: not an interface" in {
+      val ast =
+        graphql"""
+          extend type SomeInterface {
+            baz: String
+          }
+        """
+
+      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+
+      error.message should include ("Cannot extend non-object type 'SomeInterface'.")
+    }
+
+    "does not allow extending a non-object type: not a scalar" in {
+      val ast =
+        graphql"""
+          extend type String {
+            baz: String
+          }
+        """
+
+      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+
+      error.message should include ("Cannot extend non-object type 'String'.")
     }
   }
 }
