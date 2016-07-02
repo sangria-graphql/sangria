@@ -1,6 +1,6 @@
 ## v0.7.1 (2016-07-02)
 
-* Provide `extendSchema` utility function (#113). This feature allows you to extend existing schema with additional types and existing types with additional fields. It maybe be very useful for client-side tools and for server implementations in cases where parts of a schema are dynamically generated or coming from external sources (like database).
+* Provide `extendSchema` utility function (#113). This feature allows you to extend existing schema with additional types and existing types with additional fields. It may be very useful for client-side tools and for server implementations in cases where parts of a schema are dynamically generated or coming from external sources (like database).
     
   Here is a small example of how you can use it:
     
@@ -34,8 +34,7 @@
     schema.extend(schemaExtensions, myCustomBuilder)  
   ``` 
    
-  Just like with AST-based schema materialization, you can provide a custom schema builder which allows you to control most of the aspects 
-  of generated parts of the schema.  
+  Just like with AST-based schema materialization, you can provide a custom schema builder which allows you to control most of the aspects of generated parts of the schema.  
 * Handling of more than one `ProjectionName` for one field (#146).
 * Updated context propagated only to siblings (#145).
 
