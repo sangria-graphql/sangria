@@ -3,14 +3,11 @@ package sangria.schema
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast.{TypeExtensionDefinition, FieldDefinition, ObjectTypeDefinition}
-import sangria.macros._
-import sangria.parser.DeliveryScheme.Throw
-import sangria.parser.QueryParser
-import sangria.renderer.{QueryRenderer, SchemaRenderer}
+import sangria.renderer.{SchemaRenderer}
 import sangria.util.SimpleGraphQlSupport.check
 import sangria.util.{Pos, SimpleGraphQlSupport, FutureResultSupport, StringMatchers}
 import sangria.validation.IntCoercionViolation
-import spray.json._
+import sangria.macros._
 
 class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
 
@@ -155,8 +152,6 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           |}
           |
           |union SomeUnion = Foo | Biz""".stripMargin) (after being strippedOfCarriageReturns)
-
-
     }
 
     "extends objects by adding new unused types" in {
@@ -282,6 +277,88 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           |}
           |
           |union SomeUnion = Foo | Biz""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "extends objects by adding new fields with not yet used types" in {
+      val ProductType = InterfaceType("Product", fields[Unit, Unit](
+        Field("name", StringType, resolve = _ ⇒ "some name")
+      ))
+
+      val MagicPotionType = ObjectType("MagicPotion", interfaces[Unit, Unit](ProductType), fields[Unit, Unit](
+        Field("size", IntType, resolve = _ ⇒ 1)
+      ))
+
+      val schemaWithPotion = Schema(
+        query = ObjectType("Query", fields[Unit, Unit](
+          Field("foo", OptionType(FooType), resolve = _ ⇒ Some(Foo(Some("foo"), None, Nil))))),
+        additionalTypes = BarType :: MagicPotionType :: ProductType :: Nil)
+
+      val ast =
+        graphql"""
+          extend type Foo {
+            something: Anything
+          }
+
+          interface Anything {
+            id: String
+          }
+
+          type Something implements Anything {
+            f1: MagicPotion
+            f2: [Product!]
+          }
+        """
+
+      val originalRender = SchemaRenderer.renderSchema(schemaWithPotion)
+      val extendedSchema = schemaWithPotion.extend(ast)
+
+      extendedSchema should not be theSameInstanceAs (schemaWithPotion)
+      SchemaRenderer.renderSchema(schemaWithPotion) should be (originalRender)
+      SchemaRenderer.renderSchema(extendedSchema) should equal (
+        """schema {
+          |  query: Query
+          |}
+          |
+          |interface Anything {
+          |  id: String
+          |}
+          |
+          |type Bar implements SomeInterface {
+          |  name: String
+          |  some: SomeInterface
+          |  foo: Foo
+          |}
+          |
+          |type Foo implements SomeInterface {
+          |  name: String
+          |  some: SomeInterface
+          |  tree: [Foo]!
+          |  something: Anything
+          |}
+          |
+          |type MagicPotion implements Product {
+          |  size: Int!
+          |  name: String!
+          |}
+          |
+          |interface Product {
+          |  name: String!
+          |}
+          |
+          |type Query {
+          |  foo: Foo
+          |}
+          |
+          |interface SomeInterface {
+          |  name: String
+          |  some: SomeInterface
+          |}
+          |
+          |type Something implements Anything {
+          |  f1: MagicPotion
+          |  f2: [Product!]
+          |  id: String
+          |}""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
     "extends objects by adding new fields with existing types" in {

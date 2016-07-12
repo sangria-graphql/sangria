@@ -44,12 +44,14 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       val subscriptionType = schema.subscription map getTypeFromDef
       val directives = directiveDefs flatMap buildDirective
 
+      val (referenced, notReferenced) = findUnusedTypes()
+
       builder.extendSchema[Val](
         schema,
         queryType,
         mutationType,
         subscriptionType,
-        findUnusedTypes() ++ findUnusedTypes(schema),
+        notReferenced ++ findUnusedTypes(schema, referenced),
         schema.directives.map(builder.transformDirective(_, this)) ++ directives,
         this)
     }
@@ -69,7 +71,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       queryType,
       mutationType,
       subscriptionType,
-      findUnusedTypes(),
+      findUnusedTypes()._2,
       BuiltinDirectives ++ directives,
       this)
   }
@@ -124,19 +126,18 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     }
   }
 
-  def findUnusedTypes(): List[Type with Named] = {
+  def findUnusedTypes(): (Set[String], List[Type with Named]) = {
     resolveAllLazyFields()
 
     val referenced = typeDefCache.keySet
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
-    notReferenced map (tpe ⇒ getNamedType(tpe.name))
+    referenced.toSet → notReferenced.map(tpe ⇒ getNamedType(tpe.name))
   }
 
-  def findUnusedTypes(schema: Schema[_, _]): List[Type with Named] = {
+  def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): List[Type with Named] = {
     resolveAllLazyFields()
 
-    val referenced = typeDefCache.keySet
     val notReferenced = schema.typeList.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
     notReferenced map (tpe ⇒ getTypeFromDef(tpe))
@@ -144,11 +145,22 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   // TODO: think about better solution
   def resolveAllLazyFields(): Unit =  {
-    typeDefCache.values.foreach {
-      case o: ObjectLikeType[_, _] ⇒ o.fields
-      case o: InputObjectType[_] ⇒ o.fields
-      case _ ⇒ // do nothing
-    }
+    var prevCount = 0
+    var newCount = 0
+    var iteration = 0
+
+    do {
+      prevCount = typeDefCache.size
+      iteration += 1
+
+      typeDefCache.values.foreach {
+        case o: ObjectLikeType[_, _] ⇒ o.fields
+        case o: InputObjectType[_] ⇒ o.fields
+        case _ ⇒ // do nothing
+      }
+
+      newCount = typeDefCache.size
+    } while(prevCount != newCount && iteration < 20)
   }
 
   def getTypeFromExistingType(tpe: OutputType[_]): OutputType[Any] = tpe match {
