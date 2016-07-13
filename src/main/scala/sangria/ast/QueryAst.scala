@@ -1,6 +1,7 @@
 package sangria.ast
 
 import org.parboiled2.Position
+import sangria.ast
 import sangria.parser.SourceMapper
 
 import scala.collection.immutable.ListMap
@@ -92,7 +93,18 @@ case class VariableDefinition(
   comment: Option[Comment] = None,
   position: Option[Position] = None) extends AstNode
 
-sealed trait Type extends AstNode
+sealed trait Type extends AstNode {
+  def namedType: NamedType = {
+    @annotation.tailrec
+    def loop(tpe: Type): NamedType = tpe match {
+      case NotNullType(ofType, _) ⇒ loop(ofType)
+      case ListType(ofType, _) ⇒ loop(ofType)
+      case named: NamedType ⇒ named
+    }
+
+    loop(this)
+  }
+}
 
 case class NamedType(name: String, position: Option[Position] = None) extends Type
 case class NotNullType(ofType: Type, position: Option[Position] = None) extends Type
