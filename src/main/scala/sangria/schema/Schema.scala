@@ -156,37 +156,44 @@ case class ObjectType[Ctx, Val: ClassTag] (
   name: String,
   description: Option[String],
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
-  interfaces: List[InterfaceType[Ctx, _]]
+  interfaces: List[InterfaceType[Ctx, _]],
+  instanceCheck: (Any, Class[_], ObjectType[Ctx, Val]) ⇒ Boolean
 ) extends ObjectLikeType[Ctx, Val] {
   lazy val valClass = implicitly[ClassTag[Val]].runtimeClass
 
-  def isInstanceOf(value: Any) = valClass.isAssignableFrom(value.getClass)
+  def withInstanceCheck(fn: (Any, Class[_], ObjectType[Ctx, Val]) ⇒ Boolean) =
+    copy(instanceCheck = fn)
+
+  def isInstanceOf(value: Any) = instanceCheck(value, valClass, this)
 }
 
 object ObjectType {
   def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), Nil)
+    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), Nil, instanceCheck = defaultInstanceCheck)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), Nil)
+    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), Nil, instanceCheck = defaultInstanceCheck)
   def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck)
   def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(fields), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck)
 
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), Nil)
+    ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), Nil, instanceCheck = defaultInstanceCheck)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), Nil)
+    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), Nil, instanceCheck = defaultInstanceCheck)
   def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), None, Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck)
   def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType))
+    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(fieldsFn), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck)
 
   def createFromMacro[Ctx, Val: ClassTag](name: String, description: Option[String], interfaces: List[InterfaceType[Ctx, _]], fieldsFn: () ⇒ List[Field[Ctx, Val]]) =
-    ObjectType(Named.checkName(name), description, Named.checkObjFields(fieldsFn), interfaces)
+    ObjectType(Named.checkName(name), description, Named.checkObjFields(fieldsFn), interfaces, instanceCheck = defaultInstanceCheck)
 
   implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
+
+  def defaultInstanceCheck[Ctx, Val]: (Any, Class[_], ObjectType[Ctx, Val]) ⇒ Boolean =
+    (value, valClass, tpe) ⇒ valClass.isAssignableFrom(value.getClass)
 }
 
 case class InterfaceType[Ctx, Val](

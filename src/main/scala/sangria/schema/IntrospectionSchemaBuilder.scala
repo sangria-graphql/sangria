@@ -114,19 +114,19 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
     val objectType =
       objectTypeInstanceCheck(definition) match {
         case Some(fn) ⇒
-          new ObjectType[Ctx, Any](
-              name = typeName(definition),
-              description = typeDescription(definition),
-              fieldsFn = fields,
-              interfaces = interfaces) {
-            override def isInstanceOf(value: Any) = fn(value, valClass)
-          }
+          ObjectType[Ctx, Any](
+            name = typeName(definition),
+            description = typeDescription(definition),
+            fieldsFn = fields,
+            interfaces = interfaces,
+            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))
         case None ⇒
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
             fieldsFn = fields,
-            interfaces = interfaces)
+            interfaces = interfaces,
+            instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any])
       }
 
     Some(objectType)

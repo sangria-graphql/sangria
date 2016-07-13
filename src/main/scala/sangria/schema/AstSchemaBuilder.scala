@@ -194,19 +194,19 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     val objectType =
       objectTypeInstanceCheck(definition, extensions) match {
         case Some(fn) ⇒
-          new ObjectType[Ctx, Any](
-              name = typeName(definition),
-              description = typeDescription(definition),
-              fieldsFn = Named.checkObjFields(fields),
-              interfaces = interfaces) {
-            override def isInstanceOf(value: Any) = fn(value, valClass)
-          }
+          ObjectType[Ctx, Any](
+            name = typeName(definition),
+            description = typeDescription(definition),
+            fieldsFn = Named.checkObjFields(fields),
+            interfaces = interfaces,
+            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))
         case None ⇒
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
             fieldsFn = Named.checkObjFields(fields),
-            interfaces = interfaces)
+            interfaces = interfaces,
+            instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any])
       }
 
     Some(objectType)
@@ -220,15 +220,15 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       mat: AstSchemaMaterializer[Ctx]) =
     extendedObjectTypeInstanceCheck(existing, extensions) match {
       case Some(fn) ⇒
-        new ObjectType[Ctx, Any](
-            name = existing.name,
-            description = existing.description,
-            fieldsFn = Named.checkObjFields(fields),
-            interfaces = interfaces) {
-          override def isInstanceOf(value: Any) = fn(value, existing.valClass)
-        }
+        existing.copy(
+          fieldsFn = Named.checkObjFields(fields),
+          interfaces = interfaces,
+          instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))(ClassTag(existing.valClass))
       case None ⇒
-        existing.copy(fieldsFn = Named.checkObjFields(fields), interfaces = interfaces)(ClassTag(existing.valClass))
+        existing.copy(
+          fieldsFn = Named.checkObjFields(fields),
+          interfaces = interfaces,
+          instanceCheck = existing.instanceCheck.asInstanceOf[(Any, Class[_], ObjectType[Ctx, _]) ⇒ Boolean])(ClassTag(existing.valClass))
     }
 
   def buildInputObjectType(
