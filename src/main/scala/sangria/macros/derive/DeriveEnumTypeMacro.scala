@@ -53,7 +53,9 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
   }
 
   private def collectEnumerationValues(tpe: Type): List[Symbol] =
-    tpe.asInstanceOf[TypeRef].pre.members.filter(s ⇒ s.isTerm && !(s.isMethod || s.isModule || s.isClass)).toList
+    tpe.asInstanceOf[TypeRef].pre.members
+      .filter(s ⇒ s.isTerm && !(s.isMethod || s.isModule || s.isClass) && (s.typeSignature.resultType <:< typeOf[Enumeration#Value]))
+      .toList
 
   private def collectKnownEnumSubtypes(s: Symbol): Either[(Position, String), List[Symbol]] =
     if (s.isModule || s.isModuleClass) Right(List(s))

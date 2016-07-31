@@ -4,7 +4,7 @@ package test
 // can be accessed outside of the `sangria` package.
 
 import sangria.macros.derive._
-import sangria.schema.{OutputType, ObjectType}
+import sangria.schema.{EnumType, ObjectType, OutputType}
 
 case class CompanionA(b: CompanionB)
 object CompanionA {
@@ -17,7 +17,7 @@ object CompanionB {
     RenameField("c", "myC"))
 }
 
-case class CompanionC(e: CompanionEnum)
+case class CompanionC(e: CompanionEnum, e1: AnotherEnum.ValName)
 object CompanionC {
   implicit def graphqlType[Ctx]: ObjectType[Ctx, CompanionC] = deriveObjectType[Ctx, CompanionC]()
 }
@@ -28,6 +28,13 @@ object CompanionEnum1 extends CompanionEnum
 object CompanionEnum2 extends CompanionEnum
 
 object CompanionEnum {
-  implicit val graphqlType: OutputType[CompanionEnum] = deriveEnumType[CompanionEnum](
+  implicit val graphqlType: EnumType[CompanionEnum] = deriveEnumType[CompanionEnum](
     RenameValue("CompanionEnum1", "first"))
+}
+
+object AnotherEnum extends Enumeration {
+  type ValName = Value
+  val FOO, BAR, BAZ= Value
+
+  implicit val valNameType: EnumType[AnotherEnum.ValName] = deriveEnumType()
 }

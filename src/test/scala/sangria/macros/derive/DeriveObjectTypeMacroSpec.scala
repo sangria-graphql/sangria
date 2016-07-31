@@ -242,7 +242,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       tpe.fields(1).fieldType should be (ListType(StringType))
     }
 
-    "shupport vals" in {
+    "support vals" in {
       class MyTest {
         @GraphQLField
         @GraphQLName("foo")
@@ -258,6 +258,17 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       tpe.fields(0).description should be (Some("test field"))
       tpe.fields(0).deprecationReason should be (None)
       tpe.fields(0).fieldType should be (OptionType(ListType(IntType)))
+    }
+
+    "support companion objects for `Enumeration`s" in {
+      val enum = test.AnotherEnum.valNameType
+
+      enum.values.map(_.name) should (
+        have(size(3)) and
+        contain("FOO") and
+        contain("BAR") and
+        contain("BAZ")
+      )
     }
 
     "be able to find other types via implicit GraphQL types" in {
@@ -355,10 +366,10 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
       val schema = Schema(CompanionA.graphqlType)
 
-      val query = graphql"{b {myC {e}}}"
+      val query = graphql"{b {myC {e, e1}}}"
 
-      Executor.execute(schema, query, root = CompanionA(CompanionB(CompanionC(CompanionEnum1)))).await should be (Map(
-        "data" → Map("b" → Map("myC" → Map("e" → "first")))))
+      Executor.execute(schema, query, root = CompanionA(CompanionB(CompanionC(CompanionEnum1, AnotherEnum.FOO)))).await should be (Map(
+        "data" → Map("b" → Map("myC" → Map("e" → "first", "e1" → "FOO")))))
     }
 
     "support `Future`, `Try`, `Defer` and `Action` return types" in {
