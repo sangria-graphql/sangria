@@ -34,7 +34,7 @@ object CompanionEnum {
 
 object AnotherEnum extends Enumeration {
   type ValName = Value
-  val FOO, BAR, BAZ= Value
+  val FOO, BAR, BAZ = Value
 
   implicit val valNameType: EnumType[AnotherEnum.ValName] = deriveEnumType()
 }
