@@ -1,3 +1,11 @@
+## v0.7.2 (2016-08-01)
+
+* Transitive types are now collected for all types provided via `additionalTypes` to a schema definition (#149).
+*	`ObjectType.withInstanceCheck` provides an easier way to customize an instance check on `ObjectType` (#148).
+* `Enumeration` derivation macro should now only collects instances of `Enumeration#Value` (#151).
+*	Ensure that all unreferenced types are collected during the schema extension.
+* `sangria.ast.Type.namedType` helper method.
+
 ## v0.7.1 (2016-07-02)
 
 * Provide `extendSchema` utility function (#113). This feature allows you to extend existing schema with additional types and existing types with additional fields. It may be very useful for client-side tools and for server implementations in cases where parts of a schema are dynamically generated or coming from external sources (like database).
