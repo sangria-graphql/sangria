@@ -413,7 +413,7 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         Field("deepBox", OptionType(SomeBox), resolve = _ ⇒ None)
       ))
 
-      val Connection = ObjectType("NonNullStringBox2", fields[Unit, Unit](
+      val Connection = ObjectType("Connection", fields[Unit, Unit](
         Field("edges", OptionType(ListType(OptionType(
           ObjectType("Edge", fields[Unit, Unit](
             Field("node", OptionType(

@@ -727,7 +727,7 @@ case class Schema[Ctx, Val](
 
     val schemaTypes = collectTypes("a '__Schema' type", 30, introspection.__Schema, Map(BuiltinScalars map (s ⇒ s.name → (40 → s)): _*))
     val queryTypes = collectTypes("a query type", 20, query, schemaTypes)
-    val queryTypesWithAdditions = queryTypes ++ additionalTypes.map(t ⇒ t.name → (10 → t))
+    val queryTypesWithAdditions = additionalTypes.foldLeft(queryTypes){case (acc, tpe) ⇒ collectTypes("additional type", 10, tpe, acc)}
     val queryAndSubTypes = mutation map (collectTypes("a mutation type", 10, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions
     val queryAndSubAndMutTypes = subscription map (collectTypes("a subscription type", 10, _, queryAndSubTypes)) getOrElse queryAndSubTypes
 
