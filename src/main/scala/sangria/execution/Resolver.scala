@@ -385,7 +385,7 @@ class Resolver[Ctx](
           case None ⇒ Result(ErrorRegistry.empty, None)
         }
       case ListType(listTpe) ⇒
-        if (value == null)
+        if (isUndefinedValue(value))
           Result(ErrorRegistry.empty, None)
         else {
           val actualValue = value match {
@@ -428,31 +428,44 @@ class Resolver[Ctx](
         }
       case scalar: ScalarType[Any @unchecked] ⇒
         try {
-          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalScalarValue(scalar.coerceOutput(value, marshaller.capabilities), marshaller, scalar.name, scalar.scalarInfo)))
+          Result(ErrorRegistry.empty,
+            if (isUndefinedValue(value))
+              None
+            else
+              Some(marshalScalarValue(scalar.coerceOutput(value, marshaller.capabilities), marshaller, scalar.name, scalar.scalarInfo)))
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
       case enum: EnumType[Any @unchecked] ⇒
         try {
-          Result(ErrorRegistry.empty, if (value == null) None else Some(marshalEnumValue(enum.coerceOutput(value), marshaller, enum.name)))
+          Result(ErrorRegistry.empty, if (isUndefinedValue(value)) None else Some(marshalEnumValue(enum.coerceOutput(value), marshaller, enum.name)))
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
       case obj: ObjectType[Ctx, _] ⇒
-        fieldCollector.collectFields(path, obj, astFields) match {
-          case Success(fields) ⇒
-            val actions = collectActionsPar(path, obj, value, fields, ErrorRegistry.empty, userCtx)
+        if (isUndefinedValue(value))
+          Result(ErrorRegistry.empty, None)
+        else
+          fieldCollector.collectFields(path, obj, astFields) match {
+            case Success(fields) ⇒
+              val actions = collectActionsPar(path, obj, value, fields, ErrorRegistry.empty, userCtx)
 
-            resolveActionsPar(path, obj, actions, userCtx, fields.namesOrdered)
-          case Failure(error) ⇒ Result(ErrorRegistry(path, error), None)
-        }
+              resolveActionsPar(path, obj, actions, userCtx, fields.namesOrdered)
+            case Failure(error) ⇒ Result(ErrorRegistry(path, error), None)
+          }
       case abst: AbstractType ⇒
-        abst.typeOf(value, schema) match {
-          case Some(obj) ⇒ resolveValue(path, astFields, obj, field, value, userCtx)
-          case None ⇒ Result(ErrorRegistry(path,
-            new ExecutionError(s"Can't find appropriate subtype for field at path $path", exceptionHandler, sourceMapper, astFields.head.position.toList)), None)
-        }
+        if (isUndefinedValue(value))
+          Result(ErrorRegistry.empty, None)
+        else
+          abst.typeOf(value, schema) match {
+            case Some(obj) ⇒ resolveValue(path, astFields, obj, field, value, userCtx)
+            case None ⇒ Result(ErrorRegistry(path,
+              new ExecutionError(s"Can't find appropriate subtype for field at path $path", exceptionHandler, sourceMapper, astFields.head.position.toList)), None)
+          }
     }
+
+  def isUndefinedValue(value: Any) =
+    value == null || value == None
 
   def resolveSimpleListValue(simpleRes: Seq[Result], path: ExecutionPath, optional: Boolean, astPosition: Option[Position]): Result = {
     // this is very hot place, so resorting to mutability to minimize the footprint
@@ -466,7 +479,7 @@ class Resolver[Ctx](
       val res = resIt.next()
 
       if (!optional && res.value.isEmpty && res.errors.errorList.isEmpty)
-        errorReg = errorReg.add(path, new ExecutionError("Cannot return null for non-nullable type", exceptionHandler, sourceMapper, astPosition.toList))
+        errorReg = errorReg.add(path, nullForNotNullTypeError(astPosition))
       else if (res.errors.errorList.nonEmpty)
         errorReg = errorReg.add(res.errors)
 
@@ -705,7 +718,7 @@ class Resolver[Ctx](
       copy(
         errors =
             if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
-              errors.add(other.errors).add(path, new ExecutionError("Cannot return null for non-nullable type", exceptionHandler, sourceMapper, position.toList))
+              errors.add(other.errors).add(path, nullForNotNullTypeError(position))
             else
               errors.add(other.errors),
         value =
@@ -720,6 +733,9 @@ class Resolver[Ctx](
 
     def appendErrors(path: ExecutionPath, e: Vector[Throwable], position: Option[Position]) = copy(errors = errors.append(path, e, position))
   }
+
+  def nullForNotNullTypeError(position: Option[Position]) =
+    new ExecutionError("Cannot return null for non-nullable type", exceptionHandler, sourceMapper, position.toList)
 }
 
 case class MappedCtxUpdate[Ctx, Val, NewVal](ctxFn: Val ⇒ Ctx, mapFn: Val ⇒ NewVal, onError: Throwable ⇒ Unit)

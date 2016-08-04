@@ -2,14 +2,14 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{ObjectTypeDefinition, FieldDefinition, TypeDefinition}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition}
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
-import sangria.util.{StringMatchers, FutureResultSupport}
+import sangria.util.{FutureResultSupport, Pos, StringMatchers}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.macros._
 import sangria.validation.IntCoercionViolation
-import sangria.util.SimpleGraphQlSupport.check
+import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._
 
 class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
@@ -1044,6 +1044,87 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
                 "name" → "foo",
                 "age" → 10))),
           """{"v": 456}""".parseJson
+        )
+      }
+
+      "executor should properly handle undefined values (like `null` and `None`) even if GraphQL type is not null" in {
+        val schemaAst =
+          graphql"""
+            schema {
+              query: Root
+            }
+
+            enum Color {RED, GREEN, BLUE}
+
+            interface Letter {char: String}
+            type A implements Letter {char: String}
+            type B implements Letter {char: String}
+
+            type Foo {
+              barNone: Bar!
+              barNull: Bar!
+              listNone: [Bar]!
+              listNull: [Bar]!
+              intNone: Letter!
+              intNull: Letter!
+              scalarNone: String!
+              scalarNull: String!
+              enumNone: Color!
+              enumNull: Color!
+            }
+
+            type Bar {
+              baz: String
+            }
+
+            type Root {
+              foo: Foo
+            }
+          """
+
+        val customBuilder = new DefaultAstSchemaBuilder[Unit] {
+          override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
+            if (definition.name == "foo")
+              _ ⇒ Some(())
+            else if (definition.name endsWith "None")
+              _ ⇒ Value(None)
+            else if (definition.name endsWith "Null")
+              _ ⇒ Value(null)
+            else
+              _ => Value(None)
+        }
+
+        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+
+        checkContainsErrors(schema, (),
+          """
+            {
+              foo {
+                barNone {baz}
+                barNull {baz}
+                listNone {baz}
+                listNull {baz}
+                intNone {char}
+                intNull {char}
+                scalarNone
+                scalarNull
+                enumNone
+                enumNull
+              }
+            }
+          """,
+          Map("foo" → null),
+          List(
+            """Cannot return null for non-nullable type""" → List(Pos(4, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(5, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(6, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(7, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(8, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(9, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(10, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(11, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(12, 17)),
+            """Cannot return null for non-nullable type""" → List(Pos(13, 17)))
         )
       }
     }
