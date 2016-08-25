@@ -87,9 +87,9 @@ trait Ignored extends PositionTracking { this: Parser ⇒
 
   def IgnoredNoComment = rule { quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | ',') }
 
-  def Comments = rule { trackPos ~ CommentCap.* ~ Ignored.* ~> ((pos, lines) ⇒ if (lines.nonEmpty) Some(ast.Comment(lines, Some(pos))) else None) }
+  def Comments = rule { CommentCap.* ~ Ignored.* ~> (_.toList)}
 
-  def CommentCap = rule { "#" ~ capture(CommentChar.*) ~ IgnoredNoComment.* }
+  def CommentCap = rule { trackPos ~ "#" ~ capture(CommentChar.*) ~ IgnoredNoComment.* ~> ((pos, comment) ⇒ ast.Comment(comment, Some(pos))) }
 
   def Comment = rule { "#" ~ CommentChar.* }
 
@@ -105,7 +105,10 @@ trait Ignored extends PositionTracking { this: Parser ⇒
 
 trait Document { this: Parser with Operations with Ignored with Fragments with Operations with Values with TypeSystemDefinitions ⇒
 
-  def Document = rule { IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ Ignored.* ~ EOI ~> ((pos, d) ⇒ ast.Document(d.toList, Some(pos))) }
+  def Document = rule {
+    IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
+      ((pos, d, comments) ⇒ ast.Document(d.toList, comments, Some(pos)))
+  }
 
   def InputDocument = rule { IgnoredNoComment.* ~ ValueConst ~ Ignored.* ~ EOI }
 
@@ -147,8 +150,8 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
   def ObjectTypeDefinition = rule {
     Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Nil)) ~
-      (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.* ~ wsNoComment('}') ~> (
-        (comment, pos, name, interfaces, dirs, fields) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toList, dirs, comment, Some(pos)))
+      (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.* ~ Comments ~ wsNoComment('}') ~> (
+        (comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toList, dirs, comment, tc, Some(pos)))
   }
 
   def ImplementsInterfaces = rule { implements ~ NamedType.+ ~> (_.toList) }
@@ -166,8 +169,8 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   }
 
   def InterfaceTypeDefinition = rule {
-    Comments ~ trackPos ~ interface ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.+ ~ wsNoComment('}') ~> (
-      (comment, pos, name, dirs, fields) ⇒ ast.InterfaceTypeDefinition(name, fields.toList, dirs, comment, Some(pos)))
+    Comments ~ trackPos ~ interface ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+      (comment, pos, name, dirs, fields, tc) ⇒ ast.InterfaceTypeDefinition(name, fields.toList, dirs, comment, tc, Some(pos)))
   }
 
   def UnionTypeDefinition = rule {
@@ -178,18 +181,18 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   def UnionMembers = rule { NamedType.+(ws('|')) ~> (_.toList) }
 
   def EnumTypeDefinition = rule {
-    Comments ~ trackPos ~ enum ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ wsNoComment('}') ~> (
-      (comment, pos, name, dirs, values) ⇒ ast.EnumTypeDefinition(name, values.toList, dirs, comment, Some(pos)))
+    Comments ~ trackPos ~ enum ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+      (comment, pos, name, dirs, values, tc) ⇒ ast.EnumTypeDefinition(name, values.toList, dirs, comment, tc, Some(pos)))
   }
 
   def EnumValueDefinition = rule {
-    EnumValue ~ (Directives.? ~> (_ getOrElse Nil)) ~> ((v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, v.comment, v.position))
+    EnumValue ~ (Directives.? ~> (_ getOrElse Nil)) ~> ((v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, v.comments, v.position))
   }
 
   // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
   def InputObjectTypeDefinition = rule {
-    Comments ~ trackPos ~ inputType ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ InputValueDefinition.* ~ wsNoComment('}') ~> (
-      (comment, pos, name, dirs, fields) ⇒ ast.InputObjectTypeDefinition(name, fields.toList, dirs, comment, Some(pos)))
+    Comments ~ trackPos ~ inputType ~ Name ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ InputValueDefinition.* ~ Comments ~ wsNoComment('}') ~> (
+      (comment, pos, name, dirs, fields, tc) ⇒ ast.InputObjectTypeDefinition(name, fields.toList, dirs, comment, tc, Some(pos)))
   }
 
   def TypeExtensionDefinition = rule {
@@ -207,8 +210,8 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   def DirectiveLocation = rule { Comments ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
 
   def SchemaDefinition = rule {
-    Comments ~ trackPos ~ schema ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ wsNoComment('}') ~> (
-      (comment, pos, dirs, ops) ⇒ ast.SchemaDefinition(ops.toList, dirs, comment, Some(pos)))
+    Comments ~ trackPos ~ schema ~ (Directives.? ~> (_ getOrElse Nil)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+      (comment, pos, dirs, ops, tc) ⇒ ast.SchemaDefinition(ops.toList, dirs, comment, tc, Some(pos)))
   }
 
   def OperationTypeDefinition = rule {
@@ -221,9 +224,9 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
 trait Operations extends PositionTracking { this: Parser with Tokens with Ignored with Fragments with Values with Types with Directives ⇒
 
   def OperationDefinition = rule {
-    Comments ~ trackPos ~ SelectionSet ~> ((comment, pos, s) ⇒ ast.OperationDefinition(selections = s, comment = comment, position = Some(pos))) |
+    Comments ~ trackPos ~ SelectionSet ~> ((comment, pos, s) ⇒ ast.OperationDefinition(selections = s._1, comments = comment, trailingComments = s._2, position = Some(pos))) |
     Comments ~ trackPos ~ OperationType ~ OperationName.? ~ (VariableDefinitions.? ~> (_ getOrElse Nil)) ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
-        ((comment, pos, opType, name, vars, dirs, sels) ⇒ ast.OperationDefinition(opType, name, vars, dirs, sels, comment, Some(pos)))
+        ((comment, pos, opType, name, vars, dirs, sels) ⇒ ast.OperationDefinition(opType, name, vars, dirs, sels._1, comment, sels._2, Some(pos)))
   }
 
   def OperationName = rule { Name }
@@ -249,15 +252,20 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def DefaultValue = rule { wsNoComment('=') ~ ValueConst }
 
-  def SelectionSet: Rule1[List[ast.Selection]] = rule { wsNoComment('{') ~ Selection.+ ~ wsNoComment('}') ~> ((x: Seq[ast.Selection]) ⇒ x.toList) }
+  def SelectionSet: Rule1[(List[ast.Selection], List[ast.Comment])] = rule {
+    wsNoComment('{') ~ Selection.+ ~ Comments ~ wsNoComment('}') ~>
+        ((x: Seq[ast.Selection], comments: List[ast.Comment]) ⇒ x.toList → comments)
+  }
 
   def Selection = rule { Field | FragmentSpread | InlineFragment }
 
-  def Field = rule { Comments ~ trackPos ~ Alias.? ~ Name ~
+  def Field = rule {
+    Comments ~ trackPos ~ Alias.? ~ Name ~
       (Arguments.? ~> (_ getOrElse Nil)) ~
       (Directives.? ~> (_ getOrElse Nil)) ~
-      (SelectionSet.? ~> (_ getOrElse Nil)) ~>
-        ((comment, pos, alias, name, args, dirs, sels) ⇒ ast.Field(alias, name, args, dirs, sels, comment, Some(pos))) }
+      (SelectionSet.? ~> (_ getOrElse (Nil → Nil))) ~>
+        ((comment, pos, alias, name, args, dirs, sels) ⇒ ast.Field(alias, name, args, dirs, sels._1, comment, sels._2, Some(pos)))
+  }
 
   def Alias = rule { Name ~ ws(':') }
 
@@ -273,14 +281,14 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
       ((comment, pos, name, dirs) ⇒ ast.FragmentSpread(name, dirs, comment, Some(pos))) }
 
   def InlineFragment = rule { Comments ~ trackPos ~ Ellipsis ~ TypeCondition.? ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
-      ((comment, pos, typeCondition, dirs, sels) ⇒ ast.InlineFragment(typeCondition, dirs, sels, comment, Some(pos))) }
+      ((comment, pos, typeCondition, dirs, sels) ⇒ ast.InlineFragment(typeCondition, dirs, sels._1, comment, sels._2, Some(pos))) }
 
   def on = rule { Keyword("on") }
 
   def Fragment = rule { Keyword("fragment") }
 
   def FragmentDefinition = rule { Comments ~ trackPos ~ Fragment ~ FragmentName ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Nil)) ~ SelectionSet ~>
-    ((comment, pos, name, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels, comment, Some(pos))) }
+    ((comment, pos, name, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels._1, comment, sels._2, Some(pos))) }
 
   def FragmentName = rule { !on ~ Name }
 

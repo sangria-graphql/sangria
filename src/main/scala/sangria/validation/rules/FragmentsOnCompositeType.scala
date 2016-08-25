@@ -16,14 +16,14 @@ import sangria.validation.{InlineFragmentOnNonCompositeErrorViolation, FragmentO
 class FragmentsOnCompositeType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.InlineFragment(Some(cond), _, _, _, pos) ⇒
+      case ast.InlineFragment(Some(cond), _, _, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] ⇒
             Left(Vector(InlineFragmentOnNonCompositeErrorViolation(cond.name, ctx.sourceMapper, cond.position.toList)))
           case _ ⇒
             Right(Continue)
         }
-      case ast.FragmentDefinition(name, cond, _, _, _, pos) ⇒
+      case ast.FragmentDefinition(name, cond, _, _, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] ⇒
             Left(Vector(FragmentOnNonCompositeErrorViolation(name, cond.name, ctx.sourceMapper, cond.position.toList)))

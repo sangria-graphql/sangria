@@ -139,14 +139,27 @@ trait AstSchemaBuilder[Ctx] {
 object AstSchemaBuilder {
   def default[Ctx] = new DefaultAstSchemaBuilder[Ctx]
 
-  def extractDescription(comment: Seq[String]): Option[String] = {
-    val descrLines = comment.filter(_.startsWith("#"))
+  def extractDescription(node: ast.WithComments): Option[String] =
+    if (node.comments.nonEmpty) {
+      node.position.map(_.line).orElse(node.comments.last.position.map(_.line + 1)) match {
+        case Some(nodeLine) ⇒
+          val (_, relevantComments) = node.comments.foldRight((nodeLine - 1, Vector.empty[String])) {
+            case (c, (expectedLine, acc)) if c.position.isDefined && c.position.get.line == expectedLine ⇒
+              (expectedLine - 1) → (c.text +: acc)
+            case (c, acc ) ⇒ acc
+          }
 
-    if (descrLines.nonEmpty)
-      Some(descrLines.map(_.substring(1).trim) mkString "\n")
+          extractDescription(relevantComments)
+        case None ⇒
+          extractDescription(node.comments map (_.text))
+      }
+    } else None
+
+  def extractDescription(comments: Seq[String]): Option[String] =
+    if (comments.nonEmpty)
+      Some(comments.map(_.trim) mkString "\n")
     else
       None
-  }
 }
 
 class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
@@ -458,26 +471,26 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def directiveName(definition: ast.DirectiveDefinition): String =
     Named.checkName(definition.name)
 
-  def commentDescription(comment: Option[ast.Comment]): Option[String] =
-    comment flatMap (c ⇒ AstSchemaBuilder.extractDescription(c.lines))
+  def commentDescription(node: ast.WithComments): Option[String] =
+    AstSchemaBuilder.extractDescription(node)
 
   def typeDescription(definition: ast.TypeDefinition): Option[String] =
-    commentDescription(definition.comment)
+    commentDescription(definition)
 
   def fieldDescription(definition: ast.FieldDefinition): Option[String] =
-    commentDescription(definition.comment)
+    commentDescription(definition)
 
   def argumentDescription(definition: ast.InputValueDefinition): Option[String] =
-    commentDescription(definition.comment)
+    commentDescription(definition)
 
   def inputFieldDescription(definition: ast.InputValueDefinition): Option[String] =
-    commentDescription(definition.comment)
+    commentDescription(definition)
 
   def enumValueDescription(definition: ast.EnumValueDefinition): Option[String] =
-    commentDescription(definition.comment)
+    commentDescription(definition)
 
   def directiveDescription(definition: ast.DirectiveDefinition): Option[String] =
-    commentDescription(definition.comment)
+    commentDescription(definition)
 
   def enumValue(definition: ast.EnumValueDefinition): String =
     definition.name

@@ -1,7 +1,7 @@
 package sangria.renderer
 
+import org.parboiled2.Position
 import sangria.util.StringUtil.escapeString
-
 import sangria.ast._
 
 object QueryRenderer {
@@ -34,24 +34,36 @@ object QueryRenderer {
     formatInputValues = false,
     renderComments = false)
 
-  def renderSelections(sels: List[Selection], indent: String, indentLevel: Int, config: QueryRendererConfig) =
+  def renderSelections(sels: List[Selection], tc: WithTrailingComments, indent: String, indentLevel: Int, config: QueryRendererConfig) =
     if (sels.nonEmpty) {
       val rendered = sels.zipWithIndex map {
         case (sel, idx) ⇒
-          (if (idx != 0 && shouldRenderComment(sel.comment, config)) config.lineBreak else "") + render(sel, config, indentLevel + 1)
+          (if (idx != 0 && shouldRenderComment(sel, config)) config.lineBreak else "") + render(sel, config, indentLevel + 1)
       } mkString config.mandatoryLineBreak
 
-      "{" + config.lineBreak + rendered + config.lineBreak + indent + "}"
+      "{" +
+        config.lineBreak +
+        rendered +
+        renderTrailingComment(tc, config.indentLevel * (indentLevel + 1), config) +
+        trailingLineBreak(tc, config) +
+        indent +
+        "}"
     } else ""
 
-  def renderFieldDefinitions(fields: List[FieldDefinition], indent: String, indentLevel: Int, config: QueryRendererConfig) =
+  def renderFieldDefinitions(fields: List[FieldDefinition], tc: WithTrailingComments, indent: String, indentLevel: Int, config: QueryRendererConfig) =
     if (fields.nonEmpty) {
       val rendered = fields.zipWithIndex map {
         case (field, idx) ⇒
-          (if (idx != 0 && shouldRenderComment(field.comment, config)) config.lineBreak else "") + render(field, config, indentLevel + 1)
+          (if (idx != 0 && shouldRenderComment(field, config)) config.lineBreak else "") + render(field, config, indentLevel + 1)
       } mkString config.mandatoryLineBreak
 
-      "{" + config.lineBreak + rendered + config.lineBreak + indent + "}"
+      "{" +
+        config.lineBreak +
+        rendered +
+        renderTrailingComment(tc, config.indentLevel * (indentLevel + 1), config) +
+        trailingLineBreak(tc, config) +
+        indent +
+        "}"
     } else "{}"
 
   def renderDirs(dirs: List[Directive], config: QueryRendererConfig, frontSep: Boolean = false, withSep: Boolean = true) =
@@ -62,9 +74,9 @@ object QueryRenderer {
   def renderArgs(args: List[Argument], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
     if (args.nonEmpty) {
       val argsRendered = args.zipWithIndex map { case (a, idx) ⇒
-        (if (idx != 0 && shouldRenderComment(a.comment, config)) config.lineBreak else "") +
-            (if (shouldRenderComment(a.comment, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
-            render(a, config, if (shouldRenderComment(a.comment, config)) indentLevel + 1 else 0)
+        (if (idx != 0 && shouldRenderComment(a, config)) config.lineBreak else "") +
+            (if (shouldRenderComment(a, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
+            render(a, config, if (shouldRenderComment(a, config)) indentLevel + 1 else 0)
       }
 
       "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
@@ -73,9 +85,9 @@ object QueryRenderer {
   def renderInputValueDefs(args: List[InputValueDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
     if (args.nonEmpty) {
       val argsRendered = args.zipWithIndex map { case (a, idx) ⇒
-        (if (idx != 0 && shouldRenderComment(a.comment, config)) config.lineBreak else "") +
-          (if (shouldRenderComment(a.comment, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
-          render(a, config, if (shouldRenderComment(a.comment, config)) indentLevel + 1 else 0)
+        (if (idx != 0 && shouldRenderComment(a, config)) config.lineBreak else "") +
+          (if (shouldRenderComment(a, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
+          render(a, config, if (shouldRenderComment(a, config)) indentLevel + 1 else 0)
       }
 
       "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
@@ -84,9 +96,9 @@ object QueryRenderer {
   def renderVarDefs(vars: List[VariableDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
     if (vars.nonEmpty) {
       val varsRendered = vars.zipWithIndex map { case (v, idx) ⇒
-        (if (idx != 0 && shouldRenderComment(v.comment, config)) config.lineBreak else "") +
-          (if (shouldRenderComment(v.comment, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
-          render(v, config, if (shouldRenderComment(v.comment, config)) indentLevel + 2 else 0)
+        (if (idx != 0 && shouldRenderComment(v, config)) config.lineBreak else "") +
+          (if (shouldRenderComment(v, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
+          render(v, config, if (shouldRenderComment(v, config)) indentLevel + 2 else 0)
       }
 
       "(" + (varsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
@@ -94,7 +106,7 @@ object QueryRenderer {
 
   def renderInputObjectFieldDefs(fields: List[InputValueDefinition], indentLevel: Int, config: QueryRendererConfig) = {
     val fieldsRendered = fields.zipWithIndex map { case (f, idx) ⇒
-      (if (idx != 0 && shouldRenderComment(f.comment, config)) config.lineBreak else "") +
+      (if (idx != 0 && shouldRenderComment(f, config)) config.lineBreak else "") +
           render(f, config, indentLevel + 1)
     }
 
@@ -115,48 +127,77 @@ object QueryRenderer {
     case OperationType.Subscription ⇒ "subscription"
   }
 
-  def shouldRenderComment(comment: Option[Comment], config: QueryRendererConfig) =
-    config.renderComments && comment.isDefined
+  def shouldRenderComment(node: WithComments, config: QueryRendererConfig) =
+    config.renderComments && node.comments.nonEmpty
 
-  def renderComment(comment: Option[Comment], indent: String, config: QueryRendererConfig): String =
-    if (shouldRenderComment(comment, config))
-      comment.get.lines map (l ⇒ indent + "#" + (if (l.trim.nonEmpty && !l.trim.startsWith("#")) " " else "") + l.trim) mkString (
-        "",
-        config.mandatoryLineBreak,
-        config.mandatoryLineBreak)
-    else
-      ""
+  def shouldRenderComment(node: WithTrailingComments, config: QueryRendererConfig) =
+    config.renderComments && node.trailingComments.nonEmpty
 
-  def renderInputComment(comment: Option[Comment], indent: String, config: QueryRendererConfig) =
-    if (config.formatInputValues && shouldRenderComment(comment, config)) renderComment(comment, indent, config) + indent else ""
+  private def startsWithWhitespace(text: String) =
+    text.charAt(0).isWhitespace
+
+  def renderIndividualComment(node: Comment, indent: String, config: QueryRendererConfig): String =
+    indent + "#" + (if (node.text.trim.nonEmpty && !startsWithWhitespace(node.text)) " " else "") + node.text
+
+  def renderComment(node: WithComments, indent: String, config: QueryRendererConfig): String =
+    if (shouldRenderComment(node, config)) {
+      val lines = renderCommentLines(node.comments, node.position, indent, config)
+
+      lines mkString ("", config.mandatoryLineBreak, config.mandatoryLineBreak)
+    } else ""
+
+  def renderCommentLines(comments: List[Comment], nodePos: Option[Position], indent: String, config: QueryRendererConfig) = {
+    val nodeLine = nodePos.map(_.line).orElse(comments.last.position.map(_.line + 1)).fold(1)(identity)
+
+    comments.foldRight((nodeLine, Vector.empty[String])) {
+      case (c, (lastLine, acc)) ⇒
+        val currLine = c.position.fold(lastLine - 1)(_.line)
+        val diffLines = lastLine - currLine
+        val fill = if (diffLines  > 1) config.lineBreak else ""
+
+        currLine → ((renderIndividualComment(c, indent, config) + fill) +: acc)
+    }._2
+  }
+
+  def renderTrailingComment(node: WithTrailingComments, indent: String, config: QueryRendererConfig): String =
+    if (shouldRenderComment(node, config)) {
+      val lines = renderCommentLines(node.trailingComments, None, indent, config)
+
+      lines mkString (config.lineBreak + config.mandatoryLineBreak, config.mandatoryLineBreak, "")
+    } else ""
+
+  def renderInputComment(node: WithComments, indent: String, config: QueryRendererConfig) =
+    if (config.formatInputValues && shouldRenderComment(node, config)) renderComment(node, indent, config) + indent else ""
 
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0, prefix: Option[String] = None): String = {
     lazy val indent = config.indentLevel * indentLevel
 
     node match {
-      case Document(defs, _, _) ⇒ defs map (render(_, config, indentLevel)) mkString config.definitionSeparator
+      case d @ Document(defs, _, _, _) ⇒
+        (defs map (render(_, config, indentLevel)) mkString config.definitionSeparator) +
+          renderTrailingComment(d, indent, config)
 
-      case OperationDefinition(OperationType.Query, None, Nil, Nil, sels, comment, _) ⇒
-        renderComment(comment, indent, config) + indent + renderSelections(sels, indent, indentLevel, config)
+      case op @ OperationDefinition(OperationType.Query, None, Nil, Nil, sels, _, _, _) ⇒
+        renderComment(op, indent, config) + indent + renderSelections(sels, op, indent, indentLevel, config)
 
-      case OperationDefinition(opType, name, vars, dirs, sels, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case op @ OperationDefinition(opType, name, vars, dirs, sels, _, _, _) ⇒
+        renderComment(op, indent, config) +
           indent + renderOpType(opType) + config.mandatorySeparator +
           (name getOrElse "") +
           renderVarDefs(vars, indentLevel, config, withSep = false) +
           config.separator +
           renderDirs(dirs, config) +
-          renderSelections(sels, indent, indentLevel, config)
+          renderSelections(sels, op, indent, indentLevel, config)
 
-      case FragmentDefinition(name, typeCondition, dirs, sels, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case fd @ FragmentDefinition(name, typeCondition, dirs, sels, _, _, _) ⇒
+        renderComment(fd, indent, config) +
           indent + "fragment" + config.mandatorySeparator + name + config.mandatorySeparator + "on" +
           config.mandatorySeparator + typeCondition.name + config.separator +
           renderDirs(dirs, config) +
-          renderSelections(sels, indent, indentLevel, config)
+          renderSelections(sels, fd, indent, indentLevel, config)
 
-      case VariableDefinition(name, tpe, defaultValue, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case vd @ VariableDefinition(name, tpe, defaultValue, _, _) ⇒
+        renderComment(vd, indent, config) +
           indent + "$" + name + ":" + config.separator +
           render(tpe, config) +
           (defaultValue map (v ⇒ config.separator + "=" + config.separator + render(v, config)) getOrElse "")
@@ -170,175 +211,193 @@ object QueryRenderer {
       case NamedType(name, _) ⇒
         name
 
-      case Field(alias, name, args, dirs, sels, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case f @ Field(alias, name, args, dirs, sels, _, _, _) ⇒
+        renderComment(f, indent, config) +
           indent + (alias map (_ + ":" + config.separator) getOrElse "") + name +
           renderArgs(args, indentLevel, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config, withSep = sels.nonEmpty) +
-          renderSelections(sels, indent, indentLevel, config)
+          renderSelections(sels, f, indent, indentLevel, config)
 
-      case FragmentSpread(name, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case fs @ FragmentSpread(name, dirs, _, _) ⇒
+        renderComment(fs, indent, config) +
           indent + "..." + name + renderDirs(dirs, config, frontSep = true)
 
-      case InlineFragment(typeCondition, dirs, sels, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case ifr @ InlineFragment(typeCondition, dirs, sels, _, _, _) ⇒
+        renderComment(ifr, indent, config) +
           indent + "..." + config.mandatorySeparator + typeCondition.fold("")("on" + config.mandatorySeparator + _.name) + config.separator +
           renderDirs(dirs, config) +
-          renderSelections(sels, indent, indentLevel, config)
+          renderSelections(sels, ifr, indent, indentLevel, config)
 
       case Directive(name, args, _, _) ⇒
         indent + "@" + name + renderArgs(args, indentLevel, config.copy(renderComments = false), withSep = false)
 
-      case Argument(name, value, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case a @ Argument(name, value, _, _) ⇒
+        renderComment(a, indent, config) +
           indent + name + ":" + config.separator + render(value, config)
 
-      case IntValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
-      case BigIntValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
-      case FloatValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
-      case BigDecimalValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
-      case StringValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + '"' + escapeString(value) + '"'
-      case BooleanValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
-      case NullValue(comment, _) ⇒ renderInputComment(comment, indent, config) + "null"
-      case EnumValue(value, comment, _) ⇒ renderInputComment(comment, indent, config) + value
-      case ListValue(value, comment, _) ⇒
+      case v @ IntValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
+      case v @ BigIntValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
+      case v @ FloatValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
+      case v @ BigDecimalValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
+      case v @ StringValue(value, _, _) ⇒ renderInputComment(v, indent, config) + '"' + escapeString(value) + '"'
+      case v @ BooleanValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
+      case v @ NullValue(_, _) ⇒ renderInputComment(v, indent, config) + "null"
+      case v @ EnumValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
+      case v @ ListValue(value, _, _) ⇒
         def addIdent(v: Value) = v match {
           case o: ObjectValue ⇒ false
           case _ ⇒ true
         }
 
         def renderValue(v: Value, idx: Int) =
-          if (config.formatInputValues && shouldRenderComment(v.comment, config))
+          if (config.formatInputValues && shouldRenderComment(v, config))
             (if (idx != 0) config.lineBreak else "") +
               config.lineBreak +
               render(v, config, indentLevel + (if (addIdent(v)) 1 else 0))
           else
             (if (idx != 0) config.separator else "") + render(v, config, indentLevel)
 
-        renderInputComment(comment, indent, config) +
+        renderInputComment(v, indent, config) +
           "[" + (value.zipWithIndex map {case (v, idx) ⇒ renderValue(v, idx)} mkString config.inputListSeparator) + "]"
-      case ObjectValue(value, comment, _) ⇒
-        renderInputComment(comment, indent, config) +
+      case v @ ObjectValue(value, _, _) ⇒
+        renderInputComment(v, indent, config) +
           "{" + inputLineBreak(config) +
-          (value.zipWithIndex map {case (v, idx) ⇒ (if (idx != 0 && config.formatInputValues && shouldRenderComment(v.comment, config)) config.lineBreak else "") + render(v, config, inputFieldIndent(config, indentLevel))} mkString config.inputFieldSeparator) +
+          (value.zipWithIndex map {case (v, idx) ⇒ (if (idx != 0 && config.formatInputValues && shouldRenderComment(v, config)) config.lineBreak else "") + render(v, config, inputFieldIndent(config, indentLevel))} mkString config.inputFieldSeparator) +
           inputLineBreak(config) + inputIndent(config, indent) + "}"
       case VariableValue(name, _, _) ⇒ indent + "$" + name
-      case ObjectField(name, value, comment, _) ⇒
+      case v @ ObjectField(name, value, _, _) ⇒
         val rendered =
-            if (config.formatInputValues && shouldRenderComment(value.comment, config))
+            if (config.formatInputValues && shouldRenderComment(value, config))
               config.lineBreak + render(value, config, indentLevel + 1)
             else
               config.separator + render(value, config, indentLevel)
 
-        (if (config.formatInputValues) renderComment(comment, indent, config) else "") +
+        (if (config.formatInputValues) renderComment(v, indent, config) else "") +
           indent + name + ":" + rendered
-      case c @ Comment(_, _) ⇒ renderComment(Some(c), indent, config)
+      case c @ Comment(_, _) ⇒ renderIndividualComment(c, indent, config)
 
-      case ScalarTypeDefinition(name, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case std @ ScalarTypeDefinition(name, dirs, _, _) ⇒
+        renderComment(std, indent, config) +
           indent + "scalar" + config.mandatorySeparator + name +
           renderDirs(dirs, config, frontSep = true)
 
-      case ObjectTypeDefinition(name, interfaces, fields, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case otd @ ObjectTypeDefinition(name, interfaces, fields, dirs, _, _, _) ⇒
+        renderComment(otd, indent, config) +
           indent + prefix.getOrElse("") + "type" + config.mandatorySeparator + name +
           config.mandatorySeparator +
           renderInterfaces(interfaces, config) +
           renderDirs(dirs, config) +
-          renderFieldDefinitions(fields, indent, indentLevel, config)
+          renderFieldDefinitions(fields, otd, indent, indentLevel, config)
 
-      case InputObjectTypeDefinition(name, fields, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case itd @ InputObjectTypeDefinition(name, fields, dirs, _, _, _) ⇒
+        renderComment(itd, indent, config) +
           indent + "input" + config.mandatorySeparator + name +
           config.mandatorySeparator +
           renderDirs(dirs, config) +
-          "{" + config.lineBreak +
-          renderInputObjectFieldDefs(fields, indentLevel, config) +
+          "{" +
           config.lineBreak +
-          indent + "}"
+          renderInputObjectFieldDefs(fields, indentLevel, config) +
+          renderTrailingComment(itd, config.indentLevel * (indentLevel + 1), config) +
+          trailingLineBreak(itd, config) +
+          indent +
+          "}"
 
-      case InterfaceTypeDefinition(name, fields, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case itd @ InterfaceTypeDefinition(name, fields, dirs, _, _, _) ⇒
+        renderComment(itd, indent, config) +
           indent + "interface" + config.mandatorySeparator + name +
           config.separator +
           renderDirs(dirs, config) +
-          renderFieldDefinitions(fields, indent, indentLevel, config)
+          renderFieldDefinitions(fields, itd, indent, indentLevel, config)
 
-      case UnionTypeDefinition(name, types, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case utd @ UnionTypeDefinition(name, types, dirs, _, _) ⇒
+        renderComment(utd, indent, config) +
           indent + "union" + config.mandatorySeparator + name +
             renderDirs(dirs, config, frontSep = true) +
             config.separator + "=" + config.separator +
             (types map(render(_, config)) mkString (config.separator + "|" + config.separator))
 
-      case EnumTypeDefinition(name, values, dirs, comment, _) ⇒
-        val renderedValues = values.zipWithIndex map { case (value, idx) ⇒
-            (if (idx != 0 && shouldRenderComment(value.comment, config)) config.lineBreak else "") +
+      case etd @ EnumTypeDefinition(name, values, dirs, _, _, _) ⇒
+        val renderedValues = values.zipWithIndex map {
+          case (value, idx) ⇒
+            (if (idx != 0 && shouldRenderComment(value, config)) config.lineBreak else "") +
                 render(value, config, indentLevel + 1)
         } mkString config.mandatoryLineBreak
 
-        renderComment(comment, indent, config) +
+        renderComment(etd, indent, config) +
             indent + "enum" + config.mandatorySeparator + name +
             config.separator +
             renderDirs(dirs, config) +
-            "{" + config.lineBreak + renderedValues + config.lineBreak + indent + "}"
+            "{" +
+            config.lineBreak +
+            renderedValues +
+            renderTrailingComment(etd, config.indentLevel * (indentLevel + 1), config) +
+            trailingLineBreak(etd, config) +
+            indent +
+            "}"
 
-      case EnumValueDefinition(name, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case evd @ EnumValueDefinition(name, dirs, _, _) ⇒
+        renderComment(evd, indent, config) +
             indent + name +
             renderDirs(dirs, config, frontSep = true)
 
-      case FieldDefinition(name, fieldType, args, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case fd @ FieldDefinition(name, fieldType, args, dirs, _, _) ⇒
+        renderComment(fd, indent, config) +
           indent + name +
           renderInputValueDefs(args, indentLevel, config, withSep = false) +
           ":" + config.separator + render(fieldType) +
           renderDirs(dirs, config, frontSep = true)
 
-      case InputValueDefinition(name, valueType, default, dirs, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case ivd @ InputValueDefinition(name, valueType, default, dirs, _, _) ⇒
+        renderComment(ivd, indent, config) +
           indent + name + ":" + config.separator + render(valueType, config) +
           default.fold("")(d ⇒ config.separator + "=" + config.separator + render(d, config)) +
           renderDirs(dirs, config, frontSep = true)
 
-      case TypeExtensionDefinition(definition, comment, _) ⇒
-        renderComment(comment, indent, config) +
-          render(definition.copy(comment = None), config, indentLevel, Some("extend" + config.mandatorySeparator))
+      case ted @ TypeExtensionDefinition(definition, _, _) ⇒
+        renderComment(ted, indent, config) +
+          render(definition.copy(comments = Nil), config, indentLevel, Some("extend" + config.mandatorySeparator))
 
-      case DirectiveDefinition(name, args, locations, comment, _) ⇒
+      case dd @ DirectiveDefinition(name, args, locations, _, _) ⇒
         val locsRendered = locations.zipWithIndex map { case (l, idx) ⇒
-          (if (idx != 0 && shouldRenderComment(l.comment, config)) config.lineBreak else "") +
-            (if (shouldRenderComment(l.comment, config)) config.lineBreak else if (idx != 0) config.separator else "") +
-            render(l, config, if (shouldRenderComment(l.comment, config)) indentLevel + 1 else 0)
+          (if (idx != 0 && shouldRenderComment(l, config)) config.lineBreak else "") +
+            (if (shouldRenderComment(l, config)) config.lineBreak else if (idx != 0) config.separator else "") +
+            render(l, config, if (shouldRenderComment(l, config)) indentLevel + 1 else 0)
         }
 
-        renderComment(comment, indent, config) +
+        renderComment(dd, indent, config) +
           indent + "directive" + config.separator + "@" + name +
           renderInputValueDefs(args, indentLevel, config) +
-          "on" + (if (shouldRenderComment(locations.head.comment, config)) "" else config.mandatorySeparator) +
+          "on" + (if (shouldRenderComment(locations.head, config)) "" else config.mandatorySeparator) +
           locsRendered.mkString(config.separator + "|")
 
-      case DirectiveLocation(name, comment, _) ⇒
-        renderComment(comment, indent, config) + indent + name
+      case dl @ DirectiveLocation(name, _, _) ⇒
+        renderComment(dl, indent, config) + indent + name
 
-      case SchemaDefinition(ops, dirs, comment, _) ⇒
+      case sd @ SchemaDefinition(ops, dirs, _, _, _) ⇒
         val renderedOps = ops.zipWithIndex map { case (op, idx) ⇒
-          (if (idx != 0 && shouldRenderComment(op.comment, config)) config.lineBreak else "") +
+          (if (idx != 0 && shouldRenderComment(op, config)) config.lineBreak else "") +
             render(op, config, indentLevel + 1)
         } mkString config.mandatoryLineBreak
 
-        renderComment(comment, indent, config) +
+        renderComment(sd, indent, config) +
           indent + "schema"  + config.separator +
           renderDirs(dirs, config) +
-          "{" + config.lineBreak + renderedOps + config.lineBreak + indent + "}"
+          "{" +
+          config.lineBreak +
+          renderedOps +
+          renderTrailingComment(sd, config.indentLevel * (indentLevel + 1), config) +
+          trailingLineBreak(sd, config) +
+          indent + "}"
 
-      case OperationTypeDefinition(op, tpe, comment, _) ⇒
-        renderComment(comment, indent, config) +
+      case otd @ OperationTypeDefinition(op, tpe, _, _) ⇒
+        renderComment(otd, indent, config) +
           indent + renderOpType(op) + ":" + config.separator + render(tpe, config)
     }
   }
+
+  private def trailingLineBreak(tc: WithTrailingComments, config: QueryRendererConfig) =
+    if (shouldRenderComment(tc, config)) config.mandatoryLineBreak else config.lineBreak
 
   def inputLineBreak(config: QueryRendererConfig) =
     if (config.formatInputValues) config.lineBreak

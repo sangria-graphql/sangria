@@ -41,6 +41,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
            |# This source code is licensed under the BSD-style license found in the
            |# LICENSE file in the root directory of this source tree. An additional grant
            |# of patent rights can be found in the PATENTS file in the same directory.
+           |
            |query queryName($foo: ComplexType, $site: Site = MOBILE) {
            |  whoever123is: node(id: [123, 456]) {
            |    id
@@ -140,7 +141,18 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
               # comment 4
               id,
               # comment 5
-              name
+              name {
+                bar
+                # arg trailing
+              }
+
+              # comment 6
+              # comment 7
+
+
+              #comment 8
+              #comment 9
+
             }
 
             # fooo
@@ -148,7 +160,24 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
               # c1
               # c2
               a, b
+              # e1
             }
+
+
+            #{
+            #  a {
+            #    b
+            #  }
+            #}
+
+            # comment d1
+              # comment d2
+
+
+              #comment d3
+            #comment d4
+
+
           """
 
         QueryRenderer.render(ast) should equal (
@@ -158,7 +187,17 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |  id
             |
             |  # comment 5
-            |  name
+            |  name {
+            |    bar
+            |
+            |    # arg trailing
+            |  }
+            |
+            |  # comment 6
+            |  # comment 7
+            |
+            |  # comment 8
+            |  # comment 9
             |}
             |
             |# fooo
@@ -167,7 +206,21 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |  # c2
             |  a
             |  b
-            |}""".stripMargin) (after being strippedOfCarriageReturns)
+            |
+            |  # e1
+            |}
+            |
+            |# {
+            |#  a {
+            |#    b
+            |#  }
+            |# }
+            |
+            |# comment d1
+            |# comment d2
+            |
+            |# comment d3
+            |# comment d4""".stripMargin) (after being strippedOfCarriageReturns)
       }
 
       "preserve comments on fragment spreads and inline fragments" in {
@@ -187,10 +240,12 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
               # comment4
               ... on Cat {
                 c, d
+                # end1
               }
               # comment5
               # comment6
               ...Foo
+              # end
             }
 
             # fooo
@@ -207,6 +262,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |
             |  # comment1
             |  # comment2
+            |
             |  ...  {
             |    c
             |    d
@@ -217,11 +273,15 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |  ... on Cat {
             |    c
             |    d
+            |
+            |    # end1
             |  }
             |
             |  # comment5
             |  # comment6
             |  ...Foo
+            |
+            |  # end
             |}
             |
             |# fooo
@@ -239,14 +299,18 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             # foo
             #bar
             $$foo: TestType, $$second: Int = 1,
-            ## aaa
-            ## bbbb
+            # aaa
+            # bbbb
             $$third: String = "hello") {
 
               id(first: 1,
                 #hello
                 #world
                 second:$$foo, third: 1,
+                # foo
+                # bar
+
+
 
                 # 111111
                 # 12345
@@ -263,8 +327,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |    # bar
             |    $foo: TestType, $second: Int = 1,
             |
-            |    ## aaa
-            |    ## bbbb
+            |    # aaa
+            |    # bbbb
             |    $third: String = "hello") {
             |  id(first: 1,
             |
@@ -272,8 +336,12 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |    # world
             |    second: $foo, third: 1,
             |
+            |    # foo
+            |    # bar
+            |
             |    # 111111
             |    # 12345
+            |
             |    last: {a: b, c: [1, 2]})
             |}""".stripMargin) (after being strippedOfCarriageReturns)
       }
@@ -338,6 +406,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         QueryRenderer.render(input, QueryRenderer.PrettyInput) should equal (
           """# root
             |# comment!
+            |
             |{
             |  # data field!
             |  data: {
@@ -352,7 +421,9 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |        JEDI]
             |
             |      # foo bar
+            |
             |      # baz
+            |
             |      friends:
             |        # comment here!
             |        [{
@@ -381,6 +452,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |        }
             |      one:
             |        # value one
+            |
             |        # yay
             |        1
             |    }
@@ -437,6 +509,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |# This source code is licensed under the BSD-style license found in the
             |# LICENSE file in the root directory of this source tree. An additional grant
             |# of patent rights can be found in the PATENTS file in the same directory.
+            |
             |schema {
             |  query: QueryType
             |  mutation: MutationType
@@ -512,8 +585,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
       "renders schema with comments correctly" in {
         val ast =
           graphql"""
-            ## fdwfsdfsdfsd
-            ## sfddsafsdfs
+            # fdwfsdfsdfsd
+            # sfddsafsdfs
             type Foo implements Bar@dfdsfsdf(aaa: 1)@qqq(aaa:[1,2]) {
               one: Type
               # aaaaaaaaa
@@ -524,16 +597,18 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
                 #aaaaa
                 # vvvvvv
 
-                ## dffff
+                # dffff
                 argument: InputType @aaa(c: b),
 
-                ## My
-                ## comment!
+                # My
+                # comment!
                 other: String @ddd(aa:1)@xxx(ttt:"sdfdsf")): Int
               four(argument: String = "string"): String
               five(argument: [String] = ["string", "string"]): String @aaaa(if: true)
               six(argument: InputType = {key: "value"}): Type
               another(argument: InputType = {key: "value"} mylist: [String] = ["string", "string"]): Type
+
+              #te
             }
 
             type AnnotatedObject @onObject(arg: "value") {
@@ -545,6 +620,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             interface Bar {
               one: Type
               four(argument: String = "string"): String
+              #ie
             }
 
             union Feed = Story | Article | Advert
@@ -561,11 +637,11 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
               DESKTOP
               # value 2
               MOBILE
+              # ee
             }
 
             # enum comment 1
             # enum comment 2
-
             enum AnnotatedEnum @onEnum {
               ANNOTATED_VALUE @onEnumValue
               OTHER_VALUE
@@ -574,6 +650,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             input InputType {
               key: String!
               answer: Int = 42
+              #ite
             }
 
             # it's input
@@ -612,6 +689,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
               # line 2
 
               mutation: MutationType
+              #se
             }
           """
 
@@ -644,8 +722,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |schema@myDir(a:b)@another(a:b,c:1234.45){query:QueryType mutation:MutationType}""".stripMargin)  (after being strippedOfCarriageReturns)
 
         prettyRendered should equal (
-          """## fdwfsdfsdfsd
-            |## sfddsafsdfs
+          """# fdwfsdfsdfsd
+            |# sfddsafsdfs
             |type Foo implements Bar @dfdsfsdf(aaa: 1) @qqq(aaa: [1, 2]) {
             |  one: Type
             |
@@ -656,16 +734,19 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |  three(
             |    # aaaaa
             |    # vvvvvv
-            |    ## dffff
+            |
+            |    # dffff
             |    argument: InputType @aaa(c: b),
             |
-            |    ## My
-            |    ## comment!
+            |    # My
+            |    # comment!
             |    other: String @ddd(aa: 1) @xxx(ttt: "sdfdsf")): Int
             |  four(argument: String = "string"): String
             |  five(argument: [String] = ["string", "string"]): String @aaaa(if: true)
             |  six(argument: InputType = {key: "value"}): Type
             |  another(argument: InputType = {key: "value"}, mylist: [String] = ["string", "string"]): Type
+            |
+            |  # te
             |}
             |
             |type AnnotatedObject @onObject(arg: "value") {
@@ -677,6 +758,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |interface Bar {
             |  one: Type
             |  four(argument: String = "string"): String
+            |
+            |  # ie
             |}
             |
             |union Feed = Story | Article | Advert
@@ -694,6 +777,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |
             |  # value 2
             |  MOBILE
+            |
+            |  # ee
             |}
             |
             |# enum comment 1
@@ -706,6 +791,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |input InputType {
             |  key: String!
             |  answer: Int = 42
+            |
+            |  # ite
             |}
             |
             |# it's input
@@ -740,7 +827,10 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |
             |  # another comment
             |  # line 2
+            |
             |  mutation: MutationType
+            |
+            |  # se
             |}""".stripMargin) (after being strippedOfCarriageReturns)
       }
     }

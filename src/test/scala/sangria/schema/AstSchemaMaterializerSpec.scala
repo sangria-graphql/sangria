@@ -835,25 +835,25 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             |  query: Query
             |}
             |
-            |## fooo bar
-            |## baz
+            |# fooo bar
+            |# baz
             |enum MyEnum {
-            |  ## value1
+            |  # value1
             |  VALUE
             |
-            |  ## value 2
-            |  ## line 2
+            |  # value 2
+            |  # line 2
             |  OLD_VALUE @deprecated
             |
-            |  ## value 3
+            |  # value 3
             |  OTHER_VALUE @deprecated(reason: "Terrible reasons")
             |}
             |
-            |## My super query!
+            |# My super query!
             |type Query {
             |  field1: String @deprecated
             |
-            |  ## the second field!
+            |  # the second field!
             |  field2: Int @deprecated(reason: "Because I said so")
             |  enum: MyEnum
             |}""".stripMargin
@@ -881,17 +881,20 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             |  query: Query
             |}
             |
-            |## My super query!
+            |# My super query!
             |type Query {
             |
             |  # not a description!
+            |
             |  field1(
-            |    ## first arg
+            |    # first arg
             |    arg1: Int = 101,
             |
-            |    ## secnd arg
-            |    ## line 2
+            |    # This should not
+            |    # be part of the description
             |
+            |    # secnd arg
+            |    # line 2
             |    arg1: String!
             |  ): String
             |}""".stripMargin

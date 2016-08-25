@@ -71,26 +71,26 @@ trait AstLiftable {
   }
 
   implicit def liftDefinition[T <: Definition]: Liftable[T] = Liftable {
-    case OperationDefinition(o, n, v, d, s, c, p) ⇒
-      q"_root_.sangria.ast.OperationDefinition($o, $n, $v, $d, $s, $c, $p)"
-    case FragmentDefinition(n, t, d, s, c, p) ⇒
-      q"_root_.sangria.ast.FragmentDefinition($n, $t, $d, $s, $c, $p)"
+    case OperationDefinition(o, n, v, d, s, c, tc, p) ⇒
+      q"_root_.sangria.ast.OperationDefinition($o, $n, $v, $d, $s, $c, $tc, $p)"
+    case FragmentDefinition(n, t, d, s, c, tc, p) ⇒
+      q"_root_.sangria.ast.FragmentDefinition($n, $t, $d, $s, $c, $tc, $p)"
 
     case DirectiveDefinition(n, a, l, c, p) ⇒
       q"_root_.sangria.ast.DirectiveDefinition($n, $a, $l, $c, $p)"
-    case SchemaDefinition(o, d, c, p) ⇒
-      q"_root_.sangria.ast.SchemaDefinition($o, $d, $c, $p)"
+    case SchemaDefinition(o, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.SchemaDefinition($o, $d, $c, $tc, $p)"
     case TypeExtensionDefinition(d, c, p) ⇒
       q"_root_.sangria.ast.TypeExtensionDefinition($d, $c, $p)"
 
-    case EnumTypeDefinition(n, v, d, c, p) ⇒
-      q"_root_.sangria.ast.EnumTypeDefinition($n, $v, $d, $c, $p)"
-    case InputObjectTypeDefinition(n, f, d, c, p) ⇒
-      q"_root_.sangria.ast.InputObjectTypeDefinition($n, $f, $d, $c, $p)"
-    case InterfaceTypeDefinition(n, f, d, c, p) ⇒
-      q"_root_.sangria.ast.InterfaceTypeDefinition($n, $f, $d, $c, $p)"
-    case ObjectTypeDefinition(n, i, f, d, c, p) ⇒
-      q"_root_.sangria.ast.ObjectTypeDefinition($n, $i, $f, $d, $c, $p)"
+    case EnumTypeDefinition(n, v, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.EnumTypeDefinition($n, $v, $d, $c, $tc, $p)"
+    case InputObjectTypeDefinition(n, f, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.InputObjectTypeDefinition($n, $f, $d, $c, $tc, $p)"
+    case InterfaceTypeDefinition(n, f, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.InterfaceTypeDefinition($n, $f, $d, $c, $tc, $p)"
+    case ObjectTypeDefinition(n, i, f, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.ObjectTypeDefinition($n, $i, $f, $d, $c, $tc, $p)"
     case ScalarTypeDefinition(n, d, c, p) ⇒
       q"_root_.sangria.ast.ScalarTypeDefinition($n, $d, $c, $p)"
     case UnionTypeDefinition(n, t, d, c, p) ⇒
@@ -123,16 +123,16 @@ trait AstLiftable {
   }
 
   implicit def selection[T <: Selection]: Liftable[T] = Liftable {
-    case Field(a, n, arg, d, s, c, p) ⇒
-      q"_root_.sangria.ast.Field($a, $n, $arg, $d, $s, $c, $p)"
+    case Field(a, n, arg, d, s, c, tc, p) ⇒
+      q"_root_.sangria.ast.Field($a, $n, $arg, $d, $s, $c, $tc, $p)"
     case FragmentSpread(n, d, c, p) ⇒
       q"_root_.sangria.ast.FragmentSpread($n, $d, $c, $p)"
-    case InlineFragment(t, d, s, c, p) ⇒
-      q"_root_.sangria.ast.InlineFragment($t, $d, $s, $c, $p)"
+    case InlineFragment(t, d, s, c, tc, p) ⇒
+      q"_root_.sangria.ast.InlineFragment($t, $d, $s, $c, $tc, $p)"
   }
 
   implicit def liftDocument: Liftable[Document] = Liftable {
-    case doc @ Document(d, p, _) ⇒ q"_root_.sangria.ast.Document($d, $p, _root_.scala.Some(new _root_.sangria.parser.Parboiled2SourceMapper(_root_.org.parboiled2.ParserInput(${doc.source.get}))))"
+    case doc @ Document(d, c, p, _) ⇒ q"_root_.sangria.ast.Document($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.Parboiled2SourceMapper(_root_.org.parboiled2.ParserInput(${doc.source.get}))))"
   }
 }
 
