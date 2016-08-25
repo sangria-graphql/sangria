@@ -47,6 +47,13 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
     }
   }
 
+  class BrokenLightColorResolver extends DeferredResolver[Any] {
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = (deferred ++ deferred) map {
+      case LightColor(v, c) ⇒ Future.successful(v.deepColor("light" + c))
+      case FailColor(v, c) ⇒ Future.failed(new IllegalStateException("error in resolver"))
+    }
+  }
+
   val DeepDataType = ObjectType("DeepDataType", () ⇒ fields[Ctx, DeepTestSubject](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
@@ -591,15 +598,31 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new LightColorResolver).recover {
-        case error: ErrorWithResolver ⇒ error.resolveError
-      }
-
       Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new LightColorResolver).await should be (
         Map(
           "data" → Map(
             "def" → Map("color" → "lightmagenta"),
             "defFut" → Map("color" → "lightred"))))
+    }
+
+    "ensure that deferred resolver complied to the contract" in {
+      val query = graphql"""
+        {
+          def { color }
+        }
+        """
+
+      val schema = Schema(DataType)
+
+      val exceptionHandler: Executor.ExceptionHandler = {
+        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+      }
+
+      val res = Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new BrokenLightColorResolver, exceptionHandler = exceptionHandler).await.asInstanceOf[Map[String, Any]]
+
+      res("data") should be (null: Any)
+      res("errors").asInstanceOf[Seq[Map[String, Any]]](0)("message") should be (
+        "Deferred resolver returned 2 elements, but it got 1 deferred values. This violates the contract. You can find more information in the documentation: http://sangria-graphql.org/learn/#deferred-values-and-resolver")
     }
 
     "resolve deferred values correctly in presence of errors" in {

@@ -356,9 +356,13 @@ class Resolver[Ctx](
       try {
         val resolved = deferredResolver.resolve(toResolve map (d ⇒ findActualDeferred(d.deferred)), uc)
 
-        toResolve zip resolved foreach {
-          case (toRes, f) ⇒ toRes.promise tryCompleteWith (mapAllDeferred(toRes.deferred, f))
-        }
+        if (toResolve.size == resolved.size)
+          toResolve zip resolved foreach {
+            case (toRes, f) ⇒ toRes.promise tryCompleteWith mapAllDeferred(toRes.deferred, f)
+          }
+        else
+          toResolve foreach (_.promise.failure(
+            new IllegalStateException(s"Deferred resolver returned ${resolved.size} elements, but it got ${toResolve.size} deferred values. This violates the contract. You can find more information in the documentation: http://sangria-graphql.org/learn/#deferred-values-and-resolver")))
       } catch {
         case NonFatal(error) ⇒ toResolve foreach (_.promise.failure(error))
       }
