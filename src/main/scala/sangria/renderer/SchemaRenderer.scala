@@ -28,7 +28,7 @@ object SchemaRenderer {
     case Some(descr) if descr.trim.nonEmpty ⇒
       val lines = descr.lines.map(_.trim).toList
 
-      lines map (l ⇒ prefix + "##" + (if (l.trim.nonEmpty) " " + l else "")) mkString ("", "\n", if (lineBreak) "\n" else "")
+      lines map (l ⇒ prefix + "#" + (if (l.trim.nonEmpty) " " + l else "")) mkString ("", "\n", if (lineBreak) "\n" else "")
     case _ ⇒ ""
   }
 

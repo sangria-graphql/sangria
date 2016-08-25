@@ -17,7 +17,7 @@ class LoneAnonymousOperation extends ValidationRule {
     var operationCount = 0
 
     override val onEnter: ValidationVisit = {
-      case ast.Document(definitions, _, _) ⇒
+      case ast.Document(definitions, _, _, _) ⇒
         operationCount = definitions.count(_.isInstanceOf[ast.OperationDefinition])
         Right(Continue)
       case op: ast.OperationDefinition ⇒

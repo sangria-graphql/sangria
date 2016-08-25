@@ -301,13 +301,13 @@ class TypeInfo(schema: Schema[_, _]) {
         pushParent()
       case ast.Directive(name, _, _, _) ⇒
         directive = schema.directivesByName get name
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _, _) ⇒
         typeStack push Some(schema.query)
         pushParent()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _, _) ⇒
         typeStack push schema.mutation
         pushParent()
-      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) ⇒
         typeStack push schema.subscription
         pushParent()
       case fd: ast.FragmentDefinition ⇒
@@ -360,13 +360,13 @@ class TypeInfo(schema: Schema[_, _]) {
         parentTypeStack.pop()
       case ast.Directive(name, _, _, _) ⇒
         directive = None
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) ⇒
         typeStack.pop()
         parentTypeStack.pop()
       case fd: ast.FragmentDefinition ⇒

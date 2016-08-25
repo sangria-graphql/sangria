@@ -36,7 +36,7 @@ class FieldCollector[Ctx, Val](
       case (f @ Failure(_), selection) ⇒ f
       case (s @ Success(acc), selection) ⇒
         selection match {
-          case field @ ast.Field(_, _, _, dirs, _, _, _) ⇒
+          case field @ ast.Field(_, _, _, dirs, _, _, _, _) ⇒
             val name = field.outputName
 
             shouldIncludeNode(dirs, selection) match {
@@ -48,7 +48,7 @@ class FieldCollector[Ctx, Val](
                 acc.addError(name, field, error)
                 s
             }
-          case fragment @ ast.InlineFragment(_, dirs, fragmentSelections, _, _) ⇒
+          case fragment @ ast.InlineFragment(_, dirs, fragmentSelections, _, _, _) ⇒
             for {
               shouldInclude ← shouldIncludeNode(dirs, selection)
               fragmentConditionMatch ← doesFragmentConditionMatch(tpe, fragment)

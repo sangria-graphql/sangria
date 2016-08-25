@@ -56,7 +56,7 @@ class NoFragmentCycles extends ValidationRule {
      }
 
      override val onEnter: ValidationVisit = {
-       case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _, _) ⇒
+       case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _, _, _) ⇒
          if (visitedFrags.contains(fragmentName)) Right(Skip)
          else {
            val errors = detectCycleRecursive(fragmentDef)

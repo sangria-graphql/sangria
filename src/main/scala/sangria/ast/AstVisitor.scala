@@ -19,25 +19,28 @@ object AstVisitor {
 
     def loop(node: AstNode): Unit =
       node match {
-        case n @ Document(defs, _, _) ⇒
+        case n @ Document(defs, trailingComments, _, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             defs.foreach(d ⇒ loop(d))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FragmentDefinition(_, cond, dirs, sels, comment, _) ⇒
+        case n @ FragmentDefinition(_, cond, dirs, sels, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             loop(cond)
             dirs.foreach(d ⇒ loop(d))
             sels.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ OperationDefinition(_, _, vars, dirs, sels, comment, _) ⇒
+        case n @ OperationDefinition(_, _, vars, dirs, sels, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             vars.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
             sels.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
         case n @ VariableDefinition(_, tpe, default, comment, _) ⇒
@@ -47,12 +50,13 @@ object AstVisitor {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InlineFragment(cond, dirs, sels, comment, _) ⇒
+        case n @ InlineFragment(cond, dirs, sels, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             cond.foreach(c ⇒ loop(c))
             dirs.foreach(d ⇒ loop(d))
             sels.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
         case n @ FragmentSpread(_, dirs, comment, _) ⇒
@@ -71,12 +75,13 @@ object AstVisitor {
             loop(ofType)
             breakOrSkip(onLeave(n))
           }
-        case n @ Field(_, _, args, dirs, sels, comment, _) ⇒
+        case n @ Field(_, _, args, dirs, sels, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             args.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
             sels.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
         case n @ Argument(_, v, comment, _) ⇒
@@ -187,19 +192,21 @@ object AstVisitor {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ObjectTypeDefinition(_, interfaces, fields, dirs, comment, _) ⇒
+        case n @ ObjectTypeDefinition(_, interfaces, fields, dirs, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             interfaces.foreach(d ⇒ loop(d))
             fields.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InterfaceTypeDefinition(_, fields, dirs, comment, _) ⇒
+        case n @ InterfaceTypeDefinition(_, fields, dirs, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
         case n @ UnionTypeDefinition(_, types, dirs, comment, _) ⇒
@@ -209,11 +216,12 @@ object AstVisitor {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ EnumTypeDefinition(_, values, dirs, comment, _) ⇒
+        case n @ EnumTypeDefinition(_, values, dirs, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             values.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
         case n @ EnumValueDefinition(_, dirs, comment, _) ⇒
@@ -222,11 +230,12 @@ object AstVisitor {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputObjectTypeDefinition(_, fields, dirs, comment, _) ⇒
+        case n @ InputObjectTypeDefinition(_, fields, dirs, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
         case n @ TypeExtensionDefinition(definition, comment, _) ⇒
@@ -247,11 +256,12 @@ object AstVisitor {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ SchemaDefinition(ops, dirs, comment, _) ⇒
+        case n @ SchemaDefinition(ops, dirs, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             ops.foreach(s ⇒ loop(s))
             dirs.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
+            trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
         case n @ OperationTypeDefinition(_, tpe, comment, _) ⇒

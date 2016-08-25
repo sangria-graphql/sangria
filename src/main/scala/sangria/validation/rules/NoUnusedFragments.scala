@@ -29,7 +29,7 @@ class NoUnusedFragments extends ValidationRule {
      }
 
     override def onLeave: ValidationVisit = {
-      case ast.Document(_, _, _) ⇒
+      case ast.Document(_, _, _, _) ⇒
         val fragmentNameUsed = MutableSet[String]()
 
         operationDefs.foreach(operation ⇒

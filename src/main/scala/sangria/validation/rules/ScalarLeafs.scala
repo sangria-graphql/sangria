@@ -17,7 +17,7 @@ import sangria.validation._
 class ScalarLeafs extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.Field(_, name, _, _, sels, _, pos) ⇒
+      case ast.Field(_, name, _, _, sels, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(fieldType) ⇒
             val named = ctx.typeInfo.getNamedType(fieldType)
