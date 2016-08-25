@@ -1,9 +1,8 @@
 package sangria.schema
 
 import language.postfixOps
-
 import sangria.ast
-import sangria.ast.{TypeDefinition, OperationType}
+import sangria.ast.{OperationType, TypeDefinition}
 import sangria.renderer.QueryRenderer
 
 import scala.collection.concurrent.TrieMap
@@ -60,7 +59,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   lazy val build: Schema[Ctx, Any] = {
     validateDefinitions()
 
-    val schemaInfo = extractSchemaInfo(document)
+    val schemaInfo = extractSchemaInfo(document, typeDefs)
     val queryType = getObjectType(schemaInfo.query)
     val mutationType = schemaInfo.mutation map getObjectType
     val subscriptionType = schemaInfo.subscription map getObjectType
@@ -386,16 +385,16 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 }
 
 object AstSchemaMaterializer {
-  case class SchemaInfo(query: ast.NamedType, mutation: Option[ast.NamedType], subscription: Option[ast.NamedType], definition: ast.SchemaDefinition)
+  case class SchemaInfo(query: ast.NamedType, mutation: Option[ast.NamedType], subscription: Option[ast.NamedType], definition: Option[ast.SchemaDefinition])
 
-  def extractSchemaInfo(document: ast.Document): SchemaInfo = {
+  def extractSchemaInfo(document: ast.Document, typeDefs: List[ast.TypeDefinition]): SchemaInfo = {
     val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
 
-    if (schemas.isEmpty)
-      throw new SchemaMaterializationException("Must provide a schema definition.")
-    else if (schemas.size > 1)
+//    throw new SchemaMaterializationException("Must provide a schema definition.")
+
+    if (schemas.size > 1)
       throw new SchemaMaterializationException("Must provide only one schema definition.")
-    else {
+    else if (schemas.nonEmpty) {
       val schema = schemas.head
 
       val queries = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Query, tpe, _, _) ⇒ tpe}
@@ -403,7 +402,7 @@ object AstSchemaMaterializer {
       val subscriptions = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Subscription, tpe, _, _) ⇒ tpe}
 
       if (queries.size != 1)
-        throw new SchemaMaterializationException("Must provide one query type in schema.")
+        throw new SchemaMaterializationException("Must provide only one query type in schema.")
 
       if (mutations.size > 1)
         throw new SchemaMaterializationException("Must provide only one mutation type in schema.")
@@ -411,7 +410,14 @@ object AstSchemaMaterializer {
       if (subscriptions.size > 1)
         throw new SchemaMaterializationException("Must provide only one subscription type in schema.")
 
-      SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, schema)
+      SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, Some(schema))
+    } else {
+      val query = typeDefs.find(_.name == "Query") getOrElse (
+          throw new SchemaMaterializationException("Must provide schema definition with query type or a type named Query."))
+      val mutation = typeDefs.find(_.name == "Mutation") map (t ⇒ ast.NamedType(t.name))
+      val subscription = typeDefs.find(_.name == "Subscription") map (t ⇒ ast.NamedType(t.name))
+
+      SchemaInfo(ast.NamedType(query.name), mutation, subscription, None)
     }
   }
 

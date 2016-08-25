@@ -13,7 +13,7 @@ trait AstSchemaBuilder[Ctx] {
   def additionalDirectiveDefs: List[ast.DirectiveDefinition]
 
   def buildSchema(
-    definition: ast.SchemaDefinition,
+    definition: Option[ast.SchemaDefinition],
     queryType: ObjectType[Ctx, Any],
     mutationType: Option[ObjectType[Ctx, Any]],
     subscriptionType: Option[ObjectType[Ctx, Any]],
@@ -168,7 +168,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def additionalTypeDefs = Nil
 
   def buildSchema(
-      definition: ast.SchemaDefinition,
+      definition: Option[ast.SchemaDefinition],
       queryType: ObjectType[Ctx, Any],
       mutationType: Option[ObjectType[Ctx, Any]],
       subscriptionType: Option[ObjectType[Ctx, Any]],

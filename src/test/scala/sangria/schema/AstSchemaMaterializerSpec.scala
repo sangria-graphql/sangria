@@ -388,11 +388,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
       "Unreferenced type implementing referenced interface" in {
         val schema =
-          """schema {
-            |  query: Query
-            |}
-            |
-            |type Concrete implements Iface {
+          """type Concrete implements Iface {
             |  key: String
             |}
             |
@@ -409,11 +405,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
       "Unreferenced type implementing referenced union" in {
         val schema =
-          """schema {
-            |  query: Query
-            |}
-            |
-            |type Concrete {
+          """type Concrete {
             |  key: String
             |}
             |
@@ -428,11 +420,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
       "Supports @deprecated" in {
         val schema =
-          """schema {
-            |  query: Query
-            |}
-            |
-            |enum MyEnum {
+          """enum MyEnum {
             |  VALUE
             |  OLD_VALUE @deprecated
             |  OTHER_VALUE @deprecated(reason: "Terrible reasons")
@@ -459,7 +447,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide a schema definition.")
+        error.getMessage should be ("Must provide schema definition with query type or a type named Query.")
       }
 
       "Allows only a single schema definition" in {
@@ -497,7 +485,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide one query type in schema.")
+        error.getMessage should be ("Must provide only one query type in schema.")
       }
 
       "Allows only a single query type" in {
@@ -519,7 +507,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide one query type in schema.")
+        error.getMessage should be ("Must provide only one query type in schema.")
       }
 
       "Allows only a single mutation type" in {
@@ -831,11 +819,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
     "Schema Builder contains descriptions" should {
       "Use comments for descriptions" in {
         val schemaDef =
-          """schema {
-            |  query: Query
-            |}
-            |
-            |# fooo bar
+          """# fooo bar
             |# baz
             |enum MyEnum {
             |  # value1

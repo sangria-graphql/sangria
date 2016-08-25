@@ -113,11 +113,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -168,11 +164,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -232,11 +224,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -315,11 +303,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schemaWithPotion)
       SchemaRenderer.renderSchema(schemaWithPotion) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |interface Anything {
+        """interface Anything {
           |  id: String
           |}
           |
@@ -375,11 +359,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -431,11 +411,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -513,11 +489,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -598,11 +570,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -671,11 +639,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |}
-          |
-          |type Bar implements SomeInterface {
+        """type Bar implements SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  foo: Foo
@@ -750,13 +714,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
       extendedSchema should not be theSameInstanceAs (schema)
       SchemaRenderer.renderSchema(schema) should be (originalRender)
       SchemaRenderer.renderSchema(extendedSchema) should equal (
-        """schema {
-          |  query: Query
-          |  mutation: Mutation
-          |  subscription: Subscription
-          |}
-          |
-          |type Mutation {
+        """type Mutation {
           |  mutationField: String!
           |  newMutationField: Int
           |}

@@ -205,21 +205,30 @@ object SchemaRenderer {
     else
       ""
 
-  private def renderSchemaDefinition(schema: IntrospectionSchema) = {
-    val withQuery = (Indention + "query: " + renderTypeName(schema.queryType)) :: Nil
-    val withMutation = schema.mutationType.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t)))
-    val withSubs = schema.subscriptionType.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t)))
+  private def renderSchemaDefinition(schema: IntrospectionSchema): Option[String] =
+    if (isSchemaOfCommonNames(schema.queryType.name, schema.mutationType.map(_.name), schema.subscriptionType.map(_.name)))
+      None
+    else {
+      val withQuery = (Indention + "query: " + renderTypeName(schema.queryType)) :: Nil
+      val withMutation = schema.mutationType.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t)))
+      val withSubs = schema.subscriptionType.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t)))
 
-    s"schema {\n${withSubs mkString "\n"}\n}"
-  }
+      Some(s"schema {\n${withSubs mkString "\n"}\n}")
+    }
 
-  private def renderSchemaDefinition(schema: Schema[_, _]) = {
-    val withQuery = (Indention + "query: " + renderTypeName(schema.query, true)) :: Nil
-    val withMutation = schema.mutation.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t, true)))
-    val withSubs = schema.subscription.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t, true)))
+  private def renderSchemaDefinition(schema: Schema[_, _]): Option[String] =
+    if (isSchemaOfCommonNames(schema.query.name, schema.mutation.map(_.name), schema.subscription.map(_.name)))
+      None
+    else {
+      val withQuery = (Indention + "query: " + renderTypeName(schema.query, true)) :: Nil
+      val withMutation = schema.mutation.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t, true)))
+      val withSubs = schema.subscription.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t, true)))
 
-    s"schema {\n${withSubs mkString "\n"}\n}"
-  }
+      Some(s"schema {\n${withSubs mkString "\n"}\n}")
+    }
+
+  private def isSchemaOfCommonNames(query: String, mutation: Option[String], subscription: Option[String]) =
+    query == "Query" && mutation.fold(true)(_ == "Mutation") && subscription.fold(true)(_ == "Subscription")
 
   private def renderType(tpe: IntrospectionType) =
     tpe match {
@@ -257,7 +266,7 @@ object SchemaRenderer {
     val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map (renderType(_))
     val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_))
 
-    schemaDef +: (types ++ directives) mkString TypeSeparator
+    (schemaDef.toSeq ++ types ++ directives) mkString TypeSeparator
   }
 
   def renderSchema[T: InputUnmarshaller](introspectionResult: T): String =
@@ -268,7 +277,7 @@ object SchemaRenderer {
     val types = schema.typeList filterNot isBuiltInType sortBy (_.name) map renderType
     val directives = schema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
 
-    schemaDef +: (types ++ directives) mkString TypeSeparator
+    (schemaDef.toSeq ++ types ++ directives) mkString TypeSeparator
   }
 
   def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String = {
