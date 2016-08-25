@@ -41,9 +41,11 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       val Some((defaultValue, toInput)) = default.asInstanceOf[Option[(Any, ToInput[Any, Any])]]
       val (defaultInput, inputUnmarshaller) = toInput.toInput(defaultValue)
 
-      coerceInputValue(ofType, fieldPath, defaultInput, None, marshaller, firstKindMarshaller)(inputUnmarshaller).right.map(_.get) match {
-        case Right(v) ⇒
+      coerceInputValue(ofType, fieldPath, defaultInput, None, marshaller, firstKindMarshaller)(inputUnmarshaller) match {
+        case Right(Some(v)) ⇒
           marshaller.addMapNodeElem(acc, fieldName, valueMapTyped(v), false)
+        case Right(None) ⇒
+          acc
         case Left(violations) ⇒
           errors ++= violations
           acc

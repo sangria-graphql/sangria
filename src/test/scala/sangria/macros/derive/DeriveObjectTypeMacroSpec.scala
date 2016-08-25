@@ -6,7 +6,7 @@ import sangria.introspection._
 import sangria.marshalling.ScalaInput
 import sangria.schema._
 import sangria.macros._
-import sangria.util.FutureResultSupport
+import sangria.util.{DebugUtil, FutureResultSupport}
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -479,6 +479,23 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IntrospectionInputValue("str", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
         IntrospectionInputValue("color", None, IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
         IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
+    }
+
+    "not set a default value to `null`" in {
+      class Query {
+        @GraphQLField def foo(a: Option[String] = None) = "" + a
+      }
+
+      import sangria.marshalling.sprayJson._
+      import sangria.parser.DeliveryScheme.Throw
+
+      val QueryType = deriveObjectType[Unit, Query]()
+
+      val schema = Schema(QueryType)
+
+      val intro = IntrospectionParser.parse(Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await)
+
+      intro.typesByName("Query").asInstanceOf[IntrospectionObjectType].fieldsByName("foo").argsByName("a").defaultValue should be (None)
     }
   }
 }

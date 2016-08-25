@@ -57,7 +57,7 @@ object SchemaRenderer {
   private def renderDefault(value: (Any, ToInput[_, _]), tpe: InputType[_]) = {
     val coercionHelper = new ValueCoercionHelper[Any]
 
-    s" = ${DefaultValueRenderer.renderInputValueCompact(value, tpe, coercionHelper)}"
+    DefaultValueRenderer.renderInputValueCompact(value, tpe, coercionHelper).fold("")(d ⇒ s" = $d")
   }
 
   private def renderArg(arg: IntrospectionInputValue) = {

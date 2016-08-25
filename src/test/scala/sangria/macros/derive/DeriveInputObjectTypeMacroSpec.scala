@@ -2,10 +2,12 @@ package sangria.macros.derive
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
+import sangria.introspection.{IntrospectionInputObjectType, IntrospectionObjectType, IntrospectionParser}
 import sangria.marshalling.FromInput
 import sangria.marshalling.ScalaInput._
 import sangria.schema._
 import sangria.macros._
+import sangria.renderer.SchemaRenderer
 import sangria.util.FutureResultSupport
 import spray.json._
 
@@ -36,8 +38,10 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
     name: List[Int],
     @GraphQLDefault(Some(List(TestDeeper("aa", 1))): Option[List[TestDeeper]])
     deeper: Option[List[TestDeeper]])
+
   case class TestDefaults(
     id: String = "fgh",
+    optNone: Option[String] = None,
     list: Int = 324,
     nested: TestNested,
     nestedDef: Option[List[TestNested]] = Some(List(TestNested(TestDeeper("ee", 1), List(1), None), TestNested(TestDeeper("ff", 1), List(1), None))))
@@ -198,11 +202,12 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
       object MyJsonProtocol extends DefaultJsonProtocol {
         implicit val TestDeeperFormat = jsonFormat2(TestDeeper.apply)
         implicit val TestNestedFormat = jsonFormat3(TestNested.apply)
-        implicit val TestDefaultsFormat = jsonFormat4(TestDefaults.apply)
+        implicit val TestDefaultsFormat = jsonFormat5(TestDefaults.apply)
       }
 
       import MyJsonProtocol._
       import sangria.marshalling.sprayJson._
+      import sangria.parser.DeliveryScheme.Throw
 
       implicit lazy val TestDeeperType = deriveInputObjectType[TestDeeper]()
       implicit lazy val TestNestedType = deriveInputObjectType[TestNested]()
@@ -225,8 +230,11 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
 
       Executor.execute(schema, query, root = new Query).await should be (
         JsObject("data" → JsObject("foo" →
-          JsString("TestDefaults(fgh,324,TestNested(TestDeeper(foo,123),List(3, 4, 5),Some(List(TestDeeper(aa,1)))),Some(List(TestNested(TestDeeper(ee,1),List(1),Some(List(TestDeeper(aa,1)))), TestNested(TestDeeper(ff,1),List(1),Some(List(TestDeeper(aa,1)))))))"))))
+          JsString("TestDefaults(fgh,None,324,TestNested(TestDeeper(foo,123),List(3, 4, 5),Some(List(TestDeeper(aa,1)))),Some(List(TestNested(TestDeeper(ee,1),List(1),Some(List(TestDeeper(aa,1)))), TestNested(TestDeeper(ff,1),List(1),Some(List(TestDeeper(aa,1)))))))"))))
 
+      val intro = IntrospectionParser.parse(Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await)
+
+      intro.typesByName("TestDefaults").asInstanceOf[IntrospectionInputObjectType].inputFieldsByName("optNone").defaultValue should be (None)
     }
   }
 }

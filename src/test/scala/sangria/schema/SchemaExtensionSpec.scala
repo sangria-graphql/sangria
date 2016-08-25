@@ -940,19 +940,19 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """,
         Map("data" →
-            Map(
-              "foo" → Map("name" → "foo"),
-              "someInterface" → Map(
-                "name" → "a",
-                "some" → Map("name" → "b"),
-                "tree" → Vector(null, Map("name" → "d")),
-                "animal1" → Map("__typename" → "Cat", "name" → "foo"),
-                "animal2" → Map("__typename" → "Dog", "name" → "bar")),
-              "special" → Map(
-                "__typename" → "Hello",
-                "name" → "Fooo",
-                "some" → null,
-                "custom" → 123))))
+          Map(
+            "foo" → Map("name" → "foo"),
+            "someInterface" → Map(
+              "name" → "a",
+              "some" → Map("name" → "b"),
+              "tree" → Vector(null, Map("name" → "d")),
+              "animal1" → Map("__typename" → "Cat", "name" → "foo"),
+              "animal2" → Map("__typename" → "Dog", "name" → "bar")),
+            "special" → Map(
+              "__typename" → "Hello",
+              "name" → "Fooo",
+              "some" → null,
+              "custom" → 123))))
     }
   }
 }

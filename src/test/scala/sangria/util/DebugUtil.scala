@@ -10,6 +10,7 @@ import sangria.ast._
 object DebugUtil {
 
   private val indentClasses: PartialFunction[Any, Boolean] = {
+    case v ⇒ v.getClass.getSimpleName.startsWith("Introspection")
     case _: Document |
          _: Definition |
          _: SelectionContainer |
@@ -45,6 +46,13 @@ object DebugUtil {
                   "List(\n" + list.map(x ⇒ indent(level + 1) + loop(x, level + 1)).mkString(",\n") + ")"
                 else
                   "List(" + list.map(x ⇒ loop(x, level)).mkString(", ") + ")"
+            case list: scala.collection.immutable.Vector[_] ⇒
+              if (list.isEmpty) "Vector.empty"
+              else
+                if (indentLists)
+                  "Vector(\n" + list.map(x ⇒ indent(level + 1) + loop(x, level + 1)).mkString(",\n") + ")"
+                else
+                  "Vector(" + list.map(x ⇒ loop(x, level)).mkString(", ") + ")"
             case prod: Product ⇒
               val args = prod.productIterator.toList
 

@@ -7,7 +7,10 @@ case class IntrospectionSchema(
   mutationType: Option[IntrospectionNamedTypeRef],
   subscriptionType: Option[IntrospectionNamedTypeRef],
   types: Seq[IntrospectionType],
-  directives: Seq[IntrospectionDirective])
+  directives: Seq[IntrospectionDirective]
+) {
+  lazy val typesByName = types.groupBy(_.name).mapValues(_.head)
+}
 
 sealed trait IntrospectionType {
   def kind: TypeKind.Value
@@ -27,6 +30,7 @@ case class IntrospectionObjectType(
     fields: Seq[IntrospectionField],
     interfaces: Seq[IntrospectionNamedTypeRef]) extends IntrospectionType {
   val kind = TypeKind.Object
+  lazy val fieldsByName = fields.groupBy(_.name).mapValues(_.head)
 }
 
 case class IntrospectionInputObjectType(
@@ -34,6 +38,7 @@ case class IntrospectionInputObjectType(
     description: Option[String],
     inputFields: Seq[IntrospectionInputValue]) extends IntrospectionType {
   val kind = TypeKind.InputObject
+  lazy val inputFieldsByName = inputFields.groupBy(_.name).mapValues(_.head)
 }
 
 case class IntrospectionInterfaceType(
@@ -64,7 +69,10 @@ case class IntrospectionField(
   args: Seq[IntrospectionInputValue],
   tpe: IntrospectionTypeRef,
   isDeprecated: Boolean,
-  deprecationReason: Option[String])
+  deprecationReason: Option[String]
+) {
+  lazy val argsByName = args.groupBy(_.name).mapValues(_.head)
+}
 
 case class IntrospectionEnumValue(
   name: String,

@@ -221,7 +221,7 @@ package object introspection {
       Field("type", __Type, resolve = false → _.value.inputValueType),
       Field("defaultValue", OptionType(StringType),
         description = Some("A GraphQL-formatted string representing the default value for this input value."),
-        resolve = ctx ⇒ ctx.value.defaultValue.map(ctx.renderInputValueCompact(_, ctx.value.inputValueType)))
+        resolve = ctx ⇒ ctx.value.defaultValue.flatMap(ctx.renderInputValueCompact(_, ctx.value.inputValueType)))
     ))
 
   val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(
