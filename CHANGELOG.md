@@ -1,3 +1,10 @@
+## v0.7.3 (2016-08-26)
+
+* Description formatting/parsing is updated based in the changes in the reference implementation (#155). More places of the query now preserve the comments. For instance all trailing comments within a section set and at the end of the document are preserved and rendered.
+* Ensure that the result of deferred value resolution has the same size as the deferred list (#154).
+* During macro-based derivation, default value should never be a `null` for an optional arguments (#153). 
+* Executor now properly handles undefined values (like `null` and `None`) even if GraphQL type is not null (#152)
+
 ## v0.7.2 (2016-08-01)
 
 * Transitive types are now collected for all types provided via `additionalTypes` to a schema definition (#149).
