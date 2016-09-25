@@ -1,8 +1,8 @@
 package sangria.ast
 
 import org.parboiled2.Position
-import sangria.ast
 import sangria.parser.SourceMapper
+import sangria.renderer.QueryRenderer
 
 import scala.collection.immutable.ListMap
 
@@ -163,7 +163,9 @@ sealed trait WithDirectives {
 case class Directive(name: String, arguments: List[Argument], comments: List[Comment] = Nil, position: Option[Position] = None) extends AstNode
 case class Argument(name: String, value: Value, comments: List[Comment] = Nil, position: Option[Position] = None) extends NameValue
 
-sealed trait Value extends AstNode with WithComments
+sealed trait Value extends AstNode with WithComments {
+  override def renderPretty: String = QueryRenderer.render(this, QueryRenderer.PrettyInput)
+}
 
 sealed trait ScalarValue extends Value
 
@@ -291,6 +293,9 @@ case class OperationTypeDefinition(
 sealed trait AstNode {
   def position: Option[Position]
   def cacheKeyHash: Int = System.identityHashCode(this)
+
+  def renderPretty: String = QueryRenderer.render(this, QueryRenderer.Pretty)
+  def renderCompact: String = QueryRenderer.render(this, QueryRenderer.Compact)
 }
 
 sealed trait SchemaAstNode extends AstNode with WithComments
