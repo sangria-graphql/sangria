@@ -1,10 +1,7 @@
 package sangria.execution
 
-import sangria.marshalling.ResultMarshaller
 import sangria.util.FutureResultSupport
-
 import org.scalatest.{Matchers, WordSpec}
-
 import sangria.parser.QueryParser
 import sangria.schema._
 

@@ -6,7 +6,7 @@ import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.starWars.TestSchema.{PrivacyError, StarWarsSchema}
-import sangria.starWars.TestData.{FriendsResolver, CharacterRepo}
+import sangria.starWars.TestData.{CharacterRepo, FriendsResolver}
 import sangria.util.FutureResultSupport
 import InputUnmarshaller.mapVars
 import sangria.validation.QueryValidator
