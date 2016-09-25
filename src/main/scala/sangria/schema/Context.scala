@@ -238,6 +238,8 @@ object Args {
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments
 
 trait DeferredResolver[-Ctx] {
+  def includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) ⇒ Boolean] = None
+
   def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]): Vector[Vector[T]] =
     Vector(deferred)
 

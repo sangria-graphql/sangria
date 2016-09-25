@@ -3,6 +3,7 @@ package sangria.execution
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.ast
 import sangria.ast.Document
 import sangria.schema._
 import sangria.macros._
@@ -19,6 +20,9 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
       Field("descr", StringType, resolve = c ⇒ s"Cat ${c.value} descr"),
       Field("self", CategoryType, resolve = c ⇒ c.value),
       Field("selfFut", CategoryType, resolve = c ⇒ Future(c.value)),
+      Field("selfFutComplex", CategoryType,
+        complexity = Some((_, _, _) ⇒ 1000),
+        resolve = c ⇒ Future(c.value)),
       Field("children", ListType(CategoryType),
         arguments = Argument("count", IntType) :: Nil,
         resolve = c ⇒ LoadCategories((1 to c.arg[Int]("count")).map(i ⇒ s"${c.value}.$i"))),
@@ -40,6 +44,9 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
     class MyDeferredResolver extends DeferredResolver[Any] {
       val callsCount = new AtomicInteger(0)
       val valueCount = new AtomicInteger(0)
+
+      override val includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) ⇒ Boolean] =
+        Some((_, _, _, complexity) ⇒ complexity < 100)
 
       override def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]) = {
         val (expensive, cheap) = deferred.partition(_.complexity > 100)
@@ -113,6 +120,56 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
 
       resolver.callsCount.get should be (6)
       resolver.valueCount.get should be (2157)
+    }
+
+    "do not wait for future values" in {
+      val query =
+        graphql"""
+          {
+            root {
+              name
+
+              children(count: 3) {
+                s1: selfFutComplex {
+                  children(count: 5) {
+                    children(count: 5) {
+                      name
+                    }
+                  }
+                }
+
+                s2: selfFutComplex {
+                  children(count: 5) {
+                    children(count: 5) {
+                      name
+                    }
+                  }
+                }
+
+                selfFut {
+                  children(count: 5) {
+                    children(count: 5) {
+                      name
+                    }
+                  }
+                }
+
+                selfFut {
+                  children(count: 5) {
+                    children(count: 5) {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        """
+
+      val (resolver, _) = exec(query)
+
+      resolver.callsCount.get should be (16)
+      resolver.valueCount.get should be (56)
     }
 
     "Group complex/expensive deferred values together" in {
