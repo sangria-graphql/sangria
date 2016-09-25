@@ -6,7 +6,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
 import sangria.schema._
 import sangria.macros._
-import sangria.util.FutureResultSupport
+import sangria.util.{DebugUtil, FutureResultSupport}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -22,6 +22,10 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
       Field("children", ListType(CategoryType),
         arguments = Argument("count", IntType) :: Nil,
         resolve = c ⇒ LoadCategories((1 to c.arg[Int]("count")).map(i ⇒ s"${c.value}.$i"))),
+      Field("childrenComplex", ListType(CategoryType),
+        complexity = Some((_, _, _) ⇒ 1000),
+        arguments = Argument("count", IntType) :: Nil,
+        resolve = c ⇒ LoadCategories((1 to c.arg[Int]("count")).map(i ⇒ s"${c.value}.$i"))),
       Field("childrenFut", ListType(CategoryType),
         arguments = Argument("count", IntType) :: Nil,
         resolve = c ⇒ DeferredFutureValue(Future.successful(
@@ -34,10 +38,17 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
     ))
 
     class MyDeferredResolver extends DeferredResolver[Any] {
-      val count = new AtomicInteger(0)
+      val callsCount = new AtomicInteger(0)
+      val valueCount = new AtomicInteger(0)
+
+      override def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]) = {
+        val (expensive, cheap) = deferred.partition(_.complexity > 100)
+        Vector(expensive, cheap)
+      }
 
       def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = {
-        count.getAndIncrement()
+        callsCount.getAndIncrement()
+        valueCount.addAndGet(deferred.size)
 
         deferred.map {
           case LoadCategories(ids) ⇒ Future.successful(ids)
@@ -55,7 +66,7 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
       resolver → result
     }
 
-    "foo" in {
+    "result in a single resolution of once level" in {
       val query =
         graphql"""
           {
@@ -66,6 +77,12 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
                   children(count: 5) {
                     children(count: 5) {
                       children(count: 5) {
+                        name
+                      }
+                    }
+
+                    childrenFut(count: 2) {
+                      children(count: 2) {
                         name
                       }
                     }
@@ -94,7 +111,48 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
 
       val (resolver, _) = exec(query)
 
-      resolver.count.get should be (6)
+      resolver.callsCount.get should be (6)
+      resolver.valueCount.get should be (2157)
+    }
+
+    "Group complex/expensive deferred values together" in {
+      val query =
+        graphql"""
+          {
+            rootFut {
+              name
+
+              c1: childrenComplex(count: 5) {
+                self {
+                  childrenFut(count: 5) {
+                    name
+                  }
+                }
+              }
+
+              c2: childrenComplex(count: 5) {
+                self {
+                  childrenFut(count: 5) {
+                    name
+                  }
+                }
+              }
+
+              childrenFut(count: 5) {
+                self {
+                  childrenFut(count: 5) {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        """
+
+      val (resolver, r) = exec(query)
+
+      resolver.callsCount.get should be (5)
+      resolver.valueCount.get should be (19)
     }
   }
 

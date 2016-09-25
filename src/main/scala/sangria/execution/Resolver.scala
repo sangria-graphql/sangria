@@ -1,5 +1,7 @@
 package sangria.execution
 
+import language.existentials
+
 import org.parboiled2.Position
 import sangria.ast
 import sangria.marshalling.{ResultMarshaller, ScalarValueInfo}
@@ -59,10 +61,14 @@ class Resolver[Ctx](
   private def immediatelyResolveDeferred[T](uc: Ctx, dr: DeferredResult, fn: Future[Result] ⇒ Future[T]): Future[T] = {
     val res = fn(dr.futureValue)
 
-    resolveDeferred(uc, dr.deferred)
+    resolveDeferredWithGrouping(dr.deferred).foreach(groups ⇒
+      groups.foreach(group ⇒ resolveDeferred(uc, group)))
 
     res
   }
+
+  private def resolveDeferredWithGrouping(deferred: Vector[Future[Vector[Defer]]]) =
+    Future.sequence(deferred).map(listOfDef ⇒ deferredResolver.groupDeferred(listOfDef.flatten))
 
   private type Actions = (ErrorRegistry, Option[Vector[(Vector[ast.Field], Option[(Field[Ctx, _], Option[MappedCtxUpdate[Ctx, Any, Any]], LeafAction[Ctx, _])])]])
 
@@ -88,6 +94,7 @@ class Resolver[Ctx](
               case (updatedErrors, None, _) ⇒ Future.successful(Result(updatedErrors, None) → uc)
               case (updatedErrors, Some(result), newUc) ⇒
                 val sfield = tpe.getField(schema, origField.name).head
+                val fieldPath = path + fields.head
 
                 def resolveUc(v: Any) = newUc map (_.ctxFn(v)) getOrElse uc
 
@@ -112,79 +119,95 @@ class Resolver[Ctx](
                       case Value(v) ⇒
                         val updatedUc = resolveUc(v)
 
-                        Future.successful(resolveValue(path + fields.head, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) → updatedUc)
+                        Future.successful(resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) → updatedUc)
                       case PartialValue(v, es) ⇒
                         val updatedUc = resolveUc(v)
 
                         Future.successful(
-                          resolveValue(path + fields.head, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc)
-                            .appendErrors(path + fields.head, es, fields.head.position) → updatedUc)
+                          resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc)
+                            .appendErrors(fieldPath, es, fields.head.position) → updatedUc)
                       case TryValue(v) ⇒
                         Future.successful(v match {
                           case Success(success) ⇒
                             val updatedUc = resolveUc(success)
 
-                            resolveValue(path + fields.head, fields, sfield.fieldType, sfield, resolveVal(success), updatedUc) → updatedUc
-                          case Failure(e) ⇒ Result(ErrorRegistry(path + fields.head, resolveError(e), fields.head.position), None) → uc
+                            resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(success), updatedUc) → updatedUc
+                          case Failure(e) ⇒ Result(ErrorRegistry(fieldPath, resolveError(e), fields.head.position), None) → uc
                         })
                       case DeferredValue(d) ⇒
                         val p = Promise[(ChildDeferredContext, Any)]()
+                        val complexity = calcComplexity(fieldPath, origField, sfield, userContext)
+                        val defer = Defer(p, d, complexity, sfield, origField)
 
-                        immediatelyResolveDeferred(uc, DeferredResult(Vector(Future.successful(Vector(Defer(p, d)))), p.future.flatMap { case (dctx, v) ⇒
+                        immediatelyResolveDeferred(uc, DeferredResult(Vector(Future.successful(Vector(defer))), p.future.flatMap { case (dctx, v) ⇒
                           val updatedUc = resolveUc(v)
 
-                          resolveValue(path + fields.head, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) match {
+                          resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) match {
                             case r: Result ⇒ dctx.resolveResult(r.copy(userContext = Some(updatedUc)))
-                            case er: DeferredResult ⇒ dctx.resolveDeferredResult(updatedUc, er).map(_.copy(userContext = Some(updatedUc)))
+                            case er: DeferredResult ⇒
+                              dctx.resolveDeferredResult(updatedUc, er).map(_.copy(userContext = Some(updatedUc)))
                           }
                         }.recover {
-                          case e ⇒ Result(ErrorRegistry(path + fields.head, resolveError(e), fields.head.position), None)
+                          case e ⇒ Result(ErrorRegistry(fieldPath, resolveError(e), fields.head.position), None)
                         }), _.map(r ⇒ r → r.userContext.getOrElse(uc)))
                       case FutureValue(f) ⇒
                         f.map { v ⇒
                           val updatedUc = resolveUc(v)
 
-                          resolveValue(path + fields.head, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) → updatedUc
+                          resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) → updatedUc
                         }.recover { case e ⇒ Result(errors.add(path + name, resolveError(e), fields.head.position), None) → uc}
                       case PartialFutureValue(f) ⇒
                         f.map{
                           case PartialValue(v, es) ⇒
                             val updatedUc = resolveUc(v)
 
-                            resolveValue(path + fields.head, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc)
-                              .appendErrors(path + fields.head, es, fields.head.position) → updatedUc
+                            resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc)
+                              .appendErrors(fieldPath, es, fields.head.position) → updatedUc
                         }.recover { case e ⇒ Result(errors.add(path + name, resolveError(e), fields.head.position), None) → uc}
                       case DeferredFutureValue(df) ⇒
                         val p = Promise[(ChildDeferredContext, Any)]()
+                        def defer(d: Deferred[Any]) = {
+                          val complexity = calcComplexity(fieldPath, origField, sfield, userContext)
+                          Defer(p, d, complexity, sfield, origField)
+                        }
 
-                        immediatelyResolveDeferred(uc, DeferredResult(Vector(df.map(d ⇒ Vector(Defer(p, d)))), p.future.flatMap { case (dctx, v) ⇒
+                        immediatelyResolveDeferred(uc, DeferredResult(Vector(df.map(d ⇒ Vector(defer(d)))), p.future.flatMap { case (dctx, v) ⇒
                           val updatedUc = resolveUc(v)
 
-                          resolveValue(path + fields.head, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) match {
+                          resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) match {
                             case r: Result ⇒ dctx.resolveResult(r.copy(userContext = Some(updatedUc)))
                             case er: DeferredResult ⇒ dctx.resolveDeferredResult(updatedUc, er).map(_.copy(userContext = Some(updatedUc)))
                           }
                         }.recover {
-                          case e ⇒ Result(ErrorRegistry(path + fields.head, resolveError(e), fields.head.position), None)
+                          case e ⇒ Result(ErrorRegistry(fieldPath, resolveError(e), fields.head.position), None)
                         }), _.map(r ⇒ r → r.userContext.getOrElse(uc)))
                     }
                   } catch {
                     case NonFatal(e) ⇒
-                      Future.successful(Result(ErrorRegistry(path + fields.head, resolveError(e), fields.head.position), None) → uc)
+                      Future.successful(Result(ErrorRegistry(fieldPath, resolveError(e), fields.head.position), None) → uc)
                   }
 
                 resolve.flatMap {
                   case (r : Result, newUc) ⇒
-                    Future.successful(accRes.addToMap(r, fields.head.outputName, isOptional(tpe, fields.head.name), path + fields.head, fields.head.position) → newUc)
+                    Future.successful(accRes.addToMap(r, fields.head.outputName, isOptional(tpe, fields.head.name), fieldPath, fields.head.position) → newUc)
                   case (dr : DeferredResult, newUc) ⇒
                     immediatelyResolveDeferred(newUc, dr,
-                      _.map(accRes.addToMap(_, fields.head.outputName, isOptional(tpe, fields.head.name), path + fields.head, fields.head.position) → newUc))
+                      _.map(accRes.addToMap(_, fields.head.outputName, isOptional(tpe, fields.head.name), fieldPath, fields.head.position) → newUc))
                 }
             }
         }
       }
     } map {
       case (res, ctx) ⇒ res.buildValue
+    }
+  }
+
+  private def calcComplexity(path: ExecutionPath, astField: ast.Field, field: Field[Ctx, _], uc: Ctx) = {
+    val args = valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables)
+
+    args match {
+      case Success(a) ⇒ field.complexity.fold(DefaultComplexity)(_(uc, a, DefaultComplexity))
+      case _ ⇒ DefaultComplexity
     }
   }
 
@@ -234,52 +257,66 @@ class Resolver[Ctx](
         val resolvedValues = results.map {
           case (astFields, None) ⇒ astFields.head → Result(ErrorRegistry.empty, None)
           case (astFields, Some((field, updateCtx, Value(v)))) ⇒
+            val fieldsPath = path + astFields.head
+
             try {
-              astFields.head → resolveValue(path + astFields.head, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
+              astFields.head → resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
             } catch {
               case NonFatal(e) ⇒
-                astFields.head → Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position), None)
+                astFields.head → Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
             }
           case (astFields, Some((field, updateCtx, PartialValue(v, es)))) ⇒
+            val fieldsPath = path + astFields.head
+
             try {
               astFields.head →
-                resolveValue(path + astFields.head, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
-                  .appendErrors(path + astFields.head, es, astFields.head.position)
+                resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
+                  .appendErrors(fieldsPath, es, astFields.head.position)
             } catch {
               case NonFatal(e) ⇒
-                astFields.head → Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position).append(path + astFields.head, es, astFields.head.position), None)
+                astFields.head → Result(
+                  ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position)
+                    .append(fieldsPath, es, astFields.head.position),
+                  None)
             }
           case (astFields, Some((field, updateCtx, TryValue(v)))) ⇒
+            val fieldsPath = path + astFields.head
+
             v match {
               case Success(success) ⇒
                 try {
-                  astFields.head → resolveValue(path + astFields.head, astFields, field.fieldType, field, resolveVal(updateCtx, success), resolveUc(updateCtx, success))
+                  astFields.head → resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, success), resolveUc(updateCtx, success))
                 } catch {
                   case NonFatal(e) ⇒
-                    astFields.head → Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position), None)
+                    astFields.head → Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
                 }
               case Failure(e) ⇒
-                astFields.head → Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position), None)
+                astFields.head → Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
             }
           case (astFields, Some((field, updateCtx, DeferredValue(deferred)))) ⇒
+            val fieldsPath = path + astFields.head
             val promise = Promise[(ChildDeferredContext, Any)]()
+            val complexity = calcComplexity(fieldsPath, astFields.head, field, userContext)
+            val defer = Defer(promise, deferred, complexity, field, astFields.head)
 
-            astFields.head → DeferredResult(Vector(Future.successful(Vector(Defer(promise, deferred)))),
+            astFields.head → DeferredResult(Vector(Future.successful(Vector(defer))),
               promise.future
                 .flatMap { case (dctx, v) ⇒
                   val uc = resolveUc(updateCtx, v)
 
-                  resolveValue(path + astFields.head, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc) match {
+                  resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc) match {
                     case r: Result ⇒ dctx.resolveResult(r)
                     case er: DeferredResult ⇒ dctx.resolveDeferredResult(uc, er)
                   }
                 }
                 .recover {
-                  case e ⇒ Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position), None)
+                  case e ⇒ Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
                 })
           case (astFields, Some((field, updateCtx, FutureValue(future)))) ⇒
-            val resolved = future.map(v ⇒ resolveValue(path + astFields.head, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))).recover {
-              case e ⇒ Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position), None)
+            val fieldsPath = path + astFields.head
+
+            val resolved = future.map(v ⇒ resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))).recover {
+              case e ⇒ Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
             }
 
             val deferred = resolved flatMap {
@@ -293,11 +330,13 @@ class Resolver[Ctx](
 
             astFields.head → DeferredResult(Vector(deferred), value)
           case (astFields, Some((field, updateCtx, PartialFutureValue(future)))) ⇒
+            val fieldsPath = path + astFields.head
+
             val resolved = future.map {case PartialValue(v, es) ⇒
-              resolveValue(path + astFields.head, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
-                .appendErrors(path + astFields.head, es, astFields.head.position)}
+              resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
+                .appendErrors(fieldsPath, es, astFields.head.position)}
               .recover {
-                case e ⇒ Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position), None)
+                case e ⇒ Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
               }
 
             val deferred = resolved flatMap {
@@ -311,19 +350,25 @@ class Resolver[Ctx](
 
             astFields.head → DeferredResult(Vector(deferred), value)
           case (astFields, Some((field, updateCtx, DeferredFutureValue(deferredValue)))) ⇒
+            val fieldsPath = path + astFields.head
             val promise = Promise[(ChildDeferredContext, Any)]()
 
-            astFields.head → DeferredResult(Vector(deferredValue.map(d ⇒ Vector(Defer(promise, d)))),
+            def defer(d: Deferred[Any]) = {
+              val complexity = calcComplexity(fieldsPath, astFields.head, field, userContext)
+              Defer(promise, d, complexity, field, astFields.head)
+            }
+
+            astFields.head → DeferredResult(Vector(deferredValue.map(d ⇒ Vector(defer(d)))),
               promise.future.flatMap { case (dctx, v) ⇒
                 val uc = resolveUc(updateCtx, v)
 
-                resolveValue(path + astFields.head, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc) match {
+                resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc) match {
                   case r: Result ⇒ dctx.resolveResult(r)
                   case er: DeferredResult ⇒ dctx.resolveDeferredResult(uc, er)
                 }
               }
               .recover{
-                case e ⇒ Result(ErrorRegistry(path + astFields.head, resolveError(updateCtx, e), astFields.head.position), None)
+                case e ⇒ Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
               })
         }
 
@@ -349,17 +394,15 @@ class Resolver[Ctx](
     }
   }
 
-  def resolveDeferred(uc: Ctx, res: Vector[Future[Vector[Defer]]]) =
-    Future.sequence(res).foreach { listOfDef ⇒
-      val toResolve = listOfDef.flatten
-
+  private def resolveDeferred(uc: Ctx, toResolve: Vector[Defer]) =
+    if (toResolve.nonEmpty) {
       def findActualDeferred(deferred: Deferred[_]): Deferred[_] = deferred match {
         case MappingDeferred(d, _) ⇒ findActualDeferred(d)
         case d ⇒ d
       }
 
       def mapAllDeferred(deferred: Deferred[_], value: Future[Any]): Future[Any] = deferred match {
-        case MappingDeferred(d, fn) ⇒ mapAllDeferred(d, value) map (fn)
+        case MappingDeferred(d, fn) ⇒ mapAllDeferred(d, value) map fn
         case d ⇒ value
       }
 
@@ -734,7 +777,7 @@ class Resolver[Ctx](
   def nullForNotNullTypeError(position: Option[Position]) =
     new ExecutionError("Cannot return null for non-nullable type", exceptionHandler, sourceMapper, position.toList)
 
-  case class Defer(promise: Promise[(ChildDeferredContext, Any)], deferred: Deferred[Any])
+  case class Defer(promise: Promise[(ChildDeferredContext, Any)], deferred: Deferred[Any], complexity: Double, field: Field[_, _], astField: ast.Field) extends DeferredWithInfo
   case class Result(errors: ErrorRegistry, value: Option[Any /* Either marshaller.Node or marshaller.MapBuilder */], userContext: Option[Ctx] = None) extends Resolve {
     def addToMap(other: Result, key: String, optional: Boolean, path: ExecutionPath, position: Option[Position]) =
       copy(
@@ -764,7 +807,9 @@ class Resolver[Ctx](
       Future.sequence(children.map(_.promise.future)).onComplete { res ⇒
         val allDeferred = res.get.flatten
 
-        if (allDeferred.nonEmpty) resolveDeferred(uc, allDeferred)
+        if (allDeferred.nonEmpty)
+          resolveDeferredWithGrouping(allDeferred).foreach(groups ⇒
+            groups.foreach(group ⇒ resolveDeferred(uc, group)))
       }
   }
 
@@ -808,4 +853,11 @@ object Resolver {
     case ast.ObjectValue(values, _, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalAstValue(v.value, marshaller, typeName, scalarInfo)))
     case ast.VariableValue(name, _, _) ⇒ marshaller.enumNode(name, typeName)
   }
+}
+
+trait DeferredWithInfo {
+  def deferred: Deferred[Any]
+  def complexity: Double
+  def field: Field[_, _]
+  def astField: ast.Field
 }

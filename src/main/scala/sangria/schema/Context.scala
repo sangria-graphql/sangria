@@ -4,8 +4,7 @@ import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper
 
-import language.{implicitConversions, existentials}
-
+import language.{existentials, implicitConversions}
 import sangria.ast
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -239,6 +238,9 @@ object Args {
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments
 
 trait DeferredResolver[-Ctx] {
+  def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]): Vector[Vector[T]] =
+    Vector(deferred)
+
   def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx): Vector[Future[Any]]
 }
 
