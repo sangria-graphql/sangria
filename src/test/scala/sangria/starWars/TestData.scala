@@ -1,6 +1,6 @@
 package sangria.starWars
 
-import sangria.schema.{Deferred, DeferredResolver}
+import sangria.execution.deferred.{Deferred, DeferredResolver}
 
 import scala.concurrent.Future
 import scala.util.Try

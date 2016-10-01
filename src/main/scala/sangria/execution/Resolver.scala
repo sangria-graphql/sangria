@@ -1,9 +1,9 @@
 package sangria.execution
 
 import language.existentials
-
 import org.parboiled2.Position
 import sangria.ast
+import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.marshalling.{ResultMarshaller, ScalarValueInfo}
 import sangria.parser.SourceMapper
 import sangria.schema._

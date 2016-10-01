@@ -1,13 +1,14 @@
-package sangria.execution
+package sangria.execution.deferred
 
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast.Document
-import sangria.schema._
+import sangria.execution.{DeferredWithInfo, Executor}
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.schema._
+import sangria.util.FutureResultSupport
 
 import scala.concurrent.{ExecutionContext, Future}
 

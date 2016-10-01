@@ -6,10 +6,11 @@ import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.validation.QueryValidator
 import InputUnmarshaller.emptyMapVars
+import sangria.execution.deferred.DeferredResolver
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 case class Executor[Ctx, Root](
     schema: Schema[Ctx, Root],

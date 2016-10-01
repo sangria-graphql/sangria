@@ -4,14 +4,14 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
+import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.macros._
 import sangria.marshalling.ResultMarshaller
 import sangria.schema._
 import sangria.util.FutureResultSupport
 
-import scala.collection.mutable.{Map ⇒ MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {

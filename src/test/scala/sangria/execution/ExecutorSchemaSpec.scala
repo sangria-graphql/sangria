@@ -1,6 +1,7 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport

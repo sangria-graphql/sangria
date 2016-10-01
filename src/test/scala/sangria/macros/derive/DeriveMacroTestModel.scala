@@ -1,6 +1,7 @@
 package sangria.macros.derive
 
 import sangria.execution.FieldTag
+import sangria.execution.deferred.Deferred
 import sangria.schema._
 
 object DeriveMacroTestModel {

@@ -1,13 +1,13 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport
 
 import scala.concurrent.Future
 import scala.util.Success
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ActionMapSpec extends WordSpec with Matchers with FutureResultSupport {

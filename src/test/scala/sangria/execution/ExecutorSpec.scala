@@ -8,6 +8,7 @@ import sangria.macros._
 import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import InputUnmarshaller.mapVars
+import sangria.execution.deferred.{Deferred, DeferredResolver}
 
 import scala.collection.immutable.ListMap
 import scala.concurrent.Future

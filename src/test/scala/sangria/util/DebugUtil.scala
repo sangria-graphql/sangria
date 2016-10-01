@@ -10,7 +10,7 @@ import sangria.ast._
 object DebugUtil {
 
   private val indentClasses: PartialFunction[Any, Boolean] = {
-    case v ⇒ v.getClass.getSimpleName.startsWith("Introspection")
+    case v if v.getClass.getSimpleName.startsWith("Introspection") ⇒ true
     case _: Document |
          _: Definition |
          _: SelectionContainer |

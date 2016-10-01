@@ -1,17 +1,16 @@
 package sangria.util
 
 import org.scalatest.Matchers
-import sangria.execution.{QueryAnalysisError, HandledException, Executor}
+import sangria.execution.deferred.DeferredResolver
+import sangria.execution.{Executor, HandledException, QueryAnalysisError}
 import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.parser.QueryParser
-import sangria.schema.{DeferredResolver, Schema}
+import sangria.schema.Schema
 import sangria.validation.QueryValidator
-
-import spray.json.{JsValue, JsObject}
+import spray.json.{JsObject, JsValue}
 
 import scala.concurrent.Future
 import scala.util.Success
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 

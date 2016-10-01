@@ -4,8 +4,9 @@ import java.util.Random
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.schema._
-import sangria.util.{SimpleGraphQlSupport, GraphQlSupport, FutureResultSupport}
+import sangria.util.{FutureResultSupport, GraphQlSupport, SimpleGraphQlSupport}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
