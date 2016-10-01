@@ -6,7 +6,7 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -16,7 +16,7 @@ class ActionMapSpec extends WordSpec with Matchers with FutureResultSupport {
   case class ColorDefer(num: Int) extends Deferred[String]
 
   class ColorResolver extends DeferredResolver[Any] {
-    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
       case ColorDefer(num) ⇒ Future.successful("[" + (num + 45) + "]")
     }
   }

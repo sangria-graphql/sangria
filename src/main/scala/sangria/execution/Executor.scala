@@ -148,6 +148,7 @@ case class Executor[Ctx, Root](
 
       try {
         val middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
+        val deferredResolverState = deferredResolver.initialQueryState
 
         val resolver = new Resolver[Ctx](
           marshaller,
@@ -162,7 +163,8 @@ case class Executor[Ctx, Root](
           sourceMapper,
           deprecationTracker,
           middlewareVal,
-          maxQueryDepth)
+          maxQueryDepth,
+          deferredResolverState)
 
         val result =
           operation.operationType match {
@@ -276,7 +278,7 @@ case class Executor[Ctx, Root](
       }
 
     val reduced = fields.fields.foldLeft(ListBuffer(initialValues: _*)) {
-      case (acc, CollectedField(_, _, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty =>
+      case (acc, CollectedField(_, _, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty ⇒
         val astField = astFields.head
         val field = rootTpe.getField(schema, astField.name).head
         val path = ExecutionPath.empty + astField

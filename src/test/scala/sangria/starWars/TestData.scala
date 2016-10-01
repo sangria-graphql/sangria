@@ -2,7 +2,7 @@ package sangria.starWars
 
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 object TestData {
@@ -69,7 +69,7 @@ object TestData {
   )
 
   class FriendsResolver extends DeferredResolver[Any] {
-    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
       case DeferFriends(friendIds) ⇒
         Future.fromTry(Try(friendIds map (id ⇒ characters.find(_.id == id))))
     }
@@ -82,5 +82,7 @@ object TestData {
     def getHuman(id: String): Option[Human] = characters.find(c ⇒ c.isInstanceOf[Human] && c.id == id).asInstanceOf[Option[Human]]
 
     def getDroid(id: String): Option[Droid] = characters.find(c ⇒ c.isInstanceOf[Droid] && c.id == id).asInstanceOf[Option[Droid]]
+
+    def getCharacters(ids: Seq[String]): Seq[Character] = ids.flatMap(id ⇒ characters.find(_.id == id))
   }
 }

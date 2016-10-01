@@ -19,7 +19,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler: Executor.ExceptionHandler = {
-      case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+      case (m, e) ⇒ HandledException(e.getMessage)
     }
 
     Executor.execute(
@@ -33,8 +33,8 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       deferredResolver = resolver).awaitAndRecoverQueryAnalysisScala
   }
 
-  def check[T](schema: Schema[_, _], data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {
-    executeTestQuery(schema, data, query, args, userContext, resolver, validateQuery) should be (expected)
+  def check[T](schema: Schema[_, _], data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[_] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {
+    executeTestQuery(schema, data, query, args, userContext, resolver.asInstanceOf[DeferredResolver[Any]], validateQuery) should be (expected)
   }
 
   def checkErrors[T](schema: Schema[_, _], data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {
@@ -49,8 +49,21 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
     expectedErrors foreach (expected ⇒ errors should contain (expected))
   }
 
-  def checkContainsErrors[T](schema: Schema[_, _], data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, List[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit = {
-    val result = executeTestQuery(schema, data, query, args, validateQuery = validateQuery).asInstanceOf[Map[String, Any]]
+  def checkContainsErrors[T](
+    schema: Schema[_, _],
+    data: T,
+    query: String,
+    expectedData: Map[String, Any],
+    expectedErrorStrings: List[(String, List[Pos])],
+    args: JsValue = JsObject.empty,
+    userContext: Any = (),
+    resolver: DeferredResolver[_] = DeferredResolver.empty,
+    validateQuery: Boolean = true
+  ): Unit = {
+    val result = executeTestQuery(schema, data, query, args,
+      validateQuery = validateQuery,
+      userContext = userContext,
+      resolver = resolver.asInstanceOf[DeferredResolver[Any]]).asInstanceOf[Map[String, Any]]
 
     result("data") should be (expectedData)
 
@@ -90,7 +103,7 @@ trait GraphQlSupport extends FutureResultSupport with Matchers {
     SimpleGraphQlSupport.checkErrors(schema, data, query, expectedData, expectedErrors, args, userContext, resolver, validateQuery)
 
   def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, List[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
-    SimpleGraphQlSupport.checkContainsErrors(schema, data, query, expectedData, expectedErrorStrings, args, validateQuery)
+    SimpleGraphQlSupport.checkContainsErrors(schema, data, query, expectedData, expectedErrorStrings, args = args, validateQuery = validateQuery)
 }
 
 case class Pos(line: Int, col: Int)

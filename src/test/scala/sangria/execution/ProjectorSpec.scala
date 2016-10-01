@@ -7,7 +7,7 @@ import sangria.schema._
 import sangria.util.FutureResultSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
 class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
@@ -77,7 +77,7 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
   }
 
   class ProductResolver extends DeferredResolver[WithProducts] {
-    override def resolve(deferred: Vector[Deferred[Any]], ctx: WithProducts) = deferred map {
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: WithProducts, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
       case ProductDefer(ids) ⇒
         Future.fromTry(Try(ids map (id ⇒ Right(ctx.products.find(_.id == id).get))))
     }

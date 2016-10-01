@@ -8,7 +8,7 @@ import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.schema._
 import sangria.util.{FutureResultSupport, GraphQlSupport, SimpleGraphQlSupport}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
@@ -17,7 +17,7 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
   case class FailedDefer(num: NumberHolder) extends Deferred[NumberHolder]
 
   class Resolver extends DeferredResolver[Any] {
-    def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
       case SuccessfulDefer(n) ⇒ Future.successful(n)
       case FailedDefer(_) ⇒ Future.failed(new IllegalStateException("error in resolver"))
     }

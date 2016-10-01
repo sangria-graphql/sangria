@@ -1,9 +1,8 @@
 package sangria.marshalling
 
 import org.scalatest.{Matchers, WordSpec}
-
 import sangria.execution.Executor
-import sangria.marshalling.testkit.{ParsingBehaviour, InputHandlingBehaviour, MarshallingBehaviour}
+import sangria.marshalling.testkit.{InputHandlingBehaviour, MarshallingBehaviour, ParsingBehaviour}
 import sangria.parser.QueryParser
 import sangria.renderer.QueryRenderer
 import sangria.starWars.TestData.{CharacterRepo, FriendsResolver}

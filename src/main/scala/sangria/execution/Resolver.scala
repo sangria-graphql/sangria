@@ -26,7 +26,8 @@ class Resolver[Ctx](
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,
     middleware: List[(Any, Middleware[_])],
-    maxQueryDepth: Option[Int])(implicit executionContext: ExecutionContext) {
+    maxQueryDepth: Option[Int],
+    deferredResolverState: Any)(implicit executionContext: ExecutionContext) {
 
   val resultResolver = new ResultResolver(marshaller, exceptionHandler)
 
@@ -432,7 +433,7 @@ class Resolver[Ctx](
       }
 
       try {
-        val resolved = deferredResolver.resolve(toResolve map (d ⇒ findActualDeferred(d.deferred)), uc)
+        val resolved = deferredResolver.resolve(toResolve map (d ⇒ findActualDeferred(d.deferred)), uc, deferredResolverState)
 
         if (toResolve.size == resolved.size) {
           val dctx = ParentDeferredContext(uc, toResolve.size)
@@ -440,7 +441,11 @@ class Resolver[Ctx](
           for (i ← toResolve.indices) {
             val toRes = toResolve(i)
 
-            toRes.promise tryCompleteWith mapAllDeferred(toRes.deferred, resolved(i)).map(dctx.children(i) → _)
+            toRes.promise tryCompleteWith mapAllDeferred(toRes.deferred, resolved(i)).map(dctx.children(i) → _).recover {
+              case NonFatal(e) ⇒
+                dctx.children(i).resolveError(e)
+                throw e
+            }
           }
 
           dctx.init()
@@ -847,6 +852,10 @@ class Resolver[Ctx](
     def resolveResult(res: Result): Future[Result] = {
       promise.success(Vector.empty)
       Future.successful(res)
+    }
+
+    def resolveError(e: Throwable): Unit = {
+      promise.success(Vector.empty)
     }
   }
 }

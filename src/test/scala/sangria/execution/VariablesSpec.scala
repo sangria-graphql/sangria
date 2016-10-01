@@ -409,7 +409,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         ))
       )
 
-      "passes along null for non-nullable inputs if explcitly set in the query" in  checkContainsErrors(
+      "passes along null for non-nullable inputs if explicitly set in the query" in  checkContainsErrors(
         (),
         """
           {

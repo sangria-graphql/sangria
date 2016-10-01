@@ -54,7 +54,7 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
         Vector(expensive, cheap)
       }
 
-      def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = {
+      def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = {
         callsCount.getAndIncrement()
         valueCount.addAndGet(deferred.size)
 

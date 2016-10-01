@@ -1078,7 +1078,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             else if (definition.name endsWith "Null")
               _ ⇒ Value(null)
             else
-              _ => Value(None)
+              _ ⇒ Value(None)
         }
 
         val schema = Schema.buildFromAst(schemaAst, customBuilder)
