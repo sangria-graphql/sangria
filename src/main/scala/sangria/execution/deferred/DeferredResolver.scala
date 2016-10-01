@@ -32,17 +32,5 @@ object DeferredResolver {
 
 trait Deferred[+T]
 
-trait DeferredOne[Id, +T] extends Deferred[T] {
-  def id: Id
-}
-
-trait DeferredOpt[Id, +T] extends Deferred[Option[T]] {
-  def id: Id
-}
-
-trait DeferredSeq[Id, +T] extends Deferred[Seq[T]] {
-  def ids: Seq[Id]
-}
-
 case class UnsupportedDeferError(deferred: Deferred[Any])
     extends Exception(s"Deferred resolver is not defined for deferred value: $deferred.")

@@ -51,6 +51,18 @@ object Fetcher {
     new Fetcher[Ctx, Id, Res](i ⇒ id.id(i), fetch, Some(maxBatchSize), Some(() ⇒ cache))
 }
 
+trait DeferredOne[Id, +T] extends Deferred[T] {
+  def id: Id
+}
+
+trait DeferredOpt[Id, +T] extends Deferred[Option[T]] {
+  def id: Id
+}
+
+trait DeferredSeq[Id, +T] extends Deferred[Seq[T]] {
+  def ids: Seq[Id]
+}
+
 case class FetcherDeferredOne[Ctx, Id, T](source: Fetcher[Ctx, Id, T], id: Id) extends DeferredOne[Id, T]
 case class FetcherDeferredOpt[Ctx, Id, T](source: Fetcher[Ctx, Id, T], id: Id) extends DeferredOne[Id, T]
 case class FetcherDeferredSeq[Ctx, Id, T](source: Fetcher[Ctx, Id, T], ids: Seq[Id]) extends DeferredSeq[Id, T]
