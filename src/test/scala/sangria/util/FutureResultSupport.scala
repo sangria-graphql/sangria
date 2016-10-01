@@ -1,11 +1,10 @@
 package sangria.util
 
 import sangria.execution.{ErrorWithResolver, QueryAnalysisError}
-import sangria.marshalling.{ResultMarshallerForType, ResultMarshaller}
+import sangria.marshalling.ResultMarshallerForType
 
 import language.postfixOps
-
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -26,4 +25,10 @@ trait FutureResultSupport {
     }
   }
 
+
+  object sync {
+    val executionContext = ExecutionContext.fromExecutor(new java.util.concurrent.Executor {
+      def execute(command: Runnable) = command.run()
+    })
+  }
 }
