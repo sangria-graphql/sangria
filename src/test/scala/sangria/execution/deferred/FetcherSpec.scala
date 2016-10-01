@@ -1,7 +1,10 @@
 package sangria.execution.deferred
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.scalatest.{Matchers, WordSpec}
-import sangria.execution.{Executor, HandledException}
+import sangria.ast
+import sangria.execution.{DeferredWithInfo, Executor, HandledException}
 import sangria.macros._
 import sangria.schema._
 import sangria.util.{DebugUtil, FutureResultSupport, Pos}
@@ -11,6 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
   case class Category(id: String, name: String, children: Seq[String])
+  case class ColorDeferred(id: String) extends Deferred[String]
 
   object Category {
     implicit val hasId = HasId[Category, String](_.id)
@@ -40,6 +44,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       lazy val CategoryType: ObjectType[CategoryRepo, Category] = ObjectType("Category", () ⇒ fields(
         Field("id", StringType, resolve = c ⇒ c.value.id),
         Field("name", StringType, resolve = c ⇒ c.value.name),
+        Field("color", StringType, resolve = c ⇒ ColorDeferred("red")),
         Field("self", CategoryType, resolve = c ⇒ c.value),
         Field("selfOpt", OptionType(CategoryType), resolve = c ⇒ Some(c.value)),
         Field("selfFut", CategoryType, resolve = c ⇒ Future(c.value)),
@@ -186,19 +191,6 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
     }
 
     "should result in error for missing non-optional values" in {
-      val query =
-        graphql"""
-          {
-            c1: category(id: "8") {name childrenSeq {id}}
-            c2: categoryEager(id: "1") {
-              name
-              selfOpt {
-                categoryNonOpt(id: "qwe") {name}
-              }
-            }
-          }
-        """
-
       var fetchedIds = Vector.empty[Seq[String]]
 
       val fetcher =
@@ -234,6 +226,68 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       fetchedIds should be (Vector(
         Vector("8", "qwe"),
         Vector("4", "5", "foo!")))
+    }
+
+    "use fallback `DeferredResolver`" in {
+      class MyDeferredResolver extends DeferredResolver[Any] {
+        val callsCount = new AtomicInteger(0)
+        val valueCount = new AtomicInteger(0)
+
+        override val includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) ⇒ Boolean] =
+          Some((_, _, _, _) ⇒ false)
+
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = {
+          callsCount.getAndIncrement()
+          valueCount.addAndGet(deferred.size)
+
+          deferred.map {
+            case ColorDeferred(id) ⇒ Future.successful(id + "Color")
+          }
+        }
+      }
+
+      var fetchedIds = Vector.empty[Seq[String]]
+
+      val fetcher =
+        Fetcher((repo: CategoryRepo, ids: Seq[String]) ⇒ {
+          fetchedIds = fetchedIds :+ ids
+
+          repo.loadBulk(ids)
+        })
+
+      check(schema(fetcher), (),
+        """
+          {
+            c1: category(id: "1") {name childrenSeq {id}}
+
+
+            c2: categoryEager(id: "2") {
+              color
+              childrenSeq {name}
+            }
+          }
+        """,
+        Map(
+          "data" → Map(
+            "c1" → Map(
+              "name" → "Root",
+              "childrenSeq" → Vector(
+                Map("id" → "2"),
+                Map("id" → "3"),
+                Map("id" → "4"))),
+            "c2" → Map(
+              "color" → "redColor",
+              "childrenSeq" → Vector(
+                Map("name" → "Cat 5"),
+                Map("name" → "Cat 6"))))),
+        resolver = DeferredResolver.fetchersWithFallback(new MyDeferredResolver, fetcher),
+        userContext = new CategoryRepo)
+
+      fetchedIds should (
+        have(size(3)) and
+        contain(Vector("1")) and
+        contain(Vector("5", "6")) and
+        contain(Vector("3", "4", "2")))
     }
   }
 

@@ -33,8 +33,8 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       deferredResolver = resolver).awaitAndRecoverQueryAnalysisScala
   }
 
-  def check[T](schema: Schema[_, _], data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {
-    executeTestQuery(schema, data, query, args, userContext, resolver, validateQuery) should be (expected)
+  def check[T](schema: Schema[_, _], data: T, query: String, expected: Any, args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[_] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {
+    executeTestQuery(schema, data, query, args, userContext, resolver.asInstanceOf[DeferredResolver[Any]], validateQuery) should be (expected)
   }
 
   def checkErrors[T](schema: Schema[_, _], data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit = {
