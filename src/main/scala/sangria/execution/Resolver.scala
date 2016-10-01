@@ -26,7 +26,8 @@ class Resolver[Ctx](
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,
     middleware: List[(Any, Middleware[_])],
-    maxQueryDepth: Option[Int])(implicit executionContext: ExecutionContext) {
+    maxQueryDepth: Option[Int],
+    deferredResolverState: Any)(implicit executionContext: ExecutionContext) {
 
   val resultResolver = new ResultResolver(marshaller, exceptionHandler)
 
@@ -432,7 +433,7 @@ class Resolver[Ctx](
       }
 
       try {
-        val resolved = deferredResolver.resolve(toResolve map (d ⇒ findActualDeferred(d.deferred)), uc)
+        val resolved = deferredResolver.resolve(toResolve map (d ⇒ findActualDeferred(d.deferred)), uc, deferredResolverState)
 
         if (toResolve.size == resolved.size) {
           val dctx = ParentDeferredContext(uc, toResolve.size)

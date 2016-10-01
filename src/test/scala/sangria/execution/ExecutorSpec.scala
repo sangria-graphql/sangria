@@ -11,7 +11,7 @@ import InputUnmarshaller.mapVars
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 
 import scala.collection.immutable.ListMap
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -42,14 +42,14 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
   case class FailColor(subj: TestSubject, color: String) extends Deferred[DeepTestSubject]
 
   class LightColorResolver extends DeferredResolver[Any] {
-    def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
       case LightColor(v, c) ⇒ Future.successful(v.deepColor("light" + c))
       case FailColor(v, c) ⇒ Future.failed(new IllegalStateException("error in resolver"))
     }
   }
 
   class BrokenLightColorResolver extends DeferredResolver[Any] {
-    def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = (deferred ++ deferred) map {
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = (deferred ++ deferred) map {
       case LightColor(v, c) ⇒ Future.successful(v.deepColor("light" + c))
       case FailColor(v, c) ⇒ Future.failed(new IllegalStateException("error in resolver"))
     }
@@ -432,7 +432,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       case class Sum(a: Int, b: Int) extends Deferred[Int]
 
       class MyResolver extends DeferredResolver[Any] {
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
           case Sum(a, b) ⇒ Future(a + b)
         }
       }
@@ -461,7 +461,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       case class Sum(a: Int, b: Int) extends Deferred[Int]
 
       class MyResolver extends DeferredResolver[Any] {
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
           case Sum(a, b) ⇒ Future(a + b)
         }
       }

@@ -11,7 +11,7 @@ import sangria.schema._
 import sangria.util.FutureResultSupport
 
 import scala.collection.mutable.{Map => MutableMap}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
@@ -127,7 +127,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
   case object Fail extends Deferred[String]
 
   class BrokenResolver extends DeferredResolver[Any] {
-    def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
       case Fail ⇒ Future.failed(new IllegalStateException("error in resolver"))
     }
   }

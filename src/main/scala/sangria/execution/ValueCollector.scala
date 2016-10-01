@@ -88,7 +88,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
             resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller, allowErrorsOnDefault = true, errors = errors, valueMap = fromInput.fromResult)(
               acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller)))
           } catch {
-            case InputParsingError(e) =>
+            case InputParsingError(e) ⇒
               errors ++= e.map(InvalidInputValueViolation(argDef.name, _, sourceMapper, astValue.flatMap(_.position).toList))
               acc
           }

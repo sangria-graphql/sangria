@@ -1,10 +1,12 @@
 package sangria.starWars
 
 import sangria.execution.UserFacingError
+import sangria.execution.deferred.{Deferred, DeferredResolver, Fetcher, HasId}
 import sangria.schema._
 import sangria.starWars.TestData._
 
 import scala.concurrent.Future
+import scala.util.Try
 
 object TestSchema {
   case class PrivacyError(message: String) extends Exception(message) with UserFacingError

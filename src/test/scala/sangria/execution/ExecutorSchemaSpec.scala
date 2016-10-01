@@ -8,7 +8,7 @@ import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import sangria.macros._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -150,7 +150,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with FutureResultSupport
       )
 
       val resolver = new DeferredResolver[Any] {
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
           case ArticleDeferred(id) ⇒ Future.successful(article(id.toInt))
         }
       }
@@ -190,7 +190,7 @@ class ExecutorSchemaSpec extends WordSpec with Matchers with FutureResultSupport
       """
 
       val resolver = new DeferredResolver[Any] {
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any) = deferred map {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
           case ArticleDeferred(id) ⇒ Future.successful(article(id.toInt))
         }
       }
