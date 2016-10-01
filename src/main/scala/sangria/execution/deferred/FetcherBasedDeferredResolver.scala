@@ -173,4 +173,4 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]], f
 }
 
 case class AbsentDeferredValueError(fetcher: Fetcher[Any, Any, Any], deferred: Deferred[Any], id: Any)
-  extends Exception(s"Fetcher has not resolved non-optional ID: $id.")
+  extends Exception(s"Fetcher has not resolved non-optional ID '$id'.")

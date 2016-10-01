@@ -441,7 +441,11 @@ class Resolver[Ctx](
           for (i ← toResolve.indices) {
             val toRes = toResolve(i)
 
-            toRes.promise tryCompleteWith mapAllDeferred(toRes.deferred, resolved(i)).map(dctx.children(i) → _)
+            toRes.promise tryCompleteWith mapAllDeferred(toRes.deferred, resolved(i)).map(dctx.children(i) → _).recover {
+              case NonFatal(e) ⇒
+                dctx.children(i).resolveError(e)
+                throw e
+            }
           }
 
           dctx.init()
@@ -848,6 +852,10 @@ class Resolver[Ctx](
     def resolveResult(res: Result): Future[Result] = {
       promise.success(Vector.empty)
       Future.successful(res)
+    }
+
+    def resolveError(e: Throwable): Unit = {
+      promise.success(Vector.empty)
     }
   }
 }
