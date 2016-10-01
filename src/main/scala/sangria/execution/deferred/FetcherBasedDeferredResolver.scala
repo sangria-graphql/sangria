@@ -1,14 +1,25 @@
 package sangria.execution.deferred
 
+import sangria.execution.DeferredWithInfo
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.collection.mutable.{Map => MutableMap}
 
-class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]]) extends DeferredResolver[Ctx] {
+class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]], fallback: Option[DeferredResolver[Ctx]]) extends DeferredResolver[Ctx] {
   private val fetchersMap: Map[AnyRef, Fetcher[Ctx, _, _]] @uncheckedVariance =
     fetchers.map(f ⇒ f → f).toMap
+
+  override def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]) =
+    fallback match {
+      case Some(f) ⇒ f.groupDeferred(deferred)
+      case None ⇒ super.groupDeferred(deferred)
+    }
+
+  override val includeDeferredFromField =
+    fallback.flatMap(_.includeDeferredFromField) orElse super.includeDeferredFromField
 
   override def initialQueryState = fetchers.flatMap(f ⇒ f.cache.map(cacheFn ⇒ (f: AnyRef) → cacheFn())).toMap
 
@@ -23,11 +34,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]]) e
       case _ ⇒ None
     }
 
-    val failed: Set[Deferred[Any]] = grouped.get(None).map(_.toSet).getOrElse(Set.empty)
     val resolved = MutableMap[Deferred[Any], Future[Any]]()
-
-    if (failed.nonEmpty)
-      println(fetchers)
 
     grouped foreach {
       case (Some(fetcher), d) ⇒
@@ -128,13 +135,21 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]]) e
           }
         }
 
-      case (None, _) ⇒ // handled by failed
+      case (None, deferred) ⇒
+        fallback match {
+          case Some(f) ⇒
+            val res = f.resolve(deferred, ctx, queryState)
+
+            for (i ← deferred.indices) {
+              resolved(deferred(i)) = res(i)
+            }
+          case None ⇒
+            deferred.foreach(d ⇒ resolved(d) = Future.failed(UnsupportedDeferError(d)))
+
+        }
     }
 
-    deferred map { d ⇒
-      if (failed contains d) Future.failed(UnsupportedDeferError(d))
-      else resolved(d)
-    }
+    deferred map (d ⇒ resolved(d))
   }
 
   private def partitionCached(cache: Option[FetcherCache], ids: Vector[Any]): (Vector[Any], MutableMap[Any, Any]) =

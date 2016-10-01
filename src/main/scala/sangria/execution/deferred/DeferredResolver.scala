@@ -24,7 +24,10 @@ object DeferredResolver {
   }
 
   def fetchers[Ctx](fetchers: Fetcher[Ctx, _, _]*): DeferredResolver[Ctx] =
-    new FetcherBasedDeferredResolver[Ctx](fetchers.toVector)
+    new FetcherBasedDeferredResolver[Ctx](fetchers.toVector, None)
+
+  def fetchersWithFallback[Ctx](fallback: DeferredResolver[Ctx], fetchers: Fetcher[Ctx, _, _]*): DeferredResolver[Ctx] =
+    new FetcherBasedDeferredResolver[Ctx](fetchers.toVector, Some(fallback))
 }
 
 trait Deferred[+T]

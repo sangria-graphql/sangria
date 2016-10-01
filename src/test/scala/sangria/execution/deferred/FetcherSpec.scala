@@ -26,8 +26,8 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       Category("7", "Cat 7", Vector.empty),
       Category("8", "Cat 8", Vector("4", "5", "foo!")))
 
-    def loadBulk(ids: Seq[String]): Future[Seq[Category]] =
-      Future.successful(ids.flatMap(id ⇒ categories.find(_.id == id)))
+    def loadBulk(ids: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Category]] =
+      Future(ids.flatMap(id ⇒ categories.find(_.id == id)))
   }
 
   def properFetcher(implicit ec: ExecutionContext) = {
