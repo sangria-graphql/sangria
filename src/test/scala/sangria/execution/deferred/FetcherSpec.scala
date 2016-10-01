@@ -50,28 +50,28 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("selfFut", CategoryType, resolve = c ⇒ Future(c.value)),
         Field("categoryNonOpt", CategoryType,
           arguments = Argument("id", StringType) :: Nil,
-          resolve = c ⇒ fetcher.get(c.arg[String]("id"))),
+          resolve = c ⇒ fetcher.defer(c.arg[String]("id"))),
         Field("childrenSeq", ListType(CategoryType),
-          resolve = c ⇒ fetcher.getSeq(c.value.children)),
+          resolve = c ⇒ fetcher.deferSeq(c.value.children)),
         Field("childrenSeqOpt", ListType(CategoryType),
-          resolve = c ⇒ fetcher.getSeqOpt(c.value.children)),
+          resolve = c ⇒ fetcher.deferSeqOpt(c.value.children)),
         Field("childrenFut", ListType(CategoryType),
           resolve = c ⇒ DeferredFutureValue(Future.successful(
-            fetcher.getSeq(c.value.children))))))
+            fetcher.deferSeq(c.value.children))))))
 
       val QueryType = ObjectType("Query", fields[CategoryRepo, Unit](
         Field("category", OptionType(CategoryType),
           arguments = Argument("id", StringType) :: Nil,
-          resolve = c ⇒ fetcher.getOpt(c.arg[String]("id"))),
+          resolve = c ⇒ fetcher.deferOpt(c.arg[String]("id"))),
         Field("categoryEager", OptionType(CategoryType),
           arguments = Argument("id", StringType) :: Nil,
           resolve = c ⇒ c.ctx.get(c.arg[String]("id"))),
         Field("categoryNonOpt", CategoryType,
           arguments = Argument("id", StringType) :: Nil,
-          resolve = c ⇒ fetcher.get(c.arg[String]("id"))),
-        Field("root", CategoryType, resolve = _ ⇒ fetcher.get("1")),
+          resolve = c ⇒ fetcher.defer(c.arg[String]("id"))),
+        Field("root", CategoryType, resolve = _ ⇒ fetcher.defer("1")),
         Field("rootFut", CategoryType, resolve = _ ⇒
-          DeferredFutureValue(Future.successful(fetcher.get("1"))))))
+          DeferredFutureValue(Future.successful(fetcher.defer("1"))))))
 
       Schema(QueryType)
     }
@@ -289,6 +289,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         contain(Vector("5", "6")) and
         contain(Vector("3", "4", "2")))
     }
+
+    "explicit cache should be used in consequent executions" in pending
+    "support multiple fetchers" in (pending)
   }
 
   "Fetcher" when {

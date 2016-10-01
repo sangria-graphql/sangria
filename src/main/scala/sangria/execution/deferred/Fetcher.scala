@@ -5,10 +5,10 @@ import scala.concurrent.Future
 import scala.util.Try
 
 class Fetcher[Ctx, Id, Res](val idFn: Res ⇒ Id, val fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], val maxBatchSize: Option[Int], val cache: Option[() ⇒ FetcherCache]) {
-  def get(id: Id) = FetcherDeferredOne(this, id)
-  def getOpt(id: Id) = FetcherDeferredOpt(this, id)
-  def getSeq(ids: Seq[Id]) = FetcherDeferredSeq(this, ids)
-  def getSeqOpt(ids: Seq[Id]) = FetcherDeferredSeqOpt(this, ids)
+  def defer(id: Id) = FetcherDeferredOne(this, id)
+  def deferOpt(id: Id) = FetcherDeferredOpt(this, id)
+  def deferSeq(ids: Seq[Id]) = FetcherDeferredSeq(this, ids)
+  def deferSeqOpt(ids: Seq[Id]) = FetcherDeferredSeqOpt(this, ids)
 
   def ids(deferred: Vector[Deferred[Any]]): Vector[Id] = {
     val allIds =  MutableSet[Id]()
