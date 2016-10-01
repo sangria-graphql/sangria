@@ -19,7 +19,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
     val categories = Vector(
       Category("1", "Root", Vector("2", "3", "4")),
       Category("2", "Cat 2", Vector("5", "6")),
-      Category("3", "Cat 3", Vector("7")),
+      Category("3", "Cat 3", Vector("7", "5", "6")),
       Category("4", "Cat 4", Vector.empty),
       Category("5", "Cat 5", Vector.empty),
       Category("6", "Cat 6", Vector.empty),
@@ -30,40 +30,33 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       Future.successful(ids.flatMap(id ⇒ categories.find(_.id == id)))
   }
 
-  val categoryFetcher =
-    Fetcher((repo: CategoryRepo, ids: Seq[String]) ⇒ repo.loadBulk(ids))
-
-  val categoryFetcherCaching =
-    Fetcher.caching((repo: CategoryRepo, ids: Seq[String]) ⇒ repo.loadBulk(ids))
-
   def properFetcher(implicit ec: ExecutionContext) = {
-    lazy val CategoryType: ObjectType[CategoryRepo, Category] = ObjectType("Category", () ⇒ fields(
-      Field("id", StringType, resolve = c ⇒ c.value.id),
-      Field("name", StringType, resolve = c ⇒ c.value.name),
-      Field("self", CategoryType, resolve = c ⇒ c.value),
-      Field("selfFut", CategoryType, resolve = c ⇒ Future(c.value)),
-      Field("childrenSeq", ListType(CategoryType),
-        resolve = c ⇒ categoryFetcher.getSeq(c.value.children)),
-      Field("childrenSeqOpt", ListType(CategoryType),
-        resolve = c ⇒ categoryFetcher.getSeqOpt(c.value.children)),
-      Field("childrenFut", ListType(CategoryType),
-        resolve = c ⇒ DeferredFutureValue(Future.successful(
-          categoryFetcher.getSeq(c.value.children))))))
+    def schema(fetcher: Fetcher[CategoryRepo, String, Category]) = {
+      lazy val CategoryType: ObjectType[CategoryRepo, Category] = ObjectType("Category", () ⇒ fields(
+        Field("id", StringType, resolve = c ⇒ c.value.id),
+        Field("name", StringType, resolve = c ⇒ c.value.name),
+        Field("self", CategoryType, resolve = c ⇒ c.value),
+        Field("selfFut", CategoryType, resolve = c ⇒ Future(c.value)),
+        Field("childrenSeq", ListType(CategoryType),
+          resolve = c ⇒ fetcher.getSeq(c.value.children)),
+        Field("childrenSeqOpt", ListType(CategoryType),
+          resolve = c ⇒ fetcher.getSeqOpt(c.value.children)),
+        Field("childrenFut", ListType(CategoryType),
+          resolve = c ⇒ DeferredFutureValue(Future.successful(
+            fetcher.getSeq(c.value.children))))))
 
-    val QueryType = ObjectType("Query", fields[CategoryRepo, Unit](
-      Field("category", OptionType(CategoryType),
-        arguments = Argument("id", StringType) :: Nil,
-        resolve = c ⇒ categoryFetcher.getOpt(c.arg[String]("id"))),
-      Field("root", CategoryType, resolve = _ ⇒ categoryFetcher.get("1")),
-      Field("rootFut", CategoryType, resolve = _ ⇒
-        DeferredFutureValue(Future.successful(categoryFetcher.get("1"))))))
+      val QueryType = ObjectType("Query", fields[CategoryRepo, Unit](
+        Field("category", OptionType(CategoryType),
+          arguments = Argument("id", StringType) :: Nil,
+          resolve = c ⇒ fetcher.getOpt(c.arg[String]("id"))),
+        Field("root", CategoryType, resolve = _ ⇒ fetcher.get("1")),
+        Field("rootFut", CategoryType, resolve = _ ⇒
+          DeferredFutureValue(Future.successful(fetcher.get("1"))))))
 
-    val schema = Schema(QueryType)
+      Schema(QueryType)
+    }
 
-    val resolver = DeferredResolver.fetchers(categoryFetcher)
-    val resolverCaching = DeferredResolver.fetchers(categoryFetcherCaching)
-
-    "result in a single resolution of once level" in {
+    "fetch results in batches and cache results is nesessary" in {
       val query =
         graphql"""
           {
@@ -94,9 +87,42 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
           }
         """
 
-      val res = Executor.execute(schema, query, new CategoryRepo, deferredResolver = resolver).await
+      var fetchedIds = Vector.empty[Seq[String]]
 
-      res should be (
+      val fetcher =
+        Fetcher((repo: CategoryRepo, ids: Seq[String]) ⇒ {
+          fetchedIds = fetchedIds :+ ids
+
+          repo.loadBulk(ids)
+        })
+
+      var fetchedIdsCached = Vector.empty[Seq[String]]
+
+      val fetcherCached =
+        Fetcher.caching((repo: CategoryRepo, ids: Seq[String]) ⇒ {
+          fetchedIdsCached = fetchedIdsCached :+ ids
+
+          repo.loadBulk(ids)
+        })
+
+
+      val res = Executor.execute(schema(fetcher), query, new CategoryRepo,
+        deferredResolver = DeferredResolver.fetchers(fetcher)).await
+
+      val resCached = Executor.execute(schema(fetcherCached), query, new CategoryRepo,
+        deferredResolver = DeferredResolver.fetchers(fetcherCached)).await
+
+      fetchedIds should be (Vector(
+        Vector("1", "non-existing", "8"),
+        Vector("3", "4", "5", "2", "foo!"),
+        Vector("5", "6", "7")))
+
+      fetchedIdsCached should be (Vector(
+        Vector("1", "non-existing", "8"),
+        Vector("3", "4", "5", "2", "foo!"),
+        Vector("6", "7")))
+
+      List(res, resCached) foreach (_ should be (
         Map(
           "data" → Map(
             "c1" → null,
@@ -130,11 +156,19 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
                     Map(
                       "id" → "7",
                       "name" → "Cat 7",
+                      "childrenSeq" → Vector.empty),
+                    Map(
+                      "id" → "5",
+                      "name" → "Cat 5",
+                      "childrenSeq" → Vector.empty),
+                    Map(
+                      "id" → "6",
+                      "name" → "Cat 6",
                       "childrenSeq" → Vector.empty))),
                 Map(
                   "id" → "4",
                   "name" → "Cat 4",
-                  "childrenSeq" → Vector.empty))))))
+                  "childrenSeq" → Vector.empty)))))))
     }
   }
 
