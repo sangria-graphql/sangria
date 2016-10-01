@@ -4,11 +4,16 @@ version := "0.7.4-SNAPSHOT"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
-licenses := Seq("Apache License, ASL Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+licenses := Seq("Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 scalaVersion := "2.11.8"
 
-scalacOptions ++= Seq("-deprecation", "-feature", "-Xlint", "-Xlint:-missing-interpolator")
+scalacOptions ++= Seq(
+  "-target:jvm-1.7",
+  "-deprecation",
+  "-feature",
+  "-Xlint",
+  "-Xlint:-missing-interpolator")
 
 libraryDependencies ++= Seq(
   // macros
@@ -37,7 +42,7 @@ git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 
 publishMavenStyle := true
 publishArtifact in Test := false
-pomIncludeRepository := (_ => false)
+pomIncludeRepository := (_ ⇒ false)
 publishTo := Some(
   if (version.value.trim.endsWith("SNAPSHOT"))
     "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
@@ -52,7 +57,7 @@ ghpages.settings
 
 // nice *magenta* prompt!
 
-shellPrompt in ThisBuild := { state =>
+shellPrompt in ThisBuild := { state ⇒
   scala.Console.MAGENTA + Project.extract(state).currentRef.project + "> " + scala.Console.RESET
 }
 
