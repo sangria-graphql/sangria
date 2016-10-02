@@ -616,7 +616,8 @@ class Resolver[Ctx](
               sourceMapper,
               deprecationTracker,
               astFields,
-              path)
+              path,
+              deferredResolverState)
 
             if (allFields.exists(_.deprecationReason.isDefined))
               deprecationTracker.deprecatedFieldUsed(ctx)

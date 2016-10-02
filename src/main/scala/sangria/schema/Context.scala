@@ -222,7 +222,8 @@ case class Context[Ctx, Val](
   sourceMapper: Option[SourceMapper],
   deprecationTracker: DeprecationTracker,
   astFields: Vector[ast.Field],
-  path: ExecutionPath) extends WithArguments with WithInputTypeRendering[Ctx]
+  path: ExecutionPath,
+  deferredResolverState: Any) extends WithArguments with WithInputTypeRendering[Ctx]
 
 case class Args(raw: Map[String, Any]) extends AnyVal {
   def arg[T](arg: Argument[T]): T = raw.get(arg.name).fold(None.asInstanceOf[T])(_.asInstanceOf[T])

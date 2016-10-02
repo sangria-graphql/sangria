@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.execution.{DeferredWithInfo, Executor, HandledException}
+import sangria.execution.Executor
 import sangria.macros._
 import sangria.schema._
 import sangria.util.{DebugUtil, FutureResultSupport, Pos}
@@ -24,6 +24,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
   object Product {
     implicit val hasId = HasId[Product, String](_.id)
   }
+
+  val prodCat = Relation[Product, String]("product-category", _.inCategories)
+  val catProd = Relation[Category, String]("category-product", _.products)
 
   class Repo {
     private val categories = Vector(
@@ -51,6 +54,12 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
     def loadProducts(ids: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Product]] =
       Future(ids.flatMap(id ⇒ products.find(_.id == id)))
 
+    def loadProductsByCategory(categoryIds: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Product]] =
+      Future(products.filter(p ⇒ categoryIds.exists(p.inCategories contains _)))
+
+    def loadCategoriesByProduct(productIds: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Category]] =
+      Future(categories.filter(c ⇒ productIds.exists(c.products contains _)))
+
     def getCategory(id: String)(implicit ec: ExecutionContext) =
       Future(categories.find(_.id == id))
 
@@ -59,16 +68,28 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
   }
 
   def properFetcher(implicit ec: ExecutionContext) = {
-    val defaultProdFetcher =
-      Fetcher((repo: Repo, ids: Seq[String]) ⇒ repo.loadProducts(ids))
+    val defaultCatFetcher = Fetcher.relCaching[Repo, Category, String](
+      (repo, ids) ⇒ repo.loadCategories(ids),
+      (repo, ids) ⇒ repo.loadCategoriesByProduct(ids(catProd)))
 
+    val defaultProdFetcher = Fetcher.relCaching[Repo, Product, String](
+      (repo, ids) ⇒ repo.loadProducts(ids),
+      (repo, ids) ⇒ repo.loadProductsByCategory(ids(prodCat)))
 
-    def schema(fetcherCat: Fetcher[Repo, String, Category], fetcherProd: Fetcher[Repo, String, Product] = defaultProdFetcher) = {
+    val defaultResolver = DeferredResolver.fetchers(defaultProdFetcher, defaultCatFetcher)
+
+    def schema(fetcherCat: Fetcher[Repo, Category, String] = defaultCatFetcher, fetcherProd: Fetcher[Repo, Product, String] = defaultProdFetcher) = {
       lazy val ProductType: ObjectType[Repo, Product] = ObjectType("Product", () ⇒ fields(
         Field("id", StringType, resolve = c ⇒ c.value.id),
         Field("name", StringType, resolve = c ⇒ c.value.name),
         Field("categories", ListType(CategoryType),
-          resolve = c ⇒ fetcherCat.deferSeqOpt(c.value.inCategories))))
+          resolve = c ⇒ fetcherCat.deferSeqOpt(c.value.inCategories)),
+        Field("categoryRel", CategoryType,
+          resolve = c ⇒ fetcherCat.deferRel(catProd, c.value.id)),
+        Field("categoryRelOpt", OptionType(CategoryType),
+          resolve = c ⇒ fetcherCat.deferRelOpt(catProd, c.value.id)),
+        Field("categoryRelSeq", ListType(CategoryType),
+          resolve = c ⇒ fetcherCat.deferRelSeq(catProd, c.value.id))))
 
       lazy val CategoryType: ObjectType[Repo, Category] = ObjectType("Category", () ⇒ fields(
         Field("id", StringType, resolve = c ⇒ c.value.id),
@@ -79,6 +100,12 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("selfFut", CategoryType, resolve = c ⇒ Future(c.value)),
         Field("products", ListType(ProductType),
           resolve = c ⇒ fetcherProd.deferSeqOpt(c.value.products)),
+        Field("productRel", ProductType,
+          resolve = c ⇒ fetcherProd.deferRel(prodCat, c.value.id)),
+        Field("productRelOpt", OptionType(ProductType),
+          resolve = c ⇒ fetcherProd.deferRelOpt(prodCat, c.value.id)),
+        Field("productRelSeq", ListType(ProductType),
+          resolve = c ⇒ fetcherProd.deferRelSeq(prodCat, c.value.id)),
         Field("categoryNonOpt", CategoryType,
           arguments = Argument("id", StringType) :: Nil,
           resolve = c ⇒ fetcherCat.defer(c.arg[String]("id"))),
@@ -100,6 +127,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("categoryNonOpt", CategoryType,
           arguments = Argument("id", StringType) :: Nil,
           resolve = c ⇒ fetcherCat.defer(c.arg[String]("id"))),
+        Field("products", ListType(ProductType),
+          arguments = Argument("categoryIds", ListInputType(StringType)) :: Nil,
+          resolve = c ⇒ fetcherProd.deferRelSeqMany(prodCat, c.arg[Seq[String]]("categoryIds"))),
         Field("root", CategoryType, resolve = _ ⇒ fetcherCat.defer("1")),
         Field("rootFut", CategoryType, resolve = _ ⇒
           DeferredFutureValue(Future.successful(fetcherCat.defer("1"))))))
@@ -326,8 +356,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       val cache = FetcherCache.simple
 
       (1 to 3) foreach { _ ⇒
-        val fetcher =
-          Fetcher.caching(cache, (repo: Repo, ids: Seq[String]) ⇒ {
+        val fetcher = Fetcher.caching(
+          config = FetcherConfig.caching(cache),
+          fetch = (repo: Repo, ids: Seq[String]) ⇒ {
             fetchedIds = fetchedIds :+ ids
 
             repo.loadCategories(ids)
@@ -542,6 +573,139 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Vector("3", "1", "2"),
         Vector("3", "4", "1", "5", "2", "6")))
     }
+
+    "support a single relation" in check(schema(), (),
+      """
+        {
+          category(id: "4") {
+            productRel {
+              name
+
+              categoryRel {
+                name
+              }
+            }
+          }
+        }
+      """,
+      Map(
+        "data" → Map(
+          "category" → Map(
+            "productRel" → Map(
+              "name" → "Rusty sword",
+              "categoryRel" → Map(
+                "name" → "Cat 4"))))),
+      resolver = defaultResolver,
+      userContext = new Repo)
+
+    "single relation should produce an error if value is not resolved" in checkContainsErrors(schema(), (),
+      """
+        {
+          category(id: "1") {
+            productRel {
+              name
+            }
+          }
+        }
+      """,
+      Map("category" → null),
+      List("Fetcher has not resolved non-optional relation ID '1' for relation 'SimpleRelation(product-category)'." → List(Pos(4, 13))),
+      resolver = defaultResolver,
+      userContext = new Repo)
+
+    "support a optional and list relations" in check(schema(), (),
+      """
+        {
+          c1: category(id: "1") {
+            productRelOpt {
+              name
+            }
+
+            productRelSeq {
+              name
+            }
+          }
+
+          c2: category(id: "4") {
+            productRelOpt {
+              name
+
+              categoryRelOpt {
+                name
+              }
+            }
+
+            productRelSeq {
+              name
+
+              categoryRelSeq {
+                name
+              }
+            }
+          }
+        }
+      """,
+      Map(
+        "data" → Map(
+          "c1" → Map(
+            "productRelOpt" → null,
+            "productRelSeq" → Vector.empty),
+          "c2" → Map(
+            "productRelOpt" → Map(
+              "name" → "Rusty sword",
+              "categoryRelOpt" → Map(
+                "name" → "Cat 4")),
+            "productRelSeq" → Vector(
+              Map(
+                "name" → "Rusty sword",
+                "categoryRelSeq" → Vector(
+                  Map("name" → "Cat 4"),
+                  Map("name" → "Cat 6"))),
+              Map(
+                "name" → "Magic belt",
+                "categoryRelSeq" → Vector(
+                  Map("name" → "Cat 4"),
+                  Map("name" → "Cat 5"),
+                  Map("name" → "Cat 7"))),
+              Map(
+                "name" → "Health potion",
+                "categoryRelSeq" → Vector(
+                  Map("name" → "Cat 4"),
+                  Map("name" → "Cat 7"))))))),
+      resolver = defaultResolver,
+      userContext = new Repo)
+
+    "support multiple relations" in check(schema(), (),
+      """
+        {
+          products(categoryIds: ["1", "2", "5", "6", "4"]) {
+            id, name
+          }
+        }
+      """,
+      Map(
+        "data" → Map(
+          "products" → Vector(
+            Map(
+              "id" → "2",
+              "name" → "Magic belt"),
+            Map(
+              "id" → "4",
+              "name" → "Unidentified potion"),
+            Map(
+              "id" → "1",
+              "name" → "Rusty sword"),
+            Map(
+              "id" → "5",
+              "name" → "Common boots"),
+            Map(
+              "id" → "6",
+              "name" → "Golden ring"),
+            Map(
+              "id" → "3",
+              "name" → "Health potion")))),
+      resolver = defaultResolver,
+      userContext = new Repo)
   }
 
   "Fetcher" when {
