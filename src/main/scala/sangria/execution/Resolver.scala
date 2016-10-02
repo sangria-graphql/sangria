@@ -570,9 +570,9 @@ class Resolver[Ctx](
     while (resIt.hasNext && !canceled) {
       val res = resIt.next()
 
-      if (!optional && res.value.isEmpty && res.errors.errorList.isEmpty)
+      if (!optional && res.value.isEmpty && res.errors.isEmpty)
         errorReg = errorReg.add(path, nullForNotNullTypeError(astPosition))
-      else if (res.errors.errorList.nonEmpty)
+      else if (res.errors.nonEmpty)
         errorReg = errorReg.add(res.errors)
 
       res.nodeValue match {
@@ -813,7 +813,7 @@ class Resolver[Ctx](
     def addToMap(other: Result, key: String, optional: Boolean, path: ExecutionPath, position: Option[Position]) =
       copy(
         errors =
-            if (!optional && other.value.isEmpty && other.errors.errorList.isEmpty)
+            if (!optional && other.value.isEmpty && other.errors.isEmpty)
               errors.add(other.errors).add(path, nullForNotNullTypeError(position))
             else
               errors.add(other.errors),

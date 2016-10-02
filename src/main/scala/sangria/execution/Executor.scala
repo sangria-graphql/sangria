@@ -339,9 +339,14 @@ object Executor {
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
     queryReducers: List[QueryReducer[Ctx, _]] = Nil
-  )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): Future[marshaller.Node] =
-    Executor(schema, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth, queryReducers)
+  )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input], scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
+    val res = Executor(schema, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth, queryReducers)
       .execute(queryAst, userContext, root, operationName, variables)
+
+    scheme match {
+      case ExecutionScheme.Default ⇒ res.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+    }
+  }
 
   def prepare[Ctx, Root, Input](
     schema: Schema[Ctx, Root],
