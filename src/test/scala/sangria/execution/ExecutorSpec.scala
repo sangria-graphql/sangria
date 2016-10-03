@@ -712,8 +712,8 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         contain(Map("message" → "error 4", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))))
     }
 
-    "support full result" in {
-      import ExecutionScheme.FullResult
+    "support extended result" in {
+      import ExecutionScheme.Extended
 
       case class MyCtx(complexity: Double)
 

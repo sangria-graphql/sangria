@@ -1,12 +1,14 @@
 package sangria.schema
 
+import language.{existentials, implicitConversions, higherKinds}
+
 import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper
 
-import language.{existentials, implicitConversions}
 import sangria.ast
 import sangria.execution.deferred.Deferred
+import sangria.streaming.SubscriptionStream
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
@@ -95,6 +97,11 @@ class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val ne
 
 object UpdateCtx {
   def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val ⇒ Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
+}
+
+private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](source: Val, stream: SubscriptionStream[S]) extends LeafAction[Ctx, Val] {
+  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): SubscriptionValue[Ctx, NewVal, S] =
+    throw new IllegalStateException("`map` is not supported subscription actions. Action is only intended for internal use.")
 }
 
 case class ProjectionName(name: String) extends FieldTag

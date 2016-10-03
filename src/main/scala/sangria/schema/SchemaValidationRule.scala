@@ -1,8 +1,11 @@
 package sangria.schema
 
-import sangria.execution.ValueCoercionHelper
+import language.higherKinds
+
+import sangria.execution.{FieldTag, SubscriptionField, ValueCoercionHelper}
 import sangria.marshalling.{CoercedScalaResultMarshaller, ToInput}
 import sangria.renderer.SchemaRenderer
+import sangria.streaming.SubscriptionStream
 import sangria.validation._
 
 trait SchemaValidationRule {
@@ -11,7 +14,11 @@ trait SchemaValidationRule {
 
 object SchemaValidationRule {
   val empty: List[SchemaValidationRule] = Nil
-  val default: List[SchemaValidationRule] = new DefaultValuesValidationRule :: new InterfaceImplementationValidationRule :: Nil
+  val default: List[SchemaValidationRule] = List(
+    new DefaultValuesValidationRule,
+    new InterfaceImplementationValidationRule,
+    new SubscriptionFieldsValidationRule)
+
 }
 
 class DefaultValuesValidationRule extends SchemaValidationRule {
@@ -111,6 +118,48 @@ class InterfaceImplementationValidationRule extends SchemaValidationRule {
           case _ ⇒ Nil
         }
     }
+}
+
+class SubscriptionFieldsValidationRule extends SchemaValidationRule {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+    val subsName = schema.subscription.map(_.name)
+
+    def subscriptionTag(tag: FieldTag) = tag match {
+      case SubscriptionField(_) ⇒ true
+      case _ ⇒ false
+    }
+
+    val otherViolations = schema.typeList.flatMap {
+      case obj: ObjectLikeType[_, _] if subsName.isDefined && subsName.get != obj.name ⇒
+        obj.uniqueFields.filter(_.tags exists subscriptionTag).map(f ⇒
+          InvalidSubscriptionFieldViolation(obj.name, f.name))
+
+      case _ ⇒ Nil
+    }
+
+    val subsViolations = schema.subscription.fold(List.empty[Violation]) { subsType ⇒
+      val fields = subsType.uniqueFields
+      val nonSubscription = fields.filter(f ⇒ !f.tags.exists(subscriptionTag))
+
+      if (nonSubscription.size == fields.size) {
+        Nil
+      } else if (nonSubscription.isEmpty) {
+        if (fields.isEmpty) Nil
+        else {
+          val first = fields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s}.get
+
+          val differentFields = fields.tail.filter(f ⇒ f.tags.collectFirst{case SubscriptionField(s) if !first.supported(s.asInstanceOf[SubscriptionStream[({type T[X]})#T]]) ⇒ s}.nonEmpty)
+
+          if (differentFields.nonEmpty)
+            List(NotAllSubscriptionFieldsHaveSameStreamViolation(subsType.name, differentFields.map(_.name)))
+          else Nil
+        }
+      } else
+        List(NotAllSubscriptionFieldsViolation(subsType.name, nonSubscription.map(_.name)))
+    }
+
+    subsViolations ++ otherViolations
+  }
 }
 
 case class SchemaValidationException(violations: List[Violation]) extends IllegalArgumentException {

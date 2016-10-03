@@ -170,8 +170,17 @@ case class Executor[Ctx, Root](
         val result =
           operation.operationType match {
             case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-            case ast.OperationType.Subscription ⇒ resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
             case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+            case ast.OperationType.Subscription ⇒
+              tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s} match {
+                case Some(stream) ⇒
+                  // Streaming is supported - resolve as a real subscription
+                  resolver.resolveFieldsSubs(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+                case None ⇒
+                  // No streaming is supported - resolve as a normal "query" operation
+                  resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+              }
+
           }
 
         if (middlewareVal.nonEmpty)

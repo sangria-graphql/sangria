@@ -1,5 +1,8 @@
 package sangria.execution.deferred
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound(msg = "Can't find suitable `HasId` type-class instance for type `${T}`. If you have defined it already, please consider defining an implicit instance `HasId[${T}]`.")
 trait HasId[T, Id] {
   def id(value: T): Id
 }

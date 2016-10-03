@@ -33,7 +33,11 @@ libraryDependencies ++= Seq(
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.2" % "test",
-  "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
+  "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test",
+
+  // TODO: Extract in a separate lib!
+  // (introduce something like `sangria-streaming-api`)
+  "com.typesafe.akka" %% "akka-stream" % "2.4.11"
 )
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
