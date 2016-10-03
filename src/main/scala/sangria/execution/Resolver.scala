@@ -27,35 +27,48 @@ class Resolver[Ctx](
     deprecationTracker: DeprecationTracker,
     middleware: List[(Any, Middleware[_])],
     maxQueryDepth: Option[Int],
-    deferredResolverState: Any)(implicit executionContext: ExecutionContext) {
-
+    deferredResolverState: Any
+)(implicit executionContext: ExecutionContext) {
   val resultResolver = new ResultResolver(marshaller, exceptionHandler)
 
   import resultResolver._
   import Resolver._
 
-  def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields): Future[marshaller.Node] = {
+  def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val actions = collectActionsPar(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, userContext)
 
-    processFinalResolve(resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered))
+    handleScheme(processFinalResolve(resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)), scheme)
   }
 
-  def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields): Future[marshaller.Node] = {
+  def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val actions = resolveSeq(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty)
 
-    actions flatMap processFinalResolve
+    handleScheme(actions flatMap processFinalResolve, scheme)
+  }
+
+  def handleScheme(result: Future[(Vector[RegisteredError], marshaller.Node)], scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = scheme match {
+    case ExecutionScheme.Default ⇒
+      result.map{case (_, res) ⇒ res}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+
+    case ExecutionScheme.FullResult ⇒
+      result.map{case (errors, res) ⇒ ExecutionResult(userContext, res, errors, middleware)}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+
+    case s ⇒
+      throw new IllegalStateException(s"Unsupported execution scheme: $s")
   }
 
   def processFinalResolve(resolve: Resolve) = resolve match {
     case Result(errors, data, _) ⇒
       Future.successful(
-        marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]],
-          marshalErrors(errors)).asInstanceOf[marshaller.Node])
+        errors.originalErrors →
+          marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]],
+            marshalErrors(errors)).asInstanceOf[marshaller.Node])
 
     case dr: DeferredResult ⇒
       immediatelyResolveDeferred(userContext, dr, _ map { case (Result(errors, data, _)) ⇒
-        marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]],
-          marshalErrors(errors)).asInstanceOf[marshaller.Node]
+        errors.originalErrors →
+          marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]],
+            marshalErrors(errors)).asInstanceOf[marshaller.Node]
       })
   }
 

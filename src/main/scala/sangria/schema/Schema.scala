@@ -302,7 +302,6 @@ object ValidOutType extends LowPrioValidOutType {
   implicit def validSubclass[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Out]]
   implicit def validNothing[Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
   implicit def validOption[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Option[Out]]]
-
 }
 
 trait LowPrioValidOutType {
