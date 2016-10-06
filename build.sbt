@@ -37,7 +37,10 @@ libraryDependencies ++= Seq(
 
   // TODO: Extract in a separate lib!
   // (introduce something like `sangria-streaming-api`)
-  "com.typesafe.akka" %% "akka-stream" % "2.4.11"
+  "com.typesafe.akka" %% "akka-stream" % "2.4.11",
+  "io.reactivex" %% "rxscala" % "0.26.2",
+  "io.monix" %% "monix-execution" % "2.0.3",
+  "io.monix" %% "monix-reactive" % "2.0.3"
 )
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
