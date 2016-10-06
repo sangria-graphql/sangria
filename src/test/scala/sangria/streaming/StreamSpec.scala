@@ -1,8 +1,8 @@
 package sangria.streaming
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.execution.Executor
-import sangria.util.FutureResultSupport
+import sangria.execution.{Executor, HandledException}
+import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.schema._
 import sangria.macros._
 
@@ -128,6 +128,54 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         contain("""{"data": {"letters": "b"}}""".parseJson) and
         contain("""{"data": {"numbers": 1}}""".parseJson) and
         contain("""{"data": {"numbers": 2}}""".parseJson))
+    }
+
+    "recover stream errors" in {
+      import _root_.monix.execution.Scheduler.Implicits.global
+      import _root_.monix.reactive.Observable
+
+      import sangria.marshalling.sprayJson._
+      import spray.json._
+
+      import sangria.streaming.monix._
+
+      val QueryType = ObjectType("QueryType", fields[Unit, Unit](
+        Field("hello", StringType, resolve = _ ⇒ "world")
+      ))
+
+      val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
+        Field.subs("letters", OptionType(StringType), resolve = _ ⇒
+          Observable("a", "b", "c", "d", "e").map { l ⇒
+            if (l == "c") throw new IllegalStateException("foo")
+            else l
+          }.map(action(_))),
+
+        Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
+          Observable(1, 2, 3, 4).map(action(_)))
+      ))
+
+      val schema = Schema(QueryType, subscription = Some(SubscriptionType))
+
+      import sangria.execution.ExecutionScheme.Stream
+
+      val exceptionHandler: Executor.ExceptionHandler = {
+        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+      }
+
+      val stream: Observable[JsValue] =
+        Executor.execute(schema, graphql"subscription { letters numbers }", exceptionHandler = exceptionHandler)
+
+      val result = stream.toListL.runAsync.await
+
+      result should (
+        have(size(7)) and
+        contain("""{"data": {"letters": "a"}}""".parseJson) and
+        contain("""{"data": {"letters": "b"}}""".parseJson) and
+        contain("""{"data": {"letters": null}, "errors": [{"message": "foo", "path":["letters"]}]}""".parseJson) and
+        contain("""{"data": {"numbers": 1}}""".parseJson) and
+        contain("""{"data": {"numbers": 2}}""".parseJson) and
+        contain("""{"data": {"numbers": 3}}""".parseJson) and
+        contain("""{"data": {"numbers": 4}}""".parseJson))
     }
   }
 

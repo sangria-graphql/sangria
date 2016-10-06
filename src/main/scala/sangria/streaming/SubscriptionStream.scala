@@ -18,5 +18,6 @@ trait SubscriptionStream[StreamSource[_]] {
   def mapFuture[A, B](source: StreamSource[A])(fn: A ⇒ Future[B]): StreamSource[B]
   def map[A, B](source: StreamSource[A])(fn: A ⇒ B): StreamSource[B]
   def merge[T](streams: Vector[StreamSource[T]]): StreamSource[T]
+  def recover[T](stream: StreamSource[T])(fn: Throwable ⇒ T): StreamSource[T]
 }
 

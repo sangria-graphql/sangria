@@ -42,6 +42,9 @@ object akkaStreams {
       else
         throw new IllegalStateException("No streams produced!")
     }
+
+    def recover[T](stream: AkkaSource[T])(fn: Throwable ⇒ T) =
+      stream recover {case e ⇒ fn(e)}
   }
 
   type AkkaSource[+T] = Source[T, NotUsed]

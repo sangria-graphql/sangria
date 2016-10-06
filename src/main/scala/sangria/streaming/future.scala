@@ -30,6 +30,9 @@ object future {
       future flatMap resultFn
 
     def merge[T](streams: Vector[Future[T]]) = Future.firstCompletedOf(streams)
+
+    def recover[T](stream: Future[T])(fn: Throwable ⇒ T) =
+      stream recover {case e ⇒ fn(e)}
   }
 
   implicit def futureSubscriptionStream(implicit ec: ExecutionContext) = new FutureSubscriptionStream

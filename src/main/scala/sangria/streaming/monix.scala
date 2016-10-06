@@ -37,6 +37,9 @@ object monix {
         Observable.merge(streams: _*)
       else
         throw new IllegalStateException("No streams produced!")
+
+    def recover[T](stream: Observable[T])(fn: Throwable ⇒ T) =
+      stream onErrorRecover {case e ⇒ fn(e)}
   }
 
   implicit def observableSubscriptionStream(implicit scheduler: Scheduler): SubscriptionStream[Observable] =

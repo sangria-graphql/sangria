@@ -49,6 +49,9 @@ object rxscala {
         streams.head
       else
         throw new IllegalStateException("No streams produced!")
+
+    def recover[T](stream: Observable[T])(fn: Throwable ⇒ T) =
+      stream onErrorReturn (e ⇒ fn(e))
   }
 
   implicit def observableSubscriptionStream(implicit ec: ExecutionContext): SubscriptionStream[Observable] =

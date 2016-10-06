@@ -127,6 +127,8 @@ class Resolver[Ctx](
       requestedStream: Option[SubscriptionStream[S]]): (SubscriptionStream[S], S[(Vector[RegisteredError], marshaller.Node)]) = {
     val stream = requestedStream.fold(tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s}.get.asInstanceOf[SubscriptionStream[S]])(s ⇒ s)
 
+    // TODO: validate that all stream sources are of the same kind (compatible)
+
     def marshallResult(result: Result): Any =
       stream.single(result)
 
@@ -149,7 +151,7 @@ class Resolver[Ctx](
           case ErrorFieldResolution(updatedErrors) ⇒ Some(marshallResult(Result(updatedErrors, None)))
           case StreamFieldResolution(updatedErrors, svalue, standardFn) ⇒
             val s = svalue.stream.mapFuture[Any, Result](svalue.source) { action ⇒
-              val res = Result(errorReg, Some(marshaller.emptyMapNode(Seq(origField.outputName))))
+              val res = Result(updatedErrors, Some(marshaller.emptyMapNode(Seq(origField.outputName))))
               val resMap = res.value.get
               val standardAction = standardFn(action)
 
@@ -157,9 +159,15 @@ class Resolver[Ctx](
                 .map(_._1)
             }
 
-            // TODO: recover stream!
+            val recovered = svalue.stream.recover(s) { e ⇒
+              val resMap = marshaller.emptyMapNode(Seq(origField.outputName))
 
-            Some(s)
+              Result(updatedErrors.add(path + name, e),
+                if (isOptional(tpe, origField.name)) Some(marshaller.addMapNodeElem(resMap, origField.outputName, marshaller.nullNode, optional = true))
+                else None)
+            }
+
+            Some(recovered)
         }
     }
 
