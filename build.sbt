@@ -25,23 +25,24 @@ libraryDependencies ++= Seq(
   // marshalling
   "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.1",
 
+  // streaming
+  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.0-SNAPSHOT",
+
   // testing
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.1" % "test",
   "org.sangria-graphql" %% "sangria-spray-json" % "0.3.1" % "test",
   "org.sangria-graphql" %% "sangria-ion" % "0.1.0" % "test",
+  "org.sangria-graphql" %% "sangria-monix" % "0.1.0-SNAPSHOT" % "test",
+  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0-SNAPSHOT" % "test",
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.2" % "test",
-  "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test",
-
-  // TODO: Extract in a separate lib!
-  // (introduce something like `sangria-streaming-api`)
-  "com.typesafe.akka" %% "akka-stream" % "2.4.11",
-  "io.reactivex" %% "rxscala" % "0.26.2",
-  "io.monix" %% "monix-execution" % "2.0.3",
-  "io.monix" %% "monix-reactive" % "2.0.3"
+  "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
 )
+
+// TODO: remove during release
+resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 
