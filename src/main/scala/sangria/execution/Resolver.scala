@@ -125,9 +125,11 @@ class Resolver[Ctx](
       fields: CollectedFields,
       errorReg: ErrorRegistry,
       requestedStream: Option[SubscriptionStream[S]]): (SubscriptionStream[S], S[(Vector[RegisteredError], marshaller.Node)]) = {
-    val stream = requestedStream.fold(tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s}.get.asInstanceOf[SubscriptionStream[S]])(s ⇒ s)
-
-    // TODO: validate that all stream sources are of the same kind (compatible)
+    val firstStream = tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s}.get.asInstanceOf[SubscriptionStream[S]]
+    val stream = requestedStream.fold(firstStream) { s ⇒
+      if (s.supported(firstStream)) s
+      else throw new IllegalStateException("Subscription type field stream implementation is incompatible with requested stream implementation")
+    }
 
     def marshallResult(result: Result): Any =
       stream.single(result)
