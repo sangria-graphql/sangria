@@ -115,6 +115,8 @@ object FetcherConfig {
 
   def caching = empty.caching
   def caching(cache: FetcherCache) = empty.caching(cache)
+
+  def maxBatchSize(size: Int) = empty.maxBatchSize(size)
 }
 
 trait DeferredOne[+T, Id] extends Deferred[T] {
