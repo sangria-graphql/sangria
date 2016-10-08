@@ -307,16 +307,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         }
       }
 
-      var fetchedIds = Vector.empty[Seq[String]]
-
-      val fetcher =
-        Fetcher((repo: Repo, ids: Seq[String]) ⇒ {
-          fetchedIds = fetchedIds :+ ids
-
-          repo.loadCategories(ids)
-        })
-
-      check(schema(fetcher), (),
+      check(schema(), (),
         """
           {
             c1: category(id: "1") {name childrenSeq {id}}
@@ -341,14 +332,8 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
               "childrenSeq" → Vector(
                 Map("name" → "Cat 5"),
                 Map("name" → "Cat 6"))))),
-        resolver = DeferredResolver.fetchersWithFallback(new MyDeferredResolver, fetcher),
+        resolver = DeferredResolver.fetchersWithFallback(new MyDeferredResolver, defaultCatFetcher, defaultProdFetcher),
         userContext = new Repo)
-
-      fetchedIds should (
-        have(size(3)) and
-        contain(Vector("1")) and
-        contain(Vector("5", "6")) and
-        contain(Vector("3", "4", "2")))
     }
 
     "explicit cache should be used in consequent executions" in {

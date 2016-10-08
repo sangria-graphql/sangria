@@ -6,7 +6,7 @@ import sangria.validation.{Violation, AstNodeLocation}
 
 class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executor.ExceptionHandler) {
   def marshalErrors(errors: ErrorRegistry) =
-    if (errors.errorList.isEmpty) None else Some(marshaller.arrayNode(errors.errorList))
+    if (errors.isEmpty) None else Some(marshaller.arrayNode(errors.errorList))
 
   def marshalResult(data: Option[marshaller.Node], errors: Option[marshaller.Node]) = {
     val empty = marshaller.emptyMapNode(if (errors.isDefined) Vector("data", "errors") else Vector("data"))
@@ -44,23 +44,27 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
       Seq("message" → marshaller.scalarNode("Internal server error", "String", Set.empty))
   }
 
-  case class ErrorRegistry(errorList: Vector[marshaller.Node]) {
-    def add(path: ExecutionPath, error: String) =
-      copy(errorList:+ errorNode(path, None, Seq("message" → marshaller.scalarNode(error, "String", Set.empty))))
+  case class ErrorRegistry(errorList: Vector[marshaller.Node], originalErrors: Vector[RegisteredError]) {
+    def nonEmpty = errorList.nonEmpty
+    def isEmpty = errorList.isEmpty
 
     def add(path: ExecutionPath, error: Throwable) =
-      copy(errorList ++ createErrorPaths(path, error))
+      copy(errorList ++ createErrorPaths(path, error), originalErrors :+ RegisteredError(path, error, None))
 
     def append(path: ExecutionPath, errors: Vector[Throwable], position: Option[Position]) =
-      copy(errors.map(e ⇒ errorNode(path, position map singleLocation, handleException(e))) ++ errorList)
+      copy(
+        errors.map(e ⇒ errorNode(path, position map singleLocation, handleException(e))) ++ errorList,
+        errors.map(e ⇒ RegisteredError(path, e, position)) ++ originalErrors)
 
     def add(path: ExecutionPath, error: Throwable, position: Option[Position]) =
-      copy(errorList :+ errorNode(path, position map singleLocation, handleException(error)))
+      copy(
+        errorList :+ errorNode(path, position map singleLocation, handleException(error)),
+        originalErrors :+ RegisteredError(path, error, position))
 
     def add(other: ErrorRegistry) =
-      ErrorRegistry(errorList ++ other.errorList)
+      ErrorRegistry(errorList ++ other.errorList, originalErrors ++ other.originalErrors)
 
-    def createErrorPaths(path: ExecutionPath, e: Throwable) = e match {
+    private def createErrorPaths(path: ExecutionPath, e: Throwable) = e match {
       case e: WithViolations if e.violations.nonEmpty ⇒
         e.violations map { v ⇒
           errorNode(path, getLocations(v), Seq("message" → marshaller.scalarNode(v.errorMessage, "String", Set.empty)))
@@ -69,32 +73,32 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
         Vector(errorNode(path, getLocations(other), handleException(other)))
     }
 
-    def getLocations(violation: Violation) = violation match {
+    private def getLocations(violation: Violation) = violation match {
       case v: AstNodeLocation if v.positions.nonEmpty ⇒
         Some(marshallPositions(v.positions))
       case v ⇒
         None
     }
 
-    def getLocations(error: Throwable) =
+    private def getLocations(error: Throwable) =
       error match {
         case error: AstNodeLocation if error.positions.nonEmpty ⇒ Some(marshallPositions(error.positions))
         case _ ⇒ None
       }
 
-    def marshallPositions(px: List[Position]) =
+    private def marshallPositions(px: List[Position]) =
       marshaller.mapAndMarshal(px, createLocation)
 
 
-    def createLocation(pos: Position) = marshaller.mapNode(Seq(
+    private def createLocation(pos: Position) = marshaller.mapNode(Seq(
       "line" → marshaller.scalarNode(pos.line, "Int", Set.empty),
       "column" → marshaller.scalarNode(pos.column, "Int", Set.empty)))
 
-    def singleLocation(pos: Position) = marshaller.arrayNode(Vector(createLocation(pos)))
+    private def singleLocation(pos: Position) = marshaller.arrayNode(Vector(createLocation(pos)))
   }
 
   object ErrorRegistry {
-    val empty = ErrorRegistry(Vector.empty)
+    val empty = ErrorRegistry(Vector.empty, Vector.empty)
 
     def apply(path: ExecutionPath, error: Throwable): ErrorRegistry = empty.add(path, error)
     def apply(path: ExecutionPath, error: Throwable, pos: Option[Position]): ErrorRegistry = empty.add(path, error, pos)
@@ -122,3 +126,5 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
     }
   }
 }
+
+case class RegisteredError(path: ExecutionPath, error: Throwable, position: Option[Position])

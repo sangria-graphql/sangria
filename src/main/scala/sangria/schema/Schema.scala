@@ -1,18 +1,17 @@
 package sangria.schema
 
-import sangria.execution.FieldTag
-import sangria.marshalling.FromInput.{InputObjectResult, CoercedScalaResult}
+import language.{existentials, higherKinds, implicitConversions}
+import sangria.execution.{FieldTag, SubscriptionField}
+import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.marshalling._
-
-import language.{implicitConversions, existentials}
-
-import sangria.{introspection, ast}
-import sangria.validation.{ConflictingTypeDefinitionViolation, EnumValueCoercionViolation, EnumCoercionViolation, Violation}
+import sangria.{ast, introspection}
+import sangria.validation.{ConflictingTypeDefinitionViolation, EnumCoercionViolation, EnumValueCoercionViolation, Violation}
 import sangria.introspection._
+import sangria.streaming.SubscriptionStreamLike
+import sangria.streaming.SubscriptionStreamLike
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
-
 import sangria.util.tag._
 
 sealed trait Type
@@ -293,6 +292,31 @@ object Field {
       complexity: Option[(Ctx, Args, Double) ⇒ Double] = None,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
     Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, complexity, () ⇒ possibleTypes map (_.objectType))
+
+  def subs[Ctx, Val, StreamSource, Res, Out](
+    name: String,
+    fieldType: OutputType[Out],
+    description: Option[String] = None,
+    arguments: List[Argument[_]] = Nil,
+    resolve: Context[Ctx, Val] ⇒ StreamSource,
+    possibleTypes: ⇒ List[PossibleObject[_, _]] = Nil,
+    tags: List[FieldTag] = Nil,
+    complexity: Option[(Ctx, Args, Double) ⇒ Double] = None,
+    deprecationReason: Option[String] = None
+  )(implicit stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out]) = {
+    val s = stream.subscriptionStream
+
+    Field[Ctx, Val](
+      Named.checkName(name),
+      fieldType,
+      description,
+      arguments,
+      ctx ⇒ SubscriptionValue[Ctx, StreamSource, stream.StreamSource](resolve(ctx), s),
+      deprecationReason,
+      SubscriptionField[stream.StreamSource](s) +: tags,
+      complexity,
+      () ⇒ possibleTypes map (_.objectType))
+  }
 }
 
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
@@ -302,7 +326,6 @@ object ValidOutType extends LowPrioValidOutType {
   implicit def validSubclass[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Out]]
   implicit def validNothing[Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
   implicit def validOption[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Option[Out]]]
-
 }
 
 trait LowPrioValidOutType {

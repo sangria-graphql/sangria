@@ -1,11 +1,12 @@
 package sangria.execution
 
+import language.higherKinds
 import sangria.marshalling.InputUnmarshaller
 
-import language.{implicitConversions, existentials}
-
+import language.{existentials, implicitConversions}
 import sangria.ast
 import sangria.schema.{Action, Context}
+import sangria.streaming.SubscriptionStream
 
 
 trait Middleware[-Ctx] {
@@ -48,5 +49,7 @@ object FieldTag {
   implicit def stringTag(s: String): StringTag = StringTag(s)
   implicit def symbolTag(s: Symbol): StringTag = StringTag(s.name)
 }
+
+case class SubscriptionField[S[_]](stream: SubscriptionStream[S]) extends FieldTag
 
 

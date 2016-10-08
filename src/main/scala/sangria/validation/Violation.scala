@@ -288,6 +288,18 @@ case class ImplementationExtraFieldArgumentNotOptionalViolation(interfaceName: S
   lazy val errorMessage = s"$objectName.$fieldName($argumentName) is of required type '$objectFieldType', but is not also provided by the interface $interfaceName.$fieldName."
 }
 
+case class InvalidSubscriptionFieldViolation(typeName: String, fieldName: String) extends Violation {
+  lazy val errorMessage = s"Field '$typeName.$fieldName' is defined as a subscription field, but type '$typeName' is not used as a subscription type."
+}
+
+case class NotAllSubscriptionFieldsViolation(typeName: String, fieldNames: Vector[String]) extends Violation {
+  lazy val errorMessage = s"Subscription type '$typeName' may either contain only non-subscription fields or only subscription fields (defined with `Field.subs`). Following fields are non-subscription fields among other subscription fields: ${fieldNames map ("'" + _ + "'") mkString ", "}."
+}
+
+case class NotAllSubscriptionFieldsHaveSameStreamViolation(typeName: String, fieldNames: Vector[String]) extends Violation {
+  lazy val errorMessage = s"Some fields of subscription type '$typeName' have incompatible stream implementations: ${fieldNames map ("'" + _ + "'") mkString ", "}."
+}
+
 case class ListValueViolation(index: Int, violation: Violation, listSourceMapper: Option[SourceMapper], listPosition: List[Position]) extends AstNodeViolation {
   lazy val sourceMapper = violation match {
     case astv: AstNodeViolation ⇒ astv.sourceMapper

@@ -5,7 +5,7 @@ import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.macros._
-import sangria.util.FutureResultSupport
+import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.validation.QueryValidator
 import InputUnmarshaller.mapVars
 import sangria.execution.deferred.{Deferred, DeferredResolver}
@@ -710,6 +710,51 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         contain(Map("message" → "error 2", "path" → List("eager"), "locations" → Vector(Map("line" → 1, "column" → 2)))) and
         contain(Map("message" → "error 3", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))) and
         contain(Map("message" → "error 4", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))))
+    }
+
+    "support extended result" in {
+      import ExecutionScheme.Extended
+
+      case class MyCtx(complexity: Double)
+
+      case class MyListError(message: String) extends Exception(message)
+
+      val QueryType = ObjectType("Query", fields[MyCtx, Unit](
+        Field("hello", StringType,
+          complexity = Some((_, _, _) ⇒ 123),
+          resolve = _ ⇒ "world"),
+        Field("error", OptionType(StringType),
+          resolve = _ ⇒ throw new IllegalStateException("foo"))))
+
+      val schema = Schema(QueryType)
+
+      val reducer = QueryReducer.measureComplexity[MyCtx]((c, ctx) ⇒ ctx.copy(complexity = c))
+
+      val exceptionHandler: Executor.ExceptionHandler = {
+        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+      }
+
+      val middleware = new Middleware[MyCtx] {
+        type QueryVal = Int
+        def beforeQuery(context: MiddlewareQueryContext[MyCtx, _, _]) = 345
+        def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[MyCtx, _, _]) = ()
+      }
+
+      val ctx = MyCtx(0)
+
+      val result = Executor.execute(schema, graphql"{h1: hello, h2: hello, error}", ctx,
+        exceptionHandler = exceptionHandler,
+        middleware = middleware :: Nil,
+        queryReducers = reducer :: Nil).await
+
+      result.result.asInstanceOf[Map[String, Any]]("data") should be (
+        Map("h1" → "world", "h2" → "world", "error" → null))
+
+      result.errors should have size 1
+      result.errors(0).error.getMessage should be ("foo")
+
+      result.ctx.complexity should be (247)
+      result.middlewareVals(0)._1 should be (345)
     }
   }
 }
