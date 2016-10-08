@@ -351,10 +351,10 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
           Field.subs("letters", OptionType(StringType), resolve = _ ⇒
-            Observable("a", "b", "c", "d", "e").map(action(_))),
+            Observable("a", "b").map(action(_))),
 
           Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
-            Observable(1, 2, 3, 4).map(action(_)))
+            Observable(1, 2).map(action(_)))
         ))
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
@@ -363,7 +363,9 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         List(result) should contain oneOf (
           """{"data":{"letters": "a"}}""".parseJson,
-          """{"data":{"numbers": 1}}""".parseJson)
+          """{"data":{"letters": "b"}}""".parseJson,
+          """{"data":{"numbers": 1}}""".parseJson,
+          """{"data":{"numbers": 2}}""".parseJson)
       }
 
       "emit one element for non-stream based subscriptions" in {
