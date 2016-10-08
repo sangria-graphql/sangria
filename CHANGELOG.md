@@ -1,6 +1,6 @@
 ## v1.0.0-RC1 (2016-10-08)
 
-Towards 1.0! This release has 2 big new features and a number of improvements of different parts of the library.  
+Towards 1.0!
 
 * Stream-based subscriptions (#98, #166). For more info see the ["Stream-based Subscriptions" section of documentation](http://sangria-graphql.org/learn/#stream-based-subscriptions).
 * High-level Fetch API for deferred value resolution (#164). For more info see the ["High-level Fetch API" section of documentation](http://sangria-graphql.org/learn/#high-level-fetch-api).

@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
   "Stream based subscriptions" when  {
-    "suing RxScala" should {
+    "using RxScala" should {
       "Stream results" in {
         import sangria.marshalling.sprayJson._
         import spray.json._
@@ -117,9 +117,6 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         val result = stream.toListL.runAsync.await
 
         result should (
-          have(size(7)) and
-          contain("""{"data": {"letters": "a"}}""".parseJson) and
-          contain("""{"data": {"letters": "b"}}""".parseJson) and
           contain("""{"data": {"letters": null}, "errors": [{"message": "foo", "path":["letters"]}]}""".parseJson) and
           contain("""{"data": {"numbers": 1}}""".parseJson) and
           contain("""{"data": {"numbers": 2}}""".parseJson) and

@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "0.7.4-SNAPSHOT"
+version := "1.0.0-RC1-SNAPSHOT"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
@@ -26,15 +26,15 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.1",
 
   // streaming
-  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.0-SNAPSHOT",
+  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.0",
 
   // testing
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.1" % "test",
   "org.sangria-graphql" %% "sangria-spray-json" % "0.3.1" % "test",
   "org.sangria-graphql" %% "sangria-ion" % "0.1.0" % "test",
-  "org.sangria-graphql" %% "sangria-monix" % "0.1.0-SNAPSHOT" % "test",
-  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0-SNAPSHOT" % "test",
+  "org.sangria-graphql" %% "sangria-monix" % "0.1.0" % "test",
+  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0" % "test",
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.2" % "test",
