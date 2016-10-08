@@ -1,3 +1,12 @@
+## v1.0.0-RC1 (2016-10-08)
+
+Towards 1.0! This release has 2 big new features and a number of improvements of different parts of the library.  
+
+* Stream-based subscriptions (#98, #166). For more info see the ["Stream-based Subscriptions" section of documentation](http://sangria-graphql.org/learn/#stream-based-subscriptions).
+* High-level Fetch API for deferred value resolution (#164). For more info see the ["High-level Fetch API" section of documentation](http://sangria-graphql.org/learn/#high-level-fetch-api).
+* Huge improvements in deferred value resolution (#161). [Here is](https://gist.github.com/OlegIlyenko/ea8769eec855fbe1adb304780b8b0e9d) just an example of how batching algorithm is improved in comparison to previous version. For more info see the ["Deferred Value Resolution" section of documentation](http://sangria-graphql.org/learn/#deferred-value-resolution). It got a lot of new content.
+* Introduced `ExecutionScheme`. It allows to change the result type of an exaction. So now you can get some meta-information about a query execution itself, and not only the `Future` of marshaled result. For more info see the ["Alternative Execution Scheme" section of documentation](http://sangria-graphql.org/learn/#alternative-execution-scheme). 
+
 ## v0.7.3 (2016-08-26)
 
 * Description formatting/parsing is updated based in the changes in the reference implementation (#155). More places of the query now preserve the comments. For instance all trailing comments within a section set and at the end of the document are preserved and rendered.
