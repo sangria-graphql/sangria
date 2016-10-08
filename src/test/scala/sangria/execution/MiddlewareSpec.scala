@@ -10,7 +10,7 @@ import sangria.marshalling.ResultMarshaller
 import sangria.schema._
 import sangria.util.FutureResultSupport
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -32,11 +32,11 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
   case object Cacheed extends FieldTag
 
   class CachingMiddleware extends Middleware[Any] with MiddlewareAfterField[Any] {
-    type QueryVal = MutableMap[String, Action[Any, _]]
+    type QueryVal = TrieMap[String, Action[Any, _]]
     type FieldVal = Boolean
 
     def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) =
-      MutableMap()
+      TrieMap()
 
     def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = ()
 
@@ -64,15 +64,15 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
   class Count {
     val count = new AtomicInteger(0)
     var context: Option[String] = None
-    var metrics: MutableMap[String, List[Long]] = MutableMap()
+    var metrics: TrieMap[String, List[Long]] = TrieMap()
   }
 
   class FieldMetrics extends Middleware[Count] with MiddlewareAfterField[Count] with MiddlewareErrorField[Count] {
-    type QueryVal = MutableMap[String, List[Long]]
+    type QueryVal = TrieMap[String, List[Long]]
     type FieldVal = Long
 
     def beforeQuery(context: MiddlewareQueryContext[Count, _, _]) =
-      MutableMap()
+      TrieMap()
 
     def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Count, _, _]) = {
       context.ctx.metrics = queryVal
