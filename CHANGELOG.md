@@ -7,7 +7,7 @@ Towards 1.0!
 * Huge improvements in deferred value resolution (#161). [Here is](https://gist.github.com/OlegIlyenko/ea8769eec855fbe1adb304780b8b0e9d) just an example of how batching algorithm is improved in comparison to previous version. For more info see the ["Deferred Value Resolution" section of documentation](http://sangria-graphql.org/learn/#deferred-value-resolution). It got a lot of new content.
 * Introduced `ExecutionScheme`. It allows to change the result type of an exaction. So now you can get some meta-information about a query execution itself, and not only the `Future` of marshaled result. For more info see the ["Alternative Execution Scheme" section of documentation](http://sangria-graphql.org/learn/#alternative-execution-scheme).
 * Minor breaking changes:
-  * `DeferredResolver` is moved to `sangria.execution.deferred` package
+  * `DeferredResolver` and `Deferred` are moved to `sangria.execution.deferred` package.
   * `DeferredResolver.resolve` method signature is changes a bit (2 new arguments were added). Here is the new signature:
     
     ```scala
