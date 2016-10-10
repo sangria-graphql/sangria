@@ -528,7 +528,7 @@ class Resolver[Ctx](
                   case er: DeferredResult ⇒ dctx.resolveDeferredResult(uc, er)
                 }
               }
-              .recover{
+              .recover {
                 case e ⇒ Result(ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.position), None)
               })
           case (astFields, Some((field, updateCtx, SubscriptionValue(_, _)))) ⇒

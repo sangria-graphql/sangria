@@ -8,7 +8,8 @@ import sangria.ast.Document
 import sangria.execution.{DeferredWithInfo, Executor}
 import sangria.macros._
 import sangria.schema._
-import sangria.util.FutureResultSupport
+import sangria.util.{FutureResultSupport, Pos}
+import sangria.util.SimpleGraphQlSupport._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,7 +40,15 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
 
     val QueryType = ObjectType("Query", fields[Unit, Unit](
       Field("root", CategoryType, resolve = _ ⇒ DeferredValue(LoadCategories(Seq("root"))).map(_.head)),
-      Field("rootFut", CategoryType, resolve = _ ⇒ DeferredFutureValue(Future.successful(LoadCategories(Seq("root")))).map(_.head))
+      Field("rootFut", CategoryType, resolve = _ ⇒ DeferredFutureValue(Future.successful(LoadCategories(Seq("root")))).map(_.head)),
+      Field("fail1", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head)),
+      Field("fail2", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head))
+    ))
+
+    val MutationType = ObjectType("Mutation", fields[Unit, Unit](
+      Field("root", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("root"))).map(_.head)),
+      Field("fail1", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head)),
+      Field("fail2", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head))
     ))
 
     class MyDeferredResolver extends DeferredResolver[Any] {
@@ -59,12 +68,13 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
         valueCount.addAndGet(deferred.size)
 
         deferred.map {
+          case LoadCategories(ids) if ids contains "fail" ⇒ Future.failed(new IllegalStateException("foo"))
           case LoadCategories(ids) ⇒ Future.successful(ids)
         }
       }
     }
 
-    val schema = Schema(QueryType)
+    val schema = Schema(QueryType, Some(MutationType))
 
     def exec(query: Document) = {
       val resolver = new MyDeferredResolver
@@ -212,6 +222,40 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
       resolver.callsCount.get should be (5)
       resolver.valueCount.get should be (19)
     }
+
+    "failed queries should be handled appropriately" in checkContainsErrors(schema, (),
+      """
+        {
+          fail1 {name}
+          root {name}
+          fail2 {name}
+        }
+      """,
+      Map(
+        "fail1" → null,
+        "root" → Map("name" → "Cat root"),
+        "fail2" → null),
+      List(
+        "foo" → List(Pos(3, 11)),
+        "foo" → List(Pos(5, 11))),
+      resolver = new MyDeferredResolver)
+
+    "failed mutations should be handled appropriately" in checkContainsErrors(schema, (),
+      """
+        mutation {
+          fail1 {name}
+          root {name}
+          fail2 {name}
+        }
+      """,
+      Map(
+        "fail1" → null,
+        "root" → Map("name" → "Cat root"),
+        "fail2" → null),
+      List(
+        "foo" → List(Pos(3, 11)),
+        "foo" → List(Pos(5, 11))),
+      resolver = new MyDeferredResolver)
   }
 
   "DeferredResolver" when {
