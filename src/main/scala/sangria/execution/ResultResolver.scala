@@ -4,7 +4,7 @@ import org.parboiled2.Position
 import sangria.marshalling.ResultMarshaller
 import sangria.validation.{Violation, AstNodeLocation}
 
-class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executor.ExceptionHandler) {
+class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executor.ExceptionHandler, preserveOriginalErrors: Boolean) {
   def marshalErrors(errors: ErrorRegistry) =
     if (errors.isEmpty) None else Some(marshaller.arrayNode(errors.errorList))
 
@@ -49,20 +49,24 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
     def isEmpty = errorList.isEmpty
 
     def add(path: ExecutionPath, error: Throwable) =
-      copy(errorList ++ createErrorPaths(path, error), originalErrors :+ RegisteredError(path, error, None))
+      copy(
+        errorList ++ createErrorPaths(path, error),
+        if (preserveOriginalErrors) originalErrors :+ RegisteredError(path, error, None) else originalErrors)
 
     def append(path: ExecutionPath, errors: Vector[Throwable], position: Option[Position]) =
       copy(
         errors.map(e ⇒ errorNode(path, position map singleLocation, handleException(e))) ++ errorList,
-        errors.map(e ⇒ RegisteredError(path, e, position)) ++ originalErrors)
+        if (preserveOriginalErrors) errors.map(e ⇒ RegisteredError(path, e, position)) ++ originalErrors else originalErrors)
 
     def add(path: ExecutionPath, error: Throwable, position: Option[Position]) =
       copy(
         errorList :+ errorNode(path, position map singleLocation, handleException(error)),
-        originalErrors :+ RegisteredError(path, error, position))
+        if (preserveOriginalErrors) originalErrors :+ RegisteredError(path, error, position) else originalErrors)
 
     def add(other: ErrorRegistry) =
-      ErrorRegistry(errorList ++ other.errorList, originalErrors ++ other.originalErrors)
+      ErrorRegistry(
+        errorList ++ other.errorList,
+        if (preserveOriginalErrors) originalErrors ++ other.originalErrors else originalErrors)
 
     private def createErrorPaths(path: ExecutionPath, e: Throwable) = e match {
       case e: WithViolations if e.violations.nonEmpty ⇒

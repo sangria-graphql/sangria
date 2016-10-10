@@ -28,9 +28,10 @@ class Resolver[Ctx](
     deprecationTracker: DeprecationTracker,
     middleware: List[(Any, Middleware[_])],
     maxQueryDepth: Option[Int],
-    deferredResolverState: Any
+    deferredResolverState: Any,
+    preserveOriginalErrors: Boolean
 )(implicit executionContext: ExecutionContext) {
-  val resultResolver = new ResultResolver(marshaller, exceptionHandler)
+  val resultResolver = new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
 
   import resultResolver._
   import Resolver._

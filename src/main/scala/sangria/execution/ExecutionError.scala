@@ -19,7 +19,7 @@ trait ErrorWithResolver {
   def exceptionHandler: Executor.ExceptionHandler
 
   def resolveError(implicit marshaller: ResultMarshaller): marshaller.Node =
-    new ResultResolver(marshaller, exceptionHandler).resolveError(this).asInstanceOf[marshaller.Node]
+    new ResultResolver(marshaller, exceptionHandler, false).resolveError(this).asInstanceOf[marshaller.Node]
 }
 
 class ExecutionError(message: String, val exceptionHandler: Executor.ExceptionHandler, val sourceMapper: Option[SourceMapper] = None, val positions: List[Position] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError with ErrorWithResolver {

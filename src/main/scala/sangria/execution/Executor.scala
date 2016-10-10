@@ -165,7 +165,8 @@ case class Executor[Ctx, Root](
           deprecationTracker,
           middlewareVal,
           maxQueryDepth,
-          deferredResolverState)
+          deferredResolverState,
+          scheme.extended)
 
         val result =
           operation.operationType match {
