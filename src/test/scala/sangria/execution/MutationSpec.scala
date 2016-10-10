@@ -162,7 +162,7 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
       resolver = new Resolver
     )
 
-    "evaluates mutations correctly in the presense of a failed mutation" in checkErrors(
+    "evaluates mutations correctly in the presence of a failed mutation" in checkErrors(
       new Root(6),
       """
         mutation M {
@@ -229,10 +229,6 @@ class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
           "userCtx" → 49)
       ),
       List(
-        Map(
-          "message" → "Cannot change the number",
-          "path" → List("third"),
-          "locations" → List(Map("line" → 9, "column" → 11))), // todo fix duplicate errors
         Map(
           "message" → "Cannot change the number",
           "path" → List("third"),

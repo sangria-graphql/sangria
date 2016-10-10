@@ -295,7 +295,7 @@ class Resolver[Ctx](
               val updatedUc = resolveUc(v)
 
               resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) → updatedUc
-            }.recover { case e ⇒ Result(updatedErrors.add(path + name, resolveError(e), fields.head.position), None) → uc}
+            }.recover { case e ⇒ Result(ErrorRegistry(path + name, resolveError(e), fields.head.position), None) → uc}
           case PartialFutureValue(f) ⇒
             f.map{
               case PartialValue(v, es) ⇒
@@ -303,7 +303,7 @@ class Resolver[Ctx](
 
                 resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc)
                   .appendErrors(fieldPath, es, fields.head.position) → updatedUc
-            }.recover { case e ⇒ Result(updatedErrors.add(path + name, resolveError(e), fields.head.position), None) → uc}
+            }.recover { case e ⇒ Result(ErrorRegistry(path + name, resolveError(e), fields.head.position), None) → uc}
           case DeferredFutureValue(df) ⇒
             val p = Promise[(ChildDeferredContext, Any)]()
             def defer(d: Deferred[Any]) = {
@@ -331,10 +331,10 @@ class Resolver[Ctx](
 
     resolve.flatMap {
       case (r : Result, newUc) ⇒
-        Future.successful(accRes.addToMap(r, fields.head.outputName, isOptional(tpe, fields.head.name), fieldPath, fields.head.position) → newUc)
+        Future.successful(accRes.addToMap(r, fields.head.outputName, isOptional(tpe, fields.head.name), fieldPath, fields.head.position, updatedErrors) → newUc)
       case (dr : DeferredResult, newUc) ⇒
         immediatelyResolveDeferred(newUc, dr,
-          _.map(accRes.addToMap(_, fields.head.outputName, isOptional(tpe, fields.head.name), fieldPath, fields.head.position) → newUc))
+          _.map(accRes.addToMap(_, fields.head.outputName, isOptional(tpe, fields.head.name), fieldPath, fields.head.position, updatedErrors) → newUc))
     }
   }
 
@@ -541,7 +541,7 @@ class Resolver[Ctx](
         val simpleRes = resolvedValues.collect {case (af, r: Result) ⇒ af → r}
 
         val resSoFar = simpleRes.foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
-          case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path + astField, astField.position)
+          case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path + astField, astField.position, res.errors)
         }
 
         val complexRes = resolvedValues.collect{case (af, r: DeferredResult) ⇒ af → r}
@@ -551,7 +551,7 @@ class Resolver[Ctx](
           val allDeferred = complexRes.flatMap(_._2.deferred)
           val finalValue = Future.sequence(complexRes.map {case (astField, DeferredResult(_, future)) ⇒  future map (astField → _)}) map { results ⇒
             results.foldLeft(resSoFar) {
-              case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path + astField, astField.position)
+              case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path + astField, astField.position, res.errors)
             }.buildValue
           }
 
@@ -962,13 +962,13 @@ class Resolver[Ctx](
 
   case class Defer(promise: Promise[(ChildDeferredContext, Any)], deferred: Deferred[Any], complexity: Double, field: Field[_, _], astFields: Vector[ast.Field], args: Args) extends DeferredWithInfo
   case class Result(errors: ErrorRegistry, value: Option[Any /* Either marshaller.Node or marshaller.MapBuilder */], userContext: Option[Ctx] = None) extends Resolve {
-    def addToMap(other: Result, key: String, optional: Boolean, path: ExecutionPath, position: Option[Position]) =
+    def addToMap(other: Result, key: String, optional: Boolean, path: ExecutionPath, position: Option[Position], updatedErrors: ErrorRegistry) =
       copy(
         errors =
             if (!optional && other.value.isEmpty && other.errors.isEmpty)
-              errors.add(other.errors).add(path, nullForNotNullTypeError(position))
+              updatedErrors.add(other.errors).add(path, nullForNotNullTypeError(position))
             else
-              errors.add(other.errors),
+              updatedErrors.add(other.errors),
         value =
             if (optional && other.value.isEmpty)
               value map (v ⇒ marshaller.addMapNodeElem(v.asInstanceOf[marshaller.MapBuilder], key, marshaller.nullNode, optional = false))
