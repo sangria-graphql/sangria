@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.0.0-RC2-SNAPSHOT"
+version := "1.0.0-RC2"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
@@ -40,9 +40,6 @@ libraryDependencies ++= Seq(
   "net.jcazevedo" %% "moultingyaml" % "0.2" % "test",
   "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
 )
-
-// TODO: remove during release
-resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 

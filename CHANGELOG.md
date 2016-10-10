@@ -1,4 +1,4 @@
-## v1.0.0-RC2 (upcoming)
+## v1.0.0-RC2 (2016-10-10)
 
 * Capture original exceptions only if necessary (based on the `ExecutionScheme`)
 * Fixed issue with duplicate errors appearing during sequential query execution (mutations)
