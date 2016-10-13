@@ -28,6 +28,19 @@ class CoercionSpec extends WordSpec with Matchers {
         FloatType.coerceOutput(123.456, Set.empty) should be (123.456)
       }
 
+      "Float is not allowed to be Nan" in {
+        an [OutputValueCoercionException] should be thrownBy
+          FloatType.coerceOutput(Double.NaN, Set.empty)
+      }
+
+      "Float is not allowed to be infinity" in {
+        an [OutputValueCoercionException] should be thrownBy
+          FloatType.coerceOutput(Double.PositiveInfinity, Set.empty)
+
+        an [OutputValueCoercionException] should be thrownBy
+          FloatType.coerceOutput(Double.NegativeInfinity, Set.empty)
+      }
+
       "BigDecimal" in {
         BigDecimalType.coerceOutput(BigDecimal("467356453726547623.37467823648763238479823"), Set.empty) should be (
           BigDecimal("467356453726547623.37467823648763238479823"))
