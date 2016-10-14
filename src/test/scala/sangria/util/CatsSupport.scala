@@ -361,7 +361,10 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           val v = withClue(s"Can't find error message: $text") {
             val v = violations.find(_.errorMessage.contains(text))
 
-            v should not be ('empty)
+            withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
+              v should not be 'empty
+            }
+
             v
           }
 
@@ -370,7 +373,9 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           val v = withClue(s"Can't find error pattern: $pattern") {
             val v = violations.find(v ⇒ pattern.matcher(v.errorMessage).matches)
 
-            v should not be ('empty)
+            withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
+              v should not be 'empty
+            }
             v
           }
 
