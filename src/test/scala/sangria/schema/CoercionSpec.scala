@@ -28,17 +28,13 @@ class CoercionSpec extends WordSpec with Matchers {
         FloatType.coerceOutput(123.456, Set.empty) should be (123.456)
       }
 
-      "Float is not allowed to be Nan" in {
-        an [OutputValueCoercionException] should be thrownBy
-          FloatType.coerceOutput(Double.NaN, Set.empty)
+      "Float coerces NaN to null" in {
+        FloatType.coerceOutput(Double.NaN, Set.empty) should be (null.asInstanceOf[Double])
       }
 
-      "Float is not allowed to be infinity" in {
-        an [OutputValueCoercionException] should be thrownBy
-          FloatType.coerceOutput(Double.PositiveInfinity, Set.empty)
-
-        an [OutputValueCoercionException] should be thrownBy
-          FloatType.coerceOutput(Double.NegativeInfinity, Set.empty)
+      "Float coerces infinity to null" in {
+        FloatType.coerceOutput(Double.PositiveInfinity, Set.empty) should be (null.asInstanceOf[Double])
+        FloatType.coerceOutput(Double.NegativeInfinity, Set.empty) should be (null.asInstanceOf[Double])
       }
 
       "BigDecimal" in {

@@ -48,7 +48,11 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
     Field("nest", OptionType(DataType), resolve = _.value.nest),
     Field("nonNullNest", DataType, resolve = _.value.nonNullNest),
     Field("promiseNest", OptionType(DataType), resolve = _.value.promiseNest),
-    Field("nonNullPromiseNest", DataType, resolve = _.value.nonNullPromiseNest)))
+    Field("nonNullPromiseNest", DataType, resolve = _.value.nonNullPromiseNest),
+    Field("NaN", OptionType(FloatType), resolve = _ ⇒ Some(Double.NaN)),
+    Field("Inf", OptionType(FloatType), resolve = _ ⇒ Some(Double.PositiveInfinity)),
+    Field("nonNullNaN", FloatType, resolve = _ ⇒ Double.NaN),
+    Field("nonNullInf", FloatType, resolve = _ ⇒ Double.PositiveInfinity)))
 
   val schema = Schema(DataType)
 
@@ -515,5 +519,29 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       Map(
         "data" → null,
         "errors" → List(Map("message" → "Cannot return null for non-nullable type", "path" → List("nonNullPromise"), "locations" → List(Map("line" → 1, "column" → 11))))))
+
+    "nulls the top level if non-nullable field resolves NaN" in check(
+      new NullingSubject,
+      "query Q { nonNullNaN }",
+      Map(
+        "data" → null,
+        "errors" → List(Map("message" → "Cannot return null for non-nullable type", "path" → List("nonNullNaN"), "locations" → List(Map("line" → 1, "column" → 11))))))
+
+    "nulls the top level if non-nullable field resolves infinity" in check(
+      new NullingSubject,
+      "query Q { nonNullInf }",
+      Map(
+        "data" → null,
+        "errors" → List(Map("message" → "Cannot return null for non-nullable type", "path" → List("nonNullInf"), "locations" → List(Map("line" → 1, "column" → 11))))))
+
+    "treats infinity as `null`" in check(
+      new NullingSubject,
+      "query Q { Inf }",
+      Map("data" → Map("Inf" → null)))
+
+    "treats NaN as `null`" in check(
+      new NullingSubject,
+      "query Q { NaN }",
+      Map("data" → Map("NaN" → null)))
   }
 }

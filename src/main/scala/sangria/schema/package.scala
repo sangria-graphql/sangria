@@ -67,10 +67,8 @@ package object schema {
       "values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."),
     coerceOutput = (v, _) ⇒  {
       // .isNaN and .isInfinity box, we explicitly avoid that here
-      if (java.lang.Double.isNaN(v))
-        throw OutputValueCoercionException("Double value is NaN")
-      else if (java.lang.Double.isInfinite(v))
-        throw OutputValueCoercionException("Double value is infinite")
+      if (java.lang.Double.isNaN(v) || java.lang.Double.isInfinite(v))
+        null
       else
         v
     },

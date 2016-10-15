@@ -663,14 +663,30 @@ class Resolver[Ctx](
           Result(ErrorRegistry.empty,
             if (isUndefinedValue(value))
               None
-            else
-              Some(marshalScalarValue(scalar.coerceOutput(value, marshaller.capabilities), marshaller, scalar.name, scalar.scalarInfo)))
+            else {
+              val coerced = scalar.coerceOutput(value, marshaller.capabilities)
+
+              if (isUndefinedValue(coerced))
+                None
+              else
+                Some(marshalScalarValue(coerced, marshaller, scalar.name, scalar.scalarInfo))
+            })
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
       case enum: EnumType[Any @unchecked] ⇒
         try {
-          Result(ErrorRegistry.empty, if (isUndefinedValue(value)) None else Some(marshalEnumValue(enum.coerceOutput(value), marshaller, enum.name)))
+          Result(ErrorRegistry.empty,
+            if (isUndefinedValue(value))
+              None
+            else {
+              val coerced = enum.coerceOutput(value)
+
+              if (isUndefinedValue(coerced))
+                None
+              else
+                Some(marshalEnumValue(coerced, marshaller, enum.name))
+            })
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
@@ -1029,6 +1045,7 @@ object Resolver {
   def marshalScalarValue(value: Any, marshaller: ResultMarshaller, typeName: String, scalarInfo: Set[ScalarValueInfo]): marshaller.Node =
     value match {
       case astValue: ast.Value ⇒ marshalAstValue(astValue, marshaller, typeName, scalarInfo)
+      case null ⇒ marshaller.nullNode
       case v ⇒ marshaller.scalarNode(value, typeName, scalarInfo)
     }
 
