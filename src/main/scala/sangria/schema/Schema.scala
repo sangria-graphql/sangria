@@ -681,6 +681,9 @@ case class Schema[Ctx, Val](
   def extend(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
     AstSchemaMaterializer.extendSchema(this, document, builder)
 
+  def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
+    SchemaComparator.compare(oldSchema, this)
+
   lazy val types: Map[String, (Int, Type with Named)] = {
     def sameType(t1: Type, t2: Type) =
       t1.getClass.getSimpleName == t2.getClass.getSimpleName
