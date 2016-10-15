@@ -80,6 +80,27 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       change[EnumValueAdded]("Enum value `D` was added to enum `Foo`"),
       change[EnumValueDescriptionChanged]("`Foo.C` description changed"),
       change[EnumValueDeprecated]("Enum value `B` was deprecated in enum `Foo`"))
+
+    "should detect changes in unions" in checkChanges(
+      graphql"""
+        type Foo {f: String}
+        type Bar {descr: String}
+        union Agg = Foo | Bar
+      """,
+
+      graphql"""
+        type Bar {descr: String}
+        type Baz {descr: String}
+
+        # Hello
+        union Agg = Bar | Baz
+      """,
+
+      change[TypeAdded]("`Baz` type was added"),
+      change[TypeRemoved]("`Foo` type was removed"),
+      change[UnionMemberRemoved]("`Foo` type was removed from union `Agg`"),
+      change[UnionMemberAdded]("`Baz` type was added to union `Agg`"),
+      change[TypeDescriptionChanged]("`Agg` type description is changed"))
   }
 
   def change[T : ClassTag](description: String) =

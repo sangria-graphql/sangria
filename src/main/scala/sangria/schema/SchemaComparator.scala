@@ -31,11 +31,25 @@ object SchemaComparator {
 
   def findChangesInTypes(oldType: Type with Named, newType: Type with Named): Vector[SchemaChange] = {
     val typeChanges = (oldType, newType) match {
-      case (oldEnum: EnumType[_], newEnum: EnumType[_]) ⇒ findInEnumTypes(oldEnum, newEnum)
+      case (o: EnumType[_], n: EnumType[_]) ⇒ findInEnumTypes(o, n)
+      case (o: UnionType[_], n: UnionType[_]) ⇒ findInUnionTypes(o, n)
       case _ ⇒ Vector.empty
     }
 
     typeChanges ++ findDescriptionChanged(oldType, newType, SchemaChange.TypeDescriptionChanged(newType, _, _))
+  }
+
+  private def findInUnionTypes(oldType: UnionType[_], newType: UnionType[_]): Vector[SchemaChange] = {
+    val oldTypes = oldType.types.map(_.name).toSet
+    val newTypes = newType.types.map(_.name).toSet
+
+    val removed = oldTypes.diff(newTypes).toVector.map(name ⇒
+      SchemaChange.UnionMemberRemoved(oldType, oldType.types.find(_.name == name).get))
+
+    val added = newTypes.diff(oldTypes).toVector.map(name ⇒
+      SchemaChange.UnionMemberAdded(newType, newType.types.find(_.name == name).get))
+
+    removed ++ added
   }
 
   private def findInEnumTypes(oldType: EnumType[_], newType: EnumType[_]): Vector[SchemaChange] = {
@@ -105,6 +119,9 @@ object SchemaChange {
   case class EnumValueRemoved(tpe: EnumType[_], value: EnumValue[_])
     extends BreakingChange(s"Enum value `${value.name}` was removed from enum `${tpe.name}`") with TypeChange
 
+  case class UnionMemberRemoved(tpe: UnionType[_], member: ObjectType[_, _])
+    extends BreakingChange(s"`${member.name}` type was removed from union `${tpe.name}`") with TypeChange
+
   sealed abstract class NonBreakingChange(val description: String) extends SchemaChange {
     final def breakingChange = false
   }
@@ -123,6 +140,9 @@ object SchemaChange {
 
   case class EnumValueDeprecated(tpe: EnumType[_], value: EnumValue[_], oldDeprecationReason: Option[String], newDeprecationReason: Option[String])
     extends NonBreakingChange(s"Enum value `${value.name}` was deprecated in enum `${tpe.name}`") with DeprecationChange
+
+  case class UnionMemberAdded(tpe: UnionType[_], member: ObjectType[_, _])
+    extends BreakingChange(s"`${member.name}` type was added to union `${tpe.name}`") with TypeChange
 
   private val AnArticleLetters = Set('a', 'e', 'i', 'o')
 
