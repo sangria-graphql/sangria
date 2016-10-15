@@ -245,10 +245,10 @@ object SchemaChange {
     extends AbstractChange(s"`${tpe.name}.${field.name}` input field type changed from `${SchemaRenderer.renderTypeName(oldFiledType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
 
   case class SchemaMutationTypeChanged(oldType: Option[ObjectType[_, _]], newType: Option[ObjectType[_, _]])
-    extends AbstractChange(s"Schema mutation type changed from ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} to ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} type", oldType.nonEmpty)
+    extends AbstractChange(s"Schema mutation type changed from ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} to ${newType.fold("none")(t ⇒ "`" + t.name + "`")} type", oldType.nonEmpty)
 
   case class SchemaSubscriptionTypeChanged(oldType: Option[ObjectType[_, _]], newType: Option[ObjectType[_, _]])
-    extends AbstractChange(s"Schema subscription type changed from ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} to ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} type", oldType.nonEmpty)
+    extends AbstractChange(s"Schema subscription type changed from ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} to ${newType.fold("none")(t ⇒ "`" + t.name + "`")} type", oldType.nonEmpty)
 
   private val AnArticleLetters = Set('a', 'e', 'i', 'o')
 

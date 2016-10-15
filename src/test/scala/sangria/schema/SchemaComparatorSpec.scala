@@ -214,6 +214,82 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[InputFieldTypeChanged]("`Filter.a` input field type changed from `String!` to `String`"),
       breakingChange[InputFieldTypeChanged]("`Filter.c` input field type changed from `[String]` to `[String]!`"),
       breakingChange[InputFieldTypeChanged]("`Filter.b1` input field type changed from `String` to `String!`"))
+
+    "detect changes in schema definition" in checkChangesWithoutQueryType(
+      graphql"""
+        type Query {
+          foo: String
+        }
+      """,
+
+      graphql"""
+        type Foo {
+          foo: String
+        }
+
+        type Mut {
+          bar: Int!
+        }
+
+        type Subs {
+          bar: Int!
+        }
+
+        schema {
+          query: Foo
+          mutation: Mut
+          subscription: Subs
+        }
+      """,
+
+      breakingChange[TypeRemoved]("`Query` type was removed"),
+      nonBreakingChange[TypeAdded]("`Mut` type was added"),
+      nonBreakingChange[TypeAdded]("`Subs` type was added"),
+      nonBreakingChange[TypeAdded]("`Foo` type was added"),
+      breakingChange[SchemaQueryTypeChanged]("Schema query type changed from `Query` to `Foo` type"),
+      nonBreakingChange[SchemaMutationTypeChanged]("Schema mutation type changed from none to `Mut` type"),
+      nonBreakingChange[SchemaSubscriptionTypeChanged]("Schema subscription type changed from none to `Subs` type"))
+
+    "detect breaking changes in schema definition" in checkChangesWithoutQueryType(
+      graphql"""
+        type Query {
+          foo: String
+        }
+        type Mut {
+          bar: Int!
+        }
+
+        type Subs {
+          bar: Int!
+        }
+
+        schema {
+          query: Query
+          mutation: Mut
+          subscription: Subs
+        }
+      """,
+
+      graphql"""
+        type Query {
+          foo: String
+        }
+
+        type Subs1 {
+          bar: Int!
+        }
+
+        schema {
+          query: Query
+          subscription: Subs1
+        }
+      """,
+
+      breakingChange[TypeRemoved]("`Mut` type was removed"),
+      breakingChange[TypeRemoved]("`Subs` type was removed"),
+      nonBreakingChange[TypeAdded]("`Subs1` type was added"),
+      breakingChange[SchemaMutationTypeChanged]("Schema mutation type changed from `Mut` to none type"),
+      breakingChange[SchemaSubscriptionTypeChanged]("Schema subscription type changed from `Subs` to `Subs1` type"))
   }
 
   def breakingChange[T : ClassTag](description: String) =
@@ -232,6 +308,13 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
     val oldSchema = Schema.buildFromAst(oldDoc merge queryType)
     val newSchema = Schema.buildFromAst(newDoc merge queryType)
+
+    assertChanges(newSchema.compare(oldSchema), expectedChanges: _*)
+  }
+
+  def checkChangesWithoutQueryType(oldDoc: Document, newDoc: Document, expectedChanges: (Class[_], String, Boolean)*) = {
+    val oldSchema = Schema.buildFromAst(oldDoc)
+    val newSchema = Schema.buildFromAst(newDoc)
 
     assertChanges(newSchema.compare(oldSchema), expectedChanges: _*)
   }
