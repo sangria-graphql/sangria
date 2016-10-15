@@ -37,6 +37,10 @@ sealed trait Named {
   def description: Option[String]
 }
 
+sealed trait HasDeprecation {
+  def deprecationReason: Option[String]
+}
+
 object Named {
   private val NameRegexp = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
 
@@ -275,7 +279,7 @@ case class Field[Ctx, Val](
     deprecationReason: Option[String],
     tags: List[FieldTag],
     complexity: Option[(Ctx, Args, Double) ⇒ Double],
-    manualPossibleTypes: () ⇒ List[ObjectType[_, _]]) extends Named with HasArguments {
+    manualPossibleTypes: () ⇒ List[ObjectType[_, _]]) extends Named with HasArguments with HasDeprecation {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
 }
@@ -528,7 +532,7 @@ case class EnumValue[+T](
   name: String,
   description: Option[String] = None,
   value: T,
-  deprecationReason: Option[String] = None) extends Named
+  deprecationReason: Option[String] = None) extends Named with HasDeprecation
 
 case class InputObjectType[T](
   name: String,

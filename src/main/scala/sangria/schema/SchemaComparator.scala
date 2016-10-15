@@ -52,8 +52,8 @@ object SchemaComparator {
       val oldValue = oldType.byName(name)
       val newValue = newType.byName(name)
 
-      findDescriptionChanged(oldValue, newValue, SchemaChange.EnumValueDescriptionChanged(newType, newValue, _, _))
-      // TODO: deprecation
+      findDescriptionChanged(oldValue, newValue, SchemaChange.EnumValueDescriptionChanged(newType, newValue, _, _)) ++
+        findDeprecationChanged(oldValue, newValue, SchemaChange.EnumValueDeprecated(newType, newValue, _, _))
     }
 
     removed ++ added ++ changed
@@ -62,6 +62,10 @@ object SchemaComparator {
   private def findDescriptionChanged(o: Named, n: Named, fn: (Option[String], Option[String]) ⇒ SchemaChange): Vector[SchemaChange] =
     if (o.description != n.description) Vector(fn(o.description, n.description))
     else Vector.empty
+
+  private def findDeprecationChanged(o: HasDeprecation, n: HasDeprecation, fn: (Option[String], Option[String]) ⇒ SchemaChange): Vector[SchemaChange] =
+    if (o.deprecationReason != n.deprecationReason) Vector(fn(o.deprecationReason, n.deprecationReason))
+    else Vector.empty
 }
 
 sealed trait SchemaChange {
@@ -69,16 +73,26 @@ sealed trait SchemaChange {
   def description: String
 }
 
-sealed trait TypeSchemaChange {
-  def tpe: Type with Named
-}
-
 object SchemaChange {
+  sealed trait TypeChange {
+    def tpe: Type with Named
+  }
+
+  sealed trait DeprecationChange extends TypeChange {
+    def oldDeprecationReason: Option[String]
+    def newDeprecationReason: Option[String]
+  }
+
+  sealed trait DescriptionChange extends TypeChange {
+    def oldDescription: Option[String]
+    def newDescription: Option[String]
+  }
+
   sealed abstract class BreakingChange(val description: String) extends SchemaChange {
     final def breakingChange = true
   }
 
-  case class TypeRemoved(tpe: Type with Named) extends BreakingChange(s"`${tpe.name}` type was removed") with TypeSchemaChange
+  case class TypeRemoved(tpe: Type with Named) extends BreakingChange(s"`${tpe.name}` type was removed") with TypeChange
 
   case class TypeKindChanged(tpe: Type with Named, oldTpe: Type with Named)
     extends BreakingChange({
@@ -86,32 +100,29 @@ object SchemaChange {
       val newKind = kind(tpe)
 
       s"`${tpe.name}` changed from ${article(oldKind)} $oldKind type to ${article(newKind)} $newKind type"
-    }) with TypeSchemaChange
+    }) with TypeChange
 
   case class EnumValueRemoved(tpe: EnumType[_], value: EnumValue[_])
-    extends BreakingChange(s"`${value.name}` was removed from enum `${tpe.name}`") with TypeSchemaChange
+    extends BreakingChange(s"Enum value `${value.name}` was removed from enum `${tpe.name}`") with TypeChange
 
   sealed abstract class NonBreakingChange(val description: String) extends SchemaChange {
     final def breakingChange = false
   }
 
   case class TypeAdded(tpe: Type with Named)
-    extends NonBreakingChange(s"`${tpe.name}` type was added") with TypeSchemaChange
+    extends NonBreakingChange(s"`${tpe.name}` type was added") with TypeChange
 
   case class TypeDescriptionChanged(tpe: Type with Named, oldDescription: Option[String], newDescription: Option[String])
-    extends NonBreakingChange(s"`${tpe.name}` type description is changed") with TypeSchemaChange
+    extends NonBreakingChange(s"`${tpe.name}` type description is changed") with DescriptionChange
 
   case class EnumValueAdded(tpe: EnumType[_], value: EnumValue[_])
-    extends NonBreakingChange(s"`${value.name}` was added to enum `${tpe.name}`") with TypeSchemaChange
-
-  case class EnumValueDeprecated(tpe: EnumType[_], value: EnumValue[_])
-    extends NonBreakingChange(s"`${value.name}` was deprecated in enum `${tpe.name}`") with TypeSchemaChange
+    extends NonBreakingChange(s"Enum value `${value.name}` was added to enum `${tpe.name}`") with TypeChange
 
   case class EnumValueDescriptionChanged(tpe: EnumType[_], value: EnumValue[_], oldDescription: Option[String], newDescription: Option[String])
-    extends NonBreakingChange(s"`${tpe.name}.${value.name}` deprecation reason changed") with TypeSchemaChange
+      extends NonBreakingChange(s"`${tpe.name}.${value.name}` description changed") with DescriptionChange
 
-  case class EnumValueDeprecationReasonChanged(tpe: EnumType[_], value: EnumValue[_], oldDeprecationReason: Option[String], newDeprecationReason: Option[String])
-    extends NonBreakingChange(s"`${tpe.name}.${value.name}` deprecation reason changed") with TypeSchemaChange
+  case class EnumValueDeprecated(tpe: EnumType[_], value: EnumValue[_], oldDeprecationReason: Option[String], newDeprecationReason: Option[String])
+    extends NonBreakingChange(s"Enum value `${value.name}` was deprecated in enum `${tpe.name}`") with DeprecationChange
 
   private val AnArticleLetters = Set('a', 'e', 'i', 'o')
 

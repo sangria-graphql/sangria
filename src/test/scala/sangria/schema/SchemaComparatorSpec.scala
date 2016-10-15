@@ -45,6 +45,41 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
       change[TypeAdded]("`ObjectType` type was added"),
       change[TypeKindChanged]("`Type1` changed from an Interface type to a Union type"))
+
+    "detect if a type description changed " in checkChanges(
+      graphql"""
+        # normal type
+        type ObjectType {field1: String}
+      """,
+
+      graphql"""
+        # Cool type
+        type ObjectType {field1: String}
+      """,
+
+      change[TypeDescriptionChanged]("`ObjectType` type description is changed"))
+
+    "should detect changes in enum values" in checkChanges(
+      graphql"""
+        enum Foo {
+          A, B, C
+        }
+      """,
+
+      graphql"""
+        enum Foo {
+          B @deprecated(reason: "Should not be used anymore")
+
+          # The `B`
+          # value!
+          C, D
+        }
+      """,
+
+      change[EnumValueRemoved]("Enum value `A` was removed from enum `Foo`"),
+      change[EnumValueAdded]("Enum value `D` was added to enum `Foo`"),
+      change[EnumValueDescriptionChanged]("`Foo.C` description changed"),
+      change[EnumValueDeprecated]("Enum value `B` was deprecated in enum `Foo`"))
   }
 
   def change[T : ClassTag](description: String) =
