@@ -32,6 +32,11 @@ case class Document(definitions: List[Definition], trailingComments: List[Commen
     case _ ⇒ false
   }
 
+  /**
+    * Merges two documents. The `sourceMapper` is lost along the way.
+    */
+  def merge(other: Document) = Document.merge(Vector(this, other))
+
   override def hashCode(): Int =
     Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
 }
