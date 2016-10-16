@@ -6,7 +6,6 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
 import sangria.schema.SchemaChange._
 import sangria.macros._
-import sangria.util.DebugUtil
 
 import scala.reflect.ClassTag
 
@@ -232,6 +231,41 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[FieldAdded]("Field `bar` was added to `Filter` type"),
       nonBreakingChange[FieldAdded]("Field `bar` was added to `I1` type"),
       breakingChange[FieldRemoved]("Field `name` was removed from `I1` type"))
+
+    "detect changes in object type arguments" in checkChanges(
+      graphql"""
+        type Filter {
+          foo(
+            a: String!
+            b: String
+            b1: String
+            c: [String]
+          ): String!
+        }
+      """,
+
+      graphql"""
+        type Filter {
+          foo(
+            # descr
+            a: String = "foo"
+            b: [String]
+            b1: String!
+            c: [String]!
+            d: Int
+            e: Int!
+          ): String!
+        }
+      """,
+
+      breakingChange[ObjectTypeArgumentTypeChanged]("`Filter.foo(b)` type changed from `String` to `[String]`"),
+      nonBreakingChange[ObjectTypeArgumentAdded]("Argument `d` was added to `Filter.foo` field"),
+      breakingChange[ObjectTypeArgumentTypeChanged]("`Filter.foo(b1)` type changed from `String` to `String!`"),
+      nonBreakingChange[ObjectTypeArgumentTypeChanged]("`Filter.foo(a)` type changed from `String!` to `String`"),
+      breakingChange[ObjectTypeArgumentTypeChanged]("`Filter.foo(c)` type changed from `[String]` to `[String]!`"),
+      breakingChange[ObjectTypeArgumentAdded]("Argument `e` was added to `Filter.foo` field"),
+      nonBreakingChange[ObjectTypeArgumentDefaultChanged]("`Filter.foo(a)` default value changed from none to `\"foo\"`"),
+      nonBreakingChange[ObjectTypeArgumentDescriptionChanged]("`Filter.foo(a)` description is changed"))
 
     "detect changes in input type fields default value changes" in checkChanges(
       graphql"""
