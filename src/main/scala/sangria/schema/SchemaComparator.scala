@@ -252,7 +252,7 @@ object SchemaComparator {
       removed(oldArgs.find(_.name == name).get))
 
     val add = newA.diff(oldA).toVector.map { name ⇒
-      val arg = oldArgs.find(_.name == name).get
+      val arg = newArgs.find(_.name == name).get
 
       added(arg, !isOptional(arg))
     }
@@ -473,7 +473,7 @@ object SchemaChange {
     extends AbstractChange(s"Field `${field.name}` was added to `${tpe.name}` type", false) with TypeChange
 
   case class DirectiveLocationAdded(directive: Directive, location: DirectiveLocation.Value)
-    extends AbstractChange(s"`$location` directive location added to `${directive.name}` directive", true)
+    extends AbstractChange(s"`$location` directive location added to `${directive.name}` directive", false)
 
   // May be a breaking change
 

@@ -120,6 +120,32 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[TypeAdded]("`Country` type was added"),
       nonBreakingChange[TypeDescriptionChanged]("`Locale` type description is changed"))
 
+    "should detect changes in directives" in checkChanges(
+      graphql"""
+        directive @foo(a: String, b: Int!) on FIELD_DEFINITION | ENUM
+        directive @bar on FIELD_DEFINITION
+      """,
+
+      graphql"""
+        # This is foo
+        directive @foo(
+          # first arg
+          a: String,
+          c: Int) on FIELD_DEFINITION | INPUT_OBJECT
+
+        # This is baz
+        directive @baz on FIELD_DEFINITION
+      """,
+
+      breakingChange[DirectiveRemoved]("`bar` directive was removed"),
+      nonBreakingChange[DirectiveAdded]("`baz` directive was added"),
+      nonBreakingChange[DirectiveDescriptionChanged]("`foo` directive description is changed"),
+      nonBreakingChange[DirectiveArgumentDescriptionChanged]("`foo(a)` description is changed"),
+      breakingChange[DirectiveArgumentRemoved]("Argument `b` was removed from `foo` directive"),
+      nonBreakingChange[DirectiveLocationAdded]("`InputObject` directive location added to `foo` directive"),
+      breakingChange[DirectiveLocationRemoved]("`Enum` directive location removed from `foo` directive"),
+      nonBreakingChange[DirectiveArgumentAdded]("Argument `c` was added to `foo` directive"))
+
     "should detect changes in input types" in checkChanges(
       graphql"""
         input Sort {dir: Int}
