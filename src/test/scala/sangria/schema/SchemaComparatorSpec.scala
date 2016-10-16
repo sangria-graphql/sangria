@@ -162,6 +162,51 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[InputFieldDescriptionChanged]("`Filter.name` description is changed"),
       nonBreakingChange[TypeDescriptionChanged]("`Filter` type description is changed"))
 
+    "detect changes in object like type fields and interfaces when they are added or removed" in checkChanges(
+      graphql"""
+        interface I1 {
+          name: String!
+        }
+
+        interface I2 {
+          descr: String
+        }
+
+        type Filter implements I1, I2 {
+          name: String!
+          descr: String
+          foo: [Int]
+        }
+      """,
+
+      graphql"""
+        interface I1 {
+          bar: Int
+        }
+
+        interface I3 {
+          descr: String
+          id: ID
+        }
+
+        type Filter implements I1, I3 {
+          bar: Int
+          descr: String
+          id: ID
+        }
+      """,
+
+      breakingChange[TypeRemoved]("`I2` type was removed"),
+      nonBreakingChange[TypeAdded]("`I3` type was added"),
+      nonBreakingChange[ObjectTypeInterfaceRemoved]("`Filter` object type no longer implements `I2` interface"),
+      nonBreakingChange[ObjectTypeInterfaceAdded]("`Filter` object type now implements `I3` interface"),
+      breakingChange[FieldRemoved]("Field `name` was removed from `Filter` type"),
+      breakingChange[FieldRemoved]("Field `foo` was removed from `Filter` type"),
+      nonBreakingChange[FieldAdded]("Field `id` was added to `Filter` type"),
+      nonBreakingChange[FieldAdded]("Field `bar` was added to `Filter` type"),
+      nonBreakingChange[FieldAdded]("Field `bar` was added to `I1` type"),
+      breakingChange[FieldRemoved]("Field `name` was removed from `I1` type"))
+
     "detect changes in input type fields default value changes" in checkChanges(
       graphql"""
         input Filter {
