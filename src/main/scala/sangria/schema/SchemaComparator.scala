@@ -414,6 +414,9 @@ object SchemaChange {
   case class DirectiveLocationRemoved(directive: Directive, location: DirectiveLocation.Value)
     extends AbstractChange(s"`$location` directive location removed from `${directive.name}` directive", true)
 
+  case class ObjectTypeInterfaceRemoved(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
+    extends AbstractChange(s"`${tpe.name}` object type no longer implements `${interface.name}` interface", true) with TypeChange
+
   // Non-breaking changes
 
   case class TypeAdded(tpe: Type with Named)
@@ -462,9 +465,6 @@ object SchemaChange {
 
   case class DirectiveArgumentDefaultChanged(directive: Directive, argument: Argument[_], oldDefault: Option[String], newDefault: Option[String])
     extends AbstractChange(s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")("`" + _ + "`")} to ${newDefault.fold("none")("`" + _ + "`")}", false)
-
-  case class ObjectTypeInterfaceRemoved(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
-    extends AbstractChange(s"`${tpe.name}` object type no longer implements `${interface.name}` interface", false) with TypeChange
 
   case class ObjectTypeInterfaceAdded(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
     extends AbstractChange(s"`${tpe.name}` object type now implements `${interface.name}` interface", false) with TypeChange

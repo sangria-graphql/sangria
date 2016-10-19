@@ -223,7 +223,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
       breakingChange[TypeRemoved]("`I2` type was removed"),
       nonBreakingChange[TypeAdded]("`I3` type was added"),
-      nonBreakingChange[ObjectTypeInterfaceRemoved]("`Filter` object type no longer implements `I2` interface"),
+      breakingChange[ObjectTypeInterfaceRemoved]("`Filter` object type no longer implements `I2` interface"),
       nonBreakingChange[ObjectTypeInterfaceAdded]("`Filter` object type now implements `I3` interface"),
       breakingChange[FieldRemoved]("Field `name` was removed from `Filter` type"),
       breakingChange[FieldRemoved]("Field `foo` was removed from `Filter` type"),
