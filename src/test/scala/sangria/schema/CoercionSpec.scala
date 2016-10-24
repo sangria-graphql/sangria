@@ -49,6 +49,7 @@ class CoercionSpec extends WordSpec with Matchers {
 
       "String" in {
         StringType.coerceOutput("foo", Set.empty) should be ("foo")
+        StringType.coerceOutput("", Set.empty) should be ("")
       }
     }
 
@@ -98,6 +99,9 @@ class CoercionSpec extends WordSpec with Matchers {
         FloatType.coerceInput(BigIntValue(BigInt("12323443874982374987329749823"))).isLeft should be (true)
 
         FloatType.coerceInput(FloatValue(12.34)) should be (Right(12.34D))
+        FloatType.coerceInput(FloatValue(Double.NaN)).right.exists(_.isNaN) should be (true)
+        FloatType.coerceInput(FloatValue(Double.PositiveInfinity)).right.exists(_.isPosInfinity) should be (true)
+        FloatType.coerceInput(FloatValue(Double.NegativeInfinity)).right.exists(_.isNegInfinity) should be (true)
         FloatType.coerceInput(BigDecimalValue(BigDecimal(12.34))) should be (Right(12.34D))
         FloatType.coerceInput(BigDecimalValue(BigDecimal("367476315476516457632.473854635267452376546732"))).isLeft should be (true)
         FloatType.coerceInput(BooleanValue(true)).isLeft should be (true)
@@ -142,6 +146,7 @@ class CoercionSpec extends WordSpec with Matchers {
         StringType.coerceInput(BigDecimalValue(BigDecimal(12.34))).isLeft should be (true)
         StringType.coerceInput(BooleanValue(true)).isLeft should be (true)
         StringType.coerceInput(StringValue("123")) should be (Right("123"))
+        StringType.coerceInput(StringValue("")) should be (Right(""))
       }
     }
 
@@ -206,6 +211,9 @@ class CoercionSpec extends WordSpec with Matchers {
         FloatType.coerceUserInput(BigInt("12323443874982374987329749823")).isLeft should be (true)
 
         FloatType.coerceUserInput(12.34) should be (Right(12.34D))
+        FloatType.coerceUserInput(Double.NaN).right.exists(_.isNaN) should be (true)
+        FloatType.coerceUserInput(Double.PositiveInfinity).right.exists(_.isPosInfinity) should be (true)
+        FloatType.coerceUserInput(Double.NegativeInfinity).right.exists(_.isNegInfinity) should be (true)
         FloatType.coerceUserInput(BigDecimal(12.34)) should be (Right(12.34D))
         FloatType.coerceUserInput(BigDecimal("367476315476516457632.473854635267452376546732")).isLeft should be (true)
         FloatType.coerceUserInput(true).isLeft should be (true)
@@ -244,6 +252,7 @@ class CoercionSpec extends WordSpec with Matchers {
         BooleanType.coerceUserInput(12.34).isLeft should be (true)
         BooleanType.coerceUserInput(BigDecimal(12.34)).isLeft should be (true)
         BooleanType.coerceUserInput(true) should be (Right(true))
+        BooleanType.coerceUserInput(false) should be (Right(false))
         BooleanType.coerceUserInput("123").isLeft should be (true)
       }
 
@@ -259,6 +268,7 @@ class CoercionSpec extends WordSpec with Matchers {
         StringType.coerceUserInput(BigDecimal(12.34)).isLeft should be (true)
         StringType.coerceUserInput(true).isLeft should be (true)
         StringType.coerceUserInput("123") should be (Right("123"))
+        StringType.coerceUserInput("") should be (Right(""))
       }
     }
   }
