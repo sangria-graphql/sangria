@@ -6,14 +6,21 @@ description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq("Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.0"
+crossScalaVersions := Seq("2.11.8", "2.12.0")
 
 scalacOptions ++= Seq(
-  "-target:jvm-1.7",
   "-deprecation",
   "-feature",
   "-Xlint",
   "-Xlint:-missing-interpolator")
+
+scalacOptions ++= {
+  if (scalaVersion.value startsWith "2.12")
+    Seq.empty
+  else
+    Seq("-target:jvm-1.7")
+}
 
 libraryDependencies ++= Seq(
   // macros
