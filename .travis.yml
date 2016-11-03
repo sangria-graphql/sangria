@@ -1,15 +1,23 @@
 sudo: false
 language: scala
 scala:
-  - "2.11.8"
-  - "2.12.0"
+  - 2.11.8
+  - 2.12.0
 jdk:
   - oraclejdk8
-script: "sbt clean coverage test"
-after_success: "sbt coveralls"
-before_cache:
-  - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+
+script: |
+  if [[ "$TRAVIS_SCALA_VERSION" == 2.11.* ]]; then
+    sbt ++$TRAVIS_SCALA_VERSION clean coverage test
+  else
+    sbt ++$TRAVIS_SCALA_VERSION clean test
+  fi
+
+after_success: |
+  if [[ "$TRAVIS_SCALA_VERSION" == 2.11.* ]]; then
+    sbt ++$TRAVIS_SCALA_VERSION coveralls
+  fi
+
 cache:
   directories:
     - $HOME/.ivy2/cache

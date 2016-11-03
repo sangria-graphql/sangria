@@ -30,21 +30,21 @@ libraryDependencies ++= Seq(
   "org.parboiled" %% "parboiled" % "2.1.3",
 
   // marshalling
-  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.1",
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.2",
 
   // streaming
-  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.0",
+  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.1",
 
   // testing
-  "org.scalatest" %% "scalatest" % "2.2.6" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.1" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.3" % "test",
   "org.sangria-graphql" %% "sangria-spray-json" % "0.3.1" % "test",
   "org.sangria-graphql" %% "sangria-ion" % "0.1.0" % "test",
   "org.sangria-graphql" %% "sangria-monix" % "0.1.0" % "test",
   "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0" % "test",
 
   // CATs
-  "net.jcazevedo" %% "moultingyaml" % "0.2" % "test",
+  "net.jcazevedo" %% "moultingyaml" % "0.3.0" % "test",
   "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
 )
 
