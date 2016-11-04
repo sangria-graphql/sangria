@@ -44,7 +44,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0" % "test",
 
   // CATs
-  "net.jcazevedo" %% "moultingyaml" % "0.3.0" % "test",
+  "net.jcazevedo" %% "moultingyaml" % "0.3.1" % "test",
   "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
 )
 
