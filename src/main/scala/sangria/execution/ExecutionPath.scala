@@ -33,6 +33,9 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
     case ("", str: String) ⇒ str
     case (acc, str: String) ⇒ acc + "." + str
     case (acc, idx: Int) ⇒ acc + "[" + idx + "]"
+
+    case ("", other) ⇒ other.toString
+    case (acc, other) ⇒ acc + "." + other.toString
   }
 }
 

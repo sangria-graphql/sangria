@@ -322,6 +322,8 @@ case class Executor[Ctx, Root](
             case Value(value) ⇒ value
             case TryValue(value) ⇒ value.get
           }
+
+        case (acc, _) ⇒ Future.failed(new IllegalStateException(s"Invalid shape of the user context! $acc"))
       }
     } catch {
       case NonFatal(error) ⇒ Future.failed(error)
