@@ -11,6 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 trait FutureResultSupport {
   implicit class FutureResult[T](f: Future[T]) {
     def await = Await.result(f, 3 seconds)
+    def await(duration: Duration) = Await.result(f, duration)
 
     def awaitAndRecoverQueryAnalysis(implicit m: ResultMarshallerForType[T]): T = Await.result(recoverQueryAnalysis, 2 seconds)
 
