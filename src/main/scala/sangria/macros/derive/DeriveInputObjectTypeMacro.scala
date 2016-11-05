@@ -122,14 +122,22 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
   private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol, applyInfo: Option[(Type, MethodSymbol)]): (List[Annotation], Option[(Type, TermName)]) =
     applyInfo match {
       case Some((companion, apply)) ⇒
-        apply.paramLists.flatten.zipWithIndex.find(_._1.name.decodedName.toString == member.name.decodedName.toString) match {
-          case Some((param: TermSymbol, idx)) if param.isParamWithDefault ⇒
-            param.annotations → Some(companion → defaultMethodArgValue(apply.name.decodedName.toString, idx + 1).asInstanceOf[TermName])
-          case Some((param, idx)) ⇒
-            param.annotations → None
-          case None ⇒
-            Nil → None
-        }
+        val annotationsConstructors =
+          for {
+            c ← tpe.members.filter(_.isConstructor)
+            pl ← c.asMethod.paramLists
+            p ← pl
+            if p.name.decodedName.toString == member.name.decodedName.toString
+          } yield p.annotations
+
+        val defaults =
+          apply.paramLists.flatten.zipWithIndex.find(_._1.name.decodedName.toString == member.name.decodedName.toString) match {
+            case Some((param: TermSymbol, idx)) if param.isParamWithDefault ⇒
+              Some(companion → defaultMethodArgValue(apply.name.decodedName.toString, idx + 1).asInstanceOf[TermName])
+            case _ ⇒ None
+          }
+
+        annotationsConstructors.toList.flatten → defaults
 
       case None ⇒
         Nil → None

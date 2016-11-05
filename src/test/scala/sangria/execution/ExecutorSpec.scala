@@ -433,7 +433,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       class MyResolver extends DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-          case Sum(a, b) ⇒ Future(a + b)
+          case Sum(a, b) ⇒ Future(a + b)(ec)
         }
       }
 
@@ -462,7 +462,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       class MyResolver extends DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-          case Sum(a, b) ⇒ Future(a + b)
+          case Sum(a, b) ⇒ Future(a + b)(ec)
         }
       }
 

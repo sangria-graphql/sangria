@@ -29,12 +29,12 @@ class CoercionSpec extends WordSpec with Matchers {
       }
 
       "Float coerces NaN to null" in {
-        FloatType.coerceOutput(Double.NaN, Set.empty) should be (null.asInstanceOf[Double])
+        FloatType.coerceOutput(Double.NaN, Set.empty) should be (null.asInstanceOf[java.lang.Double])
       }
 
       "Float coerces infinity to null" in {
-        FloatType.coerceOutput(Double.PositiveInfinity, Set.empty) should be (null.asInstanceOf[Double])
-        FloatType.coerceOutput(Double.NegativeInfinity, Set.empty) should be (null.asInstanceOf[Double])
+        FloatType.coerceOutput(Double.PositiveInfinity, Set.empty) should be (null.asInstanceOf[java.lang.Double])
+        FloatType.coerceOutput(Double.NegativeInfinity, Set.empty) should be (null.asInstanceOf[java.lang.Double])
       }
 
       "BigDecimal" in {
