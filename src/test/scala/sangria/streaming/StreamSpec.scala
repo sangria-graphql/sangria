@@ -12,45 +12,46 @@ import scala.concurrent.Future
 
 class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
   "Stream based subscriptions" when  {
-    "using RxScala" should {
-      "Stream results" in {
-        import sangria.marshalling.sprayJson._
-        import spray.json._
-        import rx.lang.scala.Observable
-
-        import sangria.streaming.rxscala._
-
-        import scala.concurrent.ExecutionContext.Implicits.global
-
-        val QueryType = ObjectType("QueryType", fields[Unit, Unit](
-          Field("hello", StringType, resolve = _ ⇒ "world")
-        ))
-
-        val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
-          Field.subs("letters", StringType, resolve = _ ⇒
-            Observable.from(List("a", "b").map(action(_)))),
-
-          Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
-            Observable.from(List(1, 2).map(action(_))))
-        ))
-
-        val schema = Schema(QueryType, subscription = Some(SubscriptionType))
-
-        import sangria.execution.ExecutionScheme.Stream
-
-        val stream: Observable[JsValue] =
-          Executor.execute(schema, graphql"subscription { letters numbers }")
-
-        val result = stream.toBlocking.toList
-
-        result should (
-          have(size(4)) and
-          contain("""{"data": {"letters": "a"}}""".parseJson) and
-          contain("""{"data": {"letters": "b"}}""".parseJson) and
-          contain("""{"data": {"numbers": 1}}""".parseJson) and
-          contain("""{"data": {"numbers": 2}}""".parseJson))
-      }
-    }
+    // TODO: uncomment when ExScala is updated to scala 2.12
+//    "using RxScala" should {
+//      "Stream results" in {
+//        import sangria.marshalling.sprayJson._
+//        import spray.json._
+//        import rx.lang.scala.Observable
+//
+//        import sangria.streaming.rxscala._
+//
+//        import scala.concurrent.ExecutionContext.Implicits.global
+//
+//        val QueryType = ObjectType("QueryType", fields[Unit, Unit](
+//          Field("hello", StringType, resolve = _ ⇒ "world")
+//        ))
+//
+//        val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
+//          Field.subs("letters", StringType, resolve = _ ⇒
+//            Observable.from(List("a", "b").map(action(_)))),
+//
+//          Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
+//            Observable.from(List(1, 2).map(action(_))))
+//        ))
+//
+//        val schema = Schema(QueryType, subscription = Some(SubscriptionType))
+//
+//        import sangria.execution.ExecutionScheme.Stream
+//
+//        val stream: Observable[JsValue] =
+//          Executor.execute(schema, graphql"subscription { letters numbers }")
+//
+//        val result = stream.toBlocking.toList
+//
+//        result should (
+//          have(size(4)) and
+//          contain("""{"data": {"letters": "a"}}""".parseJson) and
+//          contain("""{"data": {"letters": "b"}}""".parseJson) and
+//          contain("""{"data": {"numbers": 1}}""".parseJson) and
+//          contain("""{"data": {"numbers": 2}}""".parseJson))
+//      }
+//    }
 
     "using monix" should {
       import _root_.monix.execution.Scheduler.Implicits.global
@@ -296,51 +297,52 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
           contain("Subscription type 'Subscription' may either contain only non-subscription fields or only subscription fields (defined with `Field.subs`). Following fields are non-subscription fields among other subscription fields: 'hello'."))
       }
 
-      "validate that all fields have same stream implementation at schema creation time" in {
-        val f1 = {
-          import sangria.streaming.rxscala._
-          import rx.lang.scala.Observable
+      // TODO: uncomment when ExScala is updated to scala 2.12
+//      "validate that all fields have same stream implementation at schema creation time" in {
+//        val f1 = {
+//          import sangria.streaming.rxscala._
+//          import rx.lang.scala.Observable
+//
+//          Field.subs("letters", OptionType(StringType),
+//            resolve = (_: Context[Unit, Unit]) ⇒ Observable.from(List("a")).map(action(_)))
+//        }
+//
+//        val f2 = {
+//          import sangria.streaming.monix._
+//          import _root_.monix.reactive.Observable
+//
+//          Field.subs("otherLetters", OptionType(StringType),
+//            resolve = (_: Context[Unit, Unit]) ⇒ Observable("a").map(action(_)))
+//        }
+//
+//        val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](f1, f2))
+//
+//        val error = intercept [SchemaValidationException] (Schema(QueryType, subscription = Some(SubscriptionType)))
+//
+//        error.violations.map(_.errorMessage) should (
+//          have(size(1)) and
+//          contain("Some fields of subscription type 'Subscription' have incompatible stream implementations: 'otherLetters'."))
+//      }
 
-          Field.subs("letters", OptionType(StringType),
-            resolve = (_: Context[Unit, Unit]) ⇒ Observable.from(List("a")).map(action(_)))
-        }
-
-        val f2 = {
-          import sangria.streaming.monix._
-          import _root_.monix.reactive.Observable
-
-          Field.subs("otherLetters", OptionType(StringType),
-            resolve = (_: Context[Unit, Unit]) ⇒ Observable("a").map(action(_)))
-        }
-
-        val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](f1, f2))
-
-        val error = intercept [SchemaValidationException] (Schema(QueryType, subscription = Some(SubscriptionType)))
-
-        error.violations.map(_.errorMessage) should (
-          have(size(1)) and
-          contain("Some fields of subscription type 'Subscription' have incompatible stream implementations: 'otherLetters'."))
-      }
-
-      "validate that all fields have same stream implementation at stream merge" in {
-        val SubscriptionType = {
-          import _root_.monix.reactive.Observable
-          import sangria.streaming.monix._
-
-          ObjectType("Subscription", fields[Unit, Unit](
-            Field.subs("letters", OptionType(StringType), resolve = _ ⇒
-              Observable("a", "b", "c").map(action(_)))))
-        }
-
-        val schema = Schema(QueryType, subscription = Some(SubscriptionType))
-
-        import sangria.streaming.rxscala._
-        import sangria.execution.ExecutionScheme.StreamExtended
-
-        val stream = Executor.execute(schema, graphql"subscription { letters }")
-
-        an [IllegalStateException] should be thrownBy stream.toBlocking.toList
-      }
+//      "validate that all fields have same stream implementation at stream merge" in {
+//        val SubscriptionType = {
+//          import _root_.monix.reactive.Observable
+//          import sangria.streaming.monix._
+//
+//          ObjectType("Subscription", fields[Unit, Unit](
+//            Field.subs("letters", OptionType(StringType), resolve = _ ⇒
+//              Observable("a", "b", "c").map(action(_)))))
+//        }
+//
+//        val schema = Schema(QueryType, subscription = Some(SubscriptionType))
+//
+//        import sangria.streaming.rxscala._
+//        import sangria.execution.ExecutionScheme.StreamExtended
+//
+//        val stream = Executor.execute(schema, graphql"subscription { letters }")
+//
+//        an [IllegalStateException] should be thrownBy stream.toBlocking.toList
+//      }
 
       "return first result for default execution scheme" in {
         import _root_.monix.reactive.Observable

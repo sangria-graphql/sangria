@@ -9,7 +9,7 @@ import sangria.schema._
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 import sangria.validation.rules._
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.{Stack ⇒ MutableStack, Set ⇒ MutableSet, Map ⇒ MutableMap, ListBuffer}
+import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap, ListBuffer}
 
 trait QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
@@ -122,7 +122,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
   def getFragmentSpreads(astNode: ast.SelectionContainer) =
     fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {
       val spreads = ListBuffer[ast.FragmentSpread]()
-      val setsToVisit = MutableStack[List[ast.Selection]]()
+      val setsToVisit = ValidatorStack.empty[List[ast.Selection]]
 
       setsToVisit.push(astNode.selections)
 
@@ -144,7 +144,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
     recursivelyReferencedFragmentsCache.getOrElseUpdate(operation.cacheKeyHash, {
       val frags = ListBuffer[ast.FragmentDefinition]()
       val collectedNames = MutableSet[String]()
-      val nodesToVisit = MutableStack[ast.SelectionContainer]()
+      val nodesToVisit = ValidatorStack.empty[ast.SelectionContainer]
 
       nodesToVisit.push(operation)
 
@@ -270,21 +270,21 @@ object ValidationContext {
 class TypeInfo(schema: Schema[_, _]) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
-  private val typeStack: MutableStack[Option[Type]] = MutableStack()
-  private val parentTypeStack: MutableStack[Option[CompositeType[_]]] = MutableStack()
-  private val inputTypeStack: MutableStack[Option[InputType[_]]] = MutableStack()
-  private val fieldDefStack: MutableStack[Option[Field[_, _]]] = MutableStack()
-  private val ancestorStack: MutableStack[ast.AstNode] = MutableStack()
+  private val typeStack: ValidatorStack[Option[Type]] = ValidatorStack.empty
+  private val parentTypeStack: ValidatorStack[Option[CompositeType[_]]] = ValidatorStack.empty
+  private val inputTypeStack: ValidatorStack[Option[InputType[_]]] = ValidatorStack.empty
+  private val fieldDefStack: ValidatorStack[Option[Field[_, _]]] = ValidatorStack.empty
+  private val ancestorStack: ValidatorStack[ast.AstNode] = ValidatorStack.empty
 
   var directive: Option[Directive] = None
   var argument: Option[Argument[_]] = None
 
   def tpe = typeStack.headOption.flatten
-  def previousParentType = parentTypeStack.drop(1).headOption.flatten
+  def previousParentType = parentTypeStack.headOption(1).flatten
   def parentType = parentTypeStack.headOption.flatten
   def inputType = inputTypeStack.headOption.flatten
   def fieldDef = fieldDefStack.headOption.flatten
-  def ancestors: Seq[ast.AstNode] = ancestorStack
+  def ancestors: Seq[ast.AstNode] = ancestorStack.toSeq
 
   def enter(node: ast.AstNode) = {
     ancestorStack push node
@@ -416,4 +416,19 @@ class TypeInfo(schema: Schema[_, _]) {
       case _ ⇒ None
     }
   }
+}
+
+class ValidatorStack[T] {
+  private val stack: ListBuffer[T] = ListBuffer.empty
+    
+  def push(element: T): Unit = stack.prepend(element)
+  def pop(): T = stack.remove(0)
+  def headOption = stack.headOption
+  def headOption(toDrop: Int) = stack.drop(toDrop).headOption
+  def nonEmpty = stack.nonEmpty
+  def toSeq: Seq[T] = stack
+}
+
+object ValidatorStack {
+  def empty[T] = new ValidatorStack[T]
 }

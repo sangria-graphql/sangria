@@ -968,7 +968,7 @@ class Resolver[Ctx](
   def nullForNotNullTypeError(position: Option[Position]) =
     new ExecutionError("Cannot return null for non-nullable type", exceptionHandler, sourceMapper, position.toList)
 
-  trait Resolve {
+  sealed trait Resolve {
     def appendErrors(path: ExecutionPath, errors: Vector[Throwable], position: Option[Position]): Resolve
   }
 

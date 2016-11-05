@@ -6,14 +6,21 @@ description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq("Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.0"
+crossScalaVersions := Seq("2.11.8", "2.12.0")
 
 scalacOptions ++= Seq(
-  "-target:jvm-1.7",
   "-deprecation",
   "-feature",
   "-Xlint",
   "-Xlint:-missing-interpolator")
+
+scalacOptions ++= {
+  if (scalaVersion.value startsWith "2.12")
+    Seq.empty
+  else
+    Seq("-target:jvm-1.7")
+}
 
 libraryDependencies ++= Seq(
   // macros
@@ -23,21 +30,22 @@ libraryDependencies ++= Seq(
   "org.parboiled" %% "parboiled" % "2.1.3",
 
   // marshalling
-  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.1",
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.2",
 
   // streaming
-  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.0",
+  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.1",
 
   // testing
-  "org.scalatest" %% "scalatest" % "2.2.6" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.1" % "test",
-  "org.sangria-graphql" %% "sangria-spray-json" % "0.3.1" % "test",
-  "org.sangria-graphql" %% "sangria-ion" % "0.1.0" % "test",
-  "org.sangria-graphql" %% "sangria-monix" % "0.1.0" % "test",
-  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.3" % "test",
+  "org.sangria-graphql" %% "sangria-spray-json" % "0.3.2" % "test",
+  "org.sangria-graphql" %% "sangria-ion" % "0.1.1" % "test",
+  "org.sangria-graphql" %% "sangria-monix" % "0.1.1" % "test",
+  // TODO: enable as soon as RxScala bcomes abailable
+//  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0" % "test",
 
   // CATs
-  "net.jcazevedo" %% "moultingyaml" % "0.2" % "test",
+  "net.jcazevedo" %% "moultingyaml" % "0.3.1" % "test",
   "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
 )
 

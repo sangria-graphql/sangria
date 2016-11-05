@@ -1,6 +1,5 @@
 package sangria.util
 
-import org.scalactic.PrettyMethods.PrettifierConfig
 import org.scalactic.Prettifier
 
 import scala.collection.GenMap
@@ -71,7 +70,7 @@ object DebugUtil {
       }
     }
 
-  private implicit val conf = PrettifierConfig(myPrettifier)
+  private implicit val conf = myPrettifier
 
   def prettyRender(obj: Any) = obj.pretty
 

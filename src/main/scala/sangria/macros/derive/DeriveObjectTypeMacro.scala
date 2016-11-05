@@ -205,18 +205,15 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol): List[Annotation] =
     if (tpe.companion =:= NoType) Nil
     else {
-      val applyMethods = tpe.companion.members.collect {
-        case m: MethodSymbol if m.name.decodedName.toString == "apply" ⇒ m
-      }
+      val annotationsConstructors =
+        for {
+          c ← tpe.members.filter(_.isConstructor)
+          pl ← c.asMethod.paramLists
+          p ← pl
+          if p.name.decodedName.toString == member.name.decodedName.toString
+        } yield p.annotations
 
-      val annotations = for {
-        m ← applyMethods
-        pl ← m.paramLists
-        p ← pl
-        if p.name.decodedName.toString == member.name.decodedName.toString
-      } yield p.annotations
-
-      annotations.toList.flatten
+      annotationsConstructors.toList.flatten
     }
 
   private def extractFields(knownMembers: List[KnownMember], config: Seq[MacroDeriveObjectSetting]) = {
