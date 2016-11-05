@@ -1,16 +1,21 @@
 package sangria.streaming
 
+import language.postfixOps
+
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.execution.{Executor, HandledException}
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
+import scala.concurrent.duration._
 
 import scala.concurrent.Future
 
 class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
+  val timeout = 10 seconds
+
   "Stream based subscriptions" when  {
     // TODO: uncomment when ExScala is updated to scala 2.12
 //    "using RxScala" should {
@@ -82,7 +87,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         val stream: Observable[JsValue] =
           Executor.execute(schema, graphql"subscription { letters numbers }")
 
-        val result = stream.toListL.runAsync.await
+        val result = stream.toListL.runAsync.await(timeout)
 
         result should (
           have(size(4)) and
@@ -115,7 +120,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         val stream: Observable[JsValue] =
           Executor.execute(schema, graphql"subscription { letters numbers }", exceptionHandler = exceptionHandler)
 
-        val result = stream.toListL.runAsync.await
+        val result = stream.toListL.runAsync.await(timeout)
 
         result should (
           contain("""{"data": {"letters": null}, "errors": [{"message": "foo", "path":["letters"]}]}""".parseJson) and
@@ -236,10 +241,10 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
           Executor.execute(schema, mutation,
             ctx,
             deferredResolver = DeferredResolver.fetchers(cherryPicker),
-            exceptionHandler = exceptionHandler).await
+            exceptionHandler = exceptionHandler).await(timeout)
         }
 
-        val result = stream.toListL.runAsync.await
+        val result = stream.toListL.runAsync.await(timeout)
 
         result should (
           have(size(3)) and
@@ -272,7 +277,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val stream = Executor.execute(schema, graphql"subscription { letters }")
 
-        val result = stream.toListL.runAsync.await
+        val result = stream.toListL.runAsync.await(timeout)
 
         result.map(_.result) should (
           have(size(3)) and
@@ -358,7 +363,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
 
-        val result = Executor.execute(schema, graphql"subscription { letters numbers }").await
+        val result = Executor.execute(schema, graphql"subscription { letters numbers }").await(timeout)
 
         List(result) should contain oneOf (
           """{"data":{"letters": "a"}}""".parseJson,
@@ -381,7 +386,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val stream = Executor.execute(schema, graphql"subscription { letters numbers }")
 
-        val result = stream.toListL.runAsync.await
+        val result = stream.toListL.runAsync.await(timeout)
 
         result should (
           have(size(1)) and

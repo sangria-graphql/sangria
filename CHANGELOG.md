@@ -1,3 +1,9 @@
+## v1.0.0-RC3 (2016-11-05)
+
+* Cross compile to scala 2.12 and scala 2.11 (#182, #183)  
+* Schema comparator (#169, #165). It helps to compare different schemas or different versions of the same schema. It also provides an information whether particular change is a breaking change. This is a great example of GraphQL type system potential. For more info see the ["Schema Comparator" section of documentation](http://sangria-graphql.org/learn/#schema-comparator). 
+* Improve handling of `NaN` and `infinity` values (#167, #168) 
+
 ## v1.0.0-RC2 (2016-10-10)
 
 * Capture original exceptions only if necessary (based on the `ExecutionScheme`)
