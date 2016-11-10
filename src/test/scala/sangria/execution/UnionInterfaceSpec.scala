@@ -12,7 +12,7 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
 
   case class Dog(name: Option[String], barks: Option[Boolean]) extends Named
   case class Cat(name: Option[String], meows: Option[Boolean]) extends Named
-  case class Person(name: Option[String], pets: Option[List[Option[AnyRef]]], friends: Option[List[Option[Named]]]) extends Named
+  case class Person(name: Option[String], pets: Option[List[Option[Any]]], friends: Option[List[Option[Named]]]) extends Named
 
   val NamedType = InterfaceType("Named", fields[Unit, Named](
     Field("name", OptionType(StringType), resolve = _.value.name)))
@@ -28,6 +28,7 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
   val PersonType = ObjectType("Person", interfaces[Unit, Person](NamedType), fields[Unit, Person](
     Field("pets", OptionType(ListType(OptionType(PetType))), resolve = _.value.pets),
     Field("favouritePet", PetType, resolve = _.value.pets.flatMap(_.headOption.flatMap(identity)).get),
+    Field("favouritePetList", ListType(PetType), resolve = _.value.pets.getOrElse(Nil).flatMap(x ⇒ x).toSeq),
     Field("favouritePetOpt", OptionType(PetType), resolve = _.value.pets.flatMap(_.headOption.flatMap(identity))),
     Field("friends", OptionType(ListType(OptionType(NamedType))), resolve = _.value.friends)))
   

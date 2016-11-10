@@ -326,16 +326,12 @@ object Field {
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
 trait ValidOutType[-Res, +Out]
 
-object ValidOutType extends LowPrioValidOutType {
+object ValidOutType {
+  private val valid = new ValidOutType[Any, Any] {}
+
   implicit def validSubclass[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Out]]
   implicit def validNothing[Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
   implicit def validOption[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Option[Out]]]
-}
-
-trait LowPrioValidOutType {
-  val valid = new ValidOutType[Any, Any] {}
-
-  implicit def validSeq[Res, Out](implicit ev: Res <:< Out) = valid.asInstanceOf[ValidOutType[Res, Seq[Out]]]
 }
 
 trait InputValue[T] {
