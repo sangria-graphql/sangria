@@ -263,6 +263,8 @@ class Resolver[Ctx](
           case PartialValue(v, es) ⇒
             val updatedUc = resolveUc(v)
 
+            es foreach resolveError
+
             Future.successful(
               resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc)
                 .appendErrors(fieldPath, es, fields.head.position) → updatedUc)
@@ -301,6 +303,8 @@ class Resolver[Ctx](
               case PartialValue(v, es) ⇒
                 val updatedUc = resolveUc(v)
 
+                es foreach resolveError
+
                 resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc)
                   .appendErrors(fieldPath, es, fields.head.position) → updatedUc
             }.recover { case e ⇒ Result(ErrorRegistry(path + name, resolveError(e), fields.head.position), None) → uc}
@@ -311,7 +315,15 @@ class Resolver[Ctx](
               Defer(p, d, complexity, sfield, fields, args)
             }
 
-            immediatelyResolveDeferred(uc, DeferredResult(Vector(df.map(d ⇒ Vector(defer(d)))), p.future.flatMap { case (dctx, v) ⇒
+            val actualDeferred = df
+              .map(d ⇒ Vector(defer(d)))
+              .recover {
+                case NonFatal(e) ⇒
+                  p.failure(e)
+                  Vector.empty
+              }
+
+            immediatelyResolveDeferred(uc, DeferredResult(Vector(actualDeferred), p.future.flatMap { case (dctx, v) ⇒
               val updatedUc = resolveUc(v)
 
               resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) match {
@@ -404,6 +416,8 @@ class Resolver[Ctx](
           case (astFields, Some((field, updateCtx, PartialValue(v, es)))) ⇒
             val fieldsPath = path + astFields.head
 
+            es foreach (resolveError(updateCtx, _))
+
             try {
               astFields.head →
                 resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
@@ -494,6 +508,8 @@ class Resolver[Ctx](
             val fieldsPath = path + astFields.head
 
             val resolved = future.map {case PartialValue(v, es) ⇒
+              es foreach (resolveError(updateCtx, _))
+
               resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), resolveUc(updateCtx, v))
                 .appendErrors(fieldsPath, es, astFields.head.position)}
               .recover {
@@ -519,7 +535,15 @@ class Resolver[Ctx](
               Defer(promise, d, complexity, field, astFields, args)
             }
 
-            astFields.head → DeferredResult(Vector(deferredValue.map(d ⇒ Vector(defer(d)))),
+            val actualDeferred = deferredValue
+              .map(d ⇒ Vector(defer(d)))
+              .recover {
+                case NonFatal(e) ⇒
+                  promise.failure(e)
+                  Vector.empty
+              }
+
+            astFields.head → DeferredResult(Vector(actualDeferred),
               promise.future.flatMap { case (dctx, v) ⇒
                 val uc = resolveUc(updateCtx, v)
 
@@ -802,7 +826,7 @@ class Resolver[Ctx](
               }
 
               def doErrorMiddleware(error: Throwable): Unit =
-                mAfter.collect {
+                mError.collect {
                   case ((cv, _), mv, m: MiddlewareErrorField[Ctx]) ⇒
                     m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, ctx)
                 }
@@ -846,7 +870,7 @@ class Resolver[Ctx](
                       StandardFieldResolution(
                         errors,
                         if (mAfter.nonEmpty)
-                          Value(doAfterMiddleware(resolved.value))
+                          PartialValue(doAfterMiddleware(resolved.value), resolved.errors)
                         else
                           resolved,
                         if (mError.nonEmpty)
