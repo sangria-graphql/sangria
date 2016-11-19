@@ -50,8 +50,6 @@ libraryDependencies ++= Seq(
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
-git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
-
 // Publishing
 
 publishMavenStyle := true
@@ -63,20 +61,6 @@ publishTo := Some(
   else
     "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
 
-// Site and docs
-
-site.settings
-site.includeScaladoc()
-ghpages.settings
-
-// nice *magenta* prompt!
-
-shellPrompt in ThisBuild := { state ⇒
-  scala.Console.MAGENTA + Project.extract(state).currentRef.project + "> " + scala.Console.RESET
-}
-
-// Additional meta-info
-
 startYear := Some(2015)
 organizationHomepage := Some(url("https://github.com/sangria-graphql"))
 developers := Developer("OlegIlyenko", "Oleg Ilyenko", "", url("https://github.com/OlegIlyenko")) :: Nil
@@ -84,3 +68,9 @@ scmInfo := Some(ScmInfo(
   browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
   connection = "scm:git:git@github.com:sangria-graphql/sangria.git"
 ))
+
+// nice *magenta* prompt!
+
+shellPrompt in ThisBuild := { state ⇒
+  scala.Console.MAGENTA + Project.extract(state).currentRef.project + "> " + scala.Console.RESET
+}
