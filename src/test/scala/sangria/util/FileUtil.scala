@@ -21,7 +21,7 @@ object FileUtil {
   def loadYaml(name: String, root: String = "scenarios") =
     loadResource(root + "/" + name).parseYaml
 
-  def loadScenarios(path: String, root: String = "scenarios") = {
+  def loadScenarios(path: String, root: String = "scenarios") = this.synchronized {
     val builder = new VectorBuilder[ScenarioFile]
 
     new FastClasspathScanner(root + "." + path).matchFilenameExtension("yaml", new FileMatchContentsProcessorWithContext {
