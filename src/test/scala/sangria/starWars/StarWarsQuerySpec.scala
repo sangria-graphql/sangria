@@ -5,6 +5,7 @@ import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
+import sangria.macros._
 import sangria.starWars.TestSchema.{PrivacyError, StarWarsSchema}
 import sangria.starWars.TestData.{CharacterRepo, FriendsResolver}
 import sangria.util.FutureResultSupport
@@ -17,13 +18,13 @@ import scala.util.Success
 class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport {
   "Basic Queries" should {
     "Correctly identifies R2-D2 as the hero of the Star Wars Saga" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query HeroNameQuery {
           hero {
             name
           }
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -33,7 +34,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Allows us to query for the ID and friends of R2-D2" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query HeroNameAndFriendsQuery {
           hero {
             id
@@ -43,7 +44,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
             }
           }
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -59,7 +60,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Hero query should succeed even if not all types are referenced indirectly" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query HeroNameAndFriendsQuery {
           hero {
             id
@@ -69,7 +70,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
             }
           }
         }
-        """)
+        """
 
       val HeroOnlyQuery = ObjectType[CharacterRepo, Unit](
         "HeroOnlyQuery", fields[CharacterRepo, Unit](
@@ -96,7 +97,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
 
   "Nested Queries" should {
     "Allows us to query for the friends of friends of R2-D2" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query NestedQuery {
           hero {
             name
@@ -109,7 +110,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
             }
           }
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -156,13 +157,13 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
 
   "Using IDs and query parameters to refetch objects" should {
     "Allows us to query for Luke Skywalker directly, using his ID" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query FetchLukeQuery {
           human(id: "1000") {
             name
           }
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -175,13 +176,13 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Allows us to create a generic query, then use it to fetch Luke Skywalker using his ID" in {
-      val Success(query) = QueryParser.parse("""
-        query FetchSomeIDQuery($someId: String!) {
-          human(id: $someId) {
+      val query = graphql"""
+        query FetchSomeIDQuery($$someId: String!) {
+          human(id: $$someId) {
             name
           }
         }
-        """)
+        """
 
       val args = mapVars("someId" → "1000")
 
@@ -196,13 +197,13 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Allows us to create a generic query, then use it to fetch Han Solo using his ID" in {
-      val Success(query) = QueryParser.parse("""
-        query FetchSomeIDQuery($someId: String!) {
-          human(id: $someId) {
+      val query = graphql"""
+        query FetchSomeIDQuery($$someId: String!) {
+          human(id: $$someId) {
             name
           }
         }
-        """)
+        """
 
       val args = mapVars("someId" → "1002")
 
@@ -217,13 +218,13 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Allows us to create a generic query, then pass an invalid ID to get null back" in {
-      val Success(query) = QueryParser.parse("""
-        query humanQuery($id: String!) {
-          human(id: $id) {
+      val query = graphql"""
+        query humanQuery($$id: String!) {
+          human(id: $$id) {
             name
           }
         }
-        """)
+        """
 
       val args = mapVars("id" → "not a valid id")
 
@@ -238,14 +239,14 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
 
   "Using aliases to change the key in the response" should {
     "Allows us to query for Luke, changing his key with an alias" in {
-      val Success(query) = QueryParser.parse(
-        """
-        query FetchLukeAliased {
-          luke: human(id: "1000") {
-            name
+      val query =
+        graphql"""
+          query FetchLukeAliased {
+            luke: human(id: "1000") {
+              name
+            }
           }
-        }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -257,17 +258,17 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Allows us to query for both Luke and Leia, using two root fields and an alias" in {
-      val Success(query) = QueryParser.parse(
+      val query =
+        graphql"""
+          query FetchLukeAndLeiaAliased {
+            luke: human(id: "1000") {
+              name
+            }
+            leia: human(id: "1003") {
+              name
+            }
+          }
         """
-        query FetchLukeAndLeiaAliased {
-          luke: human(id: "1000") {
-            name
-          }
-          leia: human(id: "1003") {
-            name
-          }
-        }
-        """)
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -283,7 +284,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
 
   "Uses fragments to express more complex queries" should {
     "Allows us to query using duplicated content" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query DuplicateFields {
           luke: human(id: "1000") {
             name
@@ -294,7 +295,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
             homePlanet
           }
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -310,7 +311,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Allows us to use a fragment to avoid duplicating content" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query UseFragment {
           luke: human(id: "1000") {
             ...HumanFragment
@@ -324,7 +325,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
           name
           homePlanet
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -342,14 +343,14 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
 
   "Using __typename to find the type of an object" should {
     "Allows us to verify that R2-D2 is a droid" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query CheckTypeOfR2 {
           hero {
             __typename
             name
           }
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -362,14 +363,14 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Allows us to verify that Luke is a human" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query CheckTypeOfLuke {
           hero(episode: EMPIRE) {
             __typename
             name
           }
         }
-        """)
+        """
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
@@ -384,14 +385,14 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
 
   "Reporting errors raised in resolvers" should {
     "Correctly reports error on accessing secretBackstory" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query HeroNameQuery {
           hero {
             name
             secretBackstory
           }
         }
-        """)
+        """
 
       val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
 
@@ -409,7 +410,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Correctly reports error on accessing secretBackstory in a list" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query HeroNameQuery {
           hero {
             name
@@ -419,7 +420,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
             }
           }
         }
-        """)
+        """
 
       val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
 
@@ -451,14 +452,14 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "Correctly reports error on accessing through an alias" in {
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query HeroNameQuery {
           mainHero: hero {
             name
             story: secretBackstory
           }
         }
-        """)
+        """
 
       val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
 
@@ -486,7 +487,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
 
       val schema = Schema(Query)
 
-      val Success(query) = QueryParser.parse("""
+      val query = graphql"""
         query {
           nullableA {
             nullableA {
@@ -498,7 +499,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
             }
           }
         }
-        """)
+        """
 
       val res = Executor.execute(schema, query, queryValidator = QueryValidator.empty).await.asInstanceOf[Map[String, Any]]
 
