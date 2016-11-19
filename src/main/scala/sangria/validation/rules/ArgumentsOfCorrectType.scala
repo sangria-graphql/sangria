@@ -1,10 +1,10 @@
 package sangria.validation.rules
 
-import sangria.renderer.{SchemaRenderer, QueryRenderer}
+import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.validation.ValidationContext.isValidLiteralValue
 import sangria.validation.{BadValueViolation, ValidationContext, ValidationRule}
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 
 /**
  * Argument values of correct type
@@ -28,8 +28,8 @@ class ArgumentsOfCorrectType extends ValidationRule {
               ctx.sourceMapper,
               value.position.toList)))
           else
-            Right(Continue)
-        } getOrElse Right(Continue)
+            AstVisitorCommand.RightContinue
+        } getOrElse AstVisitorCommand.RightContinue
     }
   }
 }

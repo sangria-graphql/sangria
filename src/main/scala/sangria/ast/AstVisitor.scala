@@ -1,6 +1,8 @@
 package sangria.ast
 
 import sangria.ast
+import sangria.validation.Violation
+
 import scala.util.control.Breaks._
 
 object AstVisitor {
@@ -281,4 +283,8 @@ object AstVisitor {
 
 object AstVisitorCommand extends Enumeration {
   val Skip, Continue, Break = Value
+
+  val RightContinue: Either[Vector[Violation], AstVisitorCommand.Value] = Right(Continue)
+  val RightSkip: Either[Vector[Violation], AstVisitorCommand.Value] = Right(Skip)
+  val RightBreak: Either[Vector[Violation], AstVisitorCommand.Value] = Right(Break)
 }

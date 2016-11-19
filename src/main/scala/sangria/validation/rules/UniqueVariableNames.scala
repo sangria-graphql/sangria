@@ -5,7 +5,7 @@ import org.parboiled2.Position
 import scala.language.postfixOps
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.collection.mutable.{Map ⇒ MutableMap}
@@ -22,7 +22,7 @@ class UniqueVariableNames extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition ⇒
         knownVariableNames.clear()
-        Right(Continue)
+        AstVisitorCommand.RightContinue
 
       case ast.VariableDefinition(name, _, _, _, pos) ⇒
         knownVariableNames get name match {
@@ -30,7 +30,7 @@ class UniqueVariableNames extends ValidationRule {
             Left(Vector(DuplicateVariableViolation(name, ctx.sourceMapper, otherPos ++ pos.toList)))
           case None ⇒
             knownVariableNames += name → pos.toList
-            Right(Continue)
+            AstVisitorCommand.RightContinue
         }
     }
   }

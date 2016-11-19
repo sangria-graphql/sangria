@@ -1,9 +1,9 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.SchemaRenderer
-import sangria.schema.{OptionInputType, LeafType}
+import sangria.schema.OptionInputType
 import sangria.validation._
 
 import scala.language.postfixOps
@@ -19,7 +19,7 @@ class ProvidedNonNullArguments extends ValidationRule {
     override val onLeave: ValidationVisit = {
       case ast.Field(_, name, args, _, _, _, _, pos) ⇒
         ctx.typeInfo.fieldDef match {
-          case None ⇒ Right(Continue)
+          case None ⇒ AstVisitorCommand.RightContinue
           case Some(fieldDef) ⇒
             val astArgs = args.map(_.name).toSet
 
@@ -28,12 +28,12 @@ class ProvidedNonNullArguments extends ValidationRule {
                 MissingFieldArgViolation(name, argDef.name, SchemaRenderer.renderTypeName(argDef.argumentType), ctx.sourceMapper, pos.toList)
             }
 
-            if (errors.nonEmpty) Left(errors) else Right(Continue)
+            if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
         }
 
       case ast.Directive(name, args, _, pos) ⇒
         ctx.typeInfo.directive match {
-          case None ⇒ Right(Continue)
+          case None ⇒ AstVisitorCommand.RightContinue
           case Some(dirDef) ⇒
             val astArgs = args.map(_.name).toSet
 
@@ -42,7 +42,7 @@ class ProvidedNonNullArguments extends ValidationRule {
                 MissingFieldArgViolation(name, argDef.name, SchemaRenderer.renderTypeName(argDef.argumentType), ctx.sourceMapper, pos.toList)
             }
 
-            if (errors.nonEmpty) Left(errors) else Right(Continue)
+            if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
         }
     }
   }

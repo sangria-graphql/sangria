@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.collection.mutable.{Set ⇒ MutableSet}
@@ -19,16 +19,16 @@ class UniqueArgumentNames extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case _: ast.Field ⇒
         knownArgNames.clear()
-        Right(Continue)
+        AstVisitorCommand.RightContinue
       case _: ast.Directive ⇒
         knownArgNames.clear()
-        Right(Continue)
+        AstVisitorCommand.RightContinue
       case ast.Argument(name, _, _, pos) ⇒
         if (knownArgNames contains name)
           Left(Vector(DuplicateArgNameViolation(name, ctx.sourceMapper, pos.toList)))
         else {
           knownArgNames += name
-          Right(Continue)
+          AstVisitorCommand.RightContinue
         }
     }
   }

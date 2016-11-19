@@ -35,6 +35,7 @@ object QueryValidator {
     new ProvidedNonNullArguments,
     new ScalarLeafs,
     new UniqueArgumentNames,
+    new UniqueDirectivesPerLocation,
     new UniqueFragmentNames,
     new UniqueInputFieldNames,
     new UniqueOperationNames,
@@ -91,7 +92,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     visitRes match {
       case Left(violation) ⇒
         ctx.addViolations(violation)
-      case Right(Skip) ⇒
+      case AstVisitorCommand.RightSkip ⇒
         ctx.skips(visitor) = node
       case Right(Break) ⇒
         ctx.ignoredVisitors += visitor

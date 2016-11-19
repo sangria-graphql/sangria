@@ -5,7 +5,7 @@ import scala.language.postfixOps
 import sangria.schema.{OptionInputType, InputType}
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.SchemaRenderer
 import sangria.validation._
 
@@ -21,11 +21,11 @@ class VariablesInAllowedPosition extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition ⇒
         varDefs.clear()
-        Right(Continue)
+        AstVisitorCommand.RightContinue
 
       case varDef: ast.VariableDefinition ⇒
         varDefs(varDef.name) = varDef
-        Right(Continue)
+        AstVisitorCommand.RightContinue
     }
 
     override def onLeave: ValidationVisit = {
@@ -51,7 +51,7 @@ class VariablesInAllowedPosition extends ValidationRule {
             varDef.position.toList ++ usage.node.position.toList)
         }
 
-        if (errors.nonEmpty) Left(errors.distinct) else Right(Continue)
+        if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
     }
 
     // If a variable definition has a default value, it's effectively non-null.

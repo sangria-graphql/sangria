@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema.LeafType
 import sangria.validation._
@@ -19,7 +19,7 @@ class VariablesAreInputTypes extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case ast.VariableDefinition(name, tpe, _, _, pos) ⇒
         ctx.schema.getInputType(tpe) match {
-          case Some(_) ⇒ Right(Continue)
+          case Some(_) ⇒ AstVisitorCommand.RightContinue
           case None ⇒ Left(Vector(
             NonInputTypeOnVarViolation(name, QueryRenderer.render(tpe), ctx.sourceMapper, tpe.position.toList)))
         }

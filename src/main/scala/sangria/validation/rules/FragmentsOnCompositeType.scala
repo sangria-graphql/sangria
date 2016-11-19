@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.SchemaRenderer
 import sangria.schema.CompositeType
 import sangria.validation.{InlineFragmentOnNonCompositeErrorViolation, FragmentOnNonCompositeErrorViolation, ValidationContext, ValidationRule}
@@ -21,14 +21,14 @@ class FragmentsOnCompositeType extends ValidationRule {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] ⇒
             Left(Vector(InlineFragmentOnNonCompositeErrorViolation(cond.name, ctx.sourceMapper, cond.position.toList)))
           case _ ⇒
-            Right(Continue)
+            AstVisitorCommand.RightContinue
         }
       case ast.FragmentDefinition(name, cond, _, _, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] ⇒
             Left(Vector(FragmentOnNonCompositeErrorViolation(name, cond.name, ctx.sourceMapper, cond.position.toList)))
           case _ ⇒
-            Right(Continue)
+            AstVisitorCommand.RightContinue
         }
     }
   }

@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.collection.mutable.{Set ⇒ MutableSet}
@@ -21,7 +21,7 @@ class UniqueFragmentNames extends ValidationRule {
           Left(Vector(DuplicateFragmentNameViolation(fragDef.name, ctx.sourceMapper, fragDef.position.toList)))
         else {
           knownFragmentNames += fragDef.name
-          Right(Continue)
+          AstVisitorCommand.RightContinue
         }
     }
   }

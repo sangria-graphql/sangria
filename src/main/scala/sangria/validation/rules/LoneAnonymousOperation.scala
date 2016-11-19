@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.language.postfixOps
@@ -19,12 +19,12 @@ class LoneAnonymousOperation extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case ast.Document(definitions, _, _, _) ⇒
         operationCount = definitions.count(_.isInstanceOf[ast.OperationDefinition])
-        Right(Continue)
+        AstVisitorCommand.RightContinue
       case op: ast.OperationDefinition ⇒
         if (op.name.isEmpty && operationCount > 1)
           Left(Vector(AnonOperationNotAloneViolation(ctx.sourceMapper, op.position.toList)))
         else
-          Right(Continue)
+          AstVisitorCommand.RightContinue
     }
   }
 }

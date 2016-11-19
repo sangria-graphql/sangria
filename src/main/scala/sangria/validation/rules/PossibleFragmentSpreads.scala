@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.validation._
@@ -34,7 +34,7 @@ class PossibleFragmentSpreads extends ValidationRule {
 
         errors match {
           case Some(errors) if errors.nonEmpty ⇒ Left(errors)
-          case _ ⇒ Right(Continue)
+          case _ ⇒ AstVisitorCommand.RightContinue
         }
       case fs: ast.FragmentSpread ⇒
         val errors = for {
@@ -53,7 +53,7 @@ class PossibleFragmentSpreads extends ValidationRule {
 
         errors match {
           case Some(errors) if errors.nonEmpty ⇒ Left(errors)
-          case _ ⇒ Right(Continue)
+          case _ ⇒ AstVisitorCommand.RightContinue
         }
     }
 

@@ -1,10 +1,10 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap, ListBuffer}
+import scala.collection.mutable.{Set ⇒ MutableSet, ListBuffer}
 import scala.language.postfixOps
 
 /**
@@ -21,11 +21,11 @@ class NoUnusedFragments extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case od: ast.OperationDefinition ⇒
         operationDefs += od
-        Right(Skip)
+        AstVisitorCommand.RightSkip
 
       case fd: ast.FragmentDefinition ⇒
         fragmentDefs += fd
-        Right(Skip)
+        AstVisitorCommand.RightSkip
      }
 
     override def onLeave: ValidationVisit = {
@@ -40,7 +40,7 @@ class NoUnusedFragments extends ValidationRule {
           .filter(fd ⇒ !fragmentNameUsed.contains(fd.name))
           .map(fd ⇒ UnusedFragmentViolation(fd.name, ctx.sourceMapper, fd.position.toList))
 
-        if (errors.nonEmpty) Left(errors) else Right(Continue)
+        if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
     }
   }
 }

@@ -1,5 +1,6 @@
 ## v1.0.0-RC4 (2016-XX-XX)
 
+* Validation rule for unique directives per location (#179).
 * Enforces input coercion rules (#177).
 * `MiddlewareQueryContext` and `ExecutionResult` now contain information about validation and query reducers' execution time (`validationTiming`, `queryReducerTiming`)
 * `Middleware.fieldError` was not called in all possible exceptional situations (#184).

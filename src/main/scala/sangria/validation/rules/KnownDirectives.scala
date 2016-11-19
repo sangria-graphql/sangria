@@ -6,7 +6,7 @@ import sangria.ast.{AstNode, OperationType}
 import sangria.schema.DirectiveLocation
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 /**
@@ -28,7 +28,7 @@ class KnownDirectives extends ValidationRule {
                  Left(Vector(MisplacedDirectiveViolation(name, None, ctx.sourceMapper, pos.toList)))
                case Some((correctLocation, hint)) if !dir.locations.contains(correctLocation) ⇒
                  Left(Vector(MisplacedDirectiveViolation(name, Some(hint), ctx.sourceMapper, pos.toList)))
-               case _ ⇒ Right(Continue)
+               case _ ⇒ AstVisitorCommand.RightContinue
              }
          }
      }

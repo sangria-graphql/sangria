@@ -5,7 +5,7 @@ import org.parboiled2.Position
 import scala.collection.mutable.{Map ⇒ MutableMap}
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 /**
@@ -21,14 +21,14 @@ class UniqueInputFieldNames extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case ast.ObjectValue(fields, _, _) ⇒
         knownNames.clear()
-        Right(Continue)
+        AstVisitorCommand.RightContinue
 
       case ast.ObjectField(name, _, _, pos) ⇒
         if (knownNames contains name)
           Left(Vector(DuplicateInputFieldViolation(name, ctx.sourceMapper, knownNames(name).toList ++ pos.toList)))
         else {
           knownNames += name → pos
-          Right(Continue)
+          AstVisitorCommand.RightContinue
         }
     }
   }

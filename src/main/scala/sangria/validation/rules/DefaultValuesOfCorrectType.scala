@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema.OptionInputType
 import sangria.validation.ValidationContext._
@@ -38,9 +38,9 @@ class DefaultValuesOfCorrectType extends ValidationRule {
                   ctx.sourceMapper,
                   defaultValue.position.toList)))
             else
-              Right(Continue)
+              AstVisitorCommand.RightContinue
           case _ ⇒
-            Right(Continue)
+            AstVisitorCommand.RightContinue
         }
     }
   }

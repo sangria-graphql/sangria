@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.collection.mutable.ListBuffer
@@ -20,11 +20,11 @@ class NoUnusedVariables extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition ⇒
         variableDefs.clear()
-        Right(Continue)
+        AstVisitorCommand.RightContinue
 
       case varDef: ast.VariableDefinition ⇒
         variableDefs += varDef
-        Right(Continue)
+        AstVisitorCommand.RightContinue
     }
 
     override def onLeave: ValidationVisit = {
@@ -35,7 +35,7 @@ class NoUnusedVariables extends ValidationRule {
         val errors = variableDefs.filterNot(vd ⇒ variableNameUsed.contains(vd.name)).toVector.map(vd ⇒
           UnusedVariableViolation(vd.name, operation.name, ctx.sourceMapper, vd.position.toList))
 
-        if (errors.nonEmpty) Left(errors.distinct) else Right(Continue)
+        if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
     }
   }
 }

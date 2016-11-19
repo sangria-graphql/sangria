@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.util.StringUtil
 import sangria.validation._
 
@@ -20,7 +20,7 @@ class KnownTypeNames extends ValidationRule {
         // TODO: when validating IDL, re-enable these. Experimental version does not
         // add unreferenced types, resulting in false-positive errors. Squelched
         // errors for now.
-        Right(Skip)
+        AstVisitorCommand.RightSkip
       case ast.NamedType(name, pos) ⇒
         if (!ctx.schema.allTypes.contains(name))
           Left(Vector(UnknownTypeViolation(
@@ -29,7 +29,7 @@ class KnownTypeNames extends ValidationRule {
             ctx.sourceMapper,
             pos.toList)))
         else
-          Right(Continue)
+          AstVisitorCommand.RightContinue
     }
   }
 }

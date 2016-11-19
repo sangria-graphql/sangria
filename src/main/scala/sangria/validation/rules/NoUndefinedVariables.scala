@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 import scala.collection.mutable.{Set ⇒ MutableSet}
 
@@ -20,11 +20,11 @@ class NoUndefinedVariables extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition ⇒
         variableNameDefined.clear()
-        Right(Continue)
+        AstVisitorCommand.RightContinue
 
       case varDef: ast.VariableDefinition ⇒
         variableNameDefined += varDef.name
-        Right(Continue)
+        AstVisitorCommand.RightContinue
     }
 
     override def onLeave: ValidationVisit = {
@@ -40,7 +40,7 @@ class NoUndefinedVariables extends ValidationRule {
           }
         }
 
-        if (errors.nonEmpty) Left(errors.distinct) else Right(Continue)
+        if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
     }
   }
 }

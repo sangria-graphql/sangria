@@ -4,7 +4,7 @@ import scala.collection.mutable
 import scala.language.postfixOps
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema._
 import sangria.validation._
@@ -90,7 +90,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
         if (conflicts.nonEmpty)
           Left(conflicts.toVector.map(c ⇒ FieldsConflictViolation(c.reason.fieldName, c.reason.reason, ctx.sourceMapper, (c.fields1 ++ c.fields2) flatMap (_.position))))
         else
-          Right(Continue)
+          AstVisitorCommand.RightContinue
     }
 
     def findConflictsWithinSelectionSet(parentType: Option[Type], selCont: ast.SelectionContainer): ListBuffer[Conflict] = {

@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.collection.mutable.{Set ⇒ MutableSet}
@@ -21,7 +21,7 @@ class UniqueOperationNames extends ValidationRule {
           Left(Vector(DuplicateOperationNameViolation(name, ctx.sourceMapper, pos.toList)))
         else {
           knownOpNames += name
-          Right(Continue)
+          AstVisitorCommand.RightContinue
         }
     }
   }

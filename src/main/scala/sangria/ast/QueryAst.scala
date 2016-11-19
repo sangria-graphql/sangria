@@ -161,7 +161,7 @@ sealed trait NameValue extends AstNode with WithComments {
   def value: Value
 }
 
-sealed trait WithDirectives {
+sealed trait WithDirectives extends AstNode {
   def directives: List[Directive]
 }
 
@@ -209,7 +209,7 @@ case class FieldDefinition(
   arguments: List[InputValueDefinition],
   directives: List[Directive] = Nil,
   comments: List[Comment] = Nil,
-  position: Option[Position] = None) extends SchemaAstNode
+  position: Option[Position] = None) extends SchemaAstNode with WithDirectives
 
 case class InputValueDefinition(
   name: String,
@@ -217,7 +217,7 @@ case class InputValueDefinition(
   defaultValue: Option[Value],
   directives: List[Directive] = Nil,
   comments: List[Comment] = Nil,
-  position: Option[Position] = None) extends SchemaAstNode
+  position: Option[Position] = None) extends SchemaAstNode with WithDirectives
 
 case class ObjectTypeDefinition(
   name: String,
@@ -255,7 +255,7 @@ case class EnumValueDefinition(
   name: String,
   directives: List[Directive] = Nil,
   comments: List[Comment] = Nil,
-  position: Option[Position] = None) extends SchemaAstNode
+  position: Option[Position] = None) extends SchemaAstNode with WithDirectives
 
 case class InputObjectTypeDefinition(
   name: String,
@@ -287,7 +287,7 @@ case class SchemaDefinition(
   directives: List[Directive] = Nil,
   comments: List[Comment] = Nil,
   trailingComments: List[Comment] = Nil,
-  position: Option[Position] = None) extends TypeSystemDefinition with WithTrailingComments
+  position: Option[Position] = None) extends TypeSystemDefinition with WithTrailingComments with WithDirectives
 
 case class OperationTypeDefinition(
   operation: OperationType,
@@ -305,9 +305,8 @@ sealed trait AstNode {
 
 sealed trait SchemaAstNode extends AstNode with WithComments
 sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
-sealed trait TypeDefinition extends TypeSystemDefinition {
+sealed trait TypeDefinition extends TypeSystemDefinition with WithDirectives {
   def name: String
-  def directives: List[Directive]
 }
 
 object AstNode {

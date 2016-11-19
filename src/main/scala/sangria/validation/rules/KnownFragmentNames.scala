@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.language.postfixOps
@@ -18,7 +18,7 @@ class KnownFragmentNames extends ValidationRule {
        case ast.FragmentSpread(name, _, _, pos) ⇒
          ctx.fragments.get(name) match {
            case None ⇒ Left(Vector(UnknownFragmentViolation(name, ctx.sourceMapper, pos.toList)))
-           case _ ⇒ Right(Continue)
+           case _ ⇒ AstVisitorCommand.RightContinue
          }
      }
    }

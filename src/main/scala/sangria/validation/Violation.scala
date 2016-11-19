@@ -223,6 +223,10 @@ case class RequiredSubselectionViolation(fieldName: String, typeName: String, so
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must have a sub selection."
 }
 
+case class DuplicateDirectiveViolation(directiveName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"The directive '$directiveName' can only be used once at this location."
+}
+
 case class TypeIncompatibleAnonSpreadViolation(parentTypeName: String, fragTypeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Fragment cannot be spread here as objects of type '$parentTypeName' can never be of type '$fragTypeName'."
 }

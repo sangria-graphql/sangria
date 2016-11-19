@@ -1,11 +1,10 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
-import sangria.renderer.{QueryRenderer, SchemaRenderer}
+import sangria.ast.AstVisitorCommand
+import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.util.StringUtil
-import sangria.validation.ValidationContext._
 import sangria.validation._
 
 /**
@@ -33,7 +32,7 @@ class FieldsOnCorrectType extends ValidationRule {
               ctx.sourceMapper,
               pos.toList)))
           case _ ⇒
-            Right(Continue)
+            AstVisitorCommand.RightContinue
         }
     }
 

@@ -1,7 +1,7 @@
 package sangria.validation.rules
 
 import sangria.ast
-import sangria.ast.AstVisitorCommand._
+import sangria.ast.AstVisitorCommand
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.util.StringUtil
 import sangria.validation._
@@ -28,7 +28,7 @@ class KnownArgumentNames extends ValidationRule {
                   ctx.sourceMapper,
                   pos.toList)))
               case _ ⇒
-                Right(Continue)
+                AstVisitorCommand.RightContinue
             }
 
           case _: ast.Directive ⇒
@@ -41,11 +41,11 @@ class KnownArgumentNames extends ValidationRule {
                   ctx.sourceMapper,
                   pos.toList)))
               case _ ⇒
-                Right(Continue)
+                AstVisitorCommand.RightContinue
             }
 
           case _ ⇒
-            Right(Continue)
+            AstVisitorCommand.RightContinue
         }
     }
   }
