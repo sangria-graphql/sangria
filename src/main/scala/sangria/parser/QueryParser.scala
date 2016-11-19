@@ -111,6 +111,7 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
   }
 
   def InputDocument = rule { IgnoredNoComment.* ~ ValueConst ~ Ignored.* ~ EOI }
+  def InputDocumentWithVariables = rule { IgnoredNoComment.* ~ Value ~ Ignored.* ~ EOI }
 
   def Definition = rule { OperationDefinition | FragmentDefinition | TypeSystemDefinition }
 
@@ -391,6 +392,19 @@ object QueryParser {
     val parser = new QueryParser(input)
 
     parser.InputDocument.run() match {
+      case Success(res) ⇒ scheme.success(res)
+      case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
+      case Failure(e) ⇒ scheme.failure(e)
+    }
+  }
+
+  def parseInputWithVariables(input: String)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result =
+    parseInputWithVariables(ParserInput(input))( scheme)
+
+  def parseInputWithVariables(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result = {
+    val parser = new QueryParser(input)
+
+    parser.InputDocumentWithVariables.run() match {
       case Success(res) ⇒ scheme.success(res)
       case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) ⇒ scheme.failure(e)

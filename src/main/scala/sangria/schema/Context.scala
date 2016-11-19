@@ -181,7 +181,7 @@ object DefaultValueRenderer {
       None
     else
       coercionHelper.coerceInputValue(tpe, Nil, inputValue, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default)(iu) match {
-        case Right(Some(coerced)) ⇒ Some(renderCoercedInputValue(tpe, coerced))
+        case Right(Trinary.Defined(coerced)) ⇒ Some(renderCoercedInputValue(tpe, coerced))
         case _ ⇒ None
       }
   }

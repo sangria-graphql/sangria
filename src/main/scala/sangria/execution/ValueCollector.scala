@@ -25,7 +25,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       val res = definitions.foldLeft(Vector.empty[(String, Either[Vector[Violation], VariableValue])]) {
         case (acc, varDef) ⇒
           val value = schema.getInputType(varDef.tpe)
-            .map(getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
+            .map(coercionHelper.getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
             .getOrElse(Left(Vector(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position.toList))))
 
           value match {
@@ -41,25 +41,6 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else Success(Map(values.collect {case (name, Right(v)) ⇒ name → v}: _*))
     }
 
-  def getVariableValue(definition: ast.VariableDefinition, tpe: InputType[_], input: Option[Input]): Either[Vector[Violation], Option[VariableValue]] = {
-    val violations = isValidValue(tpe, input)
-
-    if (violations.isEmpty) {
-      val fieldPath = s"$$${definition.name}" :: Nil
-
-      if (input.isEmpty || !um.isDefined(input.get)) {
-        import sangria.marshalling.queryAst.queryAstInputUnmarshaller
-
-        definition.defaultValue match {
-          case Some(dv) ⇒ Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ coerceInputValue(tpe, fieldPath, dv, None, marshaller, firstKindMarshaller))))
-          case None ⇒ Right(None)
-        }
-      } else
-        Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ coerceInputValue(tpe, fieldPath, input.get, None, marshaller, firstKindMarshaller))))
-    } else Left(violations.map(violation ⇒
-      VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.position.toList)))
-  }
-
   private val emptyArgs = Success(Args.empty)
 
   def getFieldArgumentValues(path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
@@ -68,7 +49,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     else
       argumentCache.getOrElseUpdate(path.cacheKey → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
-  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
+  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue], ignoreErrors: Boolean = false): Try[Args] =
     if (argumentDefs.isEmpty)
       emptyArgs
     else {
@@ -96,15 +77,15 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
       val errorRes = errors.result()
 
-      if (errorRes.nonEmpty) Failure(AttributeCoercionError(errorRes, exceptionHandler))
+      if (errorRes.nonEmpty && !ignoreErrors) Failure(AttributeCoercionError(errorRes, exceptionHandler))
       else Success(Args(marshaller.mapNode(res).asInstanceOf[Map[String, Any]]))
     }
 }
 
-case class VariableValue(fn: (ResultMarshaller, ResultMarshaller) ⇒ Either[Vector[Violation], Option[ResultMarshaller#Node]]) {
-  private val cache = TrieMap[Int, Either[Vector[Violation], Option[ResultMarshaller#Node]]]()
+case class VariableValue(fn: (ResultMarshaller, ResultMarshaller) ⇒ Either[Vector[Violation], Trinary[ResultMarshaller#Node]]) {
+  private val cache = TrieMap[Int, Either[Vector[Violation], Trinary[ResultMarshaller#Node]]]()
 
-  def resolve(marshaller: ResultMarshaller, firstKindMarshaller: ResultMarshaller): Either[Vector[Violation], Option[firstKindMarshaller.Node]] =
+  def resolve(marshaller: ResultMarshaller, firstKindMarshaller: ResultMarshaller): Either[Vector[Violation], Trinary[firstKindMarshaller.Node]] =
     cache.getOrElseUpdate(System.identityHashCode(firstKindMarshaller),
-      fn(marshaller, firstKindMarshaller)).asInstanceOf[Either[Vector[Violation], Option[firstKindMarshaller.Node]]]
+      fn(marshaller, firstKindMarshaller)).asInstanceOf[Either[Vector[Violation], Trinary[firstKindMarshaller.Node]]]
 }

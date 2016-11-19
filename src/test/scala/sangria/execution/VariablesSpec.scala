@@ -361,6 +361,18 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
     }
 
     "Handles non-nullable scalars" when {
+      "allows non-nullable inputs to be omitted given a default" in  check(
+        (),
+        """
+          query SetsNonNullable($value: String = "default") {
+           fieldWithNonNullableStringInput(input: $value)
+          }
+        """,
+        Map("data" → Map(
+          "fieldWithNonNullableStringInput" → "\"default\""
+        ))
+      )
+
       "does not allow non-nullable inputs to be omitted in a variable" in  checkContainsErrors(
         (),
         """
@@ -409,8 +421,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         ))
       )
 
-      "passes along null for non-nullable inputs if explicitly set in the query" in  checkContainsErrors(
-        (),
+      "passes along null for non-nullable inputs if explicitly set in the query" in  checkContainsErrors((),
         """
           {
             fieldWithNonNullableStringInput
@@ -418,8 +429,22 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
         """,
         Map("fieldWithNonNullableStringInput" → null),
         List("""Null value was provided for the NotNull Type 'String!' at path 'input'.""" → Nil),
-        validateQuery = false
-      )
+        validateQuery = false)
+
+      // Note: this test would typically fail validation before encountering
+      // this execution error, however for queries which previously validated
+      // and are being run against a new schema which have introduced a breaking
+      // change to make a formerly non-required argument required, this asserts
+      // failure before allowing the underlying code to receive a non-null value.
+      "reports error for non-provided variables for non-nullable inputs" in  checkContainsErrors((),
+        """
+          {
+            fieldWithNonNullableStringInput(input: $foo)
+          }
+        """,
+        Map("fieldWithNonNullableStringInput" → null),
+        List("""Null value was provided for the NotNull Type 'String!' at path 'input'.""" → Nil),
+        validateQuery = false)
     }
 
     "Handles lists and nullability" when {

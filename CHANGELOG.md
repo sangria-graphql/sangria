@@ -1,8 +1,10 @@
 ## v1.0.0-RC4 (2016-XX-XX)
 
+* Enforces input coercion rules (#177).
 * `MiddlewareQueryContext` and `ExecutionResult` now contain information about validation and query reducers' execution time (`validationTiming`, `queryReducerTiming`)
 * `Middleware.fieldError` was not called in all possible exceptional situations (#184).
-* A few bugfixes in error handing of deferred values. 
+* New `QueryParser.parseInputWithVariables` provides a way to parse input values with variables. 
+* Various bugfixes in error handing of deferred values and null/undefined value handling. 
 
 ## v1.0.0-RC3 (2016-11-05)
 
