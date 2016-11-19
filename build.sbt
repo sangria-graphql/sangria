@@ -41,13 +41,14 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-spray-json" % "0.3.2" % "test",
   "org.sangria-graphql" %% "sangria-ion" % "0.1.1" % "test",
   "org.sangria-graphql" %% "sangria-monix" % "0.1.1" % "test",
-  // TODO: enable as soon as RxScala bcomes abailable
-//  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.0" % "test",
+  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.1" % "test",
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.3.1" % "test",
   "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
 )
+
+testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
 git.remoteRepo := "git@github.com:sangria-graphql/sangria.git"
 
