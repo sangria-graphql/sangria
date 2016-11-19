@@ -39,7 +39,9 @@ case class MiddlewareQueryContext[+Ctx, RootVal, Input](
   queryAst: ast.Document,
   operationName: Option[String],
   variables: Input,
-  inputUnmarshaller: InputUnmarshaller[Input])
+  inputUnmarshaller: InputUnmarshaller[Input],
+  validationTiming: TimeMeasurement,
+  queryReducerTiming: TimeMeasurement)
 
 trait FieldTag
 

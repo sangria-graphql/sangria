@@ -1,3 +1,9 @@
+## v1.0.0-RC4 (2016-XX-XX)
+
+* `MiddlewareQueryContext` and `ExecutionResult` now contain information about validation and query reducers' execution time (`validationTiming`, `queryReducerTiming`)
+* `Middleware.fieldError` was not called in all possible exceptional situations (#184).
+* A few bugfixes in error handing of deferred values. 
+
 ## v1.0.0-RC3 (2016-11-05)
 
 * Cross compile to scala 2.12 and scala 2.11 (#182, #183)  

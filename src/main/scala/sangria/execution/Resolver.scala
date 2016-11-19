@@ -29,7 +29,9 @@ class Resolver[Ctx](
     middleware: List[(Any, Middleware[_])],
     maxQueryDepth: Option[Int],
     deferredResolverState: Any,
-    preserveOriginalErrors: Boolean
+    preserveOriginalErrors: Boolean,
+    validationTiming: TimeMeasurement,
+    queryReducerTiming: TimeMeasurement
 )(implicit executionContext: ExecutionContext) {
   val resultResolver = new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
 
@@ -58,13 +60,13 @@ class Resolver[Ctx](
       case ExecutionScheme.Extended ⇒
         val (s, res) = resolveSubs[({type X[Y]})#X](ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, None)
 
-        s.first(res).map{case (errors, res) ⇒ ExecutionResult(userContext, res, errors, middleware)}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+        s.first(res).map{case (errors, res) ⇒ ExecutionResult(userContext, res, errors, middleware, validationTiming, queryReducerTiming)}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
       case es: ExecutionScheme.StreamBasedExecutionScheme[({type X[Y]})#X @unchecked] ⇒
         val (_, res) = resolveSubs(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, Some(es.subscriptionStream))
 
         es.subscriptionStream.map(res) {
-          case (errors, r) if es.extended ⇒ ExecutionResult(userContext, r, errors, middleware)
+          case (errors, r) if es.extended ⇒ ExecutionResult(userContext, r, errors, middleware, validationTiming, queryReducerTiming)
           case (_, r) ⇒ r
         }.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
@@ -78,11 +80,11 @@ class Resolver[Ctx](
       result.map{case (_, res) ⇒ res}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case ExecutionScheme.Extended ⇒
-      result.map{case (errors, res) ⇒ ExecutionResult(userContext, res, errors, middleware)}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+      result.map{case (errors, res) ⇒ ExecutionResult(userContext, res, errors, middleware, validationTiming, queryReducerTiming)}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case s: ExecutionScheme.StreamBasedExecutionScheme[_] ⇒
       s.subscriptionStream.singleFuture(result.map{
-        case (errors, res) if s.extended ⇒ ExecutionResult(userContext, res, errors, middleware)
+        case (errors, res) if s.extended ⇒ ExecutionResult(userContext, res, errors, middleware, validationTiming, queryReducerTiming)
         case (_, res) ⇒ res
       }).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
