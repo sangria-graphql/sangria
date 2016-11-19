@@ -14,7 +14,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
   "Introspection" should {
     "executes an introspection query" in {
       val schema = Schema(ObjectType[Unit, Unit]("QueryRoot", Nil))
-      throw new IllegalStateException("ASAAA")
+
       Executor.execute(schema, introspectionQuery).await should be (Map(
         "data" → Map(
           "__schema" → Map(
