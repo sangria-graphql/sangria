@@ -1,5 +1,9 @@
-## v1.0.0-RC4 (2016-XX-XX)
+## v1.0.0-RC4 (2016-11-20)
 
+Sangria v1.0.0-RC4 is fully compliant with ["October 2016"](https://github.com/facebook/graphql/releases/tag/October2016) version of the GraphQL specification.
+
+* In presence of explicit `null` value, the default will not be used (#185) (spec change). **Breaking change!** Arguments with default values are no longer treated as non-optional arguments. Though `Args` still preserves existing semantics (default is still applied, even in presence of explicit `null`). The same is true for input objects and optional input object fields with default values. 
+* Added `Args.withArgs` and `Args.argDefinedInQuery` convenience methods.
 * Validation rule for unique directives per location (#179).
 * Enforces input coercion rules (#177).
 * `MiddlewareQueryContext` and `ExecutionResult` now contain information about validation and query reducers' execution time (`validationTiming`, `queryReducerTiming`)
