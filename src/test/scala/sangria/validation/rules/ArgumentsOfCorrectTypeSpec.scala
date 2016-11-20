@@ -99,6 +99,24 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """)
 
+      "null into nullable type (1)" in expectPasses(
+        """
+          {
+            complicatedArgs {
+              intArgField(intArg: null)
+            }
+          }
+        """)
+
+      "null into nullable type (2)" in expectPasses(
+        """
+          {
+            dog(a: null, b: null, c:{ requiredField: true, intField: null }) {
+              name
+            }
+          }
+        """)
+
     }
 
     "Invalid String values" should {
@@ -393,7 +411,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         """
           {
             complicatedArgs {
-              stringListArgField(stringListArg: ["one", "two"])
+              stringListArgField(stringListArg: ["one", null, "two"])
             }
           }
         """)
@@ -403,6 +421,15 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           {
             complicatedArgs {
               stringListArgField(stringListArg: [])
+            }
+          }
+        """)
+
+      "Null value" in expectPasses(
+        """
+          {
+            complicatedArgs {
+              stringListArgField(stringListArg: null)
             }
           }
         """)
@@ -547,6 +574,17 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         """,
         List(
           "Argument 'req1' expected type 'Int!' but got: \"one\"." → Some(Pos(4, 34))))
+
+      "Null value" in expectFails(
+        """
+          {
+            complicatedArgs {
+              multipleReqs(req1: null)
+            }
+          }
+        """,
+        List(
+          "Argument 'req1' expected type 'Int!' but got: null." → Some(Pos(4, 34))))
     }
 
     "Valid input object value" should {

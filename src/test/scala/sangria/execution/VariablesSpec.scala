@@ -182,6 +182,28 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""))
         )
 
+        "properly parses null value to null" in check(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: {a: null, b: null, c: "C", d: null})
+            }
+          """,
+          Map("data" → Map(
+            "fieldWithObjectInput" → """{a:null,b:null,c:"C",d:null}"""))
+        )
+
+        "properly parses null value in list" in check(
+          (),
+          """
+            {
+              fieldWithObjectInput(input: {b: ["A",null,"C"], c: "C"})
+            }
+          """,
+          Map("data" → Map(
+            "fieldWithObjectInput" → """{b:["A",null,"C"],c:"C"}"""))
+        )
+
         "does not use incorrect value" in checkContainsErrors(
           (),
           """

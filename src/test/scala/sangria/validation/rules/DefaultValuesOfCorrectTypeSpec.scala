@@ -33,6 +33,35 @@ class DefaultValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """)
 
+    "variables with valid default null values" in expectPasses(
+      """
+        query WithDefaultValues(
+          $a: Int = null,
+          $b: String = null,
+          $c: ComplexInput = { requiredField: true, intField: null }
+        ) {
+          dog { name }
+        }
+      """)
+
+    "variables with invalid default null values" in expectFailsPosList(
+      """
+        query WithDefaultValues(
+          $a: Int! = null,
+          $b: String! = null,
+          $c: ComplexInput = { requiredField: null, intField: null }
+        ) {
+          dog { name }
+        }
+      """,
+      List(
+        "Variable '$a' of type 'Int!' is required and will never use the default value. Perhaps you meant to use type 'Int'." → List(Pos(3, 22)),
+        "Variable '$b' of type 'String!' is required and will never use the default value. Perhaps you meant to use type 'String'." → List(Pos(4, 25)),
+        "Variable '$c' of type 'ComplexInput' has invalid default value: {requiredField: null, intField: null}." → List(Pos(5, 30), Pos(5, 32)),
+        "Variable '$a' of type 'Int!' is required and will never use the default value. Perhaps you meant to use type 'Int'." → List(Pos(3, 22)),
+        "Variable '$b' of type 'String!' is required and will never use the default value. Perhaps you meant to use type 'String'." → List(Pos(4, 25))
+      ))
+
     "no required variables with default values" in expectFails(
       """
         query UnreachableDefaultValues($a: Int! = 3, $b: String! = "default") {
