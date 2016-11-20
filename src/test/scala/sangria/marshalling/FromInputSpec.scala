@@ -123,9 +123,11 @@ class FromInputSpec extends WordSpec with Matchers {
         val ad = node.asInstanceOf[Map[String, Any]]
 
         def readComments(data: Seq[Option[Map[String, Any]]]) = {
-          data.toVector.map(_.map(cd ⇒ Comment(
-            author = cd("author").asInstanceOf[String],
-            text = cd.get("text").flatMap(_.asInstanceOf[Option[String]]))))
+          data.toVector.map(_.map(cd ⇒ {
+            Comment(
+              author = cd("author").asInstanceOf[Option[String]].getOrElse("manual default"),
+              text = cd.get("text").flatMap(_.asInstanceOf[Option[String]]))
+          }))
         }
 
         Article(
@@ -223,7 +225,7 @@ class FromInputSpec extends WordSpec with Matchers {
           nn(article: {
             title: "First!"
             text: null
-            comments: [null, {author: null, text: "Hello wold"}]
+            comments: [null, {text: "Hello wold"}]
           })
         }
       """,
@@ -413,7 +415,7 @@ class FromInputSpec extends WordSpec with Matchers {
           nn(article: {
             title: "First!"
             text: null
-            comments: [null, {author: null, text: "Hello wold"}]
+            comments: [null, {text: "Hello wold"}]
           })
         }
       """,

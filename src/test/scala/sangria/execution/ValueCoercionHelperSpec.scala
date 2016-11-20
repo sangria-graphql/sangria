@@ -112,8 +112,8 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
       check(opt(testInputObj), "null", Some(None))
       check(opt(testInputObj), "123", None)
       check(opt(testInputObj), "[]", None)
-      check(opt(testInputObj), "{ int: 123, requiredBool: false }", Some(Some(Map("int" → 123, "requiredBool" → false))))
-      check(opt(testInputObj), "{ bool: true, requiredBool: false }", Some(Some(Map("int" → 42, "bool" → Some(true), "requiredBool" → false))))
+      check(opt(testInputObj), "{ int: 123, requiredBool: false }", Some(Some(Map("int" → Some(123), "requiredBool" → false))))
+      check(opt(testInputObj), "{ bool: true, requiredBool: false }", Some(Some(Map("int" → Some(42), "bool" → Some(true), "requiredBool" → false))))
       check(opt(testInputObj), "{ int: true, requiredBool: true }", None)
       check(opt(testInputObj), "{ requiredBool: null }", None)
       check(opt(testInputObj), "{ bool: true }", None)
@@ -135,24 +135,24 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
 
     "omits input object fields for unprovided variables" in {
       check(opt(testInputObj), "{ int: $foo, bool: $foo, requiredBool: true }",
-        Some(Some(Map("int" → 42, "requiredBool" → true))))
+        Some(Some(Map("int" → Some(42), "requiredBool" → true))))
 
       check(opt(testInputObj), "{ int: $foo, bool: $foo, requiredBool: true }",
-        Some(Some(Map("int" → 42, "bool" → None, "requiredBool" → true))),
+        Some(Some(Map("int" → None, "bool" → None, "requiredBool" → true))),
         "$foo: Boolean" → """{"foo": null}""")
 
       check(opt(testInputObj), "{ requiredBool: $foo }", None)
 
       check(opt(testInputObj), "{ bool: $foo, requiredBool: $foo }",
-        Some(Some(Map("int" → 42, "bool" → Some(true), "requiredBool" → true))),
+        Some(Some(Map("int" → Some(42), "bool" → Some(true), "requiredBool" → true))),
         "$foo: Boolean" → """{"foo": true}""")
 
       check(opt(testInputObj), "$foo",
-        Some(Some(Map("int" → 42, "requiredBool" → true))),
+        Some(Some(Map("int" → Some(42), "requiredBool" → true))),
         "$foo: TestInput" → """{"foo": {"requiredBool": true}}""")
 
       check(opt(testInputObj), "$foo",
-        Some(Some(Map("int" → 42, "bool" → None, "requiredBool" → true))),
+        Some(Some(Map("int" → Some(42), "bool" → None, "requiredBool" → true))),
         "$foo: TestInput" → """{"foo": {"bool": null, "requiredBool": true}}""")
     }
   }

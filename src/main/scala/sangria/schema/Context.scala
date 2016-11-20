@@ -1,15 +1,14 @@
 package sangria.schema
 
-import language.{existentials, implicitConversions, higherKinds}
-
+import language.{existentials, higherKinds, implicitConversions}
 import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper
-
 import sangria.ast
 import sangria.execution.deferred.Deferred
 import sangria.streaming.SubscriptionStream
 
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 import scala.util.control.NonFatal
@@ -140,9 +139,24 @@ case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A ⇒ B) extends
 
 trait WithArguments {
   def args: Args
+
   def arg[T](arg: Argument[T]): T = args.arg(arg)
   def arg[T](name: String): T = args.arg(name)
+
   def argOpt[T](name: String): Option[T] = args.argOpt(name)
+  def argOpt[T](arg: Argument[T]): Option[T] = args.argOpt(arg)
+
+  def argDefinedInQuery(name: String): Boolean = args.argDefinedInQuery(name)
+  def argDefinedInQuery(arg: Argument[_]): Boolean = args.argDefinedInQuery(arg)
+
+  def withArgs[A1, R](arg1: Argument[A1])(fn: A1 ⇒ R): R = args.withArgs(arg1)(fn)
+  def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) ⇒ R): R = args.withArgs(arg1, arg2)(fn)
+  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R = args.withArgs(arg1, arg2, arg3)(fn)
+  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4)(fn)
+  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)(fn)
 }
 
 trait WithInputTypeRendering[Ctx] {
@@ -232,14 +246,59 @@ case class Context[Ctx, Val](
   path: ExecutionPath,
   deferredResolverState: Any) extends WithArguments with WithInputTypeRendering[Ctx]
 
-case class Args(raw: Map[String, Any]) extends AnyVal {
-  def arg[T](arg: Argument[T]): T = raw.get(arg.name).fold(None.asInstanceOf[T])(_.asInstanceOf[T])
-  def arg[T](name: String): T = raw(name).asInstanceOf[T]
-  def argOpt[T](name: String): Option[T] = raw.get(name).asInstanceOf[Option[Option[T]]].flatten
+case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], defaultInfo: TrieMap[String, Any]) {
+  private def getAsOptional[T](name: String): Option[T] =
+    raw.get(name).asInstanceOf[Option[Option[T]]].flatten
+
+  private def invariantExplicitlyNull(name: String) =
+    throw new IllegalArgumentException(s"Optional argument '$name' accessed as a non-optional argument (it has a default value), but query explicitly set argument to `null`.")
+
+  private def invariantNotProvided(name: String) =
+    throw new IllegalArgumentException(s"Optional argument '$name' accessed as a non-optional argument, but it was not provided in the query and argument does not define a default value.")
+
+  def arg[T](arg: Argument[T]): T =
+    if (optionalArgs.contains(arg.name) && argsWithDefault.contains(arg.name) && defaultInfo.contains(arg.name))
+      getAsOptional[T](arg.name).getOrElse(defaultInfo(arg.name).asInstanceOf[T])
+    else if (optionalArgs.contains(arg.name) && argsWithDefault.contains(arg.name))
+      getAsOptional[T](arg.name).getOrElse(invariantExplicitlyNull(arg.name))
+    else if (optionalArgs.contains(arg.name))
+      getAsOptional[Any](arg.name).asInstanceOf[T]
+    else
+      raw(arg.name).asInstanceOf[T]
+
+  def arg[T](name: String): T =
+    if (optionalArgs.contains(name) && argsWithDefault.contains(name) && defaultInfo.contains(name))
+      getAsOptional[T](name).getOrElse(defaultInfo(name).asInstanceOf[T])
+    else if (optionalArgs.contains(name) && argsWithDefault.contains(name))
+      getAsOptional[T](name).getOrElse(invariantExplicitlyNull(name))
+    else if (optionalArgs.contains(name))
+      getAsOptional[T](name).getOrElse(invariantNotProvided(name))
+    else
+      raw(name).asInstanceOf[T]
+
+  def argOpt[T](name: String): Option[T] = getAsOptional(name)
+
+  def argOpt[T](arg: Argument[T]): Option[T] =
+    if (optionalArgs.contains(arg.name))
+      getAsOptional[T](arg.name)
+    else
+      Some(raw(arg.name).asInstanceOf[T])
+
+  def argDefinedInQuery(name: String): Boolean = raw contains name
+  def argDefinedInQuery(arg: Argument[_]): Boolean = raw contains arg.name
+
+  def withArgs[A1, R](arg1: Argument[A1])(fn: A1 ⇒ R): R = fn(arg(arg1))
+  def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) ⇒ R): R = fn(arg(arg1), arg(arg2))
+  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3))
+  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4))
+  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5))
+  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6))
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7))
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7), arg(arg8))
 }
 
 object Args {
-  val empty = Args(Map.empty)
+  val empty = Args(Map.empty, Set.empty, Set.empty, TrieMap.empty)
 }
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments

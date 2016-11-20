@@ -169,7 +169,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       val tpe = deriveObjectType[Unit, TestSubject](
         FieldComplexity("id", (_, _, child) ⇒ child * 123.0))
 
-      tpe.fields(0).complexity.get((), Args(Map.empty), 2D) should be (246.0)
+      tpe.fields(0).complexity.get((), Args.empty, 2D) should be (246.0)
     }
 
     "allow to set name, description, deprecationReason and fieldTags with config" in {

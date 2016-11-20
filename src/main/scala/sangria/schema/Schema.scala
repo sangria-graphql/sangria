@@ -16,7 +16,19 @@ import sangria.util.tag._
 
 sealed trait Type
 
-sealed trait InputType[+T] extends Type
+sealed trait InputType[+T] extends Type {
+  def isOptional = this match {
+    case _: OptionInputType[_] ⇒ true
+    case _ ⇒ false
+  }
+
+  def isList = this match {
+    case _: ListInputType[_] ⇒ true
+    case _ ⇒ false
+  }
+
+  def isNamed = !(isOptional && isList)
+}
 
 sealed trait OutputType[+T] extends Type
 

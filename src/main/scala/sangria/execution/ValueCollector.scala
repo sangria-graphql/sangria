@@ -56,6 +56,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
       val marshaller = CoercedScalaResultMarshaller.default
       val errors = new VectorBuilder[Violation]
+      val defaultInfo = Some(TrieMap.empty[String, Any])
 
       val res = argumentDefs.foldLeft(marshaller.emptyMapNode(argumentDefs.map(_.name)): marshaller.MapBuilder) {
         case (acc, argDef) ⇒
@@ -66,7 +67,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
           import sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
           try {
-            resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller, allowErrorsOnDefault = true, errors = errors, valueMap = fromInput.fromResult)(
+            resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller, allowErrorsOnDefault = true, errors = errors, valueMap = fromInput.fromResult, defaultValueInfo = defaultInfo)(
               acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller)))
           } catch {
             case InputParsingError(e) ⇒
@@ -78,7 +79,12 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       val errorRes = errors.result()
 
       if (errorRes.nonEmpty && !ignoreErrors) Failure(AttributeCoercionError(errorRes, exceptionHandler))
-      else Success(Args(marshaller.mapNode(res).asInstanceOf[Map[String, Any]]))
+      else {
+        val optionalArgs = argumentDefs.filter(_.argumentType.isOptional).map(_.name).toSet
+        val argsWithDefault = argumentDefs.filter(_.defaultValue.isDefined).map(_.name).toSet
+
+        Success(Args(marshaller.mapNode(res).asInstanceOf[Map[String, Any]], argsWithDefault, optionalArgs, defaultInfo.get))
+      }
     }
 }
 

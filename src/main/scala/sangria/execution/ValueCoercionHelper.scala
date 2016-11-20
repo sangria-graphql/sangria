@@ -8,6 +8,7 @@ import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema._
 import sangria.validation._
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
 
 class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprecationTracker: DeprecationTracker = DeprecationTracker.empty, userContext: Option[Ctx] = None) {
@@ -18,7 +19,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       fieldPath: List[String],
       marshaller: ResultMarshaller,
       pos: List[Position] = Nil)(value: Either[Vector[Violation], Trinary[Any]]): Either[Vector[Violation], marshaller.Node] = value match {
-    case Right(v) if isOptional(ofType) ⇒ Right(marshaller.optionalArrayNodeValue(v.asInstanceOf[Trinary[marshaller.Node]].toOption))
+    case Right(v) if ofType.isOptional ⇒ Right(marshaller.optionalArrayNodeValue(v.asInstanceOf[Trinary[marshaller.Node]].toOption))
     case Right(Trinary.Defined(v)) ⇒ Right(v.asInstanceOf[marshaller.Node])
     case Right(Trinary.Undefined) | Right(Trinary.Null) ⇒ Left(Vector(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos)))
     case Left(violations) ⇒ Left(violations)
@@ -34,47 +35,62 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       errors: VectorBuilder[Violation],
       pos: List[Position] = Nil,
       allowErrorsOnDefault: Boolean = false,
-      valueMap: Nothing ⇒ Any = defaultValueMapFn)(acc: marshaller.MapBuilder, value: Option[Either[Vector[Violation], Trinary[marshaller.Node]]]): marshaller.MapBuilder = {
+      valueMap: Nothing ⇒ Any = defaultValueMapFn,
+      defaultValueInfo: Option[TrieMap[String, Any]] = None)(acc: marshaller.MapBuilder, value: Option[Either[Vector[Violation], Trinary[marshaller.Node]]]): marshaller.MapBuilder = {
     val valueMapTyped = valueMap.asInstanceOf[Any ⇒ marshaller.Node]
 
-    def getDefault = {
+    def getCoercedDefault = {
       val Some((defaultValue, toInput)) = default.asInstanceOf[Option[(Any, ToInput[Any, Any])]]
       val (defaultInput, inputUnmarshaller) = toInput.toInput(defaultValue)
 
-      coerceInputValue(ofType, fieldPath, defaultInput, None, marshaller, firstKindMarshaller)(inputUnmarshaller) match {
+      coerceInputValue(ofType, fieldPath, defaultInput, None, marshaller, firstKindMarshaller)(inputUnmarshaller)
+    }
+
+    def getDefault =
+      getCoercedDefault match {
         case Right(Trinary.Defined(v)) ⇒
-          marshaller.addMapNodeElem(acc, fieldName, valueMapTyped(v), false)
+          marshaller.addMapNodeElem(acc, fieldName, valueMapTyped(v), optional = ofType.isOptional)
         case Right(Trinary.Undefined) | Right(Trinary.Null) ⇒
           acc
         case Left(violations) ⇒
           errors ++= violations
           acc
       }
-    }
+
+    def updateDefaultInfo() =
+      defaultValueInfo match {
+        case Some(dvi) if default.isDefined ⇒
+          getCoercedDefault match {
+            case Right(Trinary.Defined(v)) ⇒
+              dvi(fieldName) = valueMapTyped(v)
+            case _ ⇒ // do nothing
+          }
+        case _ ⇒ // do nothing
+      }
+
 
     value match {
       case None if default.isDefined ⇒
         getDefault
-      case None if isOptional(ofType) ⇒
+      case None if ofType.isOptional ⇒
         acc
       case None ⇒
         errors += NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos)
         acc
 
-      case Some(Right(Trinary.Null)) if default.isDefined ⇒
-        getDefault
+      case Some(Right(Trinary.Null)) if ofType.isOptional ⇒
+        updateDefaultInfo()
+        marshaller.addMapNodeElem(acc, fieldName, marshaller.nullNode, optional = true)
       case Some(Right(Trinary.Undefined)) if default.isDefined ⇒
         getDefault
-      case Some(Right(Trinary.Null)) if isOptional(ofType) ⇒
-        marshaller.addMapNodeElem(acc, fieldName, marshaller.nullNode, optional = true)
-      case Some(Right(Trinary.Undefined)) if isOptional(ofType) ⇒
+      case Some(Right(Trinary.Undefined)) if ofType.isOptional ⇒
         acc
       case Some(Right(Trinary.Null)) | Some(Right(Trinary.Undefined)) ⇒
         errors += NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos)
         acc
 
       case Some(Right(Trinary.Defined(v))) ⇒
-        marshaller.addMapNodeElem(acc, fieldName, valueMapTyped(v), isOptional(ofType) && default.isEmpty)
+        marshaller.addMapNodeElem(acc, fieldName, valueMapTyped(v), ofType.isOptional)
       case Some(Left(_)) if allowErrorsOnDefault && default.isDefined ⇒
         getDefault
       case Some(Left(violations)) ⇒
@@ -82,9 +98,6 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         acc
     }
   }
-
-  private def isOptional(tpe: InputType[_]) =
-    tpe.isInstanceOf[OptionInputType[_]]
 
   def coerceInputValue[In](
       tpe: InputType[_],
