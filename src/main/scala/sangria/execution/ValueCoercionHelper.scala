@@ -1,7 +1,7 @@
 package sangria.execution
 
 import org.parboiled2.Position
-import sangria.ast
+import sangria.{ast, execution}
 import sangria.marshalling.{InputUnmarshaller, RawResultMarshaller, ResultMarshaller, ToInput}
 import sangria.parser.SourceMapper
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
@@ -36,7 +36,8 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       pos: List[Position] = Nil,
       allowErrorsOnDefault: Boolean = false,
       valueMap: Nothing ⇒ Any = defaultValueMapFn,
-      defaultValueInfo: Option[TrieMap[String, Any]] = None)(acc: marshaller.MapBuilder, value: Option[Either[Vector[Violation], Trinary[marshaller.Node]]]): marshaller.MapBuilder = {
+      defaultValueInfo: Option[TrieMap[String, Any]] = None,
+      undefinedValues: Option[VectorBuilder[String]] = None)(acc: marshaller.MapBuilder, value: Option[Either[Vector[Violation], Trinary[marshaller.Node]]]): marshaller.MapBuilder = {
     val valueMapTyped = valueMap.asInstanceOf[Any ⇒ marshaller.Node]
 
     def getCoercedDefault = {
@@ -50,7 +51,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       getCoercedDefault match {
         case Right(Trinary.Defined(v)) ⇒
           marshaller.addMapNodeElem(acc, fieldName, valueMapTyped(v), optional = ofType.isOptional)
-        case Right(Trinary.Undefined) | Right(Trinary.Null) ⇒
+        case Right(Trinary.Undefined) | Right(Trinary.Null) | Right(_: Trinary.NullWithDefault[_]) ⇒
           acc
         case Left(violations) ⇒
           errors ++= violations
@@ -68,24 +69,46 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         case _ ⇒ // do nothing
       }
 
+    def updateDefaultInfoWithValue(v: Any) =
+      defaultValueInfo match {
+        case Some(dvi) if default.isDefined ⇒
+          dvi(fieldName) = valueMapTyped(v)
+        case _ ⇒ // do nothing
+      }
+
+    def updateUndefined() =
+      undefinedValues match {
+        case Some(u) ⇒
+          u += fieldName
+        case _ ⇒ // do nothing
+      }
 
     value match {
       case None if default.isDefined ⇒
+        updateUndefined()
         getDefault
       case None if ofType.isOptional ⇒
+        updateUndefined()
         acc
       case None ⇒
+        updateUndefined()
         errors += NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos)
         acc
 
       case Some(Right(Trinary.Null)) if ofType.isOptional ⇒
         updateDefaultInfo()
         marshaller.addMapNodeElem(acc, fieldName, marshaller.nullNode, optional = true)
+      case Some(Right(Trinary.NullWithDefault(v))) if ofType.isOptional ⇒
+        updateDefaultInfoWithValue(v)
+        marshaller.addMapNodeElem(acc, fieldName, marshaller.nullNode, optional = true)
       case Some(Right(Trinary.Undefined)) if default.isDefined ⇒
+        updateUndefined()
         getDefault
       case Some(Right(Trinary.Undefined)) if ofType.isOptional ⇒
+        updateUndefined()
         acc
-      case Some(Right(Trinary.Null)) | Some(Right(Trinary.Undefined)) ⇒
+      case Some(Right(Trinary.Null)) | Some(Right(Trinary.Undefined)) | Some(Right(Trinary.NullWithDefault(_))) ⇒
+        updateUndefined()
         errors += NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos)
         acc
 
@@ -100,160 +123,167 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
   }
 
   def coerceInputValue[In](
-      tpe: InputType[_],
-      fieldPath: List[String],
-      input: In,
-      variables: Option[Map[String, VariableValue]],
-      marshaller: ResultMarshaller,
-      firstKindMarshaller: ResultMarshaller,
-      errorPrefix: ⇒ String = ""
-  )(implicit iu: InputUnmarshaller[In]): Either[Vector[Violation], Trinary[marshaller.Node]] = (tpe, input) match {
-    case (_, node) if iu.isVariableNode(node) ⇒
-      val varName = iu.getVariableName(node)
+    tpe: InputType[_],
+    fieldPath: List[String],
+    input: In,
+    variables: Option[Map[String, VariableValue]],
+    marshaller: ResultMarshaller,
+    firstKindMarshaller: ResultMarshaller,
+    errorPrefix: ⇒ String = "",
+    nullWithDefault: Boolean = false
+  )(implicit iu: InputUnmarshaller[In]): Either[Vector[Violation], Trinary[marshaller.Node]] = {
+    def defined(node: marshaller.Node): Trinary[marshaller.Node] =
+      if (nullWithDefault) Trinary.NullWithDefault(node)
+      else Trinary.Defined(node)
 
-      variables match {
-        case Some(vars) ⇒
-          vars.get(varName) match {
-            case Some(vv) ⇒
-              val res = vv.resolve(marshaller, firstKindMarshaller) match {
-                case resolved @ Right(_) ⇒ resolved.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
-                case errors @ Left(_) ⇒ errors.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
-              }
+    (tpe, input) match {
+      case (_, node) if iu.isVariableNode(node) ⇒
+        val varName = iu.getVariableName(node)
 
-              res
-            case None ⇒
-              Right(Trinary.Undefined)
-          }
+        variables match {
+          case Some(vars) ⇒
+            vars.get(varName) match {
+              case Some(vv) ⇒
+                val res = vv.resolve(marshaller, firstKindMarshaller) match {
+                  case resolved @ Right(_) ⇒ resolved.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
+                  case errors @ Left(_) ⇒ errors.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
+                }
 
-        case None ⇒
-          Left(Vector(VariableNotAllowedViolation(varName, sourceMapper, Nil)))
-      }
+                res
+              case None ⇒
+                Right(Trinary.Undefined)
+            }
 
-    case (OptionInputType(ofType), value) if iu.isDefined(value) ⇒
-      coerceInputValue(ofType, fieldPath, value, variables, marshaller, firstKindMarshaller, errorPrefix)
-
-    case (OptionInputType(ofType), value) ⇒
-      Right(Trinary.Null)
-
-    case (ListInputType(ofType), values) if iu.isListNode(values) ⇒
-      val res = iu.getListValue(values).toVector.map {
-        case defined if iu.isDefined(defined) ⇒
-          resolveListValue(ofType, fieldPath, marshaller, valuePosition(defined))(
-            coerceInputValue(ofType, fieldPath, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix))
-        case v ⇒
-          resolveListValue(ofType, fieldPath, marshaller, valuePosition(v, values))(Right(Trinary.Null))
-      }
-
-      val (errors, successes) = res.partition(_.isLeft)
-
-      if (errors.nonEmpty) Left(errors.collect{case Left(es) ⇒ es}.flatten)
-      else Right(Trinary.Defined(marshaller.arrayNode(successes.collect {case Right(v) ⇒ v})))
-
-    case (ListInputType(ofType), value) if iu.isDefined(value) ⇒
-      val res =
-        resolveListValue(ofType, fieldPath, marshaller, valuePosition(value))(
-          coerceInputValue(ofType, fieldPath, value, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix))
-
-      res match {
-        case Right(v) ⇒ Right(Trinary.Defined(marshaller.arrayNode(Vector(v))))
-        case Left(violations) ⇒ Left(violations)
-      }
-
-    case (lt @ ListInputType(ofType), value) ⇒
-      Left(Vector(FieldCoercionViolation(
-        fieldPath,
-        NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(lt), sourceMapper, valuePosition(value)),
-        sourceMapper,
-        valuePosition(value),
-        errorPrefix)))
-
-    case (objTpe: InputObjectType[_], valueMap) if iu.isMapNode(valueMap) ⇒
-      val errors = new VectorBuilder[Violation]
-
-      val res = objTpe.fields.foldLeft(firstKindMarshaller.emptyMapNode(objTpe.fields.map(_.name))) {
-        case (acc, field) ⇒ iu.getMapValue(valueMap, field.name) match {
-          case Some(defined) if iu.isDefined(defined) ⇒
-            resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(defined))(
-              acc, Some(coerceInputValue(field.fieldType, fieldPath :+ field.name, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix)))
-          case Some(defined) ⇒
-            resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(valueMap))(acc, Some(Right(Trinary.Null)))
-          case _ ⇒
-            resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(valueMap))(acc, None)
+          case None ⇒
+            Left(Vector(VariableNotAllowedViolation(varName, sourceMapper, Nil)))
         }
-      }
 
-      val errorRes = errors.result()
+      case (OptionInputType(ofType), value) if iu.isDefined(value) ⇒
+        coerceInputValue(ofType, fieldPath, value, variables, marshaller, firstKindMarshaller, errorPrefix, nullWithDefault)
 
-      if (errorRes.nonEmpty) Left(errorRes)
-      else Right(Trinary.Defined(firstKindMarshaller.mapNode(res).asInstanceOf[marshaller.Node]))
+      case (OptionInputType(ofType), value) ⇒
+        Right(Trinary.Null)
 
-    case (objTpe: InputObjectType[_], value) if iu.isDefined(value) ⇒
-      Left(Vector(InputObjectTypeMismatchViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), iu.render(value), sourceMapper, valuePosition(value))))
+      case (ListInputType(ofType), values) if iu.isListNode(values) ⇒
+        val res = iu.getListValue(values).toVector.map {
+          case defined if iu.isDefined(defined) ⇒
+            resolveListValue(ofType, fieldPath, marshaller, valuePosition(defined))(
+              coerceInputValue(ofType, fieldPath, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault))
+          case v ⇒
+            resolveListValue(ofType, fieldPath, marshaller, valuePosition(v, values))(Right(Trinary.Null))
+        }
 
-    case (objTpe: InputObjectType[_], value) ⇒
-      Left(Vector(FieldCoercionViolation(
-        fieldPath,
-        NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), sourceMapper, valuePosition(value)),
-        sourceMapper,
-        valuePosition(value),
-        errorPrefix)))
+        val (errors, successes) = res.partition(_.isLeft)
 
-    case (scalar: ScalarType[_], value) if iu.isScalarNode(value) ⇒
-      val coerced = iu.getScalarValue(value) match {
-        case node: ast.Value ⇒ scalar.coerceInput(node)
-        case other ⇒ scalar.coerceUserInput(other)
-      }
+        if (errors.nonEmpty) Left(errors.collect{case Left(es) ⇒ es}.flatten)
+        else Right(defined(marshaller.arrayNode(successes.collect {case Right(v) ⇒ v})))
 
-      coerced.fold(
-        violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))),
-        v ⇒ {
-          val prepared = firstKindMarshaller match {
-            case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
-            case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(v, standard.capabilities), standard, scalar.name, scalar.scalarInfo)
+      case (ListInputType(ofType), value) if iu.isDefined(value) ⇒
+        val res =
+          resolveListValue(ofType, fieldPath, marshaller, valuePosition(value))(
+            coerceInputValue(ofType, fieldPath, value, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault))
+
+        res match {
+          case Right(v) ⇒ Right(defined(marshaller.arrayNode(Vector(v))))
+          case Left(violations) ⇒ Left(violations)
+        }
+
+      case (lt @ ListInputType(ofType), value) ⇒
+        Left(Vector(FieldCoercionViolation(
+          fieldPath,
+          NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(lt), sourceMapper, valuePosition(value)),
+          sourceMapper,
+          valuePosition(value),
+          errorPrefix)))
+
+      case (objTpe: InputObjectType[_], valueMap) if iu.isMapNode(valueMap) ⇒
+        val errors = new VectorBuilder[Violation]
+
+        val res = objTpe.fields.foldLeft(firstKindMarshaller.emptyMapNode(objTpe.fields.map(_.name))) {
+          case (acc, field) ⇒ iu.getMapValue(valueMap, field.name) match {
+            case Some(defined) if iu.isDefined(defined) ⇒
+              resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(defined))(
+                acc, Some(coerceInputValue(field.fieldType, fieldPath :+ field.name, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault)))
+            case Some(defined) ⇒
+              resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(valueMap))(acc, Some(Right(Trinary.Null)))
+            case _ ⇒
+              resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(valueMap))(acc, None)
           }
+        }
 
-          Right(Trinary.Defined(prepared.asInstanceOf[marshaller.Node]))
+        val errorRes = errors.result()
+
+        if (errorRes.nonEmpty) Left(errorRes)
+        else Right(defined(firstKindMarshaller.mapNode(res).asInstanceOf[marshaller.Node]))
+
+      case (objTpe: InputObjectType[_], value) if iu.isDefined(value) ⇒
+        Left(Vector(InputObjectTypeMismatchViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), iu.render(value), sourceMapper, valuePosition(value))))
+
+      case (objTpe: InputObjectType[_], value) ⇒
+        Left(Vector(FieldCoercionViolation(
+          fieldPath,
+          NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(objTpe), sourceMapper, valuePosition(value)),
+          sourceMapper,
+          valuePosition(value),
+          errorPrefix)))
+
+      case (scalar: ScalarType[_], value) if iu.isScalarNode(value) ⇒
+        val coerced = iu.getScalarValue(value) match {
+          case node: ast.Value ⇒ scalar.coerceInput(node)
+          case other ⇒ scalar.coerceUserInput(other)
+        }
+
+        coerced.fold(
+          violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))),
+          v ⇒ {
+            val prepared = firstKindMarshaller match {
+              case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
+              case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(v, standard.capabilities), standard, scalar.name, scalar.scalarInfo)
+            }
+
+            Right(defined(prepared.asInstanceOf[marshaller.Node]))
+          })
+
+      case (_: ScalarType[_], value) if iu.isDefined(value) ⇒
+        Left(Vector(FieldCoercionViolation(fieldPath, GenericInvalidValueViolation(sourceMapper, valuePosition(value)), sourceMapper, valuePosition(value), errorPrefix)))
+
+      case (scalar: ScalarType[_], value) ⇒
+        Left(Vector(FieldCoercionViolation(
+          fieldPath,
+          NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(scalar), sourceMapper, valuePosition(value)),
+          sourceMapper,
+          valuePosition(value),
+          errorPrefix)))
+
+      case (enum: EnumType[_], value) if iu.isEnumNode(value) ⇒
+        val coerced = iu.getScalarValue(value) match {
+          case node: ast.Value ⇒ enum.coerceInput(node)
+          case other ⇒ enum.coerceUserInput(other)
+        }
+
+        coerced.fold(violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))), {
+          case (v, deprecated) ⇒
+            if (deprecated && userContext.isDefined) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext.get)
+
+            val prepared = firstKindMarshaller match {
+              case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
+              case standard ⇒ Resolver.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
+            }
+
+            Right(defined(prepared.asInstanceOf[marshaller.Node]))
         })
 
-    case (_: ScalarType[_], value) if iu.isDefined(value) ⇒
-      Left(Vector(FieldCoercionViolation(fieldPath, GenericInvalidValueViolation(sourceMapper, valuePosition(value)), sourceMapper, valuePosition(value), errorPrefix)))
+      case (enum: EnumType[_], value) if iu.isDefined(value) ⇒
+        Left(Vector(FieldCoercionViolation(fieldPath, EnumCoercionViolation, sourceMapper, valuePosition(value), errorPrefix)))
 
-    case (scalar: ScalarType[_], value) ⇒
-      Left(Vector(FieldCoercionViolation(
-        fieldPath,
-        NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(scalar), sourceMapper, valuePosition(value)),
-        sourceMapper,
-        valuePosition(value),
-        errorPrefix)))
-
-    case (enum: EnumType[_], value) if iu.isEnumNode(value) ⇒
-      val coerced = iu.getScalarValue(value) match {
-        case node: ast.Value ⇒ enum.coerceInput(node)
-        case other ⇒ enum.coerceUserInput(other)
-      }
-
-      coerced.fold(violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))), {
-        case (v, deprecated) ⇒
-          if (deprecated && userContext.isDefined) deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext.get)
-
-          val prepared = firstKindMarshaller match {
-            case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
-            case standard ⇒ Resolver.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
-          }
-
-          Right(Trinary.Defined(prepared.asInstanceOf[marshaller.Node]))
-      })
-
-    case (enum: EnumType[_], value) if iu.isDefined(value) ⇒
-      Left(Vector(FieldCoercionViolation(fieldPath, EnumCoercionViolation, sourceMapper, valuePosition(value), errorPrefix)))
-
-    case (enum: EnumType[_], value) ⇒
-      Left(Vector(FieldCoercionViolation(
-        fieldPath,
-        NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(enum), sourceMapper, valuePosition(value)),
-        sourceMapper,
-        valuePosition(value),
-        errorPrefix)))
+      case (enum: EnumType[_], value) ⇒
+        Left(Vector(FieldCoercionViolation(
+          fieldPath,
+          NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(enum), sourceMapper, valuePosition(value)),
+          sourceMapper,
+          valuePosition(value),
+          errorPrefix)))
+    }
   }
 
   private def valuePosition[T](value: T*): List[Position] = {
@@ -335,7 +365,10 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         import sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
         definition.defaultValue match {
-          case Some(dv) ⇒ Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ coerceInputValue(tpe, fieldPath, dv, None, marshaller, firstKindMarshaller))))
+          case Some(dv) ⇒
+            Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒
+              coerceInputValue(tpe, fieldPath, dv, None, marshaller, firstKindMarshaller, nullWithDefault = input.nonEmpty))))
+
           case None ⇒
             val emptyValue =
               if (input.isEmpty) Trinary.Undefined
@@ -358,7 +391,7 @@ object ValueCoercionHelper {
 
 sealed trait Trinary[+T] {
   def toOption: Option[T] = this match {
-    case Trinary.Null | Trinary.Undefined ⇒ None
+    case Trinary.Null | Trinary.Undefined | Trinary.NullWithDefault(_) ⇒ None
     case Trinary.Defined(v) ⇒ Some(v)
   }
 }
@@ -366,5 +399,8 @@ sealed trait Trinary[+T] {
 object Trinary {
   case object Null extends Trinary[Nothing]
   case object Undefined extends Trinary[Nothing]
+
   case class Defined[T](value: T) extends Trinary[T]
+
+  case class NullWithDefault[T](defaultValue: T) extends Trinary[T]
 }

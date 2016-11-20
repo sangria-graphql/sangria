@@ -246,7 +246,7 @@ case class Context[Ctx, Val](
   path: ExecutionPath,
   deferredResolverState: Any) extends WithArguments with WithInputTypeRendering[Ctx]
 
-case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], defaultInfo: TrieMap[String, Any]) {
+case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], undefinedArgs: Set[String], defaultInfo: TrieMap[String, Any]) {
   private def getAsOptional[T](name: String): Option[T] =
     raw.get(name).asInstanceOf[Option[Option[T]]].flatten
 
@@ -284,8 +284,8 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
     else
       Some(raw(arg.name).asInstanceOf[T])
 
-  def argDefinedInQuery(name: String): Boolean = raw contains name
-  def argDefinedInQuery(arg: Argument[_]): Boolean = raw contains arg.name
+  def argDefinedInQuery(name: String): Boolean = !undefinedArgs.contains(name)
+  def argDefinedInQuery(arg: Argument[_]): Boolean = argDefinedInQuery(arg.name)
 
   def withArgs[A1, R](arg1: Argument[A1])(fn: A1 ⇒ R): R = fn(arg(arg1))
   def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) ⇒ R): R = fn(arg(arg1), arg(arg2))
@@ -298,7 +298,7 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
 }
 
 object Args {
-  val empty = Args(Map.empty, Set.empty, Set.empty, TrieMap.empty)
+  val empty = Args(Map.empty, Set.empty, Set.empty, Set.empty, TrieMap.empty)
 }
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments
