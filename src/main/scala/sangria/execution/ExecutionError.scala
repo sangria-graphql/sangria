@@ -44,3 +44,6 @@ case class QueryReducingError(cause: Throwable, exceptionHandler: Executor.Excep
 
 case class OperationSelectionError(message: String, eh: Executor.ExceptionHandler, sm: Option[SourceMapper] = None, pos: List[Position] = Nil)
   extends ExecutionError(message, eh, sm, pos) with QueryAnalysisError
+
+case class UnknownOperationNameError(opName: String, eh: Executor.ExceptionHandler) extends ExecutionError(
+  s"Unknown operation name $opName", eh) with QueryAnalysisError

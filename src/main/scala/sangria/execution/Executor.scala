@@ -122,7 +122,7 @@ case class Executor[Ctx, Root](
           operationName match {
             case Some(opName) ⇒
               document.operations get Some(opName) map (Success(_)) getOrElse
-                Failure(new ExecutionError("Unknown operation named \"" + opName + "\"", exceptionHandler))
+                Failure(UnknownOperationNameError(opName, exceptionHandler))
             case None ⇒
               Success(document.operations.values.head)
           }
