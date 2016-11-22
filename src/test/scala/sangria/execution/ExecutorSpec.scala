@@ -415,6 +415,16 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       error.getMessage should be ("Must provide operation name if query contains multiple operations")
     }
 
+    "throw if the operation name is invalid" in {
+      val schema = Schema(ObjectType("Type", fields[Unit, Unit](
+        Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
+      val Success(doc) = QueryParser.parse("query Example { a }")
+
+      val error = intercept [OperationSelectionError] (Executor.execute(schema, doc, operationName = Some("Eggsample")).await)
+
+      error.getMessage should be ("Unknown operation name 'Eggsample'")
+    }
+
     "use correct schema type schema for operation" in {
       val schema = Schema(
         ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ ⇒ "b"))),
