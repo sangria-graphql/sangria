@@ -122,7 +122,7 @@ case class Executor[Ctx, Root](
           operationName match {
             case Some(opName) ⇒
               document.operations get Some(opName) map (Success(_)) getOrElse
-                Failure(UnknownOperationNameError(opName, exceptionHandler))
+                Failure(OperationSelectionError(s"Unknown operation name '$opName'", exceptionHandler))
             case None ⇒
               Success(document.operations.values.head)
           }
