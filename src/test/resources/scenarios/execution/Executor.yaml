@@ -331,7 +331,7 @@ tests:
         operation-name: UnknownExample
         test-value: data
     then:
-      exception: Unknown operation named "UnknownExample"
+      exception: Unknown operation name 'UnknownExample'
 
   - name: uses the query schema for queries
     given:

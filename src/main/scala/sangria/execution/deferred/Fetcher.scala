@@ -152,7 +152,7 @@ trait DeferredRelSeqMany[T, RelId] extends Deferred[Seq[T]] {
 }
 
 case class FetcherDeferredOne[Ctx, T, Id](source: Fetcher[Ctx, T, Id], id: Id) extends DeferredOne[T, Id]
-case class FetcherDeferredOpt[Ctx, T, Id](source: Fetcher[Ctx, T, Id], id: Id) extends DeferredOne[T, Id]
+case class FetcherDeferredOpt[Ctx, T, Id](source: Fetcher[Ctx, T, Id], id: Id) extends DeferredOpt[T, Id]
 case class FetcherDeferredSeq[Ctx, T, Id](source: Fetcher[Ctx, T, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
 case class FetcherDeferredSeqOpt[Ctx, T, Id](source: Fetcher[Ctx, T, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
 
