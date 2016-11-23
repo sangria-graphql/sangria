@@ -2,10 +2,11 @@ package sangria.execution
 
 import sangria.marshalling.ResultMarshaller
 import sangria.ast
+import sangria.schema.ObjectType
 
 case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath.PathCacheKey) {
-  def +(fieldName: String) = new ExecutionPath(path :+ fieldName, cacheKey :+ fieldName)
-  def +(field: ast.Field) = new ExecutionPath(path :+ field.outputName, cacheKey :+ field.outputName)
+  def add(field: ast.Field, parentType: ObjectType[_, _]) =
+    new ExecutionPath(path :+ field.outputName, cacheKey :+ field.outputName :+ parentType.name)
 
   def withIndex(idx: Int) = new ExecutionPath(path :+ idx, cacheKey)
 
@@ -20,7 +21,7 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
   /**
     * @return the size of the path excluding the indexes
     */
-  def size = cacheKeyPath.size
+  def size = cacheKeyPath.size / 2
 
   def marshal(m: ResultMarshaller): m.Node = m.arrayNode(path.map {
     case s: String ⇒ m.scalarNode(s, "String", Set.empty)

@@ -46,7 +46,7 @@ case class Executor[Ctx, Root](
           case CollectedField(_, astField, Success(_)) ⇒
             val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
             val field = allFields.head
-            val args = valueCollector.getFieldArgumentValues(ExecutionPath.empty + astField, field.arguments, astField.arguments, unmarshalledVariables)
+            val args = valueCollector.getFieldArgumentValues(ExecutionPath.empty.add(astField, tpe), field.arguments, astField.arguments, unmarshalledVariables)
 
             args.toOption.map(PreparedField(field, _))
           case _ ⇒ None
@@ -265,7 +265,7 @@ case class Executor[Ctx, Root](
                 case (acc, CollectedField(_, _, Success(fields))) if objTpe.getField(schema, fields.head.name).nonEmpty ⇒
                   val astField = fields.head
                   val field = objTpe.getField(schema, astField.name).head
-                  val newPath = path + astField
+                  val newPath = path.add(astField, objTpe)
                   val childReduced = loop(newPath, field.fieldType, fields)
 
                   for (i ← reducers.indices) {
@@ -303,7 +303,7 @@ case class Executor[Ctx, Root](
       case (acc, CollectedField(_, _, Success(astFields))) if rootTpe.getField(schema, astFields.head.name).nonEmpty ⇒
         val astField = astFields.head
         val field = rootTpe.getField(schema, astField.name).head
-        val path = ExecutionPath.empty + astField
+        val path = ExecutionPath.empty.add(astField, rootTpe)
         val childReduced = loop(path, field.fieldType, astFields)
 
         for (i ← reducers.indices) {
