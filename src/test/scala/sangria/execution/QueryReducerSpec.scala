@@ -1,5 +1,6 @@
 package sangria.execution
 
+import monix.execution.atomic.AtomicInt
 import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.ResultMarshaller
 import sangria.parser.QueryParser
@@ -557,6 +558,97 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
                     "ab" → "testab")))
 
       complexity should be (5D)
+    }
+  }
+
+  "MeasureQueryDepth" should {
+    def calcDepth(queryStr: String): Int = {
+      val Success(query) = QueryParser.parse(queryStr)
+
+      val depth = AtomicInt(0)
+      val reducer = QueryReducer.measureDepth[Any]((d, ctx) ⇒ {
+        depth.set(d)
+        ctx
+      })
+
+      Executor.execute(schema, query,
+        userContext = Info(Nil),
+        queryReducers = reducer :: Nil).await
+
+      depth.get
+    }
+
+    "calculate query depth" in {
+      calcDepth("""
+       {
+         info
+         a
+         nest {
+           a
+           b
+           ab
+
+           named(size: 1) {
+             name
+
+             ... on Cat {
+               meows
+             }
+
+             ... on Dog {
+               barks
+             }
+           }
+         }
+
+         nest {
+           a
+         }
+       }
+       """) should be (3)
+
+      calcDepth("""
+       {
+         nest {
+           nest {
+             nest {
+               nest {
+                 nest {
+                   a
+                 }
+               }
+             }
+           }
+         }
+       }
+       """) should be (6)
+    }
+
+    "reject max query depth" in {
+      val Success(query) = QueryParser.parse("""
+       {
+         nest {
+           nest {
+             nest {
+               nest {
+                 nest {
+                   a
+                 }
+               }
+             }
+           }
+         }
+       }
+       """)
+
+      val reducer = QueryReducer.rejectMaxDepth[Any](5)
+
+      val error = intercept [QueryReducingError] (
+        Executor.execute(schema, query,
+          userContext = Info(Nil),
+          queryReducers = reducer :: Nil).await)
+
+      error.cause.asInstanceOf[MaxQueryDepthReachedError].maxDepth should be (5)
     }
   }
 }

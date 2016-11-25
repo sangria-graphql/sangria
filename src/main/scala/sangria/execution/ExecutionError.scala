@@ -27,6 +27,8 @@ class ExecutionError(message: String, val exceptionHandler: Executor.ExceptionHa
   override def getMessage() = super.getMessage + astLocation
 }
 
+case class MaxQueryDepthReachedError(maxDepth: Int) extends Exception(s"Max query depth $maxDepth is reached.") with UserFacingError
+
 trait QueryAnalysisError extends ErrorWithResolver {
   this: Throwable ⇒
 }

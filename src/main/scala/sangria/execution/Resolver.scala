@@ -783,7 +783,7 @@ class Resolver[Ctx](
     val field = allFields.head
 
     maxQueryDepth match {
-      case Some(max) if path.size > max ⇒ ErrorFieldResolution(errors.add(path, new ExecutionError(s"Max query depth $max is reached.", exceptionHandler), astField.position))
+      case Some(max) if path.size > max ⇒ ErrorFieldResolution(errors.add(path, new MaxQueryDepthReachedError(max), astField.position))
       case _ ⇒
         valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables) match {
           case Success(args) ⇒
