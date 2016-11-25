@@ -2,8 +2,9 @@ package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
-import sangria.util.{GraphQlSupport, FutureResultSupport}
-
+import sangria.macros._
+import sangria.util.{DebugUtil, FutureResultSupport, GraphQlSupport}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport with GraphQlSupport {
   trait Named {
@@ -266,5 +267,84 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
         )
       )
     )
+
+    "caching should respect output object polymorphism" in {
+      trait FooBar{
+        def baz: Baz
+      }
+
+      case class Foo(baz: Baz) extends FooBar
+      case class Bar(baz: Baz) extends FooBar
+      case class Baz(quz: Seq[Quz])
+      case class Quz(id: String, i: Int)
+
+      val QuzType = ObjectType("Quz", fields[Unit, Quz](
+        Field("id", StringType, resolve = _.value.id),
+        Field("i", IntType, resolve = _.value.i)))
+
+      val BazType = ObjectType("Baz", fields[Unit, Baz](
+        Field("quz", OptionType(ListType(OptionType(QuzType))),
+          arguments = Argument("id", OptionInputType(ListInputType(StringType))) :: Nil,
+          resolve = c ⇒ {
+            c.argOpt[Seq[String]]("id")
+              .map(queried ⇒ c.value.quz.filter(quz ⇒ queried.contains(quz.id)))
+              .getOrElse(c.value.quz)
+              .map(Some(_))
+          })))
+
+      val FooBarType = InterfaceType("FooBar", fields[Unit, FooBar](
+        Field("baz", OptionType(BazType), resolve = _.value.baz)))
+
+      val FooType = ObjectType("Foo", interfaces[Unit, Foo](FooBarType), fields[Unit, Foo]())
+      val BarType = ObjectType("Bar", interfaces[Unit, Bar](FooBarType), fields[Unit, Bar]())
+      val FooBarBazType = UnionType("FooBarBaz", types = FooType :: BarType :: BazType :: Nil)
+
+      val QueryType = ObjectType("Query", fields[Unit, List[Any]](
+        Field("foo", OptionType(ListType(OptionType(FooBarBazType))), resolve = _.value map (Some(_)))))
+
+      val schema = Schema(QueryType)
+
+      val query =
+        graphql"""
+          {
+            foo {
+              __typename
+              ... on Foo {
+                baz{
+                  quz(id: ["one"]){ id }
+                }
+              }
+              ... on Bar {
+                baz {
+                  quz(id: ["two"]){ id i }
+                }
+              }
+            }
+          }
+        """
+
+      val data = List(
+        Foo(Baz(Seq(Quz("one", 1), Quz("three", 3), Quz("five", 5)))),
+        Baz(Seq(Quz("100", 100))),
+        Bar(Baz(Seq(Quz("two", 2), Quz("four", 4), Quz("six", 6)))))
+
+      Executor.execute(schema, query, root = data).await should be (
+        Map(
+          "data" → Map(
+            "foo" → Vector(
+              Map(
+                "__typename" → "Foo",
+                "baz" → Map(
+                  "quz" → Vector(
+                    Map("id" → "one")))),
+              Map("__typename" → "Baz"),
+              Map(
+                "__typename" → "Bar",
+                "baz" → Map(
+                  "quz" → Vector(
+                    Map(
+                      "id" → "two",
+                      "i" → 2))))))))
+    }
   }
 }
