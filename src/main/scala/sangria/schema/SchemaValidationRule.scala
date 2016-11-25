@@ -1,12 +1,14 @@
 package sangria.schema
 
 import language.higherKinds
-
 import sangria.execution.{FieldTag, SubscriptionField, ValueCoercionHelper}
+import sangria.introspection
 import sangria.marshalling.{CoercedScalaResultMarshaller, ToInput}
 import sangria.renderer.SchemaRenderer
 import sangria.streaming.SubscriptionStream
 import sangria.validation._
+
+import scala.collection.immutable.VectorBuilder
 
 trait SchemaValidationRule {
   def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation]
@@ -17,7 +19,8 @@ object SchemaValidationRule {
   val default: List[SchemaValidationRule] = List(
     new DefaultValuesValidationRule,
     new InterfaceImplementationValidationRule,
-    new SubscriptionFieldsValidationRule)
+    new SubscriptionFieldsValidationRule,
+    new IntrospectionNamesValidationRule)
 
 }
 
@@ -159,6 +162,34 @@ class SubscriptionFieldsValidationRule extends SchemaValidationRule {
     }
 
     subsViolations ++ otherViolations
+  }
+}
+
+class IntrospectionNamesValidationRule extends SchemaValidationRule {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+    val violations = new VectorBuilder[Violation]
+    val allowed = introspection.IntrospectionTypesByName.keySet
+
+    schema.typeList.foreach { tpe ⇒
+      if (tpe.name.startsWith("__") && !allowed.contains(tpe.name))
+        violations += ReservedTypeNameViolation(tpe.name)
+
+      val fields: Seq[String] =
+        tpe match {
+          case obj: ObjectLikeType[_, _] ⇒ obj.fields.map(_.name)
+          case obj: InputObjectType[_] ⇒
+            obj.fields.map(_.name)
+          case obj: EnumType[_] ⇒ obj.values.map(_.name)
+          case _ ⇒ Seq.empty
+        }
+
+      fields foreach { field ⇒
+        if (field startsWith "__")
+          violations += ReservedNameViolation(tpe.name, field)
+      }
+    }
+
+    violations.result().toList
   }
 }
 

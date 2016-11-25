@@ -134,7 +134,10 @@ case class ScalarType[T](
   coerceOutput: (T, Set[MarshallerCapability]) ⇒ Any,
   coerceInput: ast.Value ⇒ Either[Violation, T],
   complexity: Double = 0.0D,
-  scalarInfo: Set[ScalarValueInfo] = Set.empty) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named
+  scalarInfo: Set[ScalarValueInfo] = Set.empty
+) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
+  Named.checkName(name)
+}
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
@@ -519,6 +522,8 @@ case class EnumType[T](
     name: String,
     description: Option[String] = None,
     values: List[EnumValue[T]]) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
+  Named.checkName(name)
+
   lazy val byName = values groupBy (_.name) mapValues (_.head)
   lazy val byValue = values groupBy (_.value) mapValues (_.head)
 
@@ -772,10 +777,10 @@ case class Schema[Ctx, Val](
     queryAndSubAndMutTypes
   }
 
-  lazy val typeList = types.values.toList.sortBy(t ⇒ t._1 + t._2.name).map(_._2)
-  lazy val availableTypeNames = typeList map (_.name)
+  lazy val typeList: List[Type with Named] = types.values.toList.sortBy(t ⇒ t._1 + t._2.name).map(_._2)
+  lazy val availableTypeNames: List[String] = typeList map (_.name)
 
-  lazy val allTypes = types collect {case (name, (_, tpe)) ⇒ name → tpe}
+  lazy val allTypes: Map[String, Type with Named] = types collect {case (name, (_, tpe)) ⇒ name → tpe}
   lazy val inputTypes = types collect {case (name, (_, tpe: InputType[_])) ⇒ name → tpe}
   lazy val outputTypes = types collect {case (name, (_, tpe: OutputType[_])) ⇒ name → tpe}
   lazy val scalarTypes = types collect {case (name, (_, tpe: ScalarType[_])) ⇒ name → tpe}

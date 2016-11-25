@@ -367,3 +367,11 @@ case class DuplicateVariableViolation(variableName: String, sourceMapper: Option
 case class ConflictingTypeDefinitionViolation(typeName: String, conflictingTypes: List[String], parentInfo: String) extends Violation {
   lazy val errorMessage = s"Type name '$typeName' is used for several conflicting GraphQL type kinds: ${conflictingTypes mkString ", "}. Conflict found in $parentInfo."
 }
+
+case class ReservedTypeNameViolation(typeName: String) extends Violation {
+  lazy val errorMessage = s"Type name '$typeName' must not begin with '__', which is reserved by GraphQL introspection."
+}
+
+case class ReservedNameViolation(typeName: String, name: String) extends Violation {
+  lazy val errorMessage = s"Name '$typeName.$name' must not begin with '__', which is reserved by GraphQL introspection."
+}
