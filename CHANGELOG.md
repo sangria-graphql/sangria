@@ -1,3 +1,11 @@
+## v1.0.0-RC5 (2016-11-28)
+
+* Uphold spec for non-validation names not beginning with `__` (spec-change) (#189)
+* Field cache does not consider output object polymorphism (#190)
+* Added `QueryReducer.measureDepth` and `QueryReducer.rejectMaxDepth` query reducers (#191). `maxQueryDepth` argument was available for a long time on `Executor`, but in contrast to new query reducers, it measures depth along side of the execution. With query reducers it happens before query execution, thus allow to reject the query execution entirely.  
+* FetcherDeferredOpt does not extends DeferredOpt (#188)
+* Invalid operation name now be considered a client-side error and now implements `QueryAnalysisError` (#186, #187). Big thanks to @mattfenwick for working on this one!
+
 ## v1.0.0-RC4 (2016-11-20)
 
 Sangria v1.0.0-RC4 is fully compliant with ["October 2016"](https://github.com/facebook/graphql/releases/tag/October2016) version of the GraphQL specification.
