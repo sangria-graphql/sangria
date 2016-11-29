@@ -79,7 +79,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]], f
 
     val newResults =
       if (nonCachedIds.nonEmpty)
-        f.fetchRel(ctx, nonCachedIds.asInstanceOf[Map[Relation[Any, _], Vector[Any]]])
+        f.fetchRel(ctx, RelationIds(nonCachedIds.asInstanceOf[Map[Relation[Any, _], Seq[Any]]]))
           .map(groupAndCacheRelations(fetcher, fetcherCache, nonCachedIds, _))
       else
         Future.successful(MutableMap.empty[Relation[Any, Any], MutableMap[Any, Seq[Any]]])

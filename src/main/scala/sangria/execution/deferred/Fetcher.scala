@@ -6,7 +6,7 @@ import scala.concurrent.Future
 class Fetcher[Ctx, Res, Id](
   val idFn: Res ⇒ Id,
   val fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]],
-  val fetchRel: (Ctx, Map[Relation[Res, _], Seq[Id]]) ⇒ Future[Seq[Res]],
+  val fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[Res]],
   val config: FetcherConfig
 ) {
   def defer(id: Id) = FetcherDeferredOne(this, id)
@@ -87,19 +87,19 @@ class Fetcher[Ctx, Res, Id](
 }
 
 object Fetcher {
-  private def relationUnsupported[Ctx, Id, Res]: (Ctx, Map[Relation[Res, _], Seq[Id]]) ⇒ Future[Seq[Res]] =
+  private def relationUnsupported[Ctx, Id, Res]: (Ctx, RelationIds[Res]) ⇒ Future[Seq[Res]] =
     (_, _) ⇒ throw new RelationNotSupportedError
 
   def apply[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Id] =
     new Fetcher[Ctx, Res, Id](i ⇒ id.id(i), fetch, relationUnsupported, config)
 
-  def rel[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, Map[Relation[Res, _], Seq[Id]]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Id] =
+  def rel[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Id] =
     new Fetcher[Ctx, Res, Id](i ⇒ id.id(i), fetch, fetchRel, config)
 
   def caching[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Id] =
     new Fetcher[Ctx, Res, Id](i ⇒ id.id(i), fetch, relationUnsupported, config)
 
-  def relCaching[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, Map[Relation[Res, _], Seq[Id]]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Id] =
+  def relCaching[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Id] =
     new Fetcher[Ctx, Res, Id](i ⇒ id.id(i), fetch, fetchRel, config)
 }
 
@@ -175,5 +175,13 @@ abstract class AbstractRelation[T, RelId](idFn: T ⇒ Seq[RelId]) extends Relati
 }
 
 case class SimpleRelation[T, RelId](name: String)(idFn: T ⇒ Seq[RelId]) extends AbstractRelation[T, RelId](idFn)
+
+case class RelationIds[Res](rawIds: Map[Relation[Res, _], Seq[_]]) {
+  def apply[RelId](relation: Relation[Res, RelId]): Seq[RelId] =
+    get[RelId](relation).getOrElse(Vector.empty)
+
+  def get[RelId](relation: Relation[Res, RelId]): Option[Seq[RelId]] =
+    rawIds.get(relation).asInstanceOf[Option[Seq[RelId]]]
+}
 
 class RelationNotSupportedError extends Exception(s"Relations are not supported by Fetcher.")
