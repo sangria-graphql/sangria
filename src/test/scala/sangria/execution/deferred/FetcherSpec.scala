@@ -251,6 +251,81 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
                   "childrenSeq" → Vector.empty)))))))
     }
 
+    "cache relation results" in {
+      val query =
+        graphql"""
+          {
+            p1: products(categoryIds: ["4", "7"]) {
+              categoryRel {
+                name
+                products {
+                  categoryRel {
+                    name
+                    products {
+                      categoryRel {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        """
+
+      var fetchedIds = Vector.empty[Seq[String]]
+      var fetchedRels = Vector.empty[RelationIds[Category]]
+
+      val fetcher =
+        Fetcher.rel(
+          (repo: Repo, ids: Seq[String]) ⇒ {
+            fetchedIds = fetchedIds :+ ids
+
+            repo.loadCategories(ids)
+          },
+          (repo: Repo, ids: RelationIds[Category]) ⇒ {
+            fetchedRels = fetchedRels :+ ids
+
+            repo.loadCategoriesByProduct(ids(catProd))
+          })
+
+      var fetchedIdsCached = Vector.empty[Seq[String]]
+      var fetchedRelsCached = Vector.empty[RelationIds[Category]]
+
+      val fetcherCached =
+        Fetcher.relCaching(
+          (repo: Repo, ids: Seq[String]) ⇒ {
+
+            repo.loadCategories(ids)
+          },
+          (repo: Repo, ids: RelationIds[Category]) ⇒ {
+            fetchedRelsCached = fetchedRelsCached :+ ids
+
+            repo.loadCategoriesByProduct(ids(catProd))
+          })
+
+
+      val res = Executor.execute(schema(fetcher), query, new Repo,
+        deferredResolver = DeferredResolver.fetchers(fetcher, defaultProdFetcher)).await
+
+      val resCached = Executor.execute(schema(fetcherCached), query, new Repo,
+        deferredResolver = DeferredResolver.fetchers(fetcherCached, defaultProdFetcher)).await
+
+      fetchedIds should have size 0
+      fetchedIdsCached should have size 0
+
+      fetchedRels should be (
+        Vector(
+          RelationIds[Category](Map(catProd → Vector(1, 2, 3))),
+          RelationIds[Category](Map(catProd → Vector(1, 2, 3))),
+          RelationIds[Category](Map(catProd → Vector(1, 2, 3)))))
+
+      fetchedRelsCached should be (
+        Vector(RelationIds[Category](Map(catProd → Vector(1, 2, 3)))))
+
+      res should be (resCached)
+    }
+
     "should result in error for missing non-optional values" in {
       var fetchedIds = Vector.empty[Seq[String]]
 

@@ -50,7 +50,7 @@ class SimpleFetcherCache extends FetcherCache {
         update(idFn(v), v)
       }
 
-      cache.update(cacheKeyRel(rel, relId), values)
+      relCache.update(cacheKeyRel(rel, relId), values)
     }
   }
 
