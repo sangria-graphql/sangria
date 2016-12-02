@@ -18,7 +18,7 @@ More info and the documentation can be found in the project home page:
 
 [http://sangria-graphql.org](http://sangria-graphql.org)
 
-I would also would recommend you to check out [http://try.sangria-graphql.org](http://try.sangria-graphql.org).
+I would also recommend you to check out [http://try.sangria-graphql.org](http://try.sangria-graphql.org).
 It is an example of GraphQL server written with Play framework and Sangria. It also serves as a playground,
 where you can interactively execute GraphQL queries and play with some examples.
 
