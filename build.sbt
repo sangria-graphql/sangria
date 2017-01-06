@@ -36,7 +36,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.1",
 
   // testing
-  "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.3" % "test",
   "org.sangria-graphql" %% "sangria-spray-json" % "0.3.2" % "test",
   "org.sangria-graphql" %% "sangria-ion" % "0.1.1" % "test",
