@@ -295,6 +295,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       val fetcherCached =
         Fetcher.relCaching(
           (repo: Repo, ids: Seq[String]) ⇒ {
+            fetchedIdsCached = fetchedIdsCached :+ ids
 
             repo.loadCategories(ids)
           },

@@ -54,11 +54,7 @@ sealed trait HasDeprecation {
 }
 
 object Named {
-  private val NameRegexp = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
-
-  private[sangria] def doCheckNonEmptyFields(fields: Seq[Named]): Unit =
-    if (fields.isEmpty)
-      throw new IllegalArgumentException("No fields provided! You need to provide at least one field to a Type.")
+  val NameRegexp = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
 
   private[sangria] def doCheckUniqueFields(fields: Seq[Named]): Unit =
     if (fields.map(_.name).toSet.size != fields.size)
@@ -74,9 +70,9 @@ object Named {
   }
 
   def checkIntFields[T <: Seq[Named]](fields: T): T = {
-    doCheckNonEmptyFields(fields)
     doCheckUniqueFields(fields)
     doCheckFieldNames(fields)
+
     fields
   }
 
@@ -88,8 +84,8 @@ object Named {
 
   def checkIntFieldsFn[T <: Seq[Named]](fields: T): () ⇒ T = {
     doCheckUniqueFields(fields)
-    doCheckNonEmptyFields(fields)
     doCheckFieldNames(fields)
+
     () ⇒ fields
   }
 
@@ -105,7 +101,6 @@ object Named {
 
     name
   }
-
 }
 
 /**

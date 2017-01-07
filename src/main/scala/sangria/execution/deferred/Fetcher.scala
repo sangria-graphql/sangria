@@ -88,7 +88,7 @@ class Fetcher[Ctx, Res, Id](
 
 object Fetcher {
   private def relationUnsupported[Ctx, Id, Res]: (Ctx, RelationIds[Res]) ⇒ Future[Seq[Res]] =
-    (_, _) ⇒ throw new RelationNotSupportedError
+    (_, _) ⇒ Future.failed(new RelationNotSupportedError)
 
   def apply[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Id] =
     new Fetcher[Ctx, Res, Id](i ⇒ id.id(i), fetch, relationUnsupported, config)

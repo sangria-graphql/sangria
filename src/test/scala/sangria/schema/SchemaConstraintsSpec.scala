@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.validation.{ReservedNameViolation, ReservedTypeNameViolation, StringCoercionViolation}
+import sangria.validation.{EmptyFieldListViolation, ReservedNameViolation, ReservedTypeNameViolation, StringCoercionViolation}
 
 class SchemaConstraintsSpec extends WordSpec with Matchers {
   "Schema" should {
@@ -98,6 +98,25 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
         ReservedNameViolation("__Input", "__y"),
         ReservedNameViolation("__Color", "__GREEN"),
         ReservedNameViolation("__Color", "__BLUE")))
+    }
+
+    "not allow empty list of fields" in {
+      val int1Type = InterfaceType[Unit, Unit]("Interface1", Nil)
+      val int2Type = InterfaceType[Unit, Unit]("Interface2", Nil, interfaces[Unit, Unit](int1Type))
+      val outType = ObjectType[Unit, Unit]("Output", interfaces[Unit, Unit](int2Type), Nil)
+      val inputType = InputObjectType("Input", Nil)
+      val queryType = ObjectType("Query", fields[Unit, Unit](
+        Field("foo", OptionType(outType),
+          arguments = Argument("bar", inputType) :: Nil,
+          resolve = _ ⇒ ())))
+
+      val error = intercept [SchemaValidationException] (Schema(queryType))
+
+      error.violations.toSet should be (Set(
+        EmptyFieldListViolation("Input"),
+        EmptyFieldListViolation("Interface1"),
+        EmptyFieldListViolation("Interface2"),
+        EmptyFieldListViolation("Output")))
     }
   }
 }

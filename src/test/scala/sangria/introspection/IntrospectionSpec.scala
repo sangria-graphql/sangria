@@ -13,7 +13,7 @@ import scala.util.Success
 class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport {
   "Introspection" should {
     "executes an introspection query" in {
-      val schema = Schema(ObjectType[Unit, Unit]("QueryRoot", Nil))
+      val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
 
       Executor.execute(schema, introspectionQuery).await should be (Map(
         "data" → Map(
@@ -29,7 +29,20 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                 "description" → null,
                 "interfaces" → Nil,
                 "enumValues" → null,
-                "fields" → Nil,
+                "fields" → Vector(
+                  Map(
+                    "name" → "foo",
+                    "description" → null,
+                    "args" → Vector.empty,
+                    "type" → Map(
+                      "kind" → "NON_NULL",
+                      "name" → null,
+                      "ofType" → Map(
+                        "kind" → "SCALAR",
+                        "name" → "Int",
+                        "ofType" → null)),
+                    "isDeprecated" → false,
+                    "deprecationReason" → null)),
                 "kind" → "OBJECT",
                 "possibleTypes" → null
               ),
@@ -1305,7 +1318,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "exposes descriptions on types and fields" in {
-      val schema = Schema(ObjectType[Unit, Unit]("QueryRoot", Nil))
+      val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
 
       val Success(query) = QueryParser.parse(
         """
@@ -1361,7 +1374,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
     }
 
     "exposes descriptions on enums" in {
-      val schema = Schema(ObjectType[Unit, Unit]("QueryRoot", Nil))
+      val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
 
       val Success(query) = QueryParser.parse(
         """

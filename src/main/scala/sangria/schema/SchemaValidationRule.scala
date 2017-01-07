@@ -20,7 +20,8 @@ object SchemaValidationRule {
     new DefaultValuesValidationRule,
     new InterfaceImplementationValidationRule,
     new SubscriptionFieldsValidationRule,
-    new IntrospectionNamesValidationRule)
+    new IntrospectionNamesValidationRule,
+    new FieldValidationRule)
 
 }
 
@@ -187,6 +188,22 @@ class IntrospectionNamesValidationRule extends SchemaValidationRule {
         if (field startsWith "__")
           violations += ReservedNameViolation(tpe.name, field)
       }
+    }
+
+    violations.result().toList
+  }
+}
+
+class FieldValidationRule extends SchemaValidationRule {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+    val violations = new VectorBuilder[Violation]
+
+    schema.typeList.foreach {
+      case tpe: ObjectLikeType[_, _] if tpe.uniqueFields.isEmpty ⇒
+        violations += EmptyFieldListViolation(tpe.name)
+      case tpe: InputObjectType[_] if tpe.fields.isEmpty ⇒
+        violations += EmptyFieldListViolation(tpe.name)
+      case _ ⇒ // everything is fine
     }
 
     violations.result().toList

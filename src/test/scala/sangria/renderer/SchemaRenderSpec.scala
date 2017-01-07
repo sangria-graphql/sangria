@@ -571,7 +571,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
   "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
-      val schema = Schema(ObjectType[Unit, Unit]("Root", Nil))
+      val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
       val rendered = SchemaRenderer.renderIntrospectionSchema(Executor.execute(schema, introspectionQuery).await)
 
       ("\n" + rendered + "\n") should equal ("""

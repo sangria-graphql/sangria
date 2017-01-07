@@ -2,6 +2,7 @@ package sangria.validation
 
 import org.parboiled2.Position
 import sangria.parser.SourceMapper
+import sangria.schema.Named
 import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
 
@@ -374,4 +375,8 @@ case class ReservedTypeNameViolation(typeName: String) extends Violation {
 
 case class ReservedNameViolation(typeName: String, name: String) extends Violation {
   lazy val errorMessage = s"Name '$typeName.$name' must not begin with '__', which is reserved by GraphQL introspection."
+}
+
+case class EmptyFieldListViolation(typeName: String) extends Violation {
+  lazy val errorMessage = s"Type '$typeName' must have at least one field in a field list."
 }
