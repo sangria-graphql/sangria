@@ -114,8 +114,8 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("childrenSeqOpt", ListType(CategoryType),
           resolve = c ⇒ fetcherCat.deferSeqOpt(c.value.children)),
         Field("childrenFut", ListType(CategoryType),
-          resolve = c ⇒ DeferredFutureValue(Future.successful(
-            fetcherCat.deferSeq(c.value.children))))))
+          resolve = c ⇒ Future.successful(
+            fetcherCat.deferSeq(c.value.children)))))
 
       val QueryType = ObjectType("Query", fields[Repo, Unit](
         Field("category", OptionType(CategoryType),
@@ -132,7 +132,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
           resolve = c ⇒ fetcherProd.deferRelSeqMany(prodCat, c.arg[Seq[String]]("categoryIds"))),
         Field("root", CategoryType, resolve = _ ⇒ fetcherCat.defer("1")),
         Field("rootFut", CategoryType, resolve = _ ⇒
-          DeferredFutureValue(Future.successful(fetcherCat.defer("1"))))))
+          Future.successful(fetcherCat.defer("1")))))
 
       Schema(QueryType)
     }
@@ -144,7 +144,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
             c1: category(id: "non-existing") {name}
             c3: category(id: "8") {name childrenSeqOpt {id}}
 
-            root {
+            rootFut {
               id
               name
               childrenSeq {
@@ -213,7 +213,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
                   "id" → "4"),
                 Map(
                   "id" → "5"))),
-            "root" → Map(
+            "rootFut" → Map(
               "id" → "1",
               "name" → "Root",
               "childrenSeq" → Vector(
