@@ -29,6 +29,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]], f
     val grouped = deferred groupBy {
       case FetcherDeferredOne(s, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredOpt(s, _) ⇒ fetchersMap.get(s)
+      case FetcherDeferredOptOpt(s, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredSeq(s, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredSeqOpt(s, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredRel(s, _, _) ⇒ fetchersMap.get(s)
@@ -215,6 +216,21 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _]], f
             cachedResults.get(id)
 
           case FetcherDeferredOpt(_, id) ⇒
+            m.get(id) match {
+              case Some(e: Exception) ⇒ throw e
+              case v ⇒
+                v foreach (updateCache(id, _))
+
+                v
+            }
+
+          case FetcherDeferredOptOpt(_, None) ⇒
+            None
+
+          case FetcherDeferredOptOpt(_, Some(id)) if cachedResults contains id ⇒
+            cachedResults.get(id)
+
+          case FetcherDeferredOptOpt(_, Some(id)) ⇒
             m.get(id) match {
               case Some(e: Exception) ⇒ throw e
               case v ⇒

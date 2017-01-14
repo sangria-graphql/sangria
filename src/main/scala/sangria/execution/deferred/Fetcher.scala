@@ -11,6 +11,7 @@ class Fetcher[Ctx, Res, Id](
 ) {
   def defer(id: Id) = FetcherDeferredOne(this, id)
   def deferOpt(id: Id) = FetcherDeferredOpt(this, id)
+  def deferOpt(id: Option[Id]) = FetcherDeferredOptOpt(this, id)
   def deferSeq(ids: Seq[Id]) = FetcherDeferredSeq(this, ids)
   def deferSeqOpt(ids: Seq[Id]) = FetcherDeferredSeqOpt(this, ids)
 
@@ -46,6 +47,7 @@ class Fetcher[Ctx, Res, Id](
     deferred foreach {
       case FetcherDeferredOne(s, id) if s eq this ⇒ allIds += id.asInstanceOf[Id]
       case FetcherDeferredOpt(s, id) if s eq this ⇒ allIds += id.asInstanceOf[Id]
+      case FetcherDeferredOptOpt(s, Some(id)) if s eq this ⇒ allIds += id.asInstanceOf[Id]
       case FetcherDeferredSeq(s, ids) if s eq this ⇒ allIds ++= ids.asInstanceOf[Seq[Id]]
       case FetcherDeferredSeqOpt(s, ids) if s eq this ⇒ allIds ++= ids.asInstanceOf[Seq[Id]]
       case _ ⇒ // skip
@@ -127,6 +129,10 @@ trait DeferredOpt[+T, Id] extends Deferred[Option[T]] {
   def id: Id
 }
 
+trait DeferredOptOpt[+T, Id] extends Deferred[Option[T]] {
+  def id: Option[Id]
+}
+
 trait DeferredSeq[+T, Id] extends Deferred[Seq[T]] {
   def ids: Seq[Id]
 }
@@ -153,6 +159,7 @@ trait DeferredRelSeqMany[T, RelId] extends Deferred[Seq[T]] {
 
 case class FetcherDeferredOne[Ctx, T, Id](source: Fetcher[Ctx, T, Id], id: Id) extends DeferredOne[T, Id]
 case class FetcherDeferredOpt[Ctx, T, Id](source: Fetcher[Ctx, T, Id], id: Id) extends DeferredOpt[T, Id]
+case class FetcherDeferredOptOpt[Ctx, T, Id](source: Fetcher[Ctx, T, Id], id: Option[Id]) extends DeferredOptOpt[T, Id]
 case class FetcherDeferredSeq[Ctx, T, Id](source: Fetcher[Ctx, T, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
 case class FetcherDeferredSeqOpt[Ctx, T, Id](source: Fetcher[Ctx, T, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
 

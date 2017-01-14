@@ -130,6 +130,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("products", ListType(ProductType),
           arguments = Argument("categoryIds", ListInputType(StringType)) :: Nil,
           resolve = c ⇒ fetcherProd.deferRelSeqMany(prodCat, c.arg[Seq[String]]("categoryIds"))),
+        Field("productOpt", OptionType(ProductType),
+          arguments = Argument("id", OptionInputType(IntType)) :: Nil,
+          resolve = c ⇒ fetcherProd.deferOpt(c.argOpt[Int]("id"))),
         Field("root", CategoryType, resolve = _ ⇒ fetcherCat.defer("1")),
         Field("rootFut", CategoryType, resolve = _ ⇒
           Future.successful(fetcherCat.defer("1")))))
@@ -137,7 +140,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       Schema(QueryType)
     }
 
-    "fetch results in batches and cache results is necessary" in {
+    "fetch results in batches and cache results if necessary" in {
       val query =
         graphql"""
           {
@@ -249,6 +252,28 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
                   "id" → "4",
                   "name" → "Cat 4",
                   "childrenSeq" → Vector.empty)))))))
+    }
+
+    "fetch results with `deferOpt` and option argument" in {
+      val query =
+        graphql"""
+          {
+            p1: productOpt(id: 1) {id, name}
+            p2: productOpt {id, name}
+            p3: productOpt(id: 12345) {id, name}
+          }
+        """
+
+      val res = Executor.execute(schema(), query, new Repo, deferredResolver = defaultResolver).await
+
+      res should be (
+        Map(
+          "data" → Map(
+            "p1" → Map(
+              "id" → 1,
+              "name" → "Rusty sword"),
+            "p2" → null,
+            "p3" → null)))
     }
 
     "cache relation results" in {
