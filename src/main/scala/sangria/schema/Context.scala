@@ -30,6 +30,11 @@ object ReduceAction {
 }
 
 object Action extends LowPrioActions {
+  def sequence[Ctx, Val](actions: Seq[LeafAction[Ctx, Val]]): SequenceLeafAction[Ctx, Val] =
+    SequenceLeafAction[Ctx, Val](actions)
+
+  def apply[Ctx, Val](a: Action[Ctx, Val]) = a
+
   implicit def deferredAction[Ctx, Val](value: Deferred[Val]): LeafAction[Ctx, Val] = DeferredValue(value)
   implicit def tryAction[Ctx, Val](value: Try[Val]): LeafAction[Ctx, Val] = TryValue(value)
 }
@@ -42,6 +47,13 @@ trait LowPrioActions extends LowestPrioActions {
 trait LowestPrioActions {
   implicit def futureAction[Ctx, Val](value: Future[Val]): LeafAction[Ctx, Val] = FutureValue(value)
   implicit def defaultAction[Ctx, Val](value: Val): LeafAction[Ctx, Val] = Value(value)
+}
+
+object LeafAction {
+  def sequence[Ctx, Val](actions: Seq[LeafAction[Ctx, Val]]): SequenceLeafAction[Ctx, Val] =
+    SequenceLeafAction[Ctx, Val](actions)
+
+  def apply[Ctx, Val](a: LeafAction[Ctx, Val]) = a
 }
 
 case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
@@ -85,6 +97,16 @@ case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx,
 case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends LeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
     DeferredFutureValue(value map (MappingDeferred(_, fn)))
+}
+
+case class SequenceLeafAction[Ctx, Val](value: Seq[LeafAction[Ctx, Val]]) extends LeafAction[Ctx, Seq[Val]] {
+  override def map[NewVal](fn: Seq[Val] ⇒ NewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewVal] =
+    new MappedSequenceLeafAction[Ctx, Val, NewVal](this, fn)
+}
+
+class MappedSequenceLeafAction[Ctx, Val, NewVal](val action: SequenceLeafAction[Ctx, Val], val mapFn: Seq[Val] ⇒ NewVal) extends LeafAction[Ctx, NewVal] {
+  override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewNewVal] =
+    new MappedSequenceLeafAction[Ctx, Val, NewNewVal](action, v ⇒ fn(mapFn(v)))
 }
 
 class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx) extends Action[Ctx, Val] {

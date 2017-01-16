@@ -1,3 +1,8 @@
+## Upcoming
+
+* Added `Action.sequence` combinator to compose a list of `LeafAction`s in a single `LeadAction` that can be returned from a `resolve` function (#206)
+* Helper method `sangroia.schema.action` is replaced with `Action.apply` and `LeafAction.apply`
+
 ## v1.0.0-RC5 (2016-11-28)
 
 * Uphold spec for non-validation names not beginning with `__` (spec-change) (#189)

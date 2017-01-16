@@ -33,10 +33,10 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
           Field.subs("letters", StringType, resolve = _ ⇒
-            Observable.from(List("a", "b").map(action(_)))),
+            Observable.from(List("a", "b").map(Action(_)))),
 
           Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
-            Observable.from(List(1, 2).map(action(_))))
+            Observable.from(List(1, 2).map(Action(_))))
         ))
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
@@ -73,10 +73,10 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
       "Stream results with monix" in {
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
           Field.subs("letters", StringType, resolve = _ ⇒
-            Observable("a", "b").map(action(_))),
+            Observable("a", "b").map(Action(_))),
 
           Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
-            Observable(1, 2).map(action(_)))
+            Observable(1, 2).map(Action(_)))
         ))
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
@@ -102,10 +102,10 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
             Observable("a", "b", "c", "d", "e").map { l ⇒
               if (l == "c") throw new IllegalStateException("foo")
               else l
-            }.map(action(_))),
+            }.map(Action(_))),
 
           Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
-            Observable(1, 2, 3, 4).map(action(_)))
+            Observable(1, 2, 3, 4).map(Action(_)))
         ))
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
@@ -190,7 +190,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val SubscriptionType = ObjectType("Subscription", fields[Ctx, Unit](
           Field.subs("fruitEvents", OptionType(FruitEventType), resolve =
-              c ⇒ c.ctx.eventBus.map(action(_)))
+              c ⇒ c.ctx.eventBus.map(Action(_)))
         ))
 
         val schema = Schema(QueryType, Some(MutationType), Some(SubscriptionType))
@@ -268,7 +268,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
           Field.subs("letters", OptionType(StringType), resolve = _ ⇒
-            Observable("a", "b", "c").map(action(_)))))
+            Observable("a", "b", "c").map(Action(_)))))
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
 
@@ -291,7 +291,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
           Field.subs("letters", OptionType(StringType),
-            resolve = _ ⇒ Observable("a").map(action(_))),
+            resolve = _ ⇒ Observable("a").map(Action(_))),
           Field("hello", StringType, resolve = _ ⇒ "world")))
 
         val error = intercept [SchemaValidationException] (Schema(QueryType, subscription = Some(SubscriptionType)))
@@ -307,7 +307,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
           import rx.lang.scala.Observable
 
           Field.subs("letters", OptionType(StringType),
-            resolve = (_: Context[Unit, Unit]) ⇒ Observable.from(List("a")).map(action(_)))
+            resolve = (_: Context[Unit, Unit]) ⇒ Observable.from(List("a")).map(Action(_)))
         }
 
         val f2 = {
@@ -315,7 +315,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
           import _root_.monix.reactive.Observable
 
           Field.subs("otherLetters", OptionType(StringType),
-            resolve = (_: Context[Unit, Unit]) ⇒ Observable("a").map(action(_)))
+            resolve = (_: Context[Unit, Unit]) ⇒ Observable("a").map(Action(_)))
         }
 
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](f1, f2))
@@ -334,7 +334,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
           ObjectType("Subscription", fields[Unit, Unit](
             Field.subs("letters", OptionType(StringType), resolve = _ ⇒
-              Observable("a", "b", "c").map(action(_)))))
+              Observable("a", "b", "c").map(Action(_)))))
         }
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
@@ -353,10 +353,10 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
           Field.subs("letters", OptionType(StringType), resolve = _ ⇒
-            Observable("a", "b").map(action(_))),
+            Observable("a", "b").map(Action(_))),
 
           Field.subs("numbers", OptionType(IntType), resolve = _ ⇒
-            Observable(1, 2).map(action(_)))
+            Observable(1, 2).map(Action(_)))
         ))
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))

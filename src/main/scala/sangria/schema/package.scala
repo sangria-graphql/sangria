@@ -207,6 +207,4 @@ package object schema {
 
   def possibleTypes[Ctx, Abstract](objectTypes: PossibleObject[Ctx, Abstract]*): List[PossibleObject[Ctx, Abstract]] =
     objectTypes.toList
-
-  def action[Ctx, Val](a: Action[Ctx, Val]) = a
 }
