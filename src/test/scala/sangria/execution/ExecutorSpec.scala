@@ -827,9 +827,6 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
                 "path" → Vector("foo"),
                 "locations" → Vector(Map("line" → 1, "column" → (5 + offset)))))))
       }
-      
-      // Map("data" -> Map("ids" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121), "foo" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121)), "errors" -> Vector(Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 8))), Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 8))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 13))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 13))))) 
-      // Map("data" -> Map("ids" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121), "foo" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121)), "errors" -> Vector(Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 2))), Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 2))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 7))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 7)))))
     }
   }
 }
