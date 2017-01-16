@@ -8,9 +8,9 @@ import sangria.macros._
 import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.validation.QueryValidator
 import InputUnmarshaller.mapVars
-import sangria.execution.deferred.{Deferred, DeferredResolver}
+import sangria.execution.deferred.{Deferred, DeferredResolver, Fetcher, HasId}
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.Map
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -765,6 +765,71 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       result.ctx.complexity should be (247)
       result.middlewareVals(0)._1 should be (345)
+    }
+
+    "support `Action.sequence` in queries and mutations" in {
+      val error = new IllegalStateException("foo")
+
+      val fetcher = Fetcher[Unit, Int, Int]((_, ids) ⇒ Future.successful(ids.map(_ + 100)))(HasId(_ - 100))
+
+      lazy val QueryType = ObjectType("Query", fields[Unit, Unit](
+        Field("ids", OptionType(ListType(OptionType(IntType))),
+          resolve = c ⇒ Action.sequence(Seq(
+            LeafAction(Some(1)),
+            LeafAction(None),
+            LeafAction(Some(2)),
+            LeafAction(Success(Some(3))),
+            LeafAction(Future(Some(4))),
+            LeafAction(PartialValue(Some(5), Vector(error))),
+            PartialFutureValue[Unit, Option[Int]](Future(PartialValue(Some(6), Vector(error)))),
+            LeafAction(fetcher.deferOpt(7)),
+            LeafAction(fetcher.deferOpt(8)),
+            LeafAction(Future(fetcher.deferOpt(9))),
+            LeafAction(Future(fetcher.deferOpt(10)))
+          ).map(_.map(_.map(_ + 10)))).map(vs ⇒ vs.map(_.map(_ + 1))))
+      ))
+
+      val schema = Schema(QueryType, Some(QueryType))
+
+      val exceptionHandler: Executor.ExceptionHandler = {
+        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+      }
+
+      val queryRes = Executor.execute(schema, graphql"query {ids, foo: ids}",
+        exceptionHandler = exceptionHandler,
+        deferredResolver = DeferredResolver.fetchers(fetcher))
+
+      val mutationRes = Executor.execute(schema, graphql"mutation {ids, foo: ids}",
+        exceptionHandler = exceptionHandler,
+        deferredResolver = DeferredResolver.fetchers(fetcher))
+
+      Seq(queryRes.await → 8, mutationRes.await → 11) foreach { case (result, offset) ⇒
+        result should be (
+          Map(
+            "data" → Map(
+              "ids" → Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121),
+              "foo" → Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121)),
+            "errors" → Vector(
+              Map(
+                "message" → "foo",
+                "path" → Vector("ids"),
+                "locations" → Vector(Map("line" → 1, "column" → offset))),
+              Map(
+                "message" → "foo",
+                "path" → Vector("ids"),
+                "locations" → Vector(Map("line" → 1, "column" → offset))),
+              Map(
+                "message" → "foo",
+                "path" → Vector("foo"),
+                "locations" → Vector(Map("line" → 1, "column" → (5 + offset)))),
+              Map(
+                "message" → "foo",
+                "path" → Vector("foo"),
+                "locations" → Vector(Map("line" → 1, "column" → (5 + offset)))))))
+      }
+      
+      // Map("data" -> Map("ids" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121), "foo" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121)), "errors" -> Vector(Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 8))), Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 8))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 13))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 13))))) 
+      // Map("data" -> Map("ids" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121), "foo" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121)), "errors" -> Vector(Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 2))), Map("message" -> "foo", "path" -> Vector("ids"), "locations" -> Vector(Map("line" -> 1, "column" -> 2))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 7))), Map("message" -> "foo", "path" -> Vector("foo"), "locations" -> Vector(Map("line" -> 1, "column" -> 7)))))
     }
   }
 }
