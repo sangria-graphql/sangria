@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.0.0-SNAPSHOT"
+version := "1.0.0"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
@@ -30,18 +30,18 @@ libraryDependencies ++= Seq(
   "org.parboiled" %% "parboiled" % "2.1.3",
 
   // marshalling
-  "org.sangria-graphql" %% "sangria-marshalling-api" % "0.2.2",
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.0",
 
   // streaming
-  "org.sangria-graphql" %% "sangria-streaming-api" % "0.1.1",
+  "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.0",
 
   // testing
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "0.2.3" % "test",
-  "org.sangria-graphql" %% "sangria-spray-json" % "0.3.2" % "test",
-  "org.sangria-graphql" %% "sangria-ion" % "0.1.1" % "test",
-  "org.sangria-graphql" %% "sangria-monix" % "0.1.1" % "test",
-  "org.sangria-graphql" %% "sangria-rxscala" % "0.1.1" % "test",
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.0" % "test",
+  "org.sangria-graphql" %% "sangria-spray-json" % "1.0.0" % "test",
+  "org.sangria-graphql" %% "sangria-ion" % "1.0.0" % "test",
+  "org.sangria-graphql" %% "sangria-monix" % "1.0.0" % "test",
+  "org.sangria-graphql" %% "sangria-rxscala" % "1.0.0" % "test",
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.3.1" % "test",
