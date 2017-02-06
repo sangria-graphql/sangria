@@ -722,13 +722,15 @@ case class Schema[Ctx, Val](
 
     def collectTypes(parentInfo: String, priority: Int, tpe: Type, result: Map[String, (Int, Type with Named)]): Map[String, (Int, Type with Named)] = {
       tpe match {
-        case null ⇒ throw new IllegalStateException(
-          s"A `null` value was provided instead of type for $parentInfo.\n" +
-          "This can happen if you have recursive type definition or circular references within your type graph.\n" +
-          "Please use no-arg function to provide fields for such types.\n" +
-          "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
+        case null ⇒
+          throw new IllegalStateException(
+            s"A `null` value was provided instead of type for $parentInfo.\n" +
+            "This can happen if you have recursive type definition or circular references within your type graph.\n" +
+            "Please use no-arg function to provide fields for such types.\n" +
+            "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
         case t: Named if result contains t.name ⇒
           result get t.name match {
+            case Some(found) if !sameType(found._2, t) && t.isInstanceOf[ScalarAlias[_, _]] && found._2.isInstanceOf[ScalarType[_]] ⇒ result
             case Some(found) if !sameType(found._2, t) ⇒ typeConflict(t.name, found._2, t, parentInfo)
             case _ ⇒ result
           }
