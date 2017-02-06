@@ -264,8 +264,8 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
         typeRes.flatten match {
           case s @ Some(_) ⇒ s
           case None ⇒
-            val type1 = def1 map (d ⇒ ctx.typeInfo.getNamedType(d.fieldType))
-            val type2 = def2 map (d ⇒ ctx.typeInfo.getNamedType(d.fieldType))
+            val type1 = def1 map (d ⇒ d.fieldType.namedType)
+            val type2 = def2 map (d ⇒ d.fieldType.namedType)
             val conflicts = findConflictsBetweenSubSelectionSets(areMutuallyExclusive, type1.asInstanceOf[Option[CompositeType[_]]], ast1, type2.asInstanceOf[Option[CompositeType[_]]], ast2)
 
             subfieldConflicts(conflicts, outputName, ast1, ast2)
