@@ -41,13 +41,13 @@ class Resolver[Ctx](
   def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val actions = collectActionsPar(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, userContext)
 
-    handleScheme(processFinalResolve(resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)), scheme)
+    handleScheme(processFinalResolve(resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)) map (_ → userContext), scheme)
   }
 
   def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
-    val actions = resolveSeq(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty)
+    val result = resolveSeq(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty)
 
-    handleScheme(actions flatMap processFinalResolve, scheme)
+    handleScheme(result flatMap (res ⇒ processFinalResolve(res._1).map(_ → res._2)), scheme)
   }
 
   def resolveFieldsSubs(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
@@ -75,17 +75,17 @@ class Resolver[Ctx](
     }
   }
 
-  def handleScheme(result: Future[(Vector[RegisteredError], marshaller.Node)], scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = scheme match {
+  def handleScheme(result: Future[((Vector[RegisteredError], marshaller.Node), Ctx)], scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = scheme match {
     case ExecutionScheme.Default ⇒
-      result.map{case (_, res) ⇒ res}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+      result.map{case ((_, res), _) ⇒ res}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case ExecutionScheme.Extended ⇒
-      result.map{case (errors, res) ⇒ ExecutionResult(userContext, res, errors, middleware, validationTiming, queryReducerTiming)}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+      result.map{case ((errors, res), uc) ⇒ ExecutionResult(uc, res, errors, middleware, validationTiming, queryReducerTiming)}.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case s: ExecutionScheme.StreamBasedExecutionScheme[_] ⇒
-      s.subscriptionStream.singleFuture(result.map{
-        case (errors, res) if s.extended ⇒ ExecutionResult(userContext, res, errors, middleware, validationTiming, queryReducerTiming)
-        case (_, res) ⇒ res
+      s.subscriptionStream.singleFuture(result.map {
+        case ((errors, res), uc) if s.extended ⇒ ExecutionResult(uc, res, errors, middleware, validationTiming, queryReducerTiming)
+        case ((_, res), _) ⇒ res
       }).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case s ⇒
@@ -184,7 +184,7 @@ class Resolver[Ctx](
       tpe: ObjectType[Ctx, _],
       value: Any,
       fields: CollectedFields,
-      errorReg: ErrorRegistry): Future[Result] = {
+      errorReg: ErrorRegistry): Future[(Result, Ctx)] = {
     fields.fields.foldLeft(Future.successful((Result(ErrorRegistry.empty, Some(marshaller.emptyMapNode(fields.namesOrdered))), userContext))) {
       case (future, elem) ⇒ future.flatMap { resAndCtx ⇒
         (resAndCtx, elem) match {
@@ -199,7 +199,7 @@ class Resolver[Ctx](
         }
       }
     } map {
-      case (res, ctx) ⇒ res.buildValue
+      case (res, ctx) ⇒ res.buildValue → ctx
     }
   }
 

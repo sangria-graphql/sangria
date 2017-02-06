@@ -722,7 +722,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         contain(Map("message" → "error 4", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))))
     }
 
-    "support extended result" in {
+    "support extended result in queries" in {
       import ExecutionScheme.Extended
 
       case class MyCtx(complexity: Double)
@@ -765,6 +765,44 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       result.ctx.complexity should be (247)
       result.middlewareVals(0)._1 should be (345)
+    }
+
+    "support extended result in mutations" in {
+      import ExecutionScheme.Extended
+
+      case class MyCtx(acc: String)
+
+      case class MyListError(message: String) extends Exception(message)
+
+      val QueryType = ObjectType("Query", fields[MyCtx, Unit](
+        Field("hello", StringType, resolve = _ ⇒ "world")))
+
+      val MutationType = ObjectType("Mutation", fields[MyCtx, Unit](
+        Field("add", StringType,
+          arguments = Argument("str", StringType) :: Nil,
+          resolve = c ⇒ UpdateCtx(Future(c.ctx.acc + c.arg[String]("str")))(v ⇒ c.ctx.copy(v)))))
+
+      val schema = Schema(QueryType, Some(MutationType))
+
+      val ctx = MyCtx("")
+
+      val query =
+        graphql"""
+          mutation {
+            a1: add(str: "One")
+            a2: add(str: "Two")
+            a3: add(str: "Three")
+          }
+        """
+
+      val result = Executor.execute(schema, query, ctx).await
+
+      result.result.asInstanceOf[Map[String, Any]]("data") should be (
+        Map("a1" → "One", "a2" → "OneTwo", "a3" → "OneTwoThree"))
+
+      result.errors should have size 0
+
+      result.ctx.acc should be ("OneTwoThree")
     }
 
     "support `Action.sequence` in queries and mutations" in {
