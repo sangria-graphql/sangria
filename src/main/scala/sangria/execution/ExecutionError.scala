@@ -29,6 +29,8 @@ class ExecutionError(message: String, val exceptionHandler: Executor.ExceptionHa
 
 case class MaxQueryDepthReachedError(maxDepth: Int) extends Exception(s"Max query depth $maxDepth is reached.") with UserFacingError
 
+case object IntrospectionNotAllowedError extends Exception(s"Introspection is not allowed.") with UserFacingError
+
 trait QueryAnalysisError extends ErrorWithResolver {
   this: Throwable ⇒
 }

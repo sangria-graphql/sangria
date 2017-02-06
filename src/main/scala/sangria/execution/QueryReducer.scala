@@ -2,6 +2,7 @@ package sangria.execution
 
 import sangria.ast
 import sangria.schema._
+import sangria.introspection.{isIntrospection, TypeNameMetaField}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.{Failure, Success, Try}
@@ -53,6 +54,10 @@ object QueryReducer {
 
   def collectTags[Ctx, T](tagMatcher: PartialFunction[FieldTag, T])(fn: (Seq[T], Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new TagCollector[Ctx, T](tagMatcher, fn)
+
+  def rejectIntrospection[Ctx](includeTypeName: Boolean = true): QueryReducer[Ctx, Ctx] =
+    new HasIntrospectionReducer[Ctx](includeTypeName, (hasIntro, ctx) ⇒
+      if (hasIntro) throw IntrospectionNotAllowedError else ctx)
 }
 
 class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
@@ -152,6 +157,44 @@ class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Se
       field: Field[Ctx, Val],
       argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc =
     fieldAcc ++ childrenAcc ++ field.tags.collect {case t if tagMatcher.isDefinedAt(t) ⇒ tagMatcher(t)}
+
+  def reduceScalar[ST](
+    path: ExecutionPath,
+    ctx: Ctx,
+    tpe: ScalarType[ST]): Acc = initial
+
+  def reduceEnum[ET](
+    path: ExecutionPath,
+    ctx: Ctx,
+    tpe: EnumType[ET]): Acc = initial
+
+  def reduceCtx(acc: Acc, ctx: Ctx) =
+    action(acc, ctx)
+}
+
+class HasIntrospectionReducer[Ctx](includeTypeName: Boolean, action: (Boolean, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
+  type Acc = Boolean
+
+  val initial = false
+
+  def reduceAlternatives(alternatives: Seq[Acc]) = alternatives.exists(hasIntro ⇒ hasIntro)
+
+  def reduceField[Val](
+      fieldAcc: Acc,
+      childrenAcc: Acc,
+      path: ExecutionPath,
+      ctx: Ctx,
+      astFields: Vector[ast.Field],
+      parentType: ObjectType[Ctx, Val],
+      field: Field[Ctx, Val],
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc = {
+    val self =
+      if (!includeTypeName && field.name == TypeNameMetaField.name) false
+      else isIntrospection(parentType, field)
+
+    fieldAcc || childrenAcc || self
+  }
+
 
   def reduceScalar[ST](
     path: ExecutionPath,

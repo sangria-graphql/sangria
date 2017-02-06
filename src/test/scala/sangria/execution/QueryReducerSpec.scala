@@ -2,9 +2,9 @@ package sangria.execution
 
 import monix.execution.atomic.AtomicInt
 import org.scalatest.{Matchers, WordSpec}
-import sangria.marshalling.ResultMarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
+import sangria.macros._
 import sangria.ast
 import sangria.util.FutureResultSupport
 import sangria.validation.StringCoercionViolation
@@ -649,6 +649,113 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
           queryReducers = reducer :: Nil).await)
 
       error.cause.asInstanceOf[MaxQueryDepthReachedError].maxDepth should be (5)
+    }
+
+    "not reject introspection if no introspection is used" in {
+      val query = graphql"""
+       {
+         nest {
+           nest {
+             nest {
+               nest {
+                 nest {
+                   a
+                 }
+               }
+             }
+           }
+         }
+       }
+       """
+
+      val reducer = QueryReducer.rejectIntrospection[Info]()
+
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await
+    }
+
+    "not reject introspection if only `__typename` is used and it is not included" in {
+      val query = graphql"""
+       {
+         nest {
+           __typename
+           nest {
+             nest {
+               nest {
+                 __typename
+                 nest {
+                   a
+                 }
+               }
+             }
+           }
+         }
+         __typename
+       }
+       """
+
+      val reducer = QueryReducer.rejectIntrospection[Info](includeTypeName = false)
+
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await
+    }
+
+    "reject introspection if introspection is used (__schema)" in {
+      val query = graphql"""
+       {
+         nest {
+           a
+         }
+
+         __schema {
+           queryType { name }
+         }
+       }
+       """
+
+      val reducer = QueryReducer.rejectIntrospection[Info]()
+
+      val error = intercept [QueryReducingError] (
+        Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await)
+
+      error.cause should be (IntrospectionNotAllowedError)
+    }
+
+    "reject introspection if introspection is used (__type)" in {
+      val query = graphql"""
+       {
+         nest {
+           a
+         }
+
+         __type(name: "Foo") {
+           name
+         }
+       }
+       """
+
+      val reducer = QueryReducer.rejectIntrospection[Info]()
+
+      val error = intercept [QueryReducingError] (
+        Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await)
+
+      error.cause should be (IntrospectionNotAllowedError)
+    }
+
+    "reject introspection if introspection is used (__typename)" in {
+      val query = graphql"""
+       {
+         nest {
+           __typename
+           a
+         }
+       }
+       """
+
+      val reducer = QueryReducer.rejectIntrospection[Info]()
+
+      val error = intercept [QueryReducingError] (
+        Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await)
+
+      error.cause should be (IntrospectionNotAllowedError)
     }
   }
 }
