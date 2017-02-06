@@ -56,8 +56,10 @@ object QueryReducer {
     new TagCollector[Ctx, T](tagMatcher, fn)
 
   def rejectIntrospection[Ctx](includeTypeName: Boolean = true): QueryReducer[Ctx, Ctx] =
-    new HasIntrospectionReducer[Ctx](includeTypeName, (hasIntro, ctx) ⇒
-      if (hasIntro) throw IntrospectionNotAllowedError else ctx)
+    hasIntrospection((hasIntro, ctx) ⇒ if (hasIntro) throw IntrospectionNotAllowedError else ctx, includeTypeName)
+
+  def hasIntrospection[Ctx](fn: (Boolean, Ctx) ⇒ ReduceAction[Ctx, Ctx], includeTypeName: Boolean = true): QueryReducer[Ctx, Ctx] =
+    new HasIntrospectionReducer[Ctx](includeTypeName, fn)
 }
 
 class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {

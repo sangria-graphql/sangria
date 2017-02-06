@@ -1,7 +1,7 @@
 ## Upcoming
 
 * Added `Context.isIntrospection` and `sangria.introspection.isIntrospection` helper methods to easily distinguish between introspection types and fields in middleware and query reducers. 
-* Added `QueryReducer.rejectIntrospection` that rejects queries that contain introspection fields (useful for production environments where introspection can potentially be abused). 
+* Added `QueryReducer.hasIntrospection` and `QueryReducer.rejectIntrospection` that rejects queries which contain introspection fields (useful for production environments where introspection can potentially be abused). 
 
 ## v1.0.0 (2017-01-16)
 
