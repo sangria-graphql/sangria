@@ -134,6 +134,15 @@ case class ScalarType[T](
   Named.checkName(name)
 }
 
+case class ScalarAlias[T, ST](
+  aliasFor: ScalarType[ST],
+  toScalar: T ⇒ ST,
+  fromScalar: ST ⇒ Either[Violation, T]
+) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
+  def name = aliasFor.name
+  def description = aliasFor.description
+}
+
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
 
@@ -729,6 +738,7 @@ case class Schema[Ctx, Val](
         case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
         case t @ ScalarType(name, _, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
+        case ScalarAlias(aliasFor, _, _) ⇒ updated(priority, aliasFor.name, aliasFor, result, parentInfo)
         case t @ EnumType(name, _, _) ⇒ updated(priority, name, t, result, parentInfo)
         case t @ InputObjectType(name, _, _) ⇒
           t.fields.foldLeft(updated(priority, name, t, result, parentInfo)) {

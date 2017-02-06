@@ -234,6 +234,7 @@ object DefaultValueRenderer {
   def renderCoercedInputValue(t: InputType[_], v: Any): marshaller.Node = t match {
     case _ if v == null ⇒ marshaller.nullNode
     case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, marshaller.capabilities), marshaller, s.name, s.scalarInfo)
+    case s: ScalarAlias[Any @unchecked, Any @unchecked] ⇒ renderCoercedInputValue(s.aliasFor, s.toScalar(v))
     case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), marshaller, e.name)
     case io: InputObjectType[_] ⇒
       val mapValue = v.asInstanceOf[Map[String, Any]]

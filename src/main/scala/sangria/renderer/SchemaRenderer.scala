@@ -248,6 +248,7 @@ object SchemaRenderer {
       case i: InterfaceType[_, _] ⇒ renderInterface(i)
       case io: InputObjectType[_] ⇒ renderInputObject(io)
       case s: ScalarType[_] ⇒ renderScalar(s)
+      case s: ScalarAlias[_, _] ⇒ renderScalar(s.aliasFor)
       case e: EnumType[_] ⇒ renderEnum(e)
       case _ ⇒ throw new IllegalArgumentException(s"Unsupported type: $tpe")
     }

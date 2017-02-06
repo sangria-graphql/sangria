@@ -833,6 +833,8 @@ class Resolver[Ctx](
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
+      case scalar: ScalarAlias[Any @unchecked, Any @unchecked] ⇒
+        resolveValue(path, astFields, scalar.aliasFor, field, scalar.toScalar(value), userCtx)
       case enum: EnumType[Any @unchecked] ⇒
         try {
           Result(ErrorRegistry.empty,
