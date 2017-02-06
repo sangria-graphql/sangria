@@ -1,12 +1,79 @@
 package sangria.ast
 
 import sangria.ast
-import sangria.validation.Violation
+import sangria.schema.Schema
+import sangria.validation.{TypeInfo, Violation}
 
 import scala.util.control.Breaks._
 
+trait AstVisitor {
+  def onEnter: PartialFunction[AstNode, AstVisitorCommand.Value] = {case _ ⇒ AstVisitorCommand.Continue}
+  def onLeave: PartialFunction[AstNode, AstVisitorCommand.Value] = {case _ ⇒ AstVisitorCommand.Continue}
+}
+
+case class DefaultAstVisitor(
+  override val onEnter: PartialFunction[AstNode, AstVisitorCommand.Value] = {case _ ⇒ AstVisitorCommand.Continue},
+  override val onLeave: PartialFunction[AstNode, AstVisitorCommand.Value] = {case _ ⇒ AstVisitorCommand.Continue}
+) extends AstVisitor
+
 object AstVisitor {
   import ast.AstVisitorCommand._
+
+  def apply(
+    onEnter: PartialFunction[AstNode, AstVisitorCommand.Value] = {case _ ⇒ AstVisitorCommand.Continue},
+    onLeave: PartialFunction[AstNode, AstVisitorCommand.Value] = {case _ ⇒ AstVisitorCommand.Continue}
+  ) = DefaultAstVisitor(onEnter, onLeave)
+
+  def simple(
+    onEnter: PartialFunction[AstNode, Unit] = {case _ ⇒ ()},
+    onLeave: PartialFunction[AstNode, Unit] = {case _ ⇒ ()}
+  ) = DefaultAstVisitor(
+    {
+      case node if onEnter.isDefinedAt(node) ⇒
+        onEnter(node)
+        Continue
+    }, {
+      case node if onLeave.isDefinedAt(node) ⇒
+        onLeave(node)
+        Continue
+    })
+
+  def visitAst(doc: AstNode, visitor: AstVisitor): Unit =
+    visitAst(doc,
+      node ⇒ if (visitor.onEnter.isDefinedAt(node)) visitor.onEnter(node) else Continue,
+      node ⇒ if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else Continue)
+
+  def visitAstWithTypeInfo(schema: Schema[_, _], doc: AstNode)(visitorFn: TypeInfo ⇒ AstVisitor): Unit = {
+    val typeInfo = new TypeInfo(schema)
+    val visitor = visitorFn(typeInfo)
+
+    visitAst(doc,
+      node ⇒ {
+        typeInfo.enter(node)
+        if (visitor.onEnter.isDefinedAt(node)) visitor.onEnter(node) else Continue
+      },
+      node ⇒ {
+        typeInfo.leave(node)
+        if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else Continue
+      })
+  }
+
+  def visitAstWithState[T](schema: Schema[_, _], doc: AstNode, state: T)(visitorFn: (TypeInfo, T) ⇒ AstVisitor): T = {
+    val typeInfo = new TypeInfo(schema)
+    val visitor = visitorFn(typeInfo, state)
+
+    visitAst(doc,
+      node ⇒ {
+        typeInfo.enter(node)
+        if (visitor.onEnter.isDefinedAt(node)) visitor.onEnter(node) else Continue
+      },
+      node ⇒ {
+        typeInfo.leave(node)
+        if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else Continue
+      })
+
+    state
+  }
 
   def visitAst(
       doc: AstNode,

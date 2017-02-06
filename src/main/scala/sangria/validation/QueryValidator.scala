@@ -183,31 +183,14 @@ case class DocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
 
   def getVariableUsages(astNode: ast.SelectionContainer) =
     variableUsages.getOrElseUpdate(astNode.cacheKeyHash, {
-      val usages = ListBuffer[VariableUsage]()
-      val typeInfo = new TypeInfo(schema)
-
-      AstVisitor.visitAst(
-        doc = astNode,
-        onEnter = node ⇒ {
-          typeInfo.enter(node)
-
-          node match {
-            case _: ast.VariableDefinition ⇒
-              Skip
-            case vv: ast.VariableValue ⇒
-              usages += VariableUsage(vv, typeInfo.inputType)
-              Continue
-            case _ ⇒
-              Continue
-          }
-        },
-        onLeave = node ⇒ {
-          typeInfo.leave(node)
-          Continue
+      AstVisitor.visitAstWithState(schema, astNode, ListBuffer[VariableUsage]()) { (typeInfo, usages) ⇒
+        AstVisitor {
+          case _: ast.VariableDefinition ⇒ Skip
+          case vv: ast.VariableValue ⇒
+            usages += VariableUsage(vv, typeInfo.inputType)
+            Continue
         }
-      )
-
-      usages.toList
+      }.toList
     })
 
   def getRecursiveVariableUsages(operation: ast.OperationDefinition) =
