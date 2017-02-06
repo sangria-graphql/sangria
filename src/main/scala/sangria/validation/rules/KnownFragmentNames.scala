@@ -16,7 +16,7 @@ class KnownFragmentNames extends ValidationRule {
    override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
      override val onEnter: ValidationVisit = {
        case ast.FragmentSpread(name, _, _, pos) ⇒
-         ctx.fragments.get(name) match {
+         ctx.doc.fragments.get(name) match {
            case None ⇒ Left(Vector(UnknownFragmentViolation(name, ctx.sourceMapper, pos.toList)))
            case _ ⇒ AstVisitorCommand.RightContinue
          }

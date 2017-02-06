@@ -17,7 +17,7 @@ class NoFragmentCycles extends ValidationRule {
      def detectCycleRecursive(fragmentDef: ast.FragmentDefinition): Vector[Violation] = {
        visitedFrags += fragmentDef.name
 
-       val spreadNodes = ctx.getFragmentSpreads(fragmentDef)
+       val spreadNodes = ctx.documentAnalyzer.getFragmentSpreads(fragmentDef)
 
        if (spreadNodes.nonEmpty) {
          var errors: Vector[Violation] = Vector.empty
@@ -30,7 +30,7 @@ class NoFragmentCycles extends ValidationRule {
                spreadPath.push(spreadNode)
 
                if (!visitedFrags.contains(spreadNode.name)) {
-                 ctx.fragments.get(spreadNode.name) match {
+                 ctx.doc.fragments.get(spreadNode.name) match {
                    case Some(frag) ⇒ errors = errors ++ detectCycleRecursive(frag)
                    case _ ⇒ // do nothing
                  }

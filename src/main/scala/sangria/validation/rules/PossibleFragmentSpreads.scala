@@ -58,7 +58,7 @@ class PossibleFragmentSpreads extends ValidationRule {
     }
 
     def getFragmentType(ctx: ValidationContext, name: String) =
-      ctx.fragments.get(name) flatMap (fd ⇒ ctx.schema.getOutputType(fd.typeCondition, topLevel = true))
+      ctx.doc.fragments.get(name) flatMap (fd ⇒ ctx.schema.getOutputType(fd.typeCondition, topLevel = true))
 
     def doTypesOverlap(ctx: ValidationContext, type1: Type, type2: Type) = (type1, type2) match {
       case (t1: Named, t2: Named) if t1.name == t2.name ⇒ true

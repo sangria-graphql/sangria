@@ -14,20 +14,34 @@ import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 import sangria.util.tag._
 
-sealed trait Type
+sealed trait Type {
+  def namedType: Type with Named = {
+    def getNamedType(tpe: Type): Type with Named =
+      tpe match {
+        case OptionInputType(ofType) ⇒ getNamedType(ofType)
+        case OptionType(ofType) ⇒ getNamedType(ofType)
+        case ListInputType(ofType) ⇒ getNamedType(ofType)
+        case ListType(ofType) ⇒ getNamedType(ofType)
+        case n: Named ⇒ n
+        case t ⇒ throw new IllegalStateException("Expected named type, but got: " + t)
+      }
+
+    getNamedType(this)
+  }
+}
 
 sealed trait InputType[+T] extends Type {
-  def isOptional = this match {
+  lazy val isOptional = this match {
     case _: OptionInputType[_] ⇒ true
     case _ ⇒ false
   }
 
-  def isList = this match {
+  lazy val isList = this match {
     case _: ListInputType[_] ⇒ true
     case _ ⇒ false
   }
 
-  def isNamed = !(isOptional && isList)
+  lazy val isNamed = !(isOptional && isList)
 }
 
 sealed trait OutputType[+T] extends Type

@@ -20,9 +20,7 @@ class ScalarLeafs extends ValidationRule {
       case ast.Field(_, name, _, _, sels, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(fieldType) ⇒
-            val named = ctx.typeInfo.getNamedType(fieldType)
-
-            named match {
+            fieldType.namedType match {
               case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty ⇒
                 Left(Vector(NoSubselectionAllowedViolation(name, SchemaRenderer.renderTypeName(tpe, true), ctx.sourceMapper, pos.toList)))
               case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty ⇒

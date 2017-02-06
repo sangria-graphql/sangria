@@ -29,7 +29,7 @@ class NoUndefinedVariables extends ValidationRule {
 
     override def onLeave: ValidationVisit = {
       case operation: ast.OperationDefinition ⇒
-        val usages = ctx.getRecursiveVariableUsages(operation)
+        val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
 
         val errors = usages.filterNot(vu ⇒ variableNameDefined.contains(vu.node.name)).toVector.map { vu ⇒
           operation.name match {
