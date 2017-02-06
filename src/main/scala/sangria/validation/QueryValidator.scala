@@ -103,17 +103,26 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typeInfo: TypeInfo) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
-  import ValidationContext.VariableUsage
-
   private val errors = ListBuffer[Violation]()
+
+  val documentAnalyzer = DocumentAnalyzer(schema, doc)
 
   val ignoredVisitors = MutableSet[ValidationRule#AstValidatingVisitor]()
   val skips = MutableMap[ValidationRule#AstValidatingVisitor, ast.AstNode]()
 
-  lazy val fragments = doc.definitions
-    .collect{case frDef: FragmentDefinition ⇒ frDef}
-    .groupBy(_.name)
-    .mapValues(_.head)
+  def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
+    !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
+
+  def sourceMapper = doc.sourceMapper
+
+  def addViolation(v: Violation) = errors += v
+  def addViolations(vs: Vector[Violation]) = errors ++= vs
+
+  def violations = errors.toVector
+}
+
+case class DocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
+  import DocumentAnalyzer._
 
   private val fragmentSpreadsCache = TrieMap[Int, List[ast.FragmentSpread]]()
   private val recursivelyReferencedFragmentsCache = TrieMap[Int, List[ast.FragmentDefinition]]()
@@ -159,7 +168,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
           if (!collectedNames.contains(fragName)) {
             collectedNames += fragName
 
-            fragments.get(fragName) match {
+            document.fragments.get(fragName) match {
               case Some(frag) ⇒
                 frags += frag
                 nodesToVisit.push(frag)
@@ -206,21 +215,13 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
       getRecursivelyReferencedFragments(operation).foldLeft(getVariableUsages(operation)) {
         case (acc, fragment) ⇒ acc ++ getVariableUsages(fragment)
       })
+}
 
-  def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
-    !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
-
-  def sourceMapper = doc.sourceMapper
-
-  def addViolation(v: Violation) = errors += v
-  def addViolations(vs: Vector[Violation]) = errors ++= vs
-
-  def violations = errors.toVector
+object DocumentAnalyzer {
+  case class VariableUsage(node: ast.VariableValue, tpe: Option[InputType[_]])
 }
 
 object ValidationContext {
-  case class VariableUsage(node: ast.VariableValue, tpe: Option[InputType[_]])
-
   def isValidLiteralValue(tpe: InputType[_], value: ast.Value, sourceMapper: Option[SourceMapper]): Vector[Violation] = (tpe, value) match {
     case (_, _: ast.VariableValue) ⇒ Vector.empty
     case (OptionInputType(ofType), _: ast.NullValue) ⇒ Vector.empty

@@ -30,7 +30,7 @@ class VariablesInAllowedPosition extends ValidationRule {
 
     override def onLeave: ValidationVisit = {
       case operation: ast.OperationDefinition ⇒
-        val usages = ctx.getRecursiveVariableUsages(operation)
+        val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
 
         // A var type is allowed if it is the same or more strict (e.g. is
         // a subtype of) than the expected type. It can be more strict if

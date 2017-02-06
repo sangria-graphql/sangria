@@ -33,7 +33,7 @@ class NoUnusedFragments extends ValidationRule {
         val fragmentNameUsed = MutableSet[String]()
 
         operationDefs.foreach(operation ⇒
-          ctx.getRecursivelyReferencedFragments(operation)
+          ctx.documentAnalyzer.getRecursivelyReferencedFragments(operation)
             .foreach(fragment ⇒ fragmentNameUsed += fragment.name))
 
         val errors = fragmentDefs.toVector

@@ -310,7 +310,7 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
     if (optionalArgs.contains(arg.name))
       getAsOptional[T](arg.name)
     else
-      Some(raw(arg.name).asInstanceOf[T])
+      raw.get(arg.name).asInstanceOf[Option[T]]
 
   def argDefinedInQuery(name: String): Boolean = !undefinedArgs.contains(name)
   def argDefinedInQuery(arg: Argument[_]): Boolean = argDefinedInQuery(arg.name)
