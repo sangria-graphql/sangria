@@ -4,7 +4,7 @@ import language.{existentials, higherKinds, implicitConversions}
 import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper
-import sangria.ast
+import sangria.{ast, introspection}
 import sangria.execution.deferred.Deferred
 import sangria.streaming.SubscriptionStream
 
@@ -269,7 +269,10 @@ case class Context[Ctx, Val](
   deprecationTracker: DeprecationTracker,
   astFields: Vector[ast.Field],
   path: ExecutionPath,
-  deferredResolverState: Any) extends WithArguments with WithInputTypeRendering[Ctx]
+  deferredResolverState: Any
+) extends WithArguments with WithInputTypeRendering[Ctx] {
+  def isIntrospection: Boolean = introspection.isIntrospection(parentType, field)
+}
 
 case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], undefinedArgs: Set[String], defaultInfo: TrieMap[String, Any]) {
   private def getAsOptional[T](name: String): Option[T] =

@@ -310,6 +310,9 @@ package object introspection {
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 
+  def isIntrospection(tpe: ObjectType[_, _], field: Field[_, _]): Boolean =
+    Schema.isIntrospectionType(tpe.name) || MetaFieldNames.contains(field.name)
+
   val IntrospectionTypes: List[Type with Named] =
     __Schema :: __TypeKind :: __DirectiveLocation :: __Type :: __Field :: __InputValue :: __EnumValue :: __Directive :: Nil
 

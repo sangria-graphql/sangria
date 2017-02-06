@@ -1,3 +1,7 @@
+## Upcoming
+
+* Added `Context.isIntrospection` and `sangria.introspection.isIntrospection` helper methods to easily distinguish between introspection types and fields in middleware and query reducers. 
+
 ## v1.0.0 (2017-01-16)
 
 * Added `Action.sequence` combinator to compose a list of `LeafAction`s in a single `LeadAction` that can be returned from a `resolve` function (#206)
