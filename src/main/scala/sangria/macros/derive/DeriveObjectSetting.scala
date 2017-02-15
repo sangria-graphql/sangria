@@ -20,3 +20,5 @@ case class IncludeMethods[Ctx, Val](methodNames: String*) extends DeriveObjectSe
 case class ExcludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectSetting[Ctx, Val]
 case class ReplaceField[Ctx, Val](fieldName: String, field: Field[Ctx, Val]) extends DeriveObjectSetting[Ctx, Val]
 case class AddFields[Ctx, Val](fields: Field[Ctx, Val]*) extends DeriveObjectSetting[Ctx, Val]
+
+case class TransformFieldNames[Ctx, Val](transformer: String => String) extends DeriveObjectSetting[Ctx, Val]

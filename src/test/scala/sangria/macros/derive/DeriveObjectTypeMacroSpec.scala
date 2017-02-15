@@ -202,6 +202,19 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       tpe.fields(2).fieldType should be (IntType)
     }
 
+    "allow field names transformation" in {
+      val transformer1 = (s: String) => s.toUpperCase
+      val tpe = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(transformer1))
+      tpe.fields.forall(f => f.name == transformer1(f.name)) shouldBe true
+
+      val transformer2 = (s: String) => s.zipWithIndex.map {
+        case (c, i) if i % 2 == 0 => c.toLower
+        case (c, _) => c.toUpper
+      }.mkString("")
+      val tpe2 = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(transformer2))
+      tpe2.fields.forall(f => f.name == transformer2(f.name)) shouldBe true
+    }
+
     "allow to set name, description, deprecationReason and fieldTags with annotations" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated]()
 
