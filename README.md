@@ -24,6 +24,8 @@ where you can interactively execute GraphQL queries and play with some examples.
 
 If you want to use sangria with [react-relay](https://facebook.github.io/relay) framework, then you also may be interested in [sangria-relay](https://github.com/sangria-graphql/sangria-relay).
 
+Sangria works out of the box with [Apollo](https://github.com/apollographql/apollo-client).
+
 ## Mailing List
 
 If you would like to discuss something about sangria or have some questions, please feel free to join our mailing list:
