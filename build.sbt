@@ -37,15 +37,17 @@ libraryDependencies ++= Seq(
 
   // testing
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.0" % "test",
-  "org.sangria-graphql" %% "sangria-spray-json" % "1.0.0" % "test",
-  "org.sangria-graphql" %% "sangria-ion" % "1.0.0" % "test",
-  "org.sangria-graphql" %% "sangria-monix" % "1.0.0" % "test",
-  "org.sangria-graphql" %% "sangria-rxscala" % "1.0.0" % "test",
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.0" % Test,
+  "org.sangria-graphql" %% "sangria-spray-json" % "1.0.0" % Test,
+  "org.sangria-graphql" %% "sangria-argonaut" % "1.0.0" % Test,
+
+  "org.sangria-graphql" %% "sangria-ion" % "1.0.0" % Test,
+  "org.sangria-graphql" %% "sangria-monix" % "1.0.0" % Test,
+  "org.sangria-graphql" %% "sangria-rxscala" % "1.0.0" % Test,
 
   // CATs
-  "net.jcazevedo" %% "moultingyaml" % "0.3.1" % "test",
-  "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % "test"
+  "net.jcazevedo" %% "moultingyaml" % "0.3.1" % Test,
+  "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % Test
 )
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
