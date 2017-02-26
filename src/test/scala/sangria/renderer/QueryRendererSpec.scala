@@ -130,6 +130,104 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |}""".stripMargin) (after being strippedOfCarriageReturns)
       }
 
+      "render trailing comments inline for normal selections" in {
+        val ast =
+          gql"""
+           {
+             a {
+               # aaa
+
+
+               field1 #bbb
+               #sdasdsa
+               ... Bar #dfsdfsdfsd
+
+               field3 #ccc
+             } #ddddd
+
+             b {
+               ...Foo#fdfsdfds
+             }
+           }
+         """
+
+        QueryRenderer.render(ast) should equal (
+          """{
+            |  a {
+            |    # aaa
+            |
+            |    field1 # bbb
+            |
+            |    # sdasdsa
+            |    ...Bar # dfsdfsdfsd
+            |    field3 # ccc
+            |  }
+            |
+            |  # ddddd
+            |
+            |  b {
+            |    ...Foo # fdfsdfds
+            |  }
+            |}""".stripMargin) (after being strippedOfCarriageReturns)
+      }
+
+      "render trailing comments inline for type and enum definitions" in {
+        val ast =
+          gql"""
+           enum Size {
+             #comment1
+             XL #comment2
+             XXL #comment3
+           }
+
+           interface Fruit {
+             #comment1
+             test1: String #comment2
+             #another comment
+             test2(a: String): Int #comment3
+           }
+
+           type Foo implements Fruit {
+             #comment1
+             test1: String #comment2
+             test2(s: Size): Int #comment3
+           }
+
+           input Bar {
+             #comment1
+             test1: String #comment2
+             test2: Int! = 1 #comment3
+           }
+         """
+
+        QueryRenderer.render(ast) should equal (
+          """enum Size {
+            |  # comment1
+            |  XL # comment2
+            |  XXL # comment3
+            |}
+            |
+            |interface Fruit {
+            |  # comment1
+            |  test1: String # comment2
+            |
+            |  # another comment
+            |  test2(a: String): Int # comment3
+            |}
+            |
+            |type Foo implements Fruit {
+            |  # comment1
+            |  test1: String # comment2
+            |  test2(s: Size): Int # comment3
+            |}
+            |
+            |input Bar {
+            |  # comment1
+            |  test1: String # comment2
+            |  test2: Int! = 1 # comment3
+            |}""".stripMargin) (after being strippedOfCarriageReturns)
+      }
+
       "preserve comments on definitions and fields" in {
         val ast =
           graphql"""
