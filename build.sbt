@@ -22,6 +22,13 @@ scalacOptions ++= {
     Seq("-target:jvm-1.7")
 }
 
+lazy val sangriaOsgiSettings = osgiSettings ++ Seq(
+  OsgiKeys.exportPackage := Seq("sangria.*;version=${Bundle-Version}"),
+  OsgiKeys.privatePackage := Seq()
+)
+
+lazy val sangriaProject = project.in(file(".")).enablePlugins(SbtOsgi).settings(sangriaOsgiSettings:_*)
+
 libraryDependencies ++= Seq(
   // macros
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
