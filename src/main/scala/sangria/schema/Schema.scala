@@ -1,13 +1,14 @@
 package sangria.schema
 
+import sangria.ast.Document
+
 import language.{existentials, higherKinds, implicitConversions}
 import sangria.execution.{FieldTag, SubscriptionField}
 import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.marshalling._
 import sangria.{ast, introspection}
-import sangria.validation.{ConflictingTypeDefinitionViolation, EnumCoercionViolation, EnumValueCoercionViolation, Violation}
+import sangria.validation._
 import sangria.introspection._
-import sangria.streaming.SubscriptionStreamLike
 import sangria.streaming.SubscriptionStreamLike
 
 import scala.annotation.implicitNotFound
@@ -840,6 +841,8 @@ case class Schema[Ctx, Val](
 
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
     possibleTypes get baseTypeName exists (_ exists (_.name == tpe.name))
+
+  def analyzer(query: Document) = SchemaBasedDocumentAnalyzer(this, query)
 
   val validationErrors = validationRules flatMap (_.validate(this))
 

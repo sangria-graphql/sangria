@@ -1,8 +1,10 @@
 package sangria.ast
 
 import org.parboiled2.Position
+import sangria.ast
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
+import sangria.validation.DocumentAnalyzer
 
 import scala.collection.immutable.ListMap
 
@@ -36,6 +38,13 @@ case class Document(definitions: List[Definition], trailingComments: List[Commen
     * Merges two documents. The `sourceMapper` is lost along the way.
     */
   def merge(other: Document) = Document.merge(Vector(this, other))
+
+  lazy val analyzer = DocumentAnalyzer(this)
+
+  lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
+
+  def separateOperation(definition: OperationDefinition) = analyzer.separateOperation(definition)
+  def separateOperation(operationName: Option[String]) = analyzer.separateOperation(operationName)
 
   override def hashCode(): Int =
     Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)

@@ -1,23 +1,16 @@
 package sangria.validation
 
 import sangria.ast
-import sangria.ast.AstVisitor
-import sangria.ast.AstVisitorCommand.{Continue, Skip}
-import sangria.schema._
-import sangria.introspection.isIntrospection
+import sangria.ast.{FragmentDefinition, FragmentSpread, OperationDefinition}
 
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet, Map ⇒ MutableMap}
+import scala.collection.mutable.{ListBuffer, Set => MutableSet}
 
-case class DocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
-  import DocumentAnalyzer._
-
+case class DocumentAnalyzer(document: ast.Document) {
   private val fragmentSpreadsCache = TrieMap[Int, List[ast.FragmentSpread]]()
   private val recursivelyReferencedFragmentsCache = TrieMap[Int, List[ast.FragmentDefinition]]()
-  private val variableUsages = TrieMap[Int, List[VariableUsage]]()
-  private val recursiveVariableUsages = TrieMap[Int, List[VariableUsage]]()
 
-  def getFragmentSpreads(astNode: ast.SelectionContainer) =
+  def getFragmentSpreads(astNode: ast.SelectionContainer): List[FragmentSpread] =
     fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {
       val spreads = ListBuffer[ast.FragmentSpread]()
       val setsToVisit = ValidatorStack.empty[List[ast.Selection]]
@@ -38,7 +31,7 @@ case class DocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
       spreads.toList
     })
 
-  def getRecursivelyReferencedFragments(operation: ast.OperationDefinition) =
+  def getRecursivelyReferencedFragments(operation: ast.OperationDefinition): List[FragmentDefinition] =
     recursivelyReferencedFragmentsCache.getOrElseUpdate(operation.cacheKeyHash, {
       val frags = ListBuffer[ast.FragmentDefinition]()
       val collectedNames = MutableSet[String]()
@@ -69,82 +62,20 @@ case class DocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
       frags.toList
     })
 
-  def getVariableUsages(astNode: ast.SelectionContainer) =
-    variableUsages.getOrElseUpdate(astNode.cacheKeyHash, {
-      AstVisitor.visitAstWithState(schema, astNode, ListBuffer[VariableUsage]()) { (typeInfo, usages) ⇒
-        AstVisitor {
-          case _: ast.VariableDefinition ⇒ Skip
-          case vv: ast.VariableValue ⇒
-            usages += VariableUsage(vv, typeInfo.inputType)
-            Continue
-        }
-      }.toList
+  lazy val separateOperations: Map[Option[String], ast.Document] =
+    document.operations.map {
+      case (name, definition) ⇒ name → separateOperation(definition)
+    }
+
+  def separateOperation(definition: OperationDefinition): ast.Document = {
+    val definitions = (definition :: getRecursivelyReferencedFragments(definition)).sortBy(_.position match {
+      case Some(pos) ⇒ pos.line
+      case _ ⇒ 0
     })
 
-  def getRecursiveVariableUsages(operation: ast.OperationDefinition) =
-    recursiveVariableUsages.getOrElseUpdate(operation.cacheKeyHash,
-      getRecursivelyReferencedFragments(operation).foldLeft(getVariableUsages(operation)) {
-        case (acc, fragment) ⇒ acc ++ getVariableUsages(fragment)
-      })
-
-  lazy val deprecatedUsages: Vector[DeprecatedUsage] =
-    AstVisitor.visitAstWithState(schema, document, MutableMap[String, DeprecatedUsage]()) { (typeInfo, deprecated) ⇒
-      AstVisitor.simple {
-        case astField: ast.Field if typeInfo.fieldDef.isDefined && typeInfo.fieldDef.get.deprecationReason.isDefined && typeInfo.previousParentType.isDefined ⇒
-          val parent = typeInfo.previousParentType.get
-          val field = typeInfo.fieldDef.get
-
-          val key = parent.name + "." + field.name
-
-          if (!deprecated.contains(key))
-            deprecated(key) = DeprecatedField(parent, field, astField, typeInfo.fieldDef.get.deprecationReason.get)
-
-        case enumValue: ast.EnumValue ⇒
-          typeInfo.inputType.map(_.namedType) match {
-            case Some(parent: EnumType[_]) if typeInfo.enumValue.isDefined ⇒
-              val value = typeInfo.enumValue.get
-              val key = parent.name + "." + value.name
-
-              if (value.deprecationReason.isDefined && !deprecated.contains(key))
-                deprecated(key) = DeprecatedEnumValue(parent, value, enumValue, value.deprecationReason.get)
-
-            case _ ⇒ // do nothing
-          }
-
-      }
-    }.values.toVector
-
-  lazy val introspectionUsages: Vector[IntrospectionUsage] =
-    AstVisitor.visitAstWithState(schema, document, MutableMap[String, IntrospectionUsage]()) { (typeInfo, usages) ⇒
-      AstVisitor.simple {
-        case astField: ast.Field if typeInfo.fieldDef.isDefined && typeInfo.previousParentType.isDefined ⇒
-          val parent = typeInfo.previousParentType.get
-          val field = typeInfo.fieldDef.get
-
-          if (isIntrospection(parent, field)) {
-            val key = parent.name + "." + field.name
-
-            if (!usages.contains(key))
-              usages(key) = IntrospectionUsage(parent, field, astField)
-          }
-      }
-    }.values.toVector
-}
-
-object DocumentAnalyzer {
-  case class VariableUsage(node: ast.VariableValue, tpe: Option[InputType[_]])
-
-  sealed trait DeprecatedUsage extends Violation
-
-  case class DeprecatedField(parentType: CompositeType[_], field: Field[_, _], astField: ast.Field, deprecationReason: String) extends DeprecatedUsage {
-    def errorMessage = s"The field '${parentType.name}.${field.name}' is deprecated. $deprecationReason"
+    document.copy(definitions = definitions)
   }
 
-  case class DeprecatedEnumValue(parentType: EnumType[_], value: EnumValue[_], astValue: ast.EnumValue, deprecationReason: String) extends DeprecatedUsage {
-    def errorMessage = s"The enum value '${parentType.name}.${value.name}' is deprecated. $deprecationReason"
-  }
-
-  case class IntrospectionUsage(parentType: CompositeType[_], field: Field[_, _], astField: ast.Field) extends Violation {
-    def errorMessage = s"Introspection field '${parentType.name}.${field.name}' is used."
-  }
+  def separateOperation(operationName: Option[String]): Option[ast.Document] =
+    document.operations.get(operationName).map(separateOperation)
 }

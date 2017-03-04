@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable.{Map ⇒ MutableMap}
 
 /**
   * Unique directive names per location

@@ -104,7 +104,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
 
   private val errors = ListBuffer[Violation]()
 
-  val documentAnalyzer = DocumentAnalyzer(schema, doc)
+  val documentAnalyzer = SchemaBasedDocumentAnalyzer(schema, doc)
 
   val ignoredVisitors = MutableSet[ValidationRule#AstValidatingVisitor]()
   val skips = MutableMap[ValidationRule#AstValidatingVisitor, ast.AstNode]()
