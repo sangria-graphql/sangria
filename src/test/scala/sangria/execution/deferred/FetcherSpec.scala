@@ -26,6 +26,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
   }
 
   val prodCat = Relation[Product, String]("product-category", _.inCategories)
+  val prodComplexCat = Relation[Product, (Seq[String], Product),String]("product-category-complex", _._1, _._2)
   val catProd = Relation[Category, Int]("category-product", _.products)
 
   class Repo {
@@ -68,17 +69,21 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
   }
 
   def properFetcher(implicit ec: ExecutionContext) = {
-    val defaultCatFetcher = Fetcher.relCaching[Repo, Category, String](
+    val defaultCatFetcher = Fetcher.relCaching[Repo, Category, Category, String](
       (repo, ids) ⇒ repo.loadCategories(ids),
       (repo, ids) ⇒ repo.loadCategoriesByProduct(ids(catProd)))
 
-    val defaultProdFetcher = Fetcher.relCaching[Repo, Product, Int](
+    val defaultProdFetcher = Fetcher.relCaching[Repo, Product, Product, Int](
       (repo, ids) ⇒ repo.loadProducts(ids),
       (repo, ids) ⇒ repo.loadProductsByCategory(ids(prodCat)))
 
+    val complexProdFetcher = Fetcher.relCaching[Repo, Product, (Seq[String], Product), Int](
+      (repo, ids) ⇒ repo.loadProducts(ids),
+      (repo, ids) ⇒ repo.loadProductsByCategory(ids(prodComplexCat)).map(_.map(p ⇒ p.inCategories → p)))
+
     val defaultResolver = DeferredResolver.fetchers(defaultProdFetcher, defaultCatFetcher)
 
-    def schema(fetcherCat: Fetcher[Repo, Category, String] = defaultCatFetcher, fetcherProd: Fetcher[Repo, Product, Int] = defaultProdFetcher) = {
+    def schema(fetcherCat: Fetcher[Repo, Category, Category, String] = defaultCatFetcher, fetcherProd: Fetcher[Repo, Product, Product, Int] = defaultProdFetcher) = {
       lazy val ProductType: ObjectType[Repo, Product] = ObjectType("Product", () ⇒ fields(
         Field("id", IntType, resolve = c ⇒ c.value.id),
         Field("name", StringType, resolve = c ⇒ c.value.name),
@@ -102,6 +107,8 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
           resolve = c ⇒ fetcherProd.deferSeqOpt(c.value.products)),
         Field("productRel", ProductType,
           resolve = c ⇒ fetcherProd.deferRel(prodCat, c.value.id)),
+        Field("productComplexRel", ListType(ProductType),
+          resolve = c ⇒ complexProdFetcher.deferRelSeq(prodComplexCat, c.value.id)),
         Field("productRelOpt", OptionType(ProductType),
           resolve = c ⇒ fetcherProd.deferRelOpt(prodCat, c.value.id)),
         Field("productRelSeq", ListType(ProductType),
@@ -350,6 +357,45 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Vector(RelationIds[Category](Map(catProd → Vector(1, 2, 3)))))
 
       res should be (resCached)
+    }
+
+    "hansle complex relations" in {
+      val query =
+        graphql"""
+          {
+            c1: category(id: "5") {
+              productComplexRel {
+                id
+              }
+            }
+
+            c2: category(id: "6") {
+              productComplexRel {
+                name
+              }
+            }
+          }
+        """
+
+      val res = Executor.execute(schema(), query, new Repo,
+        deferredResolver = DeferredResolver.fetchers(complexProdFetcher, defaultProdFetcher, defaultCatFetcher)).await
+
+      res should be (Map(
+        "data" → Map(
+          "c1" → Map(
+            "productComplexRel" → Vector(
+              Map(
+                "id" → 2),
+              Map(
+                "id" → 4))),
+          "c2" → Map(
+            "productComplexRel" → Vector(
+              Map(
+                "name" → "Rusty sword"),
+              Map(
+                "name" → "Common boots"),
+              Map(
+                "name" → "Golden ring"))))))
     }
 
     "should result in error for missing non-optional values" in {
