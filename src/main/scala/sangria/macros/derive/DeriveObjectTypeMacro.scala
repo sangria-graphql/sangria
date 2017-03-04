@@ -110,8 +110,8 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
             val nonTransformedName = configName orElse annotationName getOrElse q"$name"
 
             config.collect{case MacroTransformFieldNames(fnt) ⇒ fnt}.lastOption match {
-              case Some(fnt) => q"$fnt($nonTransformedName)"
-              case None => nonTransformedName
+              case Some(fnt) ⇒ q"$fnt($nonTransformedName)"
+              case None ⇒ nonTransformedName
             }
           }
 

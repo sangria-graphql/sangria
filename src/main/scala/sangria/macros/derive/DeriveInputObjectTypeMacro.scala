@@ -76,6 +76,15 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
               val defaultSig = field.defaultValue.map {case (comp, defaultName) ⇒ q"${comp.typeSymbol.name.toTermName}.$defaultName"}
               val default = defaultAnnotation orElse defaultSig
 
+              val fieldName: c.universe.Tree = {
+                val nonTransformedName = configName orElse annotationName getOrElse q"$name"
+
+                config.collect{case MacroTransformFieldNames(fnt) ⇒ fnt}.lastOption match {
+                  case Some(fnt) ⇒ q"$fnt($nonTransformedName)"
+                  case None ⇒ nonTransformedName
+                }
+              }
+
               default match {
                 case Some(d) ⇒
                   val ft =
@@ -86,7 +95,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
 
                   q"""
                     sangria.schema.InputField.createFromMacroWithDefault(
-                      ${configName orElse annotationName getOrElse q"$name"},
+                      $fieldName,
                       $ft,
                       ${configDescr orElse annotationDescr},
                       $d)
@@ -94,7 +103,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
                 case None ⇒
                   q"""
                     sangria.schema.InputField.createFromMacroWithoutDefault(
-                      ${configName orElse annotationName getOrElse q"$name"},
+                      $fieldName,
                       sangria.macros.derive.GraphQLInputTypeLookup.finder[$fieldType]().graphqlType,
                       ${configDescr orElse annotationDescr})
                   """
@@ -222,6 +231,9 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
     case tree @ q"$setting.apply(..${fields: List[String]})" if checkSetting[ExcludeInputFields.type](setting) ⇒
       Right(MacroExcludeFields(fields.toSet, tree.pos))
 
+    case q"$setting.apply($fn)" if checkSetting[TransformInputFieldNames.type](setting) ⇒
+      Right(MacroTransformFieldNames(fn))
+
     case tree ⇒ Left(tree.pos →
       "Unsupported shape of derivation config. Please define subclasses of `DeriveInputObjectTypeSetting` directly in the argument list of the macro.")
   }
@@ -246,4 +258,5 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
 
   case class MacroIncludeFields(fieldNames: Set[String], pos: Position) extends MacroSetting
   case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroSetting
+  case class MacroTransformFieldNames(transformer: Tree) extends MacroSetting
 }

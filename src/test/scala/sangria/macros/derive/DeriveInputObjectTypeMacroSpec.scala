@@ -114,6 +114,29 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
       tpe.fields(0).name should be ("myList")
     }
 
+    "allow field names transformation" in {
+      val tpe = deriveInputObjectType[TestInputObjAnnotated](
+        TransformInputFieldNames(_.toUpperCase))
+
+      tpe.fields.map(_.name) should (
+        have(size(2)) and
+        contain("ID") and
+        contain("MYLIST"))
+
+      val transformer2 = (s: String) ⇒ s.zipWithIndex.map {
+        case (c, i) if i % 2 == 0 ⇒ c.toLower
+        case (c, _) ⇒ c.toUpper
+      }.mkString("")
+
+      val tpe2 = deriveInputObjectType[TestInputObjAnnotated](
+        TransformInputFieldNames(transformer2))
+
+      tpe2.fields.map(_.name) should (
+        have(size(2)) and
+        contain("iD") and
+        contain("mYlIsT"))
+    }
+
     "allow to set name and description with config" in {
       val tpe = deriveInputObjectType[TestInputObj](
         DocumentInputField("id", "the object ID"),

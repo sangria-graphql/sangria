@@ -214,6 +214,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         case (c, i) if i % 2 == 0 ⇒ c.toLower
         case (c, _) ⇒ c.toUpper
       }.mkString("")
+
       val tpe2 = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(transformer2))
 
       tpe2.fields.map(_.name) should (

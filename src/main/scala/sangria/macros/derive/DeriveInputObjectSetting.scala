@@ -15,3 +15,5 @@ case class ReplaceInputField(fieldName: String, field: InputField[_]) extends De
 
 case class IncludeInputFields(fieldNames: String*) extends DeriveInputObjectSetting
 case class ExcludeInputFields(fieldNames: String*) extends DeriveInputObjectSetting
+
+case class TransformInputFieldNames(transformer: String ⇒ String) extends DeriveInputObjectSetting
