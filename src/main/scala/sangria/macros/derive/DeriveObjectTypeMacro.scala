@@ -106,14 +106,18 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
             case (acc, _) ⇒ acc
           }
 
-          val objectTypeName: c.universe.Tree = config.collect{case MacroTransformFieldNames(fnt) => fnt}.lastOption match {
-            case Some(fnt) => q"$fnt(${configName orElse annotationName getOrElse q"$name"})"
-            case None => configName orElse annotationName getOrElse q"$name"
+          val fieldName: c.universe.Tree = {
+            val nonTransformedName = configName orElse annotationName getOrElse q"$name"
+
+            config.collect{case MacroTransformFieldNames(fnt) ⇒ fnt}.lastOption match {
+              case Some(fnt) => q"$fnt($nonTransformedName)"
+              case None => nonTransformedName
+            }
           }
 
           q"""
             sangria.schema.Field[$ctxType, $valType, $actualFieldType, $actualFieldType](
-              $objectTypeName,
+              $fieldName,
               implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$actualFieldType]].graphqlType,
               ${configDescr orElse annotationDescr},
               $args,
@@ -334,7 +338,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       Right(MacroReplaceField(fieldName, field, tree.pos))
 
     case q"$setting.apply[$_, $_]($fn)" if checkSetting[TransformFieldNames.type](setting) ⇒
-      Right(MacroTransformFieldNames(fn.symbol))
+      Right(MacroTransformFieldNames(fn))
 
     case tree ⇒ Left(tree.pos →
       "Unsupported shape of derivation config. Please define subclasses of `DeriveObjectTypeSetting` directly in the argument list of the macro.")
@@ -366,5 +370,5 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroDeriveObjectSetting
   case class MacroAddFields(fields: List[Tree]) extends MacroDeriveObjectSetting
   case class MacroReplaceField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectSetting
-  case class MacroTransformFieldNames(transformerName: Symbol) extends MacroDeriveObjectSetting
+  case class MacroTransformFieldNames(transformer: Tree) extends MacroDeriveObjectSetting
 }

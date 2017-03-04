@@ -21,4 +21,4 @@ case class ExcludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectSett
 case class ReplaceField[Ctx, Val](fieldName: String, field: Field[Ctx, Val]) extends DeriveObjectSetting[Ctx, Val]
 case class AddFields[Ctx, Val](fields: Field[Ctx, Val]*) extends DeriveObjectSetting[Ctx, Val]
 
-case class TransformFieldNames[Ctx, Val](transformer: String => String) extends DeriveObjectSetting[Ctx, Val]
+case class TransformFieldNames[Ctx, Val](transformer: String ⇒ String) extends DeriveObjectSetting[Ctx, Val]
