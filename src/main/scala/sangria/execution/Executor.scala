@@ -249,7 +249,7 @@ case class Executor[Ctx, Root](
     // Using mutability here locally in order to reduce footprint
     import scala.collection.mutable.ListBuffer
 
-    val argumentValuesFn = (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument]) ⇒
+    val argumentValuesFn = (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
       valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, variables)
 
     val initialValues: Vector[Any] = reducers map (_.initial)

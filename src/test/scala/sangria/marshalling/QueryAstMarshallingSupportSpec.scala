@@ -75,9 +75,9 @@ class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with FutureR
           |}""".stripMargin)
     }
 
-    val toRender = ast.ObjectValue(List(
-      ast.ObjectField("a", ast.ListValue(List(ast.NullValue(), ast.IntValue(123), ast.ListValue(List(ast.ObjectValue(List(ast.ObjectField("foo", ast.StringValue("bar"))))))))),
-      ast.ObjectField("b", ast.ObjectValue(List(
+    val toRender = ast.ObjectValue(Vector(
+      ast.ObjectField("a", ast.ListValue(Vector(ast.NullValue(), ast.IntValue(123), ast.ListValue(Vector(ast.ObjectValue(Vector(ast.ObjectField("foo", ast.StringValue("bar"))))))))),
+      ast.ObjectField("b", ast.ObjectValue(Vector(
         ast.ObjectField("c", ast.BooleanValue(true)),
         ast.ObjectField("d", ast.NullValue()))))))
 

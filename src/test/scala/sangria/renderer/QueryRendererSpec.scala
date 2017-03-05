@@ -95,7 +95,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
       }
 
       "render partial AST" in {
-        val ast = Field(Some("al"), "field1", Nil, List(Directive("foo", Nil)), Nil)
+        val ast = Field(Some("al"), "field1", Vector.empty, Vector(Directive("foo", Vector.empty)), Vector.empty)
 
         QueryRenderer.render(ast) should be ("al: field1 @foo")
       }

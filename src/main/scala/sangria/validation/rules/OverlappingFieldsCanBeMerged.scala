@@ -27,7 +27,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     // A cache for the "field map" and list of fragment names found in any given
     // selection set. Selection sets may be asked for this information multiple
     // times, so this improves the performance of this validator.
-    val cachedFieldsAndFragmentNames = new MutableMap[List[ast.Selection], (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String])]()
+    val cachedFieldsAndFragmentNames = new MutableMap[Vector[ast.Selection], (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String])]()
 
     /**
      * Algorithm:
@@ -392,7 +392,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
       case _ ⇒ false
     }
 
-    def sameArguments(args1: List[ast.Argument], args2: List[ast.Argument]) =
+    def sameArguments(args1: Vector[ast.Argument], args2: Vector[ast.Argument]) =
       if (args1.size != args2.size) false
       else args1.forall { a1 ⇒
         args2.find(_.name == a1.name) match {

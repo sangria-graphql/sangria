@@ -34,7 +34,7 @@ object QueryRenderer {
     formatInputValues = false,
     renderComments = false)
 
-  def renderSelections(sels: List[Selection], tc: WithTrailingComments, indent: String, indentLevel: Int, config: QueryRendererConfig) =
+  def renderSelections(sels: Vector[Selection], tc: WithTrailingComments, indent: String, indentLevel: Int, config: QueryRendererConfig) =
     if (sels.nonEmpty) {
       val rendered = sels.zipWithIndex map {
         case (sel, idx) ⇒
@@ -60,7 +60,7 @@ object QueryRenderer {
         "}"
     } else ""
 
-  def renderFieldDefinitions(fields: List[FieldDefinition], tc: WithTrailingComments, indent: String, indentLevel: Int, config: QueryRendererConfig) =
+  def renderFieldDefinitions(fields: Vector[FieldDefinition], tc: WithTrailingComments, indent: String, indentLevel: Int, config: QueryRendererConfig) =
     if (fields.nonEmpty) {
       val rendered = fields.zipWithIndex map {
         case (field, idx) ⇒
@@ -87,12 +87,12 @@ object QueryRenderer {
         "}"
     } else "{}"
 
-  def renderDirs(dirs: List[Directive], config: QueryRendererConfig, frontSep: Boolean = false, withSep: Boolean = true) =
+  def renderDirs(dirs: Vector[Directive], config: QueryRendererConfig, frontSep: Boolean = false, withSep: Boolean = true) =
     (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
       (dirs map (render(_, config)) mkString config.separator) +
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
-  def renderArgs(args: List[Argument], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
+  def renderArgs(args: Vector[Argument], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
     if (args.nonEmpty) {
       val argsRendered = args.zipWithIndex map { case (a, idx) ⇒
         (if (idx != 0 && shouldRenderComment(a, None, config)) config.lineBreak else "") +
@@ -103,7 +103,7 @@ object QueryRenderer {
       "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
     } else ""
 
-  def renderInputValueDefs(args: List[InputValueDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
+  def renderInputValueDefs(args: Vector[InputValueDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
     if (args.nonEmpty) {
       val argsRendered = args.zipWithIndex map { case (a, idx) ⇒
         (if (idx != 0 && shouldRenderComment(a, None, config)) config.lineBreak else "") +
@@ -114,7 +114,7 @@ object QueryRenderer {
       "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
     } else ""
 
-  def renderVarDefs(vars: List[VariableDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
+  def renderVarDefs(vars: Vector[VariableDefinition], indentLevel: Int, config: QueryRendererConfig, withSep: Boolean = true) =
     if (vars.nonEmpty) {
       val varsRendered = vars.zipWithIndex map { case (v, idx) ⇒
         (if (idx != 0 && shouldRenderComment(v, None, config)) config.lineBreak else "") +
@@ -125,7 +125,7 @@ object QueryRenderer {
       "(" + (varsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
     } else ""
 
-  def renderInputObjectFieldDefs(fields: List[InputValueDefinition], tc: WithTrailingComments, indentLevel: Int, config: QueryRendererConfig) = {
+  def renderInputObjectFieldDefs(fields: Vector[InputValueDefinition], tc: WithTrailingComments, indentLevel: Int, config: QueryRendererConfig) = {
     val fieldsRendered = fields.zipWithIndex map { case (f, idx) ⇒
       val prev = if (idx == 0) None else Some(fields(idx - 1))
       val next = if (idx == fields.size - 1) None else Some(fields(idx + 1))
@@ -144,7 +144,7 @@ object QueryRenderer {
     fieldsRendered mkString config.mandatoryLineBreak
   }
 
-  def renderInterfaces(interfaces: List[NamedType], config: QueryRendererConfig, frontSep: Boolean = false, withSep: Boolean = true) =
+  def renderInterfaces(interfaces: Vector[NamedType], config: QueryRendererConfig, frontSep: Boolean = false, withSep: Boolean = true) =
     if (interfaces.nonEmpty)
       (if (frontSep) config.mandatorySeparator else "") +
         "implements" + config.mandatorySeparator +
@@ -176,7 +176,7 @@ object QueryRenderer {
   def shouldRenderComment(node: WithTrailingComments, config: QueryRendererConfig) =
     config.renderComments && node.trailingComments.nonEmpty
 
-  def shouldRenderComment(comments: List[Comment], config: QueryRendererConfig) =
+  def shouldRenderComment(comments: Vector[Comment], config: QueryRendererConfig) =
     config.renderComments && comments.nonEmpty
 
   private def startsWithWhitespace(text: String) =
@@ -195,7 +195,7 @@ object QueryRenderer {
     } else ""
   }
 
-  def renderCommentLines(comments: List[Comment], nodePos: Option[Position], indent: String, config: QueryRendererConfig) = {
+  def renderCommentLines(comments: Vector[Comment], nodePos: Option[Position], indent: String, config: QueryRendererConfig) = {
     val nodeLine = nodePos.map(_.line).orElse(comments.last.position.map(_.line + 1)).fold(1)(identity)
 
     comments.foldRight((nodeLine, Vector.empty[String])) {
@@ -233,7 +233,7 @@ object QueryRenderer {
         (defs map (render(_, config, indentLevel)) mkString config.definitionSeparator) +
           renderTrailingComment(d, None, indent, config)
 
-      case op @ OperationDefinition(OperationType.Query, None, Nil, Nil, sels, _, _, _) ⇒
+      case op @ OperationDefinition(OperationType.Query, None, vars, dirs, sels, _, _, _) if vars.isEmpty && dirs.isEmpty ⇒
         renderComment(op, prev, indent, config) + indent + renderSelections(sels, op, indent, indentLevel, config)
 
       case op @ OperationDefinition(opType, name, vars, dirs, sels, _, _, _) ⇒
@@ -423,7 +423,7 @@ object QueryRenderer {
 
       case ted @ TypeExtensionDefinition(definition, _, _) ⇒
         renderComment(ted, prev, indent, config) +
-          render(definition.copy(comments = Nil), config, indentLevel, Some("extend" + config.mandatorySeparator))
+          render(definition.copy(comments = Vector.empty), config, indentLevel, Some("extend" + config.mandatorySeparator))
 
       case dd @ DirectiveDefinition(name, args, locations, _, _) ⇒
         val locsRendered = locations.zipWithIndex map { case (l, idx) ⇒

@@ -16,9 +16,9 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   import coercionHelper._
 
-  private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, List[ast.Argument]), Try[Args]]()
+  private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]()
 
-  def getVariableValues(definitions: List[ast.VariableDefinition]): Try[Map[String, VariableValue]] =
+  def getVariableValues(definitions: Vector[ast.VariableDefinition]): Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
       Failure(new ExecutionError(s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}", exceptionHandler))
     else {
@@ -43,13 +43,13 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
 
   private val emptyArgs = Success(Args.empty)
 
-  def getFieldArgumentValues(path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
+  def getFieldArgumentValues(path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
     if(argumentDefs.isEmpty)
       emptyArgs
     else
       argumentCache.getOrElseUpdate(path.cacheKey → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
-  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: List[ast.Argument], variables: Map[String, VariableValue], ignoreErrors: Boolean = false): Try[Args] =
+  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument], variables: Map[String, VariableValue], ignoreErrors: Boolean = false): Try[Args] =
     if (argumentDefs.isEmpty)
       emptyArgs
     else {

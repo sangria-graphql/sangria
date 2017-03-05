@@ -1,6 +1,7 @@
 package sangria.schema
 
 import language.postfixOps
+
 import sangria.ast
 import sangria.ast.{OperationType, TypeDefinition}
 import sangria.renderer.QueryRenderer
@@ -12,15 +13,15 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   private val typeDefCache = TrieMap[String, Type with Named]()
 
-  private lazy val typeDefs: List[ast.TypeDefinition] = document.definitions.collect {
+  private lazy val typeDefs: Vector[ast.TypeDefinition] = document.definitions.collect {
     case d: ast.TypeDefinition ⇒ d
   } ++ builder.additionalTypeDefs
 
-  private lazy val typeExtensionDefs: List[ast.TypeExtensionDefinition] = document.definitions.collect {
+  private lazy val typeExtensionDefs: Vector[ast.TypeExtensionDefinition] = document.definitions.collect {
     case d: ast.TypeExtensionDefinition ⇒ d
   } ++ builder.additionalTypeExtensionDefs
 
-  private lazy val directiveDefs: List[ast.DirectiveDefinition] = document.definitions.collect {
+  private lazy val directiveDefs: Vector[ast.DirectiveDefinition] = document.definitions.collect {
     case d: ast.DirectiveDefinition ⇒ d
   } ++ builder.additionalDirectiveDefs
 
@@ -50,7 +51,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         queryType,
         mutationType,
         subscriptionType,
-        notReferenced ++ findUnusedTypes(schema, referenced),
+        (notReferenced ++ findUnusedTypes(schema, referenced)).toList,
         schema.directives.map(builder.transformDirective(_, this)) ++ directives,
         this)
     }
@@ -70,7 +71,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       queryType,
       mutationType,
       subscriptionType,
-      findUnusedTypes()._2,
+      findUnusedTypes()._2.toList,
       BuiltinDirectives ++ directives,
       this)
   }
@@ -125,7 +126,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     }
   }
 
-  def findUnusedTypes(): (Set[String], List[Type with Named]) = {
+  def findUnusedTypes(): (Set[String], Vector[Type with Named]) = {
     resolveAllLazyFields()
 
     val referenced = typeDefCache.keySet
@@ -134,7 +135,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     referenced.toSet → notReferenced.map(tpe ⇒ getNamedType(tpe.name))
   }
 
-  def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): List[Type with Named] = {
+  def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): Vector[Type with Named] = {
     resolveAllLazyFields()
 
     val notReferenced = schema.typeList.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
@@ -175,7 +176,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     BuiltinDirectives.find(_.name == directive.name) orElse
       builder.buildDirective(
         directive,
-        directive.arguments flatMap (buildArgument(directive, None, _)),
+        directive.arguments flatMap (buildArgument(directive, None, _)) toList,
         directive.locations map buildDirectiveLocation toSet,
         this)
 
@@ -246,7 +247,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       typeDefinition,
       field,
       getOutputType(field.fieldType),
-      field.arguments flatMap (buildArgument(typeDefinition, Some(field), _)),
+      field.arguments flatMap (buildArgument(typeDefinition, Some(field), _)) toList,
       this)
 
   def extendField(tpe: ObjectLikeType[Ctx, _], field: Field[Ctx, _]) =
@@ -257,9 +258,9 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
     builder.buildObjectType(
       tpe,
-      extensions,
-      () ⇒ buildFields(tpe, tpe.fields, extensions),
-      buildInterfaces(tpe, tpe.interfaces, extensions),
+      extensions.toList,
+      () ⇒ buildFields(tpe, tpe.fields, extensions).toList,
+      buildInterfaces(tpe, tpe.interfaces, extensions).toList,
       this)
   }
 
@@ -268,7 +269,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
     builder.extendObjectType(
       tpe,
-      extensions,
+      extensions.toList,
       () ⇒ extendFields(tpe, extensions),
       extendInterfaces(tpe, extensions),
       this)
@@ -280,7 +281,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     if (extensions.exists(_.definition.interfaces.nonEmpty))
       throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
 
-    builder.buildInterfaceType(tpe, extensions, () ⇒ buildFields(tpe, tpe.fields, extensions), this)
+    builder.buildInterfaceType(tpe, extensions.toList, () ⇒ buildFields(tpe, tpe.fields, extensions).toList, this)
   }
 
   def extendInterfaceType(tpe: InterfaceType[Ctx, _]) = {
@@ -289,10 +290,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     if (extensions.exists(_.definition.interfaces.nonEmpty))
       throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
 
-    builder.extendInterfaceType(tpe, extensions, () ⇒ extendFields(tpe, extensions), this)
+    builder.extendInterfaceType(tpe, extensions.toList, () ⇒ extendFields(tpe, extensions), this)
   }
 
-  def buildInterfaces(tpe: ast.ObjectTypeDefinition, interfaces: List[ast.NamedType], extensions: List[ast.TypeExtensionDefinition]) = {
+  def buildInterfaces(tpe: ast.ObjectTypeDefinition, interfaces: Vector[ast.NamedType], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.definition.interfaces)
 
     val allInts = extraInts.foldLeft(interfaces) {
@@ -304,7 +305,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     allInts map getInterfaceType
   }
 
-  def extendInterfaces(tpe: ObjectType[Ctx, _], extensions: List[ast.TypeExtensionDefinition]) = {
+  def extendInterfaces(tpe: ObjectType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.definition.interfaces)
 
     val allInts = extraInts.foldLeft(List.empty[ast.NamedType]) {
@@ -319,7 +320,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     ei ++ oi
   }
 
-  def buildFields(tpe: TypeDefinition, fieldDefs: List[ast.FieldDefinition], extensions: List[ast.TypeExtensionDefinition]) = {
+  def buildFields(tpe: TypeDefinition, fieldDefs: Vector[ast.FieldDefinition], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(_.definition.fields)
 
     val allFields = extraFields.foldLeft(fieldDefs) {
@@ -331,7 +332,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     allFields flatMap (buildField(tpe, _))
   }
 
-  def extendFields(tpe: ObjectLikeType[Ctx, _], extensions: List[ast.TypeExtensionDefinition]) = {
+  def extendFields(tpe: ObjectLikeType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(e ⇒ e.definition.fields map (e → _))
 
     val extensionFields = extraFields.foldLeft(List.empty[(ast.TypeExtensionDefinition, ast.FieldDefinition)]) {
@@ -350,19 +351,19 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     typeExtensionDefs.filter(_.definition.name == typeName)
 
   def buildUnionDef(tpe: ast.UnionTypeDefinition) =
-    builder.buildUnionType(tpe, tpe.types map getObjectType, this)
+    builder.buildUnionType(tpe, tpe.types map getObjectType toList, this)
 
   def extendUnionType(tpe: UnionType[Ctx]) =
     builder.extendUnionType(tpe, tpe.types map getTypeFromDef, this)
 
   def buildInputObjectDef(tpe: ast.InputObjectTypeDefinition) =
-    builder.buildInputObjectType(tpe, () ⇒ tpe.fields flatMap (buildInputField(tpe, _)), this)
+    builder.buildInputObjectType(tpe, () ⇒ tpe.fields flatMap (buildInputField(tpe, _)) toList, this)
 
   def buildScalarDef(tpe: ast.ScalarTypeDefinition) =
     builder.buildScalarType(tpe, this)
 
   private def buildEnumDef(tpe: ast.EnumTypeDefinition) =
-    builder.buildEnumType(tpe, tpe.values flatMap (buildEnumValue(tpe, _)), this)
+    builder.buildEnumType(tpe, tpe.values flatMap (buildEnumValue(tpe, _)) toList, this)
 
   private def buildEnumValue(typeDef: ast.EnumTypeDefinition, value: ast.EnumValueDefinition) =
     builder.buildEnumValue(typeDef, value, this)
@@ -387,7 +388,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 object AstSchemaMaterializer {
   case class SchemaInfo(query: ast.NamedType, mutation: Option[ast.NamedType], subscription: Option[ast.NamedType], definition: Option[ast.SchemaDefinition])
 
-  def extractSchemaInfo(document: ast.Document, typeDefs: List[ast.TypeDefinition]): SchemaInfo = {
+  def extractSchemaInfo(document: ast.Document, typeDefs: Vector[ast.TypeDefinition]): SchemaInfo = {
     val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
 
 //    throw new SchemaMaterializationException("Must provide a schema definition.")

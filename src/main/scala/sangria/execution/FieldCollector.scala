@@ -31,7 +31,7 @@ class FieldCollector[Ctx, Val](
       builder map (_.build)
     })
 
-  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: List[ast.Selection], visitedFragments: MutableSet[String], initial: Try[CollectedFieldsBuilder]): Try[CollectedFieldsBuilder] =
+  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: Vector[ast.Selection], visitedFragments: MutableSet[String], initial: Try[CollectedFieldsBuilder]): Try[CollectedFieldsBuilder] =
     selections.foldLeft(initial) {
       case (f @ Failure(_), selection) ⇒ f
       case (s @ Success(acc), selection) ⇒
@@ -82,7 +82,7 @@ class FieldCollector[Ctx, Val](
         }
     }
 
-  def shouldIncludeNode(directives: List[ast.Directive], selection: ast.WithDirectives): Try[Boolean] = {
+  def shouldIncludeNode(directives: Vector[ast.Directive], selection: ast.WithDirectives): Try[Boolean] = {
     val possibleDirs = directives
         .map(d ⇒ schema.directivesByName
           .get(d.name)

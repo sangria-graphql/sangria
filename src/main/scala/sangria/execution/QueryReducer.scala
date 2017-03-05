@@ -22,7 +22,7 @@ trait QueryReducer[-Ctx, +Out] {
     astFields: Vector[ast.Field],
     parentType: ObjectType[Out, Val] @uncheckedVariance,
     field: Field[Ctx, Val] @uncheckedVariance,
-    argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc
+    argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc
 
   def reduceScalar[T](
     path: ExecutionPath,
@@ -79,7 +79,7 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) e
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc = {
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc = {
     val estimate = field.complexity match {
       case Some(fn) ⇒
         argumentValuesFn(path, field.arguments, astFields.head.arguments) match {
@@ -121,7 +121,7 @@ class MeasureQueryDepth[Ctx](action: (Int, Ctx) ⇒ ReduceAction[Ctx, Ctx]) exte
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc =
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc =
     childrenAcc
 
   def reduceScalar[T](
@@ -157,7 +157,7 @@ class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Se
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc =
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc =
     fieldAcc ++ childrenAcc ++ field.tags.collect {case t if tagMatcher.isDefinedAt(t) ⇒ tagMatcher(t)}
 
   def reduceScalar[ST](
@@ -189,7 +189,7 @@ class HasIntrospectionReducer[Ctx](includeTypeName: Boolean, action: (Boolean, C
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], List[ast.Argument]) ⇒ Try[Args]): Acc = {
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc = {
     val self =
       if (!includeTypeName && field.name == TypeNameMetaField.name) false
       else isIntrospection(parentType, field)

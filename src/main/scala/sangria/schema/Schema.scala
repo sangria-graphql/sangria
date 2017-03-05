@@ -787,8 +787,8 @@ case class Schema[Ctx, Val](
     queryAndSubAndMutTypes
   }
 
-  lazy val typeList: List[Type with Named] = types.values.toList.sortBy(t ⇒ t._1 + t._2.name).map(_._2)
-  lazy val availableTypeNames: List[String] = typeList map (_.name)
+  lazy val typeList: Vector[Type with Named] = types.values.toVector.sortBy(t ⇒ t._1 + t._2.name).map(_._2)
+  lazy val availableTypeNames: Vector[String] = typeList map (_.name)
 
   lazy val allTypes: Map[String, Type with Named] = types collect {case (name, (_, tpe)) ⇒ name → tpe}
   lazy val inputTypes = types collect {case (name, (_, tpe: InputType[_])) ⇒ name → tpe}
@@ -817,7 +817,7 @@ case class Schema[Ctx, Val](
     case ast.ListType(ofType, _) ⇒ getOutputType(ofType) map (ListType(_))
   }
 
-  lazy val directImplementations: Map[String, List[ObjectLikeType[_, _]]] = {
+  lazy val directImplementations: Map[String, Vector[ObjectLikeType[_, _]]] = {
     typeList
       .collect{case objectLike: ObjectLikeType[_, _] ⇒ objectLike}
       .flatMap(objectLike ⇒ objectLike.interfaces map (_.name → objectLike))
@@ -825,19 +825,19 @@ case class Schema[Ctx, Val](
       .mapValues(_ map (_._2))
   }
 
-  lazy val implementations: Map[String, List[ObjectType[_, _]]] = {
-    def findConcreteTypes(tpe: ObjectLikeType[_, _]): List[ObjectType[_, _]] = tpe match {
-      case obj: ObjectType[_, _] ⇒ obj :: Nil
+  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = {
+    def findConcreteTypes(tpe: ObjectLikeType[_, _]): Vector[ObjectType[_, _]] = tpe match {
+      case obj: ObjectType[_, _] ⇒ Vector(obj)
       case interface: InterfaceType[_, _] ⇒ directImplementations(interface.name) flatMap findConcreteTypes
     }
 
     directImplementations map {
-      case (name, directImpls) ⇒ name → directImpls.flatMap(findConcreteTypes).groupBy(_.name).map(_._2.head).toList
+      case (name, directImpls) ⇒ name → directImpls.flatMap(findConcreteTypes).groupBy(_.name).map(_._2.head).toVector
     }
   }
 
-  lazy val possibleTypes: Map[String, List[ObjectType[_, _]]] =
-    implementations ++ unionTypes.values.map(ut ⇒ ut.name → ut.types)
+  lazy val possibleTypes: Map[String, Vector[ObjectType[_, _]]] =
+    implementations ++ unionTypes.values.map(ut ⇒ ut.name → ut.types.toVector)
 
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
     possibleTypes get baseTypeName exists (_ exists (_.name == tpe.name))

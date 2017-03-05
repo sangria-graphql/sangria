@@ -7,13 +7,13 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.{ListBuffer, Set => MutableSet}
 
 case class DocumentAnalyzer(document: ast.Document) {
-  private val fragmentSpreadsCache = TrieMap[Int, List[ast.FragmentSpread]]()
-  private val recursivelyReferencedFragmentsCache = TrieMap[Int, List[ast.FragmentDefinition]]()
+  private val fragmentSpreadsCache = TrieMap[Int, Vector[ast.FragmentSpread]]()
+  private val recursivelyReferencedFragmentsCache = TrieMap[Int, Vector[ast.FragmentDefinition]]()
 
-  def getFragmentSpreads(astNode: ast.SelectionContainer): List[FragmentSpread] =
+  def getFragmentSpreads(astNode: ast.SelectionContainer): Vector[FragmentSpread] =
     fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {
       val spreads = ListBuffer[ast.FragmentSpread]()
-      val setsToVisit = ValidatorStack.empty[List[ast.Selection]]
+      val setsToVisit = ValidatorStack.empty[Vector[ast.Selection]]
 
       setsToVisit.push(astNode.selections)
 
@@ -28,10 +28,10 @@ case class DocumentAnalyzer(document: ast.Document) {
         }
       }
 
-      spreads.toList
+      spreads.toVector
     })
 
-  def getRecursivelyReferencedFragments(operation: ast.OperationDefinition): List[FragmentDefinition] =
+  def getRecursivelyReferencedFragments(operation: ast.OperationDefinition): Vector[FragmentDefinition] =
     recursivelyReferencedFragmentsCache.getOrElseUpdate(operation.cacheKeyHash, {
       val frags = ListBuffer[ast.FragmentDefinition]()
       val collectedNames = MutableSet[String]()
@@ -59,7 +59,7 @@ case class DocumentAnalyzer(document: ast.Document) {
         }
       }
 
-      frags.toList
+      frags.toVector
     })
 
   lazy val separateOperations: Map[Option[String], ast.Document] =
@@ -68,7 +68,7 @@ case class DocumentAnalyzer(document: ast.Document) {
     }
 
   def separateOperation(definition: OperationDefinition): ast.Document = {
-    val definitions = (definition :: getRecursivelyReferencedFragments(definition)).sortBy(_.position match {
+    val definitions = (definition +: getRecursivelyReferencedFragments(definition)).sortBy(_.position match {
       case Some(pos) ⇒ pos.line
       case _ ⇒ 0
     })

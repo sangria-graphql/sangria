@@ -87,7 +87,7 @@ class QueryAstResultMarshaller extends ResultMarshaller {
 
   def enumNode(value: String, typeName: String) = ast.EnumValue(value)
 
-  def arrayNode(values: Vector[Node]) = ast.ListValue(values.toList)
+  def arrayNode(values: Vector[Node]) = ast.ListValue(values.toVector)
   def optionalArrayNodeValue(value: Option[Node]) = value match {
     case Some(v) ⇒ v
     case None ⇒ nullNode
@@ -95,7 +95,7 @@ class QueryAstResultMarshaller extends ResultMarshaller {
 
   def mapNode(builder: MapBuilder) = mapNode(builder.toList)
   def mapNode(keyValues: Seq[(String, Node)]) =
-    ast.ObjectValue(keyValues.toList.map{case (k, v) ⇒ ast.ObjectField(k, v)})
+    ast.ObjectValue(keyValues.toVector.map{case (k, v) ⇒ ast.ObjectField(k, v)})
 
   def nullNode = ast.NullValue()
 

@@ -436,10 +436,10 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     None
 
   def enumValueDeprecationReason(definition: ast.EnumValueDefinition): Option[String] =
-    deprecationReason(definition.directives)
+    deprecationReason(definition.directives.toList)
 
   def fieldDeprecationReason(definition: ast.FieldDefinition): Option[String] =
-    deprecationReason(definition.directives)
+    deprecationReason(definition.directives.toList)
 
   def deprecationReason(dirs: List[ast.Directive]): Option[String] =
     dirs.find(_.name == DeprecatedDirective.name).flatMap { d ⇒
