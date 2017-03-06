@@ -2,7 +2,7 @@ package sangria.validation
 
 import sangria.ast
 import sangria.ast.AstVisitor
-import sangria.ast.AstVisitorCommand.{Continue, Skip}
+import sangria.visitor.VisitorCommand.{Continue, Skip}
 import sangria.schema._
 import sangria.introspection.isIntrospection
 

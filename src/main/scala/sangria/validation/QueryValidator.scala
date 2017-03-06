@@ -59,7 +59,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     ctx.violations
   }
 
-  def validateUsingRules(queryAst: ast.AstNode, ctx: ValidationContext, visitors: List[ValidationRule#AstValidatingVisitor], topLevel: Boolean): Unit = AstVisitor.visitAst(
+  def validateUsingRules(queryAst: ast.AstNode, ctx: ValidationContext, visitors: List[ValidationRule#AstValidatingVisitor], topLevel: Boolean): Unit = AstVisitor.visitAstRecursive(
     doc = queryAst,
     onEnter = node ⇒ {
       ctx.typeInfo.enter(node)

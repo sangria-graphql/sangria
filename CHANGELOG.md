@@ -6,7 +6,8 @@
 * Added `QueryReducer.hasIntrospection` and `QueryReducer.rejectIntrospection` that rejects queries which contain introspection fields (useful for production environments where introspection can potentially be abused). 
 * Improved handling of tailing comments when rendering query AST (#219)
 * Added aliases for `graphql`/`graphqlInput` macros: `gql`/`gqlInp`
-* Improved `AstVisitor`. It now includes helper methods to traverse an AST with type info and state. 
+* Improved `AstVisitor`. It now includes helper methods to traverse an AST with type info and state.
+* Using `Vector` instead of `List` for all AST nodes now. This is a minor breaking change.  
 
 ## v1.0.0 (2017-01-16)
 
