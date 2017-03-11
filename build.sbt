@@ -28,7 +28,7 @@ libraryDependencies ++= Seq(
 
   // parsing
   "org.parboiled" %% "parboiled" % "2.1.3",
-  "org.sangria-graphql" %% "macro-visit" % "0.1.1-SNAPSHOT",
+  "org.sangria-graphql" %% "macro-visit" % "0.1.1",
 
   // marshalling
   "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.0",
