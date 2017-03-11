@@ -160,6 +160,14 @@ object ValidationContext {
         case Left(violation) ⇒ Vector(violation)
         case _ ⇒ Vector.empty
       }
+    case (s: ScalarAlias[_, _], v) ⇒
+      s.aliasFor.coerceInput(v) match {
+        case Left(violation) ⇒ Vector(violation)
+        case Right(v) ⇒ s.fromScalar(v) match {
+          case Left(violation) ⇒ Vector(violation)
+          case _ ⇒ Vector.empty
+        }
+      }
     case (enum: EnumType[_], v) ⇒
       enum.coerceInput(v) match {
         case Left(violation) ⇒ Vector(violation)

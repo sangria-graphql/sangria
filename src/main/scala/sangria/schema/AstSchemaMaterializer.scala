@@ -235,6 +235,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   def extendType(existingType: Type with Named): Type with Named = existingType match {
     case tpe: ScalarType[_] ⇒ builder.transformScalarType(tpe, this)
+    case tpe: ScalarAlias[_, _] ⇒ builder.transformScalarType(tpe.aliasFor, this)
     case tpe: EnumType[_] ⇒ builder.transformEnumType(tpe, this)
     case tpe: InputObjectType[_] ⇒ builder.transformInputObjectType(tpe, this)
     case tpe: UnionType[Ctx] ⇒ extendUnionType(tpe)

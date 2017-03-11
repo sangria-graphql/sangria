@@ -149,6 +149,15 @@ case class ScalarType[T](
   Named.checkName(name)
 }
 
+case class ScalarAlias[T, ST](
+  aliasFor: ScalarType[ST],
+  toScalar: T ⇒ ST,
+  fromScalar: ST ⇒ Either[Violation, T]
+) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
+  def name = aliasFor.name
+  def description = aliasFor.description
+}
+
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
 
@@ -728,13 +737,15 @@ case class Schema[Ctx, Val](
 
     def collectTypes(parentInfo: String, priority: Int, tpe: Type, result: Map[String, (Int, Type with Named)]): Map[String, (Int, Type with Named)] = {
       tpe match {
-        case null ⇒ throw new IllegalStateException(
-          s"A `null` value was provided instead of type for $parentInfo.\n" +
-          "This can happen if you have recursive type definition or circular references within your type graph.\n" +
-          "Please use no-arg function to provide fields for such types.\n" +
-          "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
+        case null ⇒
+          throw new IllegalStateException(
+            s"A `null` value was provided instead of type for $parentInfo.\n" +
+            "This can happen if you have recursive type definition or circular references within your type graph.\n" +
+            "Please use no-arg function to provide fields for such types.\n" +
+            "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
         case t: Named if result contains t.name ⇒
           result get t.name match {
+            case Some(found) if !sameType(found._2, t) && t.isInstanceOf[ScalarAlias[_, _]] && found._2.isInstanceOf[ScalarType[_]] ⇒ result
             case Some(found) if !sameType(found._2, t) ⇒ typeConflict(t.name, found._2, t, parentInfo)
             case _ ⇒ result
           }
@@ -744,6 +755,7 @@ case class Schema[Ctx, Val](
         case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
         case t @ ScalarType(name, _, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
+        case ScalarAlias(aliasFor, _, _) ⇒ updated(priority, aliasFor.name, aliasFor, result, parentInfo)
         case t @ EnumType(name, _, _) ⇒ updated(priority, name, t, result, parentInfo)
         case t @ InputObjectType(name, _, _) ⇒
           t.fields.foldLeft(updated(priority, name, t, result, parentInfo)) {

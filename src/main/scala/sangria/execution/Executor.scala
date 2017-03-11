@@ -295,6 +295,7 @@ case class Executor[Ctx, Root](
               })
             .getOrElse (initialValues)
         case s: ScalarType[_] ⇒ reducers map (_.reduceScalar(path, userContext, s))
+        case ScalarAlias(aliasFor, _, _) ⇒ reducers map (_.reduceScalar(path, userContext, aliasFor))
         case e: EnumType[_] ⇒ reducers map (_.reduceEnum(path, userContext, e))
         case _ ⇒ initialValues
       }

@@ -510,6 +510,7 @@ object SchemaChange {
     case _: ObjectType[_, _] ⇒ "Object"
     case _: InterfaceType[_, _] ⇒ "Interface"
     case _: ScalarType[_] ⇒ "Scalar"
+    case _: ScalarAlias[_, _] ⇒ "Scalar"
     case _: UnionType[_] ⇒ "Union"
     case _: EnumType[_] ⇒ "Enum"
     case _: InputObjectType[_] ⇒ "InputObject"

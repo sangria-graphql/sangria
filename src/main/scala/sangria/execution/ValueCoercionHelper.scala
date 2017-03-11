@@ -10,6 +10,7 @@ import sangria.validation._
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
+import scala.util.Failure
 
 class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprecationTracker: DeprecationTracker = DeprecationTracker.empty, userContext: Option[Ctx] = None) {
   import ValueCoercionHelper.defaultValueMapFn
@@ -136,6 +137,34 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       if (nullWithDefault) Trinary.NullWithDefault(node)
       else Trinary.Defined(node)
 
+    def nullScalarViolation(scalar: ScalarType[_], value: In) =
+      Left(Vector(FieldCoercionViolation(
+        fieldPath,
+        NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(scalar), sourceMapper, valuePosition(value)),
+        sourceMapper,
+        valuePosition(value),
+        errorPrefix)))
+
+    def invalidScalarViolation(value: In) =
+      Left(Vector(FieldCoercionViolation(
+        fieldPath,
+        GenericInvalidValueViolation(sourceMapper, valuePosition(value)),
+        sourceMapper,
+        valuePosition(value),
+        errorPrefix)))
+
+    def resolveCoercedScalar(coerced: Either[Violation, Any], scalar: ScalarType[Any], value: In) =
+      coerced.fold(
+        violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))),
+        v ⇒ {
+          val prepared = firstKindMarshaller match {
+            case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
+            case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(v, standard.capabilities), standard, scalar.name, scalar.scalarInfo)
+          }
+
+          Right(defined(prepared.asInstanceOf[marshaller.Node]))
+        })
+
     (tpe, input) match {
       case (_, node) if iu.isVariableNode(node) ⇒
         val varName = iu.getVariableName(node)
@@ -233,27 +262,32 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case other ⇒ scalar.coerceUserInput(other)
         }
 
-        coerced.fold(
-          violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))),
-          v ⇒ {
-            val prepared = firstKindMarshaller match {
-              case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
-              case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(v, standard.capabilities), standard, scalar.name, scalar.scalarInfo)
-            }
-
-            Right(defined(prepared.asInstanceOf[marshaller.Node]))
-          })
+        resolveCoercedScalar(coerced, scalar.asInstanceOf[ScalarType[Any]], value)
 
       case (_: ScalarType[_], value) if iu.isDefined(value) ⇒
-        Left(Vector(FieldCoercionViolation(fieldPath, GenericInvalidValueViolation(sourceMapper, valuePosition(value)), sourceMapper, valuePosition(value), errorPrefix)))
+        invalidScalarViolation(value)
 
       case (scalar: ScalarType[_], value) ⇒
-        Left(Vector(FieldCoercionViolation(
-          fieldPath,
-          NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(scalar), sourceMapper, valuePosition(value)),
-          sourceMapper,
-          valuePosition(value),
-          errorPrefix)))
+        nullScalarViolation(scalar, value)
+
+      case (scalar: ScalarAlias[_, _], value) if iu.isScalarNode(value) ⇒
+        val coerced = iu.getScalarValue(value) match {
+          case node: ast.Value ⇒ scalar.aliasFor.coerceInput(node)
+          case other ⇒ scalar.aliasFor.coerceUserInput(other)
+        }
+
+        val fromAlias = coerced match {
+          case l: Left[Violation, Any] ⇒ l
+          case Right(v) ⇒ scalar.fromScalar(v)
+        }
+
+        resolveCoercedScalar(fromAlias, scalar.aliasFor.asInstanceOf[ScalarType[Any]], value)
+
+      case (_: ScalarAlias[_, _], value) if iu.isDefined(value) ⇒
+        invalidScalarViolation(value)
+
+      case (scalar: ScalarAlias[_, _], value) ⇒
+        nullScalarViolation(scalar.aliasFor, value)
 
       case (enum: EnumType[_], value) if iu.isEnumNode(value) ⇒
         val coerced = iu.getScalarValue(value) match {
@@ -335,6 +369,20 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       coerced match {
         case Left(violation) ⇒ Vector(violation)
         case _ ⇒ Vector.empty
+      }
+
+    case (scalar: ScalarAlias[_, _], Some(value)) if um.isScalarNode(value) ⇒
+      val coerced = um.getScalarValue(value) match {
+        case node: ast.Value ⇒ scalar.aliasFor.coerceInput(node)
+        case other ⇒ scalar.aliasFor.coerceUserInput(other)
+      }
+
+      coerced match {
+        case Left(violation) ⇒ Vector(violation)
+        case Right(v) ⇒ scalar.fromScalar(v) match {
+          case Left(violation) ⇒ Vector(violation)
+          case _ ⇒ Vector.empty
+        }
       }
 
     case (enum: EnumType[_], Some(value)) if um.isEnumNode(value) ⇒

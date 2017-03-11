@@ -111,6 +111,7 @@ package object introspection {
       case OptionInputType(ofType) ⇒ identifyKind(ofType, true)
       case _ if !optional ⇒ TypeKind.NonNull
       case _: ScalarType[_] ⇒ TypeKind.Scalar
+      case _: ScalarAlias[_, _] ⇒ TypeKind.Scalar
       case _: ObjectType[_, _] ⇒ TypeKind.Object
       case _: InterfaceType[_, _] ⇒ TypeKind.Interface
       case _: UnionType[_] ⇒ TypeKind.Union
