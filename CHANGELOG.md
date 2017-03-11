@@ -1,12 +1,12 @@
 ## v1.1.0 (2017-03-11)
 
 * Added scalar type alias support (#225, #210). For more info see the ["Scalar Type Alias" section of documentation](http://sangria-graphql.org/learn/#scalar-type-alias).
-* Added `derive*` macro settings (`TransformFieldNames` and `TransformInputFieldNames`) to transform field names. (#215) Big thanks to @ostronom for this contribution.
+* Greatly improved `AstVisitor` (#214). It now includes helper methods to traverse and **transform** an AST with type info and state. Sangria now integrates with [macro-visit](https://github.com/sangria-graphql/macro-visit) which was specifiably written to traverse and transform ASTs which are similar to sangria's. For more info see the ["AstVisitor" section of documentation](http://sangria-graphql.org/learn/#astvisitor).
+* Added `DocumentAnalyzer` and `SchemaBasedDocumentAnalyzer` that contain a lot of helper methods to analyze query. This includes newly introduced `deprecatedUsages` and `introspectionUsages` (#211, #207, #212). For more info see brand new ["Query And Schema Analysis" section of documentation](http://sangria-graphql.org/learn/#query-and-schema-analysis).
 * Added `QueryReducer.hasIntrospection` and `QueryReducer.rejectIntrospection` that rejects queries which contain introspection fields (#211). This may be useful for production environments where introspection can potentially be abused.
 * Added `Context.isIntrospection` and `sangria.introspection.isIntrospection` helper methods to easily distinguish between introspection types and fields in middleware and query reducers.
 * Added `QueryReducer.measureDepth` and `QueryReducer.rejectMaxDepth` rejects queries that are deeper than provided threshold (In contrast to `Executor.execute(maxQueryDepth = ...)`, query reducer does it at query analysis time before actual execution).
-* Greatly improved `AstVisitor` (#214). It now includes helper methods to traverse and **transform** an AST with type info and state. Sangria now integrates with [macro-visit](https://github.com/sangria-graphql/macro-visit) which was specifiably written to traverse and transform ASTs which are similar to sangria's. For more info see the ["AstVisitor" section of documentation](http://sangria-graphql.org/learn/#astvisitor).
-* Added `DocumentAnalyzer` and `SchemaBasedDocumentAnalyzer` that contain a lot of helper methods to analyze query. This includes newly introduced `deprecatedUsages` and `introspectionUsages` (#211, #207, #212). For more info see brand new ["Query And Schema Analysis" section of documentation](http://sangria-graphql.org/learn/#query-and-schema-analysis).
+* Added `derive*` macro settings (`TransformFieldNames` and `TransformInputFieldNames`) to transform field names. (#215) Big thanks to @ostronom for this contribution.
 * Added ability to represent complex relations in Fetch API (#220).
 * `ExecutionScheme.Extended` now returns updated user context for mutations (#209).
 * Improved handling of tailing comments when rendering query AST (#219).
