@@ -23,12 +23,11 @@ scalacOptions ++= {
 }
 
 libraryDependencies ++= Seq(
-  // macros
-  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-
-  // parsing
   "org.parboiled" %% "parboiled" % "2.1.3",
   "org.sangria-graphql" %% "macro-visit" % "0.1.1",
+
+  // macros
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
   // marshalling
   "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.0",
@@ -45,6 +44,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-ion" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-monix" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-rxscala" % "1.0.0" % Test,
+  "eu.timepit" %% "refined" % "0.7.0" % Test,
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.3.1" % Test,
