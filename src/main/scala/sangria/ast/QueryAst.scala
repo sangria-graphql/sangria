@@ -329,7 +329,7 @@ object AstNode {
 
     visit[AstNode](node,
       Visit[Comment](enterComment),
-      TransformSpecial[AstNode, Option[Position]]((_, _) ⇒ VisitorCommand.Transform(None))).asInstanceOf[T]
+      VisitAnyField[AstNode, Option[Position]]((_, _) ⇒ VisitorCommand.Transform(None))).asInstanceOf[T]
   }
 }
 
