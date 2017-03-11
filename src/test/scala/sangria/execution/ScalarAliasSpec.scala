@@ -41,7 +41,7 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("user", UserType,
           arguments = UserIdArg :: NumArg :: ComplexArg :: Nil,
           resolve = _.withArgs(UserIdArg, NumArg, ComplexArg)(
-            (userId, num, complex) ⇒ User(userId, complex("userId").asInstanceOf[Option[UserId]], "generated " + complex, num)))
+            (userId, num, complex) ⇒ User(userId, complex("userId").asInstanceOf[Option[UserId]], "generated", num)))
       )))
 
       val query =
@@ -77,7 +77,7 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
             "user" → Map(
               "id" → "1234",
               "id2" → "5678",
-              "name" → "generated ListMap(userId -> Some(UserId(5678)), userNum -> Some(500))",
+              "name" → "generated",
               "num" → 42),
             "__type" → Map(
               "name" → "User",
