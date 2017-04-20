@@ -952,15 +952,12 @@ class Resolver[Ctx](
               val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField[Ctx]])
               val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField[Ctx]])
 
-              def doAfterMiddleware[Val](v: Val): Val = {
-                val results = mAfter.flatMap {
-                  case ((cv, _), mv, m: MiddlewareAfterField[Ctx]) ⇒
-                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], v, middlewareCtx, ctx).asInstanceOf[Option[Val]]
-                  case _ ⇒ None
+              def doAfterMiddleware[Val](v: Val): Val =
+                mAfter.foldLeft(v) {
+                  case (acc, ((cv, _), mv, m: MiddlewareAfterField[Ctx])) ⇒
+                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], acc, middlewareCtx, ctx).asInstanceOf[Option[Val]] getOrElse acc
+                  case (acc, _) ⇒ acc
                 }
-
-                results.lastOption getOrElse v
-              }
 
               def doErrorMiddleware(error: Throwable): Unit =
                 mError.collect {
@@ -968,17 +965,12 @@ class Resolver[Ctx](
                     m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, ctx)
                 }
 
-              def doAfterMiddlewareWithMap[Val, NewVal](fn: Val ⇒ NewVal)(v: Val): NewVal = {
-                val mapped = fn(v)
-
-                val results = mAfter.flatMap {
-                  case ((cv, _), mv, m: MiddlewareAfterField[Ctx]) ⇒
-                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], mapped, middlewareCtx, ctx).asInstanceOf[Option[NewVal]]
-                  case _ ⇒ None
+              def doAfterMiddlewareWithMap[Val, NewVal](fn: Val ⇒ NewVal)(v: Val): NewVal =
+                mAfter.foldLeft(fn(v)) {
+                  case (acc, ((cv, _), mv, m: MiddlewareAfterField[Ctx])) ⇒
+                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], acc, middlewareCtx, ctx).asInstanceOf[Option[NewVal]] getOrElse acc
+                  case (acc, _) ⇒ acc
                 }
-
-                results.lastOption getOrElse mapped
-              }
 
               try {
                 val res =

@@ -63,6 +63,21 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
     }
   }
 
+  case class Suffixer(suffix: String) extends Middleware[Any] with MiddlewareAfterField[Any] {
+    type QueryVal = Unit
+    type FieldVal = Unit
+
+    def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) = ()
+    def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = ()
+    def beforeField(cache: QueryVal, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = continue
+
+    def afterField(cache: QueryVal, fromCache: FieldVal, value: Any, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) =
+      value match {
+        case s: String ⇒ Some(s + suffix)
+        case _ ⇒ None
+      }
+  }
+
   class Count {
     val count = new AtomicInteger(0)
     var context: Option[String] = None
@@ -115,6 +130,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
     Field("futureError", OptionType(StringType), resolve = _ ⇒ Future.failed[Option[String]](new IllegalStateException("boom"))),
     Field("defError", OptionType(StringType), resolve = _ ⇒ Fail),
     Field("someString", StringType, resolve = _ ⇒ "nothing special"),
+    Field("someStringMapped", StringType, resolve = c ⇒ UpdateCtx("unmapped")(_ ⇒ c.ctx) map (_.substring(2))),
     Field("errorInAfter", OptionType(StringType), resolve = _ ⇒ "everything ok here"),
     Field("errorInBefore", OptionType(StringType), resolve = _ ⇒ "everything ok here"),
     Field("anotherString", StringType, resolve = _ ⇒ "foo"),
@@ -304,6 +320,26 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         "e7" → Set("e71 error", "e72 error"),
         "e8" → Set("e81 error", "e82 error"),
         "e9" → Set("e9")))
+    }
+
+    "value, updated in middleware `afterField`, should be propagated though all middleware in the chain (effectively should be a fold)" in {
+      val query =
+        graphql"""
+          {
+            someString
+            someStringMapped
+          }
+        """
+
+      val ctx = new Count
+
+      val res = Executor.execute(schema, query, userContext = ctx,
+        middleware = Suffixer(" s1") :: Suffixer(" s2") :: Nil).await
+
+      res should be (Map(
+        "data" → Map(
+          "someString" → "nothing special s1 s2",
+          "someStringMapped" → "mapped s1 s2")))
     }
 
     behave like properFieldLevelMiddleware(
