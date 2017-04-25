@@ -16,6 +16,8 @@ package object schema {
       case i: Long if i.isValidInt ⇒ Right(i.toInt)
       case i: BigInt if !i.isValidInt ⇒ Left(BigIntCoercionViolation)
       case i: BigInt ⇒ Right(i.intValue)
+      case d: Double if d.isValidInt ⇒ Right(d.intValue)
+      case d: BigDecimal if d.isValidInt ⇒ Right(d.intValue)
       case _ ⇒ Left(IntCoercionViolation)
     },
     coerceInput = {
@@ -35,6 +37,8 @@ package object schema {
       case i: Long ⇒ Right(i)
       case i: BigInt if !i.isValidLong ⇒ Left(BigLongCoercionViolation)
       case i: BigInt ⇒ Right(i.longValue)
+      case d: Double if d.isWhole ⇒ Right(d.toLong)
+      case d: BigDecimal if d.isValidLong ⇒ Right(d.longValue())
       case _ ⇒ Left(LongCoercionViolation)
     },
     coerceInput = {
@@ -53,6 +57,8 @@ package object schema {
       case i: Int ⇒ Right(BigInt(i))
       case i: Long ⇒ Right(BigInt(i))
       case i: BigInt ⇒ Right(i)
+      case d: Double if d.isWhole ⇒ Right(BigInt(d.toLong))
+      case d: BigDecimal if d.isWhole ⇒ Right(d.toBigInt)
       case _ ⇒ Left(IntCoercionViolation)
     },
     coerceInput = {

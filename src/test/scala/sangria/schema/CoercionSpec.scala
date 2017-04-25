@@ -160,6 +160,14 @@ class CoercionSpec extends WordSpec with Matchers {
         IntType.coerceUserInput(BigInt("123234")) should be (Right(123234))
         IntType.coerceUserInput(BigInt("12323443874982374987329749823")).isLeft should be (true)
 
+        IntType.coerceUserInput(123.0D) should be (Right(123))
+        IntType.coerceUserInput(123.001D).isLeft should be (true)
+        IntType.coerceUserInput(1212321321321321321321312.0D).isLeft should be (true)
+
+        IntType.coerceUserInput(BigDecimal("123.0")) should be (Right(123))
+        IntType.coerceUserInput(BigDecimal("123.000001")).isLeft should be (true)
+        IntType.coerceUserInput(BigDecimal("123243432432432423423442342.0")).isLeft should be (true)
+
         IntType.coerceUserInput(12.34D).isLeft should be (true)
         IntType.coerceUserInput(BigDecimal(12.34)).isLeft should be (true)
         IntType.coerceUserInput(true).isLeft should be (true)
@@ -177,6 +185,13 @@ class CoercionSpec extends WordSpec with Matchers {
         LongType.coerceUserInput(BigInt("12323475436574")) should be (Right(12323475436574L))
         LongType.coerceUserInput(BigInt("1232344387498237498732974982334324234325435")).isLeft should be (true)
 
+        LongType.coerceUserInput(123123123123123.0D) should be (Right(123123123123123L))
+        LongType.coerceUserInput(123.001D).isLeft should be (true)
+
+        LongType.coerceUserInput(BigDecimal("123.0")) should be (Right(123L))
+        LongType.coerceUserInput(BigDecimal("123.000001")).isLeft should be (true)
+        LongType.coerceUserInput(BigDecimal("12321344346783264876328764872368.0")).isLeft should be (true)
+
         LongType.coerceUserInput(12.34D).isLeft should be (true)
         LongType.coerceUserInput(BigDecimal(12.34)).isLeft should be (true)
         LongType.coerceUserInput(true).isLeft should be (true)
@@ -189,6 +204,12 @@ class CoercionSpec extends WordSpec with Matchers {
 
         BigIntType.coerceUserInput(123L) should be (Right(BigInt("123")))
         BigIntType.coerceUserInput(12334324234L) should be (Right(BigInt("12334324234")))
+
+        BigIntType.coerceUserInput(123123123123123.0D) should be (Right(BigInt("123123123123123")))
+        BigIntType.coerceUserInput(123.001D).isLeft should be (true)
+
+        BigIntType.coerceUserInput(BigDecimal("123.0")) should be (Right(BigInt(123)))
+        BigIntType.coerceUserInput(BigDecimal("123.000001")).isLeft should be (true)
 
         BigIntType.coerceUserInput(BigInt("123234")) should be (Right(BigInt("123234")))
         BigIntType.coerceUserInput(BigInt("12323443874982374987329749823")) should be (
