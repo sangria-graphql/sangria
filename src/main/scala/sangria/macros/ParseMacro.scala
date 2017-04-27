@@ -23,8 +23,7 @@ class ParseMacro(context: blackbox.Context) extends {
           try {
             q"${QueryParser.parse(gql.stripMargin).get}"
           } catch {
-            case syntaxError: SyntaxError ⇒
-              c.abort(c.enclosingPosition, syntaxError.getMessage)
+            case error: SyntaxError ⇒ syntaxError(error)
           }
         case _ ⇒
           c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
@@ -43,10 +42,29 @@ class ParseMacro(context: blackbox.Context) extends {
           try {
             q"${QueryParser.parseInput(gql.stripMargin).get}"
           } catch {
-            case syntaxError: SyntaxError ⇒
-              c.abort(c.enclosingPosition, syntaxError.getMessage)
+            case error: SyntaxError ⇒ syntaxError(error)
           }
         case _ ⇒
           c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
       }
+
+  def syntaxError(error: SyntaxError) = {
+    val errorPos = error.originalError.position
+    val enclosingCol = if (errorPos.line == 1) calcStringStart else 0
+    val source = c.enclosingPosition.source
+    val line = source.lineToOffset(c.enclosingPosition.line + (errorPos.line - 2))
+    val col = line + enclosingCol + (errorPos.column - 1)
+    val pos = c.enclosingPosition.withPoint(col)
+
+    c.abort(pos, error.formattedError(showPosition = false))
+  }
+
+  def calcStringStart: Int = {
+    val source = c.enclosingPosition.source
+    val content = source.lineToString(c.enclosingPosition.line - 1)
+    val contentStart = content.substring(c.enclosingPosition.column - 1)
+    val offset = "(\\w+\"+)".r.findFirstMatchIn(contentStart).fold(0)(_.end)
+
+    c.enclosingPosition.column - 1 + offset
+  }
 }
