@@ -397,7 +397,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       breakingChange[SchemaSubscriptionTypeChanged]("Schema subscription type changed from `Subs` to `Subs1` type"))
 
 
-    "detect breaking changes in field AST directives" in checkChangesWithoutQueryType(
+    "detect changes in field AST directives" in checkChangesWithoutQueryType(
       gql"""
         type Query {
           foo: String @foo
@@ -412,6 +412,30 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
       nonBreakingChange[FieldAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a field `Query.foo`"),
       nonBreakingChange[FieldAstDirectiveRemoved]("Directive `@foo` removed from a field `Query.foo`"))
+
+    "detect changes in schema AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo: String
+        }
+
+        schema @foo {
+          query: Query
+        }
+      """,
+
+      gql"""
+        type Query {
+          foo: String
+        }
+
+        schema @bar(ids: [1, 2]) {
+          query: Query
+        }
+      """,
+
+      nonBreakingChange[SchemaAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a schema"),
+      nonBreakingChange[SchemaAstDirectiveRemoved]("Directive `@foo` removed from a schema"))
   }
 
   def breakingChange[T : ClassTag](description: String) =

@@ -95,10 +95,17 @@ object SchemaComparator {
       else
         withQuery
 
-    if (oldSchema.subscription.map(_.name) != newSchema.subscription.map(_.name))
-      withMutation :+ SchemaChange.SchemaSubscriptionTypeChanged(oldSchema.subscription, newSchema.subscription)
-    else
-      withMutation
+    val withSubscription =
+      if (oldSchema.subscription.map(_.name) != newSchema.subscription.map(_.name))
+        withMutation :+ SchemaChange.SchemaSubscriptionTypeChanged(oldSchema.subscription, newSchema.subscription)
+      else
+        withMutation
+
+    val directiveChanges = findInAstDirs(oldSchema.astDirectives, newSchema.astDirectives,
+      added = SchemaChange.SchemaAstDirectiveAdded(newSchema, _),
+      removed = SchemaChange.SchemaAstDirectiveRemoved(newSchema, _))
+
+    withSubscription ++ directiveChanges
   }
 
   def findChangesInTypes(oldType: Type with Named, newType: Type with Named): Vector[SchemaChange] = {
@@ -229,8 +236,8 @@ object SchemaComparator {
         Vector.empty
 
     val directiveChanges = findInAstDirs(oldField.astDirectives, newField.astDirectives,
-      added = SchemaChange.FieldAstDirectiveAdded(newType, newField, _, DirectiveLocation.FieldDefinition),
-      removed = SchemaChange.FieldAstDirectiveRemoved(newType, newField, _, DirectiveLocation.FieldDefinition))
+      added = SchemaChange.FieldAstDirectiveAdded(newType, newField, _),
+      removed = SchemaChange.FieldAstDirectiveRemoved(newType, newField, _))
 
     val argChanges = findInArgs(oldField.arguments, newField.arguments,
       added = SchemaChange.ObjectTypeArgumentAdded(newType, newField, _, _),
@@ -506,19 +513,25 @@ object SchemaChange {
     def location: DirectiveLocation.Value
   }
 
-  abstract class AbstractAstDirectiveAdded(val description: String) extends AstDirectiveAdded {
+  abstract class AbstractAstDirectiveAdded(val description: String, val location: DirectiveLocation.Value) extends AstDirectiveAdded {
     val breakingChange = false
   }
 
-  abstract class AbstractAstDirectiveRemoved(val description: String) extends AstDirectiveRemoved {
+  abstract class AbstractAstDirectiveRemoved(val description: String, val location: DirectiveLocation.Value) extends AstDirectiveRemoved {
     val breakingChange = false
   }
 
-  case class FieldAstDirectiveAdded(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive, location: DirectiveLocation.Value)
-    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a field `${tpe.name}.${field.name}`")
+  case class FieldAstDirectiveAdded(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a field `${tpe.name}.${field.name}`", DirectiveLocation.FieldDefinition)
 
-  case class FieldAstDirectiveRemoved(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive, location: DirectiveLocation.Value)
-    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a field `${tpe.name}.${field.name}`")
+  case class FieldAstDirectiveRemoved(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a field `${tpe.name}.${field.name}`", DirectiveLocation.FieldDefinition)
+
+  case class SchemaAstDirectiveAdded(schema: Schema[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a schema", DirectiveLocation.Schema)
+
+  case class SchemaAstDirectiveRemoved(schema: Schema[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a schema", DirectiveLocation.Schema)
 
   // May be a breaking change
 
