@@ -78,7 +78,8 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       breakingChange[EnumValueRemoved]("Enum value `A` was removed from enum `Foo`"),
       nonBreakingChange[EnumValueAdded]("Enum value `D` was added to enum `Foo`"),
       nonBreakingChange[EnumValueDescriptionChanged]("`Foo.C` description changed"),
-      nonBreakingChange[EnumValueDeprecated]("Enum value `B` was deprecated in enum `Foo`"))
+      nonBreakingChange[EnumValueDeprecated]("Enum value `B` was deprecated in enum `Foo`"),
+      nonBreakingChange[EnumValueAstDirectiveAdded]("Directive `@deprecated(reason:\"Should not be used anymore\")` added on an enum value `Foo.B`"))
 
     "should detect changes in unions" in checkChanges(
       graphql"""
@@ -412,6 +413,47 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
       nonBreakingChange[FieldAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a field `Query.foo`"),
       nonBreakingChange[FieldAstDirectiveRemoved]("Directive `@foo` removed from a field `Query.foo`"))
+
+    "detect changes in input field AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {a: Int}
+
+        input Foo {
+          foo: String  = "test" @foo
+        }
+      """,
+
+      gql"""
+        type Query {a: Int}
+
+        input Foo {
+          foo: String @bar(ids: [1, 2])
+        }
+      """,
+
+      nonBreakingChange[InputFieldAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on an input field `Foo.foo`"),
+      nonBreakingChange[InputFieldAstDirectiveRemoved]("Directive `@foo` removed from a input field `Foo.foo`"),
+      nonBreakingChange[InputFieldDefaultChanged]("`Foo.foo` default value changed from `\"test\"` to none"))
+
+    "detect changes in enum values AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {a: Int}
+
+        enum Foo {
+          A @foo
+        }
+      """,
+
+      gql"""
+        type Query {a: Int}
+
+        enum Foo {
+          A @bar(ids: [1, 2])
+        }
+      """,
+
+      nonBreakingChange[EnumValueAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on an enum value `Foo.A`"),
+      nonBreakingChange[EnumValueAstDirectiveRemoved]("Directive `@foo` removed from a enum value `Foo.A`"))
 
     "detect changes in schema AST directives" in checkChangesWithoutQueryType(
       gql"""

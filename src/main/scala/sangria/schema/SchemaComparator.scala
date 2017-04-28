@@ -158,8 +158,13 @@ object SchemaComparator {
       val oldValue = oldType.byName(name)
       val newValue = newType.byName(name)
 
+      val directiveChanges = findInAstDirs(oldValue.astDirectives, newValue.astDirectives,
+        added = SchemaChange.EnumValueAstDirectiveAdded(newType, newValue, _),
+        removed = SchemaChange.EnumValueAstDirectiveRemoved(newType, newValue, _))
+
       findDescriptionChanged(oldValue, newValue, SchemaChange.EnumValueDescriptionChanged(newType, newValue, _, _)) ++
-        findDeprecationChanged(oldValue, newValue, SchemaChange.EnumValueDeprecated(newType, newValue, _, _))
+        findDeprecationChanged(oldValue, newValue, SchemaChange.EnumValueDeprecated(newType, newValue, _, _)) ++
+        directiveChanges
     }
 
     val directiveChanges = findInAstDirs(oldType.astDirectives, newType.astDirectives,
@@ -367,7 +372,11 @@ object SchemaComparator {
       else
         withDefault
 
-    withType
+    val directiveChanges = findInAstDirs(oldField.astDirectives, newField.astDirectives,
+      added = SchemaChange.InputFieldAstDirectiveAdded(newType, newField, _),
+      removed = SchemaChange.InputFieldAstDirectiveRemoved(newType, newField, _))
+
+    withType ++ directiveChanges
   }
 
   private def isOptional(field: InputField[_]) = field.fieldType match {
@@ -550,6 +559,18 @@ object SchemaChange {
 
   case class FieldAstDirectiveRemoved(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive)
     extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a field `${tpe.name}.${field.name}`", DirectiveLocation.FieldDefinition)
+
+  case class EnumValueAstDirectiveAdded(tpe: EnumType[_], value: EnumValue[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an enum value `${tpe.name}.${value.name}`", DirectiveLocation.EnumValue)
+
+  case class EnumValueAstDirectiveRemoved(tpe: EnumType[_], value: EnumValue[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a enum value `${tpe.name}.${value.name}`", DirectiveLocation.EnumValue)
+
+  case class InputFieldAstDirectiveAdded(tpe: InputObjectType[_], field: InputField[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an input field `${tpe.name}.${field.name}`", DirectiveLocation.InputFieldDefinition)
+
+  case class InputFieldAstDirectiveRemoved(tpe: InputObjectType[_], field: InputField[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a input field `${tpe.name}.${field.name}`", DirectiveLocation.InputFieldDefinition)
 
   case class ObjectTypeAstDirectiveAdded(tpe: ObjectType[_, _], directive: ast.Directive)
     extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an object type `${tpe.name}`", DirectiveLocation.Object)
