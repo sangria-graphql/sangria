@@ -414,6 +414,28 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[FieldAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a field `Query.foo`"),
       nonBreakingChange[FieldAstDirectiveRemoved]("Directive `@foo` removed from a field `Query.foo`"))
 
+    "detect changes in argument AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo(bar: String @foo): String
+        }
+
+        directive @test(bar: String @hello) on FIELD
+      """,
+
+      gql"""
+        type Query {
+          foo(bar: String @bar(ids: [1, 2])): String
+        }
+
+        directive @test(bar: String @world) on FIELD
+      """,
+
+      nonBreakingChange[FieldArgumentAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a field argument `Query.foo[bar]`"),
+      nonBreakingChange[FieldArgumentAstDirectiveRemoved]("Directive `@foo` removed from a field argument `Query.foo[bar]`"),
+      nonBreakingChange[DirectiveArgumentAstDirectiveRemoved]("Directive `@hello` removed from a directive argument `test.bar`"),
+      nonBreakingChange[DirectiveArgumentAstDirectiveAdded]("Directive `@world` added on a directive argument `test.bar`"))
+
     "detect changes in input field AST directives" in checkChangesWithoutQueryType(
       gql"""
         type Query {a: Int}
