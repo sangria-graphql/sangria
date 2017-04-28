@@ -78,7 +78,8 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       breakingChange[EnumValueRemoved]("Enum value `A` was removed from enum `Foo`"),
       nonBreakingChange[EnumValueAdded]("Enum value `D` was added to enum `Foo`"),
       nonBreakingChange[EnumValueDescriptionChanged]("`Foo.C` description changed"),
-      nonBreakingChange[EnumValueDeprecated]("Enum value `B` was deprecated in enum `Foo`"))
+      nonBreakingChange[EnumValueDeprecated]("Enum value `B` was deprecated in enum `Foo`"),
+      nonBreakingChange[EnumValueAstDirectiveAdded]("Directive `@deprecated(reason:\"Should not be used anymore\")` added on an enum value `Foo.B`"))
 
     "should detect changes in unions" in checkChanges(
       graphql"""
@@ -395,6 +396,176 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[TypeAdded]("`Subs1` type was added"),
       breakingChange[SchemaMutationTypeChanged]("Schema mutation type changed from `Mut` to none type"),
       breakingChange[SchemaSubscriptionTypeChanged]("Schema subscription type changed from `Subs` to `Subs1` type"))
+
+
+    "detect changes in field AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo: String @foo
+        }
+      """,
+
+      gql"""
+        type Query {
+          foo: String @bar(ids: [1, 2])
+        }
+      """,
+
+      nonBreakingChange[FieldAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a field `Query.foo`"),
+      nonBreakingChange[FieldAstDirectiveRemoved]("Directive `@foo` removed from a field `Query.foo`"))
+
+    "detect changes in argument AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo(bar: String @foo): String
+        }
+
+        directive @test(bar: String @hello) on FIELD
+      """,
+
+      gql"""
+        type Query {
+          foo(bar: String @bar(ids: [1, 2])): String
+        }
+
+        directive @test(bar: String @world) on FIELD
+      """,
+
+      nonBreakingChange[FieldArgumentAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a field argument `Query.foo[bar]`"),
+      nonBreakingChange[FieldArgumentAstDirectiveRemoved]("Directive `@foo` removed from a field argument `Query.foo[bar]`"),
+      nonBreakingChange[DirectiveArgumentAstDirectiveRemoved]("Directive `@hello` removed from a directive argument `test.bar`"),
+      nonBreakingChange[DirectiveArgumentAstDirectiveAdded]("Directive `@world` added on a directive argument `test.bar`"))
+
+    "detect changes in input field AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {a: Int}
+
+        input Foo {
+          foo: String  = "test" @foo
+        }
+      """,
+
+      gql"""
+        type Query {a: Int}
+
+        input Foo {
+          foo: String @bar(ids: [1, 2])
+        }
+      """,
+
+      nonBreakingChange[InputFieldAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on an input field `Foo.foo`"),
+      nonBreakingChange[InputFieldAstDirectiveRemoved]("Directive `@foo` removed from a input field `Foo.foo`"),
+      nonBreakingChange[InputFieldDefaultChanged]("`Foo.foo` default value changed from `\"test\"` to none"))
+
+    "detect changes in enum values AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {a: Int}
+
+        enum Foo {
+          A @foo
+        }
+      """,
+
+      gql"""
+        type Query {a: Int}
+
+        enum Foo {
+          A @bar(ids: [1, 2])
+        }
+      """,
+
+      nonBreakingChange[EnumValueAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on an enum value `Foo.A`"),
+      nonBreakingChange[EnumValueAstDirectiveRemoved]("Directive `@foo` removed from a enum value `Foo.A`"))
+
+    "detect changes in schema AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo: String
+        }
+
+        schema @foo {
+          query: Query
+        }
+      """,
+
+      gql"""
+        type Query {
+          foo: String
+        }
+
+        schema @bar(ids: [1, 2]) {
+          query: Query
+        }
+      """,
+
+      nonBreakingChange[SchemaAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a schema"),
+      nonBreakingChange[SchemaAstDirectiveRemoved]("Directive `@foo` removed from a schema"))
+
+    "detect changes in type AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo: String
+        }
+
+        input Foo @bar(ids: [1, 2]) {
+          a: Int
+        }
+
+        type Foo1 @bar(ids: [1, 2]) {
+          a: Int
+        }
+
+        interface Foo2 @bar(ids: [1, 2]) {
+          a: Int
+        }
+
+        union Foo3 @bar(ids: [1, 2]) = Query | Foo1
+
+        enum Foo4 @bar(ids: [1, 2]) {
+          A B C
+        }
+
+        scalar Foo5 @bar(ids: [1, 2])
+      """,
+
+      gql"""
+        type Query {
+          foo: String
+        }
+
+        input Foo @bar(ids: [1]) {
+          a: Int
+        }
+
+        type Foo1 @baz {
+          a: Int
+        }
+
+        interface Foo2 @baz {
+          a: Int
+        }
+
+        union Foo3 @bar(id: 1) = Query | Foo1
+
+        enum Foo4 @bar(id: 1) {
+          A B C
+        }
+
+        scalar Foo5 @bar(ids: [1])
+      """,
+
+      nonBreakingChange[InputObjectTypeAstDirectiveAdded]("Directive `@bar(ids:[1])` added on an input type `Foo`"),
+      nonBreakingChange[InputObjectTypeAstDirectiveRemoved]("Directive `@bar(ids:[1,2])` removed from an input type `Foo`"),
+      nonBreakingChange[ObjectTypeAstDirectiveAdded]("Directive `@baz` added on an object type `Foo1`"),
+      nonBreakingChange[ObjectTypeAstDirectiveRemoved]("Directive `@bar(ids:[1,2])` removed from an object type `Foo1`"),
+      nonBreakingChange[InterfaceTypeAstDirectiveAdded]("Directive `@baz` added on an interface type `Foo2`"),
+      nonBreakingChange[InterfaceTypeAstDirectiveRemoved]("Directive `@bar(ids:[1,2])` removed from an interface type `Foo2`"),
+      nonBreakingChange[UnionTypeAstDirectiveAdded]("Directive `@bar(id:1)` added on a union type `Foo3`"),
+      nonBreakingChange[UnionTypeAstDirectiveRemoved]("Directive `@bar(ids:[1,2])` removed from a union type `Foo3`"),
+      nonBreakingChange[EnumTypeAstDirectiveAdded]("Directive `@bar(id:1)` added on an enum type `Foo4`"),
+      nonBreakingChange[EnumTypeAstDirectiveRemoved]("Directive `@bar(ids:[1,2])` removed from an enum type `Foo4`"),
+      nonBreakingChange[ScalarTypeAstDirectiveAdded]("Directive `@bar(ids:[1])` added on a scalar type `Foo5`"),
+      nonBreakingChange[ScalarTypeAstDirectiveRemoved]("Directive `@bar(ids:[1,2])` removed from a scalar type `Foo5`"))
   }
 
   def breakingChange[T : ClassTag](description: String) =

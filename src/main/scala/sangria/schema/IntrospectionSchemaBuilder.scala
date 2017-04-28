@@ -119,14 +119,16 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
             description = typeDescription(definition),
             fieldsFn = fields,
             interfaces = interfaces,
-            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))
+            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz),
+            astDirectives = Vector.empty)
         case None ⇒
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
             fieldsFn = fields,
             interfaces = interfaces,
-            instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any])
+            instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any],
+            astDirectives = Vector.empty)
       }
 
     Some(objectType)
@@ -139,7 +141,8 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
     Some(InputObjectType(
       name = typeName(definition),
       description = typeDescription(definition),
-      fieldsFn = fields))
+      fieldsFn = fields,
+      astDirectives = Vector.empty))
 
   def buildInterfaceType(
       definition: IntrospectionInterfaceType,
@@ -150,7 +153,8 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       description = typeDescription(definition),
       fieldsFn = fields,
       interfaces = Nil,
-      manualPossibleTypes = () ⇒ Nil))
+      manualPossibleTypes = () ⇒ Nil,
+      astDirectives = Vector.empty))
 
   def buildUnionType(
       definition: IntrospectionUnionType,
@@ -207,7 +211,8 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       tags = fieldTags(typeDefinition, definition),
       deprecationReason = fieldDeprecationReason(definition),
       complexity = fieldComplexity(typeDefinition, definition),
-      manualPossibleTypes = () ⇒ Nil))
+      manualPossibleTypes = () ⇒ Nil,
+      astDirectives = Vector.empty))
 
   def buildInputField(
       typeDefinition: IntrospectionInputObjectType,
@@ -219,7 +224,8 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       name = inputFieldName(definition),
       description = inputFieldDescription(definition),
       fieldType = tpe,
-      defaultValue = defaultValue))
+      defaultValue = defaultValue,
+      astDirectives = Vector.empty))
 
   def buildArgument(
       fieldDefinition: Option[IntrospectionField],
@@ -232,7 +238,8 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       description = argumentDescription(definition),
       argumentType = tpe,
       defaultValue = defaultValue,
-      fromInput = argumentFromInput(fieldDefinition, definition)))
+      fromInput = argumentFromInput(fieldDefinition, definition),
+      astDirectives = Vector.empty))
 
   def buildDirective(
       definition: IntrospectionDirective,

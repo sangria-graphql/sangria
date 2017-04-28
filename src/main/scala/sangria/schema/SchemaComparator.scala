@@ -2,6 +2,8 @@ package sangria.schema
 
 import sangria.execution.ValueCoercionHelper
 import sangria.renderer.SchemaRenderer
+import sangria.ast
+import sangria.ast.AstNode
 
 import language.existentials
 
@@ -62,7 +64,9 @@ object SchemaComparator {
       removed = SchemaChange.DirectiveArgumentRemoved(oldDir, _),
       description = SchemaChange.DirectiveArgumentDescriptionChanged(newDir, _, _, _),
       default = SchemaChange.DirectiveArgumentDefaultChanged(newDir, _, _, _),
-      typeChange = SchemaChange.DirectiveArgumentTypeChanged(newDir, _, _, _, _))
+      typeChange = SchemaChange.DirectiveArgumentTypeChanged(newDir, _, _, _, _),
+      dirAdded = SchemaChange.DirectiveArgumentAstDirectiveAdded(newDir, _, _),
+      dirRemoved = SchemaChange.DirectiveArgumentAstDirectiveRemoved(newDir, _, _))
 
     locationChanges ++ fieldChanges
   }
@@ -93,16 +97,24 @@ object SchemaComparator {
       else
         withQuery
 
-    if (oldSchema.subscription.map(_.name) != newSchema.subscription.map(_.name))
-      withMutation :+ SchemaChange.SchemaSubscriptionTypeChanged(oldSchema.subscription, newSchema.subscription)
-    else
-      withMutation
+    val withSubscription =
+      if (oldSchema.subscription.map(_.name) != newSchema.subscription.map(_.name))
+        withMutation :+ SchemaChange.SchemaSubscriptionTypeChanged(oldSchema.subscription, newSchema.subscription)
+      else
+        withMutation
+
+    val directiveChanges = findInAstDirs(oldSchema.astDirectives, newSchema.astDirectives,
+      added = SchemaChange.SchemaAstDirectiveAdded(newSchema, _),
+      removed = SchemaChange.SchemaAstDirectiveRemoved(newSchema, _))
+
+    withSubscription ++ directiveChanges
   }
 
   def findChangesInTypes(oldType: Type with Named, newType: Type with Named): Vector[SchemaChange] = {
     val typeChanges = (oldType, newType) match {
       case (o: EnumType[_], n: EnumType[_]) ⇒ findInEnumTypes(o, n)
       case (o: UnionType[_], n: UnionType[_]) ⇒ findInUnionTypes(o, n)
+      case (o: ScalarType[_], n: ScalarType[_]) ⇒ findInScalarTypes(o, n)
       case (o: InputObjectType[_], n: InputObjectType[_]) ⇒ findInInputObjectTypes(o, n)
       case (o: ObjectType[_, _], n: ObjectType[_, _]) ⇒ findInObjectTypes(o, n)
       case (o: InterfaceType[_, _], n: InterfaceType[_, _]) ⇒ findInInterfaceTypes(o, n)
@@ -122,8 +134,17 @@ object SchemaComparator {
     val added = newTypes.diff(oldTypes).toVector.map(name ⇒
       SchemaChange.UnionMemberAdded(newType, newType.types.find(_.name == name).get))
 
-    removed ++ added
+    val directiveChanges = findInAstDirs(oldType.astDirectives, newType.astDirectives,
+      added = SchemaChange.UnionTypeAstDirectiveAdded(newType, _),
+      removed = SchemaChange.UnionTypeAstDirectiveRemoved(newType, _))
+
+    removed ++ added ++ directiveChanges
   }
+
+  private def findInScalarTypes(oldType: ScalarType[_], newType: ScalarType[_]): Vector[SchemaChange] =
+    findInAstDirs(oldType.astDirectives, newType.astDirectives,
+      added = SchemaChange.ScalarTypeAstDirectiveAdded(newType, _),
+      removed = SchemaChange.ScalarTypeAstDirectiveRemoved(newType, _))
 
   private def findInEnumTypes(oldType: EnumType[_], newType: EnumType[_]): Vector[SchemaChange] = {
     val oldValues = oldType.values.map(_.name).toSet
@@ -139,11 +160,20 @@ object SchemaComparator {
       val oldValue = oldType.byName(name)
       val newValue = newType.byName(name)
 
+      val directiveChanges = findInAstDirs(oldValue.astDirectives, newValue.astDirectives,
+        added = SchemaChange.EnumValueAstDirectiveAdded(newType, newValue, _),
+        removed = SchemaChange.EnumValueAstDirectiveRemoved(newType, newValue, _))
+
       findDescriptionChanged(oldValue, newValue, SchemaChange.EnumValueDescriptionChanged(newType, newValue, _, _)) ++
-        findDeprecationChanged(oldValue, newValue, SchemaChange.EnumValueDeprecated(newType, newValue, _, _))
+        findDeprecationChanged(oldValue, newValue, SchemaChange.EnumValueDeprecated(newType, newValue, _, _)) ++
+        directiveChanges
     }
 
-    removed ++ added ++ changed
+    val directiveChanges = findInAstDirs(oldType.astDirectives, newType.astDirectives,
+      added = SchemaChange.EnumTypeAstDirectiveAdded(newType, _),
+      removed = SchemaChange.EnumTypeAstDirectiveRemoved(newType, _))
+
+    removed ++ added ++ changed ++ directiveChanges
   }
 
   private def findInInputObjectTypes(oldType: InputObjectType[_], newType: InputObjectType[_]): Vector[SchemaChange] = {
@@ -167,18 +197,28 @@ object SchemaComparator {
         findInInputFields(oldType, newType, oldField, newField)
     }
 
-    removed ++ added ++ changed
+    val directiveChanges = findInAstDirs(oldType.astDirectives, newType.astDirectives,
+      added = SchemaChange.InputObjectTypeAstDirectiveAdded(newType, _),
+      removed = SchemaChange.InputObjectTypeAstDirectiveRemoved(newType, _))
+    
+    removed ++ added ++ changed ++ directiveChanges
   }
 
   private def findInObjectTypes(oldType: ObjectType[_, _], newType: ObjectType[_, _]): Vector[SchemaChange] = {
     val interfaceChanges = findInObjectTypeInterfaces(oldType, newType)
     val fieldChanges = findInObjectTypeFields(oldType, newType)
+    val directiveChanges = findInAstDirs(oldType.astDirectives, newType.astDirectives,
+      added = SchemaChange.ObjectTypeAstDirectiveAdded(newType, _),
+      removed = SchemaChange.ObjectTypeAstDirectiveRemoved(newType, _))
 
-    interfaceChanges ++ fieldChanges
+    interfaceChanges ++ fieldChanges ++ directiveChanges
   }
 
   private def findInInterfaceTypes(oldType: InterfaceType[_, _], newType: InterfaceType[_, _]): Vector[SchemaChange] =
-    findInObjectTypeFields(oldType, newType)
+    findInObjectTypeFields(oldType, newType) ++
+      findInAstDirs(oldType.astDirectives, newType.astDirectives,
+        added = SchemaChange.InterfaceTypeAstDirectiveAdded(newType, _),
+        removed = SchemaChange.InterfaceTypeAstDirectiveRemoved(newType, _))
 
   private def findInObjectTypeInterfaces(oldType: ObjectType[_, _], newType: ObjectType[_, _]): Vector[SchemaChange] = {
     val oldInts = oldType.allInterfaces.map(_.name).toSet
@@ -226,14 +266,20 @@ object SchemaComparator {
       else
         Vector.empty
 
+    val directiveChanges = findInAstDirs(oldField.astDirectives, newField.astDirectives,
+      added = SchemaChange.FieldAstDirectiveAdded(newType, newField, _),
+      removed = SchemaChange.FieldAstDirectiveRemoved(newType, newField, _))
+
     val argChanges = findInArgs(oldField.arguments, newField.arguments,
       added = SchemaChange.ObjectTypeArgumentAdded(newType, newField, _, _),
       removed = SchemaChange.ObjectTypeArgumentRemoved(oldType, oldField, _),
       description = SchemaChange.ObjectTypeArgumentDescriptionChanged(newType, newField, _, _, _),
       default = SchemaChange.ObjectTypeArgumentDefaultChanged(newType, newField, _, _, _),
-      typeChange = SchemaChange.ObjectTypeArgumentTypeChanged(newType, newField, _, _, _, _))
+      typeChange = SchemaChange.ObjectTypeArgumentTypeChanged(newType, newField, _, _, _, _),
+      dirAdded = SchemaChange.FieldArgumentAstDirectiveAdded(newType, newField, _, _),
+      dirRemoved = SchemaChange.FieldArgumentAstDirectiveRemoved(newType, newField, _, _))
 
-    typeChanges ++ argChanges
+    typeChanges ++ argChanges ++ directiveChanges
   }
 
   private def findInArgs(
@@ -242,8 +288,10 @@ object SchemaComparator {
     added: (Argument[_], Boolean) ⇒ SchemaChange,
     removed: Argument[_] ⇒ SchemaChange,
     description: (Argument[_], Option[String], Option[String]) ⇒ SchemaChange,
-    default: (Argument[_], Option[String], Option[String]) ⇒ SchemaChange,
-    typeChange: (Argument[_], Boolean, InputType[_], InputType[_]) ⇒ SchemaChange
+    default: (Argument[_], Option[ast.Value], Option[ast.Value]) ⇒ SchemaChange,
+    typeChange: (Argument[_], Boolean, InputType[_], InputType[_]) ⇒ SchemaChange,
+    dirAdded: (Argument[_], ast.Directive) ⇒ SchemaChange,
+    dirRemoved: (Argument[_], ast.Directive) ⇒ SchemaChange
   ): Vector[SchemaChange] = {
     val oldA = oldArgs.map(_.name).toSet
     val newA = newArgs.map(_.name).toSet
@@ -262,20 +310,37 @@ object SchemaComparator {
       val newArg = newArgs.find(_.name == name).get
 
       findDescriptionChanged(oldArg, newArg, description(newArg, _, _)) ++
-        findInArg(oldArg, newArg, default(newArg, _, _), typeChange(newArg, _, _, _))
+        findInArg(oldArg, newArg, default(newArg, _, _), typeChange(newArg, _, _, _), dirAdded(newArg, _), dirRemoved(newArg, _))
     }
 
     remove ++ add ++ changed
   }
 
+  private def findInAstDirs(
+    oldDirectives: Vector[ast.Directive],
+    newDirectives: Vector[ast.Directive],
+    added: (ast.Directive) ⇒ SchemaChange,
+    removed: (ast.Directive) ⇒ SchemaChange
+  ): Vector[SchemaChange] = {
+    val oldD = oldDirectives.map(AstNode.withoutPosition(_)).toSet
+    val newD = newDirectives.map(AstNode.withoutPosition(_)).toSet
+
+    val remove = oldD.diff(newD).toVector map removed
+    val add = newD.diff(oldD).toVector map added
+
+    remove ++ add
+  }
+
   private def findInArg(
     oldArg: Argument[_],
     newArg: Argument[_],
-    default: (Option[String], Option[String]) ⇒ SchemaChange,
-    typeChange: (Boolean, InputType[_], InputType[_]) ⇒ SchemaChange
+    default: (Option[ast.Value], Option[ast.Value]) ⇒ SchemaChange,
+    typeChange: (Boolean, InputType[_], InputType[_]) ⇒ SchemaChange,
+    dirAdded: ast.Directive ⇒ SchemaChange,
+    dirRemoved: ast.Directive ⇒ SchemaChange
   ): Vector[SchemaChange] = {
-    val oldDefault = oldArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValueCompact(dv, oldArg.argumentType, coercionHelper))
-    val newDefault = newArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValueCompact(dv, newArg.argumentType, coercionHelper))
+    val oldDefault = oldArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
+    val newDefault = newArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
 
     val withDefault =
       if (oldDefault != newDefault)
@@ -292,12 +357,16 @@ object SchemaComparator {
       else
         withDefault
 
-    withType
+    val directiveChanges = findInAstDirs(oldArg.astDirectives, newArg.astDirectives,
+      added = dirAdded,
+      removed = dirRemoved)
+
+    withType ++ directiveChanges
   }
 
   private def findInInputFields(oldType: InputObjectType[_], newType: InputObjectType[_], oldField: InputField[_], newField: InputField[_]): Vector[SchemaChange] = {
-    val oldDefault = oldField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValueCompact(dv, oldField.fieldType, coercionHelper))
-    val newDefault = newField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValueCompact(dv, newField.fieldType, coercionHelper))
+    val oldDefault = oldField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
+    val newDefault = newField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
 
     val withDefault =
       if (oldDefault != newDefault)
@@ -315,7 +384,11 @@ object SchemaComparator {
       else
         withDefault
 
-    withType
+    val directiveChanges = findInAstDirs(oldField.astDirectives, newField.astDirectives,
+      added = SchemaChange.InputFieldAstDirectiveAdded(newType, newField, _),
+      removed = SchemaChange.InputFieldAstDirectiveRemoved(newType, newField, _))
+
+    withType ++ directiveChanges
   }
 
   private def isOptional(field: InputField[_]) = field.fieldType match {
@@ -457,14 +530,14 @@ object SchemaChange {
   case class FieldDeprecationChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], oldDeprecationReason: Option[String], newDeprecationReason: Option[String])
     extends AbstractChange(s"Field `${field.name}` was deprecated in `${tpe.name}` type", false) with DeprecationChange
 
-  case class InputFieldDefaultChanged(tpe: InputObjectType[_], field: InputField[_], oldDefault: Option[String], newDefault: Option[String])
-    extends AbstractChange(s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")("`" + _ + "`")} to ${newDefault.fold("none")("`" + _ + "`")}", false) with TypeChange
+  case class InputFieldDefaultChanged(tpe: InputObjectType[_], field: InputField[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
+    extends AbstractChange(s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false) with TypeChange
 
-  case class ObjectTypeArgumentDefaultChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], oldDefault: Option[String], newDefault: Option[String])
-    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault.fold("none")("`" + _ + "`")} to ${newDefault.fold("none")("`" + _ + "`")}", false) with TypeChange
+  case class ObjectTypeArgumentDefaultChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
+    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false) with TypeChange
 
-  case class DirectiveArgumentDefaultChanged(directive: Directive, argument: Argument[_], oldDefault: Option[String], newDefault: Option[String])
-    extends AbstractChange(s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")("`" + _ + "`")} to ${newDefault.fold("none")("`" + _ + "`")}", false)
+  case class DirectiveArgumentDefaultChanged(directive: Directive, argument: Argument[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
+    extends AbstractChange(s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false)
 
   case class ObjectTypeInterfaceAdded(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
     extends AbstractChange(s"`${tpe.name}` object type now implements `${interface.name}` interface", false) with TypeChange
@@ -474,6 +547,96 @@ object SchemaChange {
 
   case class DirectiveLocationAdded(directive: Directive, location: DirectiveLocation.Value)
     extends AbstractChange(s"`$location` directive location added to `${directive.name}` directive", false)
+
+  trait AstDirectiveAdded extends SchemaChange {
+    def directive: ast.Directive
+    def location: DirectiveLocation.Value
+  }
+
+  trait AstDirectiveRemoved extends SchemaChange {
+    def directive: ast.Directive
+    def location: DirectiveLocation.Value
+  }
+
+  abstract class AbstractAstDirectiveAdded(val description: String, val location: DirectiveLocation.Value) extends AstDirectiveAdded {
+    val breakingChange = false
+  }
+
+  abstract class AbstractAstDirectiveRemoved(val description: String, val location: DirectiveLocation.Value) extends AstDirectiveRemoved {
+    val breakingChange = false
+  }
+
+  case class FieldAstDirectiveAdded(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a field `${tpe.name}.${field.name}`", DirectiveLocation.FieldDefinition)
+
+  case class FieldAstDirectiveRemoved(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a field `${tpe.name}.${field.name}`", DirectiveLocation.FieldDefinition)
+
+  case class EnumValueAstDirectiveAdded(tpe: EnumType[_], value: EnumValue[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an enum value `${tpe.name}.${value.name}`", DirectiveLocation.EnumValue)
+
+  case class EnumValueAstDirectiveRemoved(tpe: EnumType[_], value: EnumValue[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a enum value `${tpe.name}.${value.name}`", DirectiveLocation.EnumValue)
+
+  case class InputFieldAstDirectiveAdded(tpe: InputObjectType[_], field: InputField[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an input field `${tpe.name}.${field.name}`", DirectiveLocation.InputFieldDefinition)
+
+  case class InputFieldAstDirectiveRemoved(tpe: InputObjectType[_], field: InputField[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a input field `${tpe.name}.${field.name}`", DirectiveLocation.InputFieldDefinition)
+
+  case class DirectiveArgumentAstDirectiveAdded(dir: Directive, argument: Argument[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a directive argument `${dir.name}.${argument.name}`", DirectiveLocation.ArgumentDefinition)
+
+  case class DirectiveArgumentAstDirectiveRemoved(dir: Directive, argument: Argument[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a directive argument `${dir.name}.${argument.name}`", DirectiveLocation.ArgumentDefinition)
+
+  case class FieldArgumentAstDirectiveAdded(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a field argument `${tpe.name}.${field.name}[${argument.name}]`", DirectiveLocation.ArgumentDefinition)
+
+  case class FieldArgumentAstDirectiveRemoved(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a field argument `${tpe.name}.${field.name}[${argument.name}]`", DirectiveLocation.ArgumentDefinition)
+
+  case class ObjectTypeAstDirectiveAdded(tpe: ObjectType[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an object type `${tpe.name}`", DirectiveLocation.Object)
+
+  case class ObjectTypeAstDirectiveRemoved(tpe: ObjectType[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from an object type `${tpe.name}`", DirectiveLocation.Object)
+
+  case class InterfaceTypeAstDirectiveAdded(tpe: InterfaceType[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an interface type `${tpe.name}`", DirectiveLocation.Interface)
+
+  case class InterfaceTypeAstDirectiveRemoved(tpe: InterfaceType[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from an interface type `${tpe.name}`", DirectiveLocation.Interface)
+
+  case class UnionTypeAstDirectiveAdded(tpe: UnionType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a union type `${tpe.name}`", DirectiveLocation.Union)
+
+  case class UnionTypeAstDirectiveRemoved(tpe: UnionType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a union type `${tpe.name}`", DirectiveLocation.Union)
+
+  case class EnumTypeAstDirectiveAdded(tpe: EnumType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an enum type `${tpe.name}`", DirectiveLocation.Enum)
+
+  case class EnumTypeAstDirectiveRemoved(tpe: EnumType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from an enum type `${tpe.name}`", DirectiveLocation.Enum)
+
+  case class ScalarTypeAstDirectiveAdded(tpe: ScalarType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a scalar type `${tpe.name}`", DirectiveLocation.Scalar)
+
+  case class ScalarTypeAstDirectiveRemoved(tpe: ScalarType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a scalar type `${tpe.name}`", DirectiveLocation.Scalar)
+
+  case class InputObjectTypeAstDirectiveAdded(tpe: InputObjectType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on an input type `${tpe.name}`", DirectiveLocation.InputObject)
+
+  case class InputObjectTypeAstDirectiveRemoved(tpe: InputObjectType[_], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from an input type `${tpe.name}`", DirectiveLocation.InputObject)
+
+  case class SchemaAstDirectiveAdded(schema: Schema[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveAdded(s"Directive `${directive.renderCompact}` added on a schema", DirectiveLocation.Schema)
+
+  case class SchemaAstDirectiveRemoved(schema: Schema[_, _], directive: ast.Directive)
+    extends AbstractAstDirectiveRemoved(s"Directive `${directive.renderCompact}` removed from a schema", DirectiveLocation.Schema)
 
   // May be a breaking change
 

@@ -180,7 +180,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       mutation = mutationType,
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
-      directives = directives)
+      directives = directives,
+      astDirectives = definition.fold(Vector.empty[ast.Directive])(_.directives))
 
   def extendSchema[Val](
       originalSchema: Schema[Ctx, Val],
@@ -204,6 +205,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       fields: () ⇒ List[Field[Ctx, Any]],
       interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) = {
+    val directives = definition.directives ++ extensions.flatMap(_.definition.directives)
+
     val objectType =
       objectTypeInstanceCheck(definition, extensions) match {
         case Some(fn) ⇒
@@ -212,14 +215,16 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
             description = typeDescription(definition),
             fieldsFn = Named.checkObjFields(fields),
             interfaces = interfaces,
-            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))
+            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz),
+            astDirectives = directives)
         case None ⇒
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
             fieldsFn = Named.checkObjFields(fields),
             interfaces = interfaces,
-            instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any])
+            instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any],
+            astDirectives = directives)
       }
 
     Some(objectType)
@@ -251,19 +256,24 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(InputObjectType(
       name = typeName(definition),
       description = typeDescription(definition),
-      fieldsFn = Named.checkIntFields(fields)))
+      fieldsFn = Named.checkIntFields(fields),
+      astDirectives = definition.directives))
 
   def buildInterfaceType(
       definition: ast.InterfaceTypeDefinition,
       extensions: List[ast.TypeExtensionDefinition],
       fields: () ⇒ List[Field[Ctx, Any]],
-      mat: AstSchemaMaterializer[Ctx]) =
+      mat: AstSchemaMaterializer[Ctx]) = {
+    val directives = definition.directives ++ extensions.flatMap(_.definition.directives)
+
     Some(InterfaceType[Ctx, Any](
       name = typeName(definition),
       description = typeDescription(definition),
       fieldsFn = Named.checkIntFields(fields),
       interfaces = Nil,
-      manualPossibleTypes = () ⇒ Nil))
+      manualPossibleTypes = () ⇒ Nil,
+      astDirectives = directives))
+  }
 
   def extendInterfaceType(
       existing: InterfaceType[Ctx, _],
@@ -279,7 +289,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(UnionType[Ctx](
       name = typeName(definition),
       description = typeDescription(definition),
-      types = types))
+      types = types,
+      astDirectives = definition.directives))
 
   def extendUnionType(
       existing: UnionType[Ctx],
@@ -297,7 +308,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       coerceOutput = scalarCoerceOutput(definition),
       coerceInput = scalarCoerceInput(definition),
       complexity = scalarComplexity(definition),
-      scalarInfo = scalarValueInfo(definition)))
+      scalarInfo = scalarValueInfo(definition),
+      astDirectives = definition.directives))
 
   def buildEnumType(
       definition: ast.EnumTypeDefinition,
@@ -306,7 +318,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(EnumType[Any](
       name = typeName(definition),
       description = typeDescription(definition),
-      values = values))
+      values = values,
+      astDirectives = definition.directives))
 
   def buildEnumValue(
       typeDefinition: ast.EnumTypeDefinition,
@@ -316,7 +329,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       name = enumValueName(definition),
       description = enumValueDescription(definition),
       value = enumValue(definition),
-      deprecationReason = enumValueDeprecationReason(definition)))
+      deprecationReason = enumValueDeprecationReason(definition),
+      astDirectives = definition.directives))
 
   def buildField(
       typeDefinition: ast.TypeDefinition,
@@ -333,7 +347,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       tags = fieldTags(typeDefinition, definition),
       deprecationReason = fieldDeprecationReason(definition),
       complexity = fieldComplexity(typeDefinition, definition),
-      manualPossibleTypes = () ⇒ Nil))
+      manualPossibleTypes = () ⇒ Nil,
+      astDirectives = definition.directives))
 
   def extendField(
       typeDefinition: ObjectLikeType[Ctx, _],
@@ -352,7 +367,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       name = inputFieldName(definition),
       description = inputFieldDescription(definition),
       fieldType = tpe,
-      defaultValue = defaultValue))
+      defaultValue = defaultValue,
+      astDirectives = definition.directives))
 
   def buildArgument(
       typeDefinition: ast.TypeSystemDefinition,
@@ -366,7 +382,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       description = argumentDescription(definition),
       argumentType = tpe,
       defaultValue = defaultValue,
-      fromInput = argumentFromInput(typeDefinition, fieldDefinition, definition)))
+      fromInput = argumentFromInput(typeDefinition, fieldDefinition, definition),
+      astDirectives = definition.directives))
 
   def buildDirective(
       definition: ast.DirectiveDefinition,
