@@ -212,7 +212,7 @@ object DefaultValueRenderer {
   def renderInputValuePretty[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): Option[String] =
     renderInputValue(value, tpe, coercionHelper) map marshaller.renderPretty
 
-  private def renderInputValue[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): Option[marshaller.Node] = {
+  def renderInputValue[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): Option[marshaller.Node] = {
     val (v, toInput) = value.asInstanceOf[(Any, ToInput[Any, Any])]
     val (inputValue, iu) = toInput.toInput(v)
 

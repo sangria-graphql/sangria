@@ -395,6 +395,23 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[TypeAdded]("`Subs1` type was added"),
       breakingChange[SchemaMutationTypeChanged]("Schema mutation type changed from `Mut` to none type"),
       breakingChange[SchemaSubscriptionTypeChanged]("Schema subscription type changed from `Subs` to `Subs1` type"))
+
+
+    "detect breaking changes in field AST directives" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo: String @foo
+        }
+      """,
+
+      gql"""
+        type Query {
+          foo: String @bar(ids: [1, 2])
+        }
+      """,
+
+      nonBreakingChange[FieldAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a field `Query.foo`"),
+      nonBreakingChange[FieldAstDirectiveRemoved]("Directive `@foo` removed from a field `Query.foo`"))
   }
 
   def breakingChange[T : ClassTag](description: String) =
