@@ -1,13 +1,16 @@
 package sangria.execution
 
+import java.util.UUID
+
 import eu.timepit.refined._
 import eu.timepit.refined.numeric._
 import eu.timepit.refined.api.Refined
 import org.scalatest.{Matchers, WordSpec}
-import sangria.util.FutureResultSupport
+import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
+import sangria.marshalling.ScalaInput
 import sangria.validation.{AstNodeViolation, ValueCoercionViolation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -25,6 +28,14 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
   implicit val PositiveIntType = ScalarAlias[Int Refined Positive, Int](
     IntType, _.value, i ⇒ refineV[Positive](i).left.map(RefineViolation))
 
+  case object IDViolation extends ValueCoercionViolation("Invalid ID")
+
+  val UUIDType = ScalarAlias[UUID, String](StringType,
+    toScalar = _.toString,
+    fromScalar = idString ⇒ try Right(UUID.fromString(idString)) catch {
+      case _: IllegalArgumentException ⇒ Left(IDViolation)
+    })
+
   val UserType = deriveObjectType[Unit, User]()
 
   val ComplexInputType = InputObjectType("Complex", List(
@@ -34,6 +45,7 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
   val UserIdArg = Argument("id", UserIdType)
   val NumArg = Argument("n", PositiveIntType)
   val ComplexArg = Argument("c", ComplexInputType)
+  val UUIDArg = Argument("id", UUIDType)
 
   "ScalarAlias" should {
     "represent value class as scalar type" in {
@@ -41,7 +53,13 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("user", UserType,
           arguments = UserIdArg :: NumArg :: ComplexArg :: Nil,
           resolve = _.withArgs(UserIdArg, NumArg, ComplexArg)(
-            (userId, num, complex) ⇒ User(userId, complex("userId").asInstanceOf[Option[UserId]], "generated", num)))
+            (userId, num, complex) ⇒ User(userId, complex("userId").asInstanceOf[Option[UserId]], "generated", num))),
+        Field("idTest", UUIDType,
+          arguments = UUIDArg :: Nil,
+          resolve = c ⇒ {
+            val uuid: UUID = c.arg(UUIDArg)
+            uuid
+          })
       )))
 
       val query =
@@ -108,6 +126,35 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
                     "ofType" → Map(
                       "kind" → "SCALAR",
                       "name" → "Int"))))))))
+    }
+
+    "represent correct transforms UUID values" in {
+//      val schema = Schema(ObjectType("Query", fields[Unit, Unit](
+//        Field("idTest", UUIDType,
+//          arguments = UUIDArg :: Nil,
+//          resolve = c ⇒ {
+//            val uuid: UUID = c.arg(UUIDArg)
+//            uuid
+//          })
+//      )))
+//
+//      val schema1 =
+//        schema.extend(gql"""
+//          extend type Query {
+//            foo: Int
+//          }
+//        """)
+//
+//      val query =
+//        gql"""
+//          query Test($$id: String!){
+//            idTest(id: $$id)
+//          }
+//        """
+//
+//      val vars = ScalaInput.scalaInput(Map("id" → "f28efae0-8808-4514-b356-02808d4e936c"))
+//
+//      DebugUtil.prettyPrint(Executor.execute(schema1, query, variables = vars).await)
     }
 
     "coerces input types correctly" in {

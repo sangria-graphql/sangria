@@ -166,7 +166,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         })
 
     (tpe, input) match {
-      case (_, node) if iu.isVariableNode(node) ⇒
+      case (tpe, node) if iu.isVariableNode(node) ⇒
         val varName = iu.getVariableName(node)
 
         variables match {
@@ -178,6 +178,19 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
                   case errors @ Left(_) ⇒ errors.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
                 }
 
+                // we need to habe addition transformation comming from a scalar alias
+//                firstKindMarshaller match {
+//                  case raw: RawResultMarshaller ⇒
+//                    tpe match {
+//                      case ScalarAlias(_, _, fromScalar) ⇒
+//                        res.right.map(_.toOption)
+//                      case _ ⇒
+//                        res
+//                    }
+//                  case standard ⇒ res
+//                }
+//
+//                res.rig
                 res
               case None ⇒
                 Right(Trinary.Undefined)
@@ -442,6 +455,8 @@ sealed trait Trinary[+T] {
     case Trinary.Null | Trinary.Undefined | Trinary.NullWithDefault(_) ⇒ None
     case Trinary.Defined(v) ⇒ Some(v)
   }
+
+//  def map[R](fn: T ⇒ R): Trinary[R]
 }
 
 object Trinary {
