@@ -441,7 +441,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
         type Query {a: Int}
 
         input Foo {
-          foo: String  = "test" @foo
+          foo: String  = "test" @foo @baz(s: "string")
         }
       """,
 
@@ -449,7 +449,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
         type Query {a: Int}
 
         input Foo {
-          foo: String @bar(ids: [1, 2])
+          foo: String @baz(s: "string") @bar(ids: [1, 2])
         }
       """,
 

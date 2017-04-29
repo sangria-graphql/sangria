@@ -32,6 +32,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
       case FetcherDeferredOptOpt(s, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredSeq(s, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredSeqOpt(s, _) ⇒ fetchersMap.get(s)
+      case FetcherDeferredSeqOptExplicit(s, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredRel(s, _, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredRelOpt(s, _, _) ⇒ fetchersMap.get(s)
       case FetcherDeferredRelSeq(s, _, _) ⇒ fetchersMap.get(s)
@@ -253,6 +254,20 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
           case FetcherDeferredSeqOpt(_, ids) ⇒
             ids flatMap { id ⇒
+              if (cachedResults contains id)
+                cachedResults.get(id)
+              else
+                m.get(id) match {
+                  case Some(e: Exception) ⇒ throw e
+                  case v ⇒
+                    v foreach (updateCache(id, _))
+
+                    v
+                }
+            }
+
+          case FetcherDeferredSeqOptExplicit(_, ids) ⇒
+            ids map { id ⇒
               if (cachedResults contains id)
                 cachedResults.get(id)
               else

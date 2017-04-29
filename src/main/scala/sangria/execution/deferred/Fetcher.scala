@@ -14,6 +14,7 @@ class Fetcher[Ctx, Res, RelRes, Id](
   def deferOpt(id: Option[Id]) = FetcherDeferredOptOpt(this, id)
   def deferSeq(ids: Seq[Id]) = FetcherDeferredSeq(this, ids)
   def deferSeqOpt(ids: Seq[Id]) = FetcherDeferredSeqOpt(this, ids)
+  def deferSeqOptExplicit(ids: Seq[Id]) = FetcherDeferredSeqOptExplicit(this, ids)
 
   def deferRel[RelId](rel: Relation[Res, RelRes, RelId], relId: RelId) = FetcherDeferredRel(this, rel, relId)
   def deferRelOpt[RelId](rel: Relation[Res, RelRes, RelId], relId: RelId) = FetcherDeferredRelOpt(this, rel, relId)
@@ -50,6 +51,7 @@ class Fetcher[Ctx, Res, RelRes, Id](
       case FetcherDeferredOptOpt(s, Some(id)) if s eq this ⇒ allIds += id.asInstanceOf[Id]
       case FetcherDeferredSeq(s, ids) if s eq this ⇒ allIds ++= ids.asInstanceOf[Seq[Id]]
       case FetcherDeferredSeqOpt(s, ids) if s eq this ⇒ allIds ++= ids.asInstanceOf[Seq[Id]]
+      case FetcherDeferredSeqOptExplicit(s, ids) if s eq this ⇒ allIds ++= ids.asInstanceOf[Seq[Id]]
       case _ ⇒ // skip
     }
 
@@ -137,6 +139,10 @@ trait DeferredSeq[+T, Id] extends Deferred[Seq[T]] {
   def ids: Seq[Id]
 }
 
+trait DeferredSeqOpt[+T, Id] extends Deferred[Seq[Option[T]]] {
+  def ids: Seq[Id]
+}
+
 trait DeferredRel[T, RelId] extends Deferred[T] {
   def rel: Relation[T, _, RelId]
   def relId: RelId
@@ -162,6 +168,7 @@ case class FetcherDeferredOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], i
 case class FetcherDeferredOptOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], id: Option[Id]) extends DeferredOptOpt[T, Id]
 case class FetcherDeferredSeq[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
 case class FetcherDeferredSeqOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
+case class FetcherDeferredSeqOptExplicit[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id]) extends DeferredSeqOpt[T, Id]
 
 case class FetcherDeferredRel[Ctx, RelId, T, Tmp, Id](source: Fetcher[Ctx, T, Tmp, Id], rel: Relation[T, Tmp, RelId], relId: RelId) extends DeferredRel[T, RelId]
 case class FetcherDeferredRelOpt[Ctx, RelId, T, Tmp, Id](source: Fetcher[Ctx, T, Tmp, Id], rel: Relation[T, Tmp, RelId], relId: RelId) extends DeferredRelOpt[T, RelId]

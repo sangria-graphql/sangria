@@ -140,6 +140,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("productOpt", OptionType(ProductType),
           arguments = Argument("id", OptionInputType(IntType)) :: Nil,
           resolve = c ⇒ fetcherProd.deferOpt(c.argOpt[Int]("id"))),
+        Field("productsOptExplicit", ListType(OptionType(ProductType)),
+          arguments = Argument("ids", ListInputType(IntType)) :: Nil,
+          resolve = c ⇒ fetcherProd.deferSeqOptExplicit(c.arg[Seq[Int]]("ids"))),
         Field("root", CategoryType, resolve = _ ⇒ fetcherCat.defer("1")),
         Field("rootFut", CategoryType, resolve = _ ⇒
           Future.successful(fetcherCat.defer("1")))))
@@ -281,6 +284,25 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
               "name" → "Rusty sword"),
             "p2" → null,
             "p3" → null)))
+    }
+
+    "fetch results with `deferSeqOptExplicit`" in {
+      val query =
+        graphql"""
+          {
+            productsOptExplicit(ids: [1, 1001, 2, 3, 3001]) {id, name}
+          }
+        """
+
+      Executor.execute(schema(), query, new Repo, deferredResolver = defaultResolver).await should be (
+        Map(
+          "data" → Map(
+            "productsOptExplicit" → Vector(
+              Map("id" → 1, "name" → "Rusty sword"),
+              null,
+              Map("id" → 2, "name" → "Magic belt"),
+              Map("id" → 3, "name" → "Health potion"),
+              null))))
     }
 
     "cache relation results" in {
