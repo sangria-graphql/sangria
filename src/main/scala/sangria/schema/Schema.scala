@@ -921,4 +921,16 @@ object Schema {
 
   def buildFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
     AstSchemaMaterializer.buildSchema[Ctx](document, builder)
+
+  def buildStubFromAst(document: ast.Document) =
+    AstSchemaMaterializer.buildSchema(Document.emptyStub + document)
+
+  def buildStubFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
+    AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
+
+  def buildDefinitions(document: ast.Document) =
+    AstSchemaMaterializer.definitions(document)
+
+  def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
+    AstSchemaMaterializer.definitions[Ctx](document, builder)
 }

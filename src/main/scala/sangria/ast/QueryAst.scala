@@ -44,6 +44,11 @@ case class Document(definitions: Vector[Definition], trailingComments: Vector[Co
     */
   def merge(other: Document) = Document.merge(Vector(this, other))
 
+  /**
+    * An alias for `merge`
+    */
+  def +(other: Document) = merge(other)
+
   lazy val analyzer = DocumentAnalyzer(this)
 
   lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
@@ -66,6 +71,14 @@ object Document {
     */
   def merge(documents: Traversable[Document]): Document =
     Document(documents.toVector.flatMap(_.definitions))
+
+  /**
+    * The most basic, but valid document with a stub `Query` type
+    */
+  val emptyStub: Document =
+    Document(Vector(
+      ObjectTypeDefinition("Query", Vector.empty, Vector(
+        FieldDefinition("stub", NamedType("String"), Vector.empty)))))
 }
 
 sealed trait ConditionalFragment extends AstNode {

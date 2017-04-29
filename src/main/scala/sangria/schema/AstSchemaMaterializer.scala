@@ -77,6 +77,15 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       this)
   }
 
+  lazy val definitions: Vector[Named] = {
+    validateDefinitions()
+
+    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
+    val unused = findUnusedTypes()
+
+    unused._1.toVector.map(getNamedType) ++ unused._2 ++ directives
+  }
+
   def validateExtensions(schema: Schema[Ctx, _]): Unit = {
     typeDefsMap foreach {
       case (name, defs) if defs.size > 1 ⇒
@@ -227,7 +236,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         }
     }
 
-  def getNamedType(typeName: String, alias: Boolean = false): Type with Named =
+  def getNamedType(typeName: String): Type with Named =
     typeDefCache.getOrElseUpdate(typeName, Schema.getBuiltInType(typeName) getOrElse (
       existingSchema.flatMap(_.allTypes.get(typeName)).map(extendType) orElse typeDefs.find(_.name == typeName).flatMap(buildType) getOrElse (
         throw new SchemaMaterializationException(
@@ -441,6 +450,12 @@ object AstSchemaMaterializer {
 
   def buildSchema[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     new AstSchemaMaterializer[Ctx](document, builder).build
+
+  def definitions(document: ast.Document): Vector[Named] =
+    definitions[Any](document, AstSchemaBuilder.default)
+
+  def definitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Vector[Named] =
+    new AstSchemaMaterializer[Ctx](document, AstSchemaBuilder.default).definitions
 
   def extendSchema[Ctx, Val](schema: Schema[Ctx, Val], document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default): Schema[Ctx, Val] =
     new AstSchemaMaterializer[Ctx](document, builder).extend(schema)
