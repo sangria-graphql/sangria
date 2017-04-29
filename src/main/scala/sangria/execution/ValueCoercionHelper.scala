@@ -165,33 +165,6 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           Right(defined(prepared.asInstanceOf[marshaller.Node]))
         })
 
-    // we need to have addition transformation coming from a scalar alias
-    def resolveScalaAliasForVariable(scalarValue: Either[Vector[Violation], Trinary[marshaller.Node]]): Either[Vector[Violation], Trinary[marshaller.Node]] = {
-      firstKindMarshaller match {
-        case _: RawResultMarshaller ⇒
-          tpe match {
-            case alias: ScalarAlias[Any, Any] @unchecked ⇒
-              scalarValue match  {
-                case l: Left[_, _] ⇒ l
-                case r @ Right(valid) ⇒
-                  valid match {
-                    case Trinary.Defined(v) ⇒
-                      alias.fromScalar(v).fold(
-                        v ⇒ Left(Vector(v)),
-                        av ⇒ Right(Trinary.Defined(av.asInstanceOf[marshaller.Node])))
-                    case Trinary.NullWithDefault(v) ⇒
-                      alias.fromScalar(v).fold(
-                        v ⇒ Left(Vector(v)),
-                        av ⇒ Right(Trinary.NullWithDefault(av.asInstanceOf[marshaller.Node])))
-                    case _ ⇒ r
-                  }
-              }
-            case _ ⇒ scalarValue
-          }
-        case _ ⇒ scalarValue
-      }
-    }
-
     (tpe, input) match {
       case (_, node) if iu.isVariableNode(node) ⇒
         val varName = iu.getVariableName(node)
@@ -200,12 +173,12 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case Some(vars) ⇒
             vars.get(varName) match {
               case Some(vv) ⇒
-                val res = vv.resolve(marshaller, firstKindMarshaller) match {
+                val res = vv.resolve(marshaller, firstKindMarshaller, tpe) match {
                   case resolved @ Right(_) ⇒ resolved.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
                   case errors @ Left(_) ⇒ errors.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
                 }
 
-                resolveScalaAliasForVariable(res)
+                res
 
               case None ⇒
                 Right(Trinary.Undefined)
@@ -442,18 +415,19 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
 
         definition.defaultValue match {
           case Some(dv) ⇒
-            Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒
-              coerceInputValue(tpe, fieldPath, dv, None, marshaller, firstKindMarshaller, nullWithDefault = input.nonEmpty))))
+            Right(Some(VariableValue((marshaller, firstKindMarshaller, actualType) ⇒
+              coerceInputValue(actualType, fieldPath, dv, None, marshaller, firstKindMarshaller, nullWithDefault = input.nonEmpty))))
 
           case None ⇒
             val emptyValue =
               if (input.isEmpty) Trinary.Undefined
               else Trinary.Null
 
-            Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ Right(emptyValue))))
+            Right(Some(VariableValue((_, _, _) ⇒ Right(emptyValue))))
         }
       } else
-        Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ coerceInputValue(tpe, fieldPath, input.get, None, marshaller, firstKindMarshaller))))
+        Right(Some(VariableValue((marshaller, firstKindMarshaller, actualType) ⇒
+          coerceInputValue(actualType, fieldPath, input.get, None, marshaller, firstKindMarshaller))))
     } else Left(violations.map(violation ⇒
       VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.position.toList)))
   }

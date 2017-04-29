@@ -46,6 +46,8 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
   val NumArg = Argument("n", PositiveIntType)
   val ComplexArg = Argument("c", ComplexInputType)
   val UUIDArg = Argument("id", UUIDType)
+  val ComplexUUIDArg = Argument("cid",
+    OptionInputType(ListInputType(ListInputType(OptionInputType(UUIDType)))))
 
   "ScalarAlias" should {
     "represent value class as scalar type" in {
@@ -142,6 +144,12 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
             val uuid: UUID = c.arg(UUIDArg)
             uuid
           }),
+        Field("cidTest", OptionType(ListType(ListType(OptionType(UUIDType)))),
+          arguments = ComplexUUIDArg :: Nil,
+          resolve = c ⇒ {
+            val cuuid: Option[Seq[Seq[Option[UUID]]]] = c.arg(ComplexUUIDArg)
+            cuuid
+          }),
         Field("inpTest", StringType,
           arguments = InpArg :: Nil,
           resolve = c ⇒ {
@@ -155,11 +163,16 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val query =
         gql"""
-          query Test($$id: String!, $$inp: TestInp!, $$id1: String = "9454db18-2ce5-11e7-93ae-92361f002671"){
+          query Test($$id: String!, $$inp: TestInp!, $$id1: String = "9454db18-2ce5-11e7-93ae-92361f002671", $$ids: [[String]!], $$ids1: [[String]!] = [["ad6a2dd9-ccd0-44dc-86d2-80cf945cb16e", "6297bd9e-2647-4770-a791-5c3f44bc56ee"], [null, "a9525f38-380b-4226-a362-471ece962f06"]]){
             i1: idTest(id: $$id)
             i2: idTest(id: $$id1)
             inp1: inpTest(inp: {id: $$id, id1: $$id1})
             inp2: inpTest(inp: $$inp)
+
+            ci1: cidTest(cid: [["ad6a2dd9-ccd0-44dc-86d2-80cf945cb16e", "6297bd9e-2647-4770-a791-5c3f44bc56ee"], [null, "a9525f38-380b-4226-a362-471ece962f06"]])
+            ci2: cidTest(cid: [[$$id, null, $$id1], ["dd96051e-21c5-468b-ad93-43241acd9540"]])
+            ci3: cidTest(cid: $$ids)
+            ci4: cidTest(cid: $$ids1)
           }
         """
 
@@ -167,15 +180,8 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
         "id" → "f28efae0-8808-4514-b356-02808d4e936c",
         "inp" → Map(
           "id" → "9454d352-2ce5-11e7-93ae-92361f002671",
-          "id1" → "9454d5e6-2ce5-11e7-93ae-92361f002671"))
-
-      Executor.execute(schema, query, variables = scalaInput(vars)).await should be (
-        Map(
-          "data" → Map(
-            "i1" → "f28efae0-8808-4514-b356-02808d4e936c",
-            "i2" → "9454db18-2ce5-11e7-93ae-92361f002671",
-            "inp1" → "f28efae0-8808-4514-b356-02808d4e936c/9454db18-2ce5-11e7-93ae-92361f002671",
-            "inp2" → "9454d352-2ce5-11e7-93ae-92361f002671/9454d5e6-2ce5-11e7-93ae-92361f002671")))
+          "id1" → "9454d5e6-2ce5-11e7-93ae-92361f002671"),
+        "ids" → Seq(Seq("9153a6c1-fb4b-4d69-b9aa-ee95765cf093", null, "1a1e42c3-b79b-4dbb-ad89-4ee223ffb6be"), Seq(null, "4e4548b0-87db-49b6-a764-2d84c2322fb7")))
 
       val schema1 =
         schema.extend(gql"""
@@ -184,13 +190,27 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
           }
         """)
 
-      Executor.execute(schema1, query, variables = scalaInput(vars)).await should be (
-        Map(
-          "data" → Map(
-            "i1" → "f28efae0-8808-4514-b356-02808d4e936c",
-            "i2" → "9454db18-2ce5-11e7-93ae-92361f002671",
-            "inp1" → "f28efae0-8808-4514-b356-02808d4e936c/9454db18-2ce5-11e7-93ae-92361f002671",
-            "inp2" → "9454d352-2ce5-11e7-93ae-92361f002671/9454d5e6-2ce5-11e7-93ae-92361f002671")))
+      Seq(schema, schema1) foreach { s ⇒
+        Executor.execute(s, query, variables = scalaInput(vars)).await should be (
+          Map(
+            "data" → Map(
+              "i1" → "f28efae0-8808-4514-b356-02808d4e936c",
+              "i2" → "9454db18-2ce5-11e7-93ae-92361f002671",
+              "inp1" → "f28efae0-8808-4514-b356-02808d4e936c/9454db18-2ce5-11e7-93ae-92361f002671",
+              "inp2" → "9454d352-2ce5-11e7-93ae-92361f002671/9454d5e6-2ce5-11e7-93ae-92361f002671",
+              "ci1" → Vector(
+                Vector("ad6a2dd9-ccd0-44dc-86d2-80cf945cb16e", "6297bd9e-2647-4770-a791-5c3f44bc56ee"),
+                Vector(null, "a9525f38-380b-4226-a362-471ece962f06")),
+              "ci2" → Vector(
+                Vector("f28efae0-8808-4514-b356-02808d4e936c", null, "9454db18-2ce5-11e7-93ae-92361f002671"),
+                Vector("dd96051e-21c5-468b-ad93-43241acd9540")),
+              "ci3" → Vector(
+                Vector("9153a6c1-fb4b-4d69-b9aa-ee95765cf093", null, "1a1e42c3-b79b-4dbb-ad89-4ee223ffb6be"),
+                Vector(null, "4e4548b0-87db-49b6-a764-2d84c2322fb7")),
+              "ci4" → Vector(
+                Vector("ad6a2dd9-ccd0-44dc-86d2-80cf945cb16e", "6297bd9e-2647-4770-a791-5c3f44bc56ee"),
+                Vector(null, "a9525f38-380b-4226-a362-471ece962f06")))))
+      }
     }
 
     "coerces input types correctly" in {
