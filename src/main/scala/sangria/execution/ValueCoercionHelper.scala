@@ -165,8 +165,35 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           Right(defined(prepared.asInstanceOf[marshaller.Node]))
         })
 
+    // we need to have addition transformation coming from a scalar alias
+    def resolveScalaAliasForVariable(scalarValue: Either[Vector[Violation], Trinary[marshaller.Node]]): Either[Vector[Violation], Trinary[marshaller.Node]] = {
+      firstKindMarshaller match {
+        case _: RawResultMarshaller ⇒
+          tpe match {
+            case alias: ScalarAlias[Any, Any] @unchecked ⇒
+              scalarValue match  {
+                case l: Left[_, _] ⇒ l
+                case r @ Right(valid) ⇒
+                  valid match {
+                    case Trinary.Defined(v) ⇒
+                      alias.fromScalar(v).fold(
+                        v ⇒ Left(Vector(v)),
+                        av ⇒ Right(Trinary.Defined(av.asInstanceOf[marshaller.Node])))
+                    case Trinary.NullWithDefault(v) ⇒
+                      alias.fromScalar(v).fold(
+                        v ⇒ Left(Vector(v)),
+                        av ⇒ Right(Trinary.NullWithDefault(av.asInstanceOf[marshaller.Node])))
+                    case _ ⇒ r
+                  }
+              }
+            case _ ⇒ scalarValue
+          }
+        case _ ⇒ scalarValue
+      }
+    }
+
     (tpe, input) match {
-      case (tpe, node) if iu.isVariableNode(node) ⇒
+      case (_, node) if iu.isVariableNode(node) ⇒
         val varName = iu.getVariableName(node)
 
         variables match {
@@ -178,20 +205,8 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
                   case errors @ Left(_) ⇒ errors.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
                 }
 
-                // we need to habe addition transformation comming from a scalar alias
-//                firstKindMarshaller match {
-//                  case raw: RawResultMarshaller ⇒
-//                    tpe match {
-//                      case ScalarAlias(_, _, fromScalar) ⇒
-//                        res.right.map(_.toOption)
-//                      case _ ⇒
-//                        res
-//                    }
-//                  case standard ⇒ res
-//                }
-//
-//                res.rig
-                res
+                resolveScalaAliasForVariable(res)
+
               case None ⇒
                 Right(Trinary.Undefined)
             }
@@ -456,14 +471,23 @@ sealed trait Trinary[+T] {
     case Trinary.Defined(v) ⇒ Some(v)
   }
 
-//  def map[R](fn: T ⇒ R): Trinary[R]
+  def map[R](fn: T ⇒ R): Trinary[R]
 }
 
 object Trinary {
-  case object Null extends Trinary[Nothing]
-  case object Undefined extends Trinary[Nothing]
+  case object Null extends Trinary[Nothing] {
+    def map[R](fn: Nothing ⇒ R) = this
+  }
 
-  case class Defined[T](value: T) extends Trinary[T]
+  case object Undefined extends Trinary[Nothing] {
+    def map[R](fn: Nothing ⇒ R) = this
+  }
 
-  case class NullWithDefault[T](defaultValue: T) extends Trinary[T]
+  case class Defined[T](value: T) extends Trinary[T] {
+    def map[R](fn: T ⇒ R) = Defined(fn(value))
+  }
+
+  case class NullWithDefault[T](defaultValue: T) extends Trinary[T] {
+    def map[R](fn: T ⇒ R) = NullWithDefault(fn(defaultValue))
+  }
 }

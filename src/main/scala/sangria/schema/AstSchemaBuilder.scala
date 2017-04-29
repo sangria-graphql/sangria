@@ -75,6 +75,11 @@ trait AstSchemaBuilder[Ctx] {
     types: List[ObjectType[Ctx, _]],
     mat: AstSchemaMaterializer[Ctx]): UnionType[Ctx]
 
+  def extendScalarAlias[T, ST](
+    existing: ScalarAlias[T, ST],
+    aliasFor: ScalarType[ST],
+    mat: AstSchemaMaterializer[Ctx]): ScalarAlias[T, ST]
+
   def buildScalarType(
     definition: ast.ScalarTypeDefinition,
     mat: AstSchemaMaterializer[Ctx]): Option[ScalarType[Any]]
@@ -286,6 +291,12 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       types: List[ObjectType[Ctx, _]],
       mat: AstSchemaMaterializer[Ctx]) =
     existing.copy(types = types)
+
+  def extendScalarAlias[T, ST](
+      existing: ScalarAlias[T, ST],
+      aliasFor: ScalarType[ST],
+      mat: AstSchemaMaterializer[Ctx]) =
+    existing.copy(aliasFor = aliasFor)
 
   def buildScalarType(
       definition: ast.ScalarTypeDefinition,

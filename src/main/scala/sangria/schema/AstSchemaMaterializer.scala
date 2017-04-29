@@ -12,6 +12,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   import AstSchemaMaterializer.extractSchemaInfo
 
   private val typeDefCache = TrieMap[String, Type with Named]()
+  private val scalarAliasCache = TrieMap[ScalarAlias[_, _], ScalarAlias[_, _]]()
 
   private lazy val typeDefs: Vector[ast.TypeDefinition] = document.definitions.collect {
     case d: ast.TypeDefinition ⇒ d
@@ -28,7 +29,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   private lazy val directiveDefsMap = directiveDefs.groupBy(_.name)
   private lazy val typeDefsMap = typeDefs.groupBy(_.name)
 
-  // maybe it would work an effort to find more elegant way
+  // maybe it would worth an effort to find more elegant way
   private var existingSchema: Option[Schema[_, _]] = None
 
   def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
@@ -170,7 +171,15 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   }
 
   def getTypeFromDef[T <: Type with Named](tpe: T): T =
-    getNamedType(tpe.name).asInstanceOf[T]
+    tpe match {
+      case alias: ScalarAlias[Any, Any] @unchecked ⇒
+        scalarAliasCache.getOrElseUpdate(alias, {
+          extendScalarAlias(alias)
+        }).asInstanceOf[T]
+      case _ ⇒
+        getNamedType(tpe.name).asInstanceOf[T]
+    }
+
 
   def buildDirective(directive: ast.DirectiveDefinition) =
     BuiltinDirectives.find(_.name == directive.name) orElse
@@ -218,7 +227,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         }
     }
 
-  def getNamedType(typeName: String): Type with Named =
+  def getNamedType(typeName: String, alias: Boolean = false): Type with Named =
     typeDefCache.getOrElseUpdate(typeName, Schema.getBuiltInType(typeName) getOrElse (
       existingSchema.flatMap(_.allTypes.get(typeName)).map(extendType) orElse typeDefs.find(_.name == typeName).flatMap(buildType) getOrElse (
         throw new SchemaMaterializationException(
@@ -235,7 +244,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   def extendType(existingType: Type with Named): Type with Named = existingType match {
     case tpe: ScalarType[_] ⇒ builder.transformScalarType(tpe, this)
-    case tpe: ScalarAlias[_, _] ⇒ builder.transformScalarType(tpe.aliasFor, this)
+    case tpe: ScalarAlias[_, _] ⇒ extendScalarAlias(tpe.asInstanceOf[ScalarAlias[Any, Any]])
     case tpe: EnumType[_] ⇒ builder.transformEnumType(tpe, this)
     case tpe: InputObjectType[_] ⇒ builder.transformInputObjectType(tpe, this)
     case tpe: UnionType[Ctx] ⇒ extendUnionType(tpe)
@@ -356,6 +365,9 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   def extendUnionType(tpe: UnionType[Ctx]) =
     builder.extendUnionType(tpe, tpe.types map getTypeFromDef, this)
+
+  def extendScalarAlias(alias: ScalarAlias[Any, Any]) =
+    builder.extendScalarAlias(alias, getTypeFromDef(alias.aliasFor), this)
 
   def buildInputObjectDef(tpe: ast.InputObjectTypeDefinition) =
     builder.buildInputObjectType(tpe, () ⇒ tpe.fields flatMap (buildInputField(tpe, _)) toList, this)

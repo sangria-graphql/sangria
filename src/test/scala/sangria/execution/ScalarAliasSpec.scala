@@ -10,7 +10,7 @@ import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
-import sangria.marshalling.ScalaInput
+import sangria.marshalling.ScalaInput.scalaInput
 import sangria.validation.{AstNodeViolation, ValueCoercionViolation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -128,33 +128,69 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
                       "name" → "Int"))))))))
     }
 
-    "represent correct transforms UUID values" in {
-//      val schema = Schema(ObjectType("Query", fields[Unit, Unit](
-//        Field("idTest", UUIDType,
-//          arguments = UUIDArg :: Nil,
-//          resolve = c ⇒ {
-//            val uuid: UUID = c.arg(UUIDArg)
-//            uuid
-//          })
-//      )))
-//
-//      val schema1 =
-//        schema.extend(gql"""
-//          extend type Query {
-//            foo: Int
-//          }
-//        """)
-//
-//      val query =
-//        gql"""
-//          query Test($$id: String!){
-//            idTest(id: $$id)
-//          }
-//        """
-//
-//      val vars = ScalaInput.scalaInput(Map("id" → "f28efae0-8808-4514-b356-02808d4e936c"))
-//
-//      DebugUtil.prettyPrint(Executor.execute(schema1, query, variables = vars).await)
+    "represent correct transforms UUID values coming from variables (also after AST-based schema extention)" in {
+      val TestInp = InputObjectType("TestInp", List(
+        InputField("id", UUIDType),
+        InputField("id1", UUIDType)))
+
+      val InpArg = Argument("inp", TestInp)
+
+      val schema = Schema(ObjectType("Query", fields[Unit, Unit](
+        Field("idTest", UUIDType,
+          arguments = UUIDArg :: Nil,
+          resolve = c ⇒ {
+            val uuid: UUID = c.arg(UUIDArg)
+            uuid
+          }),
+        Field("inpTest", StringType,
+          arguments = InpArg :: Nil,
+          resolve = c ⇒ {
+            val inp = c.arg(InpArg)
+
+            val id: UUID = inp("id").asInstanceOf[UUID]
+            val id1: UUID = inp("id1").asInstanceOf[UUID]
+
+            id + "/" + id1
+          }))))
+
+      val query =
+        gql"""
+          query Test($$id: String!, $$inp: TestInp!, $$id1: String = "9454db18-2ce5-11e7-93ae-92361f002671"){
+            i1: idTest(id: $$id)
+            i2: idTest(id: $$id1)
+            inp1: inpTest(inp: {id: $$id, id1: $$id1})
+            inp2: inpTest(inp: $$inp)
+          }
+        """
+
+      val vars = Map(
+        "id" → "f28efae0-8808-4514-b356-02808d4e936c",
+        "inp" → Map(
+          "id" → "9454d352-2ce5-11e7-93ae-92361f002671",
+          "id1" → "9454d5e6-2ce5-11e7-93ae-92361f002671"))
+
+      Executor.execute(schema, query, variables = scalaInput(vars)).await should be (
+        Map(
+          "data" → Map(
+            "i1" → "f28efae0-8808-4514-b356-02808d4e936c",
+            "i2" → "9454db18-2ce5-11e7-93ae-92361f002671",
+            "inp1" → "f28efae0-8808-4514-b356-02808d4e936c/9454db18-2ce5-11e7-93ae-92361f002671",
+            "inp2" → "9454d352-2ce5-11e7-93ae-92361f002671/9454d5e6-2ce5-11e7-93ae-92361f002671")))
+
+      val schema1 =
+        schema.extend(gql"""
+          extend type Query {
+            foo: Int
+          }
+        """)
+
+      Executor.execute(schema1, query, variables = scalaInput(vars)).await should be (
+        Map(
+          "data" → Map(
+            "i1" → "f28efae0-8808-4514-b356-02808d4e936c",
+            "i2" → "9454db18-2ce5-11e7-93ae-92361f002671",
+            "inp1" → "f28efae0-8808-4514-b356-02808d4e936c/9454db18-2ce5-11e7-93ae-92361f002671",
+            "inp2" → "9454d352-2ce5-11e7-93ae-92361f002671/9454d5e6-2ce5-11e7-93ae-92361f002671")))
     }
 
     "coerces input types correctly" in {
