@@ -26,8 +26,8 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     def stringValue = value.asInstanceOf[YamlString].value
     def arrayValue = value.asInstanceOf[YamlArray].elements
     def booleanValue = value.asInstanceOf[YamlBoolean].boolean
-    def intValue = value.asInstanceOf[YamlNumber[_]].value match {
-      case i: Int ⇒ i
+    def intValue = value.asInstanceOf[YamlNumber].value match {
+      case i if i.isValidInt ⇒ i.intValue
       case v ⇒ throw new IllegalArgumentException(s"Unsupported Int '$v' of class '${v.getClass}'.")
     }
   }
@@ -242,11 +242,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     case YamlObject(fields) ⇒ JsObject(fields.map {case (k, v) ⇒ k.stringValue → convertToJson(v)})
     case YamlBoolean(v) ⇒ JsBoolean(v)
     case YamlString(v) ⇒ JsString(v)
-    case YamlNumber(v: Int) ⇒ JsNumber(v)
-    case YamlNumber(v: Long) ⇒ JsNumber(v)
-    case YamlNumber(v: BigInt) ⇒ JsNumber(v)
     case YamlNumber(v: BigDecimal) ⇒ JsNumber(v)
-    case YamlNumber(v: Double) ⇒ JsNumber(v)
     case YamlNull ⇒ JsNull
     case v ⇒ throw new IllegalStateException(s"Yaml value is not supported in conversion: $v")
   }
