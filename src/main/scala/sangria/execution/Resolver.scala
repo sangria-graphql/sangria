@@ -949,7 +949,7 @@ class Resolver[Ctx](
 
               val beforeAction = mBefore.flatMap{case ((_, action), _, _) ⇒ action}.lastOption
 
-              val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField[Ctx]])
+              val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField[Ctx]]).reverse
               val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField[Ctx]])
 
               def doAfterMiddleware[Val](v: Val): Val =
