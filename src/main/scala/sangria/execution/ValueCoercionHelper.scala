@@ -153,13 +153,13 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         valuePosition(value),
         errorPrefix)))
 
-    def resolveCoercedScalar(coerced: Either[Violation, Any], scalar: ScalarType[Any], value: In) =
+    def resolveCoercedScalar(coerced: Either[Violation, Any], outFn: Any ⇒ Any, scalar: ScalarType[Any], value: In) =
       coerced.fold(
         violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))),
         v ⇒ {
           val prepared = firstKindMarshaller match {
             case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
-            case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(v, standard.capabilities), standard, scalar.name, scalar.scalarInfo)
+            case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(outFn(v), standard.capabilities), standard, scalar.name, scalar.scalarInfo)
           }
 
           Right(defined(prepared.asInstanceOf[marshaller.Node]))
@@ -263,7 +263,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case other ⇒ scalar.coerceUserInput(other)
         }
 
-        resolveCoercedScalar(coerced, scalar.asInstanceOf[ScalarType[Any]], value)
+        resolveCoercedScalar(coerced, identity, scalar.asInstanceOf[ScalarType[Any]], value)
 
       case (_: ScalarType[_], value) if iu.isDefined(value) ⇒
         invalidScalarViolation(value)
@@ -271,7 +271,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       case (scalar: ScalarType[_], value) ⇒
         nullScalarViolation(scalar, value)
 
-      case (scalar: ScalarAlias[_, _], value) if iu.isScalarNode(value) ⇒
+      case (scalar: ScalarAlias[Any, Any] @unchecked, value) if iu.isScalarNode(value) ⇒
         val coerced = iu.getScalarValue(value) match {
           case node: ast.Value ⇒ scalar.aliasFor.coerceInput(node)
           case other ⇒ scalar.aliasFor.coerceUserInput(other)
@@ -282,7 +282,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case Right(v) ⇒ scalar.fromScalar(v)
         }
 
-        resolveCoercedScalar(fromAlias, scalar.aliasFor.asInstanceOf[ScalarType[Any]], value)
+        resolveCoercedScalar(fromAlias, scalar.toScalar, scalar.aliasFor.asInstanceOf[ScalarType[Any]], value)
 
       case (_: ScalarAlias[_, _], value) if iu.isDefined(value) ⇒
         invalidScalarViolation(value)

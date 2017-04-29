@@ -6,8 +6,8 @@ description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq("Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-scalaVersion := "2.12.1"
-crossScalaVersions := Seq("2.11.11", "2.12.1")
+scalaVersion := "2.12.2"
+crossScalaVersions := Seq("2.11.11", "2.12.2")
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -23,7 +23,7 @@ scalacOptions ++= {
 }
 
 libraryDependencies ++= Seq(
-  "org.parboiled" %% "parboiled" % "2.1.3",
+  "org.parboiled" %% "parboiled" % "2.1.4",
   "org.sangria-graphql" %% "macro-visit" % "0.1.1",
 
   // macros
@@ -36,7 +36,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.0",
 
   // testing
-  "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.3" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-spray-json" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-argonaut" % "1.0.0" % Test,
@@ -47,8 +47,8 @@ libraryDependencies ++= Seq(
   "eu.timepit" %% "refined" % "0.7.0" % Test,
 
   // CATs
-  "net.jcazevedo" %% "moultingyaml" % "0.3.1" % Test,
-  "io.github.lukehutch" % "fast-classpath-scanner" % "1.9.18" % Test
+  "net.jcazevedo" %% "moultingyaml" % "0.4.0" % Test,
+  "io.github.lukehutch" % "fast-classpath-scanner" % "2.0.19" % Test
 )
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
