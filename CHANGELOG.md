@@ -1,3 +1,18 @@
+## v1.2.0 (2017-04-29)
+
+* Provide convenient functions for IDL-based schema materialization and validation (#240). . For more info see the ["Query Validation" section of documentation](http://sangria-graphql.org/learn/#query-validation). Improvements include:
+  * Introduced Schema.buildStubFromAst that builds a schema with a stub Query type
+  * Introduced Schema.buildDefinitions that builds a list of definitions based on IDL AST (without a schema)
+  * Introduced Document.emptyStub as a most basic, but valid document stub
+  * Introduced alias query1 + query2 for document merge
+* Add `Fetcher.deferSeqOptExplicit` or similar to explicitly get `Seq[Option[T]]` in the result (#230)
+* Fixed scalar aliases when they are used with variables or schema is extended (#237)
+* Preserve IDL directives at schema materialization time and use them in schema comparator (#236). This also adds `Vector[ast.Directive]` to all relevant schema definitions which may be extremely useful for future features and schema analysis
+* Improve syntax error reporting for `graphql` macro (#235)
+* Improve `Int`, `BigInt` and `Long` scalar value handling (#234)
+* Propagate updated value through middleware's `afterField` (#233). For more info see the ["Middleware" section of documentation](http://sangria-graphql.org/learn/#middleware).
+* Forbid 'true', 'false' and 'null' as names for Enum value (#239)
+
 ## v1.1.0 (2017-03-11)
 
 * Added scalar type alias support (#225, #210). For more info see the ["Scalar Type Alias" section of documentation](http://sangria-graphql.org/learn/#scalar-type-alias).
