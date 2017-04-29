@@ -338,8 +338,8 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
 
       res should be (Map(
         "data" → Map(
-          "someString" → "nothing special s1 s2",
-          "someStringMapped" → "mapped s1 s2")))
+          "someString" → "nothing special s2 s1",
+          "someStringMapped" → "mapped s2 s1")))
     }
 
     behave like properFieldLevelMiddleware(

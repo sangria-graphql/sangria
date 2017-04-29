@@ -173,12 +173,13 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case Some(vars) ⇒
             vars.get(varName) match {
               case Some(vv) ⇒
-                val res = vv.resolve(marshaller, firstKindMarshaller) match {
+                val res = vv.resolve(marshaller, firstKindMarshaller, tpe) match {
                   case resolved @ Right(_) ⇒ resolved.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
                   case errors @ Left(_) ⇒ errors.asInstanceOf[Either[Vector[Violation], Trinary[marshaller.Node]]]
                 }
 
                 res
+
               case None ⇒
                 Right(Trinary.Undefined)
             }
@@ -414,18 +415,19 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
 
         definition.defaultValue match {
           case Some(dv) ⇒
-            Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒
-              coerceInputValue(tpe, fieldPath, dv, None, marshaller, firstKindMarshaller, nullWithDefault = input.nonEmpty))))
+            Right(Some(VariableValue((marshaller, firstKindMarshaller, actualType) ⇒
+              coerceInputValue(actualType, fieldPath, dv, None, marshaller, firstKindMarshaller, nullWithDefault = input.nonEmpty))))
 
           case None ⇒
             val emptyValue =
               if (input.isEmpty) Trinary.Undefined
               else Trinary.Null
 
-            Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ Right(emptyValue))))
+            Right(Some(VariableValue((_, _, _) ⇒ Right(emptyValue))))
         }
       } else
-        Right(Some(VariableValue((marshaller, firstKindMarshaller) ⇒ coerceInputValue(tpe, fieldPath, input.get, None, marshaller, firstKindMarshaller))))
+        Right(Some(VariableValue((marshaller, firstKindMarshaller, actualType) ⇒
+          coerceInputValue(actualType, fieldPath, input.get, None, marshaller, firstKindMarshaller))))
     } else Left(violations.map(violation ⇒
       VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.position.toList)))
   }
@@ -442,13 +444,24 @@ sealed trait Trinary[+T] {
     case Trinary.Null | Trinary.Undefined | Trinary.NullWithDefault(_) ⇒ None
     case Trinary.Defined(v) ⇒ Some(v)
   }
+
+  def map[R](fn: T ⇒ R): Trinary[R]
 }
 
 object Trinary {
-  case object Null extends Trinary[Nothing]
-  case object Undefined extends Trinary[Nothing]
+  case object Null extends Trinary[Nothing] {
+    def map[R](fn: Nothing ⇒ R) = this
+  }
 
-  case class Defined[T](value: T) extends Trinary[T]
+  case object Undefined extends Trinary[Nothing] {
+    def map[R](fn: Nothing ⇒ R) = this
+  }
 
-  case class NullWithDefault[T](defaultValue: T) extends Trinary[T]
+  case class Defined[T](value: T) extends Trinary[T] {
+    def map[R](fn: T ⇒ R) = Defined(fn(value))
+  }
+
+  case class NullWithDefault[T](defaultValue: T) extends Trinary[T] {
+    def map[R](fn: T ⇒ R) = NullWithDefault(fn(defaultValue))
+  }
 }

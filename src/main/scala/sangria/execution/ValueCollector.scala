@@ -89,10 +89,10 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     }
 }
 
-case class VariableValue(fn: (ResultMarshaller, ResultMarshaller) ⇒ Either[Vector[Violation], Trinary[ResultMarshaller#Node]]) {
-  private val cache = TrieMap[Int, Either[Vector[Violation], Trinary[ResultMarshaller#Node]]]()
+case class VariableValue(fn: (ResultMarshaller, ResultMarshaller, InputType[_]) ⇒ Either[Vector[Violation], Trinary[ResultMarshaller#Node]]) {
+  private val cache = TrieMap[(Int, Int), Either[Vector[Violation], Trinary[ResultMarshaller#Node]]]()
 
-  def resolve(marshaller: ResultMarshaller, firstKindMarshaller: ResultMarshaller): Either[Vector[Violation], Trinary[firstKindMarshaller.Node]] =
-    cache.getOrElseUpdate(System.identityHashCode(firstKindMarshaller),
-      fn(marshaller, firstKindMarshaller)).asInstanceOf[Either[Vector[Violation], Trinary[firstKindMarshaller.Node]]]
+  def resolve(marshaller: ResultMarshaller, firstKindMarshaller: ResultMarshaller, actualType: InputType[_]): Either[Vector[Violation], Trinary[firstKindMarshaller.Node]] =
+    cache.getOrElseUpdate(System.identityHashCode(firstKindMarshaller) → System.identityHashCode(actualType.namedType),
+      fn(marshaller, firstKindMarshaller, actualType)).asInstanceOf[Either[Vector[Violation], Trinary[firstKindMarshaller.Node]]]
 }
