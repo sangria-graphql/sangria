@@ -380,3 +380,7 @@ case class ReservedNameViolation(typeName: String, name: String) extends Violati
 case class EmptyFieldListViolation(typeName: String) extends Violation {
   lazy val errorMessage = s"Type '$typeName' must have at least one field in a field list."
 }
+
+case class ReservedEnumValueNameViolation(typeName: String, valueName: String) extends Violation {
+  lazy val errorMessage = s"'Name '$typeName.$valueName' can not be used as an Enum value."
+}

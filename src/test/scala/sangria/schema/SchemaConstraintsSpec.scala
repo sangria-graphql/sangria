@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.validation.{EmptyFieldListViolation, ReservedNameViolation, ReservedTypeNameViolation, StringCoercionViolation}
+import sangria.validation._
 
 class SchemaConstraintsSpec extends WordSpec with Matchers {
   "Schema" should {
@@ -98,6 +98,24 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
         ReservedNameViolation("__Input", "__y"),
         ReservedNameViolation("__Color", "__GREEN"),
         ReservedNameViolation("__Color", "__BLUE")))
+    }
+
+    "reject an Enum type with incorrectly named values" in {
+      val colorType = EnumType("Color", values = List(
+        EnumValue("RED", value = 1),
+        EnumValue("true", value = 2),
+        EnumValue("false", value = 3),
+        EnumValue("null", value = 4)))
+
+      val queryType = ObjectType("Query", fields[Unit, Unit](
+        Field("color", OptionType(colorType), resolve = _ ⇒ None)))
+
+      val error = intercept [SchemaValidationException] (Schema(queryType))
+
+      error.violations.toSet should be (Set(
+        ReservedEnumValueNameViolation("Color", "true"),
+        ReservedEnumValueNameViolation("Color", "false"),
+        ReservedEnumValueNameViolation("Color", "null")))
     }
 
     "not allow empty list of fields" in {

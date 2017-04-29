@@ -21,7 +21,8 @@ object SchemaValidationRule {
     new InterfaceImplementationValidationRule,
     new SubscriptionFieldsValidationRule,
     new IntrospectionNamesValidationRule,
-    new FieldValidationRule)
+    new FieldValidationRule,
+    new EnumValueNameValidationRule)
 
 }
 
@@ -208,6 +209,27 @@ class FieldValidationRule extends SchemaValidationRule {
 
     violations.result().toList
   }
+}
+
+class EnumValueNameValidationRule extends SchemaValidationRule {
+  private val reservedNames = Set("true", "false", "null")
+
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+    val violations = new VectorBuilder[Violation]
+
+    schema.typeList.foreach {
+      case tpe: EnumType[_] ⇒
+        tpe.values.foreach { v ⇒
+          if (!validName(v.name))
+            violations += ReservedEnumValueNameViolation(tpe.name, v.name)
+        }
+      case _ ⇒ // everything is fine
+    }
+
+    violations.result().toList
+  }
+
+  def validName(name: String): Boolean = !reservedNames.contains(name)
 }
 
 case class SchemaValidationException(violations: List[Violation]) extends IllegalArgumentException {
