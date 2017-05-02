@@ -10,6 +10,7 @@ import sangria.marshalling._
 import sangria.{ast, introspection}
 import sangria.validation._
 import sangria.introspection._
+import sangria.renderer.{SchemaFilter, SchemaRenderer}
 import sangria.streaming.SubscriptionStreamLike
 
 import scala.annotation.implicitNotFound
@@ -335,7 +336,7 @@ object Field {
       possibleTypes: ⇒ List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) ⇒ Double] = None,
-      deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]) =
+      deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
     Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, complexity, () ⇒ possibleTypes map (_.objectType), Vector.empty)
 
   def subs[Ctx, Val, StreamSource, Res, Out](
@@ -348,7 +349,7 @@ object Field {
     tags: List[FieldTag] = Nil,
     complexity: Option[(Ctx, Args, Double) ⇒ Double] = None,
     deprecationReason: Option[String] = None
-  )(implicit stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out]) = {
+  )(implicit stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out]): Field[Ctx, Val] = {
     val s = stream.subscriptionStream
 
     Field[Ctx, Val](
@@ -734,6 +735,15 @@ case class Schema[Ctx, Val](
   def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
     SchemaComparator.compare(oldSchema, this)
 
+  def toAst: Document = SchemaRenderer.schemaAst(this)
+  def toAst(filter: SchemaFilter): Document = SchemaRenderer.schemaAst(this, filter)
+
+  def renderPretty: String = toAst.renderPretty
+  def renderPretty(filter: SchemaFilter): String = toAst(filter).renderPretty
+  
+  def renderCompact: String = toAst.renderCompact
+  def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
+
   lazy val types: Map[String, (Int, Type with Named)] = {
     def sameType(t1: Type, t2: Type) =
       t1.getClass.getSimpleName == t2.getClass.getSimpleName
@@ -878,6 +888,12 @@ case class Schema[Ctx, Val](
 object Schema {
   def isBuiltInType(typeName: String) =
     BuiltinScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
+
+  def isBuiltInGraphQLType(typeName: String) =
+    BuiltinGraphQLScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
+
+  def isBuiltInSangriaType(typeName: String) =
+    BuiltinSangriaScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
 
   def isBuiltInDirective(directiveName: String) =
     BuiltinDirectivesByName.contains(directiveName)

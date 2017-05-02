@@ -166,11 +166,23 @@ package object schema {
       case _ ⇒ Left(IDCoercionViolation)
     })
 
+  val BuiltinGraphQLScalars: List[ScalarType[_]] =
+    IntType :: FloatType :: BooleanType :: StringType :: IDType :: Nil
+
+  val BuiltinSangriaScalars: List[ScalarType[_]] =
+    LongType :: BigIntType :: BigDecimalType :: Nil
+
   val BuiltinScalars: List[ScalarType[_]] =
-    IntType :: LongType :: BigIntType :: FloatType :: BigDecimalType :: BooleanType :: StringType :: IDType :: Nil
+    BuiltinGraphQLScalars ++ BuiltinSangriaScalars
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
     BuiltinScalars.groupBy(_.name).mapValues(_.head)
+
+  val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
+    BuiltinGraphQLScalars.groupBy(_.name).mapValues(_.head)
+
+  val BuiltinSangriaScalarsByName: Map[String, ScalarType[_]] =
+    BuiltinSangriaScalars.groupBy(_.name).mapValues(_.head)
 
   val IfArg = Argument("if", BooleanType, "Included when true.")
 

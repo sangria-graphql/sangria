@@ -1,5 +1,7 @@
 package sangria.introspection
 
+import sangria.ast.Document
+import sangria.renderer.{SchemaFilter, SchemaRenderer}
 import sangria.schema.DirectiveLocation
 
 case class IntrospectionSchema(
@@ -9,6 +11,15 @@ case class IntrospectionSchema(
   types: Seq[IntrospectionType],
   directives: Seq[IntrospectionDirective]
 ) {
+  def toAst = SchemaRenderer.schemaAstFromIntrospection(this)
+  def toAst(filter: SchemaFilter): Document = SchemaRenderer.schemaAstFromIntrospection(this, filter)
+
+  def renderPretty: String = toAst.renderPretty
+  def renderPretty(filter: SchemaFilter): String = toAst(filter).renderPretty
+
+  def renderCompact: String = toAst.renderCompact
+  def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
+
   lazy val typesByName = types.groupBy(_.name).mapValues(_.head)
 }
 

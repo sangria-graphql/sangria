@@ -209,53 +209,87 @@ object SchemaRenderer {
   private def renderDirective(dir: IntrospectionDirective) =
     ast.DirectiveDefinition(dir.name, renderArgsI(dir.args), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
 
-  def schemaAst(introspectionSchema: IntrospectionSchema): ast.Document = {
+  def schemaAstFromIntrospection(introspectionSchema: IntrospectionSchema, filter: SchemaFilter = SchemaFilter.withoutSangriaBuiltIn): ast.Document = {
     val schemaDef = renderSchemaDefinition(introspectionSchema)
-    val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map renderType
-    val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
+    val types = introspectionSchema.types filter (t ⇒ filter.filterTypes(t.name)) sortBy (_.name) map renderType
+    val directives = introspectionSchema.directives filter (d ⇒ filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
 
     ast.Document(schemaDef.toVector ++ types ++ directives)
   }
 
   def renderSchema(introspectionSchema: IntrospectionSchema): String =
-    schemaAst(introspectionSchema).renderPretty
+    schemaAstFromIntrospection(introspectionSchema, SchemaFilter.withoutSangriaBuiltIn).renderPretty
 
   def renderSchema[T: InputUnmarshaller](introspectionResult: T): String = {
     import sangria.parser.DeliveryScheme.Throw
-    
-    renderSchema(IntrospectionParser parse introspectionResult)
+
+    schemaAstFromIntrospection(IntrospectionParser parse introspectionResult, SchemaFilter.withoutSangriaBuiltIn).renderPretty
   }
 
-  def schemaAst(schema: Schema[_, _]): ast.Document = {
+  def renderSchema(introspectionSchema: IntrospectionSchema, filter: SchemaFilter): String =
+    schemaAstFromIntrospection(introspectionSchema, filter).renderPretty
+
+  def renderSchema[T: InputUnmarshaller](introspectionResult: T, filter: SchemaFilter): String = {
+    import sangria.parser.DeliveryScheme.Throw
+
+    schemaAstFromIntrospection(IntrospectionParser parse introspectionResult, filter).renderPretty
+  }
+
+  def schemaAst(schema: Schema[_, _], filter: SchemaFilter = SchemaFilter.withoutSangriaBuiltIn): ast.Document = {
     val schemaDef = renderSchemaDefinition(schema)
-    val types = schema.typeList filterNot isBuiltInType sortBy (_.name) map renderType
-    val directives = schema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
+    val types = schema.typeList filter (t ⇒ filter.filterTypes(t.name)) sortBy (_.name) map renderType
+    val directives = schema.directives filter (d ⇒ filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
 
     ast.Document(schemaDef.toVector ++ types ++ directives)
   }
 
   def renderSchema(schema: Schema[_, _]): String =
-    schemaAst(schema).renderPretty
+    schemaAst(schema, SchemaFilter.withoutSangriaBuiltIn).renderPretty
 
-  def introspectionSchemaAst(introspectionSchema: IntrospectionSchema): ast.Document = {
+  def renderSchema(schema: Schema[_, _], filter: SchemaFilter): String =
+    schemaAst(schema, filter).renderPretty
+
+  private def introspectionSchemaAst(introspectionSchema: IntrospectionSchema): ast.Document = {
     val types = introspectionSchema.types filter (tpe ⇒ Schema.isIntrospectionType(tpe.name)) sortBy (_.name) map (renderType(_))
     val directives = introspectionSchema.directives filter (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_))
 
     ast.Document(types.toVector ++ directives)
   }
 
+  @deprecated("use `renderSchema` with `SchemaFilter.introspection`", "1.2.1")
   def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String =
     introspectionSchemaAst(introspectionSchema).renderPretty
 
+  @deprecated("use `renderSchema` with `SchemaFilter.introspection`", "1.2.1")
   def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T): String = {
     import sangria.parser.DeliveryScheme.Throw
     
     renderIntrospectionSchema(IntrospectionParser parse introspectionResult)
   }
+}
 
-  private def isBuiltIn(tpe: IntrospectionType) =
-    Schema.isBuiltInType(tpe.name)
+case class SchemaFilter(filterTypes: String ⇒ Boolean, filterDirectives: String ⇒ Boolean)
 
-  private def isBuiltInType(tpe: Type with Named) =
-    Schema.isBuiltInType(tpe.name)
+object SchemaFilter {
+  val withoutSangriaBuiltIn = SchemaFilter(
+    typeName ⇒ !Schema.isBuiltInType(typeName),
+    dirName ⇒ !Schema.isBuiltInDirective(dirName))
+
+  val withoutGraphQLBuiltIn = SchemaFilter(
+    typeName ⇒ !Schema.isBuiltInGraphQLType(typeName),
+    dirName ⇒ !Schema.isBuiltInDirective(dirName))
+
+  val withoutIntrospection = SchemaFilter(
+    typeName ⇒ !Schema.isIntrospectionType(typeName),
+    Function.const(true))
+
+  val builtIn = SchemaFilter(
+    typeName ⇒ Schema.isBuiltInType(typeName),
+    dirName ⇒ Schema.isBuiltInDirective(dirName))
+
+  val introspection = SchemaFilter(
+    typeName ⇒ Schema.isIntrospectionType(typeName),
+    Function.const(false))
+
+  val all = SchemaFilter(Function.const(true), Function.const(true))
 }
