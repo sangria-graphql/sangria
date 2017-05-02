@@ -2,11 +2,11 @@ package sangria.renderer
 
 import sangria.execution.ValueCoercionHelper
 import sangria.introspection._
-import sangria.marshalling.{ToInput, InputUnmarshaller}
-import sangria.parser.DeliveryScheme.Throw
+import sangria.marshalling.{InputUnmarshaller, ToInput}
 import sangria.schema._
-import sangria.util.StringUtil.escapeString
+import sangria.ast
 import sangria.introspection.__DirectiveLocation
+import sangria.parser.QueryParser
 
 object SchemaRenderer {
   def renderTypeName(tpe: Type, topLevel: Boolean = false) = {
@@ -21,216 +21,163 @@ object SchemaRenderer {
     loop(tpe, if (topLevel) "" else "!")
   }
 
-  val TypeSeparator = "\n\n"
-  val Indention = "  "
+  private def renderTypeNameAst(tpe: Type, topLevel: Boolean = false) = {
+    def nn(tpe: ast.Type, notNull: Boolean) =
+      if (notNull) ast.NotNullType(tpe)
+      else tpe
 
-  private def renderDescription(description: Option[String], prefix: String = "", lineBreak : Boolean = true) = description match {
+    def loop(t: Type, notNull: Boolean): ast.Type = t match {
+      case OptionType(ofType) ⇒ loop(ofType, false)
+      case OptionInputType(ofType) ⇒ loop(ofType, false)
+      case ListType(ofType) ⇒ nn(ast.ListType(loop(ofType, true)), notNull)
+      case ListInputType(ofType) ⇒ nn(ast.ListType(loop(ofType, true)), notNull)
+      case named: Named ⇒ nn(ast.NamedType(named.name), notNull)
+    }
+
+    loop(tpe, !topLevel)
+  }
+
+  private def renderDescription(description: Option[String]) = description match {
     case Some(descr) if descr.trim.nonEmpty ⇒
-      val lines = descr.lines.map(_.trim).toList
-
-      lines map (l ⇒ prefix + "#" + (if (l.trim.nonEmpty) " " + l else "")) mkString ("", "\n", if (lineBreak) "\n" else "")
-    case _ ⇒ ""
+      descr.split("\n").map(l ⇒ ast.Comment(l)).toVector
+    case _ ⇒ Vector.empty
   }
 
   private def renderImplementedInterfaces(tpe: IntrospectionObjectType) =
-    if (tpe.interfaces.nonEmpty)
-      tpe.interfaces map (_.name) mkString (" implements ", ", ", "")
-    else
-      ""
+    tpe.interfaces.map(t ⇒ ast.NamedType(t.name)).toVector
 
   private def renderImplementedInterfaces(tpe: ObjectLikeType[_, _]) =
-    if (tpe.allInterfaces.nonEmpty)
-      tpe.allInterfaces map (_.name) mkString (" implements ", ", ", "")
-    else
-      ""
+    tpe.allInterfaces.map(t ⇒ ast.NamedType(t.name))
 
-  def renderTypeName(tpe: IntrospectionTypeRef): String =
+  def renderTypeName(tpe: IntrospectionTypeRef): ast.Type =
     tpe match {
-      case IntrospectionListTypeRef(ofType) ⇒ s"[${renderTypeName(ofType)}]"
-      case IntrospectionNonNullTypeRef(ofType) ⇒ s"${renderTypeName(ofType)}!"
-      case IntrospectionNamedTypeRef(_, name) ⇒ name
+      case IntrospectionListTypeRef(ofType) ⇒ ast.ListType(renderTypeName(ofType))
+      case IntrospectionNonNullTypeRef(ofType) ⇒ ast.NotNullType(renderTypeName(ofType))
+      case IntrospectionNamedTypeRef(_, name) ⇒ ast.NamedType(name)
     }
 
   private def renderDefault(defaultValue: Option[String]) =
-    defaultValue.fold("")(d ⇒ s" = $d")
+    defaultValue.flatMap(d ⇒ QueryParser.parseInput(d).toOption)
 
   private def renderDefault(value: (Any, ToInput[_, _]), tpe: InputType[_]) = {
     val coercionHelper = new ValueCoercionHelper[Any]
 
-    DefaultValueRenderer.renderInputValueCompact(value, tpe, coercionHelper).fold("")(d ⇒ s" = $d")
+    DefaultValueRenderer.renderInputValue(value, tpe, coercionHelper)
   }
 
-  private def renderArg(arg: IntrospectionInputValue) = {
-    val argDef = s"${arg.name}: ${renderTypeName(arg.tpe)}"
+  private def renderArg(arg: IntrospectionInputValue) =
+    ast.InputValueDefinition(arg.name, renderTypeName(arg.tpe), renderDefault(arg.defaultValue), comments = renderDescription(arg.description))
 
-    argDef + renderDefault(arg.defaultValue)
-  }
+  private def renderArg(arg: Argument[_]) =
+    ast.InputValueDefinition(arg.name, renderTypeNameAst(arg.argumentType), arg.defaultValue.flatMap(renderDefault(_, arg.argumentType)), arg.astDirectives, renderDescription(arg.description))
 
-  private def renderArg(arg: Argument[_]) = {
-    val argDef = s"${arg.name}: ${renderTypeName(arg.argumentType)}"
-    val default = arg.defaultValue.fold("")(renderDefault(_, arg.argumentType))
+  private def withoutDeprecated(dirs: Vector[ast.Directive]) = dirs.filterNot(_.name == "deprecated")
 
-    argDef + default
-  }
-
-  def spaceOpt(show: Boolean) = if (show) " " else ""
-
-  private def renderDeprecation(isDeprecated: Boolean, reason: Option[String], frontSep: Boolean = true) = (isDeprecated, reason) match {
-    case (true, Some(r)) if r.trim == DefaultDeprecationReason ⇒ spaceOpt(frontSep) + "@deprecated"
-    case (true, Some(r)) if r.trim.nonEmpty ⇒ spaceOpt(frontSep) + "@deprecated(reason: \"" + escapeString(r.trim) + "\")"
-    case (true, _) ⇒ spaceOpt(frontSep) + "@deprecated"
-    case _ ⇒ ""
+  private def renderDeprecation(isDeprecated: Boolean, reason: Option[String]) = (isDeprecated, reason) match {
+    case (true, Some(r)) if r.trim == DefaultDeprecationReason ⇒ Vector(ast.Directive("deprecated", Vector.empty))
+    case (true, Some(r)) if r.trim.nonEmpty ⇒ Vector(ast.Directive("deprecated", Vector(ast.Argument("reason", ast.StringValue(r.trim)))))
+    case (true, _) ⇒ Vector(ast.Directive("deprecated", Vector.empty))
+    case _ ⇒ Vector.empty
   }
 
   def renderArgsI(args: Seq[IntrospectionInputValue]) =
-    if (args.nonEmpty)
-      args map (renderArg(_)) mkString ("(", ", ", ")")
-    else
-      ""
+    args.map(renderArg).toVector
 
   private def renderArgs(args: Seq[Argument[_]]) =
-    if (args.nonEmpty)
-      args map renderArg mkString ("(", ", ", ")")
-    else
-      ""
+    args.map(renderArg).toVector
 
   private def renderFieldsI(fields: Seq[IntrospectionField]) =
-    if (fields.nonEmpty)
-      fields.zipWithIndex map { case (f, idx) ⇒
-        (if (idx != 0 && f.description.isDefined) "\n" else "") +
-          renderField(f)
-      } mkString "\n"
-    else
-      ""
+    fields.map(renderField).toVector
 
   private def renderFields(fields: Seq[Field[_, _]]) =
-    if (fields.nonEmpty)
-      fields.zipWithIndex map { case (f, idx) ⇒
-        (if (idx != 0 && f.description.isDefined) "\n" else "") +
-          renderField(f)
-      } mkString "\n"
-    else
-      ""
+    fields.map(renderField).toVector
 
   private def renderInputFieldsI(fields: Seq[IntrospectionInputValue]) =
-    if (fields.nonEmpty)
-      fields.zipWithIndex map { case (f, idx) ⇒
-        (if (idx != 0 && f.description.isDefined) "\n" else "") +
-          renderInputField(f)
-      } mkString "\n"
-    else
-      ""
+    fields.map(renderInputField).toVector
 
   private def renderInputFields(fields: Seq[InputField[_]]) =
-    if (fields.nonEmpty)
-      fields.zipWithIndex map { case (f, idx) ⇒
-        (if (idx != 0 && f.description.isDefined) "\n" else "") +
-          renderInputField(f)
-      } mkString "\n"
-    else
-      ""
+    fields.map(renderInputField).toVector
 
   private def renderField(field: IntrospectionField) =
-    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}${renderArgsI(field.args)}: ${renderTypeName(field.tpe)}${renderDeprecation(field.isDeprecated, field.deprecationReason)}"
+    ast.FieldDefinition(field.name, renderTypeName(field.tpe), renderArgsI(field.args), renderDeprecation(field.isDeprecated, field.deprecationReason), renderDescription(field.description))
 
   private def renderField(field: Field[_, _]) =
-    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}${renderArgs(field.arguments)}: ${renderTypeName(field.fieldType)}${renderDeprecation(field.deprecationReason.isDefined, field.deprecationReason)}"
+    ast.FieldDefinition(field.name, renderTypeNameAst(field.fieldType), renderArgs(field.arguments), withoutDeprecated(field.astDirectives) ++ renderDeprecation(field.deprecationReason.isDefined, field.deprecationReason), renderDescription(field.description))
 
   private def renderInputField(field: IntrospectionInputValue) =
-    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}: ${renderTypeName(field.tpe)}${renderDefault(field.defaultValue)}"
+    ast.InputValueDefinition(field.name, renderTypeName(field.tpe), renderDefault(field.defaultValue), comments = renderDescription(field.description))
 
-  private def renderInputField(field: InputField[_]) = {
-    val default = field.defaultValue.fold("")(renderDefault(_, field.fieldType))
-
-    s"${renderDescription(field.description, prefix = Indention)}$Indention${field.name}: ${renderTypeName(field.fieldType)}$default"
-  }
+  private def renderInputField(field: InputField[_]) =
+    ast.InputValueDefinition(field.name, renderTypeNameAst(field.fieldType), field.defaultValue.flatMap(renderDefault(_, field.fieldType)), field.astDirectives, renderDescription(field.description))
 
   private def renderObject(tpe: IntrospectionObjectType) =
-    s"${renderDescription(tpe.description)}type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFieldsI(tpe.fields)}\n}"
+    ast.ObjectTypeDefinition(tpe.name, renderImplementedInterfaces(tpe), renderFieldsI(tpe.fields), comments = renderDescription(tpe.description))
 
   private def renderObject(tpe: ObjectType[_, _]) =
-    s"${renderDescription(tpe.description)}type ${tpe.name}${renderImplementedInterfaces(tpe)} {\n${renderFields(tpe.uniqueFields)}\n}"
+    ast.ObjectTypeDefinition(tpe.name, renderImplementedInterfaces(tpe), renderFields(tpe.uniqueFields), tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderEnum(tpe: IntrospectionEnumType) =
-    s"${renderDescription(tpe.description)}enum ${tpe.name} {\n${renderEnumValuesI(tpe.enumValues)}\n}"
+    ast.EnumTypeDefinition(tpe.name, renderEnumValuesI(tpe.enumValues), comments = renderDescription(tpe.description))
 
   private def renderEnum(tpe: EnumType[_]) =
-    s"${renderDescription(tpe.description)}enum ${tpe.name} {\n${renderEnumValues(tpe.values)}\n}"
+    ast.EnumTypeDefinition(tpe.name, renderEnumValues(tpe.values), tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderEnumValuesI(values: Seq[IntrospectionEnumValue]) =
-    if (values.nonEmpty)
-      values.zipWithIndex map { case (v, idx) ⇒
-        (if (idx != 0 && v.description.isDefined) "\n" else "") +
-          renderDescription(v.description, prefix = Indention) + Indention + v.name + renderDeprecation(v.isDeprecated, v.deprecationReason)
-      } mkString "\n"
-    else
-      ""
+    values.map(v ⇒ ast.EnumValueDefinition(v.name, renderDeprecation(v.isDeprecated, v.deprecationReason), renderDescription(v.description))).toVector
 
   private def renderEnumValues(values: Seq[EnumValue[_]]) =
-    if (values.nonEmpty)
-      values.zipWithIndex map { case (v, idx) ⇒
-        (if (idx != 0 && v.description.isDefined) "\n" else "") +
-          renderDescription(v.description, prefix = Indention) + Indention + v.name + renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason)
-      } mkString "\n"
-    else
-      ""
+    values.map(v ⇒ ast.EnumValueDefinition(v.name, withoutDeprecated(v.astDirectives) ++ renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason), renderDescription(v.description))).toVector
 
   private def renderScalar(tpe: IntrospectionScalarType) =
-    s"${renderDescription(tpe.description)}scalar ${tpe.name}"
+    ast.ScalarTypeDefinition(tpe.name, comments = renderDescription(tpe.description))
 
   private def renderScalar(tpe: ScalarType[_]) =
-    s"${renderDescription(tpe.description)}scalar ${tpe.name}"
+    ast.ScalarTypeDefinition(tpe.name, tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderInputObject(tpe: IntrospectionInputObjectType) =
-    s"${renderDescription(tpe.description)}input ${tpe.name} {\n${renderInputFieldsI(tpe.inputFields)}\n}"
+    ast.InputObjectTypeDefinition(tpe.name, renderInputFieldsI(tpe.inputFields), comments = renderDescription(tpe.description))
 
   private def renderInputObject(tpe: InputObjectType[_]) =
-    s"${renderDescription(tpe.description)}input ${tpe.name} {\n${renderInputFields(tpe.fields)}\n}"
+    ast.InputObjectTypeDefinition(tpe.name, renderInputFields(tpe.fields), tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderInterface(tpe: IntrospectionInterfaceType) =
-    s"${renderDescription(tpe.description)}interface ${tpe.name} {\n${renderFieldsI(tpe.fields)}\n}"
+    ast.InterfaceTypeDefinition(tpe.name, renderFieldsI(tpe.fields), comments = renderDescription(tpe.description))
 
   private def renderInterface(tpe: InterfaceType[_, _]) =
-    s"${renderDescription(tpe.description)}interface ${tpe.name} {\n${renderFields(tpe.uniqueFields)}\n}"
+    ast.InterfaceTypeDefinition(tpe.name, renderFields(tpe.uniqueFields), tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderUnion(tpe: IntrospectionUnionType) =
-    if (tpe.possibleTypes.nonEmpty)
-      tpe.possibleTypes map (_.name) mkString (s"${renderDescription(tpe.description)}union ${tpe.name} = ", " | ", "")
-    else
-      ""
+    ast.UnionTypeDefinition(tpe.name, tpe.possibleTypes.map(t ⇒ ast.NamedType(t.name)).toVector, comments = renderDescription(tpe.description))
 
   private def renderUnion(tpe: UnionType[_]) =
-    if (tpe.types.nonEmpty)
-      tpe.types map (_.name) mkString (s"${renderDescription(tpe.description)}union ${tpe.name} = ", " | ", "")
-    else
-      ""
+    ast.UnionTypeDefinition(tpe.name, tpe.types.map(t ⇒ ast.NamedType(t.name)).toVector, tpe.astDirectives, renderDescription(tpe.description))
 
-  private def renderSchemaDefinition(schema: IntrospectionSchema): Option[String] =
+  private def renderSchemaDefinition(schema: IntrospectionSchema): Option[ast.SchemaDefinition] =
     if (isSchemaOfCommonNames(schema.queryType.name, schema.mutationType.map(_.name), schema.subscriptionType.map(_.name)))
       None
     else {
-      val withQuery = (Indention + "query: " + renderTypeName(schema.queryType)) :: Nil
-      val withMutation = schema.mutationType.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t)))
-      val withSubs = schema.subscriptionType.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t)))
+      val withQuery = Vector(ast.OperationTypeDefinition(ast.OperationType.Query, ast.NamedType(schema.queryType.name)))
+      val withMutation = schema.mutationType.fold(withQuery)(t ⇒ withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
+      val withSubs = schema.subscriptionType.fold(withMutation)(t ⇒ withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
 
-      Some(s"schema {\n${withSubs mkString "\n"}\n}")
+      Some(ast.SchemaDefinition(withSubs))
     }
 
-  private def renderSchemaDefinition(schema: Schema[_, _]): Option[String] =
+  private def renderSchemaDefinition(schema: Schema[_, _]): Option[ast.SchemaDefinition] =
     if (isSchemaOfCommonNames(schema.query.name, schema.mutation.map(_.name), schema.subscription.map(_.name)))
       None
     else {
-      val withQuery = (Indention + "query: " + renderTypeName(schema.query, true)) :: Nil
-      val withMutation = schema.mutation.fold(withQuery)(t ⇒ withQuery :+ (Indention + "mutation: " + renderTypeName(t, true)))
-      val withSubs = schema.subscription.fold(withMutation)(t ⇒ withMutation :+ (Indention + "subscription: " + renderTypeName(t, true)))
+      val withQuery = Vector(ast.OperationTypeDefinition(ast.OperationType.Query, ast.NamedType(schema.query.name)))
+      val withMutation = schema.mutation.fold(withQuery)(t ⇒ withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
+      val withSubs = schema.subscription.fold(withMutation)(t ⇒ withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
 
-      Some(s"schema {\n${withSubs mkString "\n"}\n}")
+      Some(ast.SchemaDefinition(withSubs, schema.astDirectives))
     }
 
   private def isSchemaOfCommonNames(query: String, mutation: Option[String], subscription: Option[String]) =
     query == "Query" && mutation.fold(true)(_ == "Mutation") && subscription.fold(true)(_ == "Subscription")
 
-  private def renderType(tpe: IntrospectionType) =
+  private def renderType(tpe: IntrospectionType): ast.TypeDefinition =
     tpe match {
       case o: IntrospectionObjectType ⇒ renderObject(o)
       case u: IntrospectionUnionType ⇒ renderUnion(u)
@@ -241,7 +188,7 @@ object SchemaRenderer {
       case kind ⇒ throw new IllegalArgumentException(s"Unsupported kind: $kind")
     }
 
-  private def renderType(tpe: Type) =
+  private def renderType(tpe: Type): ast.TypeDefinition =
     tpe match {
       case o: ObjectType[_, _] ⇒ renderObject(o)
       case u: UnionType[_] ⇒ renderUnion(u)
@@ -254,42 +201,57 @@ object SchemaRenderer {
     }
 
   private def renderDirectiveLocation(loc: DirectiveLocation.Value) =
-    __DirectiveLocation.byValue(loc).name
+    ast.DirectiveLocation(__DirectiveLocation.byValue(loc).name)
 
   private def renderDirective(dir: Directive) =
-    s"${renderDescription(dir.description)}directive @${dir.name}${renderArgs(dir.arguments)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
+    ast.DirectiveDefinition(dir.name, renderArgs(dir.arguments), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
 
   private def renderDirective(dir: IntrospectionDirective) =
-    s"${renderDescription(dir.description)}directive @${dir.name}${renderArgsI(dir.args)} on ${dir.locations.toList.map(renderDirectiveLocation).sorted mkString " | "}"
+    ast.DirectiveDefinition(dir.name, renderArgsI(dir.args), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
 
-  def renderSchema(introspectionSchema: IntrospectionSchema): String = {
+  def schemaAst(introspectionSchema: IntrospectionSchema): ast.Document = {
     val schemaDef = renderSchemaDefinition(introspectionSchema)
-    val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map (renderType(_))
-    val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_))
+    val types = introspectionSchema.types filterNot isBuiltIn sortBy (_.name) map renderType
+    val directives = introspectionSchema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
 
-    (schemaDef.toSeq ++ types ++ directives) mkString TypeSeparator
+    ast.Document(schemaDef.toVector ++ types ++ directives)
   }
 
-  def renderSchema[T: InputUnmarshaller](introspectionResult: T): String =
-    renderSchema(IntrospectionParser parse introspectionResult)
+  def renderSchema(introspectionSchema: IntrospectionSchema): String =
+    schemaAst(introspectionSchema).renderPretty
 
-  def renderSchema(schema: Schema[_, _]): String = {
+  def renderSchema[T: InputUnmarshaller](introspectionResult: T): String = {
+    import sangria.parser.DeliveryScheme.Throw
+    
+    renderSchema(IntrospectionParser parse introspectionResult)
+  }
+
+  def schemaAst(schema: Schema[_, _]): ast.Document = {
     val schemaDef = renderSchemaDefinition(schema)
     val types = schema.typeList filterNot isBuiltInType sortBy (_.name) map renderType
     val directives = schema.directives filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map renderDirective
 
-    (schemaDef.toSeq ++ types ++ directives) mkString TypeSeparator
+    ast.Document(schemaDef.toVector ++ types ++ directives)
   }
 
-  def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String = {
+  def renderSchema(schema: Schema[_, _]): String =
+    schemaAst(schema).renderPretty
+
+  def introspectionSchemaAst(introspectionSchema: IntrospectionSchema): ast.Document = {
     val types = introspectionSchema.types filter (tpe ⇒ Schema.isIntrospectionType(tpe.name)) sortBy (_.name) map (renderType(_))
     val directives = introspectionSchema.directives filter (d ⇒ Schema.isBuiltInDirective(d.name)) sortBy (_.name) map (renderDirective(_))
 
-    (types ++ directives) mkString TypeSeparator
+    ast.Document(types.toVector ++ directives)
   }
 
-  def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T): String =
+  def renderIntrospectionSchema(introspectionSchema: IntrospectionSchema): String =
+    introspectionSchemaAst(introspectionSchema).renderPretty
+
+  def renderIntrospectionSchema[T: InputUnmarshaller](introspectionResult: T): String = {
+    import sangria.parser.DeliveryScheme.Throw
+    
     renderIntrospectionSchema(IntrospectionParser parse introspectionResult)
+  }
 
   private def isBuiltIn(tpe: IntrospectionType) =
     Schema.isBuiltInType(tpe.name)

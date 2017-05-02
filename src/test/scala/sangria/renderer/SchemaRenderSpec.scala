@@ -9,7 +9,6 @@ import sangria.macros._
 import sangria.util.{StringMatchers, FutureResultSupport}
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
-import spray.json.JsValue
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 import sangria.marshalling.ScalaInput.scalaInput
@@ -439,7 +438,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  int: Int
         |
         |  # has a default!
-        |  article: Article = {title:"Hello",author:"Anonymous",comments:["first!","looks good!"]}
+        |  article: Article = {title: "Hello", author: "Anonymous", comments: ["first!", "looks good!"]}
         |}
         |
         |type Root {
@@ -521,7 +520,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Directive" in {
       val myDirective = Directive("myDirective",
-        description = Some("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum. \nNunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis."),
+        description = Some("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.\nNunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis."),
         arguments =
           Argument("first", OptionInputType(ListInputType(StringType)), "Some descr", scalaInput(List("foo", "bar", "baz"))) ::
           Argument("last", OptionInputType(IntType), "Another descr") ::
@@ -545,7 +544,12 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |
         |# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.
         |# Nunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis.
-        |directive @myDirective(first: [String!] = ["foo","bar","baz"], last: Int) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+        |directive @myDirective(
+        |  # Some descr
+        |  first: [String!] = ["foo", "bar", "baz"],
+        |
+        |  # Another descr
+        |  last: Int) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }
   }
@@ -734,13 +738,19 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |}
         |
         |# Marks an element of a GraphQL schema as no longer supported.
-        |directive @deprecated(reason: String = "No longer supported") on ENUM_VALUE | FIELD_DEFINITION
+        |directive @deprecated(
+        |  # Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formattedin [Markdown](https://daringfireball.net/projects/markdown/).
+        |  reason: String = "No longer supported") on ENUM_VALUE | FIELD_DEFINITION
         |
         |# Directs the executor to include this field or fragment only when the `if` argument is true.
-        |directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+        |directive @include(
+        |  # Included when true.
+        |  if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
         |
         |# Directs the executor to skip this field or fragment when the `if` argument is true.
-        |directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+        |directive @skip(
+        |  # Included when true.
+        |  if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }
   }
