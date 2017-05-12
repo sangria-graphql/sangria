@@ -328,6 +328,24 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
 
 object Args {
   val empty = Args(Map.empty, Set.empty, Set.empty, Set.empty, TrieMap.empty)
+
+  def buildArgs(argumentDefinitions: List[Argument[_]], raw: Map[String, Any]): Args = {
+    val argsWithDefault = argumentDefinitions.filter(_.defaultValue.isDefined).map(_.name).toSet
+    val optionalArgs = argumentDefinitions.filter(_.inputValueType.isOptional).map(_.name).toSet
+    val undefinedArgs = argumentDefinitions.map(_.name)
+      .filterNot(argsWithDefault.contains)
+      .filterNot(optionalArgs.contains)
+      .filterNot(raw.contains)
+      .toSet
+
+    val defaultInfo = argumentDefinitions.collect {
+      case definition if argsWithDefault.contains(definition.name) =>
+        definition.name -> definition.defaultValue.get._1
+    }
+    val defaultMap = TrieMap() ++= defaultInfo
+
+    Args(raw, argsWithDefault, optionalArgs, undefinedArgs, defaultMap)
+  }
 }
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args) extends WithArguments
