@@ -14,8 +14,6 @@ import scala.util.{Success, Failure, Try}
 class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: Executor.ExceptionHandler)(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
-  import coercionHelper._
-
   private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]()
 
   def getVariableValues(definitions: Vector[ast.VariableDefinition]): Try[Map[String, VariableValue]] =
@@ -41,15 +39,34 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else Success(Map(values.collect {case (name, Right(v)) ⇒ name → v}: _*))
     }
 
-  private val emptyArgs = Success(Args.empty)
-
   def getFieldArgumentValues(path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
     if(argumentDefs.isEmpty)
-      emptyArgs
+      ValueCollector.emptyArgs
     else
       argumentCache.getOrElseUpdate(path.cacheKey → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
 
-  def getArgumentValues(argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument], variables: Map[String, VariableValue], ignoreErrors: Boolean = false): Try[Args] =
+  def getArgumentValues[Ctx](
+    argumentDefs: List[Argument[_]],
+    argumentAsts: Vector[ast.Argument],
+    variables: Map[String, VariableValue],
+    ignoreErrors: Boolean = false
+  ): Try[Args] = ValueCollector.getArgumentValues(coercionHelper, argumentDefs, argumentAsts, variables, exceptionHandler, ignoreErrors, sourceMapper)
+}
+
+object ValueCollector {
+  private val emptyArgs = Success(Args.empty)
+
+  def getArgumentValues[Ctx](
+    coercionHelper: ValueCoercionHelper[Ctx],
+    argumentDefs: List[Argument[_]],
+    argumentAsts: Vector[ast.Argument],
+    variables: Map[String, VariableValue],
+    exceptionHandler: Executor.ExceptionHandler,
+    ignoreErrors: Boolean = false,
+    sourceMapper: Option[SourceMapper] = None
+  ): Try[Args] = {
+    import coercionHelper._
+
     if (argumentDefs.isEmpty)
       emptyArgs
     else {
@@ -87,6 +104,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
         Success(Args(marshaller.mapNode(res).asInstanceOf[Map[String, Any]], argsWithDefault, optionalArgs, undefinedArgs.get.result().toSet, defaultInfo.get))
       }
     }
+  }
 }
 
 case class VariableValue(fn: (ResultMarshaller, ResultMarshaller, InputType[_]) ⇒ Either[Vector[Violation], Trinary[ResultMarshaller#Node]]) {
