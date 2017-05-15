@@ -327,24 +327,32 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
 }
 
 object Args {
-  val empty = Args(Map.empty, Set.empty, Set.empty, Set.empty, TrieMap.empty)
+  val empty = new Args(Map.empty, Set.empty, Set.empty, Set.empty, TrieMap.empty)
 
-  def buildArgs(argumentDefinitions: List[Argument[_]], raw: Map[String, Any]): Args = {
-    val argsWithDefault = argumentDefinitions.filter(_.defaultValue.isDefined).map(_.name).toSet
-    val optionalArgs = argumentDefinitions.filter(_.inputValueType.isOptional).map(_.name).toSet
-    val undefinedArgs = argumentDefinitions.map(_.name)
-      .filterNot(argsWithDefault.contains)
-      .filterNot(optionalArgs.contains)
-      .filterNot(raw.contains)
-      .toSet
+  def apply(definitions: List[Argument[_]], values: (String, Any)*): Args =
+    apply(definitions, values.toMap)
 
-    val defaultInfo = argumentDefinitions.collect {
-      case definition if argsWithDefault.contains(definition.name) =>
-        definition.name -> definition.defaultValue.get._1
+  def apply(definitions: List[Argument[_]], values: Map[String, Any]): Args =
+    apply(definitions, input = ScalaInput.scalaInput(values))
+
+  def apply[In: InputUnmarshaller](definitions: List[Argument[_]], input: In): Args = {
+    import sangria.marshalling.MarshallingUtil._
+    import sangria.marshalling.queryAst._
+
+    val iu = implicitly[InputUnmarshaller[In]]
+
+    if (!iu.isMapNode(input)) {
+      throw new IllegalArgumentException("The input expected to be a map-like data structure")
+    } else {
+      val argsValues =
+        iu.getMapKeys(input).map { key ⇒
+          ast.Argument(
+            name = key,
+            value = iu.getRootMapValue(input, key).map(_.convertMarshaled[ast.Value]) getOrElse ast.NullValue())
+        }
+
+      ValueCollector.getArgumentValues(ValueCoercionHelper.default, definitions, argsValues.toVector, Map.empty, PartialFunction.empty).get
     }
-    val defaultMap = TrieMap() ++= defaultInfo
-
-    Args(raw, argsWithDefault, optionalArgs, undefinedArgs, defaultMap)
   }
 }
 
