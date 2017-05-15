@@ -360,7 +360,7 @@ object Args {
 
     ValueCoercionHelper.default.coerceInputValue(tpe, List("stub"), value, None, rm.marshaller, rm.marshaller) match {
       case Right(v) ⇒ v.toOption.asInstanceOf[Option[Out]]
-      case Left(violations) ⇒ throw new AttributeCoercionError(violations, PartialFunction.empty)
+      case Left(violations) ⇒ throw AttributeCoercionError(violations, PartialFunction.empty)
     }
   }
 }
