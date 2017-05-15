@@ -61,9 +61,8 @@ class ArgsSpec extends WordSpec with Matchers {
       }
 
       "build with optional argument and defined input" in {
-        val expectedMap = Map(OPTIONAL_ARGUMENT_NAME -> 9001)
-        val args = Args(List(optionalArgument), expectedMap)
-        args.raw should be (expectedMap)
+        val args = Args(List(optionalArgument), Map(OPTIONAL_ARGUMENT_NAME -> 9001))
+        args.raw should be (Map(OPTIONAL_ARGUMENT_NAME -> Some(9001)))
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OPTIONAL_ARGUMENT_NAME))
         args.undefinedArgs should be (Set.empty)
@@ -77,7 +76,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.raw should be (Map.empty)
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OPTIONAL_ARGUMENT_NAME))
-        args.undefinedArgs should be (Set.empty)
+        args.undefinedArgs should be (Set(OPTIONAL_ARGUMENT_NAME))
         args.defaultInfo should be (TrieMap.empty)
 
         args.arg(optionalArgument) should be (None)
@@ -85,23 +84,22 @@ class ArgsSpec extends WordSpec with Matchers {
 
       "build with default values" in {
         val args = Args(List(defaultArgument))
-        args.raw should be (Map.empty)
+        args.raw should be (Map(DEFAULT_ARGUMENT_NAME -> Some(10)))
         args.argsWithDefault should be (Set(DEFAULT_ARGUMENT_NAME))
         args.optionalArgs should be (Set(DEFAULT_ARGUMENT_NAME))
-        args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap(DEFAULT_ARGUMENT_NAME -> 10))
+        args.undefinedArgs should be (Set(DEFAULT_ARGUMENT_NAME))
+        args.defaultInfo should be (TrieMap.empty)
 
         args.arg(defaultArgument) should be (10)
       }
 
       "build with overriden default values" in {
-        val expectedMap = Map(DEFAULT_ARGUMENT_NAME -> 9001)
-        val args = Args(List(defaultArgument), expectedMap)
-        args.raw should be (expectedMap)
+        val args = Args(List(defaultArgument), Map(DEFAULT_ARGUMENT_NAME -> 9001))
+        args.raw should be (Map(DEFAULT_ARGUMENT_NAME -> Some(9001)))
         args.argsWithDefault should be (Set(DEFAULT_ARGUMENT_NAME))
         args.optionalArgs should be (Set(DEFAULT_ARGUMENT_NAME))
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap(DEFAULT_ARGUMENT_NAME -> 10))
+        args.defaultInfo should be (TrieMap.empty)
 
         args.arg(defaultArgument) should be (9001)
       }
@@ -139,7 +137,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.raw should be (Map.empty)
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OPTIONAL_ARGUMENT_NAME))
-        args.undefinedArgs should be (Set.empty)
+        args.undefinedArgs should be (Set(OPTIONAL_ARGUMENT_NAME))
         args.defaultInfo should be (TrieMap.empty)
 
         args.arg(optionalArgument) should be (None)
@@ -151,7 +149,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set(DEFAULT_ARGUMENT_NAME))
         args.optionalArgs should be (Set(DEFAULT_ARGUMENT_NAME))
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap(DEFAULT_ARGUMENT_NAME -> 10))
+        args.defaultInfo should be (TrieMap.empty)
 
         args.arg(defaultArgument) should be (9001)
       }

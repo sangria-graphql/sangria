@@ -336,7 +336,6 @@ object Args {
     apply(definitions, input = ScalaInput.scalaInput(values))
 
   def apply[In: InputUnmarshaller](definitions: List[Argument[_]], input: In): Args = {
-    import sangria.marshalling.MarshallingUtil._
     import sangria.marshalling.queryAst._
 
     val iu = implicitly[InputUnmarshaller[In]]
@@ -345,13 +344,23 @@ object Args {
       throw new IllegalArgumentException("The input expected to be a map-like data structure")
     } else {
       val argsValues =
-        iu.getMapKeys(input).map { key ⇒
-          ast.Argument(
-            name = key,
-            value = iu.getRootMapValue(input, key).map(_.convertMarshaled[ast.Value]) getOrElse ast.NullValue())
+        iu.getMapKeys(input).flatMap(key ⇒ definitions.find(_.name == key)).map { arg ⇒
+          val astValue = iu.getRootMapValue(input, arg.name)
+            .flatMap(x ⇒ this.convert[In, ast.Value](x, arg.argumentType))
+
+          ast.Argument(name = arg.name, value = astValue getOrElse ast.NullValue())
         }
 
       ValueCollector.getArgumentValues(ValueCoercionHelper.default, definitions, argsValues.toVector, Map.empty, PartialFunction.empty).get
+    }
+  }
+
+  private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](value: In, tpe: InputType[_]): Option[Out] = {
+    val rm = implicitly[ResultMarshallerForType[Out]]
+
+    ValueCoercionHelper.default.coerceInputValue(tpe, List("stub"), value, None, rm.marshaller, rm.marshaller) match {
+      case Right(v) ⇒ v.toOption.asInstanceOf[Option[Out]]
+      case Left(violations) ⇒ throw new AttributeCoercionError(violations, PartialFunction.empty)
     }
   }
 }
