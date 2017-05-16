@@ -124,7 +124,8 @@ class ArgsSpec extends WordSpec with Matchers {
 
     "buildArgs with spray-json" should {
       "build with defined argument" in {
-        val args = Args(List(nonDefaultArgument), s"""{"$NonDefaultArgumentName": 10}""".parseJson)
+        val json = JsObject(NonDefaultArgumentName -> JsNumber(10))
+        val args = Args(List(nonDefaultArgument), json)
         args.raw should be (Map(NonDefaultArgumentName -> 10))
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set.empty)
@@ -139,7 +140,8 @@ class ArgsSpec extends WordSpec with Matchers {
       }
 
       "build with optional argument and defined input" in {
-        val args = Args(List(optionalArgument), s"""{"$OptionalArgumentName": 9001}""".parseJson)
+        val json = JsObject(OptionalArgumentName -> JsNumber(9001))
+        val args = Args(List(optionalArgument), json)
         args.raw should be (Map(OptionalArgumentName -> Some(9001)))
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OptionalArgumentName))
@@ -161,7 +163,8 @@ class ArgsSpec extends WordSpec with Matchers {
       }
 
       "build with overriden default values" in {
-        val args = Args(List(defaultArgument), s"""{"$DefaultArgumentName": 9001}""".parseJson)
+        val json = JsObject(DefaultArgumentName -> JsNumber(9001))
+        val args = Args(List(defaultArgument), json)
         args.raw should be (Map(DefaultArgumentName -> Some(9001)))
         args.argsWithDefault should be (Set(DefaultArgumentName))
         args.optionalArgs should be (Set(DefaultArgumentName))
@@ -172,18 +175,13 @@ class ArgsSpec extends WordSpec with Matchers {
       }
     }
 
-    "buildArgs with nested objects" should {
+    "buildArgs with nested json objects" should {
       "build with nested arguments" in {
-        val json =
-          s"""
-             |{
-             |  "$NestedParentArgumentName": {
-             |    "$NonDefaultArgumentName": 1,
-             |    "$DefaultArgumentName": 2,
-             |    "$OptionalArgumentName": 3
-             |  }
-             |}
-           """.stripMargin.parseJson
+        val json = JsObject(NestedParentArgumentName -> JsObject(
+          NonDefaultArgumentName -> JsNumber(1),
+          DefaultArgumentName -> JsNumber(2),
+          OptionalArgumentName -> JsNumber(3)))
+
         val args = Args(List(nestedParentArgument), json)
         val fields = args.arg(nestedParentArgument).asJsObject.fields
 
@@ -193,29 +191,17 @@ class ArgsSpec extends WordSpec with Matchers {
       }
 
       "not build without required arguments" in {
-        val json =
-          s"""
-             |{
-             |  "$NestedParentArgumentName": {
-             |    "$DefaultArgumentName": 2,
-             |    "$OptionalArgumentName": 3
-             |  }
-             |}
-           """.stripMargin.parseJson
+        val json = JsObject(NestedParentArgumentName -> JsObject(
+          DefaultArgumentName -> JsNumber(2),
+          OptionalArgumentName -> JsNumber(3)))
 
         an [AttributeCoercionError] should be thrownBy Args(List(nestedParentArgument), json)
       }
 
       "build without default arguments" in {
-        val json =
-          s"""
-             |{
-             |  "$NestedParentArgumentName": {
-             |    "$NonDefaultArgumentName": 1,
-             |    "$OptionalArgumentName": 3
-             |  }
-             |}
-           """.stripMargin.parseJson
+        val json = JsObject(NestedParentArgumentName -> JsObject(
+          NonDefaultArgumentName -> JsNumber(1),
+          OptionalArgumentName -> JsNumber(3)))
 
         val args = Args(List(nestedParentArgument), json)
         val fields = args.arg(nestedParentArgument).asJsObject.fields
@@ -226,22 +212,66 @@ class ArgsSpec extends WordSpec with Matchers {
       }
 
       "build without optional arguments" in {
-        val json =
-          s"""
-             |{
-             |  "$NestedParentArgumentName": {
-             |    "$NonDefaultArgumentName": 1,
-             |    "$DefaultArgumentName": 2
-             |  }
-             |}
-           """.stripMargin.parseJson
+        val json = JsObject(NestedParentArgumentName -> JsObject(
+          NonDefaultArgumentName -> JsNumber(1),
+          DefaultArgumentName -> JsNumber(2)))
 
         val args = Args(List(nestedParentArgument), json)
         val fields = args.arg(nestedParentArgument).asJsObject.fields
 
         fields(NonDefaultArgumentName) should be (JsNumber(1))
         fields(DefaultArgumentName) should be (JsNumber(2))
-        an [NoSuchElementException] should be thrownBy fields(OptionalArgumentName)
+        fields.get(OptionalArgumentName) should be ('empty)
+      }
+    }
+
+    "buildArgs with nested map objects" should {
+      "build with nested arguments" in {
+        val inputMap = NestedParentArgumentName -> Map(
+          NonDefaultArgumentName -> 1,
+          DefaultArgumentName -> 2,
+          OptionalArgumentName -> 3)
+        val args = Args(List(nestedParentArgument), inputMap)
+
+        val fields = args.arg(nestedParentArgument).asJsObject.fields
+
+        fields(NonDefaultArgumentName) should be (JsNumber(1))
+        fields(DefaultArgumentName) should be (JsNumber(2))
+        fields(OptionalArgumentName) should be (JsNumber(3))
+      }
+
+      "not build without required arguments" in {
+        val inputMap = NestedParentArgumentName -> Map(
+          DefaultArgumentName -> 2,
+          OptionalArgumentName -> 3)
+
+        an [AttributeCoercionError] should be thrownBy Args(List(nestedParentArgument), inputMap)
+      }
+
+      "build without default arguments" in {
+        val inputMap = NestedParentArgumentName -> Map(
+          NonDefaultArgumentName -> 1,
+          OptionalArgumentName -> 3)
+        val args = Args(List(nestedParentArgument), inputMap)
+
+        val fields = args.arg(nestedParentArgument).asJsObject.fields
+
+        fields(NonDefaultArgumentName) should be (JsNumber(1))
+        fields(DefaultArgumentName) should be (JsNumber(10))
+        fields(OptionalArgumentName) should be (JsNumber(3))
+      }
+
+      "build without optional arguments" in {
+        val inputMap = NestedParentArgumentName -> Map(
+          NonDefaultArgumentName -> 1,
+          DefaultArgumentName -> 2)
+        val args = Args(List(nestedParentArgument), inputMap)
+
+        val fields = args.arg(nestedParentArgument).asJsObject.fields
+
+        fields(NonDefaultArgumentName) should be (JsNumber(1))
+        fields(DefaultArgumentName) should be (JsNumber(2))
+        fields.get(OptionalArgumentName) should be ('empty)
       }
     }
   }
