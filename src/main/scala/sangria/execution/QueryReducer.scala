@@ -122,7 +122,7 @@ class MeasureQueryDepth[Ctx](action: (Int, Ctx) ⇒ ReduceAction[Ctx, Ctx]) exte
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
       argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc =
-    childrenAcc
+    Math.max(fieldAcc, childrenAcc)
 
   def reduceScalar[T](
     path: ExecutionPath,
