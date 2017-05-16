@@ -610,6 +610,35 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
       calcDepth("""
        {
          nest {
+           a
+           b
+           ab
+
+           named(size: 1) {
+             name
+
+             ... on Cat {
+               meows
+             }
+
+             ... on Dog {
+               barks
+             }
+           }
+         }
+
+         nest {
+           a
+         }
+
+         info
+         a
+       }
+       """) should be (3)
+
+      calcDepth("""
+       {
+         nest {
            nest {
              nest {
                nest {
