@@ -1,3 +1,9 @@
+## v1.2.1 (2017-05-18)
+
+* Fixed `MeasureQueryDepth` reducer not keeping the largest depth found (#245, #246). Big thanks @Eluinhost for this contribution!
+* Easier way to create `Args` (#243). Big thanks @vishalkuo for this contribution!
+* More options to render a schema (#241). This improvement is especially useful for apps that use relay modern.
+
 ## v1.2.0 (2017-04-29)
 
 * Provide convenient functions for IDL-based schema materialization and validation (#240). . For more info see the ["Query Validation" section of documentation](http://sangria-graphql.org/learn/#query-validation). Improvements include:

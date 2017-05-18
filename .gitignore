@@ -6,3 +6,5 @@ classes
 
 # files
 *.iml
+*.sc
+*.swp
