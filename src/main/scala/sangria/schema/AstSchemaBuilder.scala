@@ -218,7 +218,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
-            fieldsFn = Named.checkObjFields(fields),
+            fieldsFn = Named.checkObjFields(typeName(definition), fields),
             interfaces = interfaces,
             instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz),
             astDirectives = directives)
@@ -226,7 +226,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
-            fieldsFn = Named.checkObjFields(fields),
+            fieldsFn = Named.checkObjFields(typeName(definition), fields),
             interfaces = interfaces,
             instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any],
             astDirectives = directives)
@@ -244,12 +244,12 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     extendedObjectTypeInstanceCheck(existing, extensions) match {
       case Some(fn) ⇒
         existing.copy(
-          fieldsFn = Named.checkObjFields(fields),
+          fieldsFn = Named.checkObjFields(existing.name, fields),
           interfaces = interfaces,
           instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))(ClassTag(existing.valClass))
       case None ⇒
         existing.copy(
-          fieldsFn = Named.checkObjFields(fields),
+          fieldsFn = Named.checkObjFields(existing.name, fields),
           interfaces = interfaces,
           instanceCheck = existing.instanceCheck.asInstanceOf[(Any, Class[_], ObjectType[Ctx, _]) ⇒ Boolean])(ClassTag(existing.valClass))
     }
@@ -261,7 +261,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(InputObjectType(
       name = typeName(definition),
       description = typeDescription(definition),
-      fieldsFn = Named.checkIntFields(fields),
+      fieldsFn = Named.checkIntFields(typeName(definition), fields),
       astDirectives = definition.directives))
 
   def buildInterfaceType(
@@ -274,7 +274,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(InterfaceType[Ctx, Any](
       name = typeName(definition),
       description = typeDescription(definition),
-      fieldsFn = Named.checkIntFields(fields),
+      fieldsFn = Named.checkIntFields(typeName(definition), fields),
       interfaces = Nil,
       manualPossibleTypes = () ⇒ Nil,
       astDirectives = directives))

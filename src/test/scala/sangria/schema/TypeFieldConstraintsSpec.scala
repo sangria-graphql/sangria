@@ -23,21 +23,24 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
     }
 
     "disallow non-unique fields" in {
-      an [IllegalArgumentException] should be thrownBy {
+      val e1 = intercept [NonUniqueFieldsError] {
         ObjectType("Test", fields[Unit, Unit](
           Field("a", StringType, resolve = _ ⇒ "foo"),
           Field("b", StringType, resolve = _ ⇒ "foo"),
           Field("a", StringType, resolve = _ ⇒ "foo")
         ))
       }
-
-      an [IllegalArgumentException] should be thrownBy {
+      
+      val e2 = intercept [NonUniqueFieldsError] {
         ObjectType("Test", () ⇒ fields[Unit, Unit](
           Field("a", StringType, resolve = _ ⇒ "foo"),
           Field("b", StringType, resolve = _ ⇒ "foo"),
           Field("a", StringType, resolve = _ ⇒ "foo")
         )).fields
       }
+
+      List(e1, e2) map (_.getMessage) foreach (_ should be (
+        "All fields within 'Test' type should have unique names! Non-unique fields: 'a'."))
     }
 
     "disallow invalid names" in {
