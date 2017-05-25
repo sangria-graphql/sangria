@@ -131,7 +131,8 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
     marshaller: ResultMarshaller,
     firstKindMarshaller: ResultMarshaller,
     errorPrefix: ⇒ String = "",
-    nullWithDefault: Boolean = false
+    nullWithDefault: Boolean = false,
+    fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]] = None
   )(implicit iu: InputUnmarshaller[In]): Either[Vector[Violation], Trinary[marshaller.Node]] = {
     def defined(node: marshaller.Node): Trinary[marshaller.Node] =
       if (nullWithDefault) Trinary.NullWithDefault(node)
@@ -153,16 +154,30 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         valuePosition(value),
         errorPrefix)))
 
-    def resolveCoercedScalar(coerced: Either[Violation, Any], outFn: Any ⇒ Any, scalar: ScalarType[Any], value: In) =
+    def resolveSuccessfulCoercedScalar(v: Any, outFn: Any ⇒ Any, scalar: ScalarType[Any], value: In) = {
+      val prepared = firstKindMarshaller match {
+        case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
+        case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(outFn(v), standard.capabilities), standard, scalar.name, scalar.scalarInfo)
+      }
+
+      Right(defined(prepared.asInstanceOf[marshaller.Node]))
+    }
+
+    def resolveCoercedScalar(coerced: Either[Violation, Any], outFn: Any ⇒ Any, scalar: ScalarType[Any], actualType: InputType[_], value: In) =
       coerced.fold(
         violation ⇒ Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix))),
         v ⇒ {
-          val prepared = firstKindMarshaller match {
-            case raw: RawResultMarshaller ⇒ raw.rawScalarNode(v)
-            case standard ⇒ Resolver.marshalScalarValue(scalar.coerceOutput(outFn(v), standard.capabilities), standard, scalar.name, scalar.scalarInfo)
+          fromScalarMiddleware match {
+            case Some(fn) ⇒ fn(v, actualType) match {
+              case Some(Left(violation)) ⇒
+                Left(Vector(FieldCoercionViolation(fieldPath, violation, sourceMapper, valuePosition(value), errorPrefix)))
+              case Some(Right(newv)) ⇒
+                resolveSuccessfulCoercedScalar(newv, outFn, scalar, value)
+              case None ⇒
+                resolveSuccessfulCoercedScalar(v, outFn, scalar, value)
+            }
+            case None ⇒ resolveSuccessfulCoercedScalar(v, outFn, scalar, value)
           }
-
-          Right(defined(prepared.asInstanceOf[marshaller.Node]))
         })
 
     (tpe, input) match {
@@ -189,7 +204,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         }
 
       case (OptionInputType(ofType), value) if iu.isDefined(value) ⇒
-        coerceInputValue(ofType, fieldPath, value, variables, marshaller, firstKindMarshaller, errorPrefix, nullWithDefault)
+        coerceInputValue(ofType, fieldPath, value, variables, marshaller, firstKindMarshaller, errorPrefix, nullWithDefault, fromScalarMiddleware)
 
       case (OptionInputType(ofType), value) ⇒
         Right(Trinary.Null)
@@ -198,7 +213,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         val res = iu.getListValue(values).toVector.map {
           case defined if iu.isDefined(defined) ⇒
             resolveListValue(ofType, fieldPath, marshaller, valuePosition(defined))(
-              coerceInputValue(ofType, fieldPath, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault))
+              coerceInputValue(ofType, fieldPath, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault, fromScalarMiddleware))
           case v ⇒
             resolveListValue(ofType, fieldPath, marshaller, valuePosition(v, values))(Right(Trinary.Null))
         }
@@ -211,7 +226,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       case (ListInputType(ofType), value) if iu.isDefined(value) ⇒
         val res =
           resolveListValue(ofType, fieldPath, marshaller, valuePosition(value))(
-            coerceInputValue(ofType, fieldPath, value, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault))
+            coerceInputValue(ofType, fieldPath, value, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault, fromScalarMiddleware))
 
         res match {
           case Right(v) ⇒ Right(defined(marshaller.arrayNode(Vector(v))))
@@ -233,7 +248,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case (acc, field) ⇒ iu.getMapValue(valueMap, field.name) match {
             case Some(defined) if iu.isDefined(defined) ⇒
               resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(defined))(
-                acc, Some(coerceInputValue(field.fieldType, fieldPath :+ field.name, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault)))
+                acc, Some(coerceInputValue(field.fieldType, fieldPath :+ field.name, defined, variables, firstKindMarshaller, firstKindMarshaller, errorPrefix, nullWithDefault, fromScalarMiddleware)))
             case Some(defined) ⇒
               resolveMapValue(field.fieldType, fieldPath :+ field.name, field.defaultValue, field.name, firstKindMarshaller, firstKindMarshaller, errors, valuePosition(valueMap))(acc, Some(Right(Trinary.Null)))
             case _ ⇒
@@ -263,7 +278,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case other ⇒ scalar.coerceUserInput(other)
         }
 
-        resolveCoercedScalar(coerced, identity, scalar.asInstanceOf[ScalarType[Any]], value)
+        resolveCoercedScalar(coerced, identity, scalar.asInstanceOf[ScalarType[Any]], scalar, value)
 
       case (_: ScalarType[_], value) if iu.isDefined(value) ⇒
         invalidScalarViolation(value)
@@ -282,7 +297,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           case Right(v) ⇒ scalar.fromScalar(v)
         }
 
-        resolveCoercedScalar(fromAlias, scalar.toScalar, scalar.aliasFor.asInstanceOf[ScalarType[Any]], value)
+        resolveCoercedScalar(fromAlias, scalar.toScalar, scalar.aliasFor, scalar, value)
 
       case (_: ScalarAlias[_, _], value) if iu.isDefined(value) ⇒
         invalidScalarViolation(value)
@@ -404,7 +419,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       Vector(GenericInvalidValueViolation(sourceMapper, Nil))
   }
 
-  def getVariableValue[In](definition: ast.VariableDefinition, tpe: InputType[_], input: Option[In])(implicit um: InputUnmarshaller[In]): Either[Vector[Violation], Option[VariableValue]] = {
+  def getVariableValue[In](definition: ast.VariableDefinition, tpe: InputType[_], input: Option[In], fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]])(implicit um: InputUnmarshaller[In]): Either[Vector[Violation], Option[VariableValue]] = {
     val violations = isValidValue(tpe, input)
 
     if (violations.isEmpty) {
@@ -416,7 +431,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         definition.defaultValue match {
           case Some(dv) ⇒
             Right(Some(VariableValue((marshaller, firstKindMarshaller, actualType) ⇒
-              coerceInputValue(actualType, fieldPath, dv, None, marshaller, firstKindMarshaller, nullWithDefault = input.nonEmpty))))
+              coerceInputValue(actualType, fieldPath, dv, None, marshaller, firstKindMarshaller, nullWithDefault = input.nonEmpty, fromScalarMiddleware = fromScalarMiddleware))))
 
           case None ⇒
             val emptyValue =
@@ -427,7 +442,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         }
       } else
         Right(Some(VariableValue((marshaller, firstKindMarshaller, actualType) ⇒
-          coerceInputValue(actualType, fieldPath, input.get, None, marshaller, firstKindMarshaller))))
+          coerceInputValue(actualType, fieldPath, input.get, None, marshaller, firstKindMarshaller, fromScalarMiddleware = fromScalarMiddleware))))
     } else Left(violations.map(violation ⇒
       VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.position.toList)))
   }

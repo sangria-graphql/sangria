@@ -11,19 +11,19 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
 import scala.util.{Success, Failure, Try}
 
-class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: Executor.ExceptionHandler)(implicit um: InputUnmarshaller[Input]) {
+class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: Executor.ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]])(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]()
 
-  def getVariableValues(definitions: Vector[ast.VariableDefinition]): Try[Map[String, VariableValue]] =
+  def getVariableValues(definitions: Vector[ast.VariableDefinition], fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]]): Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
       Failure(new ExecutionError(s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}", exceptionHandler))
     else {
       val res = definitions.foldLeft(Vector.empty[(String, Either[Vector[Violation], VariableValue])]) {
         case (acc, varDef) ⇒
           val value = schema.getInputType(varDef.tpe)
-            .map(coercionHelper.getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name)))
+            .map(coercionHelper.getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name), fromScalarMiddleware))
             .getOrElse(Left(Vector(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position.toList))))
 
           value match {
@@ -50,7 +50,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
     argumentAsts: Vector[ast.Argument],
     variables: Map[String, VariableValue],
     ignoreErrors: Boolean = false
-  ): Try[Args] = ValueCollector.getArgumentValues(coercionHelper, argumentDefs, argumentAsts, variables, exceptionHandler, ignoreErrors, sourceMapper)
+  ): Try[Args] = ValueCollector.getArgumentValues(coercionHelper, argumentDefs, argumentAsts, variables, exceptionHandler, ignoreErrors, sourceMapper, fromScalarMiddleware)
 }
 
 object ValueCollector {
@@ -63,7 +63,8 @@ object ValueCollector {
     variables: Map[String, VariableValue],
     exceptionHandler: Executor.ExceptionHandler,
     ignoreErrors: Boolean = false,
-    sourceMapper: Option[SourceMapper] = None
+    sourceMapper: Option[SourceMapper] = None,
+    fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]] = None
   ): Try[Args] = {
     import coercionHelper._
 
@@ -86,7 +87,7 @@ object ValueCollector {
 
           try {
             resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller, allowErrorsOnDefault = true, errors = errors, valueMap = fromInput.fromResult, defaultValueInfo = defaultInfo, undefinedValues = undefinedArgs)(
-              acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller)))
+              acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller, fromScalarMiddleware = fromScalarMiddleware)))
           } catch {
             case InputParsingError(e) ⇒
               errors ++= e.map(InvalidInputValueViolation(argDef.name, _, sourceMapper, astValue.flatMap(_.position).toList))
