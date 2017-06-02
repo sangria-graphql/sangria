@@ -4,7 +4,7 @@ import language.postfixOps
 import org.parboiled2.Position
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
-import sangria.util.{DebugUtil, FileUtil, StringMatchers}
+import sangria.util.{FileUtil, StringMatchers}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}

@@ -3,9 +3,8 @@ package sangria.parser
 import org.parboiled2.Position
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
-import sangria.util.{DebugUtil, FileUtil, StringMatchers}
+import sangria.util.{FileUtil, StringMatchers}
 
-import scala.language.postfixOps
 import scala.util.Success
 
 class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {

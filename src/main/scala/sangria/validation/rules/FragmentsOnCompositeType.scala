@@ -2,7 +2,6 @@ package sangria.validation.rules
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand
-import sangria.renderer.SchemaRenderer
 import sangria.schema.CompositeType
 import sangria.validation.{InlineFragmentOnNonCompositeErrorViolation, FragmentOnNonCompositeErrorViolation, ValidationContext, ValidationRule}
 

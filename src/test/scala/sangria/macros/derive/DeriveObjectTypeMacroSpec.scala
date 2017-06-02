@@ -6,7 +6,7 @@ import sangria.introspection._
 import sangria.marshalling.ScalaInput
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global

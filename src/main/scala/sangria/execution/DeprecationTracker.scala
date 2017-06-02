@@ -1,6 +1,6 @@
 package sangria.execution
 
-import sangria.schema.{Context, ObjectType, EnumType, Field}
+import sangria.schema.{Context, EnumType}
 
 trait DeprecationTracker {
   def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]): Unit

@@ -4,7 +4,6 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-import scala.language.postfixOps
 
 /**
  * Lone anonymous operation

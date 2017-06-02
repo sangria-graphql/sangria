@@ -5,7 +5,7 @@ import java.util.regex.Pattern
 import net.jcazevedo.moultingyaml._
 import org.scalatest.{Matchers, WordSpec}
 import sangria.{schema, ast}
-import sangria.ast.{ObjectTypeDefinition, FieldDefinition, TypeDefinition}
+import sangria.ast.{ObjectTypeDefinition, FieldDefinition}
 import sangria.execution.{HandledException, Executor}
 import sangria.parser.{SyntaxError, QueryParser}
 import sangria.schema._

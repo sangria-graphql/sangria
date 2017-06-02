@@ -2,11 +2,10 @@ package sangria.schema
 
 import sangria.marshalling.{FromInput, ScalaInput, ToInput}
 
-import language.higherKinds
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import ScalaInput.scalaInput
 
 import scala.concurrent.ExecutionContext.Implicits.global

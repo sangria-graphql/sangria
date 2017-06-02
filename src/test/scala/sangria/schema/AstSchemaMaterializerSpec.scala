@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition}
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
 import sangria.util.{FutureResultSupport, Pos, StringMatchers}

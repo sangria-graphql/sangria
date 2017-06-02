@@ -5,7 +5,6 @@ import sangria.ast.AstVisitorCommand
 import sangria.validation._
 import scala.collection.mutable.{Set ⇒ MutableSet}
 
-import scala.language.postfixOps
 
 /**
  * No undefined variables

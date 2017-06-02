@@ -2,11 +2,9 @@ package sangria.validation.rules
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand
-import sangria.ast.AstVisitorCommand._
 import sangria.validation._
 
 import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap, Stack ⇒ MutableStack}
-import scala.language.postfixOps
 
 class NoFragmentCycles extends ValidationRule {
    override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

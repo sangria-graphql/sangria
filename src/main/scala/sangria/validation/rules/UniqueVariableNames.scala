@@ -2,7 +2,6 @@ package sangria.validation.rules
 
 import org.parboiled2.Position
 
-import scala.language.postfixOps
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand

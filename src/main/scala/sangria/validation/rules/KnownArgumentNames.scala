@@ -2,7 +2,7 @@ package sangria.validation.rules
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand
-import sangria.renderer.{QueryRenderer, SchemaRenderer}
+import sangria.renderer.SchemaRenderer
 import sangria.util.StringUtil
 import sangria.validation._
 

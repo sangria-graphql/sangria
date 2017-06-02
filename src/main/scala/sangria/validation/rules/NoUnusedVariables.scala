@@ -5,7 +5,6 @@ import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 import scala.collection.mutable.ListBuffer
-import scala.language.postfixOps
 
 /**
  * No unused variables

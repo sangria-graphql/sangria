@@ -3,7 +3,7 @@ package sangria.schema
 import sangria.ast
 import sangria.ast.Document
 
-import language.{existentials, higherKinds, implicitConversions}
+import language.implicitConversions
 import sangria.execution.{FieldTag, SubscriptionField}
 import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.marshalling._

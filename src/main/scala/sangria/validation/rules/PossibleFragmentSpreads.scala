@@ -6,7 +6,6 @@ import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.validation._
 
-import scala.language.postfixOps
 
 /**
  * Possible fragment spread

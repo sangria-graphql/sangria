@@ -2,7 +2,6 @@ package sangria.validation
 
 import org.parboiled2.Position
 import sangria.parser.SourceMapper
-import sangria.schema.Named
 import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
 

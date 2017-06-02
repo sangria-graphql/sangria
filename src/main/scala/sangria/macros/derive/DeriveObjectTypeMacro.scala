@@ -1,9 +1,7 @@
 package sangria.macros.derive
 
 import sangria.execution.deferred.Deferred
-import sangria.macros._
 import sangria.schema.{Action, Context}
-import sangria.util.StringUtil
 
 import scala.concurrent.Future
 import scala.reflect.macros.blackbox

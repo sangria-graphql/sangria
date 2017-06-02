@@ -3,7 +3,7 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport, GraphQlSupport}
+import sangria.util.{FutureResultSupport, GraphQlSupport}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport with GraphQlSupport {

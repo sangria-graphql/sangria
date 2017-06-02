@@ -2,12 +2,10 @@ package sangria.macros.derive
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
-import sangria.introspection.{IntrospectionInputObjectType, IntrospectionObjectType, IntrospectionParser}
-import sangria.marshalling.FromInput
+import sangria.introspection.{IntrospectionInputObjectType, IntrospectionParser}
 import sangria.marshalling.ScalaInput._
 import sangria.schema._
 import sangria.macros._
-import sangria.renderer.SchemaRenderer
 import sangria.util.FutureResultSupport
 import spray.json._
 

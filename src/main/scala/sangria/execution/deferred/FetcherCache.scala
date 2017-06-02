@@ -1,7 +1,6 @@
 package sangria.execution.deferred
 
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.Future
 
 trait FetcherCache {
   def cacheKey(id: Any): Any

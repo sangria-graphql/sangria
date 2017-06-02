@@ -7,7 +7,7 @@ import sangria.ast
 import sangria.execution.Executor
 import sangria.macros._
 import sangria.schema._
-import sangria.util.{DebugUtil, FutureResultSupport, Pos}
+import sangria.util.{FutureResultSupport, Pos}
 import sangria.util.SimpleGraphQlSupport._
 
 import scala.concurrent.{ExecutionContext, Future}

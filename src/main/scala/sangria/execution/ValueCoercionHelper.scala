@@ -1,7 +1,7 @@
 package sangria.execution
 
 import org.parboiled2.Position
-import sangria.{ast, execution}
+import sangria.ast
 import sangria.marshalling.{InputUnmarshaller, RawResultMarshaller, ResultMarshaller, ToInput}
 import sangria.parser.SourceMapper
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
@@ -10,7 +10,6 @@ import sangria.validation._
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
-import scala.util.Failure
 
 class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprecationTracker: DeprecationTracker = DeprecationTracker.empty, userContext: Option[Ctx] = None) {
   import ValueCoercionHelper.defaultValueMapFn

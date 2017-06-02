@@ -5,7 +5,6 @@ import sangria.ast.AstVisitorCommand
 import sangria.util.StringUtil
 import sangria.validation._
 
-import scala.language.postfixOps
 
 /**
  * Known type names

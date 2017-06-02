@@ -3,7 +3,6 @@ package sangria.validation
 import sangria.ast
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 import sangria.schema._
-import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet, Map ⇒ MutableMap}
 
 class TypeInfo(schema: Schema[_, _]) {
   // Using mutable data-structures and mutability to minimize validation footprint

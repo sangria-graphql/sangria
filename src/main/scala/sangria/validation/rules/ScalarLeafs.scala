@@ -1,6 +1,5 @@
 package sangria.validation.rules
 
-import scala.language.postfixOps
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand

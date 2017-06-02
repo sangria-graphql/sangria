@@ -6,7 +6,7 @@ import eu.timepit.refined._
 import eu.timepit.refined.numeric._
 import eu.timepit.refined.api.Refined
 import org.scalatest.{Matchers, WordSpec}
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
