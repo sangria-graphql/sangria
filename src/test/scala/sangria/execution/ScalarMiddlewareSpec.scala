@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.macros._
 import sangria.marshalling.ScalaInput
 import sangria.schema._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import sangria.validation.{ValueCoercionViolation, Violation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -29,6 +29,7 @@ class ScalarMiddlewareSpec extends WordSpec with Matchers with FutureResultSuppo
     InputField("name", StringType)))
 
   val IdArg = Argument("id", EncodedIdType)
+  val IdArgWithDefault = Argument("id", OptionInputType(EncodedIdType), defaultValue = "SOME_ID")
   val ComplexArg = Argument("c", ComplexInputType)
 
   class IdEncodingMiddleware extends Middleware[Ctx] with MiddlewareFromScalar[Ctx] with MiddlewareToScalar[Ctx] {
@@ -57,6 +58,50 @@ class ScalarMiddlewareSpec extends WordSpec with Matchers with FutureResultSuppo
         Field("test", OptionType(EncodedIdType),
           arguments = IdArg :: ComplexArg :: Nil,
           resolve = _.withArgs(IdArg, ComplexArg)(
+            (id, complex) ⇒ id + "-" + complex("userId").asInstanceOf[Option[UserId]].get + "-" + complex("name")))
+      )))
+
+      val query =
+        graphql"""
+          query Test($$id: String!, $$c: Complex!) {
+            t1: test(id: "test-a", c: {userId: "test-b", name: "foo"})
+            t2: test(id: $$id, c: $$c)
+            t3: test(id: "invalid", c: {userId: "yay", name: "foo"})
+          }
+        """
+
+      val ctx = new Ctx("test-")
+
+      val vars = ScalaInput.scalaInput(Map(
+        "id" → "test-c",
+        "c" → Map(
+          "userId" → "test-d",
+          "name" → "bar")))
+
+      val middleware = new IdEncodingMiddleware :: Nil
+
+      Executor.execute(schema, query, ctx, variables = vars, middleware = middleware).await should be (
+        Map(
+          "data" → Map(
+            "t1" → "test-a-b-foo",
+            "t2" → "test-c-d-bar",
+            "t3" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Field 'id' has wrong value: invalid id. (line 5, column 26):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n                         ^",
+              "path" → Vector("t3"),
+              "locations" → Vector(Map("line" → 5, "column" → 26))),
+            Map(
+              "message" → "Field 'c.userId' has wrong value: invalid id. (line 5, column 49):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n                                                ^",
+              "path" → Vector("t3"),
+              "locations" → Vector(Map("line" → 5, "column" → 49))))))
+    }
+
+    "encode and decode scalar value when argument has default value" in {
+      val schema = Schema(ObjectType("Query", fields[Ctx, Unit](
+        Field("test", OptionType(EncodedIdType),
+          arguments = IdArgWithDefault :: ComplexArg :: Nil,
+          resolve = _.withArgs(IdArgWithDefault, ComplexArg)(
             (id, complex) ⇒ id + "-" + complex("userId").asInstanceOf[Option[UserId]].get + "-" + complex("name")))
       )))
 
