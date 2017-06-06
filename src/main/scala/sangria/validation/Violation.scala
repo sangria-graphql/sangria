@@ -52,7 +52,7 @@ case object IDCoercionViolation extends ValueCoercionViolation("String or Int va
 case class EnumValueCoercionViolation(name: String) extends ValueCoercionViolation(s"Enum value '$name' is undefined")
 case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
-case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, ownSourceMapper: Option[SourceMapper], ownPositions: List[Position], errorPrefix: String) extends AstNodeViolation {
+case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, ownSourceMapper: Option[SourceMapper], ownPositions: List[Position], errorPrefix: String, isArgument: Boolean) extends AstNodeViolation {
   lazy val sourceMapper = valueViolation match {
     case astv: AstNodeViolation ⇒ astv.sourceMapper
     case _ ⇒ ownSourceMapper
@@ -68,7 +68,7 @@ case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Viola
     case v ⇒ v.errorMessage
   }
 
-  lazy val simpleErrorMessage = s"${errorPrefix}Field '${fieldPath mkString "."}' has wrong value: $violationMessage."
+  lazy val simpleErrorMessage = s"${errorPrefix}${if (isArgument) "Argument" else "Field"} '${fieldPath mkString "."}' has wrong value: $violationMessage."
 }
 
 case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], violation: Violation, ownSourceMapper: Option[SourceMapper], ownPositions: List[Position]) extends AstNodeViolation {
@@ -350,7 +350,7 @@ case class InputObjectIsOfWrongTypeMissingViolation(typeName: String, sourceMapp
 }
 
 case class GenericInvalidValueViolation(sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Invalid value."
+  lazy val simpleErrorMessage = s"Invalid value"
 }
 
 case class VariableNotAllowedViolation(varName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {

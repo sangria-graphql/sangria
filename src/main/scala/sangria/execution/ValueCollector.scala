@@ -86,8 +86,8 @@ object ValueCollector {
           import sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
           try {
-            resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller, allowErrorsOnDefault = true, errors = errors, valueMap = fromInput.fromResult, defaultValueInfo = defaultInfo, undefinedValues = undefinedArgs)(
-              acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller, fromScalarMiddleware = fromScalarMiddleware)))
+            resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller,  errors = errors, valueMap = fromInput.fromResult, defaultValueInfo = defaultInfo, undefinedValues = undefinedArgs, isArgument = true, fromScalarMiddleware = fromScalarMiddleware)(
+              acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller, fromScalarMiddleware = fromScalarMiddleware, isArgument = true)))
           } catch {
             case InputParsingError(e) ⇒
               errors ++= e.map(InvalidInputValueViolation(argDef.name, _, sourceMapper, astValue.flatMap(_.position).toList))
