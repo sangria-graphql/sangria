@@ -6,7 +6,7 @@ import sangria.introspection._
 import sangria.marshalling.ScalaInput
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -176,7 +176,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       val tpe = deriveObjectType[Unit, TestSubject](
         DocumentField("id", "the object ID", deprecationReason = Some("foo")),
         RenameField("id", "identifier"),
-        sangria.macros.derive.RenameField("list", "colors"),
+        RenameField("list", "colors"),
         DocumentField("list", "my colors"),
         DeprecateField("excluded", "bar"),
         FieldTags("list", CachedTag, AuthorizedTag))
@@ -243,7 +243,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
     "prioritize field config name, description, deprecationReason and merge fieldTags" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated](
-        sangria.macros.derive.RenameField("list", "fooBar"),
+        RenameField("list", "fooBar"),
         DocumentField("id", "new descr", Some("new depr")),
         FieldTags("id", FooTag),
         FieldTags("list", FooTag))
@@ -301,7 +301,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         DocumentField("text", "Comment text"))
 
       val ArticleType = deriveObjectType[Unit, Article](
-        sangria.macros.derive.RenameField("tags", "myTags"))
+        RenameField("tags", "myTags"))
 
       val testArticle = Article("My First Article", Some("foo bar"), None,
         Some(Vector(Some(Comment("bob", None)), None, Some(Comment("jane", Some("yay!"))))))

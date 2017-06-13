@@ -3,7 +3,7 @@ package sangria.execution
 import language.higherKinds
 import sangria.marshalling.InputUnmarshaller
 
-import language.{existentials, implicitConversions}
+import language.implicitConversions
 import sangria.ast
 import sangria.schema.{Action, Context}
 import sangria.streaming.SubscriptionStream

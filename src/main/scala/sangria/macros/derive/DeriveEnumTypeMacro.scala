@@ -1,6 +1,5 @@
 package sangria.macros.derive
 
-import sangria.macros._
 
 import scala.reflect.macros.blackbox
 

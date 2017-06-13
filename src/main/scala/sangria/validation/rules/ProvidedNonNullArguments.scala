@@ -6,7 +6,6 @@ import sangria.renderer.SchemaRenderer
 import sangria.schema.OptionInputType
 import sangria.validation._
 
-import scala.language.postfixOps
 
 /**
  * Provided required arguments

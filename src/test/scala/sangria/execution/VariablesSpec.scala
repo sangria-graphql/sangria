@@ -10,7 +10,6 @@ import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 import InputUnmarshaller.mapVars
 
 import spray.json._
-import DefaultJsonProtocol._
 
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global

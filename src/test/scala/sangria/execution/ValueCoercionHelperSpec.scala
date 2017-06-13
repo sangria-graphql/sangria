@@ -5,7 +5,6 @@ import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.macros._
 import sangria.ast
 
 import scala.reflect.ClassTag

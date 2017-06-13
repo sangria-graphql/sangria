@@ -6,9 +6,8 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.macros._
-import sangria.marshalling.ResultMarshaller
 import sangria.schema._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.ArrayBuffer

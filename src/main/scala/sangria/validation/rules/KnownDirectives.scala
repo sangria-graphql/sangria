@@ -1,6 +1,5 @@
 package sangria.validation.rules
 
-import language.postfixOps
 
 import sangria.ast.{AstNode, OperationType}
 import sangria.schema.DirectiveLocation

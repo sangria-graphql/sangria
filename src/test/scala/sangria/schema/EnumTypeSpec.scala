@@ -1,7 +1,6 @@
 package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.schema._
 import sangria.util.{Pos, GraphQlSupport}
 import spray.json.{JsObject, JsString, JsNumber}
 

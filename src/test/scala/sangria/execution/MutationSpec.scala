@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.schema._
-import sangria.util.{FutureResultSupport, GraphQlSupport, SimpleGraphQlSupport}
+import sangria.util.{GraphQlSupport, SimpleGraphQlSupport}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global

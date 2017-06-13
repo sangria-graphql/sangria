@@ -1,7 +1,7 @@
 package sangria.renderer
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.ast.{Comment, Directive, Field, AstNode}
+import sangria.ast.{Directive, Field, AstNode}
 import sangria.parser.QueryParser
 import sangria.util.{StringMatchers, FileUtil}
 import sangria.ast

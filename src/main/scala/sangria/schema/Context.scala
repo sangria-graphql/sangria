@@ -1,6 +1,6 @@
 package sangria.schema
 
-import language.{existentials, higherKinds, implicitConversions}
+import language.{higherKinds, implicitConversions}
 import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper

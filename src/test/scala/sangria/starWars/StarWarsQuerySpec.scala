@@ -3,7 +3,6 @@ package sangria.starWars
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
-import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.macros._
 import sangria.starWars.TestSchema.{PrivacyError, StarWarsSchema}
@@ -13,7 +12,6 @@ import InputUnmarshaller.mapVars
 import sangria.validation.QueryValidator
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
 
 class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport {
   "Basic Queries" should {

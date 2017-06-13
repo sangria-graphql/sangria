@@ -371,7 +371,6 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
       }
 
       "emit one element for non-stream based subscriptions" in {
-        import _root_.monix.reactive.Observable
         import sangria.streaming.monix._
 
         val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](

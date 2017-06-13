@@ -2,14 +2,13 @@ package sangria.util
 
 import org.scalatest.Matchers
 import sangria.execution.deferred.DeferredResolver
-import sangria.execution.{Executor, HandledException, QueryAnalysisError}
-import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
+import sangria.execution.{Executor, HandledException}
+import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema.Schema
 import sangria.validation.QueryValidator
 import spray.json.{JsObject, JsValue}
 
-import scala.concurrent.Future
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller

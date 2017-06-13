@@ -5,7 +5,6 @@ import sangria.renderer.SchemaRenderer
 import sangria.ast
 import sangria.ast.AstNode
 
-import language.existentials
 
 object SchemaComparator {
   def compare(oldSchema: Schema[_, _], newSchema: Schema[_, _]): Vector[SchemaChange] =

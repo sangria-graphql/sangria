@@ -1,6 +1,5 @@
 package sangria.macros.derive
 
-import language.existentials
 
 import sangria.schema.InputField
 

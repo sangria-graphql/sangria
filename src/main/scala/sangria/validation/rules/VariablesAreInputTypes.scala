@@ -2,11 +2,9 @@ package sangria.validation.rules
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand
-import sangria.renderer.{QueryRenderer, SchemaRenderer}
-import sangria.schema.LeafType
+import sangria.renderer.QueryRenderer
 import sangria.validation._
 
-import scala.language.postfixOps
 
 /**
  * Variables are input types

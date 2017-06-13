@@ -1,6 +1,6 @@
 package sangria.execution
 
-import language.{existentials, higherKinds}
+import language.higherKinds
 import org.parboiled2.Position
 import sangria.ast
 import sangria.execution.deferred.{Deferred, DeferredResolver}

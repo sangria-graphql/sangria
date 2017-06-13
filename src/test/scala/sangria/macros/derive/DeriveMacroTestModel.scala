@@ -5,7 +5,7 @@ import sangria.execution.deferred.Deferred
 import sangria.schema._
 
 object DeriveMacroTestModel {
-    trait Parent1 {
+  trait Parent1 {
     def id: String
   }
 

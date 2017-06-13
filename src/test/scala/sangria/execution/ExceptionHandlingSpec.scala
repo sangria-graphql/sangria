@@ -1,13 +1,12 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.marshalling.ResultMarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{OutputMatchers, FutureResultSupport}
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try, Success}
+import scala.util.{Failure, Success}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

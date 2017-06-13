@@ -1,11 +1,11 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
+import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import InputUnmarshaller.mapVars
 import sangria.execution.deferred.{Deferred, DeferredResolver, Fetcher, HasId}

@@ -8,7 +8,6 @@ import sangria.util.FutureResultSupport
 import spray.json.JsValue
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.language.higherKinds
 
 import spray.json._
 import sangria.marshalling.sprayJson._
