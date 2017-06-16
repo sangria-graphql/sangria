@@ -33,11 +33,12 @@ case class Executor[Ctx, Root](
     if (violations.nonEmpty)
       Future.failed(ValidationError(violations, exceptionHandler))
     else {
-      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler)(um)
+      val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
+      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)(um)
 
       val executionResult = for {
         operation ← getOperation(queryAst, operationName)
-        unmarshalledVariables ← valueCollector.getVariableValues(operation.variables)
+        unmarshalledVariables ← valueCollector.getVariableValues(operation.variables, scalarMiddleware)
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
         tpe ← getOperationRootType(operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
@@ -85,11 +86,12 @@ case class Executor[Ctx, Root](
     if (violations.nonEmpty)
       scheme.failed(ValidationError(violations, exceptionHandler))
     else {
-      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler)(um)
+      val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
+      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)(um)
 
       val executionResult = for {
         operation ← getOperation(queryAst, operationName)
-        unmarshalledVariables ← valueCollector.getVariableValues(operation.variables)
+        unmarshalledVariables ← valueCollector.getVariableValues(operation.variables, scalarMiddleware)
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
         tpe ← getOperationRootType(operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))

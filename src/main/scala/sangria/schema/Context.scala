@@ -219,7 +219,7 @@ object DefaultValueRenderer {
     if (!iu.isDefined(inputValue))
       None
     else
-      coercionHelper.coerceInputValue(tpe, Nil, inputValue, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default)(iu) match {
+      coercionHelper.coerceInputValue(tpe, Nil, inputValue, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default, isArgument = false)(iu) match {
         case Right(Trinary.Defined(coerced)) ⇒ Some(renderCoercedInputValue(tpe, coerced))
         case _ ⇒ None
       }
@@ -358,7 +358,7 @@ object Args {
   private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](value: In, tpe: InputType[_]): Option[Out] = {
     val rm = implicitly[ResultMarshallerForType[Out]]
 
-    ValueCoercionHelper.default.coerceInputValue(tpe, List("stub"), value, None, rm.marshaller, rm.marshaller) match {
+    ValueCoercionHelper.default.coerceInputValue(tpe, List("stub"), value, None, rm.marshaller, rm.marshaller, isArgument = false) match {
       case Right(v) ⇒ v.toOption.asInstanceOf[Option[Out]]
       case Left(violations) ⇒ throw AttributeCoercionError(violations, PartialFunction.empty)
     }

@@ -345,11 +345,13 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
           cs2: complexScalar
           cs3: complexScalar
           cs4: complexScalar
+
         }
         """)
 
-      val rejectComplexQuery = QueryReducer.rejectComplexQueries[Info](14, (c, _) ⇒
-        new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
+      val rejectComplexQuery = QueryReducer.rejectComplexQueries[Info](14, (c, _) ⇒{
+        println(c)
+        new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c")})
 
       val error = intercept [QueryReducingError] (Executor.execute(schema, query,
           userContext = Info(Nil),

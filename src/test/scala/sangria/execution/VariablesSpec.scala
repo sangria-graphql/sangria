@@ -662,7 +662,13 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithDefaultArgumentValue(input: WRONG_TYPE)
           }
         """,
-        Map("data" → Map("fieldWithDefaultArgumentValue" → "\"Hello World\"")),
+        Map(
+          "data" → Map("fieldWithDefaultArgumentValue" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Argument 'input' has wrong value: Invalid value.",
+              "path" → Vector("fieldWithDefaultArgumentValue"),
+              "locations" → Vector(Map("line" → 3, "column" → 50))))),
         validateQuery = false
       )
     }

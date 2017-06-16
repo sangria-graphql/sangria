@@ -26,7 +26,7 @@ class Resolver[Ctx](
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,
-    middleware: List[(Any, Middleware[_])],
+    middleware: List[(Any, Middleware[Ctx])],
     maxQueryDepth: Option[Int],
     deferredResolverState: Any,
     preserveOriginalErrors: Boolean,
@@ -34,6 +34,7 @@ class Resolver[Ctx](
     queryReducerTiming: TimeMeasurement
 )(implicit executionContext: ExecutionContext) {
   val resultResolver = new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
+  val toScalarMiddleware = Middleware.composeToScalarMiddleware(middleware.map(_._2), userContext)
 
   import resultResolver._
   import Resolver._
@@ -763,7 +764,8 @@ class Resolver[Ctx](
       tpe: OutputType[_],
       field: Field[Ctx, _],
       value: Any,
-      userCtx: Ctx): Resolve  =
+      userCtx: Ctx,
+      actualType: Option[InputType[_]] = None): Resolve  =
     tpe match {
       case OptionType(optTpe) ⇒
         val actualValue = value match {
@@ -825,16 +827,23 @@ class Resolver[Ctx](
             else {
               val coerced = scalar.coerceOutput(value, marshaller.capabilities)
 
-              if (isUndefinedValue(coerced))
+              if (isUndefinedValue(coerced)) {
                 None
-              else
-                Some(marshalScalarValue(coerced, marshaller, scalar.name, scalar.scalarInfo))
+              } else {
+                val coercedWithMiddleware =
+                  toScalarMiddleware match {
+                    case Some(fn) ⇒ fn(coerced, actualType getOrElse scalar) getOrElse coerced
+                    case None ⇒ coerced
+                  }
+
+                Some(marshalScalarValue(coercedWithMiddleware, marshaller, scalar.name, scalar.scalarInfo))
+              }
             })
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
       case scalar: ScalarAlias[Any @unchecked, Any @unchecked] ⇒
-        resolveValue(path, astFields, scalar.aliasFor, field, scalar.toScalar(value), userCtx)
+        resolveValue(path, astFields, scalar.aliasFor, field, scalar.toScalar(value), userCtx, Some(scalar))
       case enum: EnumType[Any @unchecked] ⇒
         try {
           Result(ErrorRegistry.empty,
