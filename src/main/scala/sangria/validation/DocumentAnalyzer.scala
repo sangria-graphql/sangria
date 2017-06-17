@@ -77,5 +77,8 @@ case class DocumentAnalyzer(document: ast.Document) {
   }
 
   def separateOperation(operationName: Option[String]): Option[ast.Document] =
-    document.operations.get(operationName).map(separateOperation)
+    if (operationName.nonEmpty && document.operations.size == 1)
+      separateOperation(document.operations.head)
+    else
+      document.operations.get(operationName).map(separateOperation)
 }
