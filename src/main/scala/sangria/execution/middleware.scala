@@ -103,6 +103,10 @@ trait MiddlewareErrorField[Ctx] extends MiddlewareBeforeField[Ctx] {
   def fieldError(queryVal: QueryVal, fieldVal: FieldVal, error: Throwable, mctx: MiddlewareQueryContext[Ctx, _, _], ctx: Context[Ctx, _]): Unit
 }
 
+trait MiddlewareExtension[Ctx] extends Middleware[Ctx] {
+  def afterQueryExtensions(queryVal: QueryVal, context: MiddlewareQueryContext[Ctx, _, _]): Vector[Extension[_]]
+}
+
 case class MiddlewareQueryContext[+Ctx, RootVal, Input](
   ctx: Ctx,
   executor: Executor[_ <: Ctx, RootVal],
@@ -123,5 +127,7 @@ object FieldTag {
 }
 
 case class SubscriptionField[S[_]](stream: SubscriptionStream[S]) extends FieldTag
+
+case class Extension[In](data: In)(implicit val iu: InputUnmarshaller[In])
 
 

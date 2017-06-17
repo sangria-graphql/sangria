@@ -1,29 +1,42 @@
 package sangria.execution
 
 import org.parboiled2.Position
-import sangria.marshalling.ResultMarshaller
-import sangria.validation.{Violation, AstNodeLocation}
+import sangria.marshalling.{ResultMarshaller, SimpleResultMarshallerForType}
+import sangria.validation.{AstNodeLocation, Violation}
 
 class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executor.ExceptionHandler, preserveOriginalErrors: Boolean) {
   def marshalErrors(errors: ErrorRegistry) =
     if (errors.isEmpty) None else Some(marshaller.arrayNode(errors.errorList))
 
-  def marshalResult(data: Option[marshaller.Node], errors: Option[marshaller.Node]) = {
-    val empty = marshaller.emptyMapNode(if (errors.isDefined) Vector("data", "errors") else Vector("data"))
+  def marshalResult(data: Option[marshaller.Node], errors: Option[marshaller.Node], extensions: Option[marshaller.Node]) = {
+    val names =
+      if (errors.isDefined & extensions.isDefined) Vector("data", "errors", "extensions")
+      else if (errors.isDefined) Vector("data", "errors")
+      else if (extensions.isDefined) Vector("data", "extensions")
+      else Vector("data")
+
+    val empty = marshaller.emptyMapNode(names)
 
     val withData = data match {
       case Some(d) ⇒ marshaller.addMapNodeElem(empty, "data", d, optional = false)
       case None ⇒ marshaller.addMapNodeElem(empty, "data", marshaller.nullNode, optional = false)
     }
 
-    errors match {
-      case Some(e) ⇒ marshaller.mapNode(marshaller.addMapNodeElem(withData, "errors", e, optional = false))
-      case None ⇒ marshaller.mapNode(withData)
+    val withErrors = errors match {
+      case Some(e) ⇒ marshaller.addMapNodeElem(withData, "errors", e, optional = false)
+      case None ⇒ withData
     }
+
+    val withExtensions = extensions match {
+      case Some(e) ⇒ marshaller.addMapNodeElem(withErrors, "extensions", e, optional = true)
+      case None ⇒ withErrors
+    }
+
+    marshaller.mapNode(withExtensions)
   }
 
   def resolveError(error: Throwable) =
-    marshalResult(None, marshalErrors(ErrorRegistry(ExecutionPath.empty, error)))
+    marshalResult(None, marshalErrors(ErrorRegistry(ExecutionPath.empty, error)), None)
 
   def handleSupportedError(e: Throwable) = {
     val handeled = exceptionHandler(marshaller → e)
@@ -128,6 +141,33 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
       case Some(node) ⇒ marshaller.mapNode(marshaller.addMapNodeElem(builderWithPath, "locations", node, optional = false))
       case None ⇒ marshaller.mapNode(builderWithPath)
     }
+  }
+}
+
+object ResultResolver {
+  def marshalExtensions(marshaller: ResultMarshaller, extensions: Seq[Extension[_]]): Option[marshaller.Node] = {
+    import scala.collection.mutable
+    import sangria.marshalling.MarshallingUtil._
+
+    implicit val m = SimpleResultMarshallerForType[marshaller.Node](marshaller)
+    val res = new mutable.LinkedHashMap[String, marshaller.Node]
+
+    extensions.foreach { e ⇒
+      val eAny = e.asInstanceOf[Extension[Any]]
+
+      implicit val iu = eAny.iu
+
+      if (iu.isMapNode(eAny.data)) {
+        iu.getMapKeys(e.data).map { key ⇒
+          iu.getMapValue(e.data, key).foreach { value ⇒
+            res(key) = value.convertMarshaled[marshaller.Node]
+          }
+        }
+      }
+    }
+
+    if (res.nonEmpty) Some(marshaller.mapNode(res.toVector))
+    else None
   }
 }
 

@@ -3,6 +3,7 @@ package sangria.execution
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.ast
 import sangria.ast.Document
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.macros._
@@ -339,6 +340,48 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         "data" → Map(
           "someString" → "nothing special s2 s1",
           "someStringMapped" → "mapped s2 s1")))
+    }
+
+    "add extensions" in {
+      val query =
+        graphql"""
+          {
+            someString
+          }
+        """
+
+      class QueryMiddleware(prefix: String) extends Middleware[Any] with MiddlewareExtension[Any] {
+        type QueryVal = String
+
+        def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) = "test-"
+        def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = ()
+
+        def afterQueryExtensions(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = {
+          import sangria.marshalling.queryAst._
+
+          Vector(Extension(
+            ast.ObjectValue(
+              Vector(
+                ast.ObjectField(prefix + "metrics", ast.ObjectValue(
+                  Vector(
+                    ast.ObjectField(queryVal + "name", ast.StringValue("test name")),
+                    ast.ObjectField(queryVal + "executionTimeMs", ast.IntValue(123))))))): ast.Value))
+        }
+      }
+
+      val res = Executor.execute(schema, query, new Count,
+        middleware = new QueryMiddleware("a-") :: new QueryMiddleware("b-") :: Nil).await
+
+      res should be (Map(
+        "data" → Map(
+          "someString" → "nothing special"),
+        "extensions" → Map(
+          "a-metrics" → Map(
+            "test-name" → "test name",
+            "test-executionTimeMs" → 123),
+          "b-metrics" → Map(
+            "test-name" → "test name",
+            "test-executionTimeMs" → 123))))
     }
 
     behave like properFieldLevelMiddleware(

@@ -97,15 +97,30 @@ class Resolver[Ctx](
     case Result(errors, data, _) ⇒
       Future.successful(
         errors.originalErrors →
-          marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]],
-            marshalErrors(errors)).asInstanceOf[marshaller.Node])
+          marshalResult(
+            data.asInstanceOf[Option[resultResolver.marshaller.Node]],
+            marshalErrors(errors),
+            marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]).asInstanceOf[marshaller.Node])
 
     case dr: DeferredResult ⇒
       immediatelyResolveDeferred(userContext, dr, _ map { case (Result(errors, data, _)) ⇒
         errors.originalErrors →
-          marshalResult(data.asInstanceOf[Option[resultResolver.marshaller.Node]],
-            marshalErrors(errors)).asInstanceOf[marshaller.Node]
+          marshalResult(
+            data.asInstanceOf[Option[resultResolver.marshaller.Node]],
+            marshalErrors(errors),
+            marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]).asInstanceOf[marshaller.Node]
       })
+  }
+
+  private def marshallExtensions: Option[marshaller.Node] = {
+    val extensions =
+      middleware flatMap {
+        case (v, m: MiddlewareExtension[Ctx]) ⇒ m.afterQueryExtensions(v.asInstanceOf[m.QueryVal], middlewareCtx)
+        case _⇒ Nil
+      }
+
+    if (extensions.nonEmpty) ResultResolver.marshalExtensions(marshaller, extensions)
+    else None
   }
 
   private def immediatelyResolveDeferred[T](uc: Ctx, dr: DeferredResult, fn: Future[Result] ⇒ Future[T]): Future[T] = {
