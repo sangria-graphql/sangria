@@ -22,8 +22,10 @@ case class Document(definitions: Vector[Definition], trailingComments: Vector[Co
     operation(operationName) map (_.operationType)
 
   def operation(operationName: Option[String] = None): Option[OperationDefinition] =
-    if (operations.size != 1 && operationName.isEmpty)
+    if (operationName.isEmpty && operations.size != 1)
       None
+    else if(operationName.isEmpty && operations.size == 1)
+      Some(operations.head._2)
     else
       operationName flatMap (opName ⇒ operations get Some(opName)) orElse operations.values.headOption
 

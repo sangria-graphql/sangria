@@ -1,3 +1,10 @@
+## v1.2.2 (Upcoming)
+
+* Added new middleware traits `MiddlewareFromScalar` and `MiddlewareToScalar`. They provide a way to transform all scalar values from middleware (#249, #248). This have some advantages since middleware can be disable, chained together and has access to context information. Huge thanks to @BjRo and @Axxiss for helping with the feature design and implementation!
+* Added new middleware trait `MiddlewareExtension` (#256). It provides an easy way to add [extensions](https://facebook.github.io/graphql/#sec-Response-Format) from middleware.
+* Improved error message for `All fields within a Type should have unique names!` (#247). It now includes type and field information.
+* Fixed helper methods for operation lookup in `ast.Document`
+
 ## v1.2.1 (2017-05-18)
 
 * Fixed `MeasureQueryDepth` reducer not keeping the largest depth found (#245, #246). Big thanks @Eluinhost for this contribution!
