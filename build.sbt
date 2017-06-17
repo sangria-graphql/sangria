@@ -44,11 +44,11 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-ion" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-monix" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-rxscala" % "1.0.0" % Test,
-  "eu.timepit" %% "refined" % "0.7.0" % Test,
+  "eu.timepit" %% "refined" % "0.8.2" % Test,
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.4.0" % Test,
-  "io.github.lukehutch" % "fast-classpath-scanner" % "2.0.19" % Test
+  "io.github.lukehutch" % "fast-classpath-scanner" % "2.2.1" % Test
 )
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")

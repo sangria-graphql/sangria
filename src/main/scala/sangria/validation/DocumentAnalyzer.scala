@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.ast.{FragmentDefinition, FragmentSpread, OperationDefinition}
 
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.{ListBuffer, Set => MutableSet}
+import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet}
 
 case class DocumentAnalyzer(document: ast.Document) {
   private val fragmentSpreadsCache = TrieMap[Int, Vector[ast.FragmentSpread]]()

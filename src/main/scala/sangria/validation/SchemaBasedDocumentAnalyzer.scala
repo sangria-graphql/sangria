@@ -8,7 +8,7 @@ import sangria.schema._
 import sangria.introspection.isIntrospection
 
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.{ListBuffer, Map => MutableMap}
+import scala.collection.mutable.{ListBuffer, Map ⇒ MutableMap}
 
 case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
   import SchemaBasedDocumentAnalyzer._

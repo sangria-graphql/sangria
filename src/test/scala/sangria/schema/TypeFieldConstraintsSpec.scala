@@ -345,11 +345,11 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
           }
          }
        """,
-        Map("data" -> Map(
-          "basket" -> Map(
-            "fruit" -> Map(
-              "size" -> 11,
-              "slice" -> 5)))))
+        Map("data" → Map(
+          "basket" → Map(
+            "fruit" → Map(
+              "size" → 11,
+              "slice" → 5)))))
 
       checkContainsErrors(
         schema,

@@ -1,9 +1,9 @@
-## v1.2.2 (Upcoming)
+## v1.2.2 (2017-06-17)
 
 * Added new middleware traits `MiddlewareFromScalar` and `MiddlewareToScalar`. They provide a way to transform all scalar values from middleware (#249, #248). This have some advantages since middleware can be disable, chained together and has access to context information. Huge thanks to @BjRo and @Axxiss for helping with the feature design and implementation!
 * Added new middleware trait `MiddlewareExtension` (#256). It provides an easy way to add [extensions](https://facebook.github.io/graphql/#sec-Response-Format) from middleware.
 * Improved error message for `All fields within a Type should have unique names!` (#247). It now includes type and field information.
-* Fixed helper methods for operation lookup in `ast.Document`
+* Fixed helper methods for operation lookup in `ast.Document`.
 
 ## v1.2.1 (2017-05-18)
 
@@ -649,20 +649,20 @@ I collected all of them in the change list below. They were necessary in order t
 * #76 - You can now provide `maxQueryDepth` to `Executor`. It will then enforce this constraint for all queries (very useful if query has recursive types) [Docs](http://sangria-graphql.org/learn/#limiting-query-depth)
 * #69 - `DeferredResolver` now got `userContext` as an argument. (breaking change: you need to provide a type parameter and one extra argument in `resolve` for your `DeferredResolver`s. you you are not interested in `userContext`, you can just use `Any` type)
 * Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
-  * `sangria.integration.CirceSupport` -> `sangria.integration.circe`
-  * `sangria.integration.Json4sSupport` -> `sangria.integration.json4s`
-  * `sangria.integration.PlayJsonSupport` -> `sangria.integration.playJson`
-  * `sangria.integration.SprayJsonSupport` -> `sangria.integration.sprayJson`
+  * `sangria.integration.CirceSupport` → `sangria.integration.circe`
+  * `sangria.integration.Json4sSupport` → `sangria.integration.json4s`
+  * `sangria.integration.PlayJsonSupport` → `sangria.integration.playJson`
+  * `sangria.integration.SprayJsonSupport` → `sangria.integration.sprayJson`
 * `ResultMarshaller` and `InputUnmarshaller` are moved in the `integration` package
 * Renamed execution `arguments` to `variables` in order to be consistent with the spec (breaking change: you need to rename this argument as well, if you are using named arguments)
 * Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity it now does not have a dependent type. Instead it uses "type tagging" for scala map variables.
   It's a minor breaking change. If you are providing execution variables as a scala map, then you need to use `mapVars` or `emptyMapVars` which are defined in `InputUnmarshaller` companion object (these functions do not wrap `Map` - they only needed to ensure type constraints):
   ```scala
-  Executor.execute(mySchema, query, variables = mapVars(Map("someId" -> "1000")))
+  Executor.execute(mySchema, query, variables = mapVars(Map("someId" → "1000")))
 
   // or
 
-  Executor.execute(mySchema, query, variables = mapVars("someId" -> "1000"))
+  Executor.execute(mySchema, query, variables = mapVars("someId" → "1000"))
   ```
 * #72 - `scala.util.Try` now can be returned from `resolve` in order to indicate a successful or failed result
 * #65 - `DeprecationTracker` should be called even if deprecation is in the interface type
