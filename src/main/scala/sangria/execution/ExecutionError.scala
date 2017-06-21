@@ -3,6 +3,7 @@ package sangria.execution
 import org.parboiled2.Position
 import sangria.marshalling.ResultMarshaller
 import sangria.parser.SourceMapper
+import sangria.schema.{AbstractType, InterfaceType, ObjectType, UnionType}
 import sangria.validation.{AstNodeLocation, Violation}
 
 trait UserFacingError {
@@ -25,6 +26,27 @@ trait ErrorWithResolver {
 class ExecutionError(message: String, val exceptionHandler: Executor.ExceptionHandler, val sourceMapper: Option[SourceMapper] = None, val positions: List[Position] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError with ErrorWithResolver {
   override def simpleErrorMessage = super.getMessage
   override def getMessage() = super.getMessage + astLocation
+}
+
+abstract class InternalExecutionError(message: String) extends Exception(message) with AstNodeLocation with ErrorWithResolver {
+  override def simpleErrorMessage = super.getMessage
+  override def getMessage() = super.getMessage + astLocation
+}
+
+case class UndefinedConcreteTypeError(path: ExecutionPath, abstractType: AbstractType, possibleTypes: Vector[ObjectType[_, _]], value: Any, exceptionHandler: Executor.ExceptionHandler, sourceMapper: Option[SourceMapper] = None, positions: List[Position] = Nil)
+  extends InternalExecutionError(s"Can't find appropriate subtype of ${UndefinedConcreteTypeError.renderAbstractType(abstractType)} type '${abstractType.name}' for value of class '${UndefinedConcreteTypeError.renderValueClass(value)}' at path '$path'. Possible types: ${UndefinedConcreteTypeError.renderPossibleTypes(possibleTypes)}. Got value: $value.")
+
+object UndefinedConcreteTypeError {
+  private def renderAbstractType(abstractType: AbstractType) = abstractType match {
+    case _: UnionType[_] ⇒ "a union"
+    case _: InterfaceType[_, _] ⇒ "an interface"
+  }
+
+  private def renderPossibleTypes(possibleTypes: Vector[ObjectType[_, _]]) =
+    if (possibleTypes.isEmpty) "none"
+    else possibleTypes.map(pt ⇒ s"${pt.name} (defined for '${pt.valClass.getName}')") mkString ", "
+
+  private def renderValueClass(value: Any) = value.getClass.getName
 }
 
 case class MaxQueryDepthReachedError(maxDepth: Int) extends Exception(s"Max query depth $maxDepth is reached.") with UserFacingError

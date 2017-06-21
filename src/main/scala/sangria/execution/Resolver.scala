@@ -894,7 +894,7 @@ class Resolver[Ctx](
           abst.typeOf(value, schema) match {
             case Some(obj) ⇒ resolveValue(path, astFields, obj, field, value, userCtx)
             case None ⇒ Result(ErrorRegistry(path,
-              new ExecutionError(s"Can't find appropriate subtype for field at path $path", exceptionHandler, sourceMapper, astFields.head.position.toList)), None)
+              UndefinedConcreteTypeError(path, abst, schema.possibleTypes.getOrElse(abst.name, Vector.empty), value, exceptionHandler, sourceMapper, astFields.head.position.toList)), None)
           }
     }
 
