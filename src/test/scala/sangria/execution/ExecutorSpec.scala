@@ -5,10 +5,11 @@ import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.macros._
-import sangria.util.FutureResultSupport
+import sangria.util.{DebugUtil, FutureResultSupport, Pos, SimpleGraphQlSupport}
 import sangria.validation.QueryValidator
 import InputUnmarshaller.mapVars
 import sangria.execution.deferred.{Deferred, DeferredResolver, Fetcher, HasId}
+import sangria.util.SimpleGraphQlSupport.checkContainsErrors
 
 import scala.collection.immutable.Map
 import scala.concurrent.{ExecutionContext, Future}
@@ -804,6 +805,62 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       result.ctx.acc should be ("OneTwoThree")
     }
+
+    "validate recursive fragments" in checkContainsErrors(schema = Schema(DataType), data = (), userContext = Ctx(),
+      query =
+        """
+          {
+            ...c
+          }
+
+          fragment one on DataType {
+            pic(size: 1)
+          }
+
+          fragment two on DataType {
+            pic(size: 3)
+          }
+
+          fragment c on DataType {
+            ...c
+            ...one
+            ...two
+          }
+        """,
+      expectedData = null,
+      expectedErrorStrings = List(
+        "Cannot spread fragment 'c' within itself." → List(Pos(15, 13)),
+        "Field 'pic' conflict because they have differing arguments." → List(Pos(11, 13), Pos(7, 13))))
+
+    "validate mutually recursive fragments" in checkContainsErrors(schema = Schema(DataType), data = (), userContext = Ctx(),
+      query =
+        """
+          {
+            ...c
+          }
+
+          fragment one on DataType {
+            pic(size: 1)
+          }
+
+          fragment two on DataType {
+            pic(size: 3)
+          }
+
+          fragment c on DataType {
+            ...d
+          }
+
+          fragment d on DataType {
+            ...c
+            ...one
+            ...two
+          }
+        """,
+      expectedData = null,
+      expectedErrorStrings = List(
+        "Cannot spread fragment 'c' within itself via 'd'." → List(Pos(15, 13), Pos(19, 13)),
+        "Field 'pic' conflict because they have differing arguments." → List(Pos(11, 13), Pos(7, 13))))
 
     "support `Action.sequence` in queries and mutations" in {
       val error = new IllegalStateException("foo")

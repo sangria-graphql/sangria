@@ -699,5 +699,45 @@ class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
         List("Field 'box' conflict because subfields 'scalar' conflict because they return conflicting types 'String' and 'Int'" →
           List(Pos(5, 17), Pos(6, 19), Pos(10, 17), Pos(11, 19))))
     }
+
+    "does not infinite loop on recursive fragment" in expectPasses(
+      """
+        fragment fragA on Human {name relatives { name ...fragA } }
+      """)
+    
+    "does not infinite loop on immediately spread fragment" in expectPasses(
+      """
+        fragment fragA on Human {name ...fragA }
+      """)
+
+    "does not infinite loop on a larger cycle" in expectPasses(
+      """
+        fragment fragA on Human {name ...fragB }
+        fragment fragB on Human {name ...fragA }
+      """)
+
+    // You would not expect this to have three error messages, and you would be
+    // right. The trickiness here is that we don't detect the immediate spread
+    // on first spreading, because it's in the context of the selection set. So
+    // by the time we detect and eliminate it, we've already spread it in once,
+    // and hence we get multiple error messages. We could change the algorithm
+    // to track that we're in an immediate fragment spread, but that would add
+    // complexity that only is needed in this error case.
+    //
+    // Because this is an invalid query by another rule (NoFragmentCycles), I'm
+    // not too worried about this case... and since we used to infinite loop,
+    // this is strictly better.
+    "finds invalid case even with immediately spread fragment" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      """
+        fragment sameAliasesWithDifferentFieldTargets on Dog {
+         ...sameAliasesWithDifferentFieldTargets
+         fido: name
+         fido: nickname
+       }
+      """,
+      List(
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields" → List(Pos(4, 10), Pos(5, 10)),
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields" → List(Pos(4, 10), Pos(5, 10)),
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields" → List(Pos(4, 10), Pos(5, 10))))
   }
 }
