@@ -739,7 +739,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |
         |# Marks an element of a GraphQL schema as no longer supported.
         |directive @deprecated(
-        |  # Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formattedin [Markdown](https://daringfireball.net/projects/markdown/).
+        |  # Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted in [Markdown](https://daringfireball.net/projects/markdown/).
         |  reason: String = "No longer supported") on ENUM_VALUE | FIELD_DEFINITION
         |
         |# Directs the executor to include this field or fragment only when the `if` argument is true.
