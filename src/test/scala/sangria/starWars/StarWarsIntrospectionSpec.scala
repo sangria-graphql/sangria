@@ -41,13 +41,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
                 Map("name" → "__Schema"),
                 Map("name" → "__Type"),
                 Map("name" → "__TypeKind"),
-                Map("name" → "BigDecimal"),
-                Map("name" → "BigInt"),
                 Map("name" → "Boolean"),
-                Map("name" → "Float"),
-                Map("name" → "ID"),
-                Map("name" → "Int"),
-                Map("name" → "Long"),
                 Map("name" → "String")
               )
             )
