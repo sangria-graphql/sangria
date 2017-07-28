@@ -783,6 +783,7 @@ case class Schema[Ctx, Val](
         case ListType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
         case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
+        case t @ ScalarType(name, _, _, _, _, _, _, _) if BuiltinScalars.contains(t) ⇒ updated(40, name, t, result, parentInfo)
         case t @ ScalarType(name, _, _, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
         case ScalarAlias(aliasFor, _, _) ⇒ updated(priority, aliasFor.name, aliasFor, result, parentInfo)
         case t @ EnumType(name, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
@@ -819,7 +820,7 @@ case class Schema[Ctx, Val](
       }
     }
 
-    val schemaTypes = collectTypes("a '__Schema' type", 30, introspection.__Schema, Map(BuiltinScalars map (s ⇒ s.name → (40 → s)): _*))
+    val schemaTypes = collectTypes("a '__Schema' type", 30, introspection.__Schema, Map.empty)
     val queryTypes = collectTypes("a query type", 20, query, schemaTypes)
     val queryTypesWithAdditions = additionalTypes.foldLeft(queryTypes){case (acc, tpe) ⇒ collectTypes("additional type", 10, tpe, acc)}
     val queryAndSubTypes = mutation map (collectTypes("a mutation type", 10, _, queryTypesWithAdditions)) getOrElse queryTypesWithAdditions

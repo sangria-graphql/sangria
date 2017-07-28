@@ -183,6 +183,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
         }
       """,
 
+      nonBreakingChange[TypeAdded]("`Int` type was added"),
       breakingChange[InputFieldRemoved]("Input field `descr` was removed from `Filter` type"),
       nonBreakingChange[InputFieldAdded]("Input field `size` was added to `Filter` type"),
       nonBreakingChange[InputFieldDescriptionChanged]("`Filter.name` description is changed"),
@@ -223,6 +224,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       """,
 
       breakingChange[TypeRemoved]("`I2` type was removed"),
+      nonBreakingChange[TypeAdded]("`ID` type was added"),
       nonBreakingChange[TypeAdded]("`I3` type was added"),
       breakingChange[ObjectTypeInterfaceRemoved]("`Filter` object type no longer implements `I2` interface"),
       nonBreakingChange[ObjectTypeInterfaceAdded]("`Filter` object type now implements `I3` interface"),
@@ -259,6 +261,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
         }
       """,
 
+      nonBreakingChange[TypeAdded]("`Int` type was added"),
       breakingChange[ObjectTypeArgumentTypeChanged]("`Filter.foo(b)` type changed from `String` to `[String]`"),
       nonBreakingChange[ObjectTypeArgumentAdded]("Argument `d` was added to `Filter.foo` field"),
       breakingChange[ObjectTypeArgumentTypeChanged]("`Filter.foo(b1)` type changed from `String` to `String!`"),
@@ -314,6 +317,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
         }
       """,
 
+      nonBreakingChange[TypeAdded]("`Int` type was added"),
       breakingChange[InputFieldAdded]("Input field `e` was added to `Filter` type"),
       nonBreakingChange[InputFieldAdded]("Input field `d` was added to `Filter` type"),
       breakingChange[InputFieldTypeChanged]("`Filter.b` input field type changed from `String` to `[String]`"),
@@ -350,6 +354,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
       breakingChange[TypeRemoved]("`Query` type was removed"),
       nonBreakingChange[TypeAdded]("`Mut` type was added"),
+      nonBreakingChange[TypeAdded]("`Int` type was added"),
       nonBreakingChange[TypeAdded]("`Subs` type was added"),
       nonBreakingChange[TypeAdded]("`Foo` type was added"),
       breakingChange[SchemaQueryTypeChanged]("Schema query type changed from `Query` to `Foo` type"),
