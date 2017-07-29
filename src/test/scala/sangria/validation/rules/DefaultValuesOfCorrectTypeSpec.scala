@@ -96,7 +96,7 @@ class DefaultValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' of type 'ComplexInput' has invalid default value: {intField: 3}. Reason: The NotNull field 'requiredField' defined in the input type 'Boolean' is missing." → Some(Pos(2, 55))
+        "Variable '$a' of type 'ComplexInput' has invalid default value: {intField: 3}. Reason: The NotNull field 'requiredField' of type 'Boolean!' defined in the 'ComplexInput' input type  is missing." → Some(Pos(2, 55))
       ))
 
     "list variables with invalid item" in expectFails(

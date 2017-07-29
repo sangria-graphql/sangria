@@ -85,5 +85,5 @@ tests:
       validate: [DefaultValuesOfCorrectType]
     then:
       - error-count: 1
-      - error: "Variable '$a' of type 'ComplexInput' has invalid default value: {intField: 3}. Reason: The NotNull field 'requiredField' defined in the input type 'Boolean' is missing."
+      - error: "Variable '$a' of type 'ComplexInput' has invalid default value: {intField: 3}. Reason: The NotNull field 'requiredField' of type 'Boolean!' defined in the 'ComplexInput' input type  is missing."
         loc: {line: 1, column: 47}

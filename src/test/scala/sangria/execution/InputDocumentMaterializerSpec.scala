@@ -5,12 +5,12 @@ import sangria.ast.ScalarTypeDefinition
 import sangria.macros._
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.marshalling.sprayJson._
+import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{DebugUtil, StringMatchers}
+import sangria.util.StringMatchers
 import sangria.validation.QueryValidator
 import spray.json.{DefaultJsonProtocol, JsValue, pimpString}
-import sangria.parser.DeliveryScheme.Throw
 
 class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMatchers {
   case class Comment(author: String, text: Option[String])
