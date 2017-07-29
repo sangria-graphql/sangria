@@ -42,7 +42,7 @@ case class InputDocumentMaterializer[Vars](schema: Schema[_, _], variables: Vars
     }
   }
 
-  private def inferVariableDefinitions[T](document: InputDocument, inputType: InputType[T]) = {
+  def inferVariableDefinitions[T](document: InputDocument, inputType: InputType[T]) = {
     document.values.flatMap { v ⇒
       AstVisitor.visitAstWithState(schema, v, new mutable.HashMap[String, VariableDefinition]) { (typeInfo, state) ⇒
         typeInfo.withInputType(inputType)
