@@ -382,7 +382,7 @@ case class MapValueViolation(fieldName: String, violation: Violation, mapSourceM
 case class UnknownInputObjectFieldViolation(typeName: String, fieldName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation with PathBasedViolation {
   lazy val pathString = "." + fieldName
 
-  lazy val errorMessageWithoutPath = s"Unknown field '$fieldName' is not defined in the input type '$typeName'."
+  lazy val errorMessageWithoutPath = s"Field '$fieldName' is not defined in the input type '$typeName'."
 
   lazy val simpleErrorMessage = s"'${pathString substring 1}' $errorMessageWithoutPath"
 }

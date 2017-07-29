@@ -694,7 +694,7 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument 'complexArg' expected type 'ComplexInput' but got: {requiredField: true, unknownField: \"value\"}. Reason: Unknown field 'unknownField' is not defined in the input type 'ComplexInput'" →
+          "Argument 'complexArg' expected type 'ComplexInput' but got: {requiredField: true, unknownField: \"value\"}. Reason: 'unknownField' Field 'unknownField' is not defined in the input type 'ComplexInput'" →
               List(Pos(4, 43), Pos(6, 17))))
     }
 

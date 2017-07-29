@@ -30,7 +30,7 @@ class InputDocumentOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         "At path 'requiredField' Boolean value expected" → List(Pos(3, 11)),
         "At path 'stringField' String value expected" → List(Pos(4, 11)),
         "At path 'stringListField[0]' String value expected" → List(Pos(5, 11), Pos(5, 28)),
-        "At path 'bestField' Unknown field 'bestField' is not defined in the input type 'ComplexInput'." → List(Pos(6, 11))
+        "At path 'bestField' Field 'bestField' is not defined in the input type 'ComplexInput'." → List(Pos(6, 11))
       ))
   }
 }

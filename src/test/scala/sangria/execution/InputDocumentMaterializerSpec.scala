@@ -95,7 +95,7 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
 
       val errors = QueryValidator.default.validateInputDocument(schema, inp, "Config")
 
-      errors should have size 5
+      errors should have size 6
 
       errors(0).errorMessage should include (
         "At path 'bar' Int value expected")
@@ -104,13 +104,16 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
         "At path 'list[1].baz' Enum value 'FOO_BAR' is undefined in enum type 'Color'. Known values are: RED, GREEN, BLUE.")
 
       errors(2).errorMessage should include (
-        "At path 'list[2]' Unknown field 'test' is not defined in the input type 'Foo'.")
+        "At path 'list[2].test' Field 'test' is not defined in the input type 'Foo'.")
 
       errors(3).errorMessage should include (
-        "At path 'list[3]' The NotNull field 'baz' of type 'Color!' defined in the 'Foo' input type  is missing.")
+        "At path 'list[2]' The NotNull field 'baz' of type 'Color!' defined in the 'Foo' input type  is missing.")
 
       errors(4).errorMessage should include (
-        "At path Unknown field 'doo' is not defined in the input type 'Config'.")
+        "At path 'list[3]' The NotNull field 'baz' of type 'Color!' defined in the 'Foo' input type  is missing.")
+
+      errors(5).errorMessage should include (
+        "At path 'doo' Field 'doo' is not defined in the input type 'Config'.")
     }
 
     "support `Any` value" in {
