@@ -679,8 +679,8 @@ class ArgumentsOfCorrectTypeSpec extends WordSpec with ValidationSupport {
           }
         """,
         List(
-          "Argument 'complexArg' expected type 'ComplexInput' but got: {stringListField: [\"one\", 2], requiredField: true}. Reason: [in field 'stringListField'] [at index #1] String value expected" →
-              List(Pos(4, 43), Pos(5, 34))))
+          "Argument 'complexArg' expected type 'ComplexInput' but got: {stringListField: [\"one\", 2], requiredField: true}. Reason: 'stringListField[1]' String value expected" →
+              List(Pos(4, 43), Pos(5, 17), Pos(5, 34))))
 
       "Partial object, unknown field arg" in expectFailsPosList(
         """

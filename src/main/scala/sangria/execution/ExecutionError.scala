@@ -66,6 +66,9 @@ case class AttributeCoercionError(violations: Vector[Violation], eh: Executor.Ex
 case class ValidationError(violations: Vector[Violation], eh: Executor.ExceptionHandler) extends ExecutionError(
   s"Query does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
 
+case class InputDocumentMaterializationError(violations: Vector[Violation], eh: Executor.ExceptionHandler) extends ExecutionError(
+  s"Input document does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
+
 case class QueryReducingError(cause: Throwable, exceptionHandler: Executor.ExceptionHandler) extends Exception(s"Query reducing error: ${cause.getMessage}", cause) with QueryAnalysisError
 
 case class OperationSelectionError(message: String, eh: Executor.ExceptionHandler, sm: Option[SourceMapper] = None, pos: List[Position] = Nil)

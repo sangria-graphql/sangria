@@ -233,6 +233,10 @@ object QueryRenderer {
         (defs map (render(_, config, indentLevel)) mkString config.definitionSeparator) +
           renderTrailingComment(d, None, indent, config)
 
+      case d @ InputDocument(defs, _, _, _) ⇒
+        (defs map (render(_, config, indentLevel)) mkString config.definitionSeparator) +
+          renderTrailingComment(d, None, indent, config)
+
       case op @ OperationDefinition(OperationType.Query, None, vars, dirs, sels, _, _, _) if vars.isEmpty && dirs.isEmpty ⇒
         renderComment(op, prev, indent, config) + indent + renderSelections(sels, op, indent, indentLevel, config)
 

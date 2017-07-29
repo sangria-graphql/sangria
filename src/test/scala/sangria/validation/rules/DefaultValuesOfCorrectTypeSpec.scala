@@ -106,7 +106,7 @@ class DefaultValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Variable '$a' of type '[String]' has invalid default value: [\"one\", 2]. Reason: [at index #1] String value expected" → Some(Pos(2, 42))
+        "Variable '$a' of type '[String]' has invalid default value: [\"one\", 2]. Reason: '[1]' String value expected" → Some(Pos(2, 42))
       ))
   }
 }

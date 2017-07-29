@@ -40,7 +40,9 @@ object QueryValidator {
     new UniqueOperationNames,
     new UniqueVariableNames,
     new VariablesAreInputTypes,
-    new VariablesInAllowedPosition
+    new VariablesInAllowedPosition,
+    new InputDocumentOfCorrectType,
+    new InputDocumentNonConflictingVariableInference
   )
 
   val empty = new QueryValidator {
@@ -52,9 +54,25 @@ object QueryValidator {
 
 class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
-    val ctx = new ValidationContext(schema, queryAst, new TypeInfo(schema))
+    val ctx = new ValidationContext(schema, queryAst, queryAst.sourceMapper, new TypeInfo(schema))
 
-    validateUsingRules(queryAst, ctx, rules map (_ visitor ctx), true)
+    validateUsingRules(queryAst, ctx, rules map (_ visitor ctx), topLevel = true)
+
+    ctx.violations
+  }
+
+  def validateInputDocument(schema: Schema[_, _], doc: ast.InputDocument, inputTypeName: String): Vector[Violation] =
+    schema.getInputType(ast.NamedType("Config")) match {
+      case Some(it) ⇒ validateInputDocument(schema, doc, it)
+      case None ⇒ throw new IllegalStateException(s"Can't find input type '$inputTypeName' in the schema. Known input types are: ${schema.inputTypes.keys.toVector.sorted mkString ", "}.")
+    }
+
+  def validateInputDocument(schema: Schema[_, _], doc: ast.InputDocument, inputType: InputType[_]): Vector[Violation] = {
+    val typeInfo = new TypeInfo(schema).withInputType(inputType)
+
+    val ctx = new ValidationContext(schema, ast.Document.emptyStub, doc.sourceMapper, typeInfo)
+
+    validateUsingRules(doc, ctx, rules map (_ visitor ctx), topLevel = true)
 
     ctx.violations
   }
@@ -99,7 +117,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     }
 }
 
-class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typeInfo: TypeInfo) {
+class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val sourceMapper: Option[SourceMapper], val typeInfo: TypeInfo) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val errors = ListBuffer[Violation]()
@@ -111,8 +129,6 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val typ
 
   def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
     !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
-
-  def sourceMapper = doc.sourceMapper
 
   def addViolation(v: Violation) = errors += v
   def addViolations(vs: Vector[Violation]) = errors ++= vs
@@ -133,7 +149,7 @@ object ValidationContext {
     case (ListInputType(ofType), v) ⇒
       isValidLiteralValue(ofType, v, sourceMapper) map (ListValueViolation(0, _, sourceMapper, v.position.toList))
     case (io: InputObjectType[_], ast.ObjectValue(fields, _, pos)) ⇒
-      val unknownFields = fields.toVector.collect {
+      val unknownFields = fields.collect {
         case f if !io.fieldsByName.contains(f.name) ⇒
           UnknownInputObjectFieldViolation(SchemaRenderer.renderTypeName(io, true), f.name, sourceMapper, f.position.toList)
       }
@@ -147,7 +163,7 @@ object ValidationContext {
             case (None, _: OptionInputType[_]) ⇒
               Vector.empty
             case (None, t) ⇒
-              Vector(NotNullInputObjectFieldMissingViolation(SchemaRenderer.renderTypeName(t, true), field.name, sourceMapper, pos.toList))
+              Vector(NotNullInputObjectFieldMissingViolation(io.name, field.name, SchemaRenderer.renderTypeName(t), sourceMapper, pos.toList))
             case (Some(af), _) ⇒
               isValidLiteralValue(field.fieldType, af.value, sourceMapper) map (MapValueViolation(field.name, _, sourceMapper, af.position.toList))
           }

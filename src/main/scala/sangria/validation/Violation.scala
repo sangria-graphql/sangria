@@ -26,7 +26,7 @@ trait AstNodeLocation {
 
   lazy val astLocation = (for {
     sm ← sourceMapper
-  } yield positions map(p ⇒ s" ${sm.renderLocation(p)}:\n${sm.renderLinePosition(p)}") mkString "\n") getOrElse ""
+  } yield positions map (p ⇒ s" ${sm.renderLocation(p)}:\n${sm.renderLinePosition(p)}") mkString "\n") getOrElse ""
 
   final def errorMessage = simpleErrorMessage + astLocation
 }
@@ -48,7 +48,8 @@ case object BooleanCoercionViolation extends ValueCoercionViolation("Boolean val
 case object StringCoercionViolation extends ValueCoercionViolation("String value expected")
 case object IDCoercionViolation extends ValueCoercionViolation("String or Int value expected")
 
-case class EnumValueCoercionViolation(name: String) extends ValueCoercionViolation(s"Enum value '$name' is undefined")
+case class EnumValueCoercionViolation(name: String, typeName: String, knownValues: Seq[String]) extends
+  ValueCoercionViolation(s"Enum value '$name' is undefined in enum type '$typeName'. Known values are: ${knownValues mkString ", "}.")
 case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
 case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, ownSourceMapper: Option[SourceMapper], ownPositions: List[Position], errorPrefix: String, isArgument: Boolean) extends AstNodeViolation {
@@ -120,6 +121,25 @@ case class BadValueViolation(argName: String, typeName: String, value: String, v
   }
 
   lazy val simpleErrorMessage = s"Argument '$argName' expected type '$typeName' but got: $value. Reason: $violationMessage"
+}
+
+case class InvalidInputDocumentViolation(typeName: String, value: String, violation: Violation, ownSourceMapper: Option[SourceMapper], ownPositions: List[Position]) extends AstNodeViolation {
+  lazy val sourceMapper = violation match {
+    case astv: AstNodeViolation ⇒ astv.sourceMapper
+    case _ ⇒ ownSourceMapper
+  }
+
+  lazy val positions = violation match {
+    case astv: AstNodeViolation ⇒ (ownPositions ++ astv.positions).distinct
+    case _ ⇒ ownPositions
+  }
+
+  lazy val violationMessage = violation match {
+    case astv: AstNodeViolation ⇒ astv.simpleErrorMessage
+    case v ⇒ v.errorMessage
+  }
+
+  lazy val simpleErrorMessage = s"At path $violationMessage"
 }
 
 case class BadValueForDefaultArgViolation(varName: String, typeName: String, value: String, violation: Violation, ownSourceMapper: Option[SourceMapper], ownPositions: List[Position]) extends AstNodeViolation {
@@ -304,36 +324,63 @@ case class NotAllSubscriptionFieldsHaveSameStreamViolation(typeName: String, fie
   lazy val errorMessage = s"Some fields of subscription type '$typeName' have incompatible stream implementations: ${fieldNames map ("'" + _ + "'") mkString ", "}."
 }
 
-case class ListValueViolation(index: Int, violation: Violation, listSourceMapper: Option[SourceMapper], listPosition: List[Position]) extends AstNodeViolation {
+trait PathBasedViolation {
+  def pathString: String
+  def errorMessageWithoutPath: String
+}
+
+case class ListValueViolation(index: Int, violation: Violation, listSourceMapper: Option[SourceMapper], listPosition: List[Position]) extends AstNodeViolation with PathBasedViolation {
   lazy val sourceMapper = violation match {
     case astv: AstNodeViolation ⇒ astv.sourceMapper
     case _ ⇒ listSourceMapper
   }
 
   lazy val positions = violation match {
-    case astv: AstNodeViolation ⇒ astv.positions
+    case astv: AstNodeViolation ⇒ listPosition ++ astv.positions
     case _ ⇒ listPosition
   }
 
-  lazy val simpleErrorMessage = s"[at index #$index] ${violation.errorMessage}"
+  lazy val pathString = violation match {
+    case pbv: PathBasedViolation ⇒ s"[$index]" + pbv.pathString
+    case _ ⇒ s"[$index]"
+  }
+
+  lazy val errorMessageWithoutPath = violation match {
+    case pbv: PathBasedViolation ⇒ pbv.errorMessageWithoutPath
+    case v: AstNodeLocation ⇒ v.simpleErrorMessage
+    case v ⇒ v.errorMessage
+  }
+
+  lazy val simpleErrorMessage = s"'$pathString' $errorMessageWithoutPath"
 }
 
-case class MapValueViolation(fieldName: String, violation: Violation, mapSourceMapper: Option[SourceMapper], mapPosition: List[Position]) extends AstNodeViolation {
+case class MapValueViolation(fieldName: String, violation: Violation, mapSourceMapper: Option[SourceMapper], mapPosition: List[Position]) extends AstNodeViolation with PathBasedViolation {
   lazy val sourceMapper = violation match {
     case astv: AstNodeViolation ⇒ astv.sourceMapper
     case _ ⇒ mapSourceMapper
   }
 
   lazy val positions = violation match {
-    case astv: AstNodeViolation ⇒ astv.positions
+    case astv: AstNodeViolation ⇒ mapPosition ++ astv.positions
     case _ ⇒ mapPosition
   }
 
-  lazy val simpleErrorMessage = s"[in field '$fieldName'] ${violation.errorMessage}"
+  lazy val pathString = violation match {
+    case pbv: PathBasedViolation ⇒ "." + fieldName + pbv.pathString
+    case _ ⇒ "." + fieldName
+  }
+
+  lazy val errorMessageWithoutPath = violation match {
+    case pbv: PathBasedViolation ⇒ pbv.errorMessageWithoutPath
+    case v: AstNodeLocation ⇒ v.simpleErrorMessage
+    case v ⇒ v.errorMessage
+  }
+
+  lazy val simpleErrorMessage = s"'${pathString substring 1}' $errorMessageWithoutPath"
 }
 
-case class NotNullInputObjectFieldMissingViolation(typeName: String, fieldName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"The NotNull field '$fieldName' defined in the input type '$typeName' is missing."
+case class NotNullInputObjectFieldMissingViolation(typeName: String, fieldName: String, fieldType: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"The NotNull field '$fieldName' of type '$fieldType' defined in the '$typeName' input type  is missing."
 }
 
 case class NotNullValueIsNullViolation(sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
@@ -382,4 +429,8 @@ case class EmptyFieldListViolation(typeName: String) extends Violation {
 
 case class ReservedEnumValueNameViolation(typeName: String, valueName: String) extends Violation {
   lazy val errorMessage = s"'Name '$typeName.$valueName' can not be used as an Enum value."
+}
+
+case class VariableInferenceViolation(variableName: String, type1: String, type2: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Inferred variable '$$$variableName' is used with two conflicting types: '$type1' and '$type2'."
 }

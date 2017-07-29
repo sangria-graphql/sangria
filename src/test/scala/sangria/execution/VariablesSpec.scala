@@ -123,7 +123,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("""Argument 'input' expected type '[String!]!' but got: ["a1", null, "b1"]. Reason: [at index #1] String value expected""" → List(Pos(3, 31)))
+          List("""Argument 'input' expected type '[String!]!' but got: ["a1", null, "b1"]. Reason: '[1]' String value expected""" → List(Pos(3, 31)))
         )
 
         "does not allow null literals in not-null fields in complex objects" in checkContainsErrors(
@@ -134,7 +134,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("""Argument 'input' expected type 'TestInputObject' but got: {a: "foo", c: null}. Reason: [in field 'c'] String value expected""" → List(Pos(3, 43), Pos(3, 54)))
+          List("""Argument 'input' expected type 'TestInputObject' but got: {a: "foo", c: null}. Reason: 'c' String value expected""" → List(Pos(3, 43), Pos(3, 54)))
         )
 
         "does not allow null literals in not-null arguments" in checkContainsErrors(
@@ -145,7 +145,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("""Argument 'input' expected type '[String!]!' but got: null. Reason: [at index #0] String value expected""" → List(Pos(3, 31)))
+          List("""Argument 'input' expected type '[String!]!' but got: null. Reason: '[0]' String value expected""" → List(Pos(3, 31)))
         )
 
         "does not allow null literals in not-null lists inside of complex objects" in checkContainsErrors(
@@ -156,7 +156,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("""Argument 'input' expected type 'TestInputObject' but got: {a: "foo", c: "baz", d: ["aa", null]}. Reason: [in field 'd'] [at index #1] String value expected""" → List(Pos(3, 43), Pos(3, 67)))
+          List("""Argument 'input' expected type 'TestInputObject' but got: {a: "foo", c: "baz", d: ["aa", null]}. Reason: 'd[1]' String value expected""" → List(Pos(3, 43), Pos(3, 64), Pos(3, 67)))
         )
 
         "executes with complex input containing undefined object fields" in check(
@@ -292,7 +292,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
 
         "errors on omission of nested non-null" in  assertErrorResult(
           """{"input": {"a": "foo", "b": "bar"}}""".parseJson,
-          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar"}. Reason: [in field 'c'] Expected non-null value, found null""")
+          """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar"}. Reason: 'c' Expected non-null value, found null""")
 
         "errors on addition of unknown input field" in  assertErrorResult(
           """{"input": {"a": "foo", "b": "bar", "c": "baz", "z": "dog"}}""".parseJson,

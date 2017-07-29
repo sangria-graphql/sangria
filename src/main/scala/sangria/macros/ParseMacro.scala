@@ -48,6 +48,25 @@ class ParseMacro(context: blackbox.Context) extends {
           c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
       }
 
+  def implInputDoc(args: Expr[Any]*) =
+    if (args.nonEmpty)
+      c.abort(c.enclosingPosition, "String interpolation is not supported for `gqlInpDoc` macro at the moment.")
+    else
+      c.prefix.tree match {
+        // Expects a string interpolation that doesn't contain any
+        // expressions, thus containing only a single tree
+        case Apply(_, List(Apply(_, t :: Nil))) ⇒
+          val q"${gql: String}" = t
+
+          try {
+            q"${QueryParser.parseInputDocument(gql.stripMargin).get}"
+          } catch {
+            case error: SyntaxError ⇒ syntaxError(error)
+          }
+        case _ ⇒
+          c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
+      }
+
   def syntaxError(error: SyntaxError) = {
     val errorPos = error.originalError.position
     val enclosingCol = if (errorPos.line == 1) calcStringStart else 0
