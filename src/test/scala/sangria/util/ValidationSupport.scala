@@ -3,7 +3,7 @@ package sangria.util
 import org.scalatest.Matchers
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.validation.{AstNodeViolation, RuleBasedQueryValidator, ValidationRule}
+import sangria.validation.{AstNodeViolation, RuleBasedQueryValidator, ValidationRule, Violation}
 
 import scala.util.Success
 
@@ -185,30 +185,43 @@ trait ValidationSupport extends Matchers {
     }
   }
 
+  def expectValidInput(s: Schema[_, _], rules: List[ValidationRule], query: String, typeName: String) = {
+    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
+
+    withClue("Should validate") {
+      validator(rules).validateInputDocument(s, doc, typeName) should have size 0
+    }
+  }
+
   def expectInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, List[Pos])]) = {
     val Success(doc) = QueryParser.parse(query)
 
-    withClue("Should not validate") {
-      val errors = validator(rules).validateQuery(s, doc)
+    assertViolations(expectedErrors, validator(rules).validateQuery(s, doc))
+  }
 
-      errors should have size expectedErrors.size
+  def expectInputInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, List[Pos])], typeName: String) = {
+    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
 
-      expectedErrors foreach { case(expected, pos) ⇒
-        withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString "; "}. Actual:\n${errors map (_.errorMessage) mkString "\n"}") {
-          errors exists { error ⇒
-            error.errorMessage.contains(expected) && {
-              val errorPositions = error.asInstanceOf[AstNodeViolation].positions
+    assertViolations(expectedErrors, validator(rules).validateInputDocument(s, doc, typeName))
+  }
 
-              errorPositions should have size pos.size
+  def assertViolations(expectedErrors: List[(String, List[Pos])], errors: Vector[Violation]) = withClue("Should not validate") {
+    errors should have size expectedErrors.size
 
-              errorPositions zip pos forall { case (actualPos, expectedPos) ⇒
-                expectedPos.line == actualPos.line && expectedPos.col == actualPos.column
-              }
+    expectedErrors foreach { case(expected, pos) ⇒
+      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString "; "}. Actual:\n${errors map (_.errorMessage) mkString "\n"}") {
+        errors exists { error ⇒
+          error.errorMessage.contains(expected) && {
+            val errorPositions = error.asInstanceOf[AstNodeViolation].positions
+
+            errorPositions should have size pos.size
+
+            errorPositions zip pos forall { case (actualPos, expectedPos) ⇒
+              expectedPos.line == actualPos.line && expectedPos.col == actualPos.column
             }
-          } should be (true)
-        }
+          }
+        } should be (true)
       }
-      
     }
   }
 
@@ -218,11 +231,17 @@ trait ValidationSupport extends Matchers {
   def expectPasses(query: String) =
     expectValid(schema, defaultRule.get :: Nil, query)
 
+  def expectInputPasses(typeName: String, query: String) =
+    expectValidInput(schema, defaultRule.get :: Nil, query, typeName)
+
   def expectFailsRule(rule: ValidationRule, query: String, expectedErrors: List[(String, Option[Pos])]) =
     expectInvalid(schema, rule :: Nil, query, expectedErrors.map{case (msg, pos) ⇒ msg → pos.toList})
 
   def expectFails(query: String, expectedErrors: List[(String, Option[Pos])]) =
     expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors.map{case (msg, pos) ⇒ msg → pos.toList})
+
+  def expectInputFails(typeName: String, query: String, expectedErrors: List[(String, List[Pos])]) =
+    expectInputInvalid(schema, defaultRule.get :: Nil, query, expectedErrors, typeName)
 
   def expectFailsPosList(query: String, expectedErrors: List[(String, List[Pos])]) =
     expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors)

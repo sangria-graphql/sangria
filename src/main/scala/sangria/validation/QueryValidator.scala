@@ -62,7 +62,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
   }
 
   def validateInputDocument(schema: Schema[_, _], doc: ast.InputDocument, inputTypeName: String): Vector[Violation] =
-    schema.getInputType(ast.NamedType("Config")) match {
+    schema.getInputType(ast.NamedType(inputTypeName)) match {
       case Some(it) ⇒ validateInputDocument(schema, doc, it)
       case None ⇒ throw new IllegalStateException(s"Can't find input type '$inputTypeName' in the schema. Known input types are: ${schema.inputTypes.keys.toVector.sorted mkString ", "}.")
     }
@@ -154,8 +154,7 @@ object ValidationContext {
           UnknownInputObjectFieldViolation(SchemaRenderer.renderTypeName(io, true), f.name, sourceMapper, f.position.toList)
       }
 
-      if (unknownFields.nonEmpty) unknownFields
-      else {
+      val fieldViolations =
         io.fields.toVector.flatMap { field ⇒
           val astField = fields.find(_.name == field.name)
 
@@ -168,7 +167,8 @@ object ValidationContext {
               isValidLiteralValue(field.fieldType, af.value, sourceMapper) map (MapValueViolation(field.name, _, sourceMapper, af.position.toList))
           }
         }
-      }
+
+      unknownFields ++ fieldViolations
     case (io: InputObjectType[_], v) ⇒
       Vector(InputObjectIsOfWrongTypeMissingViolation(SchemaRenderer.renderTypeName(io, true), sourceMapper, v.position.toList))
     case (s: ScalarType[_], v) ⇒
