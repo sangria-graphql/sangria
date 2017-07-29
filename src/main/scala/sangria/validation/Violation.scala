@@ -387,8 +387,12 @@ case class UnknownInputObjectFieldViolation(typeName: String, fieldName: String,
   lazy val simpleErrorMessage = s"'${pathString substring 1}' $errorMessageWithoutPath"
 }
 
-case class NotNullInputObjectFieldMissingViolation(typeName: String, fieldName: String, fieldType: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"The NotNull field '$fieldName' of type '$fieldType' defined in the '$typeName' input type  is missing."
+case class NotNullInputObjectFieldMissingViolation(typeName: String, fieldName: String, fieldType: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation with PathBasedViolation {
+  lazy val pathString = "." + fieldName
+
+  lazy val errorMessageWithoutPath = s"Not-null field '$fieldName' of type '$fieldType' defined in the '$typeName' input type is missing."
+
+  lazy val simpleErrorMessage = s"'${pathString substring 1}' $errorMessageWithoutPath"
 }
 
 case class NotNullValueIsNullViolation(sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {

@@ -107,10 +107,10 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
         "At path 'list[2].test' Field 'test' is not defined in the input type 'Foo'.")
 
       errors(3).errorMessage should include (
-        "At path 'list[2]' The NotNull field 'baz' of type 'Color!' defined in the 'Foo' input type  is missing.")
+        "At path 'list[2].baz' Not-null field 'baz' of type 'Color!' defined in the 'Foo' input type is missing.")
 
       errors(4).errorMessage should include (
-        "At path 'list[3]' The NotNull field 'baz' of type 'Color!' defined in the 'Foo' input type  is missing.")
+        "At path 'list[3].baz' Not-null field 'baz' of type 'Color!' defined in the 'Foo' input type is missing.")
 
       errors(5).errorMessage should include (
         "At path 'doo' Field 'doo' is not defined in the input type 'Config'.")
@@ -161,7 +161,7 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
         "At path 'bar' Int value expected")
 
       errors(1).errorMessage should include (
-        "At path The NotNull field 'test' of type 'Any!' defined in the 'Config' input type  is missing.")
+        "At path 'test' Not-null field 'test' of type 'Any!' defined in the 'Config' input type is missing.")
     }
 
     "support `to` with `FromInput` type class" in {
