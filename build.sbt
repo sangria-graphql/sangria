@@ -6,8 +6,8 @@ description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq("Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-scalaVersion := "2.12.2"
-crossScalaVersions := Seq("2.11.11", "2.12.2")
+scalaVersion := "2.12.3"
+crossScalaVersions := Seq("2.11.11", "2.12.3")
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -48,7 +48,7 @@ libraryDependencies ++= Seq(
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.4.0" % Test,
-  "io.github.lukehutch" % "fast-classpath-scanner" % "2.2.1" % Test
+  "io.github.lukehutch" % "fast-classpath-scanner" % "2.4.3" % Test
 )
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
