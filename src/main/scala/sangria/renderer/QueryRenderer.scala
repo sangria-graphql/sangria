@@ -434,7 +434,7 @@ object QueryRenderer {
 
         renderComment(dd, prev, indent, config) +
           indent + "directive" + config.separator + "@" + name +
-          renderInputValueDefs(args, indentLevel, config) +
+          renderInputValueDefs(args, indentLevel, config) + (if (args.isEmpty) config.mandatorySeparator else "") +
           "on" + (if (shouldRenderComment(locations.head, None, config)) "" else config.mandatorySeparator) +
           locsRendered.mkString(config.separator + "|")
 
