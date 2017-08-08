@@ -11,6 +11,7 @@ import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.language.implicitConversions
 import scala.util.{Success, Try}
 
 class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResultSupport {
@@ -221,6 +222,24 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         have(size(2)) and
         contain("iD") and
         contain("mYlIsT"))
+    }
+
+    "allow overriding the action for a type" in {
+
+      case class A(id: String, b: B)
+      case class B(name: String)
+
+      implicit def BAction[Ctx](value: B): LeafAction[Ctx, B] = Value(value).map(b => b.copy(name = b.name.toUpperCase))
+      
+      implicit val BType = deriveObjectType[Unit, B]()
+      implicit val AType = deriveObjectType[Unit, A]()
+
+      val schema = Schema(AType)
+
+      val query = graphql"{ id, b { name } }"
+
+      Executor.execute(schema, query, root = A("1", B("foo"))).await should be (Map(
+        "data" → Map("id" → "1", "b" → Map("name" → "FOO"))))
     }
 
     "allow to set name, description, deprecationReason and fieldTags with annotations" in {
