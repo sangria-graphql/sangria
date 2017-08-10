@@ -70,8 +70,8 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
               case Right(subset) ⇒ Right(set ++ subset)
             }
         }
-      else Left(cs.pos → "Only `Enumeration` and sealed hierarchies or case objects are supported for GraphQL EnumType derivation.")
-    } else Left(c.enclosingPosition → "Only `Enumeration` and sealed hierarchies or case objects are supported for GraphQL EnumType derivation.")
+      else Left(cs.pos → "Only `Enumeration` and sealed hierarchies of case objects are supported for GraphQL EnumType derivation.")
+    } else Left(c.enclosingPosition → "Only `Enumeration` and sealed hierarchies of case objects are supported for GraphQL EnumType derivation.")
 
   private def collectEnumValues(values: List[Symbol], config: Seq[MacroDeriveEnumSetting], t: Type): List[Tree] = {
     val extractedValues = extractEnumValues(values, config)
