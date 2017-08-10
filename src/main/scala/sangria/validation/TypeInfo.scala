@@ -24,6 +24,12 @@ class TypeInfo(schema: Schema[_, _]) {
   def fieldDef = fieldDefStack.headOption.flatten
   def ancestors: Seq[ast.AstNode] = ancestorStack.toSeq
 
+  def withInputType(inputType: InputType[_]) = {
+    inputTypeStack push Some(inputType)
+
+    this
+  }
+
   def enter(node: ast.AstNode) = {
     ancestorStack push node
 

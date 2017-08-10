@@ -11,6 +11,7 @@ object DebugUtil {
   private val indentClasses: PartialFunction[Any, Boolean] = {
     case v if v.getClass.getSimpleName.startsWith("Introspection") ⇒ true
     case _: Document |
+         _: InputDocument |
          _: Definition |
          _: SelectionContainer |
          _: Directive |
