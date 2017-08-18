@@ -932,7 +932,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         val ReturnDog = Directive("returnDog", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ ⇒ true)
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-          override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
+          override def resolveField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition) =
             if (definition.directives.exists(_.name == ReturnCat.name))
               _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
             else if (definition.directives.exists(_.name == ReturnDog.name))
@@ -1070,7 +1070,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
           """
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-          override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
+          override def resolveField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition) =
             if (definition.name == "foo")
               _ ⇒ Some(())
             else if (definition.name endsWith "None")
