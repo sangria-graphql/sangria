@@ -16,7 +16,7 @@ class FieldCollector[Ctx, Val](
     variables: Map[String, VariableValue],
     sourceMapper: Option[SourceMapper],
     valueCollector: ValueCollector[Ctx, _],
-    exceptionHandler: Executor.ExceptionHandler) {
+    exceptionHandler: ExceptionHandler) {
 
   private val resultCache = TrieMap[(ExecutionPath.PathCacheKey, String), Try[CollectedFields]]()
 

@@ -25,7 +25,7 @@ class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
 
     val Success(doc) = QueryParser.parse("{ nest { test } }")
 
-    val exceptionHandler: Executor.ExceptionHandler = {
+    val exceptionHandler = ExceptionHandler {
       case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
     }
 

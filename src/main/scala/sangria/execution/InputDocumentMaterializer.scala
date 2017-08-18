@@ -16,12 +16,12 @@ import scala.util.{Failure, Success}
 
 case class InputDocumentMaterializer[Vars](schema: Schema[_, _], variables: Vars = InputUnmarshaller.emptyMapVars)(implicit iu: InputUnmarshaller[Vars]) {
   def to[T](document: InputDocument, inputType: InputType[T])(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result = {
-    val collector = new ValueCollector[Unit, Vars](schema, variables, document.sourceMapper, DeprecationTracker.empty, (), PartialFunction.empty, None)
+    val collector = new ValueCollector[Unit, Vars](schema, variables, document.sourceMapper, DeprecationTracker.empty, (), ExceptionHandler.empty, None)
 
     val violations = QueryValidator.default.validateInputDocument(schema, document, inputType)
 
     if (violations.nonEmpty)
-      scheme.failure(InputDocumentMaterializationError(violations, PartialFunction.empty))
+      scheme.failure(InputDocumentMaterializationError(violations, ExceptionHandler.empty))
     else {
       val variableDefinitions = inferVariableDefinitions(document, inputType)
 
@@ -31,7 +31,7 @@ case class InputDocumentMaterializer[Vars](schema: Schema[_, _], variables: Vars
           try {
             scheme.success(document.values flatMap { value ⇒
               collector.coercionHelper.coerceInputValue(inputType, Nil, value, Some(vars), fromInput.marshaller, fromInput.marshaller, isArgument = false) match {
-                case Left(vs) ⇒ throw InputDocumentMaterializationError(vs, PartialFunction.empty)
+                case Left(vs) ⇒ throw InputDocumentMaterializationError(vs, ExceptionHandler.empty)
                 case Right(coerced) ⇒ coerced.toOption.map(res ⇒ fromInput.fromResult(res))
               }
             })

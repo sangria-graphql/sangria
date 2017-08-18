@@ -348,7 +348,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
               syncDeferError
         }""")
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
@@ -626,7 +626,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
@@ -647,7 +647,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
@@ -703,7 +703,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(QueryType)
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: MyListError) ⇒ HandledException(e.getMessage)
       }
 
@@ -741,7 +741,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val reducer = QueryReducer.measureComplexity[MyCtx]((c, ctx) ⇒ ctx.copy(complexity = c))
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
@@ -886,7 +886,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(QueryType, Some(QueryType))
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 

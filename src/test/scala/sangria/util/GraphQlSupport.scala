@@ -2,7 +2,7 @@ package sangria.util
 
 import org.scalatest.Matchers
 import sangria.execution.deferred.DeferredResolver
-import sangria.execution.{Executor, HandledException}
+import sangria.execution.{ExceptionHandler, Executor, HandledException}
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema.Schema
@@ -17,7 +17,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
   def executeTestQuery[T, A: InputUnmarshaller](schema: Schema[_, _], data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true) = {
     val Success(doc) = QueryParser.parse(query)
 
-    val exceptionHandler: Executor.ExceptionHandler = {
+    val exceptionHandler = ExceptionHandler {
       case (m, e) ⇒ HandledException(e.getMessage)
     }
 

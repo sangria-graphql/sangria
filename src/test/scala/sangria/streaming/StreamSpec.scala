@@ -1,16 +1,15 @@
 package sangria.streaming
 
 import language.postfixOps
-
 import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
-import sangria.execution.{Executor, HandledException}
+import sangria.execution.{ExceptionHandler, Executor, HandledException}
 import sangria.util.FutureResultSupport
 import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
@@ -112,7 +111,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         import sangria.execution.ExecutionScheme.Stream
 
-        val exceptionHandler: Executor.ExceptionHandler = {
+        val exceptionHandler = ExceptionHandler {
           case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
         }
 
@@ -197,7 +196,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         import sangria.execution.ExecutionScheme.Stream
 
-        val exceptionHandler: Executor.ExceptionHandler = {
+        val exceptionHandler = ExceptionHandler {
           case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
         }
 

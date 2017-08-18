@@ -89,7 +89,7 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
 
   val schema = Schema(TestType)
 
-  val exceptionHandler: Executor.ExceptionHandler = {
+  val exceptionHandler = ExceptionHandler {
     case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
   }
 

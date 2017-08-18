@@ -150,7 +150,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
     }
   }
 
-  val exceptionHandler: Executor.ExceptionHandler = {
+  val exceptionHandler = ExceptionHandler {
     case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
   }
 

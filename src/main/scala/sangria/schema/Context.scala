@@ -351,7 +351,7 @@ object Args {
           ast.Argument(name = arg.name, value = astValue getOrElse ast.NullValue())
         }
 
-      ValueCollector.getArgumentValues(ValueCoercionHelper.default, definitions, argsValues.toVector, Map.empty, PartialFunction.empty).get
+      ValueCollector.getArgumentValues(ValueCoercionHelper.default, definitions, argsValues.toVector, Map.empty, ExceptionHandler.empty).get
     }
   }
 
@@ -360,7 +360,7 @@ object Args {
 
     ValueCoercionHelper.default.coerceInputValue(tpe, List("stub"), value, None, rm.marshaller, rm.marshaller, isArgument = false) match {
       case Right(v) ⇒ v.toOption.asInstanceOf[Option[Out]]
-      case Left(violations) ⇒ throw AttributeCoercionError(violations, PartialFunction.empty)
+      case Left(violations) ⇒ throw AttributeCoercionError(violations, ExceptionHandler.empty)
     }
   }
 }

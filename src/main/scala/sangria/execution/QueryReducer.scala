@@ -2,7 +2,7 @@ package sangria.execution
 
 import sangria.ast
 import sangria.schema._
-import sangria.introspection.{isIntrospection, TypeNameMetaField}
+import sangria.introspection.{TypeNameMetaField, isIntrospection}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.{Failure, Success, Try}

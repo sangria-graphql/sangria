@@ -23,7 +23,7 @@ class Resolver[Ctx](
     variables: Map[String, VariableValue],
     fieldCollector: FieldCollector[Ctx, _],
     userContext: Ctx,
-    exceptionHandler: Executor.ExceptionHandler,
+    exceptionHandler: ExceptionHandler,
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,
@@ -905,7 +905,7 @@ class Resolver[Ctx](
     // this is very hot place, so resorting to mutability to minimize the footprint
 
     var errorReg = ErrorRegistry.empty
-    var listBuilder = new VectorBuilder[marshaller.Node]
+    val listBuilder = new VectorBuilder[marshaller.Node]
     var canceled = false
     val resIt = simpleRes.iterator
 
