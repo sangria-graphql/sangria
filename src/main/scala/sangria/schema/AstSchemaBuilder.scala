@@ -99,6 +99,7 @@ trait AstSchemaBuilder[Ctx] {
 
   def buildField(
     typeDefinition: ast.TypeDefinition,
+    extensions: Vector[ast.TypeExtensionDefinition],
     definition: ast.FieldDefinition,
     fieldType: OutputType[_],
     arguments: List[Argument[_]],
@@ -345,6 +346,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
 
   def buildField(
       typeDefinition: ast.TypeDefinition,
+      extensions: Vector[ast.TypeExtensionDefinition],
       definition: ast.FieldDefinition,
       fieldType: OutputType[_],
       arguments: List[Argument[_]],
@@ -354,7 +356,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       description = fieldDescription(definition),
       fieldType = fieldType,
       arguments = arguments,
-      resolve = resolveField(typeDefinition, definition),
+      resolve = resolveField(typeDefinition, extensions, definition),
       tags = fieldTags(typeDefinition, definition),
       deprecationReason = fieldDeprecationReason(definition),
       complexity = fieldComplexity(typeDefinition, definition),
@@ -439,7 +441,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       definition: ast.InputValueDefinition) =
     FromInput.defaultInput[Any]
 
-  def resolveField(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): Context[Ctx, _] ⇒ Action[Ctx, _] =
+  def resolveField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: ast.FieldDefinition): Context[Ctx, _] ⇒ Action[Ctx, _] =
     (ctx) ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
   def fieldTags(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): List[FieldTag] =

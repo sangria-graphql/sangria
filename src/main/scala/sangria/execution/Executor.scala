@@ -16,7 +16,7 @@ case class Executor[Ctx, Root](
     schema: Schema[Ctx, Root],
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-    exceptionHandler: Executor.ExceptionHandler = PartialFunction.empty,
+    exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
@@ -350,7 +350,7 @@ case class Executor[Ctx, Root](
 }
 
 object Executor {
-  type ExceptionHandler = PartialFunction[(ResultMarshaller, Throwable), HandledException]
+  type ExceptionHandler = sangria.execution.ExceptionHandler
 
   def execute[Ctx, Root, Input](
     schema: Schema[Ctx, Root],
@@ -361,7 +361,7 @@ object Executor {
     variables: Input = emptyMapVars,
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-    exceptionHandler: Executor.ExceptionHandler = PartialFunction.empty,
+    exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
@@ -379,7 +379,7 @@ object Executor {
     variables: Input = emptyMapVars,
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-    exceptionHandler: Executor.ExceptionHandler = PartialFunction.empty,
+    exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
@@ -388,8 +388,6 @@ object Executor {
     Executor(schema, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth, queryReducers)
       .prepare(queryAst, userContext, root, operationName, variables)
 }
-
-case class HandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty)
 
 class PreparedQuery[Ctx, Root, Input] private[execution] (
     val queryAst: ast.Document,

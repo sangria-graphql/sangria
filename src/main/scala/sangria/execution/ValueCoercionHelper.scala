@@ -379,11 +379,11 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
           UnknownInputObjectFieldViolation(SchemaRenderer.renderTypeName(objTpe, true), f, sourceMapper, Nil)
       }
 
-      if (unknownFields.nonEmpty) unknownFields
-      else {
+      val fieldViolations =
         objTpe.fields.toVector.flatMap(f ⇒
           isValidValue(f.fieldType, um.getMapValue(valueMap, f.name)) map (MapValueViolation(f.name, _, sourceMapper, Nil)))
-      }
+
+      fieldViolations ++ unknownFields
 
     case (objTpe: InputObjectType[_], _) ⇒
       Vector(InputObjectIsOfWrongTypeMissingViolation(SchemaRenderer.renderTypeName(objTpe, true), sourceMapper, Nil))

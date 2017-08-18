@@ -261,9 +261,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     case tpe: InterfaceType[Ctx, _] ⇒ extendInterfaceType(tpe)
   }
 
-  def buildField(typeDefinition: ast.TypeDefinition, field: ast.FieldDefinition) =
+  def buildField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], field: ast.FieldDefinition) =
     builder.buildField(
       typeDefinition,
+      extensions,
       field,
       getOutputType(field.fieldType),
       field.arguments flatMap (buildArgument(typeDefinition, Some(field), _)) toList,
@@ -348,7 +349,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case (acc, field) ⇒ acc :+ field
     }
 
-    allFields flatMap (buildField(tpe, _))
+    allFields flatMap (buildField(tpe, extensions, _))
   }
 
   def extendFields(tpe: ObjectLikeType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
@@ -360,7 +361,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case (acc, field) ⇒ acc :+ field
     }
 
-    val ef = extensionFields flatMap (f ⇒ buildField(f._1.definition, f._2))
+    val ef = extensionFields flatMap (f ⇒ buildField(f._1.definition, extensions, f._2))
     val of = tpe.uniqueFields.toList map (extendField(tpe, _))
 
     of ++ ef

@@ -564,7 +564,20 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
       "renders minimal ast" in {
         QueryRenderer.render(ast.ScalarTypeDefinition("DateTime")) should be ("scalar DateTime")
       }
+      "renders directive definitions" in {
+        val directive = ast.DirectiveDefinition("custom", arguments = Vector.empty, locations = Vector(
+          ast.DirectiveLocation("FIELD"), ast.DirectiveLocation("FRAGMENT_SPREAD"), ast.DirectiveLocation("INLINE_FRAGMENT")))
+        val prettyRendered = QueryRenderer.render(directive, QueryRenderer.Pretty)
+        val compactRendered = QueryRenderer.render(directive, QueryRenderer.Compact)
 
+        compactRendered should equal (
+          """directive@custom on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT""".stripMargin
+        ) (after being strippedOfCarriageReturns)
+        prettyRendered should equal (
+          """directive @custom on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT""".stripMargin
+        ) (after being strippedOfCarriageReturns)
+
+      }
       "render kitchen sink" in {
         val Success(ast) = QueryParser.parse(FileUtil loadQuery "schema-kitchen-sink.graphql")
 

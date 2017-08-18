@@ -241,8 +241,8 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
       violations should (
         have(size(3)) and
         contain("Argument 'n' expected type 'Int!' but got: -123. Reason: Predicate failed: (-123 > 0).") and
-        contain("Argument 'c' expected type 'Complex!' but got: {userId: 1, userNum: -5}. Reason: [in field 'userId'] String value expected") and
-        contain("Argument 'c' expected type 'Complex!' but got: {userId: 1, userNum: -5}. Reason: [in field 'userNum'] Predicate failed: (-5 > 0).")
+        contain("Argument 'c' expected type 'Complex!' but got: {userId: 1, userNum: -5}. Reason: 'userId' String value expected") and
+        contain("Argument 'c' expected type 'Complex!' but got: {userId: 1, userNum: -5}. Reason: 'userNum' Predicate failed: (-5 > 0).")
       )
     }
   }

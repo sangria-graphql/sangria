@@ -11,7 +11,7 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
 import scala.util.{Success, Failure, Try}
 
-class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: Executor.ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]])(implicit um: InputUnmarshaller[Input]) {
+class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]])(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]()
@@ -61,7 +61,7 @@ object ValueCollector {
     argumentDefs: List[Argument[_]],
     argumentAsts: Vector[ast.Argument],
     variables: Map[String, VariableValue],
-    exceptionHandler: Executor.ExceptionHandler,
+    exceptionHandler: ExceptionHandler,
     ignoreErrors: Boolean = false,
     sourceMapper: Option[SourceMapper] = None,
     fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]] = None

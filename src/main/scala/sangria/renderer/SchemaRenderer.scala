@@ -21,7 +21,7 @@ object SchemaRenderer {
     loop(tpe, if (topLevel) "" else "!")
   }
 
-  def renderTypeNameAst(tpe: Type, topLevel: Boolean = false) = {
+  def renderTypeNameAst(tpe: Type, topLevel: Boolean = false): ast.Type = {
     def nn(tpe: ast.Type, notNull: Boolean) =
       if (notNull) ast.NotNullType(tpe)
       else tpe

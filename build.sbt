@@ -36,7 +36,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.0",
 
   // testing
-  "org.scalatest" %% "scalatest" % "3.0.3" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.4" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-spray-json" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-argonaut" % "1.0.0" % Test,
@@ -48,7 +48,7 @@ libraryDependencies ++= Seq(
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.4.0" % Test,
-  "io.github.lukehutch" % "fast-classpath-scanner" % "2.4.3" % Test
+  "io.github.lukehutch" % "fast-classpath-scanner" % "2.4.5" % Test
 )
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")

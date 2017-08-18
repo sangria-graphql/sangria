@@ -110,8 +110,15 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
       ((pos, d, comments) ⇒ ast.Document(d.toVector, comments, Some(pos)))
   }
 
-  def InputDocument = rule { IgnoredNoComment.* ~ ValueConst ~ Ignored.* ~ EOI }
-  def InputDocumentWithVariables = rule { IgnoredNoComment.* ~ Value ~ Ignored.* ~ EOI }
+  def InputDocument = rule {
+    IgnoredNoComment.* ~ trackPos ~ ValueConst.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
+      ((pos, vs, comments) ⇒ ast.InputDocument(vs.toVector, comments, Some(pos)))
+  }
+
+  def InputDocumentWithVariables = rule {
+    IgnoredNoComment.* ~ trackPos ~ Value.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
+      ((pos, vs, comments) ⇒ ast.InputDocument(vs.toVector, comments, Some(pos)))
+  }
 
   def Definition = rule { OperationDefinition | FragmentDefinition | TypeSystemDefinition }
 
@@ -179,7 +186,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
         (comment, pos, name, dirs, members) ⇒ ast.UnionTypeDefinition(name, members, dirs, comment, Some(pos)))
   }
 
-  def UnionMembers = rule { NamedType.+(ws('|')) ~> (_.toVector) }
+  def UnionMembers = rule { ws('|').? ~ NamedType.+(ws('|')) ~> (_.toVector) }
 
   def EnumTypeDefinition = rule {
     Comments ~ trackPos ~ enum ~ Name ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
@@ -206,7 +213,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
       (comment, pos, name, args, locations) ⇒ ast.DirectiveDefinition(name, args, locations, comment, Some(pos)))
   }
 
-  def DirectiveLocations = rule { DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector) }
+  def DirectiveLocations = rule { ws('|').? ~ DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector) }
 
   def DirectiveLocation = rule { Comments ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
 
@@ -386,13 +393,28 @@ object QueryParser {
   }
 
   def parseInput(input: String)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result =
-    parseInput(ParserInput(input))( scheme)
+    parseInput(ParserInput(input))(scheme)
 
   def parseInput(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result = {
     val parser = new QueryParser(input)
 
     parser.InputDocument.run() match {
-      case Success(res) ⇒ scheme.success(res)
+      case Success(res) if res.values.nonEmpty ⇒ scheme.success(res.values.head)
+      case Success(res) ⇒ scheme.failure(new IllegalArgumentException("Input document does not contain any value definitions."))
+      case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
+      case Failure(e) ⇒ scheme.failure(e)
+    }
+  }
+
+  def parseInputDocument(input: String)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
+    parseInputDocument(ParserInput(input))(scheme)
+
+  def parseInputDocument(input: ParserInput)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
+    val parser = new QueryParser(input)
+
+    parser.InputDocument.run() match {
+      case Success(res) ⇒
+        scheme.success(res.copy(sourceMapper = Some(new Parboiled2SourceMapper(input))))
       case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) ⇒ scheme.failure(e)
     }
@@ -405,7 +427,22 @@ object QueryParser {
     val parser = new QueryParser(input)
 
     parser.InputDocumentWithVariables.run() match {
-      case Success(res) ⇒ scheme.success(res)
+      case Success(res) if res.values.nonEmpty ⇒ scheme.success(res.values.head)
+      case Success(res) ⇒ scheme.failure(new IllegalArgumentException("Input document does not contain any value definitions."))
+      case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
+      case Failure(e) ⇒ scheme.failure(e)
+    }
+  }
+
+  def parseInputDocumentWithVariables(input: String)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
+    parseInputDocumentWithVariables(ParserInput(input))( scheme)
+
+  def parseInputDocumentWithVariables(input: ParserInput)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
+    val parser = new QueryParser(input)
+
+    parser.InputDocumentWithVariables.run() match {
+      case Success(res) ⇒
+        scheme.success(res.copy(sourceMapper = Some(new Parboiled2SourceMapper(input))))
       case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) ⇒ scheme.failure(e)
     }

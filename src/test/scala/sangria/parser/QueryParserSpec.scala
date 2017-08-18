@@ -878,6 +878,62 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
       QueryParser.parse("query Foo($x: Complex = nullFoo) { field }").isSuccess should be (true)
     }
 
+    "parse leading vertical bar in union types" in {
+      val Success(ast) = QueryParser.parse("union Hello = | Wo | Rld")
+
+      ast.withoutSourceMapper should be (
+        Document(
+          Vector(
+            UnionTypeDefinition(
+              "Hello",
+              Vector(
+                NamedType("Wo", Some(Position(16, 1, 17))),
+                NamedType("Rld", Some(Position(21, 1, 22)))),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(0, 1, 1))
+            )),
+          Vector.empty,
+          Some(Position(0, 1, 1)),
+          None))
+    }
+
+    "not parse invalid usage of vertical bar on union types" in {
+      QueryParser.parse("union Hello = |").isSuccess should be (false)
+      QueryParser.parse("union Hello = Wo | Rld |").isSuccess should be (false)
+      QueryParser.parse("union Hello = || Wo | Rld").isSuccess should be (false)
+      QueryParser.parse("union Hello = Wo || Rld").isSuccess should be (false)
+      QueryParser.parse("union Hello = | Wo | Rld ||").isSuccess should be (false)
+    }
+
+    "parse leading vertical bar in directive definitions" in {
+      val Success(ast) = QueryParser.parse(
+        """
+        directive @include2(if: Boolean!) on
+          | FIELD
+          | FRAGMENT_SPREAD
+          | INLINE_FRAGMENT
+        """.stripCR)
+
+      ast.withoutSourceMapper should be (
+        Document(
+          Vector(
+            DirectiveDefinition(
+              "include2",
+              Vector(
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(33, 2, 33))), Some(Position(33, 2, 33))), None, Vector.empty, Vector.empty, Some(Position(29, 2, 29)))),
+              Vector(
+                DirectiveLocation("FIELD", Vector.empty, Some(Position(58, 3, 13))),
+                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(Position(76, 4, 13))),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(Position(104, 5, 13)))),
+              Vector.empty,
+              Some(Position(9, 2, 9))
+            )),
+          Vector.empty,
+          Some(Position(9, 2, 9)),
+          None))
+    }
+
     def findAst[T <: AstNode : ClassTag](ast: AstNode): Option[T] =
       ast match {
         case node if implicitly[ClassTag[T]].runtimeClass.isAssignableFrom(node.getClass) ⇒ Some(node.asInstanceOf[T])

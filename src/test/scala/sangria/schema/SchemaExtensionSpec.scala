@@ -857,7 +857,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
         """
 
       val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-        override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
+        override def resolveField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition) =
           if (definition.name == "animal1")
             _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
           else if (definition.name == "animal2")

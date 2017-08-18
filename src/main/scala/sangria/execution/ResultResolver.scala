@@ -4,7 +4,7 @@ import org.parboiled2.Position
 import sangria.marshalling.{ResultMarshaller, SimpleResultMarshallerForType}
 import sangria.validation.{AstNodeLocation, Violation}
 
-class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executor.ExceptionHandler, preserveOriginalErrors: Boolean) {
+class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: ExceptionHandler, preserveOriginalErrors: Boolean) {
   def marshalErrors(errors: ErrorRegistry) =
     if (errors.isEmpty) None else Some(marshaller.arrayNode(errors.errorList))
 
@@ -38,24 +38,68 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
   def resolveError(error: Throwable) =
     marshalResult(None, marshalErrors(ErrorRegistry(ExecutionPath.empty, error)), None)
 
-  def handleSupportedError(e: Throwable) = {
-    val handeled = exceptionHandler(marshaller → e)
-    val message = if (handeled.message == null) "" else handeled.message
+  def handleSupportedError(path: ExecutionPath, handledException: HandledException, positions: List[Position]) = {
+    handledException match {
+      case SingleHandledException(message, additionalFields, newPositions) ⇒
+        val msg = if (message == null) "" else message
 
-    Seq("message" → marshaller.scalarNode(message, "String", Set.empty)) ++ handeled.additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
+        Vector(
+          errorNode(msg, path, positions ++ newPositions,
+            additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]))
+      case MultipleHandledExceptions(messages) ⇒
+        messages.map { case (message, additionalFields, newPositions) ⇒
+          val msg = if (message == null) "" else message
+
+          errorNode(msg, path, positions ++ newPositions,
+            additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]])        }
+    }
   }
 
-  def handleException(exception: Throwable) = exception match {
-    case e: UserFacingError ⇒
-      Seq("message" → marshaller.scalarNode(e.getMessage, "String", Set.empty))
-    case e if exceptionHandler isDefinedAt (marshaller → e) ⇒
-      handleSupportedError(e)
-    case QueryReducingError(cause, _) if exceptionHandler isDefinedAt (marshaller → cause) ⇒
-      handleSupportedError(cause)
-    case e ⇒
-      e.printStackTrace()
-      Seq("message" → marshaller.scalarNode("Internal server error", "String", Set.empty))
-  }
+  private def getLocations(violation: Violation): List[Position] =
+    violation match {
+      case v: AstNodeLocation if v.positions.nonEmpty ⇒ v.positions
+      case _ ⇒ Nil
+    }
+
+  private def getLocations(error: Throwable): List[Position] =
+    error match {
+      case error: AstNodeLocation if error.positions.nonEmpty ⇒ error.positions
+      case _ ⇒ Nil
+    }
+
+  private def createLocation(pos: Position) = marshaller.mapNode(Seq(
+    "line" → marshaller.scalarNode(pos.line, "Int", Set.empty),
+    "column" → marshaller.scalarNode(pos.column, "Int", Set.empty)))
+
+  def errorNode(message: String, path: ExecutionPath, positions: List[Position], additionalFields: Seq[(String, marshaller.Node)] = Nil): marshaller.Node =
+    errorNode(
+      messageFields(message) ++
+      pathFields(path) ++
+      positionFields(positions) ++
+      additionalFields)
+
+  def errorNode(errorFields: Seq[(String, marshaller.Node)]): marshaller.Node =
+    marshaller.mapNode(errorFields.foldLeft(marshaller.emptyMapNode(errorFields.map(_._1))) {
+      case (acc, (name, value)) ⇒ marshaller.addMapNodeElem(acc, name, value, optional = false)
+    })
+
+  def messageFields(message: String): Seq[(String, marshaller.Node)] =
+    Seq("message" → marshaller.scalarNode(message, "String", Set.empty))
+
+  def pathFields(path: ExecutionPath): Seq[(String, marshaller.Node)] =
+    if (path.nonEmpty)
+      Seq("path" → path.marshal(marshaller))
+    else
+      Seq.empty
+
+  def positionFields(positions: List[Position]): Seq[(String, marshaller.Node)] =
+    if (positions.nonEmpty)
+      Seq("locations" → marshallPositions(positions))
+    else
+      Seq.empty
+
+  private def marshallPositions(px: List[Position]) =
+    marshaller.mapAndMarshal(px, createLocation)
 
   case class ErrorRegistry(errorList: Vector[marshaller.Node], originalErrors: Vector[RegisteredError]) {
     def nonEmpty = errorList.nonEmpty
@@ -63,17 +107,17 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
 
     def add(path: ExecutionPath, error: Throwable) =
       copy(
-        errorList ++ createErrorPaths(path, error),
+        errorList ++ createErrorPaths(path, error, None),
         if (preserveOriginalErrors) originalErrors :+ RegisteredError(path, error, None) else originalErrors)
 
     def append(path: ExecutionPath, errors: Vector[Throwable], position: Option[Position]) =
       copy(
-        errors.map(e ⇒ errorNode(path, position map singleLocation, handleException(e))) ++ errorList,
+        errors.flatMap(e ⇒ createErrorPaths(path, e, position)) ++ errorList,
         if (preserveOriginalErrors) errors.map(e ⇒ RegisteredError(path, e, position)) ++ originalErrors else originalErrors)
 
     def add(path: ExecutionPath, error: Throwable, position: Option[Position]) =
       copy(
-        errorList :+ errorNode(path, position map singleLocation, handleException(error)),
+        errorList ++ createErrorPaths(path, error, position),
         if (preserveOriginalErrors) originalErrors :+ RegisteredError(path, error, position) else originalErrors)
 
     def add(other: ErrorRegistry) =
@@ -81,37 +125,33 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
         errorList ++ other.errorList,
         if (preserveOriginalErrors) originalErrors ++ other.originalErrors else originalErrors)
 
-    private def createErrorPaths(path: ExecutionPath, e: Throwable) = e match {
-      case e: WithViolations if e.violations.nonEmpty ⇒
-        e.violations map { v ⇒
-          errorNode(path, getLocations(v), Seq("message" → marshaller.scalarNode(v.errorMessage, "String", Set.empty)))
-        }
-      case other ⇒
-        Vector(errorNode(path, getLocations(other), handleException(other)))
-    }
-
-    private def getLocations(violation: Violation) = violation match {
-      case v: AstNodeLocation if v.positions.nonEmpty ⇒
-        Some(marshallPositions(v.positions))
-      case v ⇒
-        None
-    }
-
-    private def getLocations(error: Throwable) =
+    private def createErrorPaths(path: ExecutionPath, error: Throwable, position: Option[Position]) =
       error match {
-        case error: AstNodeLocation if error.positions.nonEmpty ⇒ Some(marshallPositions(error.positions))
-        case _ ⇒ None
+        case e: WithViolations if e.violations.nonEmpty ⇒
+          e.violations flatMap {
+            case v if exceptionHandler.onViolation.isDefinedAt(marshaller → v)  ⇒
+              handleSupportedError(path, exceptionHandler.onViolation(marshaller → v), position.toList ++ getLocations(v))
+            case v ⇒
+              Vector(errorNode(v.errorMessage, path, position.toList ++ getLocations(v)))
+          }
+
+        case e: UserFacingError if exceptionHandler.onUserFacingError isDefinedAt (marshaller → e) ⇒
+          handleSupportedError(path, exceptionHandler.onUserFacingError(marshaller → e), position.toList ++ getLocations(e))
+
+        case e: UserFacingError ⇒
+          Vector(errorNode(e.getMessage, path, position.toList ++ getLocations(e)))
+
+        case e if exceptionHandler.onException isDefinedAt (marshaller → e) ⇒
+          handleSupportedError(path, exceptionHandler.onException(marshaller → e), position.toList ++ getLocations(e))
+
+        case QueryReducingError(cause, _) if exceptionHandler.onException isDefinedAt (marshaller → cause) ⇒
+          handleSupportedError(path, exceptionHandler.onException(marshaller → cause), position.toList ++ getLocations(cause))
+
+        case e ⇒
+          e.printStackTrace()
+
+          Vector(errorNode("Internal server error", path, position.toList ++ getLocations(e)))
       }
-
-    private def marshallPositions(px: List[Position]) =
-      marshaller.mapAndMarshal(px, createLocation)
-
-
-    private def createLocation(pos: Position) = marshaller.mapNode(Seq(
-      "line" → marshaller.scalarNode(pos.line, "Int", Set.empty),
-      "column" → marshaller.scalarNode(pos.column, "Int", Set.empty)))
-
-    private def singleLocation(pos: Position) = marshaller.arrayNode(Vector(createLocation(pos)))
   }
 
   object ErrorRegistry {
@@ -119,28 +159,6 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Executo
 
     def apply(path: ExecutionPath, error: Throwable): ErrorRegistry = empty.add(path, error)
     def apply(path: ExecutionPath, error: Throwable, pos: Option[Position]): ErrorRegistry = empty.add(path, error, pos)
-  }
-
-
-  def errorNode(path: ExecutionPath, location: Option[marshaller.Node], errorFields: Seq[(String, marshaller.Node)]) = {
-    val names = errorFields.map(_._1)
-    val namesWithPath = if (path.nonEmpty) names :+ "path" else names
-    val namesWithLoc = if (location.isDefined) namesWithPath :+ "locations" else namesWithPath
-
-    val builder = errorFields.foldLeft(marshaller.emptyMapNode(namesWithLoc)) {
-      case (acc, (name, value)) ⇒ marshaller.addMapNodeElem(acc, name, value, optional = false)
-    }
-
-    val builderWithPath =
-      if (path.nonEmpty)
-        marshaller.addMapNodeElem(builder, "path", path.marshal(marshaller), optional = false)
-      else
-        builder
-
-    location match {
-      case Some(node) ⇒ marshaller.mapNode(marshaller.addMapNodeElem(builderWithPath, "locations", node, optional = false))
-      case None ⇒ marshaller.mapNode(builderWithPath)
-    }
   }
 }
 

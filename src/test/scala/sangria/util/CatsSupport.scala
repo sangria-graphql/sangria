@@ -4,17 +4,18 @@ import java.util.regex.Pattern
 
 import net.jcazevedo.moultingyaml._
 import org.scalatest.{Matchers, WordSpec}
-import sangria.{schema, ast}
-import sangria.ast.{ObjectTypeDefinition, FieldDefinition}
-import sangria.execution.{HandledException, Executor}
-import sangria.parser.{SyntaxError, QueryParser}
+import sangria.{ast, schema}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition}
+import sangria.execution.{ExceptionHandler, Executor, HandledException}
+import sangria.parser.{QueryParser, SyntaxError}
 import sangria.schema._
 import sangria.validation._
 import spray.json._
 import sangria.marshalling.sprayJson._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 
 trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
   implicit class YamlOps(value: YamlValue) {
@@ -171,7 +172,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         c ⇒ PartialFutureValue(Future.successful(PartialValue[Any, Any](correctValue(c.field.fieldType, values), errors.toVector)))
       })
 
-    override def resolveField(typeDefinition: ast.TypeDefinition, definition: FieldDefinition) =
+    override def resolveField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition) =
       definition.directives.find(d ⇒ directiveMapping contains d.name) match {
         case Some(dir) ⇒
           directiveMapping(dir.name)(dir, definition)
@@ -277,7 +278,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     Given(query, schema)
   }
 
-  val ExceptionHandler: Executor.ExceptionHandler = {
+  val exceptionHandler = ExceptionHandler {
     case (m, e: ResolveError) ⇒ HandledException(e.getMessage)
   }
 
@@ -300,7 +301,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         queryValidator = validator,
         variables = vars,
         operationName = op,
-        exceptionHandler = ExceptionHandler).await))
+        exceptionHandler = exceptionHandler).await))
     case a ⇒
       throw new IllegalStateException(s"Not yet supported action: $a")
   }

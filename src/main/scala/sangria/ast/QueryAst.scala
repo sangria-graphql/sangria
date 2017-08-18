@@ -1,22 +1,22 @@
 package sangria.ast
 
 import org.parboiled2.Position
-import sangria.parser.SourceMapper
+import sangria.execution.InputDocumentMaterializer
+import sangria.marshalling.{FromInput, InputUnmarshaller}
+import sangria.parser.{DeliveryScheme, SourceMapper}
 import sangria.renderer.QueryRenderer
 import sangria.validation.DocumentAnalyzer
-
-import sangria.schema.Schema
+import sangria.schema.{InputType, Schema}
 import sangria.validation.{TypeInfo, Violation}
 import sangria.visitor._
 
 import scala.util.control.Breaks._
-
 import scala.collection.immutable.ListMap
 
 case class Document(definitions: Vector[Definition], trailingComments: Vector[Comment] = Vector.empty, position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode with WithTrailingComments {
   lazy val operations = Map(definitions collect {case op: OperationDefinition ⇒ op.name → op}: _*)
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition ⇒ fragment.name → fragment}: _*)
-  lazy val source = sourceMapper map (_.source)
+  lazy val source: Option[String] = sourceMapper map (_.source)
 
   def operationType(operationName: Option[String] = None): Option[OperationType] =
     operation(operationName) map (_.operationType)
@@ -32,14 +32,6 @@ case class Document(definitions: Vector[Definition], trailingComments: Vector[Co
   def withoutSourceMapper = copy(sourceMapper = None)
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[Document]
-
-  override def equals(other: Any): Boolean = other match {
-    case that: Document ⇒
-      (that canEqual this) &&
-        definitions == that.definitions &&
-        position == that.position
-    case _ ⇒ false
-  }
 
   /**
     * Merges two documents. The `sourceMapper` is lost along the way.
@@ -57,6 +49,14 @@ case class Document(definitions: Vector[Definition], trailingComments: Vector[Co
 
   def separateOperation(definition: OperationDefinition) = analyzer.separateOperation(definition)
   def separateOperation(operationName: Option[String]) = analyzer.separateOperation(operationName)
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Document ⇒
+      (that canEqual this) &&
+          definitions == that.definitions &&
+          position == that.position
+    case _ ⇒ false
+  }
 
   override def hashCode(): Int =
     Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
@@ -81,6 +81,59 @@ object Document {
     Document(Vector(
       ObjectTypeDefinition("Query", Vector.empty, Vector(
         FieldDefinition("stub", NamedType("String"), Vector.empty)))))
+}
+
+case class InputDocument(values: Vector[Value], trailingComments: Vector[Comment] = Vector.empty, position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode with WithTrailingComments {
+  lazy val source: Option[String] = sourceMapper map (_.source)
+
+  /**
+    * Merges two documents. The `sourceMapper` is lost along the way.
+    */
+  def merge(other: InputDocument) = InputDocument.merge(Vector(this, other))
+
+  /**
+    * An alias for `merge`
+    */
+  def +(other: InputDocument) = merge(other)
+
+
+  def to[T](
+    schema: Schema[_, _],
+    inputType: InputType[T]
+  )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
+    InputDocumentMaterializer.to(schema, this, inputType)
+
+  def to[T, Vars](
+    schema: Schema[_, _],
+    inputType: InputType[T],
+    variables: Vars
+  )(implicit iu: InputUnmarshaller[Vars], fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
+    InputDocumentMaterializer.to(schema, this, inputType, variables)
+
+  def to[T](inputType: InputType[T])(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
+    InputDocumentMaterializer.to(this, inputType)
+
+  def to[T, Vars](
+    inputType: InputType[T],
+    variables: Vars = InputUnmarshaller.emptyMapVars
+  )(implicit iu: InputUnmarshaller[Vars], fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
+    InputDocumentMaterializer.to(this, inputType, variables)
+
+  override def equals(other: Any): Boolean = other match {
+    case that: InputDocument ⇒
+      (that canEqual this) &&
+          values == that.values &&
+          position == that.position
+    case _ ⇒ false
+  }
+
+  override def hashCode(): Int =
+    Seq(values, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+}
+
+object InputDocument {
+  def merge(documents: Traversable[InputDocument]): InputDocument =
+    InputDocument(documents.toVector.flatMap(_.values))
 }
 
 sealed trait ConditionalFragment extends AstNode {
@@ -448,6 +501,12 @@ object AstVisitor {
     def loop(node: AstNode): Unit =
       node match {
         case n @ Document(defs, trailingComments, _, _) ⇒
+          if (breakOrSkip(onEnter(n))) {
+            defs.foreach(d ⇒ loop(d))
+            trailingComments.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ InputDocument(defs, trailingComments, _, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             defs.foreach(d ⇒ loop(d))
             trailingComments.foreach(s ⇒ loop(s))

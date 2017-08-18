@@ -134,6 +134,10 @@ trait AstLiftable {
   implicit def liftDocument: Liftable[Document] = Liftable {
     case doc @ Document(d, c, p, _) ⇒ q"_root_.sangria.ast.Document($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.Parboiled2SourceMapper(_root_.org.parboiled2.ParserInput(${doc.source.get}))))"
   }
+
+  implicit def liftInputDocument: Liftable[InputDocument] = Liftable {
+    case doc @ InputDocument(d, c, p, _) ⇒ q"_root_.sangria.ast.InputDocument($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.Parboiled2SourceMapper(_root_.org.parboiled2.ParserInput(${doc.source.get}))))"
+  }
 }
 
 trait MacroAstLiftable extends AstLiftable {

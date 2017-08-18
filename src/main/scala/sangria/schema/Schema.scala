@@ -563,13 +563,13 @@ case class EnumType[T](
   lazy val byValue = values groupBy (_.value) mapValues (_.head)
 
   def coerceUserInput(value: Any): Either[Violation, (T, Boolean)] = value match {
-    case name: String ⇒ byName get name map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
+    case valueName: String ⇒ byName get valueName map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(valueName, name, values.map(_.name)))
     case v if byValue exists (_._1 == v) ⇒ Right(v.asInstanceOf[T] → byValue(v.asInstanceOf[T]).deprecationReason.isDefined)
     case _ ⇒ Left(EnumCoercionViolation)
   }
 
   def coerceInput(value: ast.Value): Either[Violation, (T, Boolean)] = value match {
-    case ast.EnumValue(name, _, _) ⇒ byName get name map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(name))
+    case ast.EnumValue(valueName, _, _) ⇒ byName get valueName map (v ⇒ Right(v.value → v.deprecationReason.isDefined)) getOrElse Left(EnumValueCoercionViolation(valueName, name, values.map(_.name)))
     case _ ⇒ Left(EnumCoercionViolation)
   }
 

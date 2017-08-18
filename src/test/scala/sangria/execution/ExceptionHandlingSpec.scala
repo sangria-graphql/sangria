@@ -3,16 +3,18 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{OutputMatchers, FutureResultSupport}
+import sangria.util.{DebugUtil, FutureResultSupport, OutputMatchers, StringMatchers}
+import sangria.validation.{AstNodeLocation, UndefinedFieldViolation}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers {
+class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers with StringMatchers {
   val TestType = ObjectType("Test", fields[Unit, Unit](
-    Field("success", OptionType(StringType), resolve = _ ⇒ "Yay"),
+    Field("success", OptionType(StringType),
+      arguments = Argument("num", OptionInputType(IntType)) :: Nil,
+      resolve = _ ⇒ "Yay"),
     Field("trySuccess", OptionType(StringType), resolve = _ ⇒ Success("try!")),
     Field("tryError", OptionType(StringType), resolve = _ ⇒ Failure(new IllegalStateException("try boom!"))),
     Field("error", OptionType(StringType), resolve = _ ⇒ throw new IllegalStateException("Boom!")),
@@ -68,7 +70,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         }
         """)
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
       }
 
@@ -96,7 +98,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         }
         """)
 
-      val exceptionHandler: Executor.ExceptionHandler = {
+      val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒
           HandledException(e.getMessage,
             Map("foo" → m.arrayNode(Vector(m.scalarNode("bar", "String", Set.empty), m.scalarNode(1234, "Int", Set.empty))), "baz" → m.scalarNode("Test", "String", Set.empty)))
@@ -120,6 +122,98 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
               "foo" → List("bar", 1234),
               "baz" → "Test",
               "locations" → List(Map("line" → 4, "column" → 11))))))
+    }
+
+    "handle violation-based errors" in {
+      val Success(doc) = QueryParser.parse("""
+        {
+          nonExistingField
+          success(num: "One")
+        }
+        """)
+
+      val exceptionHandler = ExceptionHandler (onViolation = {
+        case (m, v: UndefinedFieldViolation) ⇒
+          HandledException("Field is missing!!! D:", Map("fieldName" → m.scalarNode(v.fieldName, "String", Set.empty)))
+        case (_, v: AstNodeLocation) ⇒
+          HandledException(v.simpleErrorMessage + " [with extras]")
+      })
+
+      val res =
+        Executor.execute(schema, doc, exceptionHandler = exceptionHandler).recover {
+          case analysis: QueryAnalysisError ⇒ analysis.resolveError
+        }
+
+      res.await should be  (
+        Map(
+          "data" → null,
+          "errors" → Vector(
+            Map(
+              "message" → "Field is missing!!! D:",
+              "locations" → Vector(Map("line" → 3, "column" → 11)),
+              "fieldName" → "nonExistingField"),
+            Map(
+              "message" → "Argument 'num' expected type 'Int' but got: \"One\". Reason: Int value expected [with extras]",
+              "locations" → Vector(Map("line" → 4, "column" → 24))))))
+    }
+
+    "handle user-facing errors errors" in {
+      val Success(doc) = QueryParser.parse("""
+        query Foo {
+          success(num: 1)
+        }
+        """)
+
+      val exceptionHandler = ExceptionHandler (onUserFacingError = {
+        case (m, e: OperationSelectionError) ⇒
+          HandledException("Wrong operation?!", Map("errorCode" → m.scalarNode("AAAAAaaAA!", "String", Set.empty)))
+      })
+
+      val res =
+        Executor.execute(schema, doc, operationName = Some("Bar"), exceptionHandler = exceptionHandler).recover {
+          case analysis: QueryAnalysisError ⇒ analysis.resolveError
+        }
+
+      res.await should be  (
+        Map(
+          "data" → null,
+          "errors" → Vector(
+            Map(
+              "message" → "Wrong operation?!",
+              "errorCode" → "AAAAAaaAA!"))))
+    }
+
+    "allow multiple handled errors with ast positions" in {
+      val Success(doc) = QueryParser.parse("""
+        query Foo {
+          error
+        }
+        """.stripCR)
+
+      val exceptionHandler = ExceptionHandler {
+        case (m, e: IllegalStateException) ⇒
+          HandledException(
+            Vector(
+              ("Error 1", Map("errorCode" → m.scalarNode("OOPS", "String", Set.empty)), Nil),
+              ("Error 2", Map.empty[String, m.Node], doc.operations.head._2.position.toList)))
+      }
+
+      Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (
+        Map(
+          "data" → Map("error" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Error 1",
+              "path" → Vector("error"),
+              "locations" → Vector(
+                Map("line" → 3, "column" → 11)),
+              "errorCode" → "OOPS"),
+            Map(
+              "message" → "Error 2",
+              "path" → Vector("error"),
+              "locations" → Vector(
+                Map("line" → 3, "column" → 11),
+                Map("line" → 2, "column" → 9))))))
     }
   }
 
