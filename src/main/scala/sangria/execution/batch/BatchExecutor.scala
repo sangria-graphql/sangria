@@ -36,7 +36,7 @@ object BatchExecutor {
     variables: Input = emptyMapVars,
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-    exceptionHandler: Executor.ExceptionHandler = PartialFunction.empty,
+    exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
@@ -248,7 +248,7 @@ object BatchExecutor {
     executor.execute(queryAst, userContext, root, Some(operationName), variables).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
   }
 
-  private def validateOperationNames(document: ast.Document, operationNames: Seq[String], exceptionHandler: Executor.ExceptionHandler): Try[Unit] =
+  private def validateOperationNames(document: ast.Document, operationNames: Seq[String], exceptionHandler: ExceptionHandler): Try[Unit] =
     if (operationNames.isEmpty)
       Failure(OperationSelectionError(s"List of operations to execute in batch is empty.", exceptionHandler))
     else
@@ -257,7 +257,7 @@ object BatchExecutor {
         case None ⇒ Success(())
       }
 
-  private def calcExecutionPlan(schema: Schema[_, _], queryAst: ast.Document, operationNames: Seq[String], allowedToInferVariableDefinitions: Boolean, exceptionHandler: Executor.ExceptionHandler): Try[(ast.Document, BatchExecutionPlan)] = {
+  private def calcExecutionPlan(schema: Schema[_, _], queryAst: ast.Document, operationNames: Seq[String], allowedToInferVariableDefinitions: Boolean, exceptionHandler: ExceptionHandler): Try[(ast.Document, BatchExecutionPlan)] = {
     val (exportOperations, exportFragments) = findUsages(schema, queryAst, operationNames)
 
     val collectResult =
@@ -300,7 +300,7 @@ object BatchExecutor {
       }
   }
 
-  private def validateCircularOperationDependencies(queryAst: ast.Document, dependencies: Map[String, Vector[(String, Set[String])]], exceptionHandler: Executor.ExceptionHandler): Try[(ast.Document, Map[String, Vector[(String, Set[String])]])] = {
+  private def validateCircularOperationDependencies(queryAst: ast.Document, dependencies: Map[String, Vector[(String, Set[String])]], exceptionHandler: ExceptionHandler): Try[(ast.Document, Map[String, Vector[(String, Set[String])]])] = {
     val violations = new mutable.ListBuffer[Violation]
 
     def loop(src: String, deps: Vector[(String, Set[String])], path: Vector[(String, String)]): Unit =
@@ -334,7 +334,7 @@ object BatchExecutor {
   private def findExportedVariableNames(exportOperations: mutable.HashMap[String, ExportOperation]): Set[String] =
     exportOperations.values.flatMap(_.exports.map(_.exportedName)).toSet
 
-  private def inferVariableDefinitions(exportOperations: mutable.HashMap[String, ExportOperation], queryAst: ast.Document, exceptionHandler: Executor.ExceptionHandler): Try[ast.Document] = {
+  private def inferVariableDefinitions(exportOperations: mutable.HashMap[String, ExportOperation], queryAst: ast.Document, exceptionHandler: ExceptionHandler): Try[ast.Document] = {
     val inferenceViolations = new mutable.ListBuffer[Violation]
 
     val updatedDocument =
@@ -395,7 +395,7 @@ object BatchExecutor {
     usages diff defs
   }
 
-  private def collectFragmentInfo(exportOperation: ExportOperation, exportFragments: mutable.HashMap[String, ExportFragment], exceptionHandler: Executor.ExceptionHandler): Try[ExportOperation] = {
+  private def collectFragmentInfo(exportOperation: ExportOperation, exportFragments: mutable.HashMap[String, ExportFragment], exceptionHandler: ExceptionHandler): Try[ExportOperation] = {
     val currentExports = new mutable.ListBuffer[Export]
     val currentVariables = new mutable.ListBuffer[VariableUsage]
 
