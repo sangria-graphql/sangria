@@ -37,8 +37,8 @@ class PossibleFragmentSpreads extends ValidationRule {
         }
       case fs: ast.FragmentSpread ⇒
         val errors = for {
-          tpe ← getFragmentType(ctx, fs.name)
-          parent ← ctx.typeInfo.parentType
+          tpe ← ctx.typeInfo.tpe
+          parent ← ctx.typeInfo.previousParentType
         } yield
           if (!doTypesOverlap(ctx, tpe, parent))
             Vector(TypeIncompatibleSpreadViolation(
@@ -55,9 +55,6 @@ class PossibleFragmentSpreads extends ValidationRule {
           case _ ⇒ AstVisitorCommand.RightContinue
         }
     }
-
-    def getFragmentType(ctx: ValidationContext, name: String) =
-      ctx.doc.fragments.get(name) flatMap (fd ⇒ ctx.schema.getOutputType(fd.typeCondition, topLevel = true))
 
     def doTypesOverlap(ctx: ValidationContext, type1: Type, type2: Type) = (type1, type2) match {
       case (t1: Named, t2: Named) if t1.name == t2.name ⇒ true
