@@ -186,7 +186,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
         (comment, pos, name, dirs, members) ⇒ ast.UnionTypeDefinition(name, members, dirs, comment, Some(pos)))
   }
 
-  def UnionMembers = rule { NamedType.+(ws('|')) ~> (_.toVector) }
+  def UnionMembers = rule { ws('|').? ~ NamedType.+(ws('|')) ~> (_.toVector) }
 
   def EnumTypeDefinition = rule {
     Comments ~ trackPos ~ enum ~ Name ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
@@ -213,7 +213,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
       (comment, pos, name, args, locations) ⇒ ast.DirectiveDefinition(name, args, locations, comment, Some(pos)))
   }
 
-  def DirectiveLocations = rule { DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector) }
+  def DirectiveLocations = rule { ws('|').? ~ DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector) }
 
   def DirectiveLocation = rule { Comments ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
 

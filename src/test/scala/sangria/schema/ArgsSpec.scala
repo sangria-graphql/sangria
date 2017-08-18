@@ -9,8 +9,6 @@ import spray.json._
 import scala.collection.concurrent.TrieMap
 
 class ArgsSpec extends WordSpec with Matchers {
-
-
   val NonDefaultArgumentName = "nonDefaultArgument"
   val DefaultArgumentName = "defaultArgument"
   val OptionalArgumentName = "optionalArg"
