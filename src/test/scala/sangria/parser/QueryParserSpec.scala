@@ -913,7 +913,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
           | FIELD
           | FRAGMENT_SPREAD
           | INLINE_FRAGMENT
-        """)
+        """.stripCR)
 
       ast.withoutSourceMapper should be (
         Document(
@@ -921,17 +921,16 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             DirectiveDefinition(
               "include2",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(34, 2, 33))), Some(Position(34, 2, 33))),
-                  None, Vector.empty, Vector.empty, Some(Position(30, 2, 29)))),
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(33, 2, 33))), Some(Position(33, 2, 33))), None, Vector.empty, Vector.empty, Some(Position(29, 2, 29)))),
               Vector(
-                DirectiveLocation("FIELD", Vector.empty, Some(Position(60, 3, 13))),
-                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(Position(79, 4, 13))),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(Position(108, 5, 13)))),
+                DirectiveLocation("FIELD", Vector.empty, Some(Position(58, 3, 13))),
+                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(Position(76, 4, 13))),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(Position(104, 5, 13)))),
               Vector.empty,
-              Some(Position(10, 2, 9))
+              Some(Position(9, 2, 9))
             )),
           Vector.empty,
-          Some(Position(10, 2, 9)),
+          Some(Position(9, 2, 9)),
           None))
     }
 

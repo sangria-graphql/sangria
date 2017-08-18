@@ -8,4 +8,8 @@ trait StringMatchers {
   }
 
   def stripCarriageReturns(s: String) = s.replaceAll("\\r", "")
+
+  implicit class StringHelpers(s: String) {
+    def stripCR: String = stripCarriageReturns(s)
+  }
 }
