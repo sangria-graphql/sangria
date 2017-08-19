@@ -5,13 +5,13 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.macros._
 import sangria.marshalling._
 import sangria.schema._
-import sangria.util.FutureResultSupport
+import sangria.util.{FutureResultSupport, Pos}
 import spray.json._
-
 import monix.execution.Scheduler.Implicits.global
-import sangria.execution.ExecutionScheme.Stream
+import sangria.execution.{ValidationError, WithViolations}
 import sangria.marshalling.sprayJson._
 import sangria.streaming.monix._
+import sangria.util.SimpleGraphQlSupport.checkContainsViolations
 
 class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
   val IdsArg = Argument("ids", ListInputType(IntType))
@@ -62,6 +62,8 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
     directives = BuiltinDirectives :+ BatchExecutor.ExportDirective)
 
   "BatchExecutor" should {
+    import sangria.execution.ExecutionScheme.Stream
+
     "Batch multiple queries and ensure correct execution order" in {
       val query =
         gql"""
@@ -109,48 +111,48 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       res.toListL.runAsync.await.toSet should be (
         Set(
-        """
-        {
-          "data": {
-            "ids": [1, 2],
-            "foo": [1, 2],
-            "nested": {
-              "ids1": [4, 5],
-              "aaa": [4, 5]
+          """
+          {
+            "data": {
+              "ids": [1, 2],
+              "foo": [1, 2],
+              "nested": {
+                "ids1": [4, 5],
+                "aaa": [4, 5]
+              }
             }
           }
-        }
-        """,
-        """
-        {
-          "data": {
-            "ids2": [],
-            "stuff": [
-              {"id": 2}
-            ]
+          """,
+          """
+          {
+            "data": {
+              "ids2": [],
+              "stuff": [
+                {"id": 2}
+              ]
+            }
           }
-        }
-        """,
-        """
-        {
-          "data": {
-            "stuff": [
-              {"id": 1},
-              {"id": 2},
-              {"id": 4},
-              {"id": 5},
-              {"id": 4},
-              {"id": 5},
-              {"id": 111},
-              {"id": 222},
-              {"id": 444}
-            ],
-            "stuff1": "1, 2, 4, 5, 4, 5, 111, 222, 444",
-            "single": { "id": 1 },
-            "greet": "Hello, Bob!"
+          """,
+          """
+          {
+            "data": {
+              "stuff": [
+                {"id": 1},
+                {"id": 2},
+                {"id": 4},
+                {"id": 5},
+                {"id": 4},
+                {"id": 5},
+                {"id": 111},
+                {"id": 222},
+                {"id": 444}
+              ],
+              "stuff1": "1, 2, 4, 5, 4, 5, 111, 222, 444",
+              "single": { "id": 1 },
+              "greet": "Hello, Bob!"
+            }
           }
-        }
-        """).map(_.parseJson))
+          """).map(_.parseJson))
     }
 
     "take the first element of the list" in {
@@ -190,45 +192,45 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       res.toListL.runAsync.await.toSet should be (
         Set(
-        """
-        {
-          "data": {
-            "name2": "some name 2",
-            "nested": {
-              "name1": "some name 1"
-            }
-          },
-          "extensions": {
-            "batch": {
-              "operationName": "q1"
-            }
-          }
-        }
-        """,
-        """
-        {
-          "data": {
-            "greet": "Hello, some name 2!"
-          },
-          "extensions": {
-            "batch": {
-              "operationName": "q2"
+          """
+          {
+            "data": {
+              "name2": "some name 2",
+              "nested": {
+                "name1": "some name 1"
+              }
+            },
+            "extensions": {
+              "batch": {
+                "operationName": "q1"
+              }
             }
           }
-        }
-        """,
-        """
-        {
-          "data": {
-            "greetAll": "Hello, some name 2 and some name 1!"
-          },
-          "extensions": {
-            "batch": {
-              "operationName": "q3"
+          """,
+          """
+          {
+            "data": {
+              "greet": "Hello, some name 2!"
+            },
+            "extensions": {
+              "batch": {
+                "operationName": "q2"
+              }
             }
           }
-        }
-        """).map(_.parseJson))
+          """,
+          """
+          {
+            "data": {
+              "greetAll": "Hello, some name 2 and some name 1!"
+            },
+            "extensions": {
+              "batch": {
+                "operationName": "q3"
+              }
+            }
+          }
+          """).map(_.parseJson))
     }
 
     "handle complex objects" in {
@@ -258,12 +260,141 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       val res = BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2"))
 
-      res.toListL.runAsync.await.toSet foreach {
-        (x: JsValue) ⇒ println(x.prettyPrint)
-      }
-
       res.toListL.runAsync.await.toSet should be (
         Set(
+          """
+          {
+            "data": {
+              "stuff": [{
+                "id": 1,
+                "name": "data #1"
+              }, {
+                "id": 2,
+                "name": "data #2"
+              }],
+              "nested": {
+                "stuff": [{
+                  "id": 3,
+                  "name": "data #3"
+                }, {
+                  "id": 4,
+                  "name": "data #4"
+                }]
+              }
+            }
+          }
+          """,
+          """
+          {
+            "data": {
+              "createData": [{
+                "id": 1,
+                "name": "data #1"
+              }, {
+                "id": 2,
+                "name": "data #2"
+              }, {
+                "id": 3,
+                "name": "data #3"
+              }, {
+                "id": 4,
+                "name": "data #4"
+              }]
+            }
+          }
+          """).map(_.parseJson))
+    }
+
+    "produce type inference errors if same variables are used with incompatible types" in {
+      val query =
+        gql"""
+          query q1 {
+            ids @export(as: "ids")
+          }
+
+          query q2 {
+            stuff(ids: $$ids) {id}
+            single(id: $$ids) {id}
+
+            greet(name: $$ids)
+          }
+        """
+
+      checkContainsViolations(
+        BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2")).toListL.runAsync.await,
+        List(
+          "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'Int!'." → List(Pos(7, 24), Pos(8, 24)),
+          "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'String!'." → List(Pos(7, 24), Pos(10, 25))))
+    }
+
+    "not allow circular dependencies" in {
+      val query =
+        gql"""
+          query q1 {
+            ids @export(as: "from1")
+            nested {
+              ...Foo
+            }
+          }
+
+          fragment Foo on Query {
+            ids1 @export(as: "from1")
+            stuff(ids: $$from3) {id}
+          }
+
+          query q2 {
+            stuff(ids: $$from1) {id}
+
+            ids @export(as: "from2")
+          }
+
+          query q3 {
+            ids @export(as: "from3")
+            stuff(ids: $$from2) {id}
+          }
+        """
+
+      checkContainsViolations(
+        BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2", "q3")).toListL.runAsync.await,
+        List(
+          "Operation 'q1' has a circular dependency at path 'q1($from3) -> q3($from2) -> q2($from1) -> q1'." → List(Pos(2, 11)),
+          "Operation 'q3' has a circular dependency at path 'q3($from2) -> q2($from1) -> q1($from3) -> q3'." → List(Pos(20, 11)),
+          "Operation 'q2' has a circular dependency at path 'q2($from1) -> q1($from3) -> q3($from2) -> q2'." → List(Pos(14, 11))))
+    }
+  }
+
+  "BatchExecutor (with single result)" should {
+    import sangria.execution.ExecutionScheme.Extended
+
+
+    "able to return a single result" in {
+      val query =
+        gql"""
+          query q1 {
+            stuff(ids: [1, 2]) @export(as: "myData") {
+              id
+              name
+            }
+            nested {
+              ...Foo
+            }
+          }
+
+          fragment Foo on Query {
+            stuff(ids: [3, 4]) @export(as: "myData") {
+              id
+              name
+            }
+          }
+
+          mutation q2 {
+            createData(data: $$myData) {id name}
+          }
+        """
+
+      val res = BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2"))
+
+      res.await.result should be (
         """
         {
           "data": {
@@ -285,26 +416,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
             }
           }
         }
-        """,
-        """
-        {
-          "data": {
-            "createData": [{
-              "id": 1,
-              "name": "data #1"
-            }, {
-              "id": 2,
-              "name": "data #2"
-            }, {
-              "id": 3,
-              "name": "data #3"
-            }, {
-              "id": 4,
-              "name": "data #4"
-            }]
-          }
-        }
-        """).map(_.parseJson))
+        """.parseJson)
     }
   }
 }

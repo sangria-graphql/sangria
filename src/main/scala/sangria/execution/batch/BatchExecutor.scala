@@ -363,7 +363,7 @@ object BatchExecutor {
             val violations = new mutable.ListBuffer[Violation]
 
             tail.foreach { curr ⇒
-              val currType = first.tpe.getOrElse(throw new IllegalStateException("Variable usage type is not detected, but expected at this point!"))
+              val currType = curr.tpe.getOrElse(throw new IllegalStateException("Variable usage type is not detected, but expected at this point!"))
               val currAstType = SchemaRenderer.renderTypeNameAst(currType)
 
               if (firstAstType != currAstType)

@@ -2,11 +2,11 @@ package sangria.util
 
 import org.scalatest.Matchers
 import sangria.execution.deferred.DeferredResolver
-import sangria.execution.{ExceptionHandler, Executor, HandledException}
+import sangria.execution.{ExceptionHandler, Executor, HandledException, WithViolations}
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema.Schema
-import sangria.validation.QueryValidator
+import sangria.validation.{AstNodeLocation, QueryValidator}
 import spray.json.{JsObject, JsValue}
 
 import scala.util.Success
@@ -87,6 +87,31 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
               case None ⇒ true
               case Some(locs: Seq[Map[String, Any]] @unchecked) ⇒
                 locs.map(loc ⇒ Pos(loc("line").asInstanceOf[Int], loc("column").asInstanceOf[Int])) == pos
+            }
+          }
+        } should be(true)
+      }
+    }
+  }
+
+  def checkContainsViolations(execute: ⇒ Unit, expected: Seq[(String, Seq[Pos])]) = {
+    val error = intercept [WithViolations] (execute)
+
+    val prettyViolations = error.violations.map(_.errorMessage).mkString("\n", "\n", "\n")
+
+    withClue(s"Invalid size. Expected ${expected.size}. Actual (${error.violations.size}):\n$prettyViolations") {
+      error.violations should have size expected.size
+    }
+
+    expected foreach { case(expected, pos) ⇒
+      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString ","}. Actual:\n$prettyViolations") {
+        error.violations exists { error ⇒
+          val message = error.errorMessage
+
+          message.contains(expected) && {
+            error match {
+              case n: AstNodeLocation ⇒ n.positions.map(p ⇒ Pos(p.line, p.column)) == pos
+              case _ ⇒ false
             }
           }
         } should be(true)
