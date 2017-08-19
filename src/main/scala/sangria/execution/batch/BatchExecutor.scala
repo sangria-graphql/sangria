@@ -27,6 +27,10 @@ object BatchExecutor {
     locations = Set(DirectiveLocation.Field),
     shouldInclude = _ ⇒ true)
 
+  val OperationNameExtension = Middleware.simpleExtension[Any](ctx ⇒
+    ast.ObjectValue("batch" → ast.ObjectValue("operationName" →
+      ctx.operationName.fold(ast.NullValue(): ast.Value)(ast.StringValue(_)))))
+
   def executeBatch[Ctx, Root, Input, T](
     schema: Schema[Ctx, Root],
     queryAst: ast.Document,
@@ -47,8 +51,8 @@ object BatchExecutor {
     val validations =
       validateOperationNames(queryAst, operationNames, exceptionHandler)
         .flatMap(_ ⇒ calcExecutionPlan(schema, queryAst, operationNames, inferVariableDefinitions, exceptionHandler))
-        .flatMap { res ⇒
-          val violations = queryValidator.validateQuery(schema, res._1)
+        .flatMap { case res @ (updatedDocument, _) ⇒
+          val violations = queryValidator.validateQuery(schema, updatedDocument)
 
           if (violations.nonEmpty) Failure(ValidationError(violations, exceptionHandler))
           else Success(res)
@@ -258,10 +262,10 @@ object BatchExecutor {
       }
 
   private def calcExecutionPlan(schema: Schema[_, _], queryAst: ast.Document, operationNames: Seq[String], allowedToInferVariableDefinitions: Boolean, exceptionHandler: ExceptionHandler): Try[(ast.Document, BatchExecutionPlan)] = {
-    val (exportOperations, exportFragments) = findUsages(schema, queryAst, operationNames)
+    val (exportedAll, exportFragments) = findUsages(schema, queryAst)
 
     val collectResult =
-      exportOperations.foldLeft(Success(exportOperations): Try[mutable.HashMap[String, ExportOperation]]) {
+      exportedAll.foldLeft(Success(exportedAll): Try[mutable.HashMap[String, ExportOperation]]) {
         case (s @ Success(ops), (opName, op)) ⇒
           collectFragmentInfo(op, exportFragments, exceptionHandler) match {
             case Success(o) ⇒
@@ -273,13 +277,15 @@ object BatchExecutor {
         case (f @ Failure(_), _) ⇒ f
       }
 
+    val exportedRelevant = exportedAll.filterKeys(operationNames.contains).toMap
+
     collectResult
       .flatMap { _ ⇒
         if (allowedToInferVariableDefinitions)
-          inferVariableDefinitions(exportOperations, queryAst, exceptionHandler)
+          inferVariableDefinitions(exportedAll, queryAst, exceptionHandler)
         else {
           val violations =
-            exportOperations.values.flatMap { op ⇒
+            exportedAll.values.flatMap { op ⇒
               findUndefinedVariableUsages(op).map(UndefinedVariableDefinitionViolation(op.operationName, _, queryAst.sourceMapper, op.variableUsages.flatMap(_.node.position).toList))
             }
 
@@ -290,13 +296,13 @@ object BatchExecutor {
         }
       }
       .flatMap { updatedQueryAst ⇒
-        val exportedVars = findExportedVariableNames(exportOperations)
-        val dependencies = findOperationDependencies(exportOperations, exportedVars)
+        val exportedVars = findExportedVariableNames(exportedRelevant)
+        val dependencies = findOperationDependencies(exportedRelevant, exportedVars)
 
         validateCircularOperationDependencies(updatedQueryAst, dependencies, exceptionHandler)
       }
       .map { case (updatedQueryAst, dependencies) ⇒
-        updatedQueryAst → BatchExecutionPlan(exportOperations.toMap, dependencies)
+        updatedQueryAst → BatchExecutionPlan(exportedRelevant, dependencies)
       }
   }
 
@@ -322,7 +328,7 @@ object BatchExecutor {
       Success(queryAst → dependencies)
   }
 
-  private def findOperationDependencies(exportOperations: mutable.HashMap[String, ExportOperation], exportedVars: Set[String]): Map[String, Vector[(String, Set[String])]] =
+  private def findOperationDependencies(exportOperations: Map[String, ExportOperation], exportedVars: Set[String]): Map[String, Vector[(String, Set[String])]] =
     exportOperations.values.map { src ⇒
       val requires = (src.variableDefs.map(_.name).filter(exportedVars.contains) ++ src.variableUsages.map(_.node.name).filter(exportedVars.contains)).toSet
 
@@ -331,7 +337,7 @@ object BatchExecutor {
       src.operationName → providers.toVector
     }.toMap
 
-  private def findExportedVariableNames(exportOperations: mutable.HashMap[String, ExportOperation]): Set[String] =
+  private def findExportedVariableNames(exportOperations: Map[String, ExportOperation]): Set[String] =
     exportOperations.values.flatMap(_.exports.map(_.exportedName)).toSet
 
   private def inferVariableDefinitions(exportOperations: mutable.HashMap[String, ExportOperation], queryAst: ast.Document, exceptionHandler: ExceptionHandler): Try[ast.Document] = {
@@ -436,7 +442,7 @@ object BatchExecutor {
       Success(exportOperation)
   }
 
-  private def findUsages(schema: Schema[_, _], queryAst: ast.Document, operationNames: Seq[String]): (mutable.HashMap[String, ExportOperation], mutable.HashMap[String, ExportFragment]) = {
+  private def findUsages(schema: Schema[_, _], queryAst: ast.Document): (mutable.HashMap[String, ExportOperation], mutable.HashMap[String, ExportFragment]) = {
     var currentOperation: Option[String] = None
     var currentFragment: Option[String] = None
 
@@ -450,9 +456,6 @@ object BatchExecutor {
 
     AstVisitor.visitAstWithTypeInfo(schema, queryAst)(typeInfo ⇒ AstVisitor(
       onEnter = {
-        case op: ast.OperationDefinition if op.name.isDefined && !operationNames.contains(op.name.get) ⇒
-          VisitorCommand.Skip
-
         case op: ast.OperationDefinition if op.name.isDefined ⇒
           currentOperation = op.name
           VisitorCommand.Continue

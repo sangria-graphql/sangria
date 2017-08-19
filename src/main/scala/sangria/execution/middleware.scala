@@ -76,6 +76,9 @@ object Middleware {
       })
     else None
   }
+
+  def simpleExtension[Ctx](extensionFn: MiddlewareQueryContext[Ctx, _, _] ⇒ ast.Value) =
+    new SimpleAstBasedExtensionMiddleware[Ctx](extensionFn)
 }
 
 trait MiddlewareBeforeField[Ctx] extends Middleware[Ctx] {
