@@ -1,14 +1,12 @@
 package sangria.execution
 
-import language.higherKinds
+import language.{higherKinds, implicitConversions, existentials}
 import sangria.marshalling.InputUnmarshaller
 
-import language.implicitConversions
 import sangria.ast
 import sangria.schema.{Action, Context, InputType}
 import sangria.streaming.SubscriptionStream
 import sangria.validation.Violation
-
 
 trait Middleware[-Ctx] {
   type QueryVal

@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.2.3-SNAPSHOT"
+version := "1.3.0-SNAPSHOT"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
@@ -12,8 +12,7 @@ crossScalaVersions := Seq("2.11.11", "2.12.3")
 scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
-  "-Xlint",
-  "-Xlint:-missing-interpolator")
+  "-Xlint:-missing-interpolator,_")
 
 scalacOptions ++= {
   if (scalaVersion.value startsWith "2.12")

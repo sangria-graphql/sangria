@@ -1,3 +1,48 @@
+## v1.3.0 (2017-08-19)
+
+* **Experimental** Batch Executor (#273). For more info see the ["Batch Executor" section of the documentation](http://sangria-graphql.org/learn/#batch-executor).
+* Allow `Violation`s and `UserFacingError`s to be handled by custom exception handler (#252).
+
+  Refactored exception handling mechanism:
+
+  * Now it is able to handle `Violation`s as well as `UserFacingError`s.
+  * `HandledException` is now able to capture multiple errors and additional AST node positions.
+  * Since it is now a standalone class, it would be easier to expand on error handling in future.
+
+  **Minor breaking change.** It's just a small syntax change. Migration strategy:
+
+  ```scala
+  // Before
+  val exceptionHandler: Executor.ExceptionHandler = {
+    case (m, ...) ⇒...
+  })
+
+  // After
+  val exceptionHandler = ExceptionHandler {
+    case (m, ...) ⇒...
+  }
+  ```
+
+  `ExceptionHandler` is now a standalone class that allows you to provide following handlers:
+
+  * `onException` - all unexpected exceptions coming from the `resolve` functions (behaves exactly like in earlier versions)
+  * `onViolation` - handles violations (things like validation errors, argument/variable coercion, etc.)
+  * `onUserFacingError` - handles standard sangria errors (errors like invalid operation name, max query depth, etc.)
+
+  For more info see the updated ["Custom ExceptionHandler" section of the documentation](http://sangria-graphql.org/learn/#custom-exceptionhandler).
+* Improved input document validation and deserialization (#272). Improvements include:
+  * Added `InputDocument` which is used in validation, materialization, etc.
+  * New macros `gqlInpDoc`/`graphqlInputDoc` that produces an `InputDocument` instead of just `sangria.ast.Value`.
+  * Added `RuleBasedQueryValidator.validateInputDocument` that validates `InputDocument` against the schema.
+  * `InputDocument.to` provide a convenient way to `deserialize`/`materialize` an input document based on the `FromInput` type-class.
+  * Improved a lot of validation messages related to input value validations.
+* Add support for leading vertical bar in union types and directive definitions (#253) (spec change).
+* Fixed infinite loop on invalid queries in OverlappingFields (#266, #238).
+* Information about type extensions is now available in the field resolve function builder (#267).
+* Fixed directive definition rendering in query renderer (#274). Thanks to @alexeygolev for this contribution!
+* Built-in scalars will now only be added to the schema if they are used (#271, #270). Thanks to @jlawrienyt for this contribution!
+* Improve error message when an appropriate implementation of an abstract type cannot be found (#259).
+
 ## v1.2.2 (2017-06-17)
 
 * Added new middleware traits `MiddlewareFromScalar` and `MiddlewareToScalar`. They provide a way to transform all scalar values from middleware (#249, #248). This have some advantages since middleware can be disable, chained together and has access to context information. Huge thanks to @BjRo and @Axxiss for helping with the feature design and implementation!
@@ -13,7 +58,7 @@
 
 ## v1.2.0 (2017-04-29)
 
-* Provide convenient functions for IDL-based schema materialization and validation (#240). . For more info see the ["Query Validation" section of documentation](http://sangria-graphql.org/learn/#query-validation). Improvements include:
+* Provide convenient functions for IDL-based schema materialization and validation (#240). For more info see the ["Query Validation" section of documentation](http://sangria-graphql.org/learn/#query-validation). Improvements include:
   * Introduced Schema.buildStubFromAst that builds a schema with a stub Query type
   * Introduced Schema.buildDefinitions that builds a list of definitions based on IDL AST (without a schema)
   * Introduced Document.emptyStub as a most basic, but valid document stub
