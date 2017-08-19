@@ -273,6 +273,10 @@ case class ObjectValue(fields: Vector[ObjectField], comments: Vector[Comment] = 
     }
 }
 
+object ObjectValue {
+  def apply(fields: (String, Value)*): ObjectValue = ObjectValue(fields.toVector map (f ⇒ ObjectField(f._1, f._2)))
+}
+
 case class ObjectField(name: String, value: Value, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends NameValue
 
 case class Comment(text: String, position: Option[Position] = None) extends AstNode
