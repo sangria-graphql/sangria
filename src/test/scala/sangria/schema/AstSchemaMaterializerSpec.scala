@@ -2,15 +2,18 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition, TypeExtensionDefinition}
+import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
-import sangria.util.{FutureResultSupport, Pos, StringMatchers}
+import sangria.util.{DebugUtil, FutureResultSupport, Pos, StringMatchers}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.macros._
+import sangria.macros.derive._
 import sangria.validation.IntCoercionViolation
 import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
 
@@ -713,6 +716,111 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         query.ownFields.map(_.name) should be (List("field1", "field2", "field3", "field4"))
         query.interfaces.map(_.name) should be (List("Foo", "Bar"))
+      }
+
+      "allow extending static schema" in {
+        import sangria.marshalling.sprayJson._
+
+        case class Article(id: String, title: String, text: String, author: Option[String])
+
+        class Repo {
+          def loadArticle(id: String): Option[Article] =
+            Some(Article(id, s"Test Article #$id", "blah blah blah...", Some("Bob")))
+
+          def loadComments: List[JsValue] =
+            List(JsObject(
+              "text" → JsString("First!"),
+              "author" → JsObject(
+                "name" → JsString("Jane"),
+                "lastComment" → JsObject(
+                  "text" → JsString("Boring...")))))
+        }
+
+        val ArticleType = deriveObjectType[Repo, Article]()
+
+        val IdArg = Argument("id", StringType)
+
+        val QueryType = ObjectType("Query", fields[Repo, Unit](
+          Field("article", OptionType(ArticleType),
+            arguments = IdArg :: Nil,
+            resolve = c ⇒ c.ctx.loadArticle(c arg IdArg))))
+
+        val staticSchema = Schema(QueryType)
+
+        val extensions =
+          gql"""
+            extend type Article {
+              comments: [Comment]! @loadComments
+            }
+
+            type Comment {
+              text: String!
+              author: CommentAuthor!
+            }
+
+            type CommentAuthor {
+              name: String!
+              lastComment: Comment
+            }
+          """
+
+        val builder = new DefaultAstSchemaBuilder[Repo] {
+          override def resolveField(typeDefinition: TypeDefinition, extensions: Vector[TypeExtensionDefinition], definition: FieldDefinition) =
+            if (definition.directives.exists(_.name == "loadComments"))
+              c ⇒ c.ctx.loadComments
+            else
+              c ⇒ resolveJson(c.field.name, c.field.fieldType, c.value.asInstanceOf[JsValue])
+
+          def resolveJson(name: String, tpe: OutputType[_], json: JsValue): Any = tpe match {
+            case OptionType(ofType) ⇒ resolveJson(name, ofType, json)
+            case ListType(ofType) ⇒ json.asInstanceOf[JsArray].elements.map(resolveJson(name, ofType, _))
+            case StringType ⇒ json.asJsObject.fields(name).asInstanceOf[JsString].value
+            case _ if json.asJsObject.fields(name).isInstanceOf[JsObject] ⇒ json.asJsObject.fields(name)
+            case t ⇒ throw new IllegalStateException(s"Type ${SchemaRenderer.renderTypeName(t)} is not supported")
+          }
+        }
+
+        val schema = staticSchema.extend(extensions, builder)
+
+        val query =
+          gql"""
+            {
+              article(id: "42") {
+                title
+                text
+                comments {
+                  text
+                  author {
+                    name
+                    lastComment {
+                      text
+                    }
+                  }
+                }
+              }
+            }
+          """
+
+        Executor.execute(schema, query, new Repo).await should be (
+          """
+            {
+              "data": {
+                "article": {
+                  "title": "Test Article #42",
+                  "text": "blah blah blah...",
+                  "comments": [{
+                    "text": "First!",
+                    "author": {
+                      "name": "Jane",
+                      "lastComment": {
+                        "text": "Boring..."
+                      }
+                    }
+                  }]
+                }
+              }
+            }
+          """.parseJson)
       }
 
       "don't allow to extend the same interface twice" in {
