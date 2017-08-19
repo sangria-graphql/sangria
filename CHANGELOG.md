@@ -14,12 +14,12 @@
   ```scala
   // Before
   val exceptionHandler: Executor.ExceptionHandler = {
-    case (m, ...) ⇒...
+    case (m, ...) ⇒ ...
   })
 
   // After
   val exceptionHandler = ExceptionHandler {
-    case (m, ...) ⇒...
+    case (m, ...) ⇒ ...
   }
   ```
 
@@ -30,7 +30,7 @@
   * `onUserFacingError` - handles standard sangria errors (errors like invalid operation name, max query depth, etc.)
 
   For more info see the updated ["Custom ExceptionHandler" section of the documentation](http://sangria-graphql.org/learn/#custom-exceptionhandler).
-* Improved input document validation and deserialization (#272). Improvements include:
+* Improved input document validation and deserialization (#272). For more info see ["Input Document Validation" section of the documentation](http://sangria-graphql.org/learn/#input-document-validation) and updated ["Query AST Marshalling" section](http://sangria-graphql.org/learn/#query-ast-marshalling). Improvements include:
   * Added `InputDocument` which is used in validation, materialization, etc.
   * New macros `gqlInpDoc`/`graphqlInputDoc` that produces an `InputDocument` instead of just `sangria.ast.Value`.
   * Added `RuleBasedQueryValidator.validateInputDocument` that validates `InputDocument` against the schema.
@@ -38,7 +38,7 @@
   * Improved a lot of validation messages related to input value validations.
 * Add support for leading vertical bar in union types and directive definitions (#253) (spec change).
 * Fixed infinite loop on invalid queries in OverlappingFields (#266, #238).
-* Information about type extensions is now available in the field resolve function builder (#267).
+* Information about type extensions is now available in the field resolve function builder (#267). **Minor breaking change.** The signature of `DefaultAstSchemaBuilder.buildField` and `DefaultAstSchemaBuilder.resolveField` has changed. You need to add `extensions: Vector[ast.TypeExtensionDefinition]` as a second argument.
 * Fixed directive definition rendering in query renderer (#274). Thanks to @alexeygolev for this contribution!
 * Built-in scalars will now only be added to the schema if they are used (#271, #270). Thanks to @jlawrienyt for this contribution!
 * Improve error message when an appropriate implementation of an abstract type cannot be found (#259).
