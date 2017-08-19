@@ -8,7 +8,6 @@ import sangria.schema._
 import sangria.util.{FutureResultSupport, Pos}
 import spray.json._
 import monix.execution.Scheduler.Implicits.global
-import sangria.execution.{ValidationError, WithViolations}
 import sangria.marshalling.sprayJson._
 import sangria.streaming.monix._
 import sangria.util.SimpleGraphQlSupport.checkContainsViolations

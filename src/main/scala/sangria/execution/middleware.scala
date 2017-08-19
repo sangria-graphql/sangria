@@ -77,7 +77,7 @@ object Middleware {
     else None
   }
 
-  def simpleExtension[Ctx](extensionFn: MiddlewareQueryContext[Ctx, _, _] ⇒ ast.Value) =
+  def simpleExtension[Ctx](extensionFn: MiddlewareQueryContext[Ctx, _, _] ⇒ ast.Value): Middleware[Ctx] =
     new SimpleAstBasedExtensionMiddleware[Ctx](extensionFn)
 }
 

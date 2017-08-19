@@ -18,6 +18,18 @@ import scala.util.{Failure, Success, Try}
 import scala.util.control.Breaks.{break, breakable}
 import BatchExecutionPlan._
 
+/** __EXPERIMENTAL__
+  *
+  * Batch query executor which provides following features:
+  *
+  * - Allows specifying multiple `operationNames` when executing a GraphQL query document.
+  *   All operations would be executed in order inferred from the dependencies between queries.
+  * - Support for `@export(as: "foo")` directive. This directive allows you to save the
+  *   results of the query execution and then use it as a variable in a different query within the same document.
+  *   This provides a way to define data dependencies between queries.
+  * - When used with `@export` directive, the variables would be automatically inferred by
+  *   the execution engine, so you don't need to declare them explicitly (though you can)
+  */
 object BatchExecutor {
   val AsArg = Argument("as", StringType, "The variable name.")
 
@@ -27,10 +39,11 @@ object BatchExecutor {
     locations = Set(DirectiveLocation.Field),
     shouldInclude = _ ⇒ true)
 
-  val OperationNameExtension = Middleware.simpleExtension[Any](ctx ⇒
+  val OperationNameExtension: Middleware[Any] = Middleware.simpleExtension[Any](ctx ⇒
     ast.ObjectValue("batch" → ast.ObjectValue("operationName" →
       ctx.operationName.fold(ast.NullValue(): ast.Value)(ast.StringValue(_)))))
 
+  /** __EXPERIMENTAL__ */
   def executeBatch[Ctx, Root, Input, T](
     schema: Schema[Ctx, Root],
     queryAst: ast.Document,
