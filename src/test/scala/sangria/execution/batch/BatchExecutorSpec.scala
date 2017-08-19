@@ -8,14 +8,26 @@ import sangria.schema._
 import sangria.util.FutureResultSupport
 import spray.json._
 
+import monix.execution.Scheduler.Implicits.global
+import sangria.execution.ExecutionScheme.Stream
+import sangria.marshalling.sprayJson._
+import sangria.streaming.monix._
+
 class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
   val IdsArg = Argument("ids", ListInputType(IntType))
   val IdArg = Argument("id", IntType)
   val NameArg = Argument("name", StringType)
   val NamesArg = Argument("names", ListInputType(StringType))
 
-  val DataType = ObjectType("Data", fields[Unit, Int](
-    Field("id", IntType, resolve = _.value)))
+  val DataType = ObjectType("Data", fields[Unit, (Int, String)](
+    Field("id", IntType, resolve = _.value._1),
+    Field("name", StringType, resolve = _.value._2)))
+
+  lazy val DataInputType = InputObjectType("DataInput", List(
+    InputField("id", IntType),
+    InputField("name", StringType)))
+
+  val DataArg = Argument("data", ListInputType(DataInputType))
 
   lazy val QueryType: ObjectType[Unit, Unit] = ObjectType("Query", () ⇒ fields[Unit, Unit](
     Field("ids", ListType(IntType), resolve = _ ⇒ List(1, 2)),
@@ -32,16 +44,22 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
     Field("nested", QueryType, resolve = _ ⇒ ()),
     Field("stuff", ListType(DataType),
       arguments = IdsArg :: Nil,
-      resolve = _.arg(IdsArg)),
+      resolve = _.arg(IdsArg).map(id ⇒ id → s"data #$id")),
     Field("single", DataType,
       arguments = IdArg :: Nil,
-      resolve = _.arg(IdArg)),
+      resolve = _.withArgs(IdArg)(id ⇒ id → s"data #$id")),
     Field("stuff1", StringType,
       arguments = IdsArg :: Nil,
       resolve = _.arg(IdsArg).mkString(", "))
   ))
 
-  val schema = Schema(QueryType, directives = BuiltinDirectives :+ BatchExecutor.ExportDirective)
+  lazy val MutationType = ObjectType("Mutation", fields[Unit, Unit](
+    Field("createData", ListType(DataType),
+      arguments = DataArg :: Nil,
+      resolve = _.withArgs(DataArg)(_.map(d ⇒ d("id").asInstanceOf[Int] → d("name").asInstanceOf[String])))))
+
+  val schema = Schema(QueryType, Some(MutationType),
+    directives = BuiltinDirectives :+ BatchExecutor.ExportDirective)
 
   "BatchExecutor" should {
     "Batch multiple queries and ensure correct execution order" in {
@@ -85,16 +103,12 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
         "bar" → Map("a" → "hello", "b" → "world"),
         "name" → "Bob"))
 
-      import monix.execution.Scheduler.Implicits.global
-      import sangria.execution.ExecutionScheme.Stream
-      import sangria.marshalling.sprayJson._
-      import sangria.streaming.monix._
-
       val res = BatchExecutor.executeBatch(schema, query,
         operationNames = List("q1", "q2", "q3"),
         variables = vars)
 
-      val expectedResults = Set(
+      res.toListL.runAsync.await.toSet should be (
+        Set(
         """
         {
           "data": {
@@ -136,9 +150,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
             "greet": "Hello, Bob!"
           }
         }
-        """).map(_.parseJson)
-
-      res.toListL.runAsync.await.toSet should be (expectedResults)
+        """).map(_.parseJson))
     }
 
     "take the first element of the list" in {
@@ -172,16 +184,12 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
           }
         """
 
-      import monix.execution.Scheduler.Implicits.global
-      import sangria.execution.ExecutionScheme.Stream
-      import sangria.marshalling.sprayJson._
-      import sangria.streaming.monix._
-
       val res = BatchExecutor.executeBatch(schema, query,
         operationNames = List("q3", "q1", "q2"),
         middleware = BatchExecutor.OperationNameExtension :: Nil)
 
-      val expectedResults = Set(
+      res.toListL.runAsync.await.toSet should be (
+        Set(
         """
         {
           "data": {
@@ -220,9 +228,83 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
             }
           }
         }
-        """).map(_.parseJson)
+        """).map(_.parseJson))
+    }
 
-      res.toListL.runAsync.await.toSet should be (expectedResults)
+    "handle complex objects" in {
+      val query =
+        gql"""
+          query q1 {
+            stuff(ids: [1, 2]) @export(as: "myData") {
+              id
+              name
+            }
+            nested {
+              ...Foo
+            }
+          }
+
+          fragment Foo on Query {
+            stuff(ids: [3, 4]) @export(as: "myData") {
+              id
+              name
+            }
+          }
+
+          mutation q2 {
+            createData(data: $$myData) {id name}
+          }
+        """
+
+      val res = BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2"))
+
+      res.toListL.runAsync.await.toSet foreach {
+        (x: JsValue) ⇒ println(x.prettyPrint)
+      }
+
+      res.toListL.runAsync.await.toSet should be (
+        Set(
+        """
+        {
+          "data": {
+            "stuff": [{
+              "id": 1,
+              "name": "data #1"
+            }, {
+              "id": 2,
+              "name": "data #2"
+            }],
+            "nested": {
+              "stuff": [{
+                "id": 3,
+                "name": "data #3"
+              }, {
+                "id": 4,
+                "name": "data #4"
+              }]
+            }
+          }
+        }
+        """,
+        """
+        {
+          "data": {
+            "createData": [{
+              "id": 1,
+              "name": "data #1"
+            }, {
+              "id": 2,
+              "name": "data #2"
+            }, {
+              "id": 3,
+              "name": "data #3"
+            }, {
+              "id": 4,
+              "name": "data #4"
+            }]
+          }
+        }
+        """).map(_.parseJson))
     }
   }
 }
