@@ -20,14 +20,65 @@ case class Executor[Ctx, Root](
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
-    queryReducers: List[QueryReducer[Ctx, _]] = Nil)(implicit executionContext: ExecutionContext) {
+    queryReducers: List[QueryReducer[Ctx, _]] = Nil,
+    preparationQueryReducers: Option[List[QueryReducer[Ctx, _]]] = None
+)(implicit executionContext: ExecutionContext) {
+
+  def prepare[Input](
+    queryAst: ast.Document,
+    userContext: Ctx,
+    root: Root,
+    operationName: Option[String]
+  )(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
+    val (violations, validationTiming) = TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
+
+    if (violations.nonEmpty)
+      Future.failed(ValidationError(violations, exceptionHandler))
+    else {
+      val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
+      val reducers = preparationQueryReducers.getOrElse(List.empty)
+
+      val executionResult = for {
+        operation ← getOperation(queryAst, operationName)
+        fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, Map.empty, queryAst.sourceMapper, null, exceptionHandler)
+        tpe ← getOperationRootType(operation, queryAst.sourceMapper)
+        fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
+      } yield {
+
+        reduceQuerySafe(reducers, fieldCollector, None, Map.empty, tpe, fields, userContext) match {
+          case fut: Future[(Ctx, TimeMeasurement) @unchecked] ⇒
+            fut.map(newCtx ⇒
+              new PreparedQuery[Ctx, Root, Input](queryAst, operation, tpe, newCtx._1, root, Seq.empty,
+                (c: Ctx, r: Root, v: Input, m: ResultMarshaller, scheme: ExecutionScheme) ⇒ {
+                  val valueCollector = new ValueCollector[Ctx, Input](schema, v, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)(um)
+                  val variables = valueCollector.getVariableValues(operation.variables, scalarMiddleware).get
+                  executeOperation(queryAst, operationName, v, um, operation, queryAst.sourceMapper, valueCollector,
+                    fieldCollector, m, variables, tpe, fields, c, r, scheme, validationTiming, newCtx._2)
+                }))
+          case (newCtx: Ctx @unchecked, timing: TimeMeasurement) ⇒
+            Future(new PreparedQuery[Ctx, Root, Input](queryAst, operation, tpe, newCtx, root, Seq.empty,
+              (c: Ctx, r: Root, v: Input, m: ResultMarshaller, scheme: ExecutionScheme) ⇒ {
+                val valueCollector = new ValueCollector[Ctx, Input](schema, v, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)(um)
+                val variables = valueCollector.getVariableValues(operation.variables, scalarMiddleware).get
+                executeOperation(queryAst, operationName, v, um, operation, queryAst.sourceMapper, valueCollector,
+                  fieldCollector, m, variables, tpe, fields, c, r, scheme, validationTiming, timing)
+              }))
+        }
+      }
+
+      executionResult match {
+        case Success(future) ⇒ future
+        case Failure(error) ⇒ Future.failed(error)
+      }
+    }
+  }
 
   def prepare[Input](
       queryAst: ast.Document,
       userContext: Ctx,
       root: Root,
       operationName: Option[String] = None,
-      variables: Input = emptyMapVars)(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
+      variables: Input)(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
     val (violations, validationTiming) = TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
     if (violations.nonEmpty)
@@ -35,6 +86,7 @@ case class Executor[Ctx, Root](
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
       val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)(um)
+      val reducers = preparationQueryReducers.getOrElse(List.empty) ++ queryReducers
 
       val executionResult = for {
         operation ← getOperation(queryAst, operationName)
@@ -53,17 +105,17 @@ case class Executor[Ctx, Root](
           case _ ⇒ None
         }
 
-        reduceQuerySafe(fieldCollector, valueCollector, unmarshalledVariables, tpe, fields, userContext) match {
+        reduceQuerySafe(reducers, fieldCollector, Some(valueCollector), unmarshalledVariables, tpe, fields, userContext) match {
           case fut: Future[(Ctx, TimeMeasurement) @unchecked] ⇒
             fut.map(newCtx ⇒
               new PreparedQuery[Ctx, Root, Input](queryAst, operation, tpe, newCtx._1, root, preparedFields,
-                (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) ⇒
-                  executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
+                (c: Ctx, r: Root, v: Input, m: ResultMarshaller, scheme: ExecutionScheme) ⇒
+                  executeOperation(queryAst, operationName, v, um, operation, queryAst.sourceMapper, valueCollector,
                     fieldCollector, m, unmarshalledVariables, tpe, fields, c, r, scheme, validationTiming, newCtx._2)))
           case (newCtx: Ctx @unchecked, timing: TimeMeasurement) ⇒
             Future.successful(new PreparedQuery[Ctx, Root, Input](queryAst, operation, tpe, newCtx, root, preparedFields,
-              (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) ⇒
-                executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
+              (c: Ctx, r: Root, v: Input, m: ResultMarshaller, scheme: ExecutionScheme) ⇒
+                executeOperation(queryAst, operationName, v, um, operation, queryAst.sourceMapper, valueCollector,
                   fieldCollector, m, unmarshalledVariables, tpe, fields, c, r, scheme, validationTiming, timing)))
         }
       }
@@ -95,7 +147,7 @@ case class Executor[Ctx, Root](
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
         tpe ← getOperationRootType(operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
-      } yield reduceQuerySafe(fieldCollector, valueCollector, unmarshalledVariables, tpe, fields, userContext) match {
+      } yield reduceQuerySafe(queryReducers, fieldCollector, Some(valueCollector), unmarshalledVariables, tpe, fields, userContext) match {
         case fut: Future[(Ctx, TimeMeasurement) @unchecked] ⇒
           scheme.flatMapFuture(fut)(c ⇒ executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
             fieldCollector, marshaller, unmarshalledVariables, tpe, fields, c._1, root, scheme, validationTiming, c._2))
@@ -213,8 +265,9 @@ case class Executor[Ctx, Root](
 
   // returns either new Ctx or future of it (with time measurement)
   private def reduceQuerySafe[Val](
+      queryReducers: List[QueryReducer[Ctx, _]],
       fieldCollector: FieldCollector[Ctx, Root],
-      valueCollector: ValueCollector[Ctx, _],
+      valueCollector: Option[ValueCollector[Ctx, _]],
       variables: Map[String, VariableValue],
       rootTpe: ObjectType[Ctx, Root],
       fields: CollectedFields,
@@ -230,7 +283,17 @@ case class Executor[Ctx, Root](
         res → TimeMeasurement(startTime, endTime, end - start)
       }
 
-      reduceQuery(fieldCollector, valueCollector, variables, rootTpe, fields, queryReducers.toVector, userContext) match {
+      val argumentValuesFn =
+        valueCollector match {
+          case Some(valueCollector) =>
+            (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
+              valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, variables)
+          case None =>
+            (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
+              Success(Args.empty.copy(undefinedArgs = argumentDefs.map(_.name).toSet))
+        }
+
+      reduceQuery(queryReducers, fieldCollector, argumentValuesFn, variables, rootTpe, fields, queryReducers.toVector, userContext) match {
         case future: Future[Ctx] ⇒
           future
             .map(newCtx ⇒ timeMeasurement(newCtx))
@@ -241,8 +304,9 @@ case class Executor[Ctx, Root](
     } else userContext → TimeMeasurement.empty
 
   private def reduceQuery[Val](
+      queryReducers: List[QueryReducer[Ctx, _]],
       fieldCollector: FieldCollector[Ctx, Val],
-      valueCollector: ValueCollector[Ctx, _],
+      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args],
       variables: Map[String, VariableValue],
       rootTpe: ObjectType[_, _],
       fields: CollectedFields,
@@ -251,8 +315,6 @@ case class Executor[Ctx, Root](
     // Using mutability here locally in order to reduce footprint
     import scala.collection.mutable.ListBuffer
 
-    val argumentValuesFn = (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
-      valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, variables)
 
     val initialValues: Vector[Any] = reducers map (_.initial)
 
@@ -376,17 +438,17 @@ object Executor {
     userContext: Ctx = (),
     root: Root = (),
     operationName: Option[String] = None,
-    variables: Input = emptyMapVars,
     queryValidator: QueryValidator = QueryValidator.default,
     deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
     exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
-    queryReducers: List[QueryReducer[Ctx, _]] = Nil
+    queryReducers: List[QueryReducer[Ctx, _]] = Nil,
+    preparationQueryReducers: Option[List[QueryReducer[Ctx, _]]] = None
   )(implicit executionContext: ExecutionContext, um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] =
     Executor(schema, queryValidator, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth, queryReducers)
-      .prepare(queryAst, userContext, root, operationName, variables)
+      .prepare(queryAst, userContext, root, operationName)
 }
 
 class PreparedQuery[Ctx, Root, Input] private[execution] (
@@ -396,9 +458,9 @@ class PreparedQuery[Ctx, Root, Input] private[execution] (
     val userContext: Ctx,
     val root: Root,
     val fields: Seq[PreparedField[Ctx, Root]],
-    execFn: (Ctx, Root, ResultMarshaller, ExecutionScheme) ⇒ Any) {
-  def execute(userContext: Ctx = userContext, root: Root = root)(implicit marshaller: ResultMarshaller, scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] =
-    execFn(userContext, root, marshaller, scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+    execFn: (Ctx, Root, Input, ResultMarshaller, ExecutionScheme) ⇒ Any) {
+  def execute(userContext: Ctx = userContext, root: Root = root, variables: Input)(implicit marshaller: ResultMarshaller, scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] =
+    execFn(userContext, root, variables, marshaller, scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 }
 
 case class PreparedField[Ctx, Root](field: Field[Ctx, Root], args: Args)
