@@ -2,7 +2,7 @@ package sangria.schema
 
 import sangria.ast
 import sangria.execution.FieldTag
-import sangria.marshalling.{FromInput, ToInput, MarshallerCapability, ScalarValueInfo}
+import sangria.marshalling.{FromInput, MarshallerCapability, ScalarValueInfo, ToInput}
 import sangria.validation.Violation
 
 import scala.reflect.ClassTag
@@ -10,6 +10,7 @@ import scala.reflect.ClassTag
 trait AstSchemaBuilder[Ctx] {
   def additionalTypeDefs: List[ast.TypeDefinition]
   def additionalTypeExtensionDefs: List[ast.TypeExtensionDefinition]
+  def additionalTypes: List[Type with Named]
   def additionalDirectiveDefs: List[ast.DirectiveDefinition]
 
   def buildSchema(
@@ -105,11 +106,23 @@ trait AstSchemaBuilder[Ctx] {
     arguments: List[Argument[_]],
     mat: AstSchemaMaterializer[Ctx]): Option[Field[Ctx, Any]]
 
+  def buildFieldType(
+    typeDefinition: ast.TypeDefinition,
+    extensions: Vector[ast.TypeExtensionDefinition],
+    definition: ast.FieldDefinition,
+    arguments: List[Argument[_]],
+    mat: AstSchemaMaterializer[Ctx]): OutputType[Any]
+
   def extendField(
     typeDefinition: ObjectLikeType[Ctx, _],
     existing: Field[Ctx, Any],
     fieldType: OutputType[_],
     mat: AstSchemaMaterializer[Ctx]): Field[Ctx, Any]
+
+  def extendFieldType(
+    typeDefinition: ObjectLikeType[Ctx, _],
+    existing: Field[Ctx, Any],
+    mat: AstSchemaMaterializer[Ctx]): OutputType[Any]
 
   def buildInputField(
     typeDefinition: ast.InputObjectTypeDefinition,
@@ -118,6 +131,12 @@ trait AstSchemaBuilder[Ctx] {
     defaultValue: Option[(_, ToInput[_, _])],
     mat: AstSchemaMaterializer[Ctx]): Option[InputField[Any]]
 
+  def buildInputFieldType(
+    typeDefinition: ast.InputObjectTypeDefinition,
+    definition: ast.InputValueDefinition,
+    defaultValue: Option[(_, ToInput[_, _])],
+    mat: AstSchemaMaterializer[Ctx]): InputType[Any]
+
   def buildArgument(
     typeDefinition: ast.TypeSystemDefinition,
     fieldDefinition: Option[ast.FieldDefinition],
@@ -125,6 +144,13 @@ trait AstSchemaBuilder[Ctx] {
     tpe: InputType[_],
     defaultValue: Option[(_, ToInput[_, _])],
     mat: AstSchemaMaterializer[Ctx]): Option[Argument[Any]]
+
+  def buildArgumentType(
+    typeDefinition: ast.TypeSystemDefinition,
+    fieldDefinition: Option[ast.FieldDefinition],
+    definition: ast.InputValueDefinition,
+    defaultValue: Option[(_, ToInput[_, _])],
+    mat: AstSchemaMaterializer[Ctx]): InputType[Any]
 
   def buildEnumValue(
     typeDefinition: ast.EnumTypeDefinition,
@@ -144,6 +170,22 @@ trait AstSchemaBuilder[Ctx] {
 
 object AstSchemaBuilder {
   def default[Ctx] = new DefaultAstSchemaBuilder[Ctx]
+  def resolverBased[Ctx](resolvers: AstSchemaResolver[Ctx]*) = new ResolverBasedAstSchemaBuilder[Ctx](resolvers)
+
+  object TypeName {
+    def unapply(definition: ast.TypeDefinition): Option[String] =
+      Some(definition.name)
+  }
+
+  object FieldName {
+    def unapply(definition: ast.FieldDefinition): Option[String] =
+      Some(definition.name)
+  }
+
+  object ScalarName {
+    def unapply(definition: ast.ScalarTypeDefinition): Option[String] =
+      Some(definition.name)
+  }
 
   def extractDescription(node: ast.WithComments): Option[String] =
     if (node.comments.nonEmpty) {
@@ -169,9 +211,10 @@ object AstSchemaBuilder {
 }
 
 class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
-  def additionalDirectiveDefs = Nil
-  def additionalTypeExtensionDefs = Nil
-  def additionalTypeDefs = Nil
+  def additionalDirectiveDefs: List[ast.DirectiveDefinition] = Nil
+  def additionalTypeExtensionDefs: List[ast.TypeExtensionDefinition] = Nil
+  def additionalTypeDefs: List[ast.TypeDefinition] = Nil
+  def additionalTypes: List[Type with Named] = Nil
 
   def buildSchema(
       definition: Option[ast.SchemaDefinition],
@@ -363,12 +406,26 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       manualPossibleTypes = () ⇒ Nil,
       astDirectives = definition.directives))
 
+  def buildFieldType(
+      typeDefinition: ast.TypeDefinition,
+      extensions: Vector[ast.TypeExtensionDefinition],
+      definition: ast.FieldDefinition,
+      arguments: List[Argument[_]],
+      mat: AstSchemaMaterializer[Ctx]): OutputType[Any] =
+    mat.getOutputType(definition.fieldType)
+
   def extendField(
       typeDefinition: ObjectLikeType[Ctx, _],
       existing: Field[Ctx, Any],
       fieldType: OutputType[_],
       mat: AstSchemaMaterializer[Ctx]) =
     existing.copy(fieldType = fieldType, manualPossibleTypes = () ⇒ Nil)
+
+  def extendFieldType(
+      typeDefinition: ObjectLikeType[Ctx, _],
+      existing: Field[Ctx, Any],
+      mat: AstSchemaMaterializer[Ctx]): OutputType[Any] =
+    mat.getTypeFromExistingType(existing.fieldType)
 
   def buildInputField(
       typeDefinition: ast.InputObjectTypeDefinition,
@@ -382,6 +439,13 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       fieldType = tpe,
       defaultValue = defaultValue,
       astDirectives = definition.directives))
+
+  def buildInputFieldType(
+      typeDefinition: ast.InputObjectTypeDefinition,
+      definition: ast.InputValueDefinition,
+      defaultValue: Option[(_, ToInput[_, _])],
+      mat: AstSchemaMaterializer[Ctx]): InputType[Any] =
+    mat.getInputType(definition.valueType)
 
   def buildArgument(
       typeDefinition: ast.TypeSystemDefinition,
@@ -397,6 +461,14 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       defaultValue = defaultValue,
       fromInput = argumentFromInput(typeDefinition, fieldDefinition, definition),
       astDirectives = definition.directives))
+
+  def buildArgumentType(
+      typeDefinition: ast.TypeSystemDefinition,
+      fieldDefinition: Option[ast.FieldDefinition],
+      definition: ast.InputValueDefinition,
+      defaultValue: Option[(_, ToInput[_, _])],
+      mat: AstSchemaMaterializer[Ctx]): InputType[Any] =
+    mat.getInputType(definition.valueType)
 
   def buildDirective(
       definition: ast.DirectiveDefinition,

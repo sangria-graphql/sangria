@@ -141,8 +141,9 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
     val referenced = typeDefCache.keySet
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
+    val notReferencedAdd = builder.additionalTypes.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
-    referenced.toSet → notReferenced.map(tpe ⇒ getNamedType(tpe.name))
+    referenced.toSet → (notReferenced.map(tpe ⇒ getNamedType(tpe.name)) ++ notReferencedAdd)
   }
 
   def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): Vector[Type with Named] = {
@@ -237,10 +238,11 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     }
 
   def getNamedType(typeName: String): Type with Named =
-    typeDefCache.getOrElseUpdate(typeName, Schema.getBuiltInType(typeName) getOrElse (
-      existingSchema.flatMap(_.allTypes.get(typeName)).map(extendType) orElse typeDefs.find(_.name == typeName).flatMap(buildType) getOrElse (
-        throw new SchemaMaterializationException(
-          s"Invalid or incomplete schema, unknown type: $typeName."))))
+    typeDefCache.getOrElseUpdate(typeName, Schema.getBuiltInType(typeName) getOrElse
+      existingSchema.flatMap(_.allTypes.get(typeName)).map(extendType)
+        .orElse(builder.additionalTypes.find(_.name == typeName).map(extendType))
+        .orElse(typeDefs.find(_.name == typeName).flatMap(buildType))
+        .getOrElse(throw new SchemaMaterializationException(s"Invalid or incomplete schema, unknown type: $typeName.")))
 
   def buildType(definition: TypeDefinition): Option[Type with Named] = definition match {
     case d: ast.ObjectTypeDefinition ⇒ buildObjectDef(d)
@@ -261,17 +263,19 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     case tpe: InterfaceType[Ctx, _] ⇒ extendInterfaceType(tpe)
   }
 
-  def buildField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], field: ast.FieldDefinition) =
-    builder.buildField(
-      typeDefinition,
-      extensions,
-      field,
-      getOutputType(field.fieldType),
-      field.arguments flatMap (buildArgument(typeDefinition, Some(field), _)) toList,
-      this)
+  def buildField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], field: ast.FieldDefinition) = {
+    val args = field.arguments flatMap (buildArgument(typeDefinition, Some(field), _)) toList
+    val fieldType = builder.buildFieldType(typeDefinition, extensions, field, args, this)
 
-  def extendField(tpe: ObjectLikeType[Ctx, _], field: Field[Ctx, _]) =
-    builder.extendField(tpe, field.asInstanceOf[Field[Ctx, Any]], getTypeFromExistingType(field.fieldType), this)
+    builder.buildField(typeDefinition, extensions, field, fieldType, args, this)
+  }
+
+
+  def extendField(tpe: ObjectLikeType[Ctx, _], field: Field[Ctx, _]) = {
+    val f = field.asInstanceOf[Field[Ctx, Any]]
+
+    builder.extendField(tpe, f, builder.extendFieldType(tpe, f, this), this)
+  }
 
   def buildObjectDef(tpe: ast.ObjectTypeDefinition) = {
     val extensions = findExtensions(tpe.name)
@@ -394,11 +398,19 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def buildDefault(defaultValue: Option[ast.Value]) =
     defaultValue map (dv ⇒ dv → sangria.marshalling.queryAst.queryAstToInput)
 
-  def buildArgument(typeDefinition: ast.TypeSystemDefinition, fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) =
-    builder.buildArgument(typeDefinition, fieldDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
+  def buildArgument(typeDefinition: ast.TypeSystemDefinition, fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) = {
+    val default = buildDefault(value.defaultValue)
+    val tpe = builder.buildArgumentType(typeDefinition, fieldDef, value, default, this)
 
-  def buildInputField(typeDef: ast.InputObjectTypeDefinition, value: ast.InputValueDefinition) =
-    builder.buildInputField(typeDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
+    builder.buildArgument(typeDefinition, fieldDef, value, tpe, default, this)
+  }
+
+  def buildInputField(typeDef: ast.InputObjectTypeDefinition, value: ast.InputValueDefinition) = {
+    val default = buildDefault(value.defaultValue)
+    val tpe = builder.buildInputFieldType(typeDef, value, default, this)
+
+    builder.buildInputField(typeDef, value, tpe, default, this)
+  }
 
   def buildDirectiveLocation(loc: ast.DirectiveLocation) =
     try {

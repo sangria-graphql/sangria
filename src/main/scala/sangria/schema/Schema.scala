@@ -724,7 +724,7 @@ case class Directive(
   description: Option[String] = None,
   arguments: List[Argument[_]] = Nil,
   locations: Set[DirectiveLocation.Value] = Set.empty,
-  shouldInclude: DirectiveContext ⇒ Boolean) extends HasArguments with Named
+  shouldInclude: DirectiveContext ⇒ Boolean = _ ⇒ true) extends HasArguments with Named
 
 case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],
