@@ -35,8 +35,6 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   private var existingSchema: Option[Schema[_, _]] = None
   private var existingDefsMat: Map[String, MaterializedType] = Map.empty
 
-  lazy val builderState: Any = builder.state(document)
-
   def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
     validateExtensions(schema)
 
@@ -254,9 +252,12 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
       val builtType =
         if (allCandidates.size > 1) {
-          val resolved = builder.resolveNameConflict(origin, allCandidates)
+          val resolved = builder.resolveNameConflict(
+            origin,
+            allCandidates ++
+              typeDefCache.find(_._2.name == typeName).map{case ((o, _), v) ⇒ BuiltMaterializedTypeInst(o, v)}.toVector)
 
-          if (typeDefCache.keySet.exists(_._2 == resolved.name))
+          if (!resolved.isInstanceOf[BuiltMaterializedTypeInst] && typeDefCache.keySet.exists(_._2 == resolved.name))
             throw SchemaMaterializationException("Name conflict resolution produced already existing type name")
           else
             getNamedType(origin, resolved)
@@ -269,6 +270,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   def getNamedType(origin: MatOrigin, tpe: MaterializedType): Option[Type with Named] =
     tpe match {
+      case BuiltMaterializedTypeInst(o, t) ⇒ Some(t)
       case MaterializedTypeInst(o, t) ⇒ Some(extendType(o, t))
       case MaterializedTypeAst(o, t) ⇒ buildType(o, t)
     }

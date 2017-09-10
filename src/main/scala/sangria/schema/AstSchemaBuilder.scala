@@ -8,7 +8,6 @@ import sangria.validation.Violation
 import scala.reflect.ClassTag
 
 trait AstSchemaBuilder[Ctx] {
-  def state(document: ast.Document): Any
   def additionalTypeExtensionDefs: List[ast.TypeExtensionDefinition]
   def additionalTypes: List[MaterializedType]
   def additionalDirectiveDefs: List[ast.DirectiveDefinition]
@@ -243,7 +242,6 @@ object AstSchemaBuilder {
 }
 
 class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
-  def state(document: ast.Document): Any = ()
   def additionalDirectiveDefs: List[ast.DirectiveDefinition] = Nil
   def additionalTypeExtensionDefs: List[ast.TypeExtensionDefinition] = Nil
   def additionalTypes: List[MaterializedType] = Nil

@@ -12,6 +12,7 @@ import sangria.visitor.VisitorCommand
 
 import scala.collection.immutable.VectorBuilder
 import scala.reflect.{ClassTag, classTag}
+import scala.util.Try
 import scala.util.control.NonFatal
 
 class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ctx]]) extends DefaultAstSchemaBuilder[Ctx] {
@@ -19,8 +20,10 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
   protected lazy val directiveScalarResolvers = resolvers collect {case dr: DirectiveScalarResolver[Ctx] ⇒ dr}
   protected lazy val directiveInpResolvers = resolvers collect {case dr: DirectiveInputTypeResolver[Ctx] ⇒ dr}
   protected lazy val directiveOutResolvers = resolvers collect {case dr: DirectiveOutputTypeResolver[Ctx] ⇒ dr}
-  protected lazy val genericDirectiveResolvers = resolvers collect {case dr: GenericDirectiveResolver[Ctx, _] ⇒ dr}
-  protected lazy val genericDirectiveResolversByName = genericDirectiveResolvers.groupBy(_.directive.name).mapValues(_.head)
+  protected lazy val additionalDirectives = resolvers flatMap {
+    case AdditionalDirectives(ad) ⇒ ad
+    case _ ⇒ Nil
+  }
 
   protected lazy val dynamicDirectiveNames = resolvers collect {case dr: DynamicDirectiveResolver[Ctx, _] ⇒ dr.directiveName} toSet
   protected lazy val directives =
@@ -28,7 +31,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       directiveScalarResolvers.map(_.directive) ++
       directiveInpResolvers.map(_.directive) ++
       directiveOutResolvers.map(_.directive) ++
-      genericDirectiveResolvers.map(_.directive)
+      additionalDirectives
 
   protected lazy val stubQueryType = ObjectType("Query", fields[Unit, Unit](Field("stub", StringType, resolve = _ ⇒ "stub")))
   protected lazy val validationSchema = Schema(stubQueryType, directives = directives.toList ++ BuiltinDirectives)
@@ -47,75 +50,6 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     if (violations.nonEmpty) throw MaterializedSchemaValidationError(violations)
     else this
   }
-  
-  def collectGeneric[T : ClassTag](schema: ast.Document): Vector[T] = {
-    val targetClass = classTag[T].runtimeClass
-    val relevantResolvers = genericDirectiveResolversByName.filter {case (_, d) ⇒ targetClass.isAssignableFrom(d.ofClass)}
-    val result = new VectorBuilder[T]
-    val stack = ValidatorStack.empty[ast.AstNode]
-
-    AstVisitor.visit(schema, AstVisitor(
-      onEnter = {
-        case node: ast.WithDirectives ⇒
-          stack.push(node)
-
-          val withCorrectLocation = filterByLocation(stack, node, relevantResolvers)
-
-          result ++=
-              node.directives.flatMap(astDir ⇒
-                withCorrectLocation.get(astDir.name).flatMap(d ⇒ d.resolve(GenericDirectiveContext(astDir, node, Args(d.directive, astDir))).value)).asInstanceOf[Vector[T]]
-
-          VisitorCommand.Continue
-
-        case node ⇒
-          stack.push(node)
-          VisitorCommand.Continue
-      },
-      onLeave = {
-        case _ ⇒
-          stack.pop()
-          VisitorCommand.Continue
-      }
-    ))
-
-    result.result()
-  }
-
-  private def filterByLocation(visitorStack: ValidatorStack[ast.AstNode], node: ast.AstNode, directives: Map[String, GenericDirectiveResolver[Ctx, _]]) =
-    directives.filter {case (_, d) ⇒ d.locations.isEmpty || KnownDirectives.getLocation(node, visitorStack.head(1)).fold(false)(l ⇒ d.locations contains l._1)}
-
-  override def state(document: ast.Document): Any = {
-    val result = new VectorBuilder[GenericDirectiveValue[_]]
-    val stack = ValidatorStack.empty[ast.AstNode]
-
-    AstVisitor.visit(document, AstVisitor(
-      onEnter = {
-        case node: ast.WithDirectives ⇒
-          stack.push(node)
-
-          val withCorrectLocation = filterByLocation(stack, node, genericDirectiveResolversByName)
-
-          result ++=
-              node.directives.flatMap(astDir ⇒
-                withCorrectLocation.get(astDir.name).map(d ⇒ d.resolve(GenericDirectiveContext(astDir, node, Args(d.directive, astDir)))))
-
-          VisitorCommand.Continue
-
-        case node ⇒
-          stack.push(node)
-          VisitorCommand.Continue
-      },
-      onLeave = {
-        case _ ⇒
-          stack.pop()
-          VisitorCommand.Continue
-      }
-    ))
-
-    result.result()
-  }
-
-  protected def getState(mat: AstSchemaMaterializer[Ctx]) = mat.builderState.asInstanceOf[Vector[GenericDirectiveValue[_]]]
 
   protected def allowKnownDynamicDirectives(violations: Vector[Violation]) =
     violations.filterNot {
@@ -160,8 +94,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
   override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: ast.FieldDefinition, mat: AstSchemaMaterializer[Ctx]) = {
     val dResolvers = definition.directives flatMap (findResolver(_))
-
-    // TODO: create args outside of resolver
+    
     if (dResolvers.nonEmpty)
       c ⇒ {
         val resultAction =
@@ -283,12 +216,85 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 object ResolverBasedAstSchemaBuilder {
   def apply[Ctx](resolvers: AstSchemaResolver[Ctx]*) = new ResolverBasedAstSchemaBuilder[Ctx](resolvers)
 
+  private def invalidType[In](expected: String, got: In)(implicit iu: InputUnmarshaller[In]) =
+    throw InputMaterializationException(s"Expected $expected value, but got: " + iu.render(got))
+
   private def extractScalar[In](t: ScalarType[_], value: In)(implicit iu: InputUnmarshaller[In]) = {
     iu.getScalaScalarValue(value)
   }
 
   private def extractEnum[In](t: EnumType[_], value: In)(implicit iu: InputUnmarshaller[In]) = {
-    iu.getScalarValue(value)
+    val coerced = iu.getScalarValue(value)
+
+    t match {
+      case BooleanType ⇒
+        coerced match  {
+          case v: Boolean ⇒ v
+          case v: String ⇒ Try(v.toBoolean).fold(invalidType("Boolean", value), identity)
+          case _ ⇒ invalidType("Boolean", value)
+        }
+      case StringType ⇒
+        coerced.toString
+      case IDType ⇒
+        coerced match  {
+          case s: String ⇒ s
+          case _ ⇒ invalidType("ID", value)
+        }
+      case IntType ⇒
+        coerced match  {
+          case v: Int ⇒ v
+          case i: Long if i.isValidInt ⇒ i.toInt
+          case v: BigInt if v.isValidInt ⇒ v
+          case d: Double if d.isValidInt ⇒ d.intValue
+          case d: BigDecimal if d.isValidInt ⇒ d.intValue
+          case v: String ⇒ Try(v.toInt).fold(invalidType("Int", value), identity)
+          case _ ⇒ invalidType("Int", value)
+        }
+      case IntType ⇒
+        coerced match  {
+          case i: Int ⇒ i: Long
+          case i: Long ⇒ i
+          case i: BigInt if !i.isValidLong ⇒ invalidType("Long", value)
+          case i: BigInt ⇒ i.longValue
+          case d: Double if d.isWhole ⇒ d.toLong
+          case d: BigDecimal if d.isValidLong ⇒ d.longValue()
+          case v: String ⇒ Try(v.toLong).fold(invalidType("Long", value), identity)
+          case _ ⇒ invalidType("Long", value)
+        }
+      case BigIntType ⇒
+        coerced match {
+          case i: Int ⇒ BigInt(i)
+          case i: Long ⇒ BigInt(i)
+          case i: BigInt ⇒ i
+          case d: Double if d.isWhole ⇒ BigInt(d.toLong)
+          case d: BigDecimal if d.isWhole ⇒ d.toBigInt
+          case v: String ⇒ Try(BigInt(v)).fold(invalidType("BigInt", value), identity)
+          case _ ⇒ invalidType("BigInt", value)
+        }
+      case BigDecimalType ⇒
+        coerced match {
+          case i: Int ⇒ BigDecimal(i)
+          case i: Long ⇒ BigDecimal(i)
+          case i: BigInt ⇒ BigDecimal(i)
+          case d: Double ⇒ BigDecimal(d)
+          case d: BigDecimal ⇒ d
+          case v: String ⇒ Try(BigDecimal(v)).fold(invalidType("BigDecimal", value), identity)
+          case _ ⇒ invalidType("BigDecimal", value)
+        }
+      case FloatType ⇒
+        coerced match {
+          case i: Int ⇒ i.toDouble
+          case i: Long ⇒ i.toDouble
+          case i: BigInt if !i.isValidDouble ⇒ invalidType("Float", value)
+          case i: BigInt ⇒ i.doubleValue()
+          case d: Double ⇒ d
+          case d: BigDecimal if !d.isDecimalDouble ⇒ invalidType("Float", value)
+          case d: BigDecimal ⇒ d.doubleValue()
+          case v: String ⇒ Try(v.toDouble).fold(invalidType("Float", value), identity)
+          case _ ⇒ invalidType("Float", value)
+        }
+      case _ ⇒ coerced
+    }
   }
 
   def extractValue[In](tpe: OutputType[_], value: Option[In])(implicit iu: InputUnmarshaller[In]): Any = tpe match {
@@ -298,8 +304,12 @@ object ResolverBasedAstSchemaBuilder {
     case t: ScalarAlias[_, _] ⇒ extractValue(t.aliasFor, value)
     case t: ScalarType[_] ⇒ extractScalar(t, value.get)
     case t: EnumType[_] ⇒ extractEnum(t, value.get)
-    case _: CompositeType[_] ⇒ value.get
-    case t ⇒ throw new SchemaMaterializationException(s"Extractor for a type '${SchemaRenderer.renderTypeName(t)}' is not supported yet.")
+    case _: CompositeType[_] ⇒
+      val objValue = value.get
+
+      if (iu.isMapNode(objValue)) objValue
+      else invalidType("Object", objValue)
+    case t ⇒ throw SchemaMaterializationException(s"Extractor for a type '${SchemaRenderer.renderTypeName(t)}' is not supported yet.")
   }
 
   def extractFieldValue[In](parentType: CompositeType[_], field: Field[_, _], value: In)(implicit iu: InputUnmarshaller[In]): Any = {
@@ -331,4 +341,38 @@ object ResolverBasedAstSchemaBuilder {
     AnyFieldResolver[Ctx] {
       case origin if origin != ExistingOrigin ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
     }
+
+  def collectGeneric[T](schema: ast.Document, resolvers: GenericDirectiveResolver[T]*): Vector[T] = {
+    val result = new VectorBuilder[T]
+    val resolversByName = resolvers.groupBy(_.directive.name)
+    val stack = ValidatorStack.empty[ast.AstNode]
+
+    AstVisitor.visit(schema, AstVisitor(
+      onEnter = {
+        case node: ast.WithDirectives ⇒
+          stack.push(node)
+
+          result ++=
+              node.directives.flatMap(astDir ⇒
+                findByLocation(stack, node, resolversByName.getOrElse(astDir.name, Nil))
+                  .flatMap(d ⇒ d.resolve(GenericDirectiveContext(astDir, node, Args(d.directive, astDir)))))
+
+          VisitorCommand.Continue
+
+        case node ⇒
+          stack.push(node)
+          VisitorCommand.Continue
+      },
+      onLeave = {
+        case _ ⇒
+          stack.pop()
+          VisitorCommand.Continue
+      }
+    ))
+
+    result.result()
+  }
+
+  private def findByLocation[T](visitorStack: ValidatorStack[ast.AstNode], node: ast.AstNode, directives: Seq[GenericDirectiveResolver[T]]) =
+    directives.filter(d ⇒ d.locations.isEmpty || KnownDirectives.getLocation(node, visitorStack.head(1)).fold(false)(l ⇒ d.locations contains l._1))
 }
