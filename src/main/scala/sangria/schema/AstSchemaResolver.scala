@@ -19,7 +19,8 @@ case class AdditionalDirectives[Ctx](additionalDirectives: Seq[Directive]) exten
 
 case class DirectiveResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveContext[Ctx] ⇒ Action[Ctx, Any]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveContext[Ctx] ⇒ Action[Ctx, Any],
+  complexity: Option[ComplexityDirectiveContext[Ctx] ⇒ (Ctx, Args, Double) ⇒ Double] = None) extends AstSchemaResolver[Ctx]
 
 case class DirectiveInputTypeResolver[Ctx](
   directive: Directive,
@@ -37,10 +38,12 @@ case class ScalarResolver[Ctx](resolve: PartialFunction[ast.ScalarTypeDefinition
 
 case class DynamicDirectiveResolver[Ctx, T](
   directiveName: String,
-  resolve: DynamicDirectiveContext[Ctx, T] ⇒ Action[Ctx, Any])(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaResolver[Ctx]
+  resolve: DynamicDirectiveContext[Ctx, T] ⇒ Action[Ctx, Any],
+  complexity: Option[ComplexityDynamicDirectiveContext[Ctx, T] ⇒ (Ctx, Args, Double) ⇒ Double] = None)(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaResolver[Ctx]
 
 case class FieldResolver[Ctx](
-  resolve: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), Context[Ctx, _] ⇒ Action[Ctx, Any]],
+  complexity: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), (Ctx, Args, Double) ⇒ Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
 
 case class ExistingFieldResolver[Ctx](
   resolve: PartialFunction[(ObjectLikeType[Ctx, _], Field[Ctx, _]), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
@@ -50,10 +53,22 @@ case class AnyFieldResolver[Ctx](
 
 case class ConflictResolver[Ctx](resolve: (MatOrigin, Vector[MaterializedType]) ⇒ MaterializedType) extends AstSchemaResolver[Ctx]
 
+sealed trait AstSchemaGenericResolver[T] {
+  def locations: Set[DirectiveLocation.Value]
+  def directiveName: String
+}
+
 case class GenericDirectiveResolver[T](
-  directive: Directive,
+    directive: Directive,
+    locations: Set[DirectiveLocation.Value] = Set.empty,
+    resolve: GenericDirectiveContext ⇒ Option[T]) extends AstSchemaGenericResolver[T] {
+  def directiveName = directive.name
+}
+
+case class GenericDynamicDirectiveResolver[T, A](
+  directiveName: String,
   locations: Set[DirectiveLocation.Value] = Set.empty,
-  resolve: GenericDirectiveContext ⇒ Option[T])
+  resolve: GenericDynamicDirectiveContext[A] ⇒ Option[T])(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaGenericResolver[T]
 
 case class AstDirectiveInputTypeContext(
   directive: ast.Directive,
@@ -84,6 +99,11 @@ case class GenericDirectiveContext(
   astNode: ast.AstNode,
   args: Args) extends WithArguments
 
+case class GenericDynamicDirectiveContext[A](
+  directive: ast.Directive,
+  astNode: ast.AstNode,
+  args: A)
+
 case class AstDirectiveScalarContext(
   directive: ast.Directive,
   definition: ast.ScalarTypeDefinition,
@@ -97,3 +117,15 @@ case class DynamicDirectiveContext[Ctx, In](
   ctx: Context[Ctx, _],
   lastValue: Option[Action[Ctx, Any]],
   args: In)
+
+case class ComplexityDynamicDirectiveContext[Ctx, In](
+  directive: ast.Directive,
+  typeDefinition: ast.TypeDefinition,
+  fieldDefinition: ast.FieldDefinition,
+  args: In)
+
+case class ComplexityDirectiveContext[Ctx](
+  directive: ast.Directive,
+  typeDefinition: ast.TypeDefinition,
+  fieldDefinition: ast.FieldDefinition,
+  args: Args)

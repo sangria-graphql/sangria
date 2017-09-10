@@ -2,7 +2,7 @@ package sangria.schema
 
 import language.postfixOps
 import sangria.ast
-import sangria.ast.AstVisitor
+import sangria.ast.{AstVisitor, FieldDefinition, TypeDefinition}
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ToInput}
 import sangria.renderer.SchemaRenderer
@@ -11,8 +11,6 @@ import sangria.validation.rules.KnownDirectives
 import sangria.visitor.VisitorCommand
 
 import scala.collection.immutable.VectorBuilder
-import scala.reflect.{ClassTag, classTag}
-import scala.util.Try
 import scala.util.control.NonFatal
 
 class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ctx]]) extends DefaultAstSchemaBuilder[Ctx] {
@@ -58,15 +56,28 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
 
   protected def findResolver(directive: ast.Directive): Option[(ast.Directive, AstSchemaResolver[Ctx])] = resolvers.collectFirst {
-    case r @ DirectiveResolver(d, _) if d.name == directive.name ⇒ directive → r
-    case r @ DynamicDirectiveResolver(directive.name, _) ⇒ directive → r
+    case r @ DirectiveResolver(d, _, _) if d.name == directive.name ⇒ directive → r
+    case r @ DynamicDirectiveResolver(directive.name, _, _) ⇒ directive → r
+  }
+
+  protected def findComplexityResolver(directive: ast.Directive): Option[(ast.Directive, AstSchemaResolver[Ctx])] = resolvers.collectFirst {
+    case r @ DirectiveResolver(d, _, _) if d.name == directive.name && r.complexity.isDefined ⇒ directive → r
+    case r @ DynamicDirectiveResolver(directive.name, _, _) if r.complexity.isDefined ⇒ directive → r
   }
 
   protected def findResolver(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): Option[FieldResolver[Ctx]] = {
     val arg = typeDefinition → definition
 
     resolvers.collectFirst {
-      case r @ FieldResolver(fn) if fn.isDefinedAt(arg) ⇒ r
+      case r @ FieldResolver(fn, _) if fn.isDefinedAt(arg) ⇒ r
+    }
+  }
+
+  protected def findComplexityResolver(typeDefinition: ast.TypeDefinition, definition: ast.FieldDefinition): Option[FieldResolver[Ctx]] = {
+    val arg = typeDefinition → definition
+
+    resolvers.collectFirst {
+      case r @ FieldResolver(fn, _) if fn.isDefinedAt(arg) && r.complexity.isDefinedAt(arg) ⇒ r
     }
   }
 
@@ -83,15 +94,6 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       case r @ AnyFieldResolver(fn) if fn.isDefinedAt(origin) ⇒ r
     }
 
-  protected def createDynamicArgs[T : ResultMarshallerForType](astDirective: ast.Directive): T = {
-    import sangria.marshalling.queryAst._
-    import sangria.marshalling.ImprovedMarshallingUtil._
-
-    val value: ast.Value = ast.ObjectValue(astDirective.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value)))
-
-    value.convertMarshaled[T]
-  }
-
   override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: ast.FieldDefinition, mat: AstSchemaMaterializer[Ctx]) = {
     val dResolvers = definition.directives flatMap (findResolver(_))
     
@@ -99,13 +101,13 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       c ⇒ {
         val resultAction =
           dResolvers.foldLeft(None: Option[Action[Ctx, Any]]) {
-            case (acc, (d, DirectiveResolver(sd, fn))) ⇒
+            case (acc, (d, DirectiveResolver(sd, fn, _))) ⇒
               Some(fn(AstDirectiveContext[Ctx](d, typeDefinition, definition, extensions, c, acc, Args(sd, d))))
 
-            case (acc, (d, ddc @ DynamicDirectiveResolver(_, fn))) ⇒
+            case (acc, (d, ddc @ DynamicDirectiveResolver(_, fn, _))) ⇒
               implicit val marshaller = ddc.marshaller
 
-              Some(fn(DynamicDirectiveContext[Ctx, Any](d, typeDefinition, definition, extensions, c, acc, createDynamicArgs(d))))
+              Some(fn(DynamicDirectiveContext[Ctx, Any](d, typeDefinition, definition, extensions, c, acc, ResolverBasedAstSchemaBuilder.createDynamicArgs(d))))
 
             case (acc, _) ⇒
               acc
@@ -139,7 +141,6 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
             super.extendFieldResolver(origin, typeDefinition, existing, fieldType, mat)
         }
     }
-
 
   override def buildFieldType(
     origin: MatOrigin,
@@ -211,6 +212,28 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
   override def resolveNameConflict(fromOrigin: MatOrigin, types: Vector[MaterializedType]) =
     resolvers.collectFirst {case r: ConflictResolver[Ctx] ⇒ r.resolve(fromOrigin, types)} getOrElse
       super.resolveNameConflict(fromOrigin, types)
+
+  override def fieldComplexity(typeDefinition: TypeDefinition, definition: FieldDefinition) = {
+    val dResolvers = definition.directives flatMap (findComplexityResolver(_))
+    val fromDirectives =
+      dResolvers.foldLeft(None: Option[(Ctx, Args, Double) ⇒ Double]) {
+        case (None, (d, DirectiveResolver(sd, _, Some(complexity)))) ⇒
+          Some(complexity(ComplexityDirectiveContext[Ctx](d, typeDefinition, definition, Args(sd, d))))
+
+        case (None, (d, ddc @ DynamicDirectiveResolver(_, _, Some(complexity)))) ⇒
+          implicit val marshaller = ddc.marshaller
+
+          Some(complexity(ComplexityDynamicDirectiveContext[Ctx, Any](d, typeDefinition, definition, ResolverBasedAstSchemaBuilder.createDynamicArgs(d))))
+
+        case (acc, _) ⇒
+          acc
+      }
+
+    fromDirectives orElse
+      findComplexityResolver(typeDefinition, definition).map(_.complexity(typeDefinition, definition)) orElse
+      super.fieldComplexity(typeDefinition, definition)
+  }
+
 }
 
 object ResolverBasedAstSchemaBuilder {
@@ -347,9 +370,9 @@ object ResolverBasedAstSchemaBuilder {
       case origin if origin != ExistingOrigin ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
     }
 
-  def collectGeneric[T](schema: ast.Document, resolvers: GenericDirectiveResolver[T]*): Vector[T] = {
+  def collectGeneric[T](schema: ast.Document, resolvers: AstSchemaGenericResolver[T]*): Vector[T] = {
     val result = new VectorBuilder[T]
-    val resolversByName = resolvers.groupBy(_.directive.name)
+    val resolversByName = resolvers.groupBy(_.directiveName)
     val stack = ValidatorStack.empty[ast.AstNode]
 
     AstVisitor.visit(schema, AstVisitor(
@@ -358,9 +381,17 @@ object ResolverBasedAstSchemaBuilder {
           stack.push(node)
 
           result ++=
-              node.directives.flatMap(astDir ⇒
+              node.directives.flatMap { astDir ⇒
                 findByLocation(stack, node, resolversByName.getOrElse(astDir.name, Nil))
-                  .flatMap(d ⇒ d.resolve(GenericDirectiveContext(astDir, node, Args(d.directive, astDir)))))
+                  .flatMap {
+                    case GenericDirectiveResolver(directive, _, resolve) ⇒
+                      resolve(GenericDirectiveContext(astDir, node, Args(directive, astDir)))
+                    case gd @ GenericDynamicDirectiveResolver(_, _, resolve) ⇒
+                      implicit val marshaller = gd.marshaller
+
+                      resolve(GenericDynamicDirectiveContext(astDir, node, createDynamicArgs(astDir)))
+                  }
+              }
 
           VisitorCommand.Continue
 
@@ -378,6 +409,15 @@ object ResolverBasedAstSchemaBuilder {
     result.result()
   }
 
-  private def findByLocation[T](visitorStack: ValidatorStack[ast.AstNode], node: ast.AstNode, directives: Seq[GenericDirectiveResolver[T]]) =
+  def createDynamicArgs[T : ResultMarshallerForType](astDirective: ast.Directive): T = {
+    import sangria.marshalling.queryAst._
+    import sangria.marshalling.ImprovedMarshallingUtil._
+
+    val value: ast.Value = ast.ObjectValue(astDirective.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value)))
+
+    value.convertMarshaled[T]
+  }
+
+  private def findByLocation[T](visitorStack: ValidatorStack[ast.AstNode], node: ast.AstNode, directives: Seq[AstSchemaGenericResolver[T]]) =
     directives.filter(d ⇒ d.locations.isEmpty || KnownDirectives.getLocation(node, visitorStack.head(1)).fold(false)(l ⇒ d.locations contains l._1))
 }
