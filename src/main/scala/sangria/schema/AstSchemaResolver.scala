@@ -1,5 +1,7 @@
 package sangria.schema
 
+import language.existentials
+
 import sangria.ast
 import sangria.ast.{FieldDefinition, TypeSystemDefinition}
 import sangria.marshalling.ResultMarshallerForType

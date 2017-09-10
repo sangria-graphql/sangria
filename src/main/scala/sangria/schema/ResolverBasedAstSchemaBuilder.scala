@@ -223,6 +223,11 @@ object ResolverBasedAstSchemaBuilder {
     iu.getScalaScalarValue(value)
   }
 
+  private def safe[T, In](op: ⇒ T, expected: String, got: In)(implicit iu: InputUnmarshaller[In]) =
+    try op catch {
+      case NonFatal(_) ⇒ invalidType(expected, got)
+    }
+
   private def extractEnum[In](t: EnumType[_], value: In)(implicit iu: InputUnmarshaller[In]) = {
     val coerced = iu.getScalarValue(value)
 
@@ -230,7 +235,7 @@ object ResolverBasedAstSchemaBuilder {
       case BooleanType ⇒
         coerced match  {
           case v: Boolean ⇒ v
-          case v: String ⇒ Try(v.toBoolean).fold(invalidType("Boolean", value), identity)
+          case v: String ⇒ safe(v.toBoolean, "Boolean", value)
           case _ ⇒ invalidType("Boolean", value)
         }
       case StringType ⇒
@@ -247,7 +252,7 @@ object ResolverBasedAstSchemaBuilder {
           case v: BigInt if v.isValidInt ⇒ v
           case d: Double if d.isValidInt ⇒ d.intValue
           case d: BigDecimal if d.isValidInt ⇒ d.intValue
-          case v: String ⇒ Try(v.toInt).fold(invalidType("Int", value), identity)
+          case v: String ⇒ safe(v.toInt, "Int", value)
           case _ ⇒ invalidType("Int", value)
         }
       case IntType ⇒
@@ -258,7 +263,7 @@ object ResolverBasedAstSchemaBuilder {
           case i: BigInt ⇒ i.longValue
           case d: Double if d.isWhole ⇒ d.toLong
           case d: BigDecimal if d.isValidLong ⇒ d.longValue()
-          case v: String ⇒ Try(v.toLong).fold(invalidType("Long", value), identity)
+          case v: String ⇒ safe(v.toLong, "Long", value)
           case _ ⇒ invalidType("Long", value)
         }
       case BigIntType ⇒
@@ -268,7 +273,7 @@ object ResolverBasedAstSchemaBuilder {
           case i: BigInt ⇒ i
           case d: Double if d.isWhole ⇒ BigInt(d.toLong)
           case d: BigDecimal if d.isWhole ⇒ d.toBigInt
-          case v: String ⇒ Try(BigInt(v)).fold(invalidType("BigInt", value), identity)
+          case v: String ⇒ safe(BigInt(v), "BigInt", value)
           case _ ⇒ invalidType("BigInt", value)
         }
       case BigDecimalType ⇒
@@ -278,7 +283,7 @@ object ResolverBasedAstSchemaBuilder {
           case i: BigInt ⇒ BigDecimal(i)
           case d: Double ⇒ BigDecimal(d)
           case d: BigDecimal ⇒ d
-          case v: String ⇒ Try(BigDecimal(v)).fold(invalidType("BigDecimal", value), identity)
+          case v: String ⇒ safe(BigDecimal(v), "BigDecimal", value)
           case _ ⇒ invalidType("BigDecimal", value)
         }
       case FloatType ⇒
@@ -290,7 +295,7 @@ object ResolverBasedAstSchemaBuilder {
           case d: Double ⇒ d
           case d: BigDecimal if !d.isDecimalDouble ⇒ invalidType("Float", value)
           case d: BigDecimal ⇒ d.doubleValue()
-          case v: String ⇒ Try(v.toDouble).fold(invalidType("Float", value), identity)
+          case v: String ⇒ safe(v.toDouble, "Float", value)
           case _ ⇒ invalidType("Float", value)
         }
       case _ ⇒ coerced
