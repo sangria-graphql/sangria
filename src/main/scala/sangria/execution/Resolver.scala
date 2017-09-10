@@ -32,7 +32,8 @@ class Resolver[Ctx](
     deferredResolverState: Any,
     preserveOriginalErrors: Boolean,
     validationTiming: TimeMeasurement,
-    queryReducerTiming: TimeMeasurement
+    queryReducerTiming: TimeMeasurement,
+    queryAst: ast.Document
 )(implicit executionContext: ExecutionContext) {
   val resultResolver = new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
   val toScalarMiddleware = Middleware.composeToScalarMiddleware(middleware.map(_._2), userContext)
@@ -955,6 +956,7 @@ class Resolver[Ctx](
               field,
               tpe.asInstanceOf[ObjectType[Ctx, Any]],
               marshaller,
+              queryAst,
               sourceMapper,
               deprecationTracker,
               astFields,

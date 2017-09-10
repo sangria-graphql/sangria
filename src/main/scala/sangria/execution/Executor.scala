@@ -172,7 +172,8 @@ case class Executor[Ctx, Root](
           deferredResolverState,
           scheme.extended,
           validationTiming,
-          queryReducerTiming)
+          queryReducerTiming,
+          queryAst)
 
         val result =
           operation.operationType match {

@@ -266,6 +266,7 @@ case class Context[Ctx, Val](
   field: Field[Ctx, Val],
   parentType: ObjectType[Ctx, Any],
   marshaller: ResultMarshaller,
+  query: ast.Document,
   sourceMapper: Option[SourceMapper],
   deprecationTracker: DeprecationTracker,
   astFields: Vector[ast.Field],
@@ -353,6 +354,14 @@ object Args {
 
       ValueCollector.getArgumentValues(ValueCoercionHelper.default, definitions, argsValues.toVector, Map.empty, ExceptionHandler.empty).get
     }
+  }
+
+  def apply(schemaElem: HasArguments, astElem: ast.WithArguments): Args = {
+    import sangria.marshalling.queryAst._
+
+    apply(
+      schemaElem.arguments,
+      ast.ObjectValue(astElem.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value))): ast.Value)
   }
 
   private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](value: In, tpe: InputType[_]): Option[Out] = {

@@ -857,7 +857,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
         """
 
       val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-        override def resolveField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition) =
+        override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Unit]) =
           if (definition.name == "animal1")
             _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
           else if (definition.name == "animal2")
@@ -867,14 +867,14 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           else
             _.value.asInstanceOf[Map[String, Any]](definition.name)
 
-        override def objectTypeInstanceCheck(definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
+        override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
           Some((value, clazz) ⇒ value match {
             case v: Map[_, _] if definition.name == "Hello" ⇒ true
             case v : Map[String, _] @unchecked if v contains "type" ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name
             case _ ⇒ false
           })
 
-        override def extendedObjectTypeInstanceCheck(tpe: ObjectType[Unit, _], extensions: List[TypeExtensionDefinition]) =
+        override def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Unit, _], extensions: List[TypeExtensionDefinition]) =
           Some((value, clazz) ⇒ value match {
             case v: Map[_, _] if tpe.name == "Hello" ⇒ true
             case v if clazz.isAssignableFrom(v.getClass) ⇒ true

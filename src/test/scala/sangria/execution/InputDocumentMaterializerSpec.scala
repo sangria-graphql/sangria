@@ -39,7 +39,7 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
     InputField("port", OptionInputType(IntType), 1234)))
 
   val anyValueBuilder = new DefaultAstSchemaBuilder[Any] {
-    override def buildScalarType(definition: ScalarTypeDefinition, mat: AstSchemaMaterializer[Any]) =
+    override def buildScalarType(origin: MatOrigin, definition: ScalarTypeDefinition, mat: AstSchemaMaterializer[Any]) =
       if (definition.directives.exists(_.name == "anyValue"))
         Some(ScalarType[Any](
           name = typeName(definition),
@@ -51,7 +51,7 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
           scalarInfo = scalarValueInfo(definition),
           astDirectives = definition.directives))
       else
-        super.buildScalarType(definition, mat)
+        super.buildScalarType(origin, definition, mat)
   }
 
   "InputDocument materializer and validator" should {

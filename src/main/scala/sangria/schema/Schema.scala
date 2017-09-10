@@ -64,6 +64,8 @@ sealed trait UnmodifiedType
 sealed trait Named {
   def name: String
   def description: Option[String]
+
+  def rename(newName: String): this.type
 }
 
 sealed trait HasDeprecation {
@@ -155,6 +157,8 @@ case class ScalarType[T](
   astDirectives: Vector[ast.Directive] = Vector.empty
 ) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
   Named.checkName(name)
+
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 case class ScalarAlias[T, ST](
@@ -164,6 +168,7 @@ case class ScalarAlias[T, ST](
 ) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
   def name = aliasFor.name
   def description = aliasFor.description
+  def rename(newName: String) = copy(aliasFor = aliasFor.rename(newName)).asInstanceOf[this.type]
 }
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
@@ -212,6 +217,8 @@ case class ObjectType[Ctx, Val: ClassTag] (
     copy(instanceCheck = fn)
 
   def isInstanceOf(value: Any) = instanceCheck(value, valClass, this)
+
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object ObjectType {
@@ -253,6 +260,7 @@ case class InterfaceType[Ctx, Val](
 ) extends ObjectLikeType[Ctx, Val] with AbstractType {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object InterfaceType {
@@ -311,10 +319,12 @@ object PossibleType {
 }
 
 case class UnionType[Ctx](
-  name: String,
-  description: Option[String] = None,
-  types: List[ObjectType[Ctx, _]],
-  astDirectives: Vector[ast.Directive] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType
+    name: String,
+    description: Option[String] = None,
+    types: List[ObjectType[Ctx, _]],
+    astDirectives: Vector[ast.Directive] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType {
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+}
 
 case class Field[Ctx, Val](
     name: String,
@@ -329,6 +339,7 @@ case class Field[Ctx, Val](
     astDirectives: Vector[ast.Directive]) extends Named with HasArguments with HasDeprecation {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object Field {
@@ -401,6 +412,7 @@ case class Argument[T](
     throw new IllegalArgumentException(s"Argument '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this argument nullable or remove the default value.")
 
   def inputValueType = argumentType
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object Argument {
@@ -574,14 +586,18 @@ case class EnumType[T](
   }
 
   def coerceOutput(value: T): String = byValue(value).name
+
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 case class EnumValue[+T](
-  name: String,
-  description: Option[String] = None,
-  value: T,
-  deprecationReason: Option[String] = None,
-  astDirectives: Vector[ast.Directive] = Vector.empty) extends Named with HasDeprecation
+    name: String,
+    description: Option[String] = None,
+    value: T,
+    deprecationReason: Option[String] = None,
+    astDirectives: Vector[ast.Directive] = Vector.empty) extends Named with HasDeprecation {
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+}
 
 case class InputObjectType[T](
   name: String,
@@ -591,6 +607,8 @@ case class InputObjectType[T](
 ) extends InputType[T @@ InputObjectResult] with NullableType with UnmodifiedType with Named {
   lazy val fields = fieldsFn()
   lazy val fieldsByName = fields groupBy(_.name) mapValues(_.head)
+
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object InputObjectType {
@@ -637,6 +655,7 @@ case class InputField[T](
     throw new IllegalArgumentException(s"Input field '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this fields nullable or remove the default value.")
 
   def inputValueType = fieldType
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object InputField {
@@ -720,11 +739,13 @@ object DirectiveLocation extends Enumeration {
 }
 
 case class Directive(
-  name: String,
-  description: Option[String] = None,
-  arguments: List[Argument[_]] = Nil,
-  locations: Set[DirectiveLocation.Value] = Set.empty,
-  shouldInclude: DirectiveContext ⇒ Boolean = _ ⇒ true) extends HasArguments with Named
+    name: String,
+    description: Option[String] = None,
+    arguments: List[Argument[_]] = Nil,
+    locations: Set[DirectiveLocation.Value] = Set.empty,
+    shouldInclude: DirectiveContext ⇒ Boolean = _ ⇒ true) extends HasArguments with Named {
+  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+}
 
 case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],
