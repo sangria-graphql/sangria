@@ -22,6 +22,14 @@ case class DirectiveResolver[Ctx](
   resolve: AstDirectiveContext[Ctx] ⇒ Action[Ctx, Any],
   complexity: Option[ComplexityDirectiveContext[Ctx] ⇒ (Ctx, Args, Double) ⇒ Double] = None) extends AstSchemaResolver[Ctx]
 
+case class DirectiveFieldProvider[Ctx](
+  directive: Directive,
+  resolve: DirectiveFieldProviderContext[Ctx] ⇒ List[MaterializedField[Ctx, _]]) extends AstSchemaResolver[Ctx]
+
+case class DynamicDirectiveFieldProvider[Ctx, A](
+  directiveName: String,
+  resolve: DynamicDirectiveFieldProviderContext[Ctx, A] ⇒ List[MaterializedField[Ctx, _]])(implicit val marshaller: ResultMarshallerForType[A]) extends AstSchemaResolver[Ctx]
+
 case class DirectiveInputTypeResolver[Ctx](
   directive: Directive,
   resolve: AstDirectiveInputTypeContext ⇒ InputType[Any]) extends AstSchemaResolver[Ctx]
@@ -46,7 +54,7 @@ case class FieldResolver[Ctx](
   complexity: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), (Ctx, Args, Double) ⇒ Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
 
 case class ExistingFieldResolver[Ctx](
-  resolve: PartialFunction[(ObjectLikeType[Ctx, _], Field[Ctx, _]), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[(Option[ObjectLikeType[Ctx, _]], Field[Ctx, _]), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
 
 case class AnyFieldResolver[Ctx](
   resolve: PartialFunction[MatOrigin, Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
@@ -93,6 +101,22 @@ case class AstDirectiveContext[Ctx](
   ctx: Context[Ctx, _],
   lastValue: Option[Action[Ctx, Any]],
   args: Args) extends WithArguments
+
+case class DirectiveFieldProviderContext[Ctx](
+  origin: MatOrigin,
+  directive: ast.Directive,
+  typeDefinition: ast.TypeDefinition,
+  extensions: Vector[ast.TypeExtensionDefinition],
+  materializer: AstSchemaMaterializer[Ctx],
+  args: Args) extends WithArguments
+
+case class DynamicDirectiveFieldProviderContext[Ctx, A](
+  origin: MatOrigin,
+  directive: ast.Directive,
+  typeDefinition: ast.TypeDefinition,
+  extensions: Vector[ast.TypeExtensionDefinition],
+  materializer: AstSchemaMaterializer[Ctx],
+  args: A)
 
 case class GenericDirectiveContext(
   directive: ast.Directive,

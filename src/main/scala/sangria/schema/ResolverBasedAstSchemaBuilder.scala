@@ -2,7 +2,7 @@ package sangria.schema
 
 import language.postfixOps
 import sangria.ast
-import sangria.ast.{AstVisitor, FieldDefinition, TypeDefinition}
+import sangria.ast.{AstVisitor, FieldDefinition, TypeDefinition, TypeExtensionDefinition}
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ToInput}
 import sangria.renderer.SchemaRenderer
@@ -18,18 +18,24 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
   protected lazy val directiveScalarResolvers = resolvers collect {case dr: DirectiveScalarResolver[Ctx] ⇒ dr}
   protected lazy val directiveInpResolvers = resolvers collect {case dr: DirectiveInputTypeResolver[Ctx] ⇒ dr}
   protected lazy val directiveOutResolvers = resolvers collect {case dr: DirectiveOutputTypeResolver[Ctx] ⇒ dr}
+  protected lazy val directiveProviderDirs = resolvers collect {case dr: DirectiveFieldProvider[Ctx] ⇒ dr.directive}
+  protected lazy val directiveDynProviderDirNames = resolvers collect {case dr: DynamicDirectiveFieldProvider[Ctx, _] ⇒ dr.directiveName}
   protected lazy val additionalDirectives = resolvers flatMap {
     case AdditionalDirectives(ad) ⇒ ad
     case _ ⇒ Nil
   }
 
-  protected lazy val dynamicDirectiveNames = resolvers collect {case dr: DynamicDirectiveResolver[Ctx, _] ⇒ dr.directiveName} toSet
+  protected lazy val dynamicDirectiveNames =
+    resolvers.collect{case dr: DynamicDirectiveResolver[Ctx, _] ⇒ dr.directiveName}.toSet ++
+    directiveDynProviderDirNames
+
   protected lazy val directives =
     directiveResolvers.map(_.directive) ++
       directiveScalarResolvers.map(_.directive) ++
       directiveInpResolvers.map(_.directive) ++
       directiveOutResolvers.map(_.directive) ++
-      additionalDirectives
+      additionalDirectives ++
+      directiveProviderDirs
 
   protected lazy val stubQueryType = ObjectType("Query", fields[Unit, Unit](Field("stub", StringType, resolve = _ ⇒ "stub")))
   protected lazy val validationSchema = Schema(stubQueryType, directives = directives.toList ++ BuiltinDirectives)
@@ -81,7 +87,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
-  protected def findExistingResolver(typeDefinition: ObjectLikeType[Ctx, _], field: Field[Ctx, _]): Option[ExistingFieldResolver[Ctx]] = {
+  protected def findExistingResolver(typeDefinition: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]): Option[ExistingFieldResolver[Ctx]] = {
     val arg = typeDefinition → field
 
     resolvers.collectFirst {
@@ -129,7 +135,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       }
   }
 
-  override def extendFieldResolver(origin: MatOrigin, typeDefinition: ObjectLikeType[Ctx, _], existing: Field[Ctx, Any], fieldType: OutputType[_], mat: AstSchemaMaterializer[Ctx]) =
+  override def extendFieldResolver(origin: MatOrigin, typeDefinition: Option[ObjectLikeType[Ctx, _]], existing: Field[Ctx, Any], fieldType: OutputType[_], mat: AstSchemaMaterializer[Ctx]) =
     findExistingResolver(typeDefinition, existing) match {
       case Some(fResolver) ⇒
         fResolver.resolve(typeDefinition, existing)
@@ -234,6 +240,30 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       super.fieldComplexity(typeDefinition, definition)
   }
 
+  override def buildAdditionalFields(
+    origin: MatOrigin,
+    typeDefinition: TypeDefinition,
+    extensions: Vector[TypeExtensionDefinition],
+    mat: AstSchemaMaterializer[Ctx]
+  ) = {
+    val allAstDirectives = typeDefinition.directives ++ extensions.flatMap(_.definition.directives)
+
+    val materializedFields =
+      allAstDirectives.flatMap { astDir ⇒
+        resolvers.collect {
+          case DirectiveFieldProvider(directive, resolve) if directive.name == astDir.name ⇒
+            resolve(DirectiveFieldProviderContext[Ctx](origin, astDir, typeDefinition, extensions, mat, Args(directive, astDir)))
+
+          case ddfp @ DynamicDirectiveFieldProvider(astDir.name, resolve) ⇒
+            implicit val marshaller = ddfp.marshaller
+
+            resolve(DynamicDirectiveFieldProviderContext[Ctx, Any](origin, astDir, typeDefinition, extensions, mat, ResolverBasedAstSchemaBuilder.createDynamicArgs(astDir)))
+        }
+      }
+
+    materializedFields.flatten.toList.asInstanceOf[List[MaterializedField[Ctx, Any]]] ++
+      super.buildAdditionalFields(origin, typeDefinition, extensions, mat)
+  }
 }
 
 object ResolverBasedAstSchemaBuilder {

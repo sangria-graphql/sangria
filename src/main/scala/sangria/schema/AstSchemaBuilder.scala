@@ -121,6 +121,12 @@ trait AstSchemaBuilder[Ctx] {
     arguments: List[Argument[_]],
     mat: AstSchemaMaterializer[Ctx]): Option[Field[Ctx, Any]]
 
+  def buildAdditionalFields(
+    origin: MatOrigin,
+    typeDefinition: ast.TypeDefinition,
+    extensions: Vector[ast.TypeExtensionDefinition],
+    mat: AstSchemaMaterializer[Ctx]): List[MaterializedField[Ctx, Any]]
+
   def buildFieldType(
     origin: MatOrigin,
     typeDefinition: ast.TypeDefinition,
@@ -131,14 +137,14 @@ trait AstSchemaBuilder[Ctx] {
 
   def extendField(
     origin: MatOrigin,
-    typeDefinition: ObjectLikeType[Ctx, _],
+    typeDefinition: Option[ObjectLikeType[Ctx, _]],
     existing: Field[Ctx, Any],
     fieldType: OutputType[_],
     mat: AstSchemaMaterializer[Ctx]): Field[Ctx, Any]
 
   def extendFieldType(
     origin: MatOrigin,
-    typeDefinition: ObjectLikeType[Ctx, _],
+    typeDefinition: Option[ObjectLikeType[Ctx, _]],
     existing: Field[Ctx, Any],
     mat: AstSchemaMaterializer[Ctx]): OutputType[Any]
 
@@ -460,18 +466,23 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       mat: AstSchemaMaterializer[Ctx]): OutputType[Any] =
     mat.getOutputType(origin, definition.fieldType)
 
+  def buildAdditionalFields(
+    origin: MatOrigin,
+    typeDefinition: ast.TypeDefinition,
+    extensions: Vector[ast.TypeExtensionDefinition],
+    mat: AstSchemaMaterializer[Ctx]): List[MaterializedField[Ctx, Any]] = Nil
+
   def extendField(
       origin: MatOrigin,
-      typeDefinition: ObjectLikeType[Ctx, _],
+      typeDefinition: Option[ObjectLikeType[Ctx, _]],
       existing: Field[Ctx, Any],
       fieldType: OutputType[_],
-      mat: AstSchemaMaterializer[Ctx]) = {
+      mat: AstSchemaMaterializer[Ctx]) =
     existing.copy(fieldType = fieldType, resolve = extendFieldResolver(origin, typeDefinition, existing, fieldType, mat), manualPossibleTypes = () ⇒ Nil)
-  }
 
   def extendFieldType(
       origin: MatOrigin,
-      typeDefinition: ObjectLikeType[Ctx, _],
+      typeDefinition: Option[ObjectLikeType[Ctx, _]],
       existing: Field[Ctx, Any],
       mat: AstSchemaMaterializer[Ctx]): OutputType[Any] =
     mat.getTypeFromExistingType(origin, existing.fieldType)
@@ -581,7 +592,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
 
   def extendFieldResolver(
     origin: MatOrigin,
-    typeDefinition: ObjectLikeType[Ctx, _],
+    typeDefinition: Option[ObjectLikeType[Ctx, _]],
     existing: Field[Ctx, Any],
     fieldType: OutputType[_],
     mat: AstSchemaMaterializer[Ctx]): Context[Ctx, Any] ⇒ Action[Ctx, _]  = existing.resolve

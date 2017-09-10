@@ -210,6 +210,12 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an object type.")
     }
 
+  def getScalarType(origin: MatOrigin, tpe: ast.NamedType): ScalarType[Any] =
+    getOutputType(origin, tpe, false) match {
+      case obj: ScalarType[_] ⇒ obj.asInstanceOf[ScalarType[Any]]
+      case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not a scalar type.")
+    }
+
   def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType) =
     getOutputType(origin, tpe, false) match {
       case obj: InterfaceType[_, _] ⇒ obj.asInstanceOf[InterfaceType[Ctx, Any]]
@@ -302,7 +308,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   }
 
 
-  def extendField(origin: MatOrigin, tpe: ObjectLikeType[Ctx, _], field: Field[Ctx, _]) = {
+  def extendField(origin: MatOrigin, tpe: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]) = {
     val f = field.asInstanceOf[Field[Ctx, Any]]
 
     builder.extendField(origin, tpe, f, builder.extendFieldType(origin, tpe, f, this), this)
@@ -380,13 +386,18 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def buildFields(origin: MatOrigin, tpe: TypeDefinition, fieldDefs: Vector[ast.FieldDefinition], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(_.definition.fields)
 
-    val allFields = extraFields.foldLeft(fieldDefs) {
+    val withExtensions = extraFields.foldLeft(fieldDefs) {
       case (acc, field) if acc.exists(_.name == field.name) ⇒
         throw new SchemaMaterializationException(s"Field '${tpe.name}.${field.name}' already exists in the schema. It cannot also be defined in this type extension.")
       case (acc, field) ⇒ acc :+ field
     }
 
-    allFields flatMap (buildField(origin, tpe, extensions, _))
+    val addFields = builder.buildAdditionalFields(origin, tpe, extensions, this).flatMap {
+      case MaterializedFieldAst(o, ast) ⇒ buildField(o, tpe, extensions, ast)
+      case MaterializedFieldInst(o, definition) ⇒ Some(extendField(o, None, definition))
+    }
+
+    withExtensions.flatMap(buildField(origin, tpe, extensions, _)) ++ addFields
   }
 
   def extendFields(origin: MatOrigin, tpe: ObjectLikeType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
@@ -399,7 +410,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     }
 
     val ef = extensionFields flatMap (f ⇒ buildField(origin, f._1.definition, extensions, f._2))
-    val of = tpe.uniqueFields.toList map (extendField(origin, tpe, _))
+    val of = tpe.uniqueFields.toList map (extendField(origin, Some(tpe), _))
 
     of ++ ef
   }
