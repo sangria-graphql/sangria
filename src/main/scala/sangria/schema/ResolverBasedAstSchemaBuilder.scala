@@ -87,8 +87,8 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
-  protected def findExistingResolver(typeDefinition: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]): Option[ExistingFieldResolver[Ctx]] = {
-    val arg = typeDefinition → field
+  protected def findExistingResolver(origin: MatOrigin, typeDefinition: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]): Option[ExistingFieldResolver[Ctx]] = {
+    val arg = (origin, typeDefinition, field)
 
     resolvers.collectFirst {
       case r @ ExistingFieldResolver(fn) if fn.isDefinedAt(arg) ⇒ r
@@ -136,9 +136,9 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
   }
 
   override def extendFieldResolver(origin: MatOrigin, typeDefinition: Option[ObjectLikeType[Ctx, _]], existing: Field[Ctx, Any], fieldType: OutputType[_], mat: AstSchemaMaterializer[Ctx]) =
-    findExistingResolver(typeDefinition, existing) match {
+    findExistingResolver(origin, typeDefinition, existing) match {
       case Some(fResolver) ⇒
-        fResolver.resolve(typeDefinition, existing)
+        fResolver.resolve((origin, typeDefinition, existing))
       case None ⇒
         findAnyResolver(origin) match {
           case Some(fResolver) ⇒
@@ -264,6 +264,27 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     materializedFields.flatten.toList.asInstanceOf[List[MaterializedField[Ctx, Any]]] ++
       super.buildAdditionalFields(origin, typeDefinition, extensions, mat)
   }
+
+  override def transformScalarType[T](origin: MatOrigin, existing: ScalarType[T], mat: AstSchemaMaterializer[Ctx]) = {
+    val ctx = ExistingScalarContext(origin, existing.asInstanceOf[ScalarType[Any]], mat)
+
+    val resolved = resolvers.collectFirst {
+      case ExistingScalarResolver(resolve) if resolve.isDefinedAt(ctx) ⇒ resolve(ctx).asInstanceOf[ScalarType[T]]
+    }
+
+    resolved getOrElse super.transformScalarType(origin, existing, mat)
+  }
+
+
+  override def transformEnumType[T](origin: MatOrigin, existing: EnumType[T], mat: AstSchemaMaterializer[Ctx]) = {
+    val ctx = ExistingEnumContext(origin, existing.asInstanceOf[EnumType[Any]], mat)
+
+    val resolved = resolvers.collectFirst {
+      case ExistingEnumResolver(resolve) if resolve.isDefinedAt(ctx) ⇒ resolve(ctx).asInstanceOf[EnumType[T]]
+    }
+
+    resolved getOrElse super.transformEnumType(origin, existing, mat)
+  }
 }
 
 object ResolverBasedAstSchemaBuilder {
@@ -272,16 +293,12 @@ object ResolverBasedAstSchemaBuilder {
   private def invalidType[In](expected: String, got: In)(implicit iu: InputUnmarshaller[In]) =
     throw InputMaterializationException(s"Expected $expected value, but got: " + iu.render(got))
 
-  private def extractScalar[In](t: ScalarType[_], value: In)(implicit iu: InputUnmarshaller[In]) = {
-    iu.getScalaScalarValue(value)
-  }
-
   private def safe[T, In](op: ⇒ T, expected: String, got: In)(implicit iu: InputUnmarshaller[In]) =
     try op catch {
       case NonFatal(_) ⇒ invalidType(expected, got)
     }
 
-  private def extractEnum[In](t: EnumType[_], value: In)(implicit iu: InputUnmarshaller[In]) = {
+  private def extractScalar[In](t: ScalarType[_], value: In)(implicit iu: InputUnmarshaller[In]) = {
     val coerced = iu.getScalarValue(value)
 
     t match {
@@ -302,13 +319,13 @@ object ResolverBasedAstSchemaBuilder {
         coerced match  {
           case v: Int ⇒ v
           case i: Long if i.isValidInt ⇒ i.toInt
-          case v: BigInt if v.isValidInt ⇒ v
+          case v: BigInt if v.isValidInt ⇒ v.intValue
           case d: Double if d.isValidInt ⇒ d.intValue
           case d: BigDecimal if d.isValidInt ⇒ d.intValue
           case v: String ⇒ safe(v.toInt, "Int", value)
           case _ ⇒ invalidType("Int", value)
         }
-      case IntType ⇒
+      case LongType ⇒
         coerced match  {
           case i: Int ⇒ i: Long
           case i: Long ⇒ i
@@ -355,6 +372,9 @@ object ResolverBasedAstSchemaBuilder {
     }
   }
 
+  private def extractEnum[In](t: EnumType[_], value: In)(implicit iu: InputUnmarshaller[In]) =
+    iu.getScalarValue(value).toString
+
   def extractValue[In](tpe: OutputType[_], value: Option[In])(implicit iu: InputUnmarshaller[In]): Any = tpe match {
     case OptionType(ofType) ⇒ Option(extractValue(ofType, value))
     case _ if value.isEmpty || !iu.isDefined(value.get) ⇒ null
@@ -392,7 +412,7 @@ object ResolverBasedAstSchemaBuilder {
 
   def defaultExistingInputResolver[Ctx, In : InputUnmarshaller] =
     ExistingFieldResolver[Ctx] {
-      case (_, _) ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
+      case (_, _, _) ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
     }
 
   def defaultAnyInputResolver[Ctx, In : InputUnmarshaller] =

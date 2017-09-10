@@ -42,6 +42,12 @@ case class DirectiveScalarResolver[Ctx](
   directive: Directive,
   resolve: AstDirectiveScalarContext ⇒ ScalarType[_]) extends AstSchemaResolver[Ctx]
 
+case class ExistingScalarResolver[Ctx](
+  resolve: PartialFunction[ExistingScalarContext[Ctx], ScalarType[Any]]) extends AstSchemaResolver[Ctx]
+
+case class ExistingEnumResolver[Ctx](
+  resolve: PartialFunction[ExistingEnumContext[Ctx], EnumType[Any]]) extends AstSchemaResolver[Ctx]
+
 case class ScalarResolver[Ctx](resolve: PartialFunction[ast.ScalarTypeDefinition, ScalarType[_]]) extends AstSchemaResolver[Ctx]
 
 case class DynamicDirectiveResolver[Ctx, T](
@@ -54,7 +60,7 @@ case class FieldResolver[Ctx](
   complexity: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), (Ctx, Args, Double) ⇒ Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
 
 case class ExistingFieldResolver[Ctx](
-  resolve: PartialFunction[(Option[ObjectLikeType[Ctx, _]], Field[Ctx, _]), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[(MatOrigin, Option[ObjectLikeType[Ctx, _]], Field[Ctx, _]), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
 
 case class AnyFieldResolver[Ctx](
   resolve: PartialFunction[MatOrigin, Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
@@ -132,6 +138,16 @@ case class AstDirectiveScalarContext(
   directive: ast.Directive,
   definition: ast.ScalarTypeDefinition,
   args: Args) extends WithArguments
+
+case class ExistingScalarContext[Ctx](
+  origin: MatOrigin,
+  existing: ScalarType[Any],
+  mat: AstSchemaMaterializer[Ctx])
+
+case class ExistingEnumContext[Ctx](
+  origin: MatOrigin,
+  existing: EnumType[Any],
+  mat: AstSchemaMaterializer[Ctx])
 
 case class DynamicDirectiveContext[Ctx, In](
   directive: ast.Directive,
