@@ -4,15 +4,9 @@ case class TimeMeasurement(startMs: Long, endMs: Long, durationNanos: Long)
 
 object TimeMeasurement {
   def measure[T](fn: ⇒ T): (T, TimeMeasurement) = {
-    val startTime = System.currentTimeMillis()
-    val start = System.nanoTime()
-
+    val sw = StopWatch.start()
     val res = fn
-
-    val end = System.nanoTime()
-    val endTime = System.currentTimeMillis()
-
-    res → TimeMeasurement(startTime, endTime, end - start)
+    res → sw.stop
   }
 
   def empty = {
@@ -20,4 +14,17 @@ object TimeMeasurement {
 
     TimeMeasurement(time, time, 0L)
   }
+}
+
+case class StopWatch(startTime: Long, startNanos: Long) {
+  def stop: TimeMeasurement = {
+    val endTime = System.currentTimeMillis()
+    val endNanos = System.nanoTime()
+
+    TimeMeasurement(startTime, endTime, endNanos - startNanos)
+  }
+}
+
+object StopWatch {
+  def start(): StopWatch = StopWatch(System.currentTimeMillis(), System.nanoTime())
 }

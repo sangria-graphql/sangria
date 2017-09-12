@@ -205,11 +205,12 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
           }
         """)
 
-      val out = captureConsoleOut {
-        Executor.execute(schema, query, deprecationTracker = DeprecationTracker.print).await
-      }
+      val sb = StringBuilder.newBuilder
+      val tracker = new PrintingDeprecationTracker(sb.append(_))
 
-      out should include ("Deprecated enum value '2' used of enum 'TestEnum'.")
+      Executor.execute(schema, query, deprecationTracker = tracker).await
+
+      sb.toString() should include ("Deprecated enum value '2' used of enum 'TestEnum'.")
     }
 
     "track deprecated fields" in  {
@@ -221,11 +222,12 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
 
-      val out = captureConsoleOut {
-        Executor.execute(schema, query, deprecationTracker = DeprecationTracker.print).await
-      }
+      val sb = StringBuilder.newBuilder
+      val tracker = new PrintingDeprecationTracker(sb.append(_))
 
-      out should include ("Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
+      Executor.execute(schema, query, deprecationTracker = tracker).await
+
+      sb.toString() should include ("Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
     }
   }
 }
