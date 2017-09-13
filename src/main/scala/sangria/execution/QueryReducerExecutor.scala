@@ -37,14 +37,7 @@ object QueryReducerExecutor {
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, Map.empty, queryAst.sourceMapper, valueCollector, exceptionHandler)
         tpe ← Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
-      } yield {
-        val argumentValuesFn: QueryReducer.ArgumentValuesFn =
-          (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
-            valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, Map.empty)
-//            Failure(new IllegalStateException("argument values are not available when reducing without variables"))
-
-        QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, argumentValuesFn, tpe, fields, userContext)
-      }
+      } yield QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, tpe, fields, userContext)
 
       executionResult match {
         case Success(future) ⇒ future
@@ -59,13 +52,13 @@ object QueryReducerExecutor {
     queryReducers: List[QueryReducer[Ctx, _]],
     exceptionHandler: ExceptionHandler,
     fieldCollector: FieldCollector[Ctx, Root],
-    argumentValuesFn: QueryReducer.ArgumentValuesFn,
+    valueCollector: ValueCollector[Ctx, _],
     rootTpe: ObjectType[Ctx, Root],
     fields: CollectedFields,
     userContext: Ctx)(implicit executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] =
     if (queryReducers.nonEmpty) {
       val sw = StopWatch.start()
-      reduceQueryUnsafe(schema, fieldCollector, argumentValuesFn, rootTpe, fields, queryReducers.toVector, userContext)
+      reduceQueryUnsafe(schema, fieldCollector, valueCollector, rootTpe, fields, queryReducers.toVector, userContext)
         .map(_ → sw.stop)
         .recover { case error: Throwable ⇒ throw QueryReducingError(error, exceptionHandler) }
     } else Future.successful(userContext → TimeMeasurement.empty)
@@ -73,12 +66,14 @@ object QueryReducerExecutor {
   private def reduceQueryUnsafe[Ctx, Val](
     schema: Schema[Ctx, _],
     fieldCollector: FieldCollector[Ctx, Val],
-    argumentValuesFn: QueryReducer.ArgumentValuesFn,
+    valueCollector: ValueCollector[Ctx, _],
     rootTpe: ObjectType[Ctx, _],
     fields: CollectedFields,
     reducers: Vector[QueryReducer[Ctx, _]],
     userContext: Ctx)(implicit executionContext: ExecutionContext): Future[Ctx] = {
-    // Using mutability here locally in order to reduce footprint
+    val argumentValuesFn: QueryReducer.ArgumentValuesFn =
+      (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
+        valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, Map.empty)
 
     val initialValues: Vector[Any] = reducers map (_.initial)
 
@@ -89,6 +84,7 @@ object QueryReducerExecutor {
         case objTpe: ObjectType[Ctx @unchecked, _] ⇒
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) ⇒
+              // Using mutability here locally in order to reduce footprint
               ff.fields.foldLeft(Array(initialValues: _*)) {
                 case (acc, CollectedField(_, _, Success(fields))) if objTpe.getField(schema, fields.head.name).nonEmpty ⇒
                   val astField = fields.head

@@ -136,6 +136,5 @@ class UnknownVariablesValueCollector[Ctx](
     argumentDefs: List[Argument[_]],
     argumentAsts: Vector[ast.Argument],
     variables: Map[String, VariableValue],
-    ignoreErrors: Boolean
-  ): Try[Args] = ValueCollector.emptyArgs
+    ignoreErrors: Boolean) = super.getArgumentValues(argumentDefs, argumentAsts, variables, ignoreErrors = true)
 }

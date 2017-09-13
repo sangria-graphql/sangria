@@ -43,9 +43,6 @@ case class Executor[Ctx, Root](
         tpe ← Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
       } yield {
-        val argumentValuesFn: QueryReducer.ArgumentValuesFn =
-          (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
-            valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, unmarshalledVariables)
         val preparedFields = fields.fields.flatMap {
           case CollectedField(_, astField, Success(_)) ⇒
             val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
@@ -56,7 +53,7 @@ case class Executor[Ctx, Root](
           case _ ⇒ None
         }
 
-        QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, argumentValuesFn, tpe, fields, userContext).map {
+        QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, tpe, fields, userContext).map {
           case (newCtx, timing) ⇒
             new PreparedQuery[Ctx, Root, Input](queryAst, operation, tpe, newCtx, root, preparedFields,
               (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) ⇒
@@ -96,7 +93,7 @@ case class Executor[Ctx, Root](
         val argumentValuesFn: QueryReducer.ArgumentValuesFn =
           (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
             valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, unmarshalledVariables)
-        val reduced = QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, argumentValuesFn, tpe, fields, userContext)
+        val reduced = QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, tpe, fields, userContext)
         scheme.flatMapFuture(reduced){ case (newCtx, timing) ⇒
           executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
             fieldCollector, marshaller, unmarshalledVariables, tpe, fields, newCtx, root, scheme, validationTiming, timing)
