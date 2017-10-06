@@ -1,14 +1,12 @@
 package sangria.execution
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{OutputMatchers, FutureResultSupport}
-
-import scala.util.Success
+import sangria.util.{FutureResultSupport, OutputMatchers}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Success
 
 class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers {
   class RecordingDeprecationTracker extends DeprecationTracker {
@@ -182,7 +180,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
     }
   }
 
-  "PrintingDeprecationTracker" should {
+  "LoggingDeprecationTracker" should {
     "track deprecated enum values" in  {
       val testEnum = EnumType[Int]("TestEnum", values = List(
         EnumValue("NONDEPRECATED", value = 1),
@@ -206,7 +204,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
         """)
 
       val sb = StringBuilder.newBuilder
-      val tracker = new PrintingDeprecationTracker(sb.append(_))
+      val tracker = new LoggingDeprecationTracker(sb.append(_))
 
       Executor.execute(schema, query, deprecationTracker = tracker).await
 
@@ -223,7 +221,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
 
       val sb = StringBuilder.newBuilder
-      val tracker = new PrintingDeprecationTracker(sb.append(_))
+      val tracker = new LoggingDeprecationTracker(sb.append(_))
 
       Executor.execute(schema, query, deprecationTracker = tracker).await
 

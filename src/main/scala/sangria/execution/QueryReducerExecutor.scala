@@ -1,4 +1,4 @@
-package scala.sangria.execution
+package sangria.execution
 
 import sangria.ast
 import sangria.execution._
@@ -16,7 +16,6 @@ object QueryReducerExecutor {
     schema: Schema[Ctx, Root],
     queryAst: ast.Document,
     userContext: Ctx,
-    root: Root,
     queryReducers: List[QueryReducer[Ctx, _]],
     operationName: Option[String] = None,
     queryValidator: QueryValidator = QueryValidator.default,
@@ -30,7 +29,7 @@ object QueryReducerExecutor {
       Future.failed(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new UnknownVariablesValueCollector[Ctx](schema, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)
+      val valueCollector = new ValueCollector[Ctx, _ @@ ScalaInput](schema, InputUnmarshaller.emptyMapVars, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware, true)(InputUnmarshaller.scalaInputUnmarshaller[_ @@ ScalaInput])
 
       val executionResult = for {
         operation ← Executor.getOperation(exceptionHandler,queryAst, operationName)

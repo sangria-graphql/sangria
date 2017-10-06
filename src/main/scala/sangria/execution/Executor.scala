@@ -8,7 +8,6 @@ import sangria.validation.QueryValidator
 import InputUnmarshaller.emptyMapVars
 import sangria.execution.deferred.DeferredResolver
 import scala.concurrent.{ExecutionContext, Future}
-import scala.sangria.execution.QueryReducerExecutor
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
@@ -34,7 +33,7 @@ case class Executor[Ctx, Root](
       Future.failed(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)(um)
+      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware, false)(um)
 
       val executionResult = for {
         operation ← Executor.getOperation(exceptionHandler,queryAst, operationName)
@@ -81,7 +80,7 @@ case class Executor[Ctx, Root](
       scheme.failed(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware)(um)
+      val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware, false)(um)
 
       val executionResult = for {
         operation ← Executor.getOperation(exceptionHandler, queryAst, operationName)
@@ -90,9 +89,6 @@ case class Executor[Ctx, Root](
         tpe ← Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
       } yield {
-        val argumentValuesFn: QueryReducer.ArgumentValuesFn =
-          (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
-            valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, unmarshalledVariables)
         val reduced = QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, tpe, fields, userContext)
         scheme.flatMapFuture(reduced){ case (newCtx, timing) ⇒
           executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,

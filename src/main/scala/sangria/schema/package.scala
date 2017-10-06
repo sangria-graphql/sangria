@@ -190,12 +190,18 @@ package object schema {
     description = Some("Directs the executor to include this field or fragment only when the `if` argument is true."),
     arguments = IfArg :: Nil,
     locations = Set(DirectiveLocation.Field, DirectiveLocation.FragmentSpread, DirectiveLocation.InlineFragment),
+    // if we don't know if we should include it, then we should include it:
+    // ValueCollector will fail before we get here if values must be known, such as when preparing or executing a query,
+    // but for e.g. running a QueryReducer without known variables, we must be conservative
     shouldInclude = ctx ⇒ ctx.args.argOpt(IfArg).getOrElse(true))
 
   val SkipDirective = Directive("skip",
     description = Some("Directs the executor to skip this field or fragment when the `if` argument is true."),
     arguments = IfArg :: Nil,
     locations = Set(DirectiveLocation.Field, DirectiveLocation.FragmentSpread, DirectiveLocation.InlineFragment),
+    // if we don't know if we should include it, then we should include it:
+    // ValueCollector will fail before we get here if values must be known, such as when preparing or executing a query,
+    // but for e.g. running a QueryReducer without known variables, we must be conservative
     shouldInclude = ctx ⇒ !ctx.args.argOpt(IfArg).getOrElse(false))
 
   val DefaultDeprecationReason = "No longer supported"

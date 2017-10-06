@@ -5,13 +5,12 @@ import sangria.marshalling._
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema._
-import sangria.util.tag.@@
 import sangria.validation._
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
 import scala.util.{Failure, Success, Try}
 
-class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]])(implicit um: InputUnmarshaller[Input]) {
+class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]], ignoreErrors: Boolean)(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]()
@@ -48,8 +47,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
   def getArgumentValues[Ctx](
     argumentDefs: List[Argument[_]],
     argumentAsts: Vector[ast.Argument],
-    variables: Map[String, VariableValue],
-    ignoreErrors: Boolean = false
+    variables: Map[String, VariableValue]
   ): Try[Args] = ValueCollector.getArgumentValues(coercionHelper, argumentDefs, argumentAsts, variables, exceptionHandler, ignoreErrors, sourceMapper, fromScalarMiddleware)
 }
 
@@ -114,27 +112,4 @@ case class VariableValue(fn: (ResultMarshaller, ResultMarshaller, InputType[_]) 
   def resolve(marshaller: ResultMarshaller, firstKindMarshaller: ResultMarshaller, actualType: InputType[_]): Either[Vector[Violation], Trinary[firstKindMarshaller.Node]] =
     cache.getOrElseUpdate(System.identityHashCode(firstKindMarshaller) → System.identityHashCode(actualType.namedType),
       fn(marshaller, firstKindMarshaller, actualType)).asInstanceOf[Either[Vector[Violation], Trinary[firstKindMarshaller.Node]]]
-}
-
-class UnknownVariablesValueCollector[Ctx](
-  schema: Schema[_, _],
-  sourceMapper: Option[SourceMapper],
-  deprecationTracker: DeprecationTracker,
-  userContext: Ctx,
-  exceptionHandler: ExceptionHandler,
-  fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]]
-) extends ValueCollector[Ctx, _ @@ ScalaInput](
-  schema,
-  InputUnmarshaller.emptyMapVars,
-  sourceMapper,
-  deprecationTracker,
-  userContext,
-  exceptionHandler,
-  fromScalarMiddleware
-)(InputUnmarshaller.scalaInputUnmarshaller[_ @@ ScalaInput]) {
-  override def getArgumentValues[_](
-    argumentDefs: List[Argument[_]],
-    argumentAsts: Vector[ast.Argument],
-    variables: Map[String, VariableValue],
-    ignoreErrors: Boolean) = super.getArgumentValues(argumentDefs, argumentAsts, variables, ignoreErrors = true)
 }
