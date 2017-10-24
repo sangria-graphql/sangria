@@ -21,6 +21,13 @@ scalacOptions ++= {
     Seq("-target:jvm-1.7")
 }
 
+lazy val sangriaOsgiSettings = osgiSettings ++ Seq(
+  OsgiKeys.exportPackage := Seq("sangria.*;version=${Bundle-Version}"),
+  OsgiKeys.privatePackage := Seq()
+)
+
+lazy val sangriaProject = project.in(file(".")).enablePlugins(SbtOsgi).settings(sangriaOsgiSettings:_*)
+
 libraryDependencies ++= Seq(
   "org.parboiled" %% "parboiled" % "2.1.4",
   "org.sangria-graphql" %% "macro-visit" % "0.1.1",
