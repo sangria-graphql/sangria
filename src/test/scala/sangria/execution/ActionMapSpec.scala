@@ -40,7 +40,6 @@ class ActionMapSpec extends WordSpec with Matchers with FutureResultSupport {
     Field("deferred", StringType, resolve = _ ⇒
       DeferredValue(ColorDefer(123)).map(x ⇒ x + 345)),
     Field("deferredPartialError", StringType, resolve = _ ⇒
-    Field("deferredPartialError", StringType, resolve = _ ⇒
       DeferredValue(ColorDefer(123))
         .mapWithErrors(x ⇒ (x + 10, Vector(SimpleError("ooops"), SimpleError("something went wrong"))))
         .map(x ⇒ x + "foo")
