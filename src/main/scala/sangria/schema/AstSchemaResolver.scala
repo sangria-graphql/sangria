@@ -11,8 +11,14 @@ sealed trait AstSchemaResolver[Ctx]
 case class AdditionalTypes[Ctx](additionalTypes: List[MaterializedType]) extends AstSchemaResolver[Ctx]
 
 object AdditionalTypes {
+  def apply[Ctx](schema: Schema[Ctx, _], additionalTypes: (Type with Named)*): AdditionalTypes[Ctx] = {
+    val origin = ExistingSchemaOrigin(schema)
+
+    AdditionalTypes(additionalTypes.toList.map(MaterializedType(origin, _)))
+  }
+
   def apply[Ctx](additionalTypes: (Type with Named)*): AdditionalTypes[Ctx] =
-    AdditionalTypes(additionalTypes.toList.map(MaterializedType(ExistingOrigin, _)))
+    AdditionalTypes(additionalTypes.toList.map(MaterializedType(StandaloneOrigin, _)))
 }
 
 case class AdditionalDirectives[Ctx](additionalDirectives: Seq[Directive]) extends AstSchemaResolver[Ctx]

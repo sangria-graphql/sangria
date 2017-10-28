@@ -11,6 +11,8 @@ import scala.collection.concurrent.TrieMap
 class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
   import AstSchemaMaterializer.extractSchemaInfo
 
+  private val sdlOrigin = SDLOrigin(document)
+
   private val typeDefCache = TrieMap[(MatOrigin, String), Type with Named]()
   private val scalarAliasCache = TrieMap[ScalarAlias[_, _], ScalarAlias[_, _]]()
 
@@ -18,7 +20,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     case d: ast.TypeDefinition ⇒ d
   }
 
-  private lazy val typeDefsMat: Vector[MaterializedType] = typeDefs.map(MaterializedType(SDLOrigin, _))
+  private lazy val typeDefsMat: Vector[MaterializedType] = typeDefs.map(MaterializedType(sdlOrigin, _))
 
   private lazy val typeExtensionDefs: Vector[ast.TypeExtensionDefinition] = document.definitions.collect {
     case d: ast.TypeExtensionDefinition ⇒ d
@@ -36,18 +38,20 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   private var existingDefsMat: Map[String, MaterializedType] = Map.empty
 
   def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
+    val existingOrigin = ExistingSchemaOrigin(schema)
+
     validateExtensions(schema)
 
     if (typeDefs.isEmpty && typeExtensionDefs.isEmpty)
       schema
     else {
       existingSchema = Some(schema)
-      existingDefsMat = schema.allTypes.mapValues(MaterializedType(ExistingOrigin, _))
+      existingDefsMat = schema.allTypes.mapValues(MaterializedType(existingOrigin, _))
 
-      val queryType = getTypeFromDef(ExistingOrigin, schema.query)
-      val mutationType = schema.mutation map (getTypeFromDef(ExistingOrigin, _))
-      val subscriptionType = schema.subscription map (getTypeFromDef(ExistingOrigin, _))
-      val directives = directiveDefs flatMap (buildDirective(ExistingOrigin, _))
+      val queryType = getTypeFromDef(existingOrigin, schema.query)
+      val mutationType = schema.mutation map (getTypeFromDef(existingOrigin, _))
+      val subscriptionType = schema.subscription map (getTypeFromDef(existingOrigin, _))
+      val directives = directiveDefs flatMap (buildDirective(existingOrigin, _))
 
       val (referenced, notReferenced) = findUnusedTypes()
 
@@ -57,7 +61,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         mutationType,
         subscriptionType,
         (notReferenced ++ findUnusedTypes(schema, referenced)).toList,
-        schema.directives.map(builder.transformDirective(ExistingOrigin, _, this)) ++ directives,
+        schema.directives.map(builder.transformDirective(existingOrigin, _, this)) ++ directives,
         this)
     }
   }
@@ -66,10 +70,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     validateDefinitions()
 
     val schemaInfo = extractSchemaInfo(document, typeDefs)
-    val queryType = getObjectType(SDLOrigin, schemaInfo.query)
-    val mutationType = schemaInfo.mutation map (getObjectType(SDLOrigin, _))
-    val subscriptionType = schemaInfo.subscription map (getObjectType(SDLOrigin, _))
-    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(SDLOrigin, _))
+    val queryType = getObjectType(sdlOrigin, schemaInfo.query)
+    val mutationType = schemaInfo.mutation map (getObjectType(sdlOrigin, _))
+    val subscriptionType = schemaInfo.subscription map (getObjectType(sdlOrigin, _))
+    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
 
     builder.buildSchema(
       schemaInfo.definition,
@@ -84,10 +88,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   lazy val definitions: Vector[Named] = {
     validateDefinitions()
 
-    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(SDLOrigin, _))
+    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
     val unused = findUnusedTypes()
 
-    unused._1.toVector.map(getNamedType(SDLOrigin, _)) ++ unused._2 ++ directives
+    unused._1.toVector.map(getNamedType(sdlOrigin, _)) ++ unused._2 ++ directives
   }
 
   def validateExtensions(schema: Schema[Ctx, _]): Unit = {
@@ -147,15 +151,17 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
     val notReferencedAdd = builder.additionalTypes.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
-    referenced → (notReferenced.map(tpe ⇒ getNamedType(SDLOrigin, tpe.name)) ++ notReferencedAdd.map(tpe ⇒ getNamedType(tpe.origin, tpe.name)))
+    referenced → (notReferenced.map(tpe ⇒ getNamedType(sdlOrigin, tpe.name)) ++ notReferencedAdd.map(tpe ⇒ getNamedType(tpe.origin, tpe.name)))
   }
 
   def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): Vector[Type with Named] = {
+    val existingOrigin = ExistingSchemaOrigin(schema)
+
     resolveAllLazyFields()
 
     val notReferenced = schema.typeList.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
-    notReferenced map (tpe ⇒ getTypeFromDef(ExistingOrigin, tpe))
+    notReferenced map (tpe ⇒ getTypeFromDef(existingOrigin, tpe))
   }
 
   // TODO: think about better solution

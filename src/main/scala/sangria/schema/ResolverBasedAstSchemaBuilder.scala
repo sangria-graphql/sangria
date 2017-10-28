@@ -95,6 +95,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
+  
   protected def findAnyResolver(origin: MatOrigin): Option[AnyFieldResolver[Ctx]] =
     resolvers.collectFirst {
       case r @ AnyFieldResolver(fn) if fn.isDefinedAt(origin) ⇒ r
@@ -417,10 +418,10 @@ object ResolverBasedAstSchemaBuilder {
 
   def defaultAnyInputResolver[Ctx, In : InputUnmarshaller] =
     AnyFieldResolver[Ctx] {
-      case origin if origin != ExistingOrigin ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
+      case _: ExistingSchemaOrigin[_, _] ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
     }
 
-  def collectGeneric[T](schema: ast.Document, resolvers: AstSchemaGenericResolver[T]*): Vector[T] = {
+  def resolveDirectives[T](schema: ast.Document, resolvers: AstSchemaGenericResolver[T]*): Vector[T] = {
     val result = new VectorBuilder[T]
     val resolversByName = resolvers.groupBy(_.directiveName)
     val stack = ValidatorStack.empty[ast.AstNode]

@@ -2,13 +2,17 @@ package sangria.validation
 
 import sangria.ast
 import sangria.ast.{FragmentDefinition, FragmentSpread, OperationDefinition}
+import sangria.schema.{AstSchemaGenericResolver, ResolverBasedAstSchemaBuilder}
 
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet}
+import scala.collection.mutable.{ListBuffer, Set => MutableSet}
 
 case class DocumentAnalyzer(document: ast.Document) {
   private val fragmentSpreadsCache = TrieMap[Int, Vector[ast.FragmentSpread]]()
   private val recursivelyReferencedFragmentsCache = TrieMap[Int, Vector[ast.FragmentDefinition]]()
+
+  def resolveDirectives[T](resolvers: AstSchemaGenericResolver[T]*): Vector[T] =
+    ResolverBasedAstSchemaBuilder.resolveDirectives[T](document, resolvers: _*)
 
   def getFragmentSpreads(astNode: ast.SelectionContainer): Vector[FragmentSpread] =
     fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {

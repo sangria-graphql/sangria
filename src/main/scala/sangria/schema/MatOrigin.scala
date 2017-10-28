@@ -1,5 +1,7 @@
 package sangria.schema
 
+import sangria.ast.Document
+
 trait MatOrigin {
   def description: String
 
@@ -8,5 +10,6 @@ trait MatOrigin {
 
 abstract class BaseMatOrigin(val description: String) extends MatOrigin
 
-case object SDLOrigin extends BaseMatOrigin("SDL")
-case object ExistingOrigin extends BaseMatOrigin("existing schema")
+case class SDLOrigin(document: Document) extends BaseMatOrigin("SDL")
+case class ExistingSchemaOrigin[Ctx, Val](schema: Schema[Ctx, Val]) extends BaseMatOrigin("existing schema")
+case object StandaloneOrigin extends BaseMatOrigin("standalone")
