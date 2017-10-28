@@ -21,36 +21,38 @@ scalacOptions ++= {
     Seq("-target:jvm-1.7")
 }
 
+testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
+
 libraryDependencies ++= Seq(
+  // AST Parser
   "org.parboiled" %% "parboiled" % "2.1.4",
+
+  // AST Visitor
   "org.sangria-graphql" %% "macro-visit" % "0.1.1",
 
-  // macros
-  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-
-  // marshalling
+  // Marshalling
   "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.0",
 
-  // streaming
+  // Streaming
   "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.0",
 
-  // testing
+  // Macros
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+
+  // Testing
   "org.scalatest" %% "scalatest" % "3.0.4" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.0" % Test,
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.1" % Test,
   "org.sangria-graphql" %% "sangria-spray-json" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-argonaut" % "1.0.0" % Test,
-
   "org.sangria-graphql" %% "sangria-ion" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-monix" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-rxscala" % "1.0.0" % Test,
-  "eu.timepit" %% "refined" % "0.8.2" % Test,
+  "eu.timepit" %% "refined" % "0.8.4" % Test,
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.4.0" % Test,
-  "io.github.lukehutch" % "fast-classpath-scanner" % "2.4.5" % Test
+  "io.github.lukehutch" % "fast-classpath-scanner" % "2.8.1" % Test
 )
-
-testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
 // Publishing
 

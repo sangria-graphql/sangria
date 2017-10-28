@@ -761,7 +761,7 @@ case class Schema[Ctx, Val](
   def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
     SchemaComparator.compare(oldSchema, this)
 
-  def toAst: Document = SchemaRenderer.schemaAst(this)
+  lazy val toAst: Document = SchemaRenderer.schemaAst(this)
   def toAst(filter: SchemaFilter): Document = SchemaRenderer.schemaAst(this, filter)
 
   def renderPretty: String = toAst.renderPretty

@@ -418,7 +418,7 @@ object ResolverBasedAstSchemaBuilder {
 
   def defaultAnyInputResolver[Ctx, In : InputUnmarshaller] =
     AnyFieldResolver[Ctx] {
-      case _: ExistingSchemaOrigin[_, _] ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
+      case _ ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
     }
 
   def resolveDirectives[T](schema: ast.Document, resolvers: AstSchemaGenericResolver[T]*): Vector[T] = {

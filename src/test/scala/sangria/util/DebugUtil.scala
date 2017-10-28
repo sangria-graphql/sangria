@@ -5,6 +5,7 @@ import org.scalactic.Prettifier
 import scala.collection.GenMap
 import org.scalactic.PrettyMethods.Prettyizer
 import sangria.ast._
+import spray.json.JsValue
 
 object DebugUtil {
 
@@ -30,6 +31,7 @@ object DebugUtil {
         def loop(obj: Any, level: Int, indentLists: Boolean = false, indentMap: Boolean = false): String =
           obj match {
             case null ⇒ "null"
+            case json: JsValue ⇒ json.prettyPrint
             case aString: String ⇒ "\"" + StringUtil.escapeString(aString) + "\""
             case aStringWrapper: scala.collection.immutable.StringOps ⇒ "\"" + aStringWrapper + "\""
             case aChar: Char ⇒  "\'" + aChar + "\'"
@@ -73,8 +75,14 @@ object DebugUtil {
 
   private implicit val conf = myPrettifier
 
-  def prettyRender(obj: Any) = obj.pretty
+  def prettyRender[T](obj: T): String = {
+    obj.pretty
+  }
 
-  def prettyPrint(obj: Any) = println(prettyRender(obj))
+  def prettyPrint[T](obj: T): T = {
+    println(prettyRender(obj))
+
+    obj
+  }
 
 }

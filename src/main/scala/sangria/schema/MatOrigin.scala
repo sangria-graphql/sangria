@@ -2,6 +2,7 @@ package sangria.schema
 
 import sangria.ast.Document
 
+/** Provide info on where the definitions came from. E.g. SDL, existing schema, etc */
 trait MatOrigin {
   def description: String
 
