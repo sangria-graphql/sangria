@@ -1,9 +1,8 @@
 package sangria.execution
 
 import sangria.ast
-import sangria.schema._
 import sangria.introspection.{TypeNameMetaField, isIntrospection}
-
+import sangria.schema._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.{Failure, Success, Try}
 
@@ -22,7 +21,7 @@ trait QueryReducer[-Ctx, +Out] {
     astFields: Vector[ast.Field],
     parentType: ObjectType[Out, Val] @uncheckedVariance,
     field: Field[Ctx, Val] @uncheckedVariance,
-    argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc
+    argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc
 
   def reduceScalar[T](
     path: ExecutionPath,
@@ -38,6 +37,8 @@ trait QueryReducer[-Ctx, +Out] {
 }
 
 object QueryReducer {
+  type ArgumentValuesFn = (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) => Try[Args]
+
   def measureComplexity[Ctx](fn: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new MeasureComplexity[Ctx](fn)
 
@@ -60,6 +61,7 @@ object QueryReducer {
 
   def hasIntrospection[Ctx](fn: (Boolean, Ctx) ⇒ ReduceAction[Ctx, Ctx], includeTypeName: Boolean = true): QueryReducer[Ctx, Ctx] =
     new HasIntrospectionReducer[Ctx](includeTypeName, fn)
+
 }
 
 class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
@@ -79,7 +81,7 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) e
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc = {
+      argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc = {
     val estimate = field.complexity match {
       case Some(fn) ⇒
         argumentValuesFn(path, field.arguments, astFields.head.arguments) match {
@@ -121,7 +123,7 @@ class MeasureQueryDepth[Ctx](action: (Int, Ctx) ⇒ ReduceAction[Ctx, Ctx]) exte
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc =
+      argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc =
     Math.max(fieldAcc, childrenAcc)
 
   def reduceScalar[T](
@@ -157,7 +159,7 @@ class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Se
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc =
+      argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc =
     fieldAcc ++ childrenAcc ++ field.tags.collect {case t if tagMatcher.isDefinedAt(t) ⇒ tagMatcher(t)}
 
   def reduceScalar[ST](
@@ -189,7 +191,7 @@ class HasIntrospectionReducer[Ctx](includeTypeName: Boolean, action: (Boolean, C
       astFields: Vector[ast.Field],
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
-      argumentValuesFn: (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]): Acc = {
+      argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc = {
     val self =
       if (!includeTypeName && field.name == TypeNameMetaField.name) false
       else isIntrospection(parentType, field)

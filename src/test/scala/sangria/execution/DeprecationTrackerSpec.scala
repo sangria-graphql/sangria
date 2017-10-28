@@ -1,14 +1,12 @@
 package sangria.execution
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{OutputMatchers, FutureResultSupport}
-
-import scala.util.Success
+import sangria.util.{FutureResultSupport, OutputMatchers}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Success
 
 class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers {
   class RecordingDeprecationTracker extends DeprecationTracker {
@@ -182,7 +180,7 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
     }
   }
 
-  "PrintingDeprecationTracker" should {
+  "LoggingDeprecationTracker" should {
     "track deprecated enum values" in  {
       val testEnum = EnumType[Int]("TestEnum", values = List(
         EnumValue("NONDEPRECATED", value = 1),
@@ -205,11 +203,12 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
           }
         """)
 
-      val out = captureConsoleOut {
-        Executor.execute(schema, query, deprecationTracker = DeprecationTracker.print).await
-      }
+      val sb = StringBuilder.newBuilder
+      val tracker = new LoggingDeprecationTracker(sb.append(_))
 
-      out should include ("Deprecated enum value '2' used of enum 'TestEnum'.")
+      Executor.execute(schema, query, deprecationTracker = tracker).await
+
+      sb.toString() should include ("Deprecated enum value '2' used of enum 'TestEnum'.")
     }
 
     "track deprecated fields" in  {
@@ -221,11 +220,12 @@ class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSup
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
 
-      val out = captureConsoleOut {
-        Executor.execute(schema, query, deprecationTracker = DeprecationTracker.print).await
-      }
+      val sb = StringBuilder.newBuilder
+      val tracker = new LoggingDeprecationTracker(sb.append(_))
 
-      out should include ("Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
+      Executor.execute(schema, query, deprecationTracker = tracker).await
+
+      sb.toString() should include ("Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
     }
   }
 }

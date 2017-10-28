@@ -6,12 +6,11 @@ import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema._
 import sangria.validation._
-
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
-class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]])(implicit um: InputUnmarshaller[Input]) {
+class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]], ignoreErrors: Boolean)(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]()
@@ -48,13 +47,12 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
   def getArgumentValues[Ctx](
     argumentDefs: List[Argument[_]],
     argumentAsts: Vector[ast.Argument],
-    variables: Map[String, VariableValue],
-    ignoreErrors: Boolean = false
+    variables: Map[String, VariableValue]
   ): Try[Args] = ValueCollector.getArgumentValues(coercionHelper, argumentDefs, argumentAsts, variables, exceptionHandler, ignoreErrors, sourceMapper, fromScalarMiddleware)
 }
 
 object ValueCollector {
-  private val emptyArgs = Success(Args.empty)
+  private[execution] val emptyArgs = Success(Args.empty)
 
   def getArgumentValues[Ctx](
     coercionHelper: ValueCoercionHelper[Ctx],
@@ -83,7 +81,7 @@ object ValueCollector {
           val astValue = astArgMap get argDef.name map (_.value)
           val fromInput = argDef.fromInput
 
-          import sangria.marshalling.queryAst.queryAstInputUnmarshaller
+          implicit val um = sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
           try {
             resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller,  errors = errors, valueMap = fromInput.fromResult, defaultValueInfo = defaultInfo, undefinedValues = undefinedArgs, isArgument = true, fromScalarMiddleware = fromScalarMiddleware)(
