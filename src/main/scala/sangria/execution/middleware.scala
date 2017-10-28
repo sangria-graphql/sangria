@@ -82,10 +82,11 @@ object Middleware {
 trait MiddlewareBeforeField[Ctx] extends Middleware[Ctx] {
   type FieldVal
 
-  def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[Ctx, _, _], ctx: Context[Ctx, _]): (FieldVal, Option[Action[Ctx, _]])
+  def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[Ctx, _, _], ctx: Context[Ctx, _]): BeforeFieldResult[Ctx, FieldVal]
 
-  lazy val continue: (Unit, Option[Action[Ctx, _]]) = (Unit, None)
-  def continue(fieldVal: FieldVal): (FieldVal, Option[Action[Ctx, _]]) = (fieldVal, None)
+  lazy val continue: BeforeFieldResult[Ctx, Unit] = BeforeFieldResult(())
+  def continue(fieldVal: FieldVal): BeforeFieldResult[Ctx, FieldVal] = BeforeFieldResult(fieldVal)
+  def overrideAction(actionOverride: Action[Ctx, _]): BeforeFieldResult[Ctx, Unit] = BeforeFieldResult((), Some(actionOverride))
 }
 
 trait MiddlewareAfterField[Ctx] extends MiddlewareBeforeField[Ctx] {
@@ -117,6 +118,21 @@ case class MiddlewareQueryContext[+Ctx, RootVal, Input](
   inputUnmarshaller: InputUnmarshaller[Input],
   validationTiming: TimeMeasurement,
   queryReducerTiming: TimeMeasurement)
+
+case class BeforeFieldResult[Ctx, FieldVal](
+  fileVal: FieldVal = (),
+  actionOverride: Option[Action[Ctx, _]] = None,
+  attachment: Option[MiddlewareAttachment] = None)
+
+trait MiddlewareAttachment
+
+object BeforeFieldResult {
+  // backwards compatibility
+  implicit def fromTuple2[Ctx, FieldVal](tuple: (FieldVal, Option[Action[Ctx, _]])): BeforeFieldResult[Ctx, FieldVal] =
+    BeforeFieldResult(tuple._1, tuple._2)
+
+  def attachment[Ctx](a: MiddlewareAttachment): BeforeFieldResult[Ctx, Unit] = BeforeFieldResult[Ctx, Unit]((), attachment = Some(a))
+}
 
 trait FieldTag
 

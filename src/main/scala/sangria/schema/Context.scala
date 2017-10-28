@@ -1,6 +1,6 @@
 package sangria.schema
 
-import language.{higherKinds, implicitConversions, existentials}
+import language.{existentials, higherKinds, implicitConversions}
 import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper
@@ -10,6 +10,7 @@ import sangria.streaming.SubscriptionStream
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
 import scala.util.control.NonFatal
 
@@ -91,11 +92,17 @@ case class PartialFutureValue[Ctx, Val](value: Future[PartialValue[Ctx, Val]]) e
 
 case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
+    DeferredValue(MappingDeferred(value, (v: Val) ⇒ (fn(v), Vector.empty)))
+
+  def mapWithErrors[NewVal](fn: Val ⇒ (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, fn))
 }
 
 case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends LeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
+    DeferredFutureValue(value map (MappingDeferred(_, (v: Val) ⇒ (fn(v), Vector.empty))))
+
+  def mapWithErrors[NewVal](fn: Val ⇒ (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
     DeferredFutureValue(value map (MappingDeferred(_, fn)))
 }
 
@@ -160,7 +167,7 @@ case class ProjectedName(name: String, children: Vector[ProjectedName] = Vector.
   }
 }
 
-case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A ⇒ B) extends Deferred[B]
+case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A ⇒ (B, Vector[Throwable])) extends Deferred[B]
 
 trait WithArguments {
   def args: Args
@@ -271,9 +278,22 @@ case class Context[Ctx, Val](
   deprecationTracker: DeprecationTracker,
   astFields: Vector[ast.Field],
   path: ExecutionPath,
-  deferredResolverState: Any
+  deferredResolverState: Any,
+  middlewareAttachments: Vector[MiddlewareAttachment] = Vector.empty
 ) extends WithArguments with WithInputTypeRendering[Ctx] {
   def isIntrospection: Boolean = introspection.isIntrospection(parentType, field)
+
+  def attachment[T <: MiddlewareAttachment : ClassTag]: Option[T] = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass
+
+    middlewareAttachments.collectFirst {case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T]}
+  }
+
+  def attachments[T <: MiddlewareAttachment : ClassTag]: Vector[T] = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass
+
+    middlewareAttachments.collect {case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T]}
+  }
 }
 
 case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], undefinedArgs: Set[String], defaultInfo: TrieMap[String, Any]) {

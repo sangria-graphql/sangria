@@ -1,6 +1,7 @@
 package sangria.schema
 
-import language.postfixOps
+import language.{postfixOps, existentials}
+
 import sangria.ast
 import sangria.ast.{AstVisitor, FieldDefinition, TypeDefinition, TypeExtensionDefinition}
 import sangria.execution.MaterializedSchemaValidationError
@@ -125,7 +126,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     else
       findResolver(typeDefinition, definition) match {
         case Some(fResolver) ⇒
-          fResolver.resolve(typeDefinition, definition)
+          fResolver.resolve(typeDefinition → definition)
         case None ⇒
           findAnyResolver(origin) match {
             case Some(fResolver) ⇒
@@ -237,7 +238,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       }
 
     fromDirectives orElse
-      findComplexityResolver(typeDefinition, definition).map(_.complexity(typeDefinition, definition)) orElse
+      findComplexityResolver(typeDefinition, definition).map(_.complexity(typeDefinition → definition)) orElse
       super.fieldComplexity(typeDefinition, definition)
   }
 
