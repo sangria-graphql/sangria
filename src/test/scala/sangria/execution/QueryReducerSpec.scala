@@ -2,13 +2,13 @@ package sangria.execution
 
 import monix.execution.atomic.AtomicInt
 import org.scalatest.{Matchers, WordSpec}
+import sangria.ast
+import sangria.execution.QueryReducer.ArgumentValuesFn
+import sangria.macros._
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.macros._
-import sangria.ast
 import sangria.util.FutureResultSupport
 import sangria.validation.StringCoercionViolation
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -186,6 +186,48 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
           "test2" → "tests", "nest" → Map())))
 
       complexity should be (4.0D)
+    }
+
+    "when variables unknown, reduce even fields that may be excluded when variables are known" in {
+      val Success(query) = QueryParser.parse("""
+        query Test($shouldSkipOrInclude: Boolean!){
+          scalarArgs(foo: "bar")
+          baz: scalarArgs(foo: "baz") @skip(if: $shouldSkipOrInclude)
+
+          nestList(size: 3) @include(if: $shouldSkipOrInclude){
+            complexScalar
+            nest {
+              cc: scalarCustom
+              dd: scalarCustom
+            }
+          }
+
+          test: scalar @skip(if: $shouldSkipOrInclude)
+
+          ...fr
+          ...fr
+          ...fr
+
+          nest {
+            ...fr @include(if: $shouldSkipOrInclude)
+          }
+        }
+
+        fragment fr on Test {
+          test1: scalar @skip(if: $shouldSkipOrInclude)
+          test2: scalar @skip(if: $shouldSkipOrInclude)
+        }
+      """)
+
+      var complexity = 0.0D
+
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        ctx
+      }
+
+      QueryReducerExecutor.reduceQueryWithoutVariables(schema, query, Info(Nil), complReducer :: Nil)
+      complexity should be (40.6D)
     }
 
     "estimate interface type complexity based on the most complex possible type" in {
@@ -789,4 +831,70 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
       error.cause should be (IntrospectionNotAllowedError)
     }
   }
+  case class Context(seen: Map[String, String])
+
+    "QueryReducerExecutor" should {
+
+      val query = graphql"""
+         query myQuery($$include: Boolean!, $$skip: Boolean!) {
+           nest {
+             skip: a @skip(if: $$skip)
+             include: a @include(if: $$include)
+             a
+           }
+         }
+       """
+      
+      val reducer = new QueryReducer[Info, Info] {
+        override type Acc = Seq[Int]
+
+        override def initial: Acc = Seq.empty
+
+        override def reduceAlternatives(alternatives: Seq[Acc]): Acc = ???
+
+        override def reduceField[Val](
+          fieldAcc: Acc,
+          childrenAcc: Acc,
+          path: ExecutionPath,
+          ctx: Info,
+          astFields: Vector[ast.Field],
+          parentType: ObjectType[Info, Val],
+          field: Field[Info, Val],
+          argumentValuesFn: ArgumentValuesFn
+        ): Acc = {
+          val args = argumentValuesFn(path, field.arguments, astFields.head.arguments)
+          assert(args == Success(Args.empty))
+          fieldAcc ++ childrenAcc :+ 1
+        }
+
+        override def reduceScalar[T](
+          path: ExecutionPath,
+          ctx: Info,
+          tpe: ScalarType[T]
+        ): Acc = initial
+
+        override def reduceEnum[T](
+          path: ExecutionPath,
+          ctx: Info,
+          tpe: EnumType[T]
+        ): Acc = ???
+
+        override def reduceCtx(
+          acc: Acc,
+          ctx: Info
+        ): ReduceAction[Info, Info] = ctx.copy(ctx.nums ++ acc)
+      }
+
+      "work with variables absent" in {
+        val res =
+          QueryReducerExecutor.reduceQueryWithoutVariables(
+            schema,
+            query,
+            Info(Seq(100)),
+            reducer :: Nil
+          )
+          .await
+        assert(res._1.nums == Seq(100, 1, 1, 1, 1), "expected 4 nodes to be visited")
+      }
+    }
 }

@@ -64,7 +64,7 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
     def getCategory(id: String)(implicit ec: ExecutionContext) =
       Future(categories.find(_.id == id))
 
-    def getProduct(id: String)(implicit ec: ExecutionContext) =
+    def getProduct(id: Int)(implicit ec: ExecutionContext) =
       Future(products.find(_.id == id))
   }
 

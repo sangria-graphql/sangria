@@ -172,11 +172,11 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
     import spray.json._
     import sangria.marshalling.sprayJson._
 
-    val valueCollector = new ValueCollector(testSchema, (if (vars._2.nonEmpty) vars._2 else "{}").parseJson, None, DeprecationTracker.empty, (), ExceptionHandler.empty, None)
+    val valueCollector = new ValueCollector(testSchema, (if (vars._2.nonEmpty) vars._2 else "{}").parseJson, None, DeprecationTracker.empty, (), ExceptionHandler.empty, None, true)
     val variables = valueCollector.getVariableValues(QueryParser.parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}").operations(Some("Foo")).variables, None).get
 
     val parsed = QueryParser.parseInputWithVariables(value)
-    val args = valueCollector.getArgumentValues(Argument("a", tpe) :: Nil, Vector(ast.Argument("a", parsed)), variables, ignoreErrors = true).get
+    val args = valueCollector.getArgumentValues(Argument("a", tpe) :: Nil, Vector(ast.Argument("a", parsed)), variables).get
 
     args.raw.get("a")
   }

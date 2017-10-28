@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 
 case class InputDocumentMaterializer[Vars](schema: Schema[_, _], variables: Vars = InputUnmarshaller.emptyMapVars)(implicit iu: InputUnmarshaller[Vars]) {
   def to[T](document: InputDocument, inputType: InputType[T])(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result = {
-    val collector = new ValueCollector[Unit, Vars](schema, variables, document.sourceMapper, DeprecationTracker.empty, (), ExceptionHandler.empty, None)
+    val collector = new ValueCollector[Unit, Vars](schema, variables, document.sourceMapper, DeprecationTracker.empty, (), ExceptionHandler.empty, None, false)(iu)
 
     val violations = QueryValidator.default.validateInputDocument(schema, document, inputType)
 

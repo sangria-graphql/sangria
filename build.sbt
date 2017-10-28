@@ -12,7 +12,7 @@ crossScalaVersions := Seq("2.11.11", "2.12.3")
 scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
-  "-Xlint:-missing-interpolator,_")
+  "-Xlint:-missing-interpolator,-unused,_")
 
 scalacOptions ++= {
   if (scalaVersion.value startsWith "2.12")
