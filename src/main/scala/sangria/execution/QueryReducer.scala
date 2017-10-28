@@ -37,7 +37,7 @@ trait QueryReducer[-Ctx, +Out] {
 }
 
 object QueryReducer {
-  type ArgumentValuesFn = (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) => Try[Args]
+  type ArgumentValuesFn = (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]
 
   def measureComplexity[Ctx](fn: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new MeasureComplexity[Ctx](fn)

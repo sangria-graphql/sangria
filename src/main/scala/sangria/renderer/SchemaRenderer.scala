@@ -210,7 +210,7 @@ object SchemaRenderer {
     ast.DirectiveDefinition(dir.name, renderArgsI(dir.args), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
 
   def schemaAstFromIntrospection(introspectionSchema: IntrospectionSchema, filter: SchemaFilter = SchemaFilter.withoutSangriaBuiltIn): ast.Document = {
-    val schemaDef = renderSchemaDefinition(introspectionSchema)
+    val schemaDef = if (filter.renderSchema) renderSchemaDefinition(introspectionSchema) else None
     val types = introspectionSchema.types filter (t ⇒ filter.filterTypes(t.name)) sortBy (_.name) map renderType
     val directives = introspectionSchema.directives filter (d ⇒ filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
 
@@ -236,7 +236,7 @@ object SchemaRenderer {
   }
 
   def schemaAst(schema: Schema[_, _], filter: SchemaFilter = SchemaFilter.withoutSangriaBuiltIn): ast.Document = {
-    val schemaDef = renderSchemaDefinition(schema)
+    val schemaDef = if (filter.renderSchema) renderSchemaDefinition(schema) else None
     val types = schema.typeList filter (t ⇒ filter.filterTypes(t.name)) sortBy (_.name) map renderType
     val directives = schema.directives filter (d ⇒ filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
 
@@ -268,7 +268,7 @@ object SchemaRenderer {
   }
 }
 
-case class SchemaFilter(filterTypes: String ⇒ Boolean, filterDirectives: String ⇒ Boolean)
+case class SchemaFilter(filterTypes: String ⇒ Boolean, filterDirectives: String ⇒ Boolean, renderSchema: Boolean = true)
 
 object SchemaFilter {
   val withoutSangriaBuiltIn = SchemaFilter(
@@ -289,7 +289,8 @@ object SchemaFilter {
 
   val introspection = SchemaFilter(
     typeName ⇒ Schema.isIntrospectionType(typeName),
-    Function.const(false))
+    Function.const(false),
+    renderSchema = false)
 
   val all = SchemaFilter(Function.const(true), Function.const(true))
 }

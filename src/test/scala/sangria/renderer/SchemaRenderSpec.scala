@@ -576,7 +576,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
   "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
       val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
-      val rendered = SchemaRenderer.renderIntrospectionSchema(Executor.execute(schema, introspectionQuery).await)
+      val rendered = SchemaRenderer.renderSchema(Executor.execute(schema, introspectionQuery).await, SchemaFilter.introspection)
 
       ("\n" + rendered + "\n") should equal ("""
         |# A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
@@ -736,21 +736,6 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  # Indicates this type is a non-null. `ofType` is a valid field.
         |  NON_NULL
         |}
-        |
-        |# Marks an element of a GraphQL schema as no longer supported.
-        |directive @deprecated(
-        |  # Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted in [Markdown](https://daringfireball.net/projects/markdown/).
-        |  reason: String = "No longer supported") on ENUM_VALUE | FIELD_DEFINITION
-        |
-        |# Directs the executor to include this field or fragment only when the `if` argument is true.
-        |directive @include(
-        |  # Included when true.
-        |  if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
-        |
-        |# Directs the executor to skip this field or fragment when the `if` argument is true.
-        |directive @skip(
-        |  # Included when true.
-        |  if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }
   }

@@ -170,8 +170,8 @@ object QueryReducerExecutor {
       }
 
     newContext match {
-      case fut: Future[Ctx @unchecked] => fut
-      case ctx => Future.successful(ctx.asInstanceOf[Ctx])
+      case fut: Future[Ctx @unchecked] ⇒ fut
+      case ctx ⇒ Future.successful(ctx.asInstanceOf[Ctx])
     }
   }
 

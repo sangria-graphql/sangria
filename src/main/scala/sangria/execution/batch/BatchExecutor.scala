@@ -327,7 +327,7 @@ object BatchExecutor {
         violations += CircularOperationDependencyViolation(src, path.map(_._2), queryAst.sourceMapper, queryAst.operations(Some(src)).position.toList)
       else {
         deps.foreach { d ⇒
-          loop(d._1, dependencies(d._1), path :+ (src, s"$src(${d._2.map("$" + _).mkString(", ")})"))
+          loop(d._1, dependencies(d._1), path :+ ((src, s"$src(${d._2.map("$" + _).mkString(", ")})")))
         }
       }
 
