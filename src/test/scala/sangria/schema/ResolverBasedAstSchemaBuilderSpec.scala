@@ -14,20 +14,25 @@ import sangria.validation.BaseViolation
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with FutureResultSupport {
   case object UUIDViolation extends BaseViolation("Invalid UUID")
+
+  def parseUuid(s: String) = Try(UUID.fromString(s)) match {
+    case Success(s) ⇒ Right(s)
+    case Failure(e) ⇒ Left(UUIDViolation)
+  }
 
   val UUIDType =
     ScalarType[UUID]("UUID",
       coerceOutput = (v, _) ⇒ v.toString,
       coerceUserInput = {
-        case s: String ⇒ Try(UUID.fromString(s)).fold(_ ⇒ Left(UUIDViolation), Right(_))
+        case s: String ⇒ parseUuid(s)
         case _ ⇒ Left(UUIDViolation)
       },
       coerceInput = {
-        case ast.StringValue(s, _, _) ⇒ Try(UUID.fromString(s)).fold(_ ⇒ Left(UUIDViolation), Right(_))
+        case ast.StringValue(s, _, _) ⇒ parseUuid(s)
         case _ ⇒ Left(UUIDViolation)
       })
 
@@ -249,14 +254,16 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
             case None ⇒ value
           }
         }),
-        DirectiveResolver(AddFinalDir, c ⇒ {
-          val finalValue = c.ctx.arg[String]("final")
+        DirectiveResolver(AddFinalDir,
+          c ⇒ {
+            val finalValue = c.ctx.arg[String]("final")
 
-          c.lastValue match {
-            case Some(last) ⇒ last.map(_ + finalValue)
-            case None ⇒ finalValue
-          }
-        }, complexity = Some(_ ⇒ (_, _, _) ⇒ 100.0)))
+            c.lastValue match {
+              case Some(last) ⇒ last.map(_ + finalValue)
+              case None ⇒ finalValue
+            }
+          },
+          complexity = Some(_ ⇒ (_, _, _) ⇒ 100.0)))
 
       val schemaAst =
         gql"""
@@ -284,6 +291,63 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
           "data" → Map(
             "myStr" → "first-second-last",
             "myStr1" → "realFirst-second")))
+
+      complexity.get should be (200)
+    }
+
+    "resolve fields based on the dynamic directives" in {
+      import sangria.marshalling.sprayJson._
+
+      val builder = resolverBased[Any](
+        DynamicDirectiveResolver[Any, JsValue]("add", c ⇒ c.args.asJsObject.fields("value") match {
+          case JsString(str) ⇒
+            c.lastValue match {
+              case Some(last) ⇒ last.map(_ + str)
+              case None ⇒ str
+            }
+          case _ ⇒ c.lastValue.getOrElse("")
+        }),
+        DynamicDirectiveResolver[Any, JsValue]("addFinal",
+          c ⇒ {
+            val finalValue = c.ctx.arg[String]("final")
+
+            c.lastValue match {
+              case Some(last) ⇒ last.map(_ + finalValue)
+              case None ⇒ finalValue
+            }
+          },
+          complexity = Some(_ ⇒ (_, _, _) ⇒ 100.0)))
+
+      val schemaAst =
+        gql"""
+          type Query {
+            myStr(final: String!): String @add(value: "first") @addFinal
+            myStr1(final: String!): String @addFinal @add(value: "second")
+          }
+        """
+
+      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query =
+        gql"""
+          {
+            myStr(final: "-last")
+            myStr1(final: "realFirst-")
+          }
+        """
+
+      val complexity = new AtomicInteger(0)
+      val reducer = QueryReducer.measureComplexity[Any]((c, _) ⇒ complexity.set(c.toInt))
+
+      Executor.execute(schema, query, queryReducers = reducer :: Nil).await should be (
+        """
+          {
+            "data": {
+              "myStr": "first-last",
+              "myStr1": "realFirst-second"
+            }
+          }
+        """.parseJson)
 
       complexity.get should be (200)
     }
