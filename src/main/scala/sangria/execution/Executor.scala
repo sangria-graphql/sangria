@@ -12,21 +12,22 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 case class Executor[Ctx, Root](
-    schema: Schema[Ctx, Root],
-    queryValidator: QueryValidator = QueryValidator.default,
-    deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
-    exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
-    deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-    middleware: List[Middleware[Ctx]] = Nil,
-    maxQueryDepth: Option[Int] = None,
-    queryReducers: List[QueryReducer[Ctx, _]] = Nil)(implicit executionContext: ExecutionContext) {
-
+  schema: Schema[Ctx, Root],
+  queryValidator: QueryValidator = QueryValidator.default,
+  deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
+  exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
+  deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
+  middleware: List[Middleware[Ctx]] = Nil,
+  maxQueryDepth: Option[Int] = None,
+  queryReducers: List[QueryReducer[Ctx, _]] = Nil
+)(implicit executionContext: ExecutionContext) {
   def prepare[Input](
-      queryAst: ast.Document,
-      userContext: Ctx,
-      root: Root,
-      operationName: Option[String] = None,
-      variables: Input = emptyMapVars)(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
+    queryAst: ast.Document,
+    userContext: Ctx,
+    root: Root,
+    operationName: Option[String] = None,
+    variables: Input = emptyMapVars
+  )(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
     val (violations, validationTiming) = TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
     if (violations.nonEmpty)
@@ -69,11 +70,12 @@ case class Executor[Ctx, Root](
   }
 
   def execute[Input](
-      queryAst: ast.Document,
-      userContext: Ctx,
-      root: Root,
-      operationName: Option[String] = None,
-      variables: Input = emptyMapVars)(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input], scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
+    queryAst: ast.Document,
+    userContext: Ctx,
+    root: Root,
+    operationName: Option[String] = None,
+    variables: Input = emptyMapVars
+  )(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input], scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val (violations, validationTiming) = TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
     if (violations.nonEmpty)
@@ -103,76 +105,76 @@ case class Executor[Ctx, Root](
     }
   }
 
-  def executeOperation[Input](
-        queryAst: ast.Document,
-        operationName: Option[String] = None,
-        inputVariables: Input,
-        inputUnmarshaller: InputUnmarshaller[Input],
-        operation: ast.OperationDefinition,
-        sourceMapper: Option[SourceMapper],
-        valueCollector: ValueCollector[Ctx, _],
-        fieldCollector: FieldCollector[Ctx, Root],
-        marshaller: ResultMarshaller,
-        variables: Map[String, VariableValue],
-        tpe: ObjectType[Ctx, Root],
-        fields: CollectedFields,
-        ctx: Ctx,
-        root: Root,
-        scheme: ExecutionScheme,
-        validationTiming: TimeMeasurement,
-        queryReducerTiming: TimeMeasurement): scheme.Result[Ctx, marshaller.Node] = {
-      val middlewareCtx = MiddlewareQueryContext(ctx, this, queryAst, operationName, inputVariables, inputUnmarshaller, validationTiming, queryReducerTiming)
+  private def executeOperation[Input](
+    queryAst: ast.Document,
+    operationName: Option[String] = None,
+    inputVariables: Input,
+    inputUnmarshaller: InputUnmarshaller[Input],
+    operation: ast.OperationDefinition,
+    sourceMapper: Option[SourceMapper],
+    valueCollector: ValueCollector[Ctx, _],
+    fieldCollector: FieldCollector[Ctx, Root],
+    marshaller: ResultMarshaller,
+    variables: Map[String, VariableValue],
+    tpe: ObjectType[Ctx, Root],
+    fields: CollectedFields,
+    ctx: Ctx,
+    root: Root,
+    scheme: ExecutionScheme,
+    validationTiming: TimeMeasurement,
+    queryReducerTiming: TimeMeasurement
+  ): scheme.Result[Ctx, marshaller.Node] = {
+    val middlewareCtx = MiddlewareQueryContext(ctx, this, queryAst, operationName, inputVariables, inputUnmarshaller, validationTiming, queryReducerTiming)
 
-      try {
-        val middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
-        val deferredResolverState = deferredResolver.initialQueryState
+    try {
+      val middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
+      val deferredResolverState = deferredResolver.initialQueryState
 
-        val resolver = new Resolver[Ctx](
-          marshaller,
-          middlewareCtx,
-          schema,
-          valueCollector,
-          variables,
-          fieldCollector,
-          ctx,
-          exceptionHandler,
-          deferredResolver,
-          sourceMapper,
-          deprecationTracker,
-          middlewareVal,
-          maxQueryDepth,
-          deferredResolverState,
-          scheme.extended,
-          validationTiming,
-          queryReducerTiming,
-          queryAst)
+      val resolver = new Resolver[Ctx](
+        marshaller,
+        middlewareCtx,
+        schema,
+        valueCollector,
+        variables,
+        fieldCollector,
+        ctx,
+        exceptionHandler,
+        deferredResolver,
+        sourceMapper,
+        deprecationTracker,
+        middlewareVal,
+        maxQueryDepth,
+        deferredResolverState,
+        scheme.extended,
+        validationTiming,
+        queryReducerTiming,
+        queryAst)
 
-        val result =
-          operation.operationType match {
-            case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-            case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-            case ast.OperationType.Subscription ⇒
-              tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s} match {
-                case Some(stream) ⇒
-                  // Streaming is supported - resolve as a real subscription
-                  resolver.resolveFieldsSubs(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-                case None ⇒
-                  // No streaming is supported - resolve as a normal "query" operation
-                  resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-              }
+      val result =
+        operation.operationType match {
+          case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+          case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+          case ast.OperationType.Subscription ⇒
+            tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s} match {
+              case Some(stream) ⇒
+                // Streaming is supported - resolve as a real subscription
+                resolver.resolveFieldsSubs(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+              case None ⇒
+                // No streaming is supported - resolve as a normal "query" operation
+                resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+            }
 
-          }
+        }
 
-        if (middlewareVal.nonEmpty)
-          scheme.onComplete(result)(
-            middlewareVal foreach { case (v, m) ⇒ m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)})
-        else result
-      } catch {
-        case NonFatal(error) ⇒
-          scheme.failed(error)
-      }
+      if (middlewareVal.nonEmpty)
+        scheme.onComplete(result)(
+          middlewareVal foreach { case (v, m) ⇒ m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)})
+      else result
+    } catch {
+      case NonFatal(error) ⇒
+        scheme.failed(error)
     }
-
+  }
 }
 
 object Executor {
@@ -244,7 +246,6 @@ object Executor {
           }
       }
     }
-
 }
 
 class PreparedQuery[Ctx, Root, Input] private[execution] (
