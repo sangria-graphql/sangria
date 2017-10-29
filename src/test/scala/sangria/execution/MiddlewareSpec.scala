@@ -8,7 +8,7 @@ import sangria.ast.Document
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.macros._
 import sangria.schema._
-import sangria.util.FutureResultSupport
+import sangria.util.{DebugUtil, FutureResultSupport}
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.ArrayBuffer
@@ -382,6 +382,33 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
           "b-metrics" → Map(
             "test-name" → "test name",
             "test-executionTimeMs" → 123))))
+    }
+
+    "allow attachments to communicate values with resolve cuntions" in {
+      case class CurrentUser(userName: String) extends MiddlewareAttachment
+
+      class QueryMiddleware(name: Option[String]) extends Middleware[Any] with MiddlewareBeforeField[Any] {
+        type QueryVal = Unit
+        type FieldVal = Unit
+
+        def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) = ()
+        def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = ()
+
+        def beforeField(queryVal: QueryVal, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) =
+          BeforeFieldResult(attachment = name.map(CurrentUser))
+      }
+
+      val schema = Schema(ObjectType("Test", () ⇒ fields[Unit, Unit](
+        Field("user", OptionType(StringType), resolve = _.attachment[CurrentUser].map(_.userName)),
+        Field("users", ListType(StringType), resolve = _.attachments[CurrentUser].map(_.userName)))))
+
+      val res = Executor.execute(schema, gql"{user, users}",
+        middleware = new QueryMiddleware(Some("foo")) :: new QueryMiddleware(None) :: new QueryMiddleware(Some("bar")) :: Nil).await
+
+      res should be (Map(
+        "data" → Map(
+          "user" → "foo",
+          "users" → Vector("foo", "bar"))))
     }
 
     behave like properFieldLevelMiddleware(

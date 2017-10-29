@@ -7,7 +7,9 @@ class ValidatorStack[T] {
 
   def push(element: T): Unit = stack.prepend(element)
   def pop(): T = stack.remove(0)
+  def head = stack.head
   def headOption = stack.headOption
+  def head(toDrop: Int) = stack.drop(toDrop).head
   def headOption(toDrop: Int) = stack.drop(toDrop).headOption
   def nonEmpty = stack.nonEmpty
   def toSeq: Seq[T] = stack

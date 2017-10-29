@@ -1,0 +1,53 @@
+package sangria.schema
+
+import sangria.ast
+
+sealed trait MaterializedType {
+  def origin: MatOrigin
+  def name: String
+  def rename(newName: String): MaterializedType
+}
+
+object MaterializedType {
+  def apply(origin: MatOrigin, tpe: ast.TypeDefinition): MaterializedType = MaterializedTypeAst(origin, tpe)
+  def apply(origin: MatOrigin, tpe: Type with Named): MaterializedType = MaterializedTypeInst(origin, tpe)
+}
+
+case class MaterializedTypeAst(origin: MatOrigin, tpe: ast.TypeDefinition) extends MaterializedType {
+  def name = tpe.name
+  def rename(newName: String) = copy(tpe = tpe.rename(newName))
+}
+
+case class MaterializedTypeInst(origin: MatOrigin, tpe: Type with Named) extends MaterializedType {
+  def name = tpe.name
+  def rename(newName: String) = copy(tpe = tpe.rename(newName))
+}
+
+case class BuiltMaterializedTypeInst(origin: MatOrigin, tpe: Type with Named) extends MaterializedType {
+  def name = tpe.name
+  def rename(newName: String) = copy(tpe = tpe.rename(newName))
+}
+
+sealed trait MaterializedField[Ctx, Val] {
+  def origin: MatOrigin
+  def name: String
+  def rename(newName: String): MaterializedField[Ctx, Val]
+}
+
+object MaterializedField {
+  def apply[Ctx](origin: MatOrigin, field: ast.FieldDefinition): MaterializedField[Ctx, Any] =
+    MaterializedFieldAst[Ctx](origin, field)
+
+  def apply[Ctx, Val](origin: MatOrigin, field: Field[Ctx, Val]): MaterializedField[Ctx, Val] =
+    MaterializedFieldInst[Ctx, Val](origin, field)
+}
+
+case class MaterializedFieldAst[Ctx](origin: MatOrigin, field: ast.FieldDefinition) extends MaterializedField[Ctx, Any] {
+  def name = field.name
+  def rename(newName: String) = copy(field = field.copy(name = newName))
+}
+
+case class MaterializedFieldInst[Ctx, Val](origin: MatOrigin, field: Field[Ctx, Val]) extends MaterializedField[Ctx, Val] {
+  def name = field.name
+  def rename(newName: String) = copy(field = field.rename(newName))
+}

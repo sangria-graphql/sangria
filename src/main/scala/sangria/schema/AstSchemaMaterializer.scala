@@ -11,12 +11,16 @@ import scala.collection.concurrent.TrieMap
 class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
   import AstSchemaMaterializer.extractSchemaInfo
 
-  private val typeDefCache = TrieMap[String, Type with Named]()
+  private val sdlOrigin = SDLOrigin(document)
+
+  private val typeDefCache = TrieMap[(MatOrigin, String), Type with Named]()
   private val scalarAliasCache = TrieMap[ScalarAlias[_, _], ScalarAlias[_, _]]()
 
   private lazy val typeDefs: Vector[ast.TypeDefinition] = document.definitions.collect {
     case d: ast.TypeDefinition ⇒ d
-  } ++ builder.additionalTypeDefs
+  }
+
+  private lazy val typeDefsMat: Vector[MaterializedType] = typeDefs.map(MaterializedType(sdlOrigin, _))
 
   private lazy val typeExtensionDefs: Vector[ast.TypeExtensionDefinition] = document.definitions.collect {
     case d: ast.TypeExtensionDefinition ⇒ d
@@ -31,19 +35,23 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   // maybe it would worth an effort to find more elegant way
   private var existingSchema: Option[Schema[_, _]] = None
+  private var existingDefsMat: Map[String, MaterializedType] = Map.empty
 
   def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
+    val existingOrigin = ExistingSchemaOrigin(schema)
+
     validateExtensions(schema)
 
     if (typeDefs.isEmpty && typeExtensionDefs.isEmpty)
       schema
     else {
       existingSchema = Some(schema)
+      existingDefsMat = schema.allTypes.mapValues(MaterializedType(existingOrigin, _))
 
-      val queryType = getTypeFromDef(schema.query)
-      val mutationType = schema.mutation map getTypeFromDef
-      val subscriptionType = schema.subscription map getTypeFromDef
-      val directives = directiveDefs flatMap buildDirective
+      val queryType = getTypeFromDef(existingOrigin, schema.query)
+      val mutationType = schema.mutation map (getTypeFromDef(existingOrigin, _))
+      val subscriptionType = schema.subscription map (getTypeFromDef(existingOrigin, _))
+      val directives = directiveDefs flatMap (buildDirective(existingOrigin, _))
 
       val (referenced, notReferenced) = findUnusedTypes()
 
@@ -53,7 +61,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         mutationType,
         subscriptionType,
         (notReferenced ++ findUnusedTypes(schema, referenced)).toList,
-        schema.directives.map(builder.transformDirective(_, this)) ++ directives,
+        schema.directives.map(builder.transformDirective(existingOrigin, _, this)) ++ directives,
         this)
     }
   }
@@ -62,10 +70,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     validateDefinitions()
 
     val schemaInfo = extractSchemaInfo(document, typeDefs)
-    val queryType = getObjectType(schemaInfo.query)
-    val mutationType = schemaInfo.mutation map getObjectType
-    val subscriptionType = schemaInfo.subscription map getObjectType
-    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
+    val queryType = getObjectType(sdlOrigin, schemaInfo.query)
+    val mutationType = schemaInfo.mutation map (getObjectType(sdlOrigin, _))
+    val subscriptionType = schemaInfo.subscription map (getObjectType(sdlOrigin, _))
+    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
 
     builder.buildSchema(
       schemaInfo.definition,
@@ -80,10 +88,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   lazy val definitions: Vector[Named] = {
     validateDefinitions()
 
-    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap buildDirective
+    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
     val unused = findUnusedTypes()
 
-    unused._1.toVector.map(getNamedType) ++ unused._2 ++ directives
+    unused._1.toVector.map(getNamedType(sdlOrigin, _)) ++ unused._2 ++ directives
   }
 
   def validateExtensions(schema: Schema[Ctx, _]): Unit = {
@@ -139,18 +147,21 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def findUnusedTypes(): (Set[String], Vector[Type with Named]) = {
     resolveAllLazyFields()
 
-    val referenced = typeDefCache.keySet
+    val referenced = typeDefCache.map(_._2.name).toSet
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
+    val notReferencedAdd = builder.additionalTypes.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
-    referenced.toSet → notReferenced.map(tpe ⇒ getNamedType(tpe.name))
+    referenced → (notReferenced.map(tpe ⇒ getNamedType(sdlOrigin, tpe.name)) ++ notReferencedAdd.map(tpe ⇒ getNamedType(tpe.origin, tpe.name)))
   }
 
   def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): Vector[Type with Named] = {
+    val existingOrigin = ExistingSchemaOrigin(schema)
+
     resolveAllLazyFields()
 
     val notReferenced = schema.typeList.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
-    notReferenced map (tpe ⇒ getTypeFromDef(tpe))
+    notReferenced map (tpe ⇒ getTypeFromDef(existingOrigin, tpe))
   }
 
   // TODO: think about better solution
@@ -173,147 +184,185 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     } while(prevCount != newCount && iteration < 20)
   }
 
-  def getTypeFromExistingType(tpe: OutputType[_]): OutputType[Any] = tpe match {
-    case ListType(ofType) ⇒ ListType(getTypeFromExistingType(ofType))
-    case OptionType(ofType) ⇒ OptionType(getTypeFromExistingType(ofType))
-    case t: Named ⇒ getTypeFromDef(t)
+  def getTypeFromExistingType(origin: MatOrigin, tpe: OutputType[_]): OutputType[Any] = tpe match {
+    case ListType(ofType) ⇒ ListType(getTypeFromExistingType(origin, ofType))
+    case OptionType(ofType) ⇒ OptionType(getTypeFromExistingType(origin, ofType))
+    case t: Named ⇒ getTypeFromDef(origin, t)
   }
 
-  def getTypeFromDef[T <: Type with Named](tpe: T): T =
+  def getTypeFromDef[T <: Type with Named](origin: MatOrigin, tpe: T): T =
     tpe match {
       case alias: ScalarAlias[Any, Any] @unchecked ⇒
         scalarAliasCache.getOrElseUpdate(alias, {
-          extendScalarAlias(alias)
+          extendScalarAlias(origin, alias)
         }).asInstanceOf[T]
       case _ ⇒
-        getNamedType(tpe.name).asInstanceOf[T]
+        getNamedType(origin, tpe.name).asInstanceOf[T]
     }
 
 
-  def buildDirective(directive: ast.DirectiveDefinition) =
+  def buildDirective(origin: MatOrigin, directive: ast.DirectiveDefinition) =
     BuiltinDirectives.find(_.name == directive.name) orElse
       builder.buildDirective(
+        origin,
         directive,
-        directive.arguments flatMap (buildArgument(directive, None, _)) toList,
+        directive.arguments flatMap (buildArgument(origin, directive, None, _)) toList,
         directive.locations map buildDirectiveLocation toSet,
         this)
 
-  def getObjectType(tpe: ast.NamedType): ObjectType[Ctx, Any] =
-    getOutputType(tpe, false) match {
+  def getObjectType(origin: MatOrigin, tpe: ast.NamedType): ObjectType[Ctx, Any] =
+    getOutputType(origin, tpe, false) match {
       case obj: ObjectType[_, _] ⇒ obj.asInstanceOf[ObjectType[Ctx, Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an object type.")
     }
 
-  def getInterfaceType(tpe: ast.NamedType) =
-    getOutputType(tpe, false) match {
+  def getScalarType(origin: MatOrigin, tpe: ast.NamedType): ScalarType[Any] =
+    getOutputType(origin, tpe, false) match {
+      case obj: ScalarType[_] ⇒ obj.asInstanceOf[ScalarType[Any]]
+      case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not a scalar type.")
+    }
+
+  def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType) =
+    getOutputType(origin, tpe, false) match {
       case obj: InterfaceType[_, _] ⇒ obj.asInstanceOf[InterfaceType[Ctx, Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an interface type.")
     }
 
-  def getInputType(tpe: ast.Type, optional: Boolean = true): InputType[_] =
+  def getInputType(origin: MatOrigin, tpe: ast.Type, optional: Boolean = true): InputType[_] =
     tpe match {
-      case ast.ListType(ofType, _) if optional ⇒ OptionInputType(ListInputType(getInputType(ofType, true)))
-      case ast.ListType(ofType, _) ⇒ ListInputType(getInputType(ofType, true))
-      case ast.NotNullType(ofType, _) ⇒ getInputType(ofType, false)
+      case ast.ListType(ofType, _) if optional ⇒ OptionInputType(ListInputType(getInputType(origin, ofType, true)))
+      case ast.ListType(ofType, _) ⇒ ListInputType(getInputType(origin, ofType, true))
+      case ast.NotNullType(ofType, _) ⇒ getInputType(origin, ofType, false)
       case ast.NamedType(name, _) ⇒
-        getNamedType(name) match {
+        getNamedType(origin, name) match {
           case input: InputType[_] if optional ⇒ OptionInputType(input)
           case input: InputType[_] ⇒ input
           case _ ⇒ throw new SchemaMaterializationException(s"Type '$name' is not an input type, but was used in input type position!")
         }
     }
 
-  def getOutputType(tpe: ast.Type, optional: Boolean = true): OutputType[_] =
+  def getOutputType(origin: MatOrigin, tpe: ast.Type, optional: Boolean = true): OutputType[_] =
     tpe match {
-      case ast.ListType(ofType, _) if optional ⇒ OptionType(ListType(getOutputType(ofType, true)))
-      case ast.ListType(ofType, _) ⇒ ListType(getOutputType(ofType, true))
-      case ast.NotNullType(ofType, _) ⇒ getOutputType(ofType, false)
+      case ast.ListType(ofType, _) if optional ⇒ OptionType(ListType(getOutputType(origin, ofType, true)))
+      case ast.ListType(ofType, _) ⇒ ListType(getOutputType(origin, ofType, true))
+      case ast.NotNullType(ofType, _) ⇒ getOutputType(origin, ofType, false)
       case ast.NamedType(name, _) ⇒
-        getNamedType(name) match {
+        getNamedType(origin, name) match {
           case input: OutputType[_] if optional ⇒ OptionType(input)
           case input: OutputType[_] ⇒ input
           case _ ⇒ throw new SchemaMaterializationException(s"Type '$name' is not an output type, but was used in output type position!")
         }
     }
 
-  def getNamedType(typeName: String): Type with Named =
-    typeDefCache.getOrElseUpdate(typeName, Schema.getBuiltInType(typeName) getOrElse (
-      existingSchema.flatMap(_.allTypes.get(typeName)).map(extendType) orElse typeDefs.find(_.name == typeName).flatMap(buildType) getOrElse (
-        throw new SchemaMaterializationException(
-          s"Invalid or incomplete schema, unknown type: $typeName."))))
+  def getNamedType(origin: MatOrigin, typeName: String): Type with Named =
+    typeDefCache.getOrElseUpdate(origin → typeName, Schema.getBuiltInType(typeName) getOrElse {
+      val existing = existingDefsMat.get(typeName).toVector
+      val sdl = typeDefsMat.filter(_.name == typeName)
+      val additional = builder.additionalTypes.filter(_.name == typeName).toVector
 
-  def buildType(definition: TypeDefinition): Option[Type with Named] = definition match {
-    case d: ast.ObjectTypeDefinition ⇒ buildObjectDef(d)
-    case d: ast.InterfaceTypeDefinition ⇒ buildInterfaceDef(d)
-    case d: ast.UnionTypeDefinition ⇒ buildUnionDef(d)
-    case d: ast.InputObjectTypeDefinition ⇒ buildInputObjectDef(d)
-    case d: ast.ScalarTypeDefinition ⇒ buildScalarDef(d)
-    case d: ast.EnumTypeDefinition ⇒ buildEnumDef(d)
+      val allCandidates = existing ++ sdl ++ additional
+
+      val builtType =
+        if (allCandidates.size > 1) {
+          val resolved = builder.resolveNameConflict(
+            origin,
+            allCandidates ++
+              typeDefCache.find(_._2.name == typeName).map{case ((o, _), v) ⇒ BuiltMaterializedTypeInst(o, v)}.toVector)
+
+          if (!resolved.isInstanceOf[BuiltMaterializedTypeInst] && typeDefCache.keySet.exists(_._2 == resolved.name))
+            throw SchemaMaterializationException("Name conflict resolution produced already existing type name")
+          else
+            getNamedType(origin, resolved)
+        } else if (allCandidates.nonEmpty) {
+          getNamedType(origin, allCandidates.head)
+        } else None
+
+      builtType getOrElse (throw new SchemaMaterializationException(s"Invalid or incomplete schema, unknown type: $typeName."))
+    })
+
+  def getNamedType(origin: MatOrigin, tpe: MaterializedType): Option[Type with Named] =
+    tpe match {
+      case BuiltMaterializedTypeInst(o, t) ⇒ Some(t)
+      case MaterializedTypeInst(o, t) ⇒ Some(extendType(o, t))
+      case MaterializedTypeAst(o, t) ⇒ buildType(o, t)
+    }
+
+  def buildType(origin: MatOrigin, definition: TypeDefinition): Option[Type with Named] = definition match {
+    case d: ast.ObjectTypeDefinition ⇒ buildObjectDef(origin, d)
+    case d: ast.InterfaceTypeDefinition ⇒ buildInterfaceDef(origin, d)
+    case d: ast.UnionTypeDefinition ⇒ buildUnionDef(origin, d)
+    case d: ast.InputObjectTypeDefinition ⇒ buildInputObjectDef(origin, d)
+    case d: ast.ScalarTypeDefinition ⇒ buildScalarDef(origin, d)
+    case d: ast.EnumTypeDefinition ⇒ buildEnumDef(origin, d)
   }
 
-  def extendType(existingType: Type with Named): Type with Named = existingType match {
-    case tpe: ScalarType[_] ⇒ builder.transformScalarType(tpe, this)
-    case tpe: ScalarAlias[_, _] ⇒ extendScalarAlias(tpe.asInstanceOf[ScalarAlias[Any, Any]])
-    case tpe: EnumType[_] ⇒ builder.transformEnumType(tpe, this)
-    case tpe: InputObjectType[_] ⇒ builder.transformInputObjectType(tpe, this)
-    case tpe: UnionType[Ctx] ⇒ extendUnionType(tpe)
-    case tpe: ObjectType[Ctx, _] ⇒ extendObjectType(tpe)
-    case tpe: InterfaceType[Ctx, _] ⇒ extendInterfaceType(tpe)
+  def extendType(origin: MatOrigin, existingType: Type with Named): Type with Named = existingType match {
+    case tpe: ScalarType[_] ⇒ builder.transformScalarType(origin, tpe, this)
+    case tpe: ScalarAlias[_, _] ⇒ extendScalarAlias(origin, tpe.asInstanceOf[ScalarAlias[Any, Any]])
+    case tpe: EnumType[_] ⇒ builder.transformEnumType(origin, tpe, this)
+    case tpe: InputObjectType[_] ⇒ builder.transformInputObjectType(origin, tpe, this)
+    case tpe: UnionType[Ctx] ⇒ extendUnionType(origin, tpe)
+    case tpe: ObjectType[Ctx, _] ⇒ extendObjectType(origin, tpe)
+    case tpe: InterfaceType[Ctx, _] ⇒ extendInterfaceType(origin, tpe)
   }
 
-  def buildField(typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], field: ast.FieldDefinition) =
-    builder.buildField(
-      typeDefinition,
-      extensions,
-      field,
-      getOutputType(field.fieldType),
-      field.arguments flatMap (buildArgument(typeDefinition, Some(field), _)) toList,
-      this)
+  def buildField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], field: ast.FieldDefinition) = {
+    val args = field.arguments flatMap (buildArgument(origin, typeDefinition, Some(field), _)) toList
+    val fieldType = builder.buildFieldType(origin, typeDefinition, extensions, field, args, this)
 
-  def extendField(tpe: ObjectLikeType[Ctx, _], field: Field[Ctx, _]) =
-    builder.extendField(tpe, field.asInstanceOf[Field[Ctx, Any]], getTypeFromExistingType(field.fieldType), this)
+    builder.buildField(origin, typeDefinition, extensions, field, fieldType, args, this)
+  }
 
-  def buildObjectDef(tpe: ast.ObjectTypeDefinition) = {
+
+  def extendField(origin: MatOrigin, tpe: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]) = {
+    val f = field.asInstanceOf[Field[Ctx, Any]]
+
+    builder.extendField(origin, tpe, f, builder.extendFieldType(origin, tpe, f, this), this)
+  }
+
+  def buildObjectDef(origin: MatOrigin, tpe: ast.ObjectTypeDefinition) = {
     val extensions = findExtensions(tpe.name)
 
     builder.buildObjectType(
+      origin,
       tpe,
       extensions.toList,
-      () ⇒ buildFields(tpe, tpe.fields, extensions).toList,
-      buildInterfaces(tpe, tpe.interfaces, extensions).toList,
+      () ⇒ buildFields(origin, tpe, tpe.fields, extensions).toList,
+      buildInterfaces(origin, tpe, tpe.interfaces, extensions).toList,
       this)
   }
 
-  def extendObjectType(tpe: ObjectType[Ctx, _]) = {
+  def extendObjectType(origin: MatOrigin, tpe: ObjectType[Ctx, _]) = {
     val extensions = findExtensions(tpe.name)
 
     builder.extendObjectType(
+      origin,
       tpe,
       extensions.toList,
-      () ⇒ extendFields(tpe, extensions),
-      extendInterfaces(tpe, extensions),
+      () ⇒ extendFields(origin, tpe, extensions),
+      extendInterfaces(origin, tpe, extensions),
       this)
   }
 
-  def buildInterfaceDef(tpe: ast.InterfaceTypeDefinition) = {
+  def buildInterfaceDef(origin: MatOrigin, tpe: ast.InterfaceTypeDefinition) = {
     val extensions = findExtensions(tpe.name)
 
     if (extensions.exists(_.definition.interfaces.nonEmpty))
       throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
 
-    builder.buildInterfaceType(tpe, extensions.toList, () ⇒ buildFields(tpe, tpe.fields, extensions).toList, this)
+    builder.buildInterfaceType(origin, tpe, extensions.toList, () ⇒ buildFields(origin, tpe, tpe.fields, extensions).toList, this)
   }
 
-  def extendInterfaceType(tpe: InterfaceType[Ctx, _]) = {
+  def extendInterfaceType(origin: MatOrigin, tpe: InterfaceType[Ctx, _]) = {
     val extensions = findExtensions(tpe.name)
 
     if (extensions.exists(_.definition.interfaces.nonEmpty))
       throw new SchemaMaterializationException(s"Extension of interface type '${tpe.name}' implements interfaces which is not allowed.")
 
-    builder.extendInterfaceType(tpe, extensions.toList, () ⇒ extendFields(tpe, extensions), this)
+    builder.extendInterfaceType(origin, tpe, extensions.toList, () ⇒ extendFields(origin, tpe, extensions), this)
   }
 
-  def buildInterfaces(tpe: ast.ObjectTypeDefinition, interfaces: Vector[ast.NamedType], extensions: Vector[ast.TypeExtensionDefinition]) = {
+  def buildInterfaces(origin: MatOrigin, tpe: ast.ObjectTypeDefinition, interfaces: Vector[ast.NamedType], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.definition.interfaces)
 
     val allInts = extraInts.foldLeft(interfaces) {
@@ -322,10 +371,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case (acc, interface) ⇒ acc :+ interface
     }
 
-    allInts map getInterfaceType
+    allInts map (getInterfaceType(origin, _))
   }
 
-  def extendInterfaces(tpe: ObjectType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
+  def extendInterfaces(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.definition.interfaces)
 
     val allInts = extraInts.foldLeft(List.empty[ast.NamedType]) {
@@ -334,25 +383,30 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case (acc, interface) ⇒ acc :+ interface
     }
 
-    val ei = allInts map getInterfaceType
-    val oi = tpe.interfaces map (getTypeFromDef(_).asInstanceOf[InterfaceType[Ctx, Any]])
+    val ei = allInts map (getInterfaceType(origin, _))
+    val oi = tpe.interfaces map (getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any]])
 
     ei ++ oi
   }
 
-  def buildFields(tpe: TypeDefinition, fieldDefs: Vector[ast.FieldDefinition], extensions: Vector[ast.TypeExtensionDefinition]) = {
+  def buildFields(origin: MatOrigin, tpe: TypeDefinition, fieldDefs: Vector[ast.FieldDefinition], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(_.definition.fields)
 
-    val allFields = extraFields.foldLeft(fieldDefs) {
+    val withExtensions = extraFields.foldLeft(fieldDefs) {
       case (acc, field) if acc.exists(_.name == field.name) ⇒
         throw new SchemaMaterializationException(s"Field '${tpe.name}.${field.name}' already exists in the schema. It cannot also be defined in this type extension.")
       case (acc, field) ⇒ acc :+ field
     }
 
-    allFields flatMap (buildField(tpe, extensions, _))
+    val addFields = builder.buildAdditionalFields(origin, tpe, extensions, this).flatMap {
+      case MaterializedFieldAst(o, ast) ⇒ buildField(o, tpe, extensions, ast)
+      case MaterializedFieldInst(o, definition) ⇒ Some(extendField(o, None, definition))
+    }
+
+    withExtensions.flatMap(buildField(origin, tpe, extensions, _)) ++ addFields
   }
 
-  def extendFields(tpe: ObjectLikeType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
+  def extendFields(origin: MatOrigin, tpe: ObjectLikeType[Ctx, _], extensions: Vector[ast.TypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(e ⇒ e.definition.fields map (e → _))
 
     val extensionFields = extraFields.foldLeft(List.empty[(ast.TypeExtensionDefinition, ast.FieldDefinition)]) {
@@ -361,8 +415,8 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case (acc, field) ⇒ acc :+ field
     }
 
-    val ef = extensionFields flatMap (f ⇒ buildField(f._1.definition, extensions, f._2))
-    val of = tpe.uniqueFields.toList map (extendField(tpe, _))
+    val ef = extensionFields flatMap (f ⇒ buildField(origin, f._1.definition, extensions, f._2))
+    val of = tpe.uniqueFields.toList map (extendField(origin, Some(tpe), _))
 
     of ++ ef
   }
@@ -370,35 +424,43 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def findExtensions(typeName: String) =
     typeExtensionDefs.filter(_.definition.name == typeName)
 
-  def buildUnionDef(tpe: ast.UnionTypeDefinition) =
-    builder.buildUnionType(tpe, tpe.types map getObjectType toList, this)
+  def buildUnionDef(origin: MatOrigin, tpe: ast.UnionTypeDefinition) =
+    builder.buildUnionType(origin, tpe, tpe.types map (getObjectType(origin, _)) toList, this)
 
-  def extendUnionType(tpe: UnionType[Ctx]) =
-    builder.extendUnionType(tpe, tpe.types map getTypeFromDef, this)
+  def extendUnionType(origin: MatOrigin, tpe: UnionType[Ctx]) =
+    builder.extendUnionType(origin, tpe, tpe.types map (getTypeFromDef(origin, _)), this)
 
-  def extendScalarAlias(alias: ScalarAlias[Any, Any]) =
-    builder.extendScalarAlias(alias, getTypeFromDef(alias.aliasFor), this)
+  def extendScalarAlias(origin: MatOrigin, alias: ScalarAlias[Any, Any]) =
+    builder.extendScalarAlias(origin, alias, getTypeFromDef(origin, alias.aliasFor), this)
 
-  def buildInputObjectDef(tpe: ast.InputObjectTypeDefinition) =
-    builder.buildInputObjectType(tpe, () ⇒ tpe.fields flatMap (buildInputField(tpe, _)) toList, this)
+  def buildInputObjectDef(origin: MatOrigin, tpe: ast.InputObjectTypeDefinition) =
+    builder.buildInputObjectType(origin, tpe, () ⇒ tpe.fields flatMap (buildInputField(origin, tpe, _)) toList, this)
 
-  def buildScalarDef(tpe: ast.ScalarTypeDefinition) =
-    builder.buildScalarType(tpe, this)
+  def buildScalarDef(origin: MatOrigin, tpe: ast.ScalarTypeDefinition) =
+    builder.buildScalarType(origin, tpe, this)
 
-  private def buildEnumDef(tpe: ast.EnumTypeDefinition) =
-    builder.buildEnumType(tpe, tpe.values flatMap (buildEnumValue(tpe, _)) toList, this)
+  private def buildEnumDef(origin: MatOrigin, tpe: ast.EnumTypeDefinition) =
+    builder.buildEnumType(origin, tpe, tpe.values flatMap (buildEnumValue(origin, tpe, _)) toList, this)
 
-  private def buildEnumValue(typeDef: ast.EnumTypeDefinition, value: ast.EnumValueDefinition) =
-    builder.buildEnumValue(typeDef, value, this)
+  private def buildEnumValue(origin: MatOrigin, typeDef: ast.EnumTypeDefinition, value: ast.EnumValueDefinition) =
+    builder.buildEnumValue(origin, typeDef, value, this)
 
   def buildDefault(defaultValue: Option[ast.Value]) =
     defaultValue map (dv ⇒ dv → sangria.marshalling.queryAst.queryAstToInput)
 
-  def buildArgument(typeDefinition: ast.TypeSystemDefinition, fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) =
-    builder.buildArgument(typeDefinition, fieldDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
+  def buildArgument(origin: MatOrigin, typeDefinition: ast.TypeSystemDefinition, fieldDef: Option[ast.FieldDefinition], value: ast.InputValueDefinition) = {
+    val default = buildDefault(value.defaultValue)
+    val tpe = builder.buildArgumentType(origin, typeDefinition, fieldDef, value, default, this)
 
-  def buildInputField(typeDef: ast.InputObjectTypeDefinition, value: ast.InputValueDefinition) =
-    builder.buildInputField(typeDef, value, getInputType(value.valueType), buildDefault(value.defaultValue), this)
+    builder.buildArgument(origin, typeDefinition, fieldDef, value, tpe, default, this)
+  }
+
+  def buildInputField(origin: MatOrigin, typeDef: ast.InputObjectTypeDefinition, value: ast.InputValueDefinition) = {
+    val default = buildDefault(value.defaultValue)
+    val tpe = builder.buildInputFieldType(origin, typeDef, value, default, this)
+
+    builder.buildInputField(origin, typeDef, value, tpe, default, this)
+  }
 
   def buildDirectiveLocation(loc: ast.DirectiveLocation) =
     try {
@@ -413,8 +475,6 @@ object AstSchemaMaterializer {
 
   def extractSchemaInfo(document: ast.Document, typeDefs: Vector[ast.TypeDefinition]): SchemaInfo = {
     val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
-
-//    throw new SchemaMaterializationException("Must provide a schema definition.")
 
     if (schemas.size > 1)
       throw new SchemaMaterializationException("Must provide only one schema definition.")

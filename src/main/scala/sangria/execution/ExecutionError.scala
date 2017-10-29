@@ -69,6 +69,9 @@ case class ValidationError(violations: Vector[Violation], eh: ExceptionHandler) 
 case class InputDocumentMaterializationError(violations: Vector[Violation], eh: ExceptionHandler) extends ExecutionError(
   s"Input document does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
 
+case class MaterializedSchemaValidationError(violations: Vector[Violation], eh: ExceptionHandler = ExceptionHandler.empty) extends ExecutionError(
+  s"Materialized schema does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
+
 case class QueryReducingError(cause: Throwable, exceptionHandler: ExceptionHandler) extends Exception(s"Query reducing error: ${cause.getMessage}", cause) with QueryAnalysisError
 
 case class OperationSelectionError(message: String, eh: ExceptionHandler, sm: Option[SourceMapper] = None, pos: List[Position] = Nil)

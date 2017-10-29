@@ -32,7 +32,8 @@ class Resolver[Ctx](
     deferredResolverState: Any,
     preserveOriginalErrors: Boolean,
     validationTiming: TimeMeasurement,
-    queryReducerTiming: TimeMeasurement
+    queryReducerTiming: TimeMeasurement,
+    queryAst: ast.Document
 )(implicit executionContext: ExecutionContext) {
   val resultResolver = new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
   val toScalarMiddleware = Middleware.composeToScalarMiddleware(middleware.map(_._2), userContext)
@@ -43,7 +44,7 @@ class Resolver[Ctx](
   def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val actions = collectActionsPar(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, userContext)
 
-    handleScheme(processFinalResolve(resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)) map (_ → userContext), scheme)
+   handleScheme(processFinalResolve(resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)) map (_ → userContext), scheme)
   }
 
   def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
@@ -340,14 +341,16 @@ class Resolver[Ctx](
               case Failure(e) ⇒ Result(ErrorRegistry(fieldPath, resolveError(e), fields.head.position), None) → uc
             })
           case DeferredValue(d) ⇒
-            val p = Promise[(ChildDeferredContext, Any)]()
+            val p = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
             val (args, complexity) = calcComplexity(fieldPath, origField, sfield, userContext)
             val defer = Defer(p, d, complexity, sfield, fields, args)
 
-            immediatelyResolveDeferred(uc, DeferredResult(Vector(Future.successful(Vector(defer))), p.future.flatMap { case (dctx, v) ⇒
+            immediatelyResolveDeferred(uc, DeferredResult(Vector(Future.successful(Vector(defer))), p.future.flatMap { case (dctx, v, es) ⇒
               val updatedUc = resolveUc(v)
 
-              resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) match {
+              es foreach resolveError
+
+              resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc).appendErrors(fieldPath, es, fields.head.position) match {
                 case r: Result ⇒ dctx.resolveResult(r.copy(userContext = Some(updatedUc)))
                 case er: DeferredResult ⇒
                   dctx.resolveDeferredResult(updatedUc, er).map(_.copy(userContext = Some(updatedUc)))
@@ -372,7 +375,7 @@ class Resolver[Ctx](
                   .appendErrors(fieldPath, es, fields.head.position) → updatedUc
             }.recover { case e ⇒ Result(ErrorRegistry(path.add(origField, tpe), resolveError(e), fields.head.position), None) → uc}
           case DeferredFutureValue(df) ⇒
-            val p = Promise[(ChildDeferredContext, Any)]()
+            val p = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
             def defer(d: Deferred[Any]) = {
               val (args, complexity) = calcComplexity(fieldPath, origField, sfield, userContext)
               Defer(p, d, complexity, sfield, fields, args)
@@ -386,10 +389,12 @@ class Resolver[Ctx](
                   Vector.empty
               }
 
-            immediatelyResolveDeferred(uc, DeferredResult(Vector(actualDeferred), p.future.flatMap { case (dctx, v) ⇒
+            immediatelyResolveDeferred(uc, DeferredResult(Vector(actualDeferred), p.future.flatMap { case (dctx, v, es) ⇒
               val updatedUc = resolveUc(v)
 
-              resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc) match {
+              es foreach resolveError
+
+              resolveValue(fieldPath, fields, sfield.fieldType, sfield, resolveVal(v), updatedUc).appendErrors(fieldPath, es, fields.head.position) match {
                 case r: Result ⇒ dctx.resolveResult(r.copy(userContext = Some(updatedUc)))
                 case er: DeferredResult ⇒ dctx.resolveDeferredResult(updatedUc, er).map(_.copy(userContext = Some(updatedUc)))
               }
@@ -453,13 +458,13 @@ class Resolver[Ctx](
       case FutureValue(future) ⇒ SeqRes(future.map(v ⇒ SeqFutRes(v)).recover {case e ⇒ SeqFutRes(errors = Vector(e))})
       case PartialFutureValue(future) ⇒ SeqRes(future.map{case PartialValue(v, es) ⇒ SeqFutRes(v, es)}.recover {case e ⇒ SeqFutRes(errors = Vector(e))})
       case DeferredValue(deferred) ⇒
-        val promise = Promise[(ChildDeferredContext, Any)]()
+        val promise = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
         val (args, complexity) = calcComplexity(fieldsPath, astFields.head, field, userContext)
         val defer = Defer(promise, deferred, complexity, field, astFields, args)
 
-        SeqRes(promise.future.map{case (dctx, v) ⇒ SeqFutRes(v, dctx = dctx)}.recover {case e ⇒ SeqFutRes(errors = Vector(e))}, defer)
+        SeqRes(promise.future map {case (dctx, v, es) ⇒ SeqFutRes(v, es, dctx)} recover {case e ⇒ SeqFutRes(errors = Vector(e))}, defer)
       case DeferredFutureValue(deferredValue) ⇒
-        val promise = Promise[(ChildDeferredContext, Any)]()
+        val promise = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
 
         def defer(d: Deferred[Any]) = {
           val (args, complexity) = calcComplexity(fieldsPath, astFields.head, field, userContext)
@@ -474,7 +479,7 @@ class Resolver[Ctx](
                 Vector.empty
             }
 
-        SeqRes(promise.future.map{case (dctx, v) ⇒ SeqFutRes(v, dctx = dctx)}.recover {case e ⇒ SeqFutRes(errors = Vector(e))}, actualDeferred)
+        SeqRes(promise.future map {case (dctx, v, es) ⇒ SeqFutRes(v, es, dctx)} recover {case e ⇒ SeqFutRes(errors = Vector(e))}, actualDeferred)
       case SequenceLeafAction(_) | _: MappedSequenceLeafAction[_, _, _] ⇒
         SeqRes(SeqFutRes(errors = Vector(new IllegalStateException("Nested `SequenceLeafAction` is not yet supported inside of another `SequenceLeafAction`"))))
       case SubscriptionValue(_, _) ⇒
@@ -590,16 +595,18 @@ class Resolver[Ctx](
             }
           case (astFields, Some((field, updateCtx, DeferredValue(deferred)))) ⇒
             val fieldsPath = path.add(astFields.head, tpe)
-            val promise = Promise[(ChildDeferredContext, Any)]()
+            val promise = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
             val (args, complexity) = calcComplexity(fieldsPath, astFields.head, field, userContext)
             val defer = Defer(promise, deferred, complexity, field, astFields, args)
 
             astFields.head → DeferredResult(Vector(Future.successful(Vector(defer))),
               promise.future
-                .flatMap { case (dctx, v) ⇒
+                .flatMap { case (dctx, v, es) ⇒
                   val uc = resolveUc(updateCtx, v)
 
-                  resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc) match {
+                  es foreach (resolveError(updateCtx, _))
+
+                  resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc).appendErrors(fieldsPath, es, astFields.head.position) match {
                     case r: Result ⇒ dctx.resolveResult(r)
                     case er: DeferredResult ⇒ dctx.resolveDeferredResult(uc, er)
                   }
@@ -671,9 +678,10 @@ class Resolver[Ctx](
             }
 
             astFields.head → DeferredResult(Vector(deferred), value)
+
           case (astFields, Some((field, updateCtx, DeferredFutureValue(deferredValue)))) ⇒
             val fieldsPath = path.add(astFields.head, tpe)
-            val promise = Promise[(ChildDeferredContext, Any)]()
+            val promise = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
 
             def defer(d: Deferred[Any]) = {
               val (args, complexity) = calcComplexity(fieldsPath, astFields.head, field, userContext)
@@ -689,10 +697,12 @@ class Resolver[Ctx](
               }
 
             astFields.head → DeferredResult(Vector(actualDeferred),
-              promise.future.flatMap { case (dctx, v) ⇒
+              promise.future.flatMap { case (dctx, v, es) ⇒
                 val uc = resolveUc(updateCtx, v)
 
-                resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc) match {
+                es foreach (resolveError(updateCtx, _))
+
+                resolveValue(fieldsPath, astFields, field.fieldType, field, resolveVal(updateCtx, v), uc).appendErrors(fieldsPath, es, astFields.head.position) match {
                   case r: Result ⇒ dctx.resolveResult(r)
                   case er: DeferredResult ⇒ dctx.resolveDeferredResult(uc, er)
                 }
@@ -743,9 +753,13 @@ class Resolver[Ctx](
         case d ⇒ d
       }
 
-      def mapAllDeferred(deferred: Deferred[_], value: Future[Any]): Future[Any] = deferred match {
-        case MappingDeferred(d, fn) ⇒ mapAllDeferred(d, value) map fn
-        case d ⇒ value
+      def mapAllDeferred(deferred: Deferred[_], value: Future[Any]): Future[(Any, Vector[Throwable])] = deferred match {
+        case MappingDeferred(d, fn) ⇒ mapAllDeferred(d, value) map {
+          case (v, errors) ⇒
+            val (mappedV, newErrors) = fn(v)
+            mappedV → (errors ++ newErrors)
+        }
+        case _ ⇒ value.map(_→ Vector.empty)
       }
 
       try {
@@ -757,7 +771,7 @@ class Resolver[Ctx](
           for (i ← toResolve.indices) {
             val toRes = toResolve(i)
 
-            toRes.promise tryCompleteWith mapAllDeferred(toRes.deferred, resolved(i)).map(dctx.children(i) → _).recover {
+            toRes.promise tryCompleteWith mapAllDeferred(toRes.deferred, resolved(i)).map(v ⇒ (dctx.children(i), v._1, v._2)).recover {
               case NonFatal(e) ⇒
                 dctx.children(i).resolveError(e)
                 throw e
@@ -781,7 +795,7 @@ class Resolver[Ctx](
       field: Field[Ctx, _],
       value: Any,
       userCtx: Ctx,
-      actualType: Option[InputType[_]] = None): Resolve  =
+      actualType: Option[InputType[_]] = None): Resolve =
     tpe match {
       case OptionType(optTpe) ⇒
         val actualValue = value match {
@@ -955,6 +969,7 @@ class Resolver[Ctx](
               field,
               tpe.asInstanceOf[ObjectType[Ctx, Any]],
               marshaller,
+              queryAst,
               sourceMapper,
               deprecationTracker,
               astFields,
@@ -965,35 +980,37 @@ class Resolver[Ctx](
               deprecationTracker.deprecatedFieldUsed(ctx)
 
             try {
-              val mBefore = middleware flatMap {
+              val mBefore = middleware collect {
                 case (mv, m: MiddlewareBeforeField[Ctx]) ⇒
-                  Some((m.beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx), mv, m))
-                case _ ⇒
-                  None
+                  (m.beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx), mv, m)
               }
 
-              val beforeAction = mBefore.flatMap{case ((_, action), _, _) ⇒ action}.lastOption
+              val beforeAction = mBefore.collect{case (BeforeFieldResult(_, Some(action), _), _, _) ⇒ action}.lastOption
+              val beforeAttachments = mBefore.collect{case (BeforeFieldResult(_, _, Some(att)), _, _) ⇒ att}.toVector
+              val updatedCtx =
+                if (beforeAttachments.nonEmpty) ctx.copy(middlewareAttachments = beforeAttachments)
+                else ctx
 
               val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField[Ctx]]).reverse
               val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField[Ctx]])
 
               def doAfterMiddleware[Val](v: Val): Val =
                 mAfter.foldLeft(v) {
-                  case (acc, ((cv, _), mv, m: MiddlewareAfterField[Ctx])) ⇒
-                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], acc, middlewareCtx, ctx).asInstanceOf[Option[Val]] getOrElse acc
+                  case (acc, (BeforeFieldResult(cv, _, _), mv, m: MiddlewareAfterField[Ctx])) ⇒
+                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], acc, middlewareCtx, updatedCtx).asInstanceOf[Option[Val]] getOrElse acc
                   case (acc, _) ⇒ acc
                 }
 
               def doErrorMiddleware(error: Throwable): Unit =
                 mError.collect {
-                  case ((cv, _), mv, m: MiddlewareErrorField[Ctx]) ⇒
-                    m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, ctx)
+                  case (BeforeFieldResult(cv, _, _), mv, m: MiddlewareErrorField[Ctx]) ⇒
+                    m.fieldError(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], error, middlewareCtx, updatedCtx)
                 }
 
               def doAfterMiddlewareWithMap[Val, NewVal](fn: Val ⇒ NewVal)(v: Val): NewVal =
                 mAfter.foldLeft(fn(v)) {
-                  case (acc, ((cv, _), mv, m: MiddlewareAfterField[Ctx])) ⇒
-                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], acc, middlewareCtx, ctx).asInstanceOf[Option[NewVal]] getOrElse acc
+                  case (acc, (BeforeFieldResult(cv, _, _), mv, m: MiddlewareAfterField[Ctx])) ⇒
+                    m.afterField(mv.asInstanceOf[m.QueryVal], cv.asInstanceOf[m.FieldVal], acc, middlewareCtx, updatedCtx).asInstanceOf[Option[NewVal]] getOrElse acc
                   case (acc, _) ⇒ acc
                 }
 
@@ -1003,8 +1020,8 @@ class Resolver[Ctx](
                     case Some(action) ⇒ action
                     case None ⇒
                       field.resolve match {
-                        case pfn: Projector[Ctx, _, _] ⇒ pfn(ctx, collectProjections(path, field, astFields, pfn.maxLevel))
-                        case fn ⇒ fn(ctx)
+                        case pfn: Projector[Ctx, _, _] ⇒ pfn(updatedCtx, collectProjections(path, field, astFields, pfn.maxLevel))
+                        case fn ⇒ fn(updatedCtx)
                       }
                   }
 
@@ -1171,10 +1188,12 @@ class Resolver[Ctx](
   }
 
   case class DeferredResult(deferred: Vector[Future[Vector[Defer]]], futureValue: Future[Result]) extends Resolve {
-    def appendErrors(path: ExecutionPath, errors: Vector[Throwable], position: Option[Position]) = copy(futureValue = futureValue map (_.appendErrors(path, errors, position)))
+    def appendErrors(path: ExecutionPath, errors: Vector[Throwable], position: Option[Position]) =
+      if (errors.nonEmpty) copy(futureValue = futureValue map (_.appendErrors(path, errors, position)))
+      else this
   }
 
-  case class Defer(promise: Promise[(ChildDeferredContext, Any)], deferred: Deferred[Any], complexity: Double, field: Field[_, _], astFields: Vector[ast.Field], args: Args) extends DeferredWithInfo
+  case class Defer(promise: Promise[(ChildDeferredContext, Any, Vector[Throwable])], deferred: Deferred[Any], complexity: Double, field: Field[_, _], astFields: Vector[ast.Field], args: Args) extends DeferredWithInfo
   case class Result(errors: ErrorRegistry, value: Option[Any /* Either marshaller.Node or marshaller.MapBuilder */], userContext: Option[Ctx] = None) extends Resolve {
     def addToMap(other: Result, key: String, optional: Boolean, path: ExecutionPath, position: Option[Position], updatedErrors: ErrorRegistry) =
       copy(
@@ -1193,7 +1212,9 @@ class Resolver[Ctx](
     def builderValue = value.asInstanceOf[Option[marshaller.MapBuilder]]
     def buildValue = copy(value = builderValue map marshaller.mapNode)
 
-    def appendErrors(path: ExecutionPath, e: Vector[Throwable], position: Option[Position]) = copy(errors = errors.append(path, e, position))
+    def appendErrors(path: ExecutionPath, e: Vector[Throwable], position: Option[Position]): Result =
+      if (e.nonEmpty) copy(errors = errors.append(path, e, position))
+      else this
   }
 
   case class ParentDeferredContext(uc: Ctx, expectedBranches: Int) {
@@ -1270,7 +1291,7 @@ object Resolver {
     case ast.BooleanValue(b, _, _) ⇒ marshaller.scalarNode(b, typeName, scalarInfo)
     case ast.NullValue(_, _) ⇒ marshaller.nullNode
     case ast.EnumValue(enum, _, _) ⇒ marshaller.enumNode(enum, typeName)
-    case ast.ListValue(values, _, _) ⇒ marshaller.arrayNode(values.toVector map (marshalAstValue(_, marshaller, typeName, scalarInfo)))
+    case ast.ListValue(values, _, _) ⇒ marshaller.arrayNode(values map (marshalAstValue(_, marshaller, typeName, scalarInfo)))
     case ast.ObjectValue(values, _, _) ⇒ marshaller.mapNode(values map (v ⇒ v.name → marshalAstValue(v.value, marshaller, typeName, scalarInfo)))
     case ast.VariableValue(name, _, _) ⇒ marshaller.enumNode(name, typeName)
   }

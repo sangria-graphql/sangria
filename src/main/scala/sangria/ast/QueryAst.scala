@@ -208,6 +208,10 @@ case class NamedType(name: String, position: Option[Position] = None) extends Ty
 case class NotNullType(ofType: Type, position: Option[Position] = None) extends Type
 case class ListType(ofType: Type, position: Option[Position] = None) extends Type
 
+sealed trait WithArguments extends AstNode {
+  def arguments: Vector[Argument]
+}
+
 sealed trait Selection extends AstNode with WithDirectives with WithComments
 
 case class Field(
@@ -218,7 +222,7 @@ case class Field(
     selections: Vector[Selection],
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends Selection with SelectionContainer {
+    position: Option[Position] = None) extends Selection with SelectionContainer with WithArguments {
   lazy val outputName = alias getOrElse name
 }
 
@@ -247,7 +251,7 @@ sealed trait WithDirectives extends AstNode {
   def directives: Vector[Directive]
 }
 
-case class Directive(name: String, arguments: Vector[Argument], comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends AstNode
+case class Directive(name: String, arguments: Vector[Argument], comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends AstNode with WithArguments
 case class Argument(name: String, value: Value, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends NameValue
 
 sealed trait Value extends AstNode with WithComments {
@@ -284,10 +288,12 @@ case class Comment(text: String, position: Option[Position] = None) extends AstN
 // Schema Definition
 
 case class ScalarTypeDefinition(
-  name: String,
-  directives: Vector[Directive] = Vector.empty,
-  comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeDefinition
+    name: String,
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeDefinition {
+  def rename(newName: String) = copy(name = newName)
+}
 
 case class FieldDefinition(
   name: String,
@@ -306,36 +312,44 @@ case class InputValueDefinition(
   position: Option[Position] = None) extends SchemaAstNode with WithDirectives
 
 case class ObjectTypeDefinition(
-  name: String,
-  interfaces: Vector[NamedType],
-  fields: Vector[FieldDefinition],
-  directives: Vector[Directive] = Vector.empty,
-  comments: Vector[Comment] = Vector.empty,
-  trailingComments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeDefinition with WithTrailingComments
+    name: String,
+    interfaces: Vector[NamedType],
+    fields: Vector[FieldDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
 
 case class InterfaceTypeDefinition(
-  name: String,
-  fields: Vector[FieldDefinition],
-  directives: Vector[Directive] = Vector.empty,
-  comments: Vector[Comment] = Vector.empty,
-  trailingComments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeDefinition with WithTrailingComments
+    name: String,
+    fields: Vector[FieldDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
 
 case class UnionTypeDefinition(
-  name: String,
-  types: Vector[NamedType],
-  directives: Vector[Directive] = Vector.empty,
-  comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeDefinition
+    name: String,
+    types: Vector[NamedType],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeDefinition {
+  def rename(newName: String) = copy(name = newName)
+}
 
 case class EnumTypeDefinition(
-  name: String,
-  values: Vector[EnumValueDefinition],
-  directives: Vector[Directive] = Vector.empty,
-  comments: Vector[Comment] = Vector.empty,
-  trailingComments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeDefinition with WithTrailingComments
+    name: String,
+    values: Vector[EnumValueDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
 
 case class EnumValueDefinition(
   name: String,
@@ -344,12 +358,14 @@ case class EnumValueDefinition(
   position: Option[Position] = None) extends SchemaAstNode with WithDirectives
 
 case class InputObjectTypeDefinition(
-  name: String,
-  fields: Vector[InputValueDefinition],
-  directives: Vector[Directive] = Vector.empty,
-  comments: Vector[Comment] = Vector.empty,
-  trailingComments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeDefinition with WithTrailingComments
+    name: String,
+    fields: Vector[InputValueDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
 
 case class TypeExtensionDefinition(
   definition: ObjectTypeDefinition,
@@ -393,6 +409,7 @@ sealed trait SchemaAstNode extends AstNode with WithComments
 sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
 sealed trait TypeDefinition extends TypeSystemDefinition with WithDirectives {
   def name: String
+  def rename(newName: String): TypeDefinition
 }
 
 object AstNode {
