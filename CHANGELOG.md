@@ -1,11 +1,9 @@
 ## v1.3.1 (2017-10-29)
 
 * Resolver based SDL schema builder (#288).
-* Prepared queries without known variables (#281, #277). Huge thanks to @msolomon for making this contribution!
-* Ability to provide a partial value for deferred values (#290).
-* Provide ability to provide additional values from Middleware (#289)
-
-
+* Prepared queries without known variables (#281, #277). Huge thanks to @msolomon for making this contribution! This feature adds `QueryReducerExecutor.reduceQueryWithoutVariables`. In its signature it is similar to `Executor.prepare`, but it does not require `variables` and designed to validate and execute query reducers for queries that are being analyzed ahead of time (e.g. in the context of persistent queries).
+* Ability to provide a partial error for deferred values (#290). `DeferredValue` and `DeferredFutureValue` now has a method `mapWithErrors`. This works similar to the `PartialValue`, so you can still have a successful result and at the same time indicate errors that happened during deferred value resolution.
+* Ability to provide additional values from Middleware (#289). `beforeField` now returns `BeforeFieldResult` (instead of just a tuple) which allows you to add a `MiddlewareAttachment`. This attachment then can be used in resolve function via `Context.attachment`/`Context.attachments`.
 
 ## v1.3.0 (2017-08-19)
 

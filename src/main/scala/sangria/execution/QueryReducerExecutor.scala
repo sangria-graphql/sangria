@@ -11,7 +11,6 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 object QueryReducerExecutor {
-
   def reduceQueryWithoutVariables[Ctx, Root](
     schema: Schema[Ctx, Root],
     queryAst: ast.Document,
