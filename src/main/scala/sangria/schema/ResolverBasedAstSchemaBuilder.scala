@@ -11,7 +11,6 @@ import sangria.validation.rules.KnownDirectives
 import sangria.visitor.VisitorCommand
 
 import scala.collection.immutable.VectorBuilder
-import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ctx]]) extends DefaultAstSchemaBuilder[Ctx] {
@@ -490,6 +489,9 @@ object ResolverBasedAstSchemaBuilder {
 
   def simpleInstanceCheck[Ctx](fn: Any ⇒ String): InstanceCheck[Ctx] =
     InstanceCheck(c ⇒ (value, _) ⇒ fn(value) == c.definition.name)
+
+  def fieldInstanceCheck[Ctx, T : InputUnmarshaller]: InstanceCheck[Ctx] =
+    fieldInstanceCheck[Ctx, T]("type")
 
   def fieldInstanceCheck[Ctx, T : InputUnmarshaller](fieldName: String): InstanceCheck[Ctx] = {
     val iu = implicitly[InputUnmarshaller[T]]

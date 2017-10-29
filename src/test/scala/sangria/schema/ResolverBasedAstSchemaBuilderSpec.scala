@@ -527,5 +527,72 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
           }
         """.parseJson)
     }
+
+    "support field-based instance check" in {
+      import sangria.marshalling.sprayJson._
+
+      val builder = resolverBased[Unit](
+        fieldInstanceCheck[Unit, JsValue],
+        defaultAnyInputResolver[Unit, JsValue])
+
+      val schemaAst =
+        gql"""
+          type Dog {
+            name: String!
+          }
+
+          type Cat {
+            size: Int
+          }
+
+          union Pet = Dog | Cat
+
+          type Query {
+            pets: [Pet]
+          }
+        """
+
+      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query =
+        gql"""
+          {
+            pets {
+              __typename
+
+              ... on Dog {name}
+              ... on Cat {size}
+            }
+          }
+        """
+
+      val data =
+        """
+          {
+            "pets": [{
+              "type": "Dog",
+              "name": "foo"
+            }, {
+              "type": "Cat",
+              "size": 50
+            }]
+          }
+        """.parseJson
+
+      Executor.execute(schema, query, root = data).await should be (
+        """
+          {
+            "data": {
+              "pets": [{
+                "__typename": "Dog",
+                "name": "foo"
+              }, {
+                "__typename": "Cat",
+                "size": 50
+              }]
+            }
+          }
+        """.parseJson)
+    }
   }
 }
