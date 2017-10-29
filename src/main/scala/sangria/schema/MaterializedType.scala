@@ -28,7 +28,7 @@ case class BuiltMaterializedTypeInst(origin: MatOrigin, tpe: Type with Named) ex
   def rename(newName: String) = copy(tpe = tpe.rename(newName))
 }
 
-sealed trait MaterializedField[Ctx, Val] {
+sealed trait MaterializedField[Ctx, +Val] {
   def origin: MatOrigin
   def name: String
   def rename(newName: String): MaterializedField[Ctx, Val]

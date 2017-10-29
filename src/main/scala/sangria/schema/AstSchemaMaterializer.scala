@@ -222,7 +222,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not a scalar type.")
     }
 
-  def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType) =
+  def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType): InterfaceType[Ctx, Any] =
     getOutputType(origin, tpe, false) match {
       case obj: InterfaceType[_, _] ⇒ obj.asInstanceOf[InterfaceType[Ctx, Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an interface type.")

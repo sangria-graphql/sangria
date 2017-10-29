@@ -145,6 +145,26 @@ case class GenericDirectiveResolver[T](
   def directiveName = directive.name
 }
 
+trait WithTypeLookup[Ctx] {
+  def materializer: AstSchemaMaterializer[Ctx]
+  def origin: MatOrigin
+
+  def objectType(typeName: String): ObjectType[Ctx, Any] =
+    materializer.getObjectType(origin, ast.NamedType(typeName))
+
+  def scalarType(typeName: String): ScalarType[Any] =
+    materializer.getScalarType(origin, ast.NamedType(typeName))
+
+  def interfaceType(typeName: String): InterfaceType[Ctx, Any] =
+    materializer.getInterfaceType(origin, ast.NamedType(typeName))
+
+  def inputType(typeName: String): InputType[_] =
+    materializer.getInputType(origin, ast.NamedType(typeName), optional = false)
+
+  def outputType(typeName: String): OutputType[_] =
+    materializer.getOutputType(origin, ast.NamedType(typeName), optional = false)
+}
+
 case class GenericDynamicDirectiveResolver[T, A](
   directiveName: String,
   locations: Set[DirectiveLocation.Value] = Set.empty,
@@ -180,7 +200,7 @@ case class DirectiveFieldProviderContext[Ctx](
   typeDefinition: ast.TypeDefinition,
   extensions: Vector[ast.TypeExtensionDefinition],
   materializer: AstSchemaMaterializer[Ctx],
-  args: Args) extends WithArguments
+  args: Args) extends WithArguments with WithTypeLookup[Ctx]
 
 case class DynamicDirectiveFieldProviderContext[Ctx, A](
   origin: MatOrigin,
@@ -188,7 +208,7 @@ case class DynamicDirectiveFieldProviderContext[Ctx, A](
   typeDefinition: ast.TypeDefinition,
   extensions: Vector[ast.TypeExtensionDefinition],
   materializer: AstSchemaMaterializer[Ctx],
-  args: A)
+  args: A) extends WithTypeLookup[Ctx]
 
 case class GenericDirectiveContext(
   directive: ast.Directive,
@@ -208,12 +228,12 @@ case class AstDirectiveScalarContext(
 case class ExistingScalarContext[Ctx](
   origin: MatOrigin,
   existing: ScalarType[Any],
-  mat: AstSchemaMaterializer[Ctx])
+  materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
 
 case class ExistingEnumContext[Ctx](
   origin: MatOrigin,
   existing: EnumType[Any],
-  mat: AstSchemaMaterializer[Ctx])
+  materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
 
 case class DynamicDirectiveContext[Ctx, In](
   directive: ast.Directive,

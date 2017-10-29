@@ -406,6 +406,9 @@ object ResolverBasedAstSchemaBuilder {
     case t ⇒ throw SchemaMaterializationException(s"Extractor for a type '${SchemaRenderer.renderTypeName(t)}' is not supported yet.")
   }
 
+  def extractFieldValue[Ctx, In](context: Context[Ctx, _])(implicit iu: InputUnmarshaller[In]): Any =
+    extractFieldValue[In](context.parentType, context.field, context.value.asInstanceOf[In])
+
   def extractFieldValue[In](parentType: CompositeType[_], field: Field[_, _], value: In)(implicit iu: InputUnmarshaller[In]): Any = {
     try
       if (!iu.isMapNode(value))
@@ -423,17 +426,17 @@ object ResolverBasedAstSchemaBuilder {
 
   def defaultInputResolver[Ctx, In : InputUnmarshaller] =
     FieldResolver[Ctx] {
-      case (_, _) ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
+      case (_, _) ⇒ extractFieldValue[Ctx, In]
     }
 
   def defaultExistingInputResolver[Ctx, In : InputUnmarshaller] =
     ExistingFieldResolver[Ctx] {
-      case (_, _, _) ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
+      case (_, _, _) ⇒ extractFieldValue[Ctx, In]
     }
 
   def defaultAnyInputResolver[Ctx, In : InputUnmarshaller] =
     AnyFieldResolver[Ctx] {
-      case origin if !origin.isInstanceOf[ExistingSchemaOrigin[_, _]] ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
+      case origin if !origin.isInstanceOf[ExistingSchemaOrigin[_, _]] ⇒ extractFieldValue[Ctx, In]
     }
 
   def resolveDirectives[T](schema: ast.Document, resolvers: AstSchemaGenericResolver[T]*): Vector[T] = {
