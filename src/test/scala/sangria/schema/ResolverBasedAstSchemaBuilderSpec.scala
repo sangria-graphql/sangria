@@ -11,6 +11,7 @@ import sangria.schema.AstSchemaBuilder.{FieldName, TypeName, resolverBased}
 import sangria.schema.{DirectiveLocation => DL}
 import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.validation.BaseViolation
+import sangria.schema.ResolverBasedAstSchemaBuilder._
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -77,7 +78,7 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
         DirectiveResolver(TestDir, resolve = _.arg(ValueArg)),
         DynamicDirectiveResolver[Any, JsValue]("json", resolve = _.args),
         FieldResolver {case (TypeName("Query"), FieldName("id")) ⇒ _ ⇒ UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")},
-        ResolverBasedAstSchemaBuilder.defaultAnyInputResolver[Any, JsValue])
+        defaultAnyInputResolver[Any, JsValue])
 
       val schemaAst =
         gql"""
@@ -350,6 +351,181 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
         """.parseJson)
 
       complexity.get should be (200)
+    }
+
+    "resolve fields based on names" in {
+      val builder = resolverBased[Unit](
+        FieldResolver {
+          case (TypeName("Query"), field @ FieldName(fieldName)) if fieldName startsWith "test" ⇒
+            c ⇒ c.arg[Int](field.arguments.head.name) + 1
+        },
+        FieldResolver.map(
+          "Query" → Map(
+            "a" → (_ ⇒ "a value"),
+            "b" → (_ ⇒ "b value"))),
+        ExistingFieldResolver {
+          case (_, _, field) if field.name startsWith "existing" ⇒
+            c ⇒ "replacement"
+        },
+        ExistingFieldResolver.map(
+          "Query" → Map(
+            "c" → (_ ⇒ "c value"))))
+
+      val existingSchema = Schema(ObjectType("Query", fields[Unit, Unit](
+        Field("simple", StringType, resolve = _ ⇒ "value"),
+        Field("c", StringType, resolve = _ ⇒ "c value"),
+        Field("existingField", StringType, resolve = _ ⇒ "foo"))))
+
+      val schemaAst =
+        gql"""
+          extend type Query {
+            a: String
+            b: String
+            testOne(size: Int!): Int
+            testTwo(size: Int!): Int
+          }
+        """
+
+      val schema = existingSchema.extend(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query =
+        gql"""
+          {
+            existingField
+            simple
+            testOne(size: 123)
+            testTwo(size: 1)
+            a
+            b
+            c
+          }
+        """
+
+      Executor.execute(schema, query).await should be (Map(
+        "data" → Map(
+          "simple" → "value",
+          "existingField" → "replacement",
+          "testOne" → 124,
+          "testTwo" → 2,
+          "a" → "a value",
+          "b" → "b value",
+          "c" → "c value")))
+    }
+
+    "support instance check" in {
+      import sangria.marshalling.sprayJson._
+      
+      val builder = resolverBased[Unit](
+        simpleInstanceCheck {
+          case value: JsValue if value.asJsObject.fields.contains("type") ⇒
+            value.asJsObject.fields("type").asInstanceOf[JsString].value
+          case value: JsValue if value.asJsObject.fields.contains("name") ⇒
+            "Dog"
+          case _ ⇒
+            "Cat"
+        },
+        defaultAnyInputResolver[Unit, JsValue])
+
+      val schemaAst =
+        gql"""
+          enum Color {
+            Red, Green, Blue
+          }
+
+          interface Fruit {
+            id: ID!
+          }
+
+          type Apple implements Fruit {
+            id: ID!
+            color: Color
+          }
+
+          type Banana implements Fruit {
+            id: ID!
+            length: Int
+          }
+
+          type Dog {
+            name: String!
+          }
+
+          type Cat {
+            size: Int
+          }
+
+          union Pet = Dog | Cat
+
+          type Query {
+            fruits: [Fruit]
+            pets: [Pet]
+          }
+        """
+
+      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query =
+        gql"""
+          {
+            fruits {
+              __typename
+              id
+
+              ... on Apple {color}
+              ... on Banana {length}
+            }
+            pets {
+              __typename
+
+              ... on Dog {name}
+              ... on Cat {size}
+            }
+          }
+        """
+
+      val data =
+        """
+          {
+            "fruits": [{
+              "type": "Apple",
+              "id": "1",
+              "color": "Red"
+            }, {
+              "type": "Banana",
+              "id": "2",
+              "length": 12
+            }],
+            "pets": [{
+              "name": "foo"
+            }, {
+              "size": 50
+            }]
+          }
+        """.parseJson
+
+      Executor.execute(schema, query, root = data).await should be (
+        """
+          {
+            "data": {
+              "fruits": [{
+                "__typename": "Apple",
+                "id": "1",
+                "color": "Red"
+              }, {
+                "__typename": "Banana",
+                "id": "2",
+                "length": 12
+              }],
+              "pets": [{
+                "__typename": "Dog",
+                "name": "foo"
+              }, {
+                "__typename": "Cat",
+                "size": 50
+              }]
+            }
+          }
+        """.parseJson)
     }
   }
 }

@@ -476,8 +476,6 @@ object AstSchemaMaterializer {
   def extractSchemaInfo(document: ast.Document, typeDefs: Vector[ast.TypeDefinition]): SchemaInfo = {
     val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
 
-//    throw new SchemaMaterializationException("Must provide a schema definition.")
-
     if (schemas.size > 1)
       throw new SchemaMaterializationException("Must provide only one schema definition.")
     else if (schemas.nonEmpty) {

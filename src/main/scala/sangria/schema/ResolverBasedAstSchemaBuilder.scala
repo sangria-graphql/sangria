@@ -1,7 +1,6 @@
 package sangria.schema
 
-import language.{postfixOps, existentials}
-
+import language.{existentials, postfixOps}
 import sangria.ast
 import sangria.ast.{AstVisitor, FieldDefinition, TypeDefinition, TypeExtensionDefinition}
 import sangria.execution.MaterializedSchemaValidationError
@@ -12,6 +11,7 @@ import sangria.validation.rules.KnownDirectives
 import sangria.visitor.VisitorCommand
 
 import scala.collection.immutable.VectorBuilder
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ctx]]) extends DefaultAstSchemaBuilder[Ctx] {
@@ -96,7 +96,6 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
-  
   protected def findAnyResolver(origin: MatOrigin): Option[AnyFieldResolver[Ctx]] =
     resolvers.collectFirst {
       case r @ AnyFieldResolver(fn) if fn.isDefinedAt(origin) ⇒ r
@@ -279,13 +278,29 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
 
   override def transformEnumType[T](origin: MatOrigin, existing: EnumType[T], mat: AstSchemaMaterializer[Ctx]) = {
-    val ctx = ExistingEnumContext(origin, existing.asInstanceOf[EnumType[Any]], mat)
+    val ctx = ExistingEnumContext[Ctx](origin, existing.asInstanceOf[EnumType[Any]], mat)
 
     val resolved = resolvers.collectFirst {
       case ExistingEnumResolver(resolve) if resolve.isDefinedAt(ctx) ⇒ resolve(ctx).asInstanceOf[EnumType[T]]
     }
 
     resolved getOrElse super.transformEnumType(origin, existing, mat)
+  }
+
+  override def objectTypeInstanceCheck(origin: MatOrigin, definition: ast.ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] = {
+    val ctx = InstanceCheckContext[Ctx](origin, definition, extensions)
+
+    resolvers.collectFirst {
+      case InstanceCheck(fn) ⇒ fn(ctx)
+    }
+  }
+
+  override def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: List[ast.TypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] = {
+    val ctx = ExistingInstanceCheckContext[Ctx](origin, tpe, extensions)
+
+    resolvers.collectFirst {
+      case ExistingInstanceCheck(fn) ⇒ fn(ctx)
+    }
   }
 }
 
@@ -419,7 +434,7 @@ object ResolverBasedAstSchemaBuilder {
 
   def defaultAnyInputResolver[Ctx, In : InputUnmarshaller] =
     AnyFieldResolver[Ctx] {
-      case _ ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
+      case _: SDLOrigin ⇒ c ⇒ extractFieldValue(c.parentType, c.field, c.value.asInstanceOf[In])
     }
 
   def resolveDirectives[T](schema: ast.Document, resolvers: AstSchemaGenericResolver[T]*): Vector[T] = {
@@ -472,4 +487,21 @@ object ResolverBasedAstSchemaBuilder {
 
   private def findByLocation[T](visitorStack: ValidatorStack[ast.AstNode], node: ast.AstNode, directives: Seq[AstSchemaGenericResolver[T]]) =
     directives.filter(d ⇒ d.locations.isEmpty || KnownDirectives.getLocation(node, visitorStack.head(1)).fold(false)(l ⇒ d.locations contains l._1))
+
+  def simpleInstanceCheck[Ctx](fn: Any ⇒ String): InstanceCheck[Ctx] =
+    InstanceCheck(c ⇒ (value, _) ⇒ fn(value) == c.definition.name)
+
+  def fieldInstanceCheck[Ctx, T : InputUnmarshaller](fieldName: String): InstanceCheck[Ctx] = {
+    val iu = implicitly[InputUnmarshaller[T]]
+
+    InstanceCheck(c ⇒ (value, _) ⇒ {
+      val node = value.asInstanceOf[T]
+
+      if (!iu.isMapNode(node)) false
+      else iu.getMapValue(node, fieldName) match {
+        case Some(v) ⇒ iu.isScalarNode(v) && iu.getScalaScalarValue(v) == c.definition.name
+        case None ⇒  false
+      }
+    })
+  }
 }

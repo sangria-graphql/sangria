@@ -65,11 +65,39 @@ case class FieldResolver[Ctx](
   resolve: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), Context[Ctx, _] ⇒ Action[Ctx, Any]],
   complexity: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), (Ctx, Args, Double) ⇒ Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
 
+object FieldResolver {
+  def map[Ctx](config: (String, Map[String, Context[Ctx, _] ⇒ Action[Ctx, Any]])*): FieldResolver[Ctx] = {
+    val configMap = config.toMap
+
+    FieldResolver {
+      case (tpe, field) if configMap.contains(tpe.name) && configMap(tpe.name).contains(field.name) ⇒
+        configMap(tpe.name)(field.name)
+    }
+  }
+}
+
 case class ExistingFieldResolver[Ctx](
   resolve: PartialFunction[(MatOrigin, Option[ObjectLikeType[Ctx, _]], Field[Ctx, _]), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
 
+object ExistingFieldResolver {
+  def map[Ctx](config: (String, Map[String, Context[Ctx, _] ⇒ Action[Ctx, Any]])*): ExistingFieldResolver[Ctx] = {
+    val configMap = config.toMap
+
+    ExistingFieldResolver {
+      case (_, tpe, field) if tpe.isDefined && configMap.contains(tpe.get.name) && configMap(tpe.get.name).contains(field.name) ⇒
+        configMap(tpe.get.name)(field.name)
+    }
+  }
+}
+
 case class AnyFieldResolver[Ctx](
   resolve: PartialFunction[MatOrigin, Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
+
+case class InstanceCheck[Ctx](
+  fn: InstanceCheckContext[Ctx] ⇒ (Any, Class[_]) ⇒ Boolean) extends AstSchemaResolver[Ctx]
+
+case class ExistingInstanceCheck[Ctx](
+  fn: ExistingInstanceCheckContext[Ctx] ⇒ (Any, Class[_]) ⇒ Boolean) extends AstSchemaResolver[Ctx]
 
 case class ConflictResolver[Ctx](resolve: (MatOrigin, Vector[MaterializedType]) ⇒ MaterializedType) extends AstSchemaResolver[Ctx]
 
@@ -175,3 +203,13 @@ case class ComplexityDirectiveContext[Ctx](
   typeDefinition: ast.TypeDefinition,
   fieldDefinition: ast.FieldDefinition,
   args: Args)
+
+case class InstanceCheckContext[Ctx](
+  origin: MatOrigin,
+  definition: ast.ObjectTypeDefinition,
+  extensions: List[ast.TypeExtensionDefinition])
+
+case class ExistingInstanceCheckContext[Ctx](
+  origin: MatOrigin,
+  tpe: ObjectType[Ctx, _],
+  extensions: List[ast.TypeExtensionDefinition])
