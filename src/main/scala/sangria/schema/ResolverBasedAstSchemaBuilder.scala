@@ -486,24 +486,4 @@ object ResolverBasedAstSchemaBuilder {
 
   private def findByLocation[T](visitorStack: ValidatorStack[ast.AstNode], node: ast.AstNode, directives: Seq[AstSchemaGenericResolver[T]]) =
     directives.filter(d ⇒ d.locations.isEmpty || KnownDirectives.getLocation(node, visitorStack.head(1)).fold(false)(l ⇒ d.locations contains l._1))
-
-  def simpleInstanceCheck[Ctx](fn: Any ⇒ String): InstanceCheck[Ctx] =
-    InstanceCheck(c ⇒ (value, _) ⇒ fn(value) == c.definition.name)
-
-  def fieldInstanceCheck[Ctx, T : InputUnmarshaller]: InstanceCheck[Ctx] =
-    fieldInstanceCheck[Ctx, T]("type")
-
-  def fieldInstanceCheck[Ctx, T : InputUnmarshaller](fieldName: String): InstanceCheck[Ctx] = {
-    val iu = implicitly[InputUnmarshaller[T]]
-
-    InstanceCheck(c ⇒ (value, _) ⇒ {
-      val node = value.asInstanceOf[T]
-
-      if (!iu.isMapNode(node)) false
-      else iu.getMapValue(node, fieldName) match {
-        case Some(v) ⇒ iu.isScalarNode(v) && iu.getScalaScalarValue(v) == c.definition.name
-        case None ⇒  false
-      }
-    })
-  }
 }

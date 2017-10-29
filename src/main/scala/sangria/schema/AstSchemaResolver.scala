@@ -1,10 +1,9 @@
 package sangria.schema
 
 import language.existentials
-
 import sangria.ast
 import sangria.ast.{FieldDefinition, TypeSystemDefinition}
-import sangria.marshalling.ResultMarshallerForType
+import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType}
 
 sealed trait AstSchemaResolver[Ctx]
 
@@ -74,6 +73,9 @@ object FieldResolver {
         configMap(tpe.name)(field.name)
     }
   }
+
+  def defaultInput[Ctx, In : InputUnmarshaller] =
+    ResolverBasedAstSchemaBuilder.defaultInputResolver[Ctx, In]
 }
 
 case class ExistingFieldResolver[Ctx](
@@ -88,13 +90,43 @@ object ExistingFieldResolver {
         configMap(tpe.get.name)(field.name)
     }
   }
+
+  def defaultInput[Ctx, In : InputUnmarshaller] =
+    ResolverBasedAstSchemaBuilder.defaultExistingInputResolver[Ctx, In]
 }
 
 case class AnyFieldResolver[Ctx](
   resolve: PartialFunction[MatOrigin, Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
 
+object AnyFieldResolver {
+  def defaultInput[Ctx, In : InputUnmarshaller] =
+    ResolverBasedAstSchemaBuilder.defaultAnyInputResolver[Ctx, In]
+}
+
 case class InstanceCheck[Ctx](
   fn: InstanceCheckContext[Ctx] ⇒ (Any, Class[_]) ⇒ Boolean) extends AstSchemaResolver[Ctx]
+
+object InstanceCheck {
+  def simple[Ctx](fn: Any ⇒ String): InstanceCheck[Ctx] =
+    InstanceCheck(c ⇒ (value, _) ⇒ fn(value) == c.definition.name)
+
+  def field[Ctx, T : InputUnmarshaller]: InstanceCheck[Ctx] =
+    field[Ctx, T]("type")
+
+  def field[Ctx, T : InputUnmarshaller](fieldName: String): InstanceCheck[Ctx] = {
+    val iu = implicitly[InputUnmarshaller[T]]
+
+    InstanceCheck(c ⇒ (value, _) ⇒ {
+      val node = value.asInstanceOf[T]
+
+      if (!iu.isMapNode(node)) false
+      else iu.getMapValue(node, fieldName) match {
+        case Some(v) ⇒ iu.isScalarNode(v) && iu.getScalaScalarValue(v) == c.definition.name
+        case None ⇒  false
+      }
+    })
+  }
+}
 
 case class ExistingInstanceCheck[Ctx](
   fn: ExistingInstanceCheckContext[Ctx] ⇒ (Any, Class[_]) ⇒ Boolean) extends AstSchemaResolver[Ctx]

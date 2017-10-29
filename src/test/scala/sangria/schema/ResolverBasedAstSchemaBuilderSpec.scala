@@ -78,7 +78,7 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
         DirectiveResolver(TestDir, resolve = _.arg(ValueArg)),
         DynamicDirectiveResolver[Any, JsValue]("json", resolve = _.args),
         FieldResolver {case (TypeName("Query"), FieldName("id")) ⇒ _ ⇒ UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")},
-        defaultAnyInputResolver[Any, JsValue])
+        AnyFieldResolver.defaultInput[Any, JsValue])
 
       val schemaAst =
         gql"""
@@ -416,7 +416,7 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
       import sangria.marshalling.sprayJson._
       
       val builder = resolverBased[Unit](
-        simpleInstanceCheck {
+        InstanceCheck.simple {
           case value: JsValue if value.asJsObject.fields.contains("type") ⇒
             value.asJsObject.fields("type").asInstanceOf[JsString].value
           case value: JsValue if value.asJsObject.fields.contains("name") ⇒
@@ -424,7 +424,7 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
           case _ ⇒
             "Cat"
         },
-        defaultAnyInputResolver[Unit, JsValue])
+        AnyFieldResolver.defaultInput[Unit, JsValue])
 
       val schemaAst =
         gql"""
@@ -532,8 +532,8 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
       import sangria.marshalling.sprayJson._
 
       val builder = resolverBased[Unit](
-        fieldInstanceCheck[Unit, JsValue],
-        defaultAnyInputResolver[Unit, JsValue])
+        InstanceCheck.field[Unit, JsValue],
+        AnyFieldResolver.defaultInput[Unit, JsValue])
 
       val schemaAst =
         gql"""

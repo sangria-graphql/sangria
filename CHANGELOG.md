@@ -1,3 +1,12 @@
+## v1.3.1 (2017-10-29)
+
+* Resolver based SDL schema builder (#288).
+* Prepared queries without known variables (#281, #277). Huge thanks to @msolomon for making this contribution!
+* Ability to provide a partial value for deferred values (#290).
+* Provide ability to provide additional values from Middleware (#289)
+
+
+
 ## v1.3.0 (2017-08-19)
 
 * **Experimental** Batch Executor (#273). For more info see the ["Batch Executor" section of the documentation](http://sangria-graphql.org/learn/#batch-executor).
