@@ -5,10 +5,12 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.QueryReducer.ArgumentValuesFn
 import sangria.macros._
+import sangria.marshalling.InputUnmarshaller.mapVars
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport
 import sangria.validation.StringCoercionViolation
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -139,6 +141,39 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
                 "foo" → Map("cc" → "testsc", "dd" → "testsc"))))))
 
       complexity should be (54.6D)
+    }
+
+    "perform basic calculation with variables" in {
+      val query =
+        gql"""
+          query Test($$size: Int!){
+            scalar
+
+            nestList(size: $$size) {
+              complexScalar
+            }
+          }
+        """
+
+      var complexity = 0.0D
+
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) ⇒
+        complexity = c
+        ctx
+      }
+
+      val vars = mapVars("size" → 3)
+
+      Executor.execute(schema, query, userContext = Info(Nil), variables = vars, queryReducers = complReducer :: Nil).await should be (
+        Map(
+          "data" → Map(
+            "scalar" → "tests",
+            "nestList" → Vector(
+              Map("complexScalar" → "testcs"),
+              Map("complexScalar" → "testcs"),
+              Map("complexScalar" → "testcs")))))
+
+      complexity should be (12.6D)
     }
 
     "not include excluded fields and fragments" in {
@@ -830,70 +865,70 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
       error.cause should be (IntrospectionNotAllowedError)
     }
   }
+
   case class Context(seen: Map[String, String])
 
-    "QueryReducerExecutor" should {
-
-      val query = graphql"""
-         query myQuery($$include: Boolean!, $$skip: Boolean!) {
-           nest {
-             skip: a @skip(if: $$skip)
-             include: a @include(if: $$include)
-             a
-           }
+  "QueryReducerExecutor" should {
+    val query = graphql"""
+       query myQuery($$include: Boolean!, $$skip: Boolean!) {
+         nest {
+           skip: a @skip(if: $$skip)
+           include: a @include(if: $$include)
+           a
          }
-       """
-      
-      val reducer = new QueryReducer[Info, Info] {
-        override type Acc = Seq[Int]
+       }
+     """
 
-        override def initial: Acc = Seq.empty
+    val reducer = new QueryReducer[Info, Info] {
+      override type Acc = Seq[Int]
 
-        override def reduceAlternatives(alternatives: Seq[Acc]): Acc = ???
+      override def initial: Acc = Seq.empty
 
-        override def reduceField[Val](
-          fieldAcc: Acc,
-          childrenAcc: Acc,
-          path: ExecutionPath,
-          ctx: Info,
-          astFields: Vector[ast.Field],
-          parentType: ObjectType[Info, Val],
-          field: Field[Info, Val],
-          argumentValuesFn: ArgumentValuesFn
-        ): Acc = {
-          val args = argumentValuesFn(path, field.arguments, astFields.head.arguments)
-          assert(args == Success(Args.empty))
-          fieldAcc ++ childrenAcc :+ 1
-        }
+      override def reduceAlternatives(alternatives: Seq[Acc]): Acc = ???
 
-        override def reduceScalar[T](
-          path: ExecutionPath,
-          ctx: Info,
-          tpe: ScalarType[T]
-        ): Acc = initial
-
-        override def reduceEnum[T](
-          path: ExecutionPath,
-          ctx: Info,
-          tpe: EnumType[T]
-        ): Acc = ???
-
-        override def reduceCtx(
-          acc: Acc,
-          ctx: Info
-        ): ReduceAction[Info, Info] = ctx.copy(ctx.nums ++ acc)
+      override def reduceField[Val](
+        fieldAcc: Acc,
+        childrenAcc: Acc,
+        path: ExecutionPath,
+        ctx: Info,
+        astFields: Vector[ast.Field],
+        parentType: ObjectType[Info, Val],
+        field: Field[Info, Val],
+        argumentValuesFn: ArgumentValuesFn
+      ): Acc = {
+        val args = argumentValuesFn(path, field.arguments, astFields.head.arguments)
+        assert(args == Success(Args.empty))
+        fieldAcc ++ childrenAcc :+ 1
       }
 
-      "work with variables absent" in {
-        val res =
-          QueryReducerExecutor.reduceQueryWithoutVariables(
-            schema,
-            query,
-            Info(Seq(100)),
-            reducer :: Nil
-          )
-          .await
-        assert(res._1.nums == Seq(100, 1, 1, 1, 1), "expected 4 nodes to be visited")
-      }
+      override def reduceScalar[T](
+        path: ExecutionPath,
+        ctx: Info,
+        tpe: ScalarType[T]
+      ): Acc = initial
+
+      override def reduceEnum[T](
+        path: ExecutionPath,
+        ctx: Info,
+        tpe: EnumType[T]
+      ): Acc = ???
+
+      override def reduceCtx(
+        acc: Acc,
+        ctx: Info
+      ): ReduceAction[Info, Info] = ctx.copy(ctx.nums ++ acc)
     }
+
+    "work with variables absent" in {
+      val res =
+        QueryReducerExecutor.reduceQueryWithoutVariables(
+          schema,
+          query,
+          Info(Seq(100)),
+          reducer :: Nil
+        )
+        .await
+      assert(res._1.nums == Seq(100, 1, 1, 1, 1), "expected 4 nodes to be visited")
+    }
+  }
 }
