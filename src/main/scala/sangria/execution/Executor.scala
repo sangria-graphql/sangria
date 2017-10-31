@@ -53,7 +53,7 @@ case class Executor[Ctx, Root](
           case _ ⇒ None
         }
 
-        QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, tpe, fields, userContext).map {
+        QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, unmarshalledVariables, tpe, fields, userContext).map {
           case (newCtx, timing) ⇒
             new PreparedQuery[Ctx, Root, Input](queryAst, operation, tpe, newCtx, root, preparedFields,
               (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) ⇒
@@ -91,7 +91,7 @@ case class Executor[Ctx, Root](
         tpe ← Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
       } yield {
-        val reduced = QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, tpe, fields, userContext)
+        val reduced = QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, unmarshalledVariables, tpe, fields, userContext)
         scheme.flatMapFuture(reduced){ case (newCtx, timing) ⇒
           executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
             fieldCollector, marshaller, unmarshalledVariables, tpe, fields, newCtx, root, scheme, validationTiming, timing)
