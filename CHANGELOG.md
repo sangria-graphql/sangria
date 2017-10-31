@@ -1,3 +1,7 @@
+## v1.3.2 (2017-11-01)
+
+* Fix **regression** where variables aren't passed to query reducers (#291). Thanks to @msolomon for a quick fix!
+
 ## v1.3.1 (2017-10-29)
 
 * High-level API for SDL-based schema materialization (#288). It provides much more simple and robust API for building an executable schema based on SDL definitions. For more info see ["High-level SDL-based Schema Builder" section of the documentation](http://sangria-graphql.org/learn/#high-level-sdl-based-schema-builder).
