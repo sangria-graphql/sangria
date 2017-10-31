@@ -35,7 +35,7 @@ object QueryReducerExecutor {
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, Map.empty, queryAst.sourceMapper, valueCollector, exceptionHandler)
         tpe ← Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
         fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
-      } yield QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, tpe, fields, userContext)
+      } yield QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, Map.empty, tpe, fields, userContext)
 
       executionResult match {
         case Success(future) ⇒ future
@@ -51,12 +51,13 @@ object QueryReducerExecutor {
     exceptionHandler: ExceptionHandler,
     fieldCollector: FieldCollector[Ctx, Root],
     valueCollector: ValueCollector[Ctx, _],
+    variables: Map[String, VariableValue],
     rootTpe: ObjectType[Ctx, Root],
     fields: CollectedFields,
     userContext: Ctx)(implicit executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] =
     if (queryReducers.nonEmpty) {
       val sw = StopWatch.start()
-      reduceQueryUnsafe(schema, fieldCollector, valueCollector, rootTpe, fields, queryReducers.toVector, userContext)
+      reduceQueryUnsafe(schema, fieldCollector, valueCollector, variables, rootTpe, fields, queryReducers.toVector, userContext)
         .map(_ → sw.stop)
         .recover { case error: Throwable ⇒ throw QueryReducingError(error, exceptionHandler) }
     } else Future.successful(userContext → TimeMeasurement.empty)
@@ -65,13 +66,14 @@ object QueryReducerExecutor {
     schema: Schema[Ctx, _],
     fieldCollector: FieldCollector[Ctx, Val],
     valueCollector: ValueCollector[Ctx, _],
+    variables: Map[String, VariableValue],
     rootTpe: ObjectType[Ctx, _],
     fields: CollectedFields,
     reducers: Vector[QueryReducer[Ctx, _]],
     userContext: Ctx)(implicit executionContext: ExecutionContext): Future[Ctx] = {
     val argumentValuesFn: QueryReducer.ArgumentValuesFn =
       (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
-        valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, Map.empty)
+        valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, variables)
 
     val initialValues: Vector[Any] = reducers map (_.initial)
 

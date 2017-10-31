@@ -1,6 +1,7 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
+import sangria.ast
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
@@ -218,6 +219,50 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val preparedQuery = Executor.prepare(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" → 100))).await
 
       preparedQuery.execute().await should be (expected)
+    }
+
+    "[regression] execute queries with reducers that use variables" in {
+      val doc = gql"""
+        query Example($$size: Int) {
+          ...on DataType {
+            pic(size: $$size)
+          }
+        }
+      """
+
+      val expected = Map("data" → Map("pic" → "Pic of size: 100"))
+
+      val schema = Schema(DataType)
+
+      var sizeValue: Int = -1
+
+      object PicSizeFinderReducer extends QueryReducer[Ctx, Ctx]{
+        type Acc = Unit
+        def initial: Acc = ()
+        def reduceAlternatives(alternatives: Seq[Acc]): Acc = initial
+
+        def reduceField[Val](
+          fieldAcc: Acc,
+          childrenAcc: Acc,
+          path: ExecutionPath,
+          ctx: Ctx,
+          astFields: Vector[ast.Field],
+          parentType: ObjectType[Ctx, Val],
+          field: Field[Ctx, Val],
+          argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc = {
+            val Success(args) = argumentValuesFn(path, field.arguments, astFields.head.arguments)
+            args.argOpt[Int]("size").foreach { picSize =>
+              sizeValue = picSize
+            }
+          }
+
+        def reduceScalar[T](path: ExecutionPath, ctx: Ctx, tpe: ScalarType[T]): Acc = initial
+        def reduceEnum[T](path: ExecutionPath, ctx: Ctx, tpe: EnumType[T]): Acc = initial
+        def reduceCtx(acc: Acc, ctx: Ctx): ReduceAction[Ctx, Ctx] = Value(ctx)
+      }
+
+      Executor.execute(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" → 100)), queryReducers = PicSizeFinderReducer :: Nil ).await should be (expected)
+      sizeValue should be (100)
     }
 
     "prepare should validate in the preparation stage" in {
