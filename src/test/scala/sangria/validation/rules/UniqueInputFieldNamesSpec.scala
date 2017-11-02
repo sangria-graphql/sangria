@@ -29,6 +29,13 @@ class UniqueInputFieldNamesSpec extends WordSpec with ValidationSupport {
         }
       """)
 
+    "multiple input object fields with the same name in different objects" in expectPasses(
+      """
+        {
+          field(arg: {f1: "value", f2: {f1: "another value", f3: "v3"}, f3: "v4"})
+        }
+      """)
+
     "duplicate input object fields" in expectFailsPosList(
       """
         {

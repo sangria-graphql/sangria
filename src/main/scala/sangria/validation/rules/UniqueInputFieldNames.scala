@@ -19,7 +19,7 @@ class UniqueInputFieldNames extends ValidationRule {
     val knownNames = MutableMap[String, Option[Position]]()
 
     override val onEnter: ValidationVisit = {
-      case ast.ObjectValue(fields, _, _) ⇒
+      case ast.ObjectValue(_, _, _) ⇒
         knownNames.clear()
         AstVisitorCommand.RightContinue
 
@@ -30,6 +30,12 @@ class UniqueInputFieldNames extends ValidationRule {
           knownNames += name → pos
           AstVisitorCommand.RightContinue
         }
+    }
+
+    override def onLeave: ValidationVisit = {
+      case ast.ObjectValue(_, _, _) ⇒
+        knownNames.clear()
+        AstVisitorCommand.RightContinue
     }
   }
 }
