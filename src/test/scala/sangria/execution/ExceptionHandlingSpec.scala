@@ -4,16 +4,26 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{DebugUtil, FutureResultSupport, OutputMatchers, StringMatchers}
-import sangria.validation.{AstNodeLocation, UndefinedFieldViolation}
+import sangria.validation.{AstNodeLocation, BadValueViolation, BaseViolation, UndefinedFieldViolation}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers with StringMatchers {
+
+  case object EmailTypeViolation extends BaseViolation("Invalid email")
+
+  val errorScalar = ScalarAlias[String, String](StringType,
+    toScalar = identity,
+    fromScalar = _ ⇒ Left(EmailTypeViolation))
+
   val TestType = ObjectType("Test", fields[Unit, Unit](
     Field("success", OptionType(StringType),
       arguments = Argument("num", OptionInputType(IntType)) :: Nil,
+      resolve = _ ⇒ "Yay"),
+    Field("errorInScalar", OptionType(StringType),
+      arguments = Argument("email", errorScalar) :: Nil,
       resolve = _ ⇒ "Yay"),
     Field("trySuccess", OptionType(StringType), resolve = _ ⇒ Success("try!")),
     Field("tryError", OptionType(StringType), resolve = _ ⇒ Failure(new IllegalStateException("try boom!"))),
@@ -129,10 +139,13 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         {
           nonExistingField
           success(num: "One")
+          errorInScalar(email: "foo")
         }
         """)
 
       val exceptionHandler = ExceptionHandler (onViolation = {
+        case (m, BadValueViolation(_, _, _, v: EmailTypeViolation.type, _, _)) ⇒
+          HandledException("Scalar", Map("original" → m.scalarNode(v.errorMessage, "String", Set.empty)))
         case (m, v: UndefinedFieldViolation) ⇒
           HandledException("Field is missing!!! D:", Map("fieldName" → m.scalarNode(v.fieldName, "String", Set.empty)))
         case (_, v: AstNodeLocation) ⇒
@@ -154,7 +167,11 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
               "fieldName" → "nonExistingField"),
             Map(
               "message" → "Argument 'num' expected type 'Int' but got: \"One\". Reason: Int value expected [with extras]",
-              "locations" → Vector(Map("line" → 4, "column" → 24))))))
+              "locations" → Vector(Map("line" → 4, "column" → 24))),
+            Map(
+              "message" → "Scalar",
+              "locations" → Vector(Map("line" → 5, "column" → 32)),
+              "original" → "Invalid email"))))
     }
 
     "handle user-facing errors errors" in {
