@@ -16,11 +16,14 @@ import sangria.validation._
  */
 class UniqueInputFieldNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    val knownNames = MutableMap[String, Option[Position]]()
+    val knownNameStack = ValidatorStack.empty[MutableMap[String, Option[Position]]]
+    var knownNames = MutableMap[String, Option[Position]]()
 
     override val onEnter: ValidationVisit = {
       case ast.ObjectValue(_, _, _) ⇒
-        knownNames.clear()
+        knownNameStack.push(knownNames)
+        knownNames = MutableMap[String, Option[Position]]()
+
         AstVisitorCommand.RightContinue
 
       case ast.ObjectField(name, _, _, pos) ⇒
@@ -34,7 +37,8 @@ class UniqueInputFieldNames extends ValidationRule {
 
     override def onLeave: ValidationVisit = {
       case ast.ObjectValue(_, _, _) ⇒
-        knownNames.clear()
+        knownNames = knownNameStack.pop()
+
         AstVisitorCommand.RightContinue
     }
   }
