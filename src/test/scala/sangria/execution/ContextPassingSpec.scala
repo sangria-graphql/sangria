@@ -37,9 +37,11 @@ class ContextPassingSpec extends WordSpec with Matchers with FutureResultSupport
     Field("fullName", StringType, resolve = _.ctx.fullName),
     Field("name", NameType, resolve = _ ⇒ ())))
 
+  def colorField[Ctx <: ColorComponent with NameComponent] =
+    Field("color", ColorType, None, resolve = (ctx: Context[Ctx, Unit]) ⇒ ())
 
   val QueryType = ObjectType("Query", fields[Cake, Unit](
-    Field("color", ColorType, resolve = _ ⇒ ()),
+    colorField,
     Field("person", PersonType, resolve = _ ⇒ ())
   ))
 
