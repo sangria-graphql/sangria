@@ -1,3 +1,8 @@
+## v1.3.3 (upcoming)
+
+* Fixed a validation of nested InputObjectType with same property names (#292). 
+* Improved performance of `Document.hashCode` which had a big influence on performance of the AST-based schema builder. 
+
 ## v1.3.2 (2017-11-01)
 
 * Fix **regression** where variables aren't passed to query reducers (#291). Thanks to @msolomon for a quick fix!
