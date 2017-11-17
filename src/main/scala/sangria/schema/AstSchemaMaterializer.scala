@@ -313,7 +313,6 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     builder.buildField(origin, typeDefinition, extensions, field, fieldType, args, this)
   }
 
-
   def extendField(origin: MatOrigin, tpe: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]) = {
     val f = field.asInstanceOf[Field[Ctx, Any]]
 
