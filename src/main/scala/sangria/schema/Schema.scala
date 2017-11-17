@@ -771,8 +771,8 @@ case class Schema[Ctx, Val](
   def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
 
   lazy val types: Map[String, (Int, Type with Named)] = {
-    def sameType(t1: Type with Named, t2: Type with Named) =
-      t1.name == t2.name
+    def sameType(t1: Type, t2: Type) =
+      t1.getClass.getSimpleName == t2.getClass.getSimpleName
 
     def typeConflict(name: String, t1: Type, t2: Type, parentInfo: String) =
       throw SchemaValidationException(ConflictingTypeDefinitionViolation(
