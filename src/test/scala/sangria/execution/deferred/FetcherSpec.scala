@@ -359,6 +359,25 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
             repo.loadCategoriesByProduct(ids(catProd))
           })
 
+      var fetchedRelsOnly = Vector.empty[RelationIds[Category]]
+
+      val fetcherRelsOnly =
+        Fetcher.relOnly(
+          (repo: Repo, ids: RelationIds[Category]) ⇒ {
+            fetchedRelsOnly = fetchedRelsOnly :+ ids
+
+            repo.loadCategoriesByProduct(ids(catProd))
+          })
+
+      var fetchedRelsOnlyCached = Vector.empty[RelationIds[Category]]
+
+      val fetcherRelsOnlyCached =
+        Fetcher.relOnlyCaching(
+          (repo: Repo, ids: RelationIds[Category]) ⇒ {
+            fetchedRelsOnlyCached = fetchedRelsOnlyCached :+ ids
+
+            repo.loadCategoriesByProduct(ids(catProd))
+          })
 
       val res = Executor.execute(schema(fetcher), query, new Repo,
         deferredResolver = DeferredResolver.fetchers(fetcher, defaultProdFetcher)).await
@@ -366,19 +385,33 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       val resCached = Executor.execute(schema(fetcherCached), query, new Repo,
         deferredResolver = DeferredResolver.fetchers(fetcherCached, defaultProdFetcher)).await
 
+      val resRelsOnly = Executor.execute(schema(fetcherRelsOnly), query, new Repo,
+        deferredResolver = DeferredResolver.fetchers(fetcherRelsOnly, defaultProdFetcher)).await
+
+      val resRelsOnlyCached = Executor.execute(schema(fetcherRelsOnlyCached), query, new Repo,
+        deferredResolver = DeferredResolver.fetchers(fetcherRelsOnlyCached, defaultProdFetcher)).await
+
       fetchedIds should have size 0
       fetchedIdsCached should have size 0
 
-      fetchedRels should be (
-        Vector(
-          RelationIds[Category](Map(catProd → Vector(1, 2, 3))),
-          RelationIds[Category](Map(catProd → Vector(1, 2, 3))),
-          RelationIds[Category](Map(catProd → Vector(1, 2, 3)))))
+      val relsOut = Vector(
+        RelationIds[Category](Map(catProd → Vector(1, 2, 3))),
+        RelationIds[Category](Map(catProd → Vector(1, 2, 3))),
+        RelationIds[Category](Map(catProd → Vector(1, 2, 3))))
 
-      fetchedRelsCached should be (
-        Vector(RelationIds[Category](Map(catProd → Vector(1, 2, 3)))))
+      val relsCachedOut = Vector(RelationIds[Category](Map(catProd → Vector(1, 2, 3))))
+
+      fetchedRels should be (relsOut)
+
+      fetchedRelsCached should be (relsCachedOut)
+
+      fetchedRelsOnly should be (relsOut)
+
+      fetchedRelsOnlyCached should be (relsCachedOut)
 
       res should be (resCached)
+
+      resRelsOnly should be (resRelsOnlyCached)
     }
 
     "hansle complex relations" in {
