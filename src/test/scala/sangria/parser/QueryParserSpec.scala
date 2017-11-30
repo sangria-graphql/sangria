@@ -4,7 +4,7 @@ import language.postfixOps
 import org.parboiled2.Position
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
-import sangria.util.{FileUtil, StringMatchers}
+import sangria.util.{DebugUtil, FileUtil, StringMatchers}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
@@ -977,6 +977,21 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             Some(BigDecimalValue(expected._2, Vector.empty, Some(Position(24, 1, 25)))))
         }
       }
+    }
+
+    "parse block string values" in {
+      val q = "\"\"\""
+
+      val stringValue =
+        s"""
+          $q
+            hello,
+              world
+          $q
+        """
+
+      QueryParser.parseInput(stripCarriageReturns(stringValue)) should be (
+        Success(StringValue("\n            hello,\n              world\n          ", true, Vector.empty, Some(Position(11, 2, 11)))))
     }
 
     "parse input values independently" in {
