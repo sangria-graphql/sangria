@@ -300,7 +300,7 @@ object QueryRenderer {
       case v @ BigIntValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
       case v @ FloatValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
       case v @ BigDecimalValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
-      case v @ StringValue(value, _, _) ⇒ renderInputComment(v, indent, config) + '"' + escapeString(value) + '"'
+      case v @ StringValue(value, _, _, _) ⇒ renderInputComment(v, indent, config) + '"' + escapeString(value) + '"'
       case v @ BooleanValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
       case v @ NullValue(_, _) ⇒ renderInputComment(v, indent, config) + "null"
       case v @ EnumValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value

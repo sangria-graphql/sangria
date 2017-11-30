@@ -31,7 +31,7 @@ class CustomScalarSpec extends WordSpec with Matchers {
           case _ ⇒ Left(DateCoercionViolation)
         },
         coerceInput = {
-          case ast.StringValue(s, _, _) ⇒ parseDate(s)
+          case ast.StringValue(s, _, _, _) ⇒ parseDate(s)
           case _ ⇒ Left(DateCoercionViolation)
         })
 

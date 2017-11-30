@@ -91,7 +91,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("1000", Vector.empty, Some(Position(176, 4, 29))),
+                      StringValue("1000", false, Vector.empty, Some(Position(176, 4, 29))),
                       Vector.empty,
                       Some(Position(172, 4, 25))
                     )),
@@ -135,7 +135,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("10103\n \u00F6 \u00F6", Vector.empty, Some(Position(284, 7, 34))),
+                      StringValue("10103\n \u00F6 \u00F6", false, Vector.empty, Some(Position(284, 7, 34))),
                       Vector.empty,
                       Some(Position(275, 7, 25))
                     )),
@@ -592,7 +592,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                         Vector(
                           ObjectField(
                             "key",
-                            StringValue("value", Vector.empty, Some(Position(1348, 46, 50))),
+                            StringValue("value", false, Vector.empty, Some(Position(1348, 46, 50))),
                             Vector.empty,
                             Some(Position(1343, 46, 45))
                           )),
@@ -772,11 +772,11 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                 FieldDefinition("one", NamedType("Type", Some(Position(498, 15, 18))), Vector.empty, Vector.empty, Vector.empty, Some(Position(493, 15, 13))),
                 FieldDefinition("two", NamedType("Type", Some(Position(542, 16, 40))), Vector(InputValueDefinition("argument", NotNullType(NamedType("InputType", Some(Position(529, 16, 27))), Some(Position(529, 16, 27))), None, Vector.empty, Vector.empty, Some(Position(519, 16, 17)))), Vector.empty, Vector.empty, Some(Position(515, 16, 13))),
                 FieldDefinition("three", NamedType("Int", Some(Position(602, 17, 56))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(Position(575, 17, 29))), None, Vector.empty, Vector.empty, Some(Position(565, 17, 19))), InputValueDefinition("other", NamedType("String", Some(Position(593, 17, 47))), None, Vector.empty, Vector.empty, Some(Position(586, 17, 40)))), Vector.empty, Vector.empty, Some(Position(559, 17, 13))),
-                FieldDefinition("four", NamedType("String", Some(Position(653, 18, 48))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(633, 18, 28))), Some(StringValue("string", Vector.empty, Some(Position(642, 18, 37)))), Vector.empty, Vector.empty, Some(Position(623, 18, 18)))), Vector.empty, Vector.empty, Some(Position(618, 18, 13))),
+                FieldDefinition("four", NamedType("String", Some(Position(653, 18, 48))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(633, 18, 28))), Some(StringValue("string", false, Vector.empty, Some(Position(642, 18, 37)))), Vector.empty, Vector.empty, Some(Position(623, 18, 18)))), Vector.empty, Vector.empty, Some(Position(618, 18, 13))),
                 FieldDefinition("five", NamedType("String", Some(Position(721, 19, 62))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(688, 19, 29))), Some(Position(687, 19, 28))), Some(ListValue(
                   Vector(
-                    StringValue("string", Vector.empty, Some(Position(699, 19, 40))),
-                    StringValue("string", Vector.empty, Some(Position(709, 19, 50)))),
+                    StringValue("string", false, Vector.empty, Some(Position(699, 19, 40))),
+                    StringValue("string", false, Vector.empty, Some(Position(709, 19, 50)))),
                   Vector.empty,
                   Some(Position(698, 19, 39))
                 )), Vector.empty, Vector.empty, Some(Position(677, 19, 18)))), Vector.empty, Vector.empty, Some(Position(672, 19, 13))),
@@ -784,7 +784,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     ObjectField(
                       "key",
-                      StringValue("value", Vector.empty, Some(Position(772, 20, 45))),
+                      StringValue("value", false, Vector.empty, Some(Position(772, 20, 45))),
                       Vector.empty,
                       Some(Position(767, 20, 40))
                     )),
@@ -800,7 +800,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
               "AnnotatedObject",
               Vector.empty,
               Vector(
-                FieldDefinition("annotatedField", NamedType("Type", Some(Position(916, 24, 59))), Vector(InputValueDefinition("arg", NamedType("Type", Some(Position(890, 24, 33))), Some(StringValue("default", Vector.empty, Some(Position(897, 24, 40)))), Vector(Directive(
+                FieldDefinition("annotatedField", NamedType("Type", Some(Position(916, 24, 59))), Vector(InputValueDefinition("arg", NamedType("Type", Some(Position(890, 24, 33))), Some(StringValue("default", false, Vector.empty, Some(Position(897, 24, 40)))), Vector(Directive(
                   "onArg",
                   Vector.empty,
                   Vector.empty,
@@ -817,7 +817,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "arg",
-                      StringValue("value", Vector.empty, Some(Position(847, 23, 47))),
+                      StringValue("value", false, Vector.empty, Some(Position(847, 23, 47))),
                       Vector.empty,
                       Some(Position(842, 23, 42))
                     )),
@@ -832,7 +832,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
               "Bar",
               Vector(
                 FieldDefinition("one", NamedType("Type", Some(Position(1017, 29, 18))), Vector.empty, Vector.empty, Vector.empty, Some(Position(1012, 29, 13))),
-                FieldDefinition("four", NamedType("String", Some(Position(1069, 30, 48))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(1049, 30, 28))), Some(StringValue("string", Vector.empty, Some(Position(1058, 30, 37)))), Vector.empty, Vector.empty, Some(Position(1039, 30, 18)))), Vector.empty, Vector.empty, Some(Position(1034, 30, 13)))),
+                FieldDefinition("four", NamedType("String", Some(Position(1069, 30, 48))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(1049, 30, 28))), Some(StringValue("string", false, Vector.empty, Some(Position(1058, 30, 37)))), Vector.empty, Vector.empty, Some(Position(1039, 30, 18)))), Vector.empty, Vector.empty, Some(Position(1034, 30, 13)))),
               Vector.empty,
               Vector(
                 Comment(" It's an interface!", Some(Position(953, 27, 11)))),

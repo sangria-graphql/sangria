@@ -55,7 +55,7 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
     case ast.BigDecimalValue(d, _, _) ⇒ d
     case ast.FloatValue(f, _, _) ⇒ f
     case ast.IntValue(i, _, _) ⇒ i
-    case ast.StringValue(s, _, _) ⇒ s
+    case ast.StringValue(s, _, _, _) ⇒ s
     case ast.EnumValue(s, _, _) ⇒ s
     case node ⇒ throw new IllegalStateException("Unsupported scalar node: " + node)
   }

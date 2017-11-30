@@ -50,13 +50,35 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Digit = rule { ch('0') | NonZeroDigit }
 
-  def StringValue = rule { atomic(Comments ~ trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ IgnoredNoComment.* ~> ((comment, pos, s) ⇒ ast.StringValue(s, comment, Some(pos))))}
+  def StringValue = rule { BlockStringValue | NonBlockStringValue }
 
-  def Characters = rule { (NormalChar | '\\' ~ EscapedChar).* }
+  def BlockStringValue = rule {
+    Comments ~ trackPos ~ BlockString ~ clearSB() ~ BlockStringCharacters ~ BlockString ~ push(sb.toString) ~ IgnoredNoComment.* ~>
+      ((comment, pos, s) ⇒ ast.StringValue(s, true, comment, Some(pos)))
+  }
+
+  def BlockStringCharacters = rule { (BlockStringCharacter | BlockStringEscapedChar).* }
+
+  def BlockString = rule { str("\"\"\"") }
+
+  def QuotedBlockString = rule { str("\\\"\"\"") }
+
+  def BlockStringCharacter = rule { !(QuotedBlockString | BlockString) ~ ANY ~ appendSB() }
+
+  def BlockStringEscapedChar = rule {
+    QuotedBlockString ~ appendSB("\"\"\"")
+  }
+
+  def NormalCharacter = rule { !(QuoteBackslash | LineTerminator) ~ ANY ~ appendSB() }
+
+  def NonBlockStringValue = rule {
+    Comments ~ trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ IgnoredNoComment.* ~>
+        ((comment, pos, s) ⇒ ast.StringValue(s, false, comment, Some(pos)))
+  }
+
+  def Characters = rule { (NormalCharacter | '\\' ~ EscapedChar).* }
 
   val QuoteBackslash = CharPredicate("\"\\")
-
-  def NormalChar = rule { !(QuoteBackslash | LineTerminator) ~ ANY ~ appendSB() }
 
   def EscapedChar = rule {
     QuoteBackslash ~ appendSB() |

@@ -68,7 +68,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("1000", Vector.empty, Some(Position(145, 3, 19))),
+                      StringValue("1000", false, Vector.empty, Some(Position(145, 3, 19))),
                       Vector.empty,
                       Some(Position(141, 3, 15))
                     )),
@@ -112,7 +112,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("10103\n \u00F6 \u00F6", Vector.empty, Some(Position(223, 6, 24))),
+                      StringValue("10103\n \u00F6 \u00F6", false, Vector.empty, Some(Position(223, 6, 24))),
                       Vector.empty,
                       Some(Position(214, 6, 15))
                     )),
@@ -516,7 +516,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                         Vector(
                           ObjectField(
                             "key",
-                            StringValue("value", Vector.empty, Some(Position(937, 45, 40))),
+                            StringValue("value", false, Vector.empty, Some(Position(937, 45, 40))),
                             Vector.empty,
                             Some(Position(932, 45, 35))
                           )),
@@ -988,14 +988,14 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
           Vector(
             BigIntValue(1, Vector.empty, Some(Position(1, 1, 2))),
             BigIntValue(2, Vector.empty, Some(Position(4, 1, 5))),
-            StringValue("test", Vector.empty, Some(Position(6, 1, 7)))),
+            StringValue("test", false, Vector.empty, Some(Position(6, 1, 7)))),
           Vector.empty,
           Some(Position(0, 1, 1))),
         "{a: 1, b: \"foo\" c: {nest: true, oops: null, e: FOO_BAR}}" →
           ObjectValue(
             Vector(
               ObjectField("a", BigIntValue(1, Vector.empty, Some(Position(4, 1, 5))), Vector.empty, Some(Position(1, 1, 2))),
-              ObjectField("b", StringValue("foo", Vector.empty, Some(Position(10, 1, 11))), Vector.empty, Some(Position(7, 1, 8))),
+              ObjectField("b", StringValue("foo", false, Vector.empty, Some(Position(10, 1, 11))), Vector.empty, Some(Position(7, 1, 8))),
               ObjectField("c",
                 ObjectValue(
                   Vector(
@@ -1019,7 +1019,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
           ObjectValue(
             Vector(
               ObjectField("a", BigIntValue(1, Vector.empty, Some(Position(26, 3, 15))), Vector.empty, Some(Position(23, 3, 12))),
-              ObjectField("b", StringValue("foo", Vector.empty, Some(Position(80, 6, 15))),
+              ObjectField("b", StringValue("foo", false, Vector.empty, Some(Position(80, 6, 15))),
                 Vector(Comment(" This is a test comment!", Some(Position(40, 5, 12)))),
                 Some(Position(77, 6, 12)))),
               Vector.empty,
@@ -1071,7 +1071,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                     Vector(
                       ObjectField(
                         "field1",
-                        StringValue("val", Vector(Comment(" comment 18.11", Some(Position(849, 61, 1))), Comment(" comment 18.12", Some(Position(865, 62, 1)))), Some(Position(881, 63, 1))),
+                        StringValue("val", false, Vector(Comment(" comment 18.11", Some(Position(849, 61, 1))), Comment(" comment 18.12", Some(Position(865, 62, 1)))), Some(Position(881, 63, 1))),
                         Vector(
                           Comment(" comment 18.7", Some(Position(779, 55, 1))),
                           Comment(" comment 18.8", Some(Position(794, 56, 1)))),
