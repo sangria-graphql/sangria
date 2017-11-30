@@ -159,6 +159,8 @@ class StringUtilSpec extends WordSpec with Matchers with StringMatchers {
       ) should equal (
         "".stripMargin
       ) (after being strippedOfCarriageReturns)
+
+      blockStringValue("") should equal ("")
     }
   }
 }
