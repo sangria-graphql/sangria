@@ -224,6 +224,11 @@ object AstSchemaBuilder {
       Some(definition.name)
   }
 
+  object EnumName {
+    def unapply(definition: ast.EnumTypeDefinition): Option[String] =
+      Some(definition.name)
+  }
+
   def extractDescription(node: ast.WithComments): Option[String] =
     if (node.comments.nonEmpty) {
       node.position.map(_.line).orElse(node.comments.last.position.map(_.line + 1)) match {
@@ -433,7 +438,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(EnumValue[String](
       name = enumValueName(definition),
       description = enumValueDescription(definition),
-      value = enumValue(definition),
+      value = enumValue(typeDefinition, definition),
       deprecationReason = enumValueDeprecationReason(definition),
       astDirectives = definition.directives))
 
@@ -675,6 +680,6 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def directiveDescription(definition: ast.DirectiveDefinition): Option[String] =
     commentDescription(definition)
 
-  def enumValue(definition: ast.EnumValueDefinition): String =
+  def enumValue(typeDefinition: ast.EnumTypeDefinition, definition: ast.EnumValueDefinition): String =
     definition.name
 }

@@ -2,7 +2,7 @@ package sangria.schema
 
 import language.{existentials, postfixOps}
 import sangria.ast
-import sangria.ast.{AstVisitor, FieldDefinition, TypeDefinition, TypeExtensionDefinition}
+import sangria.ast._
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ToInput}
 import sangria.renderer.SchemaRenderer
@@ -300,6 +300,16 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     resolvers.collectFirst {
       case ExistingInstanceCheck(fn) ⇒ fn(ctx)
     }
+  }
+
+  override def enumValue(typeDefinition: ast.EnumTypeDefinition, definition: EnumValueDefinition) = {
+    val ctx = typeDefinition → definition
+    val resolved =
+      resolvers.collectFirst {
+        case SimpleEnumValueResolver(fn) if fn.isDefinedAt(ctx) ⇒ fn(ctx)
+      }
+
+    resolved getOrElse super.enumValue(typeDefinition, definition)
   }
 }
 

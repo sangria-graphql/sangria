@@ -47,6 +47,9 @@ case class DirectiveScalarResolver[Ctx](
   directive: Directive,
   resolve: AstDirectiveScalarContext ⇒ ScalarType[_]) extends AstSchemaResolver[Ctx]
 
+case class SimpleEnumValueResolver[Ctx](
+  resolve: PartialFunction[(ast.EnumTypeDefinition, ast.EnumValueDefinition), String]) extends AstSchemaResolver[Ctx]
+
 case class ExistingScalarResolver[Ctx](
   resolve: PartialFunction[ExistingScalarContext[Ctx], ScalarType[Any]]) extends AstSchemaResolver[Ctx]
 

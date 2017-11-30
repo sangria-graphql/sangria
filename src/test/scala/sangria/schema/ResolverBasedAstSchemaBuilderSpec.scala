@@ -7,7 +7,8 @@ import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.{Executor, QueryReducer}
 import sangria.macros._
-import sangria.schema.AstSchemaBuilder.{FieldName, TypeName, resolverBased}
+import sangria.marshalling.{InputUnmarshaller, ScalaInput}
+import sangria.schema.AstSchemaBuilder.{EnumName, FieldName, TypeName, resolverBased}
 import sangria.schema.{DirectiveLocation => DL}
 import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.validation.BaseViolation
@@ -294,6 +295,76 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
             "myStr1" → "realFirst-second")))
 
       complexity.get should be (200)
+    }
+
+    "resolve enum values" in {
+      val builder = resolverBased[Any](
+        SimpleEnumValueResolver {
+          case (EnumName("Color"), v) if v.name == "RED" ⇒ "#FF0000"
+          case (EnumName("Color"), v) if v.name == "GREEN" ⇒ "#00FF00"
+          case (EnumName("Color"), v) if v.name == "BLUE" ⇒ "#0000FF"
+        },
+        FieldResolver {
+          case (TypeName("Mutation"), FieldName("eat")) ⇒
+            ctx ⇒ "tasty " + ctx.arg[String]("color") + " " + ctx.arg[InputObjectType.DefaultInput]("fruit")("color")
+        })
+
+      val schemaAst =
+        gql"""
+          enum Color {
+            RED, GREEN, BLUE
+          }
+
+          input Fruit {
+            name: String!
+             color: Color!
+          }
+
+          extend type Mutation {
+            eat(fruit: Fruit!, color: Color!): String
+          }
+        """
+
+      val existingSchema = Schema(
+        query = ObjectType("Query", fields[Any, Unit](
+          Field("testQuery", StringType, resolve = _ ⇒ "test"))),
+        mutation = Some(ObjectType("Mutation", fields[Any, Unit](
+          Field("testMut", StringType, resolve = _ ⇒ "test")))))
+
+      val schema = existingSchema.extend(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query =
+        gql"""
+          mutation {
+            testMut
+            eat(fruit: {name: "Apple", color: RED}, color: GREEN)
+          }
+        """
+
+      Executor.execute(schema, query).await should be (
+        Map("data" → Map(
+          "testMut" → "test",
+          "eat" → "tasty #00FF00 #FF0000")))
+
+      val queryWithVars =
+        gql"""
+          mutation Eat($$color1: Color!, $$color2: Color!, $$fruit: Fruit!) {
+            eat(fruit: {name: "Apple", color: $$color1}, color: $$color2)
+            more: eat(fruit: $$fruit, color: RED)
+          }
+        """
+
+      val vars = InputUnmarshaller.mapVars(
+        "color1" → "RED",
+        "color2" → "BLUE",
+        "fruit" → Map(
+          "name" → "Banana",
+          "color" → "GREEN"))
+
+      Executor.execute(schema, queryWithVars, variables = vars).await should be (
+        Map("data" → Map(
+          "eat" → "tasty #0000FF #FF0000",
+          "more" → "tasty #FF0000 #00FF00")))
     }
 
     "resolve fields based on the dynamic directives" in {
