@@ -34,7 +34,7 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
         case _ ⇒ Left(UUIDViolation)
       },
       coerceInput = {
-        case ast.StringValue(s, _, _, _) ⇒ parseUuid(s)
+        case ast.StringValue(s, _, _, _, _) ⇒ parseUuid(s)
         case _ ⇒ Left(UUIDViolation)
       })
 

@@ -1,11 +1,11 @@
 package sangria.parser
 
 import org.parboiled2._
-import CharPredicate.{HexDigit, Digit19}
-
+import CharPredicate.{Digit19, HexDigit}
 import sangria.ast
+import sangria.util.StringUtil
 
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 
 trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored ⇒
 
@@ -54,7 +54,7 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def BlockStringValue = rule {
     Comments ~ trackPos ~ BlockString ~ clearSB() ~ BlockStringCharacters ~ BlockString ~ push(sb.toString) ~ IgnoredNoComment.* ~>
-      ((comment, pos, s) ⇒ ast.StringValue(s, true, comment, Some(pos)))
+      ((comment, pos, s) ⇒ ast.StringValue(StringUtil.blockStringValue(s), true, Some(s), comment, Some(pos)))
   }
 
   def BlockStringCharacters = rule { (BlockStringCharacter | BlockStringEscapedChar).* }
@@ -73,7 +73,7 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def NonBlockStringValue = rule {
     Comments ~ trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ IgnoredNoComment.* ~>
-        ((comment, pos, s) ⇒ ast.StringValue(s, false, comment, Some(pos)))
+        ((comment, pos, s) ⇒ ast.StringValue(s, false, None, comment, Some(pos)))
   }
 
   def Characters = rule { (NormalCharacter | '\\' ~ EscapedChar).* }

@@ -265,7 +265,7 @@ case class IntValue(value: Int, comments: Vector[Comment] = Vector.empty, positi
 case class BigIntValue(value: BigInt, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
 case class FloatValue(value: Double, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
 case class BigDecimalValue(value: BigDecimal, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
-case class StringValue(value: String, block: Boolean = false, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
+case class StringValue(value: String, block: Boolean = false, blockRawValue: Option[String] = None, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
 case class BooleanValue(value: Boolean, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
 case class EnumValue(value: String, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends Value
 case class ListValue(values: Vector[Value], comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends Value
@@ -652,7 +652,7 @@ object AstVisitor {
           if (breakOrSkip(onEnter(n))) {
             breakOrSkip(onLeave(n))
           }
-        case n @ StringValue(_, _, comment, _) ⇒
+        case n @ StringValue(_, _, _, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))

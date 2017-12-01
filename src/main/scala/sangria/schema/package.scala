@@ -140,7 +140,7 @@ package object schema {
       case _ ⇒ Left(StringCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(s, _, _, _) ⇒ Right(s)
+      case ast.StringValue(s, _, _, _, _) ⇒ Right(s)
       case _ ⇒ Left(StringCoercionViolation)
     })
 
@@ -160,7 +160,7 @@ package object schema {
       case _ ⇒ Left(IDCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(id, _, _, _) ⇒ Right(id)
+      case ast.StringValue(id, _, _, _, _) ⇒ Right(id)
       case ast.IntValue(id, _, _) ⇒ Right(id.toString)
       case ast.BigIntValue(id, _, _) ⇒ Right(id.toString)
       case _ ⇒ Left(IDCoercionViolation)

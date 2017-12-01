@@ -27,7 +27,7 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
       case _ ⇒ Left(StringCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(id, _, _, _) ⇒ Right(id)
+      case ast.StringValue(id, _, _, _, _) ⇒ Right(id)
       case _ ⇒ Left(StringCoercionViolation)
     })
 

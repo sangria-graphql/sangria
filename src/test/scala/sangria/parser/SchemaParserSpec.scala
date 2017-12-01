@@ -39,11 +39,11 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
                 FieldDefinition("one", NamedType("Type", Some(Position(377, 14, 8))), Vector.empty, Vector.empty, Vector.empty, Some(Position(372, 14, 3))),
                 FieldDefinition("two", NamedType("Type", Some(Position(411, 15, 30))), Vector(InputValueDefinition("argument", NotNullType(NamedType("InputType", Some(Position(398, 15, 17))), Some(Position(398, 15, 17))), None, Vector.empty, Vector.empty, Some(Position(388, 15, 7)))), Vector.empty, Vector.empty, Some(Position(384, 15, 3))),
                 FieldDefinition("three", NamedType("Int", Some(Position(461, 16, 46))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(Position(434, 16, 19))), None, Vector.empty, Vector.empty, Some(Position(424, 16, 9))), InputValueDefinition("other", NamedType("String", Some(Position(452, 16, 37))), None, Vector.empty, Vector.empty, Some(Position(445, 16, 30)))), Vector.empty, Vector.empty, Some(Position(418, 16, 3))),
-                FieldDefinition("four", NamedType("String", Some(Position(502, 17, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(482, 17, 18))), Some(StringValue("string", false, Vector.empty, Some(Position(491, 17, 27)))), Vector.empty, Vector.empty, Some(Position(472, 17, 8)))), Vector.empty, Vector.empty, Some(Position(467, 17, 3))),
+                FieldDefinition("four", NamedType("String", Some(Position(502, 17, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(482, 17, 18))), Some(StringValue("string", false, None, Vector.empty, Some(Position(491, 17, 27)))), Vector.empty, Vector.empty, Some(Position(472, 17, 8)))), Vector.empty, Vector.empty, Some(Position(467, 17, 3))),
                 FieldDefinition("five", NamedType("String", Some(Position(560, 18, 52))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(527, 18, 19))), Some(Position(526, 18, 18))), Some(ListValue(
                   Vector(
-                    StringValue("string", false, Vector.empty, Some(Position(538, 18, 30))),
-                    StringValue("string", false, Vector.empty, Some(Position(548, 18, 40)))),
+                    StringValue("string", false, None, Vector.empty, Some(Position(538, 18, 30))),
+                    StringValue("string", false, None, Vector.empty, Some(Position(548, 18, 40)))),
                   Vector.empty,
                   Some(Position(537, 18, 29))
                 )), Vector.empty, Vector.empty, Some(Position(516, 18, 8)))), Vector.empty, Vector.empty, Some(Position(511, 18, 3))),
@@ -51,7 +51,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     ObjectField(
                       "key",
-                      StringValue("value", false, Vector.empty, Some(Position(601, 19, 35))),
+                      StringValue("value", false, None, Vector.empty, Some(Position(601, 19, 35))),
                       Vector.empty,
                       Some(Position(596, 19, 30))
                     )),
@@ -67,7 +67,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
               "AnnotatedObject",
               Vector.empty,
               Vector(
-                FieldDefinition("annotatedField", NamedType("Type", Some(Position(715, 23, 49))), Vector(InputValueDefinition("arg", NamedType("Type", Some(Position(689, 23, 23))), Some(StringValue("default", false, Vector.empty, Some(Position(696, 23, 30)))), Vector(Directive(
+                FieldDefinition("annotatedField", NamedType("Type", Some(Position(715, 23, 49))), Vector(InputValueDefinition("arg", NamedType("Type", Some(Position(689, 23, 23))), Some(StringValue("default", false, None, Vector.empty, Some(Position(696, 23, 30)))), Vector(Directive(
                   "onArg",
                   Vector.empty,
                   Vector.empty,
@@ -84,7 +84,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "arg",
-                      StringValue("value", false, Vector.empty, Some(Position(656, 22, 37))),
+                      StringValue("value", false, None, Vector.empty, Some(Position(656, 22, 37))),
                       Vector.empty,
                       Some(Position(651, 22, 32))
                     )),
@@ -99,7 +99,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
               "Bar",
               Vector(
                 FieldDefinition("one", NamedType("Type", Some(Position(776, 28, 8))), Vector.empty, Vector.empty, Vector.empty, Some(Position(771, 28, 3))),
-                FieldDefinition("four", NamedType("String", Some(Position(818, 29, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(798, 29, 18))), Some(StringValue("string", false, Vector.empty, Some(Position(807, 29, 27)))), Vector.empty, Vector.empty, Some(Position(788, 29, 8)))), Vector.empty, Vector.empty, Some(Position(783, 29, 3)))),
+                FieldDefinition("four", NamedType("String", Some(Position(818, 29, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(798, 29, 18))), Some(StringValue("string", false, None, Vector.empty, Some(Position(807, 29, 27)))), Vector.empty, Vector.empty, Some(Position(788, 29, 8)))), Vector.empty, Vector.empty, Some(Position(783, 29, 3)))),
               Vector.empty,
               Vector(
                 Comment(" It's an interface!", Some(Position(732, 26, 1)))),

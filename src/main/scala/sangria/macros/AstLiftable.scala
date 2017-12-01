@@ -105,7 +105,7 @@ trait AstLiftable {
   implicit def liftValue[T <: sangria.ast.Value]: Liftable[T] = Liftable {
     case IntValue(v, c, p) ⇒ q"_root_.sangria.ast.IntValue($v, $c, $p)"
     case FloatValue(v, c, p) ⇒ q"_root_.sangria.ast.FloatValue($v, $c, $p)"
-    case StringValue(v, b, c, p) ⇒ q"_root_.sangria.ast.StringValue($v, $b, $c, $p)"
+    case StringValue(v, b, r, c, p) ⇒ q"_root_.sangria.ast.StringValue($v, $b, $r, $c, $p)"
     case BooleanValue(v, c, p) ⇒ q"_root_.sangria.ast.BooleanValue($v, $c, $p)"
     case NullValue(c, p) ⇒ q"_root_.sangria.ast.NullValue($c, $p)"
     case EnumValue(v, c, p) ⇒ q"_root_.sangria.ast.EnumValue($v, $c, $p)"
