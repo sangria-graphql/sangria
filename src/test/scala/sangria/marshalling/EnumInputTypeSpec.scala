@@ -81,7 +81,8 @@ class EnumInputTypeSpec extends WordSpec with Matchers {
     Await.result(fut, 2.seconds)
   }
 
-  "correctly unmarshals an enum in a complex input type" in {
+  // Ignored for the moment being. Related discussion: https://github.com/sangria-graphql/sangria/issues/300
+  "correctly unmarshals an enum in a complex input type" ignore {
     val query =
       """
         | query GetTheComplexThing {
