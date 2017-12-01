@@ -1,7 +1,7 @@
 package sangria.renderer
 
 import org.parboiled2.Position
-import sangria.util.StringUtil.escapeString
+import sangria.util.StringUtil.{escapeString, escapeBlockString}
 import sangria.ast._
 
 object QueryRenderer {
@@ -15,7 +15,8 @@ object QueryRenderer {
     inputFieldSeparator = ", ",
     inputListSeparator = ",",
     formatInputValues = false,
-    renderComments = true)
+    renderComments = true,
+    formatBlockStrings = true)
 
   val PrettyInput = Pretty.copy(
     inputFieldSeparator = "\n",
@@ -32,7 +33,8 @@ object QueryRenderer {
     inputFieldSeparator = ",",
     inputListSeparator = ",",
     formatInputValues = false,
-    renderComments = false)
+    renderComments = false,
+    formatBlockStrings = false)
 
   def renderSelections(sels: Vector[Selection], tc: WithTrailingComments, indent: String, indentLevel: Int, config: QueryRendererConfig) =
     if (sels.nonEmpty) {
@@ -225,6 +227,13 @@ object QueryRenderer {
   def renderInputComment(node: WithComments, indent: String, config: QueryRendererConfig) =
     if (config.formatInputValues && shouldRenderComment(node, None, config)) renderComment(node, None, indent, config) + indent else ""
 
+  def renderBlockString(node: AstNode, str: String, indent: String, config: QueryRendererConfig) =
+    if (str.trim.nonEmpty) {
+      val lines = escapeBlockString(str).split("\n").map(indent + _)
+
+      lines.mkString("\"\"\"\n", "\n", "\n" + indent + "\"\"\"")
+    } else "\"\""
+
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0, prefix: Option[String] = None, prev: Option[AstNode] = None): String = {
     lazy val indent = config.indentLevel * indentLevel
 
@@ -300,10 +309,14 @@ object QueryRenderer {
       case v @ BigIntValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
       case v @ FloatValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
       case v @ BigDecimalValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
-      case v @ StringValue(value, _, _, _, _) ⇒ renderInputComment(v, indent, config) + '"' + escapeString(value) + '"'
       case v @ BooleanValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
       case v @ NullValue(_, _) ⇒ renderInputComment(v, indent, config) + "null"
       case v @ EnumValue(value, _, _) ⇒ renderInputComment(v, indent, config) + value
+      case v @ StringValue(value, block, _, _, _) if !block || !config.formatBlockStrings ⇒
+        renderInputComment(v, indent, config) + '"' + escapeString(value) + '"'
+      case v @ StringValue(value, _, _, _, _) ⇒
+        renderInputComment(v, indent, config) + renderBlockString(v, value, indent, config)
+
       case v @ ListValue(value, _, _) ⇒
         def addIdent(v: Value) = v match {
           case o: ObjectValue ⇒ false
@@ -493,4 +506,5 @@ case class QueryRendererConfig(
   inputFieldSeparator: String,
   inputListSeparator: String,
   formatInputValues: Boolean,
+  formatBlockStrings: Boolean,
   renderComments: Boolean)

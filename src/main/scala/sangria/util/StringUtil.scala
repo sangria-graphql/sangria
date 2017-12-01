@@ -71,6 +71,8 @@ object StringUtil {
     d(a.length)(b.length)
   }
 
+  def escapeBlockString(str: String) = str.replaceAll("\"\"\"", "\\\\\"\"\"")
+
   def escapeString(str: String) =
     str flatMap {
       case ch if ch > 0xfff ⇒ "\\u" + charHex(ch)
