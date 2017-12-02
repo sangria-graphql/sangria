@@ -617,7 +617,6 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
           "}\nfragment Foo on User@foo(bar:1){baz@docs(info:\"\\\"\\\"\\\"\\n\\\"" +
           "\\\"\\\" this \\\" is \\\"\\\"\\na description! \\\"\\\"\\\"\")}")
 
-        // TODO: improve pretty rendering for block strings
         prettyRendered should equal (FileUtil loadQuery "block-string-rendered.graphql") (after being strippedOfCarriageReturns)
       }
     }

@@ -1,18 +1,18 @@
 query FetchLukeAndLeiaAliased($someVar: String = """
-hello \
-  world
-""") {
+  hello \
+    world
+  """) {
   luke: human(id: "1000", bar: """
- \"test
-123 \u0000
-""")
+     \"test
+    123 \u0000
+    """)
   ...Foo
 }
 
 fragment Foo on User @foo(bar: 1) {
   baz @docs(info: """
-\"""
-\""" this " is ""
-a description! \"""
-""")
+    \"""
+    \""" this " is ""
+    a description! \"""
+    """)
 }
