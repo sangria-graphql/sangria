@@ -3,7 +3,7 @@ package sangria.util
 import org.scalatest.{Matchers, WordSpec}
 import sangria.util.StringUtil._
 
-class StringUtilSpec extends WordSpec with Matchers {
+class StringUtilSpec extends WordSpec with Matchers with StringMatchers {
   "camelCaseToUnderscore" should {
     "convert camel-case identifiers to underscore-based one" in {
       camelCaseToUnderscore("FooBar") should be ("foo_bar")
@@ -46,6 +46,121 @@ class StringUtilSpec extends WordSpec with Matchers {
     
     "Returns options sorted based on similarity" in {
       suggestionList("abc", Seq("a", "ab", "abc")) should be (Seq("abc", "ab"))
+    }
+  }
+
+  "blockStringValue" should {
+    "removes uniform indentation from a string" in {
+      blockStringValue(
+        """
+          |    Hello,
+          |      World!
+          |
+          |    Yours,
+          |      GraphQL.
+          |""".stripMargin
+      ) should equal (
+        """Hello,
+          |  World!
+          |
+          |Yours,
+          |  GraphQL.""".stripMargin
+      ) (after being strippedOfCarriageReturns)
+    }
+
+    "removes empty leading and trailing lines" in {
+      blockStringValue(
+        """
+          |
+          |    Hello,
+          |      World!
+          |
+          |    Yours,
+          |      GraphQL.
+          |
+          |""".stripMargin
+      ) should equal (
+        """Hello,
+          |  World!
+          |
+          |Yours,
+          |  GraphQL.""".stripMargin
+      ) (after being strippedOfCarriageReturns)
+    }
+
+    "removes blank leading and trailing lines" in {
+      val spaces = " " * 10
+
+      blockStringValue(
+        s"""
+           |$spaces
+           |    Hello,
+           |      World!
+           |
+           |    Yours,
+           |      GraphQL.
+           |$spaces
+           |""".stripMargin
+      ) should equal (
+        """Hello,
+          |  World!
+          |
+          |Yours,
+          |  GraphQL.""".stripMargin
+      ) (after being strippedOfCarriageReturns)
+    }
+
+    "retains indentation from first line" in {
+      blockStringValue(
+        """    Hello,
+           |      World!
+           |
+           |    Yours,
+           |      GraphQL.
+           |""".stripMargin
+      ) should equal (
+        """    Hello,
+          |  World!
+          |
+          |Yours,
+          |  GraphQL.""".stripMargin
+      ) (after being strippedOfCarriageReturns)
+    }
+
+    "does not alter trailing spaces" in {
+      val spaces = " " * 10
+
+      blockStringValue(
+        s"""
+           |    Hello,$spaces
+           |      World!$spaces
+           |    $spaces
+           |    Yours,$spaces
+           |      GraphQL.$spaces
+           |""".stripMargin
+      ) should equal (
+        s"""Hello,$spaces
+           |  World!$spaces
+           |$spaces
+           |Yours,$spaces
+           |  GraphQL.$spaces""".stripMargin
+      ) (after being strippedOfCarriageReturns)
+    }
+
+    "handles empty strings" in {
+      val spaces = " " * 10
+
+      blockStringValue(
+        s"""
+           |$spaces
+           |
+           |$spaces
+           |""".stripMargin
+      ) should equal (
+        "".stripMargin
+      ) (after being strippedOfCarriageReturns)
+
+      blockStringValue("") should equal ("")
     }
   }
 }

@@ -634,7 +634,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       d.arguments.find(_.name == ReasonArg.name) match {
         case Some(reason) ⇒
           reason.value match {
-            case ast.StringValue(value, _, _) ⇒ Some(value)
+            case ast.StringValue(value, _, _, _, _) ⇒ Some(value)
             case _ ⇒ None
           }
         case None ⇒ Some(DefaultDeprecationReason)

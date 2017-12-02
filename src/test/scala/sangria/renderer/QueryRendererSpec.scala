@@ -1,11 +1,12 @@
 package sangria.renderer
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.ast.{Directive, Field, AstNode}
+import sangria.ast._
 import sangria.parser.QueryParser
-import sangria.util.{StringMatchers, FileUtil}
+import sangria.util.{FileUtil, StringMatchers}
 import sangria.ast
 import sangria.macros._
+import sangria.visitor.VisitorCommand
 
 import scala.util.Success
 
@@ -557,6 +558,66 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |  }
             |}""".stripMargin) (after being strippedOfCarriageReturns)
 
+      }
+
+      "render queries with block strings (erase block meta-info)" in {
+        val Success(origAst) = QueryParser.parse(FileUtil loadQuery "block-string.graphql")
+
+        val ast = AstVisitor.visit(origAst, AstVisitor {
+          case s: StringValue ⇒ VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
+        })
+
+        val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
+        val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
+
+        val Success(prettyParsed) = QueryParser.parse(prettyRendered)
+        val Success(compactParsed) = QueryParser.parse(compactRendered)
+
+        AstNode.withoutPosition(ast) should be (AstNode.withoutPosition(prettyParsed))
+        AstNode.withoutPosition(ast, stripComments = true) should be (
+          AstNode.withoutPosition(compactParsed, stripComments = true))
+
+        compactRendered should be (
+          "query FetchLukeAndLeiaAliased($someVar:String=\"hello \\\\\\n  world\"" +
+          "){luke:human(id:\"1000\",bar:\" \\\\\\\"test\\n123 \\\\u0000\") ...Foo" +
+          "}\nfragment Foo on User@foo(bar:1){baz@docs(info:\"\\\"\\\"\\\"\\n\\\"" +
+          "\\\"\\\" this \\\" is \\\"\\\"\\na description! \\\"\\\"\\\"\")}")
+
+        prettyRendered should equal (
+          """query FetchLukeAndLeiaAliased($someVar: String = "hello \\\n  world") {
+            |  luke: human(id: "1000", bar: " \\\"test\n123 \\u0000")
+            |  ...Foo
+            |}
+            |
+            |fragment Foo on User @foo(bar: 1) {
+            |  baz @docs(info: "\"\"\"\n\"\"\" this \" is \"\"\na description! \"\"\"")
+            |}""".stripMargin) (after being strippedOfCarriageReturns)
+      }
+
+      "render queries with block strings " in {
+        val Success(ast) = QueryParser.parse(FileUtil loadQuery "block-string.graphql")
+
+        def withoutRaw(withRaw: Document, block: Boolean = true) = AstVisitor.visit(withRaw, AstVisitor {
+          case s: StringValue ⇒ VisitorCommand.Transform(s.copy(block = if (block) s.block else false, blockRawValue = None))
+        })
+
+        val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
+        val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
+        
+        val Success(prettyParsed) = QueryParser.parse(prettyRendered)
+        val Success(compactParsed) = QueryParser.parse(compactRendered)
+
+        AstNode.withoutPosition(withoutRaw(ast)) should be (AstNode.withoutPosition(withoutRaw(prettyParsed)))
+        AstNode.withoutPosition(withoutRaw(ast, block = false), stripComments = true) should be (
+          AstNode.withoutPosition(withoutRaw(compactParsed, block = false), stripComments = true))
+
+        compactRendered should be (
+          "query FetchLukeAndLeiaAliased($someVar:String=\"hello \\\\\\n  world\"" +
+          "){luke:human(id:\"1000\",bar:\" \\\\\\\"test\\n123 \\\\u0000\") ...Foo" +
+          "}\nfragment Foo on User@foo(bar:1){baz@docs(info:\"\\\"\\\"\\\"\\n\\\"" +
+          "\\\"\\\" this \\\" is \\\"\\\"\\na description! \\\"\\\"\\\"\")}")
+
+        prettyRendered should equal (FileUtil loadQuery "block-string-rendered.graphql") (after being strippedOfCarriageReturns)
       }
     }
 

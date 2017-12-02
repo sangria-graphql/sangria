@@ -39,7 +39,7 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
           case _ ⇒ Left(StringCoercionViolation)
         },
         coerceInput = {
-          case ast.StringValue(s, _, _) ⇒ Right(s)
+          case ast.StringValue(s, _, _, _, _) ⇒ Right(s)
           case _ ⇒ Left(StringCoercionViolation)
         })
 
@@ -66,7 +66,7 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
           case _ ⇒ Left(StringCoercionViolation)
         },
         coerceInput = {
-          case ast.StringValue(s, _, _) ⇒ Right(s)
+          case ast.StringValue(s, _, _, _, _) ⇒ Right(s)
           case _ ⇒ Left(StringCoercionViolation)
         })
 

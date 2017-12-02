@@ -492,7 +492,7 @@ object BatchExecutor {
         case field: ast.Field if currentOperation.isDefined || currentFragment.isDefined ⇒
           field.directives.find(_.name == ExportDirective.name) match {
             case Some(d) ⇒ d.arguments.find(_.name == AsArg.name) match {
-              case Some(ast.Argument(_, ast.StringValue(as, _, _), _, _)) if typeInfo.fieldDef.isDefined ⇒
+              case Some(ast.Argument(_, ast.StringValue(as, _, _, _, _), _, _)) if typeInfo.fieldDef.isDefined ⇒
                 currentDirectives += Export(as, calcPath(typeInfo), d, typeInfo.fieldDef.get.fieldType)
                 VisitorCommand.Continue
               case _ ⇒ VisitorCommand.Continue

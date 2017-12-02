@@ -1,11 +1,11 @@
 package sangria.parser
 
 import org.parboiled2._
-import CharPredicate.{HexDigit, Digit19}
-
+import CharPredicate.{Digit19, HexDigit}
 import sangria.ast
+import sangria.util.StringUtil
 
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 
 trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored ⇒
 
@@ -50,13 +50,35 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def Digit = rule { ch('0') | NonZeroDigit }
 
-  def StringValue = rule { atomic(Comments ~ trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ IgnoredNoComment.* ~> ((comment, pos, s) ⇒ ast.StringValue(s, comment, Some(pos))))}
+  def StringValue = rule { BlockStringValue | NonBlockStringValue }
 
-  def Characters = rule { (NormalChar | '\\' ~ EscapedChar).* }
+  def BlockStringValue = rule {
+    Comments ~ trackPos ~ BlockString ~ clearSB() ~ BlockStringCharacters ~ BlockString ~ push(sb.toString) ~ IgnoredNoComment.* ~>
+      ((comment, pos, s) ⇒ ast.StringValue(StringUtil.blockStringValue(s), true, Some(s), comment, Some(pos)))
+  }
+
+  def BlockStringCharacters = rule { (BlockStringCharacter | BlockStringEscapedChar).* }
+
+  def BlockString = rule { str("\"\"\"") }
+
+  def QuotedBlockString = rule { str("\\\"\"\"") }
+
+  def BlockStringCharacter = rule { !(QuotedBlockString | BlockString) ~ ANY ~ appendSB() }
+
+  def BlockStringEscapedChar = rule {
+    QuotedBlockString ~ appendSB("\"\"\"")
+  }
+
+  def NormalCharacter = rule { !(QuoteBackslash | LineTerminator) ~ ANY ~ appendSB() }
+
+  def NonBlockStringValue = rule {
+    Comments ~ trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(sb.toString) ~ IgnoredNoComment.* ~>
+        ((comment, pos, s) ⇒ ast.StringValue(s, false, None, comment, Some(pos)))
+  }
+
+  def Characters = rule { (NormalCharacter | '\\' ~ EscapedChar).* }
 
   val QuoteBackslash = CharPredicate("\"\\")
-
-  def NormalChar = rule { !(QuoteBackslash | LineTerminator) ~ ANY ~ appendSB() }
 
   def EscapedChar = rule {
     QuoteBackslash ~ appendSB() |

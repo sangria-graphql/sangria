@@ -21,7 +21,7 @@ class SchemaDefinitionSpec extends WordSpec with Matchers with FutureResultSuppo
           case _ ⇒ Left(StringCoercionViolation)
         },
         coerceInput = {
-          case ast.StringValue(s, _, _) ⇒ Right(s)
+          case ast.StringValue(s, _, _, _, _) ⇒ Right(s)
           case _ ⇒ Left(StringCoercionViolation)
         })
 

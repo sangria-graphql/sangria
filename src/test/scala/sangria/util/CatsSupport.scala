@@ -71,14 +71,14 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
 
   def directiveStringArg(d: ast.Directive, name: String) =
     d.arguments.collectFirst {
-      case ast.Argument(`name`, ast.StringValue(str, _, _), _, _) ⇒ str
+      case ast.Argument(`name`, ast.StringValue(str, _, _, _, _), _, _) ⇒ str
     }
     .getOrElse(throw new IllegalStateException(s"Can't find a directive argument $name"))
 
   def directiveStringListArg(d: ast.Directive, name: String) =
     d.arguments.collectFirst {
       case ast.Argument(`name`, ast.ListValue(values, _, _), _, _) ⇒
-        values.collect {case ast.StringValue(v, _, _) ⇒ v}
+        values.collect {case ast.StringValue(v, _, _, _, _) ⇒ v}
     }
     .getOrElse(throw new IllegalStateException(s"Can't find a directive argument $name"))
 
