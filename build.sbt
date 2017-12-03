@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.3.3-SNAPSHOT"
+version := "1.3.3"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
@@ -51,7 +51,7 @@ libraryDependencies ++= Seq(
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.4.0" % Test,
-  "io.github.lukehutch" % "fast-classpath-scanner" % "2.8.1" % Test
+  "io.github.lukehutch" % "fast-classpath-scanner" % "2.9.3" % Test
 )
 
 // Publishing
