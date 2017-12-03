@@ -203,7 +203,7 @@ object AstSchemaBuilder {
   def default[Ctx] = new DefaultAstSchemaBuilder[Ctx]
   def resolverBased[Ctx](resolvers: AstSchemaResolver[Ctx]*) = new ResolverBasedAstSchemaBuilder[Ctx](resolvers)
 
-  @deprecated("Please migrate to new string-based description format", "1.4.0")
+  @deprecated("Please migrate to new string-based description format", "1.3.3")
   def defaultWithLegacyCommentDescriptions[Ctx] = new DefaultAstSchemaBuilder[Ctx] {
     override def useLegacyCommentDescriptions = true
   }
@@ -664,7 +664,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def directiveName(definition: ast.DirectiveDefinition): String =
     Named.checkName(definition.name)
 
-  @deprecated("Please migrate to new string-based description format", "1.4.0")
+  @deprecated("Please migrate to new string-based description format", "1.3.3")
   def useLegacyCommentDescriptions: Boolean = false
 
   def commentDescription(node: ast.WithComments): Option[String] =
