@@ -18,6 +18,7 @@ object QueryValidator {
   val allRules: List[ValidationRule] = List(
     new ArgumentsOfCorrectType,
     new DefaultValuesOfCorrectType,
+    new ExecutableDefinitions,
     new FieldsOnCorrectType,
     new FragmentsOnCompositeType,
     new KnownArgumentNames,
@@ -45,11 +46,13 @@ object QueryValidator {
     new InputDocumentNonConflictingVariableInference
   )
 
+  def ruleBased(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
+
   val empty = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = Vector.empty
   }
 
-  val default = new RuleBasedQueryValidator(allRules)
+  val default = ruleBased(allRules)
 }
 
 class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {

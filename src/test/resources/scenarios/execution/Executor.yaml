@@ -503,22 +503,3 @@ tests:
     then:
       data:
         field: '{"a":true,"c":false,"e":0}'
-
-  - name: fails to execute a query containing a type definition
-    given:
-      schema: |
-        type Type {
-          foo: String
-        }
-
-        schema {
-          query: Type
-        }
-      query: |
-        { foo }
-
-        type Query { foo: String }
-    when:
-      execute:
-    then:
-      exception: GraphQL cannot execute a request containing a ObjectTypeDefinition.

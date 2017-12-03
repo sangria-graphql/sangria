@@ -826,7 +826,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val schema = Schema(DataType)
 
       val error = intercept[ExecutionError] {
-        Executor.execute(schema, doc, root = new TestSubject,userContext = Ctx()).await
+        Executor.execute(schema, doc, root = new TestSubject,userContext = Ctx(), queryValidator = QueryValidator.empty).await
       }
 
       error.getMessage should be ("GraphQL cannot execute a request containing a ObjectTypeDefinition.")
