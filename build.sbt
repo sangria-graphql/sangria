@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.3.3"
+version := "1.3.4-SNAPSHOT"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
