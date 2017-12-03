@@ -19,6 +19,10 @@ object GraphQLOutputTypeLookup extends GraphQLOutputTypeLookupLowPrio {
   implicit def optionLookup[T : GraphQLOutputTypeLookup]  = new GraphQLOutputTypeLookup[Option[T]] {
     def graphqlType = OptionType(implicitly[GraphQLOutputTypeLookup[T]].graphqlType)
   }
+
+  implicit def interfaceLookup[T](implicit int: InterfaceType[_, T]) = new GraphQLOutputTypeLookup[T] {
+    override def graphqlType = int
+  }
 }
 
 trait GraphQLOutputTypeLookupLowPrio {
