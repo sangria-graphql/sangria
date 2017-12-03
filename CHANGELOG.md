@@ -1,5 +1,47 @@
-## v1.3.3 (upcoming)
+## v1.3.3 (2017-12-03)
 
+* Added support for string-based descriptions in SDL and implement most recent SDL-related changes (#303, #304, #305) (spec change). **Breaking change** for all SDL users. The type, field and enum value descriptions are now handled differently in the SDL.
+
+  Old format (comment-based):
+
+  ```graphql
+  # This is a description
+  # of the `Foo` type.
+  type Foo implements Bar {
+
+    # another description
+    one: Type
+  }
+  ```
+
+  New format (string-based):
+
+  ```graphql
+  """
+  This is a description
+  of the `Foo` type.
+  """
+  type Foo implements Bar {
+    "another description"
+    one: Type
+  }
+  ```
+
+  **Migration path**: by default (and after the update) only new description format is used. The old (comment-based) is still will be supported for several version. In order to enable description handling in the old format, please override `DefaultAstSchemaBuilder.useLegacyCommentDescriptions` or use `AstSchemaBuilder.defaultWithLegacyCommentDescriptions`.
+* Added block string support (#260, #301) ([spec change](https://github.com/facebook/graphql/pull/327)). Here is an example of the new multi-line string syntax:
+
+  ```graphql
+  mutation {
+    sendEmail(message: """
+      Hello,
+        World!
+
+      Yours,
+        GraphQL.
+    """)
+  }
+  ```
+* Added `relOnly` and `relOnlyCaching` methods to `Fetcher`. Thanks to @kuppuswamy for this contribution!
 * Fixed a validation of nested InputObjectType with same property names (#292). 
 * Improved performance of `Document.hashCode` which had a big influence on performance of the AST-based schema builder. 
 
