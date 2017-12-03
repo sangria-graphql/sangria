@@ -27,7 +27,7 @@
   }
   ```
 
-  **Migration path**: by default (and after the update) only new description format is used. The old (comment-based) is still will be supported for several version. In order to enable description handling in the old format, please override `DefaultAstSchemaBuilder.useLegacyCommentDescriptions` or use `AstSchemaBuilder.defaultWithLegacyCommentDescriptions`.
+  **Migration path**: by default (and after the update) only new description format is used. The old (comment-based) format is still will be supported for several version. In order to enable description handling in the old format, please override `DefaultAstSchemaBuilder.useLegacyCommentDescriptions` or use `AstSchemaBuilder.defaultWithLegacyCommentDescriptions`.
 * Added block string support (#260, #301) ([spec change](https://github.com/facebook/graphql/pull/327)). Here is an example of the new multi-line string syntax:
 
   ```graphql
