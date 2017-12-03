@@ -173,66 +173,76 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   }
 
   def ScalarTypeDefinition = rule {
-    Comments ~ trackPos ~ scalar ~ Name ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~> (
-      (comment, pos, name, dirs) ⇒ ast.ScalarTypeDefinition(name, dirs, comment, Some(pos)))
+    Description ~ Comments ~ trackPos ~ scalar ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> (
+      (descr, comment, pos, name, dirs) ⇒ ast.ScalarTypeDefinition(name, dirs, descr, comment, Some(pos)))
   }
 
-  // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
   def ObjectTypeDefinition = rule {
-    Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~
-      (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ FieldDefinition.* ~ Comments ~ wsNoComment('}') ~> (
-        (comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toVector, dirs, comment, tc, Some(pos)))
+    Description ~ Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
+      (descr, comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toVector, dirs, descr, comment, tc, Some(pos)))
+  }
+  
+  /** ObjectTypeExtension :
+    * - extend type Name ImplementsInterfaces? Directives[Const]? FieldDefinitions
+    * - extend type Name ImplementsInterfaces? Directives[Const]
+    * - extend type Name ImplementsInterfaces
+    */
+  def TypeExtensionDefinition = rule {
+    (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
+      (descr, comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, fields.toVector, dirs, descr, comment, tc, Some(pos)), Vector.empty, Some(pos)))) |
+    (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ DirectivesConst ~> (
+      (descr, comment, pos, name, interfaces, dirs) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, Vector.empty, dirs, descr, comment, Vector.empty, Some(pos)), Vector.empty, Some(pos)))) |
+    (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ ImplementsInterfaces ~> (
+      (descr, comment, pos, name, interfaces) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, Vector.empty, Vector.empty, descr, comment, Vector.empty, Some(pos)), Vector.empty, Some(pos))))
   }
 
   def ImplementsInterfaces = rule { implements ~ NamedType.+ ~> (_.toVector) }
 
+  def FieldDefinitions = rule {
+    wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}')
+  }
+
   def FieldDefinition = rule {
-    Comments ~ trackPos ~ Name ~ (ArgumentsDefinition.? ~> (_ getOrElse Vector.empty)) ~ ws(':') ~ Type ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~> (
-      (comment, pos, name, args, fieldType, dirs) ⇒ ast.FieldDefinition(name, fieldType, args, dirs, comment, Some(pos)))
+    Description ~ Comments ~ trackPos ~ Name ~ (ArgumentsDefinition.? ~> (_ getOrElse Vector.empty)) ~ ws(':') ~ Type ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~> (
+      (descr, comment, pos, name, args, fieldType, dirs) ⇒ ast.FieldDefinition(name, fieldType, args, dirs, descr, comment, Some(pos)))
   }
 
   def ArgumentsDefinition = rule { wsNoComment('(') ~ InputValueDefinition.+ ~ wsNoComment(')') ~> (_.toVector) }
 
   def InputValueDefinition = rule {
-    Comments ~ trackPos ~ Name ~ ws(':') ~ Type ~ DefaultValue.? ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~> (
-      (comment, pos, name, valueType, default, dirs) ⇒ ast.InputValueDefinition(name, valueType, default, dirs, comment, Some(pos)))
+    Description ~ Comments ~ trackPos ~ Name ~ ws(':') ~ Type ~ DefaultValue.? ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> (
+      (descr, comment, pos, name, valueType, default, dirs) ⇒ ast.InputValueDefinition(name, valueType, default, dirs, descr, comment, Some(pos)))
   }
 
   def InterfaceTypeDefinition = rule {
-    Comments ~ trackPos ~ interface ~ Name ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
-      (comment, pos, name, dirs, fields, tc) ⇒ ast.InterfaceTypeDefinition(name, fields.toVector, dirs, comment, tc, Some(pos)))
+    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
+      (descr, comment, pos, name, dirs, fields, tc) ⇒ ast.InterfaceTypeDefinition(name, fields.toVector, dirs, descr, comment, tc, Some(pos)))
   }
 
   def UnionTypeDefinition = rule {
-    Comments ~ trackPos ~ union ~ Name ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('=') ~ UnionMembers ~> (
-        (comment, pos, name, dirs, members) ⇒ ast.UnionTypeDefinition(name, members, dirs, comment, Some(pos)))
+    Description ~ Comments ~ trackPos ~ union ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('=') ~ UnionMembers ~> (
+      (descr, comment, pos, name, dirs, members) ⇒ ast.UnionTypeDefinition(name, members, dirs, descr, comment, Some(pos)))
   }
 
   def UnionMembers = rule { ws('|').? ~ NamedType.+(ws('|')) ~> (_.toVector) }
 
   def EnumTypeDefinition = rule {
-    Comments ~ trackPos ~ enum ~ Name ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
-      (comment, pos, name, dirs, values, tc) ⇒ ast.EnumTypeDefinition(name, values.toVector, dirs, comment, tc, Some(pos)))
+    Description ~ Comments ~ trackPos ~ enum ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+      (descr, comment, pos, name, dirs, values, tc) ⇒ ast.EnumTypeDefinition(name, values.toVector, dirs, descr, comment, tc, Some(pos)))
   }
 
   def EnumValueDefinition = rule {
-    EnumValue ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~> ((v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, v.comments, v.position))
+    Description ~ EnumValue ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> ((descr, v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, descr, v.comments, v.position))
   }
-
-  // TODO: clarify https://github.com/facebook/graphql/pull/90/files#r64149353
+  
   def InputObjectTypeDefinition = rule {
-    Comments ~ trackPos ~ inputType ~ Name ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ InputValueDefinition.* ~ Comments ~ wsNoComment('}') ~> (
-      (comment, pos, name, dirs, fields, tc) ⇒ ast.InputObjectTypeDefinition(name, fields.toVector, dirs, comment, tc, Some(pos)))
-  }
-
-  def TypeExtensionDefinition = rule {
-    Comments ~ trackPos ~ extend ~ ObjectTypeDefinition ~> (
-      (comment, pos, definition) ⇒ ast.TypeExtensionDefinition(definition, comment, Some(pos)))
+    Description ~ Comments ~ trackPos ~ inputType ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ InputValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+      (descr, comment, pos, name, dirs, fields, tc) ⇒ ast.InputObjectTypeDefinition(name, fields.toVector, dirs, descr, comment, tc, Some(pos)))
   }
 
   def DirectiveDefinition = rule {
-    Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_ getOrElse Vector.empty)) ~ on ~ DirectiveLocations ~> (
-      (comment, pos, name, args, locations) ⇒ ast.DirectiveDefinition(name, args, locations, comment, Some(pos)))
+    Description ~ Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_ getOrElse Vector.empty)) ~ on ~ DirectiveLocations ~> (
+      (descr, comment, pos, name, args, locations) ⇒ ast.DirectiveDefinition(name, args, locations, descr, comment, Some(pos)))
   }
 
   def DirectiveLocations = rule { ws('|').? ~ DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector) }
@@ -240,7 +250,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   def DirectiveLocation = rule { Comments ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
 
   def SchemaDefinition = rule {
-    Comments ~ trackPos ~ schema ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+    Comments ~ trackPos ~ schema ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
       (comment, pos, dirs, ops, tc) ⇒ ast.SchemaDefinition(ops.toVector, dirs, comment, tc, Some(pos)))
   }
 
@@ -248,6 +258,8 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
     Comments ~ trackPos ~ OperationType ~ ws(':') ~ NamedType ~> (
       (comment, pos, opType, tpe) ⇒ ast.OperationTypeDefinition(opType, tpe, comment, Some(pos)))
   }
+
+  def Description = rule { StringValue.? }
 
 }
 
@@ -301,7 +313,11 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def Arguments = rule { Ignored.* ~ wsNoComment('(') ~ Argument.+ ~ wsNoComment(')') ~> (_.toVector) }
 
+  def ArgumentsConst = rule { Ignored.* ~ wsNoComment('(') ~ ArgumentConst.+ ~ wsNoComment(')') ~> (_.toVector) }
+
   def Argument = rule { Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ Value ~> ((comment, pos, name, value) ⇒ ast.Argument(name, value, comment, Some(pos))) }
+
+  def ArgumentConst = rule { Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ ValueConst ~> ((comment, pos, name, value) ⇒ ast.Argument(name, value, comment, Some(pos))) }
 
 }
 
@@ -373,11 +389,16 @@ trait Values { this: Parser with Tokens with Ignored with Operations ⇒
 }
 
 trait Directives { this: Parser with Tokens with Operations with Ignored ⇒
-
+  
   def Directives = rule { Directive.+ ~> (_.toVector) }
 
+  def DirectivesConst = rule { DirectiveConst.+ ~> (_.toVector) }
+
   def Directive = rule { Comments ~ trackPos ~ '@' ~ NameStrict ~ (Arguments.? ~> (_ getOrElse Vector.empty)) ~>
-      ((comment, pos, name, args) ⇒ ast.Directive(name, args, comment, Some(pos))) }
+    ((comment, pos, name, args) ⇒ ast.Directive(name, args, comment, Some(pos))) }
+
+  def DirectiveConst = rule { Comments ~ trackPos ~ '@' ~ NameStrict ~ (ArgumentsConst.? ~> (_ getOrElse Vector.empty)) ~>
+    ((comment, pos, name, args) ⇒ ast.Directive(name, args, comment, Some(pos))) }
 
 }
 

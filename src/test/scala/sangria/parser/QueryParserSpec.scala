@@ -890,6 +890,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                 NamedType("Wo", Some(Position(16, 1, 17))),
                 NamedType("Rld", Some(Position(21, 1, 22)))),
               Vector.empty,
+              None,
               Vector.empty,
               Some(Position(0, 1, 1))
             )),
@@ -921,11 +922,12 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             DirectiveDefinition(
               "include2",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(33, 2, 33))), Some(Position(33, 2, 33))), None, Vector.empty, Vector.empty, Some(Position(29, 2, 29)))),
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(33, 2, 33))), Some(Position(33, 2, 33))), None, Vector.empty, None, Vector.empty, Some(Position(29, 2, 29)))),
               Vector(
                 DirectiveLocation("FIELD", Vector.empty, Some(Position(58, 3, 13))),
                 DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(Position(76, 4, 13))),
                 DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(Position(104, 5, 13)))),
+              None,
               Vector.empty,
               Some(Position(9, 2, 9))
             )),

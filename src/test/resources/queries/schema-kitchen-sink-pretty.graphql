@@ -53,6 +53,7 @@ scalar AnnotatedScalar @onScalar
 enum Site {
   "description 1"
   DESKTOP
+
   """
   description 2
   """
@@ -78,12 +79,9 @@ extend type Foo {
   seven(argument: [String]): Type
 }
 
-extend type Foo @onType 
+extend type Foo @onType
 
 "cool skip"
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
-directive @include(if: Boolean!)
-  on FIELD
-   | FRAGMENT_SPREAD
-   | INLINE_FRAGMENT
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT

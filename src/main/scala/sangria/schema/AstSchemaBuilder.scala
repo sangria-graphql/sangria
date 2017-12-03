@@ -203,6 +203,11 @@ object AstSchemaBuilder {
   def default[Ctx] = new DefaultAstSchemaBuilder[Ctx]
   def resolverBased[Ctx](resolvers: AstSchemaResolver[Ctx]*) = new ResolverBasedAstSchemaBuilder[Ctx](resolvers)
 
+  @deprecated("Please migrate to new string-based description format", "1.4.0")
+  def defaultWithLegacyCommentDescriptions[Ctx] = new DefaultAstSchemaBuilder[Ctx] {
+    override def useLegacyCommentDescriptions = true
+  }
+
   object TypeName {
     def unapply(definition: ast.TypeDefinition): Option[String] =
       Some(definition.name)
@@ -659,26 +664,36 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def directiveName(definition: ast.DirectiveDefinition): String =
     Named.checkName(definition.name)
 
+  @deprecated("Please migrate to new string-based description format", "1.4.0")
+  def useLegacyCommentDescriptions: Boolean = false
+
   def commentDescription(node: ast.WithComments): Option[String] =
     AstSchemaBuilder.extractDescription(node)
 
   def typeDescription(definition: ast.TypeDefinition): Option[String] =
-    commentDescription(definition)
+    if (useLegacyCommentDescriptions) commentDescription(definition)
+    else definition.description.map(_.value)
+
 
   def fieldDescription(definition: ast.FieldDefinition): Option[String] =
-    commentDescription(definition)
+    if (useLegacyCommentDescriptions) commentDescription(definition)
+    else definition.description.map(_.value)
 
   def argumentDescription(definition: ast.InputValueDefinition): Option[String] =
-    commentDescription(definition)
+    if (useLegacyCommentDescriptions) commentDescription(definition)
+    else definition.description.map(_.value)
 
   def inputFieldDescription(definition: ast.InputValueDefinition): Option[String] =
-    commentDescription(definition)
+    if (useLegacyCommentDescriptions) commentDescription(definition)
+    else definition.description.map(_.value)
 
   def enumValueDescription(definition: ast.EnumValueDefinition): Option[String] =
-    commentDescription(definition)
+    if (useLegacyCommentDescriptions) commentDescription(definition)
+    else definition.description.map(_.value)
 
   def directiveDescription(definition: ast.DirectiveDefinition): Option[String] =
-    commentDescription(definition)
+    if (useLegacyCommentDescriptions) commentDescription(definition)
+    else definition.description.map(_.value)
 
   def enumValue(typeDefinition: ast.EnumTypeDefinition, definition: ast.EnumValueDefinition): String =
     definition.name

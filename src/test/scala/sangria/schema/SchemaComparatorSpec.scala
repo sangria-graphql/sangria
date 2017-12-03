@@ -47,12 +47,12 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
     "detect if a type description changed " in checkChanges(
       graphql"""
-        # normal type
+        "normal type"
         type ObjectType {field1: String}
       """,
 
       graphql"""
-        # Cool type
+        "Cool type"
         type ObjectType {field1: String}
       """,
 
@@ -69,8 +69,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
         enum Foo {
           B @deprecated(reason: "Should not be used anymore")
 
-          # The `B`
-          # value!
+          "The `B`\nvalue!"
           C, D
         }
       """,
@@ -92,7 +91,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
         type Bar {descr: String}
         type Baz {descr: String}
 
-        # Hello
+        "Hello"
         union Agg = Bar | Baz
       """,
 
@@ -109,10 +108,10 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       """,
 
       graphql"""
-        # This is locale
+        "This is locale"
         scalar Locale
 
-        # This is country
+        "This is country"
         scalar Country
       """,
 
@@ -127,13 +126,13 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       """,
 
       graphql"""
-        # This is foo
+        "This is foo"
         directive @foo(
-          # first arg
+          "first arg"
           a: String,
           c: Int) on FIELD_DEFINITION | INPUT_OBJECT
 
-        # This is baz
+        "This is baz"
         directive @baz on FIELD_DEFINITION
       """,
 
@@ -153,10 +152,10 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       """,
 
       graphql"""
-        # This is sort
+        "This is sort"
         input Sort {dir: Int}
 
-        # This is foo
+        "This is foo"
         input Foo {size: Int}
       """,
 
@@ -173,12 +172,12 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       """,
 
       graphql"""
-        # search filter
+        "search filter"
         input Filter {
-          # filter by name
+          "filter by name"
           name: String!
 
-          # filter by size
+          "filter by size"
           size: Int
         }
       """,
@@ -250,7 +249,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       graphql"""
         type Filter {
           foo(
-            # descr
+            "descr"
             a: String = "foo"
             b: [String]
             b1: String!
