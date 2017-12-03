@@ -35,7 +35,7 @@ tests:
 
   - name: Simple type inheriting interface
     given:
-      query: type Hello implements World { }
+      query: "type Hello implements World { foo: Bar }"
     when:
       parse:
     then:
@@ -43,7 +43,7 @@ tests:
 
   - name: Simple type inheriting multiple interfaces
     given:
-      query: type Hello implements Wo, rld { }
+      query: "type Hello implements Wo, rld { foo: Bar }"
     when:
       parse:
     then:

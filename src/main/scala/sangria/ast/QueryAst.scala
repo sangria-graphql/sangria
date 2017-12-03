@@ -145,6 +145,10 @@ sealed trait WithComments extends AstNode {
   def comments: Vector[Comment]
 }
 
+sealed trait WithDescription extends AstNode {
+  def description: Option[StringValue]
+}
+
 sealed trait WithTrailingComments {
   def trailingComments: Vector[Comment]
 }
@@ -291,8 +295,9 @@ case class Comment(text: String, position: Option[Position] = None) extends AstN
 case class ScalarTypeDefinition(
     name: String,
     directives: Vector[Directive] = Vector.empty,
+    description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition {
+    position: Option[Position] = None) extends TypeDefinition with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -301,25 +306,28 @@ case class FieldDefinition(
   fieldType: Type,
   arguments: Vector[InputValueDefinition],
   directives: Vector[Directive] = Vector.empty,
+  description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode with WithDirectives
+  position: Option[Position] = None) extends SchemaAstNode with WithDirectives with WithDescription
 
 case class InputValueDefinition(
   name: String,
   valueType: Type,
   defaultValue: Option[Value],
   directives: Vector[Directive] = Vector.empty,
+  description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode with WithDirectives
+  position: Option[Position] = None) extends SchemaAstNode with WithDirectives with WithDescription
 
 case class ObjectTypeDefinition(
     name: String,
     interfaces: Vector[NamedType],
     fields: Vector[FieldDefinition],
     directives: Vector[Directive] = Vector.empty,
+    description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -327,9 +335,10 @@ case class InterfaceTypeDefinition(
     name: String,
     fields: Vector[FieldDefinition],
     directives: Vector[Directive] = Vector.empty,
+    description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -337,8 +346,9 @@ case class UnionTypeDefinition(
     name: String,
     types: Vector[NamedType],
     directives: Vector[Directive] = Vector.empty,
+    description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition {
+    position: Option[Position] = None) extends TypeDefinition with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -346,25 +356,28 @@ case class EnumTypeDefinition(
     name: String,
     values: Vector[EnumValueDefinition],
     directives: Vector[Directive] = Vector.empty,
+    description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
 case class EnumValueDefinition(
   name: String,
   directives: Vector[Directive] = Vector.empty,
+  description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode with WithDirectives
+  position: Option[Position] = None) extends SchemaAstNode with WithDirectives with WithDescription
 
 case class InputObjectTypeDefinition(
     name: String,
     fields: Vector[InputValueDefinition],
     directives: Vector[Directive] = Vector.empty,
+    description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments {
+    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -377,8 +390,9 @@ case class DirectiveDefinition(
   name: String,
   arguments: Vector[InputValueDefinition],
   locations: Vector[DirectiveLocation],
+  description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeSystemDefinition
+  position: Option[Position] = None) extends TypeSystemDefinition with WithDescription
 
 case class DirectiveLocation(
   name: String,
@@ -408,7 +422,7 @@ sealed trait AstNode {
 
 sealed trait SchemaAstNode extends AstNode with WithComments
 sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
-sealed trait TypeDefinition extends TypeSystemDefinition with WithDirectives {
+sealed trait TypeDefinition extends TypeSystemDefinition with WithDirectives with WithDescription {
   def name: String
   def rename(newName: String): TypeDefinition
 }
@@ -675,67 +689,75 @@ object AstVisitor {
 
         // IDL schema definition
 
-        case n @ ScalarTypeDefinition(_, dirs, comment, _) ⇒
+        case n @ ScalarTypeDefinition(_, dirs, description, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FieldDefinition(_, fieldType, args, dirs, comment, _) ⇒
+        case n @ FieldDefinition(_, fieldType, args, dirs, description, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             loop(fieldType)
             args.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputValueDefinition(_, valueType, default, dirs, comment, _) ⇒
+        case n @ InputValueDefinition(_, valueType, default, dirs, description, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             loop(valueType)
             default.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ObjectTypeDefinition(_, interfaces, fields, dirs, comment, trailingComments, _) ⇒
+        case n @ ObjectTypeDefinition(_, interfaces, fields, dirs, description, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             interfaces.foreach(d ⇒ loop(d))
             fields.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InterfaceTypeDefinition(_, fields, dirs, comment, trailingComments, _) ⇒
+        case n @ InterfaceTypeDefinition(_, fields, dirs, description, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ UnionTypeDefinition(_, types, dirs, comment, _) ⇒
+        case n @ UnionTypeDefinition(_, types, dirs, description, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             types.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ EnumTypeDefinition(_, values, dirs, comment, trailingComments, _) ⇒
+        case n @ EnumTypeDefinition(_, values, dirs, description, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             values.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ EnumValueDefinition(_, dirs, comment, _) ⇒
+        case n @ EnumValueDefinition(_, dirs, description, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             dirs.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputObjectTypeDefinition(_, fields, dirs, comment, trailingComments, _) ⇒
+        case n @ InputObjectTypeDefinition(_, fields, dirs, description, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d ⇒ loop(d))
             dirs.foreach(d ⇒ loop(d))
@@ -749,10 +771,11 @@ object AstVisitor {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ DirectiveDefinition(_, args, locations, comment, _) ⇒
+        case n @ DirectiveDefinition(_, args, locations, description, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             args.foreach(d ⇒ loop(d))
             locations.foreach(d ⇒ loop(d))
+            description.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }

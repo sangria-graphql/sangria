@@ -3,7 +3,7 @@ package sangria.renderer
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
 import sangria.parser.QueryParser
-import sangria.util.{FileUtil, StringMatchers}
+import sangria.util.{DebugUtil, FileUtil, StringMatchers}
 import sangria.ast
 import sangria.macros._
 import sangria.visitor.VisitorCommand
@@ -11,6 +11,8 @@ import sangria.visitor.VisitorCommand
 import scala.util.Success
 
 class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
+  val quotes = "\"\"\""
+
   "QueryRenderer" when {
     "rendering queries" should {
       "render kitchen sink" in {
@@ -625,6 +627,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
       "renders minimal ast" in {
         QueryRenderer.render(ast.ScalarTypeDefinition("DateTime")) should be ("scalar DateTime")
       }
+
       "renders directive definitions" in {
         val directive = ast.DirectiveDefinition("custom", arguments = Vector.empty, locations = Vector(
           ast.DirectiveLocation("FIELD"), ast.DirectiveLocation("FRAGMENT_SPREAD"), ast.DirectiveLocation("INLINE_FRAGMENT")))
@@ -637,10 +640,14 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         prettyRendered should equal (
           """directive @custom on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT""".stripMargin
         ) (after being strippedOfCarriageReturns)
-
       }
+
       "render kitchen sink" in {
         val Success(ast) = QueryParser.parse(FileUtil loadQuery "schema-kitchen-sink.graphql")
+
+        def noBlock(a: AstNode) = AstVisitor.visit(a, AstVisitor {
+          case v: StringValue ⇒ VisitorCommand.Transform(v.copy(block = false, blockRawValue = None))
+        })
 
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
@@ -651,107 +658,29 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         AstNode.withoutPosition(ast, stripComments = true) should be (
           AstNode.withoutPosition(prettyParsed, stripComments = true))
 
-        AstNode.withoutPosition(ast, stripComments = true) should be (
-          AstNode.withoutPosition(compactParsed, stripComments = true))
+        AstNode.withoutPosition(noBlock(ast), stripComments = true) should be (
+          AstNode.withoutPosition(noBlock(compactParsed), stripComments = true))
 
         compactRendered should equal (
           """schema{query:QueryType mutation:MutationType}
-            |type Foo implements Bar{one:Type two(argument:InputType!):Type three(argument:InputType,other:String):Int four(argument:String="string"):String five(argument:[String]=["string","string"]):String six(argument:InputType={key:"value"}):Type}
+            |"type description!" type Foo implements Bar{one:Type two(argument:InputType!):Type three(argument:InputType,other:String):Int four(argument:String="string"):String five(argument:[String]=["string","string"]):String "More \"\"\" descriptions \\" six(argument:InputType={key:"value"}):Type}
             |type AnnotatedObject @onObject(arg:"value"){annotatedField(arg:Type="default"@onArg):Type@onField}
-            |interface Bar{one:Type four(argument:String="string"):String}
+            |" It's an interface!" interface Bar{one:Type four(argument:String="string"):String}
             |interface AnnotatedInterface@onInterface{annotatedField(arg:Type@onArg):Type@onField}
             |union Feed=Story|Article|Advert
             |union AnnotatedUnion@onUnion=A|B
             |scalar CustomScalar
             |scalar AnnotatedScalar@onScalar
-            |enum Site{DESKTOP MOBILE}
+            |enum Site{"description 1" DESKTOP "description 2" MOBILE}
             |enum AnnotatedEnum@onEnum{ANNOTATED_VALUE@onEnumValue OTHER_VALUE}
             |input InputType {key:String! answer:Int=42}
             |input AnnotatedInput @onInputObjectType{annotatedField:Type@onField}
             |extend type Foo {seven(argument:[String]):Type}
-            |extend type Foo @onType{}
-            |type NoFields {}
-            |directive@skip(if:Boolean!)on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
+            |extend type Foo @onType
+            |"cool skip" directive@skip(if:Boolean!)on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
             |directive@include(if:Boolean!)on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT""".stripMargin) (after being strippedOfCarriageReturns)
 
-        prettyRendered should equal (
-          """# Copyright (c) 2015, Facebook, Inc.
-            |# All rights reserved.
-            |#
-            |# This source code is licensed under the BSD-style license found in the
-            |# LICENSE file in the root directory of this source tree. An additional grant
-            |# of patent rights can be found in the PATENTS file in the same directory.
-            |
-            |schema {
-            |  query: QueryType
-            |  mutation: MutationType
-            |}
-            |
-            |type Foo implements Bar {
-            |  one: Type
-            |  two(argument: InputType!): Type
-            |  three(argument: InputType, other: String): Int
-            |  four(argument: String = "string"): String
-            |  five(argument: [String] = ["string", "string"]): String
-            |  six(argument: InputType = {key: "value"}): Type
-            |}
-            |
-            |type AnnotatedObject @onObject(arg: "value") {
-            |  annotatedField(arg: Type = "default" @onArg): Type @onField
-            |}
-            |
-            |# It's an interface!
-            |interface Bar {
-            |  one: Type
-            |  four(argument: String = "string"): String
-            |}
-            |
-            |interface AnnotatedInterface @onInterface {
-            |  annotatedField(arg: Type @onArg): Type @onField
-            |}
-            |
-            |union Feed = Story | Article | Advert
-            |
-            |union AnnotatedUnion @onUnion = A | B
-            |
-            |scalar CustomScalar
-            |
-            |scalar AnnotatedScalar @onScalar
-            |
-            |enum Site {
-            |  # value 1
-            |  DESKTOP
-            |
-            |  # value 2
-            |  MOBILE
-            |}
-            |
-            |enum AnnotatedEnum @onEnum {
-            |  ANNOTATED_VALUE @onEnumValue
-            |  OTHER_VALUE
-            |}
-            |
-            |input InputType {
-            |  key: String!
-            |  answer: Int = 42
-            |}
-            |
-            |input AnnotatedInput @onInputObjectType {
-            |  # field comment
-            |  annotatedField: Type @onField
-            |}
-            |
-            |extend type Foo {
-            |  seven(argument: [String]): Type
-            |}
-            |
-            |extend type Foo @onType {}
-            |
-            |type NoFields {}
-            |
-            |directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
-            |
-            |directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT""".stripMargin) (after being strippedOfCarriageReturns)
+        prettyRendered should equal (FileUtil loadQuery "schema-kitchen-sink-pretty.graphql")
       }
 
       "renders schema with comments correctly" in {

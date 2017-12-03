@@ -26,6 +26,8 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
     render(schema)
   }
 
+  val quotes = "\"\"\""
+
   def `default schema renderer`(implicit render: Schema[Unit, Unit] ⇒ String): Unit = {
     "Prints String Field" in {
       renderSingleFieldSchema(OptionType(StringType)) should equal ("""
@@ -244,7 +246,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal (s"""
         |schema {
         |  query: Root
         |}
@@ -253,11 +255,15 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  str: String
         |}
         |
-        |# My
-        |# description
+        |$quotes
+        |My
+        |description
+        |$quotes
         |interface Foo {
-        |  # field
-        |  # description
+        |  $quotes
+        |  field
+        |  description
+        |  $quotes
         |  str: String
         |}
         |
@@ -412,32 +418,36 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal (s"""
         |schema {
         |  query: Root
         |}
         |
-        |# Blog article
+        |"Blog article"
         |input Article {
-        |  # The most important field
+        |  "The most important field"
         |  title: String!
         |
-        |  # The author of the article
+        |  "The author of the article"
         |  author: String = "Anonymous"
         |
-        |  # comments!
+        |  "comments!"
         |  comments: [String!]!
         |}
         |
-        |# My
-        |# description
+        |$quotes
+        |My
+        |description
+        |$quotes
         |input InputType {
-        |  # My
-        |  # field
-        |  # description
+        |  $quotes
+        |  My
+        |  field
+        |  description
+        |  $quotes
         |  int: Int
         |
-        |  # has a default!
+        |  "has a default!"
         |  article: Article = {title: "Hello", author: "Anonymous", comments: ["first!", "looks good!"]}
         |}
         |
@@ -468,13 +478,15 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal (s"""
         |schema {
         |  query: Root
         |}
         |
-        |# My
-        |# description
+        |$quotes
+        |My
+        |description
+        |$quotes
         |scalar Odd
         |
         |type Root {
@@ -497,16 +509,20 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal (s"""
         |schema {
         |  query: Root
         |}
         |
-        |# My
-        |# description
+        |$quotes
+        |My
+        |description
+        |$quotes
         |enum RGB {
-        |  # My Red
-        |  # color
+        |  $quotes
+        |  My Red
+        |   color
+        |  $quotes
         |  RED
         |  GREEN @deprecated(reason: "not cool anymore")
         |  BLUE @deprecated
@@ -523,6 +539,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         description = Some("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.\nNunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis."),
         arguments =
           Argument("first", OptionInputType(ListInputType(StringType)), "Some descr", scalaInput(List("foo", "bar", "baz"))) ::
+          Argument("middle", OptionInputType(ListInputType(StringType)), "Several\n  lines\nof \"description\"", scalaInput(123)) ::
           Argument("last", OptionInputType(IntType), "Another descr") ::
           Nil,
         locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.InputFieldDefinition),
@@ -532,8 +549,8 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         Field("foo", OptionType(StringType), resolve = _ ⇒ None)))
 
       val schema = Schema(root, directives = BuiltinDirectives :+ myDirective)
-
-      render(schema) should equal ("""
+      
+      render(schema) should equal (s"""
         |schema {
         |  query: Root
         |}
@@ -542,13 +559,22 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  foo: String
         |}
         |
-        |# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.
-        |# Nunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis.
+        |$quotes
+        |Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.
+        |Nunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis.
+        |$quotes
         |directive @myDirective(
-        |  # Some descr
+        |  "Some descr"
         |  first: [String!] = ["foo", "bar", "baz"],
         |
-        |  # Another descr
+        |  $quotes
+        |  Several
+        |    lines
+        |  of "description"
+        |  $quotes
+        |  middle: [String!],
+        |
+        |  "Another descr"
         |  last: Int) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -577,11 +603,13 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
     "Print Introspection Schema" in {
       val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
       val rendered = SchemaRenderer.renderSchema(Executor.execute(schema, introspectionQuery).await, SchemaFilter.introspection)
-
-      ("\n" + rendered + "\n") should equal ("""
-        |# A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
-        |#
-        |# In some cases, you need to provide options to alter GraphQL’s execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.
+      
+      ("\n" + rendered + "\n") should equal (s"""
+        |$quotes
+        |A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
+        |
+        |In some cases, you need to provide options to alter GraphQL’s execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.
+        |$quotes
         |type __Directive {
         |  name: String!
         |  description: String
@@ -592,64 +620,64 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  onField: Boolean! @deprecated(reason: "Use `locations`.")
         |}
         |
-        |# A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.
+        |"A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies."
         |enum __DirectiveLocation {
-        |  # Location adjacent to a query operation.
+        |  "Location adjacent to a query operation."
         |  QUERY
         |
-        |  # Location adjacent to a mutation operation.
+        |  "Location adjacent to a mutation operation."
         |  MUTATION
         |
-        |  # Location adjacent to a subscription operation.
+        |  "Location adjacent to a subscription operation."
         |  SUBSCRIPTION
         |
-        |  # Location adjacent to a field.
+        |  "Location adjacent to a field."
         |  FIELD
         |
-        |  # Location adjacent to a fragment definition.
+        |  "Location adjacent to a fragment definition."
         |  FRAGMENT_DEFINITION
         |
-        |  # Location adjacent to a fragment spread.
+        |  "Location adjacent to a fragment spread."
         |  FRAGMENT_SPREAD
         |
-        |  # Location adjacent to an inline fragment.
+        |  "Location adjacent to an inline fragment."
         |  INLINE_FRAGMENT
         |
-        |  # Location adjacent to a schema definition.
+        |  "Location adjacent to a schema definition."
         |  SCHEMA
         |
-        |  # Location adjacent to a scalar definition.
+        |  "Location adjacent to a scalar definition."
         |  SCALAR
         |
-        |  # Location adjacent to an object type definition.
+        |  "Location adjacent to an object type definition."
         |  OBJECT
         |
-        |  # Location adjacent to a field definition.
+        |  "Location adjacent to a field definition."
         |  FIELD_DEFINITION
         |
-        |  # Location adjacent to an argument definition.
+        |  "Location adjacent to an argument definition."
         |  ARGUMENT_DEFINITION
         |
-        |  # Location adjacent to an interface definition.
+        |  "Location adjacent to an interface definition."
         |  INTERFACE
         |
-        |  # Location adjacent to a union definition.
+        |  "Location adjacent to a union definition."
         |  UNION
         |
-        |  # Location adjacent to an enum definition.
+        |  "Location adjacent to an enum definition."
         |  ENUM
         |
-        |  # Location adjacent to an enum value definition.
+        |  "Location adjacent to an enum value definition."
         |  ENUM_VALUE
         |
-        |  # INPUT_OBJECT
+        |  "INPUT_OBJECT"
         |  INPUT_OBJECT
         |
-        |  # Location adjacent to an input object field definition.
+        |  "Location adjacent to an input object field definition."
         |  INPUT_FIELD_DEFINITION
         |}
         |
-        |# One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.
+        |"One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string."
         |type __EnumValue {
         |  name: String!
         |  description: String
@@ -657,7 +685,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  deprecationReason: String
         |}
         |
-        |# Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.
+        |"Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type."
         |type __Field {
         |  name: String!
         |  description: String
@@ -667,37 +695,39 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  deprecationReason: String
         |}
         |
-        |# Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.
+        |"Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value."
         |type __InputValue {
         |  name: String!
         |  description: String
         |  type: __Type!
         |
-        |  # A GraphQL-formatted string representing the default value for this input value.
+        |  "A GraphQL-formatted string representing the default value for this input value."
         |  defaultValue: String
         |}
         |
-        |# A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.
+        |"A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations."
         |type __Schema {
-        |  # A list of all types supported by this server.
+        |  "A list of all types supported by this server."
         |  types: [__Type!]!
         |
-        |  # The type that query operations will be rooted at.
+        |  "The type that query operations will be rooted at."
         |  queryType: __Type!
         |
-        |  # If this server supports mutation, the type that mutation operations will be rooted at.
+        |  "If this server supports mutation, the type that mutation operations will be rooted at."
         |  mutationType: __Type
         |
-        |  # If this server support subscription, the type that subscription operations will be rooted at.
+        |  "If this server support subscription, the type that subscription operations will be rooted at."
         |  subscriptionType: __Type
         |
-        |  # A list of all directives supported by this server.
+        |  "A list of all directives supported by this server."
         |  directives: [__Directive!]!
         |}
         |
-        |# The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.
-        |#
-        |# Depending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name and description, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.
+        |$quotes
+        |The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.
+        |
+        |Depending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name and description, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.
+        |$quotes
         |type __Type {
         |  kind: __TypeKind!
         |  name: String
@@ -710,30 +740,30 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  ofType: __Type
         |}
         |
-        |# An enum describing what kind of type a given `__Type` is.
+        |"An enum describing what kind of type a given `__Type` is."
         |enum __TypeKind {
-        |  # Indicates this type is a scalar.
+        |  "Indicates this type is a scalar."
         |  SCALAR
         |
-        |  # Indicates this type is an object. `fields` and `interfaces` are valid fields.
+        |  "Indicates this type is an object. `fields` and `interfaces` are valid fields."
         |  OBJECT
         |
-        |  # Indicates this type is an interface. `fields` and `possibleTypes` are valid fields.
+        |  "Indicates this type is an interface. `fields` and `possibleTypes` are valid fields."
         |  INTERFACE
         |
-        |  # Indicates this type is a union. `possibleTypes` is a valid field.
+        |  "Indicates this type is a union. `possibleTypes` is a valid field."
         |  UNION
         |
-        |  # Indicates this type is an enum. `enumValues` is a valid field.
+        |  "Indicates this type is an enum. `enumValues` is a valid field."
         |  ENUM
         |
-        |  # Indicates this type is an input object. `inputFields` is a valid field.
+        |  "Indicates this type is an input object. `inputFields` is a valid field."
         |  INPUT_OBJECT
         |
-        |  # Indicates this type is a list. `ofType` is a valid field.
+        |  "Indicates this type is a list. `ofType` is a valid field."
         |  LIST
         |
-        |  # Indicates this type is a non-null. `ofType` is a valid field.
+        |  "Indicates this type is a non-null. `ofType` is a valid field."
         |  NON_NULL
         |}
         |""".stripMargin) (after being strippedOfCarriageReturns)

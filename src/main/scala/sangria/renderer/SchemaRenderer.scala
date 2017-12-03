@@ -37,11 +37,11 @@ object SchemaRenderer {
     loop(tpe, !topLevel)
   }
 
-  private def renderDescription(description: Option[String]) = description match {
-    case Some(descr) if descr.trim.nonEmpty ⇒
-      descr.split("\n").map(l ⇒ ast.Comment(l)).toVector
-    case _ ⇒ Vector.empty
-  }
+  private def renderDescription(description: Option[String]): Option[ast.StringValue] =
+    description.flatMap { d ⇒
+      if (d.trim.nonEmpty) Some(ast.StringValue(d, block = d.indexOf('\n') > 0))
+      else None
+    }
 
   private def renderImplementedInterfaces(tpe: IntrospectionObjectType) =
     tpe.interfaces.map(t ⇒ ast.NamedType(t.name)).toVector
@@ -66,10 +66,15 @@ object SchemaRenderer {
   }
 
   private def renderArg(arg: IntrospectionInputValue) =
-    ast.InputValueDefinition(arg.name, renderTypeName(arg.tpe), renderDefault(arg.defaultValue), comments = renderDescription(arg.description))
+    ast.InputValueDefinition(arg.name, renderTypeName(arg.tpe), renderDefault(arg.defaultValue), description = renderDescription(arg.description))
 
   private def renderArg(arg: Argument[_]) =
-    ast.InputValueDefinition(arg.name, renderTypeNameAst(arg.argumentType), arg.defaultValue.flatMap(renderDefault(_, arg.argumentType)), arg.astDirectives, renderDescription(arg.description))
+    ast.InputValueDefinition(
+      arg.name,
+      renderTypeNameAst(arg.argumentType),
+      arg.defaultValue.flatMap(renderDefault(_, arg.argumentType)),
+      arg.astDirectives,
+      renderDescription(arg.description))
 
   private def withoutDeprecated(dirs: Vector[ast.Directive]) = dirs.filterNot(_.name == "deprecated")
 
@@ -105,19 +110,19 @@ object SchemaRenderer {
     ast.FieldDefinition(field.name, renderTypeNameAst(field.fieldType), renderArgs(field.arguments), withoutDeprecated(field.astDirectives) ++ renderDeprecation(field.deprecationReason.isDefined, field.deprecationReason), renderDescription(field.description))
 
   private def renderInputField(field: IntrospectionInputValue) =
-    ast.InputValueDefinition(field.name, renderTypeName(field.tpe), renderDefault(field.defaultValue), comments = renderDescription(field.description))
+    ast.InputValueDefinition(field.name, renderTypeName(field.tpe), renderDefault(field.defaultValue), description = renderDescription(field.description))
 
   private def renderInputField(field: InputField[_]) =
     ast.InputValueDefinition(field.name, renderTypeNameAst(field.fieldType), field.defaultValue.flatMap(renderDefault(_, field.fieldType)), field.astDirectives, renderDescription(field.description))
 
   private def renderObject(tpe: IntrospectionObjectType) =
-    ast.ObjectTypeDefinition(tpe.name, renderImplementedInterfaces(tpe), renderFieldsI(tpe.fields), comments = renderDescription(tpe.description))
+    ast.ObjectTypeDefinition(tpe.name, renderImplementedInterfaces(tpe), renderFieldsI(tpe.fields), description = renderDescription(tpe.description))
 
   private def renderObject(tpe: ObjectType[_, _]) =
     ast.ObjectTypeDefinition(tpe.name, renderImplementedInterfaces(tpe), renderFields(tpe.uniqueFields), tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderEnum(tpe: IntrospectionEnumType) =
-    ast.EnumTypeDefinition(tpe.name, renderEnumValuesI(tpe.enumValues), comments = renderDescription(tpe.description))
+    ast.EnumTypeDefinition(tpe.name, renderEnumValuesI(tpe.enumValues), description = renderDescription(tpe.description))
 
   private def renderEnum(tpe: EnumType[_]) =
     ast.EnumTypeDefinition(tpe.name, renderEnumValues(tpe.values), tpe.astDirectives, renderDescription(tpe.description))
@@ -129,25 +134,25 @@ object SchemaRenderer {
     values.map(v ⇒ ast.EnumValueDefinition(v.name, withoutDeprecated(v.astDirectives) ++ renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason), renderDescription(v.description))).toVector
 
   private def renderScalar(tpe: IntrospectionScalarType) =
-    ast.ScalarTypeDefinition(tpe.name, comments = renderDescription(tpe.description))
+    ast.ScalarTypeDefinition(tpe.name, description = renderDescription(tpe.description))
 
   private def renderScalar(tpe: ScalarType[_]) =
     ast.ScalarTypeDefinition(tpe.name, tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderInputObject(tpe: IntrospectionInputObjectType) =
-    ast.InputObjectTypeDefinition(tpe.name, renderInputFieldsI(tpe.inputFields), comments = renderDescription(tpe.description))
+    ast.InputObjectTypeDefinition(tpe.name, renderInputFieldsI(tpe.inputFields), description = renderDescription(tpe.description))
 
   private def renderInputObject(tpe: InputObjectType[_]) =
     ast.InputObjectTypeDefinition(tpe.name, renderInputFields(tpe.fields), tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderInterface(tpe: IntrospectionInterfaceType) =
-    ast.InterfaceTypeDefinition(tpe.name, renderFieldsI(tpe.fields), comments = renderDescription(tpe.description))
+    ast.InterfaceTypeDefinition(tpe.name, renderFieldsI(tpe.fields), description = renderDescription(tpe.description))
 
   private def renderInterface(tpe: InterfaceType[_, _]) =
     ast.InterfaceTypeDefinition(tpe.name, renderFields(tpe.uniqueFields), tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderUnion(tpe: IntrospectionUnionType) =
-    ast.UnionTypeDefinition(tpe.name, tpe.possibleTypes.map(t ⇒ ast.NamedType(t.name)).toVector, comments = renderDescription(tpe.description))
+    ast.UnionTypeDefinition(tpe.name, tpe.possibleTypes.map(t ⇒ ast.NamedType(t.name)).toVector, description = renderDescription(tpe.description))
 
   private def renderUnion(tpe: UnionType[_]) =
     ast.UnionTypeDefinition(tpe.name, tpe.types.map(t ⇒ ast.NamedType(t.name)).toVector, tpe.astDirectives, renderDescription(tpe.description))

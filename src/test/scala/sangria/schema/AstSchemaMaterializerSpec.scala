@@ -566,7 +566,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
               query: Hello
             }
 
-            type Hello implements Bar { }
+            type Hello implements Bar {
+              foo: String
+            }
           """
 
         val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
@@ -925,7 +927,55 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
     }
 
     "Schema Builder contains descriptions" should {
-      "Use comments for descriptions" in {
+      val quotes = "\"\"\""
+
+      "Use SDL descriptions" in {
+        val schemaDef =
+          s"""$quotes
+             |fooo bar
+             |baz
+             |$quotes
+             |enum MyEnum {
+             |  "value1"
+             |  VALUE
+             |
+             |  $quotes
+             |  value 2
+             |  line 2
+             |  $quotes
+             |  OLD_VALUE @deprecated
+             |
+             |  "value 3"
+             |  OTHER_VALUE @deprecated(reason: "Terrible reasons")
+             |}
+             |
+             |"My super query!"
+             |type Query {
+             |  field1: String @deprecated
+             |
+             |  "the second field!"
+             |  field2: Int @deprecated(reason: "Because I said so")
+             |  enum: MyEnum
+             |}""".stripMargin
+
+        cycleOutput(schemaDef) should equal (schemaDef) (after being strippedOfCarriageReturns)
+
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+
+        val myEnum = schema.inputTypes("MyEnum").asInstanceOf[EnumType[_]]
+
+        myEnum.description should be (Some("fooo bar\nbaz"))
+        myEnum.values(0).description should be (Some("value1"))
+        myEnum.values(1).description should be (Some("value 2\nline 2"))
+        myEnum.values(2).description should be (Some("value 3"))
+
+        val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
+
+        query.description should be (Some("My super query!"))
+        query.fields(1).description should be (Some("the second field!"))
+      }
+
+      "Support legacy comment-based SDL descriptions" in {
         val schemaDef =
           """# fooo bar
             |# baz
@@ -950,9 +1000,8 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             |  enum: MyEnum
             |}""".stripMargin
 
-        cycleOutput(schemaDef) should equal (schemaDef) (after being strippedOfCarriageReturns)
-
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef),
+          AstSchemaBuilder.defaultWithLegacyCommentDescriptions)
 
         val myEnum = schema.inputTypes("MyEnum").asInstanceOf[EnumType[_]]
 
@@ -969,27 +1018,28 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
       "Use comments for descriptions on arguments" in {
         val schemaDef =
-          """schema {
-            |  query: Query
-            |}
-            |
-            |# My super query!
-            |type Query {
-            |
-            |  # not a description!
-            |
-            |  field1(
-            |    # first arg
-            |    arg1: Int = 101,
-            |
-            |    # This should not
-            |    # be part of the description
-            |
-            |    # secnd arg
-            |    # line 2
-            |    arg1: String!
-            |  ): String
-            |}""".stripMargin
+          s"""schema {
+             |  query: Query
+             |}
+             |
+             |"My super query!"
+             |type Query {
+             |
+             |  # not a description!
+             |  field1(
+             |    "first arg"
+             |    arg1: Int = 101,
+             |
+             |    # This should not
+             |    # be part of the description
+             |
+             |    $quotes
+             |    secnd arg
+             |    line 2
+             |    $quotes
+             |    arg1: String!
+             |  ): String
+             |}""".stripMargin
 
         val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
 

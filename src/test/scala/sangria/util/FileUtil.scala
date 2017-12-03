@@ -14,7 +14,7 @@ import scala.io.Source
 import net.jcazevedo.moultingyaml._
 
 
-object FileUtil {
+object FileUtil extends StringMatchers {
   def loadQuery(name: String) =
     loadResource("queries/" + name)
 
@@ -46,7 +46,7 @@ object FileUtil {
 
   def loadResource(path: String) =
     Option(this.getClass.getResourceAsStream("/" + path)) match {
-      case Some(res) ⇒ Source.fromInputStream(res, "UTF-8").mkString
+      case Some(res) ⇒ stripCarriageReturns(Source.fromInputStream(res, "UTF-8").mkString)
       case None ⇒ throw new IllegalArgumentException("Resource not found: /" + path)
     }
 

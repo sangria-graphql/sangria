@@ -7,7 +7,7 @@ import sangria.execution.MaterializedSchemaValidationError
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ToInput}
 import sangria.renderer.SchemaRenderer
 import sangria.validation.{QueryValidator, UnknownDirectiveViolation, ValidatorStack, Violation}
-import sangria.validation.rules.KnownDirectives
+import sangria.validation.rules.{ExecutableDefinitions, KnownDirectives}
 import sangria.visitor.VisitorCommand
 
 import scala.collection.immutable.VectorBuilder
@@ -45,11 +45,11 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     case _ ⇒ Nil
   }.toList
 
-  def validateSchema(schema: ast.Document): Vector[Violation] =
-    allowKnownDynamicDirectives(QueryValidator.default.validateQuery(validationSchema, schema))
+  def validateSchema(schema: ast.Document, validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator): Vector[Violation] =
+    allowKnownDynamicDirectives(validator.validateQuery(validationSchema, schema))
 
-  def validateSchemaWithException(schema: ast.Document): ResolverBasedAstSchemaBuilder[Ctx] = {
-    val violations = validateSchema(schema)
+  def validateSchemaWithException(schema: ast.Document, validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator): ResolverBasedAstSchemaBuilder[Ctx] = {
+    val violations = validateSchema(schema, validator)
 
     if (violations.nonEmpty) throw MaterializedSchemaValidationError(violations)
     else this
@@ -315,6 +315,8 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
 object ResolverBasedAstSchemaBuilder {
   def apply[Ctx](resolvers: AstSchemaResolver[Ctx]*) = new ResolverBasedAstSchemaBuilder[Ctx](resolvers)
+
+  val validator: QueryValidator = QueryValidator.ruleBased(QueryValidator.allRules.filterNot(_.isInstanceOf[ExecutableDefinitions]))
 
   private def invalidType[In](expected: String, got: In)(implicit iu: InputUnmarshaller[In]) =
     throw InputMaterializationException(s"Expected $expected value, but got: " + iu.render(got))

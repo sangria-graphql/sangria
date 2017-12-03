@@ -1,6 +1,7 @@
 package sangria.validation
 
 import org.parboiled2.Position
+import sangria.ast.Definition
 import sangria.parser.SourceMapper
 import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
@@ -241,6 +242,13 @@ case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, s
 
 case class RequiredSubselectionViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must have a sub selection."
+}
+
+case class NonExecutableDefinitionViolation(name: Option[String], definition: Definition, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = name match {
+    case Some(n) ⇒ s"The '$n' definition is not executable."
+    case None ⇒ "Query document contains non-executable definitions."
+  }
 }
 
 case class DuplicateDirectiveViolation(directiveName: String, sourceMapper: Option[SourceMapper], positions: List[Position]) extends AstNodeViolation {
