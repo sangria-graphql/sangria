@@ -19,6 +19,16 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     deriveObjectType(ctx.tpe, Some(ctxVal.tpe → fn), v.tpe, config)
   }
 
+  case class WrapperInfo(tpe: Type, w: Tree)
+
+  def deriveWrappedObjectType[Ctx : WeakTypeTag, Wrapper : WeakTypeTag, Val : WeakTypeTag](config: Tree*)(w: Tree) = {
+    val ctx = weakTypeTag[Ctx]
+    val wrapper = weakTypeTag[Wrapper]
+    val v = weakTypeTag[Val]
+
+    deriveObjectType(ctx.tpe, None, v.tpe, config, Some(WrapperInfo(wrapper.tpe, w)))
+  }
+
   def deriveNormalObjectType[Ctx : WeakTypeTag, Val : WeakTypeTag](config: Tree*) = {
     val ctx = weakTypeTag[Ctx]
     val v = weakTypeTag[Val]
@@ -26,7 +36,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     deriveObjectType(ctx.tpe, None, v.tpe, config)
   }
 
-  def deriveObjectType(ctxType: Type, ctxValType: Option[(Type, Tree)], valType: Type, config: Seq[Tree]) = {
+  def deriveObjectType(ctxType: Type, ctxValType: Option[(Type, Tree)], valType: Type, config: Seq[Tree], wrapper: Option[WrapperInfo] = None) = {
     val targetType = ctxValType.fold(valType)(_._1)
     val validatedConfig = validateObjectConfig(config, targetType)
 
@@ -36,7 +46,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     else {
       val validConfig = validatedConfig.collect {case Right(cfg) ⇒ cfg}
 
-      collectFields(validConfig, ctxType, targetType, valType, ctxValType.isDefined) match {
+      collectFields(validConfig, ctxType, targetType, valType, ctxValType.isDefined, wrapper) match {
         case Left(errors) ⇒ reportErrors(errors)
         case Right(fields) ⇒
           val tpeName = q"${targetType.typeSymbol.name.decodedName.toString}"
@@ -65,25 +75,63 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     }
   }
 
-  private def collectFields(config: Seq[MacroDeriveObjectSetting], ctxType: Type, targetType: Type, valType: Type, useFn: Boolean): Either[List[(Position, String)], List[Tree]] = {
+  private def collectFields(config: Seq[MacroDeriveObjectSetting], ctxType: Type, targetType: Type, valType: Type, useFn: Boolean, wrapper: Option[WrapperInfo] = None): Either[List[(Position, String)], List[Tree]] = {
     val knownMembers = findKnownMembers(targetType, config.foldLeft(Set.empty[String]) {
       case (acc, MacroIncludeMethods(methods)) ⇒ acc ++ methods
       case (acc, _) ⇒ acc
     })
+
+    val actualValType = wrapper.fold(valType)(w ⇒ appliedType(w.tpe, valType))
 
     validateFieldConfig(knownMembers, config) match {
       case Nil ⇒
         val fields = extractFields(knownMembers, config)
 
         val classFields = fields map { field ⇒
-          val (args, resolve) =
-            if (field.accessor)
-              Nil → q"(c: sangria.schema.Context[$ctxType, $valType]) ⇒ ${if (useFn) q"valFn(c.ctx)" else q"c.value"}.${field.method.name}"
-            else
-              fieldWithArguments(field, ctxType, valType, useFn)
-
           val fieldType = field.method.returnType
           val actualFieldType = findActualFieldType(fieldType)
+
+          val (args, resolve) =
+            if (field.accessor) {
+              val valueCode = if (useFn) q"valFn(c.ctx)" else q"c.value"
+              val wrappedCode = wrapper match {
+                case Some(w) if isSupertype[Option[_]](fieldType) ⇒
+                  q"${w.w}.get($valueCode).${field.method.name}.map(v ⇒ if (isWrapped) ${w.w}.wrap(c, v) else v): Any"
+                case Some(w) ⇒
+                  val v = q"${w.w}.get($valueCode).${field.method.name}"
+
+                  q"if (isWrapped) ${w.w}.wrap(c, $v): Any else $v: Any"
+                case None ⇒
+                  q"$valueCode.${field.method.name}"
+              }
+
+              Nil → q"(c: sangria.schema.Context[$ctxType, $actualValType]) ⇒ $wrappedCode"
+            } else
+              fieldWithArguments(field, ctxType, valType, useFn)
+
+          val graphqlWrappedType =
+            wrapper match {
+              case Some(w) if isSupertype[Option[_]](fieldType) ⇒
+                Some(appliedType(typeOf[Option[_]], appliedType(w.tpe, fieldType.typeArgs.head)))
+              case Some(w) ⇒
+                Some(appliedType(w.tpe, actualFieldType))
+              case None ⇒
+                None
+            }
+
+          val graphqlType =
+            graphqlWrappedType match {
+              case Some(tpe) ⇒
+                q"sangria.macros.derive.IsWrapped.getWrapped[$actualFieldType, $tpe]"
+              case None ⇒
+                q"implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$actualFieldType]].graphqlType"
+            }
+
+          val signatureResultType =
+            wrapper match {
+              case Some(_) ⇒ typeOf[Any]
+              case None ⇒ actualFieldType
+            }
 
           val name = field.name
           val annotationName = symbolName(field.annotations)
@@ -114,9 +162,11 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           }
 
           q"""
-            sangria.schema.Field[$ctxType, $valType, $actualFieldType, $actualFieldType](
+            ${graphqlWrappedType.fold(q"")(tpe ⇒ q"val isWrapped = sangria.macros.derive.IsWrapped.isWrapped[$tpe]")}
+
+            sangria.schema.Field[$ctxType, $actualValType, $signatureResultType, $signatureResultType](
               $fieldName,
-              implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$actualFieldType]].graphqlType,
+              $graphqlType,
               ${configDescr orElse annotationDescr},
               $args,
               $resolve,
