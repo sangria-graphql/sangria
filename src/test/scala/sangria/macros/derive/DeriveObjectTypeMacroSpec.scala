@@ -501,6 +501,68 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IntrospectionInputValue("color", None, IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
         IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
     }
+    "allow to set arguments description with config" in {
+      object MyJsonProtocol extends DefaultJsonProtocol {
+        implicit val PetFormat = jsonFormat2(Pet.apply)
+      }
+
+      import MyJsonProtocol._
+      import sangria.marshalling.sprayJson._
+
+      implicit val PetType = deriveInputObjectType[Pet]()
+      implicit val colorType = deriveEnumType[Color.Value]()
+
+      case class Ctx(num: Int, fooBar: FooBar)
+
+      class FooBar {
+        def hello(id: Int, songs: Seq[String])(ctx: Context[Ctx, Unit], pet: Pet, colors: Seq[Color.Value]) =
+          s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}, pet = $pet, ctx = ${ctx.ctx.num}"
+
+        def opt(str: Option[String], color: Option[Color.Value])(pet: Option[Pet]) =
+          s"str = $str, color = $color, pet = $pet"
+      }
+
+      val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar,
+        IncludeMethods("hello", "opt"),
+        MethodArgument("hello", "id",     "`id`"),
+        MethodArgument("hello", "songs",  "`songs`"),
+        MethodArgument("hello", "pet",    "`pet`"),
+        MethodArguments("opt", "str"   -> "string",
+                               "color" -> "a color")
+      )
+
+      val schema = Schema(tpe)
+
+      import sangria.parser.DeliveryScheme.Throw
+
+      val intro = IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
+      val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
+
+      introType.fields should have size 2
+
+      val Some(helloField) = introType.fields.find(_.name == "hello")
+
+      helloField.args should have size 4
+
+      helloField.args should be (List(
+        IntrospectionInputValue("id", Some("`id`"),
+          IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "Int")), None),
+        IntrospectionInputValue("songs", Some("`songs`"),
+          IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),None),
+        IntrospectionInputValue("pet", Some("`pet`"),
+          IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet")), None),
+        IntrospectionInputValue("colors", None,
+          IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color")))), None)))
+
+      val Some(optField) = introType.fields.find(_.name == "opt")
+
+      optField.args should have size 3
+
+      optField.args should be (List(
+        IntrospectionInputValue("str", Some("string"), IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
+        IntrospectionInputValue("color", Some("a color"), IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
+        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
+    }
 
     "not set a default value to `null`" in {
       class Query {
