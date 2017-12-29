@@ -130,7 +130,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
         val allFields = classFields ++ additionalFields(config)
 
         if (allFields.nonEmpty) Right(allFields)
-        else Left(List(c.enclosingPosition → "Field list is empty"))
+        else Left(List(c.enclosingPosition → s"$targetType: Field list is empty"))
       case errors ⇒ Left(errors)
     }
   }
@@ -201,7 +201,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   }
 
   private def findKnownMembers(tpe: Type, includeMethods: Set[String]): List[KnownMember] =
-    tpe.members.collect {
+    // we "force" m by calling info. This makes sure its type information is complete, in particular that
+    // annotations are available through `.annotations`
+    tpe.members.map { m => m.info; m }.collect {
       case m: MethodSymbol if m.isCaseAccessor ⇒
         KnownMember(tpe, m, findCaseClassAccessorAnnotations(tpe, m), accessor = true)
       case m: MethodSymbol if memberField(m.annotations) || includeMethods.contains(m.name.decodedName.toString) ⇒
