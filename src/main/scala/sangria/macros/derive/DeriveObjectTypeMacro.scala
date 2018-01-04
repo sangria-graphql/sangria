@@ -167,19 +167,12 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       ContextArg
     case term: TermSymbol ⇒
       val tpe = term.typeSignature.resultType
+      val methodName = member.method.name.decodedName.toString
       val argName = term.name.decodedName.toString
       val name = symbolName(term.annotations).collect {case q"${s: String}" ⇒ s} getOrElse argName
 
-      val annotationDescription = symbolDescription(term.annotations)
-      val configDescription = {
-        val methodName = member.method.name.decodedName.toString
-        config.collect{
-          case describeArg: MacroMethodArgument => describeArg.get(methodName, argName)
-          case describeArgs: MacroMethodArguments => describeArgs.get(methodName, argName)
-        }.flatten.lastOption
-      }
-      val description = configDescription orElse annotationDescription
-      val default = symbolDefault(term.annotations)
+      val description = collectArgDescription(config, methodName, argName) orElse symbolDescription(term.annotations)
+      val default = collectArgDefault(config, methodName, argName) orElse symbolDefault(term.annotations)
 
       val ast = default match {
         case Some(defaultValue) ⇒
@@ -261,10 +254,31 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     def unknownMember(pos: Position, name: String) =
       pos → s"Unknown member '$name'. Known members are: ${knownMembers map (_.name) mkString ", "}"
 
-    def unknownArguments(pos: Position, methodName: String, methods: List[MethodSymbol], args: Seq[String]) = {
-      val knownArgumentsNames  = methods.flatMap(_.paramLists.flatten map (_.name.decodedName.toString)).distinct
-      pos →  s"Unknown argument '$args' of method '$methodName'. Known arguments are: ${knownArgumentsNames mkString ", "}"
+    def getMethod(pos: Position, name: String) =
+      knownMembers.withFilter(_.name == name).map(_.method) match {
+        case method :: Nil ⇒ Right(method)
+        case Nil ⇒ Left(unknownMember(pos, name) :: Nil)
+        case _ ⇒ Left(List(
+          pos → s"Cannot configure overloaded method '$name' using `DeriveObjectSetting` due to ambiguity, use annotations instead."
+        ))
+      }
+    def getArgument(pos: Position, methodName: String, argName: String) = getMethod(pos, methodName).right.flatMap{ method ⇒
+      val knownArguments = method.paramLists.flatten
+      knownArguments.find(_.name.decodedName.toString == argName)
+        .map(Right(_))
+        .getOrElse(Left(List(
+          pos → s"Unknown argument '$argName' of method '$method'. Known arguments are: ${knownArguments.map(_.name.decodedName) mkString ", "}"
+        )))
     }
+    def validateHasArgument(pos: Position, methodName: String, argName: String) = getArgument(pos, methodName, argName).right.map(_ ⇒ Nil).merge
+    def validateArgumentDefault(pos: Position, methodName: String, argName: String, default: Tree, argType: Type) =
+      getArgument(pos, methodName, argName).right.map{
+        case arg if argType <:< arg.typeSignature.resultType ⇒ Nil
+        case arg ⇒ List(
+          pos → s"Wrong type of default value '$default' for argument '$argName' of method '$methodName': expected '${arg.typeSignature.resultType}', but got '$argType'."
+        )
+      }.merge
+
 
     config.toList.flatMap {
       case MacroIncludeFields(fields, pos) if !fields.forall(knownMembersSet.contains) ⇒
@@ -295,22 +309,17 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       case MacroReplaceField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
         unknownMember(pos, fieldName) :: Nil
 
-      case MacroMethodArgument(fieldName, argName, _, pos) ⇒
-        if (!knownMembersSet.contains(fieldName)) unknownMember(pos, fieldName) :: Nil
-        else {
-          val methods = knownMembers.withFilter(_.name == fieldName).map(_.method)
-          if (methods.exists(_.paramLists.flatten.exists(_.name.decodedName.toString == argName))) Nil
-          else unknownArguments(pos, fieldName, methods, Seq(argName)) :: Nil
-        }
+      case MacroMethodArgumentDescription(methodName, argName, _, pos) ⇒
+        validateHasArgument(pos, methodName, argName)
 
-      case MacroMethodArguments(fieldName, descriptions, pos) ⇒
-        if (!knownMembersSet.contains(fieldName)) unknownMember(pos, fieldName) :: Nil
-        else {
-          val methods = knownMembers.withFilter(_.name == fieldName).map(_.method)
-          val notFound = descriptions.keys.filterNot(arg => methods.exists(_.paramLists.flatten.exists(_.name.decodedName.toString == arg)))
-          if (notFound.isEmpty) Nil
-          else unknownArguments(pos, fieldName, methods, notFound.toSeq) :: Nil
-        }
+      case MacroMethodArgumentsDescription(methodName, descriptions, pos) ⇒
+        descriptions.keys.toList.flatMap(validateHasArgument(pos, methodName, _))
+
+      case MacroMethodArgumentDefault(methodName, argName, argType, default, pos) ⇒
+        validateArgumentDefault(pos, methodName, argName, default, argType)
+
+      case MacroMethodArgument(methodName, argName, _, argType, default, pos) ⇒
+        validateArgumentDefault(pos, methodName, argName, default, argType)
 
       case _ ⇒ Nil
     }
@@ -370,16 +379,22 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     case q"$setting.apply[$_, $_]($fn)" if checkSetting[TransformFieldNames.type](setting) ⇒
       Right(MacroTransformFieldNames(fn))
 
-    case tree @ q"$setting.apply[$_, $_](${methodName: String}, ${argName: String}, $description)" if checkSetting[MethodArgument.type](setting) ⇒
-      Right(MacroMethodArgument(methodName, argName, description, tree.pos))
+    case tree @ q"$setting.apply[$_, $_](${methodName: String}, ${argName: String}, $description)" if checkSetting[MethodArgumentDescription.type](setting) ⇒
+      Right(MacroMethodArgumentDescription(methodName, argName, description, tree.pos))
 
-    case tree @ q"$setting.apply[$_, $_](${methodName: String}, ..$descriptions)" if checkSetting[MethodArguments.type](setting) ⇒
+    case tree @ q"$setting.apply[$_, $_](${methodName: String}, ..$descriptions)" if checkSetting[MethodArgumentsDescription.type](setting) ⇒
       val descriptionsMap = descriptions.map{
-        case q"(${argName: String}, $description)" => argName -> description
-        case q"scala.this.Predef.ArrowAssoc[$_](${argName: String}).->[$_]($description)" => argName -> description // scala 2.11
-        case q"scala.Predef.ArrowAssoc[$_](${argName: String}).->[$_]($description)" => argName -> description      // scala 2.12
+        case q"(${argName: String}, $description)" ⇒ argName → description
+        case q"scala.this.Predef.ArrowAssoc[$_](${argName: String}).->[$_]($description)" ⇒ argName → description // scala 2.11
+        case q"scala.Predef.ArrowAssoc[$_](${argName: String}).->[$_]($description)" ⇒ argName → description      // scala 2.12
       }.toMap
-      Right(MacroMethodArguments(methodName, descriptionsMap, tree.pos))
+      Right(MacroMethodArgumentsDescription(methodName, descriptionsMap, tree.pos))
+
+    case tree @ q"$setting.apply[$_, $_, ${arg: Type}](${methodName: String}, ${argName: String}, $default)" if checkSetting[MethodArgumentDefault.type](setting) ⇒
+      Right(MacroMethodArgumentDefault(methodName, argName, arg, default, tree.pos))
+
+    case tree @ q"$setting.apply[$_, $_, ${arg: Type}](${methodName: String}, ${argName: String}, $description, $default)" if checkSetting[MethodArgument.type](setting) ⇒
+      Right(MacroMethodArgument(methodName, argName, description, arg, default, tree.pos))
 
     case tree ⇒ Left(tree.pos →
       "Unsupported shape of derivation config. Please define subclasses of `DeriveObjectTypeSetting` directly in the argument list of the macro.")
@@ -413,10 +428,19 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   case class MacroReplaceField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectSetting
   case class MacroTransformFieldNames(transformer: Tree) extends MacroDeriveObjectSetting
 
-  case class MacroMethodArgument(methodName: String, argName: String, description: Tree, pos: Position) extends MacroDeriveObjectSetting {
-    def get(method: String, arg: String): Option[Tree] = if (methodName == method && argName == arg) Some(description) else None
-  }
-  case class MacroMethodArguments(methodName: String, descriptions: Map[String, Tree], pos: Position) extends MacroDeriveObjectSetting {
-    def get(method: String, arg: String): Option[Tree] = if (methodName == method) descriptions.get(arg) else None
-  }
+  case class MacroMethodArgumentDescription(methodName: String, argName: String, description: Tree, pos: Position) extends MacroDeriveObjectSetting
+  case class MacroMethodArgumentsDescription(methodName: String, descriptions: Map[String, Tree], pos: Position) extends MacroDeriveObjectSetting
+  case class MacroMethodArgumentDefault(methodName: String, argName: String, defaultType: Type, default: Tree, pos: Position) extends MacroDeriveObjectSetting
+  case class MacroMethodArgument(methodName: String, argName: String, description: Tree, defaultType: Type, default: Tree, pos: Position) extends MacroDeriveObjectSetting
+
+  private def collectArgDescription(config: Seq[MacroDeriveObjectSetting], methodName: String, argName: String) = config.collect{
+    case MacroMethodArgumentDescription(`methodName`, `argName`, description, _) => Some(description)
+    case MacroMethodArgumentsDescription(`methodName`, descriptions, _) => descriptions.get(argName)
+    case MacroMethodArgument(`methodName`, `argName`, description, _, _, _) => Some(description)
+  }.flatten.lastOption
+
+  private def collectArgDefault(config: Seq[MacroDeriveObjectSetting], methodName: String, argName: String) = config.collect{
+    case MacroMethodArgumentDefault(`methodName`, `argName`, _, default, _) => default
+    case MacroMethodArgument(`methodName`, `argName`, _, _, default, _) => default
+  }.lastOption
 }

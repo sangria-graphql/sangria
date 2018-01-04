@@ -501,7 +501,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IntrospectionInputValue("color", None, IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
         IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
     }
-    "allow to set arguments description with config" in {
+    "allow to set arguments descriptions and default values with config" in {
       object MyJsonProtocol extends DefaultJsonProtocol {
         implicit val PetFormat = jsonFormat2(Pet.apply)
       }
@@ -524,11 +524,11 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
       val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar,
         IncludeMethods("hello", "opt"),
-        MethodArgument("hello", "id",     "`id`"),
-        MethodArgument("hello", "songs",  "`songs`"),
-        MethodArgument("hello", "pet",    "`pet`"),
-        MethodArguments("opt", "str"   -> "string",
-                               "color" -> "a color")
+        MethodArgumentDescription( "hello", "id", "`id`"),
+        MethodArgumentDescription( "hello", "songs", "`songs`"),
+        MethodArgumentsDescription("opt", "str"   -> "string", "color" -> "a color"),
+        MethodArgumentDefault("hello", "songs",  "My favorite song" :: Nil),
+        MethodArgument("hello", "pet", "`pet`", Pet("Octocat", None))
       )
 
       val schema = Schema(tpe)
@@ -548,9 +548,11 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IntrospectionInputValue("id", Some("`id`"),
           IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "Int")), None),
         IntrospectionInputValue("songs", Some("`songs`"),
-          IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),None),
+          IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String"))),
+          Some("""["My favorite song"]""")),
         IntrospectionInputValue("pet", Some("`pet`"),
-          IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet")), None),
+          IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
+          Some("""{name:"Octocat"}""")),
         IntrospectionInputValue("colors", None,
           IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color")))), None)))
 
@@ -562,6 +564,15 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IntrospectionInputValue("str", Some("string"), IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
         IntrospectionInputValue("color", Some("a color"), IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
         IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
+    }
+
+    "validate known argument names" in {
+      class Foo { def foo(name: String) = 1 }
+      """deriveObjectType[Unit, Foo](IncludeFields("foo"), MethodArgumentDescription("foo", "bar", "???"))""" shouldNot compile
+    }
+    "validate arguments' default types" in {
+      class Foo { def foo(name: String) = 1 }
+      """deriveObjectType[Unit, Foo](IncludeFields("foo"), MethodArgumentDefault("foo", "name", 1))""" shouldNot compile
     }
 
     "not set a default value to `null`" in {
