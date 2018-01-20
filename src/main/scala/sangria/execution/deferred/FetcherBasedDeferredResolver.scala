@@ -208,7 +208,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
           case FetcherDeferredOne(_, id) ⇒
             m.get(id) match {
-              case Some(e: Exception) ⇒ throw e
+              case Some(t: Throwable) ⇒ throw t
               case Some(v) ⇒ updateCache(id, v)
               case None ⇒ throw AbsentDeferredValueError(f, deferred, id)
             }
@@ -218,7 +218,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
           case FetcherDeferredOpt(_, id) ⇒
             m.get(id) match {
-              case Some(e: Exception) ⇒ throw e
+              case Some(t: Throwable) ⇒ throw t
               case v ⇒
                 v foreach (updateCache(id, _))
 
@@ -233,7 +233,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
           case FetcherDeferredOptOpt(_, Some(id)) ⇒
             m.get(id) match {
-              case Some(e: Exception) ⇒ throw e
+              case Some(t: Throwable) ⇒ throw t
               case v ⇒
                 v foreach (updateCache(id, _))
 
@@ -246,7 +246,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
                 cachedResults(id)
               else
                 m.get(id) match {
-                  case Some(e: Exception) ⇒ throw e
+                  case Some(t: Throwable) ⇒ throw t
                   case Some(v) ⇒ updateCache(id, v)
                   case None ⇒ throw AbsentDeferredValueError(f, deferred, id)
                 }
@@ -258,7 +258,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
                 cachedResults.get(id)
               else
                 m.get(id) match {
-                  case Some(e: Exception) ⇒ throw e
+                  case Some(t: Throwable) ⇒ throw t
                   case v ⇒
                     v foreach (updateCache(id, _))
 
@@ -272,7 +272,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
                 cachedResults.get(id)
               else
                 m.get(id) match {
-                  case Some(e: Exception) ⇒ throw e
+                  case Some(t: Throwable) ⇒ throw t
                   case v ⇒
                     v foreach (updateCache(id, _))
 
