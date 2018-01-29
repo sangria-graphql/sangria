@@ -153,14 +153,14 @@ package object schema {
       "(such as `4`) input value will be accepted as an ID."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case s: String ⇒ Right(s)
+      case s: String if s.trim.nonEmpty ⇒ Right(s)
       case i: Int ⇒ Right(i.toString)
       case i: Long ⇒ Right(i.toString)
       case i: BigInt ⇒ Right(i.toString)
       case _ ⇒ Left(IDCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(id, _, _, _, _) ⇒ Right(id)
+      case ast.StringValue(id, _, _, _, _) if id.trim.nonEmpty ⇒ Right(id)
       case ast.IntValue(id, _, _) ⇒ Right(id.toString)
       case ast.BigIntValue(id, _, _) ⇒ Right(id.toString)
       case _ ⇒ Left(IDCoercionViolation)

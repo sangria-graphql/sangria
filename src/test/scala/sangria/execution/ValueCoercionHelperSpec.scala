@@ -34,6 +34,8 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
       check(opt(StringType), "123", None)
       check(opt(StringType), "true", None)
       check(opt(IDType), "123.456", None)
+      check(opt(IDType), "\"\"", None)
+      check(opt(IDType), "\"    \"", None)
     }
 
     val testEnum = EnumType("TestColor", values = List(
