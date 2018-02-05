@@ -40,6 +40,9 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
   protected lazy val stubQueryType = ObjectType("Query", fields[Unit, Unit](Field("stub", StringType, resolve = _ ⇒ "stub")))
   protected lazy val validationSchema = Schema(stubQueryType, directives = directives.toList ++ BuiltinDirectives)
 
+  override def useLegacyCommentDescriptions: Boolean =
+    resolvers.exists(_.isInstanceOf[LegacyCommentDescriptionsResolver[Ctx]])
+
   override lazy val additionalTypes: List[MaterializedType] = resolvers.flatMap {
     case AdditionalTypes(at) ⇒ at
     case _ ⇒ Nil

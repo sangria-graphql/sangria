@@ -80,6 +80,7 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
         DirectiveResolver(TestDir, resolve = _.arg(ValueArg)),
         DynamicDirectiveResolver[Any, JsValue]("json", resolve = _.args),
         FieldResolver {case (TypeName("Query"), FieldName("id")) ⇒ _ ⇒ UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")},
+        LegacyCommentDescriptionsResolver(),
         AnyFieldResolver.defaultInput[Any, JsValue])
 
       val schemaAst =
