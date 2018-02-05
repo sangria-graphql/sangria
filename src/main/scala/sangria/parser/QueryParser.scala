@@ -148,6 +148,7 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
 
 trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directives with Types with Operations with Values with Fragments ⇒
   def legacyImplementsInterface: Boolean
+  def legacyEmptyFields: Boolean
 
   def scalar = rule { Keyword("scalar") }
   def `type` = rule { Keyword("type") }
@@ -182,13 +183,17 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
     Description ~ Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
       (descr, comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toVector, dirs, descr, comment, tc, Some(pos)))
   }
-  
+
+  def TypeExtensionDefinition = rule {
+    ObjectTypeExtensionDefinition
+  }
+
   /** ObjectTypeExtension :
     * - extend type Name ImplementsInterfaces? Directives[Const]? FieldDefinitions
     * - extend type Name ImplementsInterfaces? Directives[Const]
     * - extend type Name ImplementsInterfaces
     */
-  def TypeExtensionDefinition = rule {
+  def ObjectTypeExtensionDefinition = rule {
     (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
       (descr, comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, fields.toVector, dirs, descr, comment, tc, Some(pos)), Vector.empty, Some(pos)))) |
     (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ DirectivesConst ~> (
@@ -203,7 +208,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   }
 
   def FieldDefinitions = rule {
-    wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}')
+    wsNoComment('{') ~ (test(legacyEmptyFields) ~ FieldDefinition.* | FieldDefinition.+) ~ Comments ~ wsNoComment('}')
   }
 
   def FieldDefinition = rule {

@@ -10,6 +10,7 @@ import sangria.macros._
 import scala.reflect.ClassTag
 
 class SchemaComparatorSpec extends WordSpec with Matchers {
+  
   "SchemaComparator" should {
     val QueryType = ObjectType("Query", fields[Unit, Unit](
       Field("field1", OptionType(StringType), resolve = _ ⇒ "foo")))
@@ -198,7 +199,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
           descr: String
         }
 
-        type Filter implements I1, I2 {
+        type Filter implements I1 & I2 {
           name: String!
           descr: String
           foo: [Int]
@@ -215,7 +216,7 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
           id: ID
         }
 
-        type Filter implements I1, I3 {
+        type Filter implements I1 & I3 {
           bar: Int
           descr: String
           id: ID
