@@ -299,7 +299,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  int: Int
         |}
         |
-        |type Bar implements Foo, Baaz {
+        |type Bar implements Foo & Baaz {
         |  str: String
         |  int: Int
         |}
@@ -341,7 +341,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  str: String
         |}
         |
-        |type Bar implements Baaz, Foo {
+        |type Bar implements Baaz & Foo {
         |  int: Int
         |  str: String
         |}

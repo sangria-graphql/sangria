@@ -438,7 +438,65 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
 
     "Simple type inheriting multiple interfaces" in {
       val Success(ast) = QueryParser.parse(
-        "type Hello implements Wo, rld { foo: Bar }")
+        "type Hello implements Wo & rld { foo: Bar }")
+
+      ast.copy(sourceMapper = None) should be (
+        Document(
+          Vector(
+            ObjectTypeDefinition(
+              "Hello",
+              Vector(
+                NamedType("Wo", Some(Position(22, 1, 23))),
+                NamedType("rld", Some(Position(27, 1, 28)))),
+              Vector(
+                FieldDefinition("foo", NamedType("Bar", Some(Position(38, 1, 39))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(33, 1, 34)))),
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(0, 1, 1))
+            )),
+          Vector.empty,
+          Some(Position(0, 1, 1)),
+          None
+        ))
+    }
+
+    "Simple type inheriting multiple interfaces (allow separator at the beginning)" in {
+      val Success(ast) = QueryParser.parse(
+        """
+          type Hello implements
+            & Foo
+            & Baz
+          {
+            foo: Bar
+          }
+        """)
+      ast.copy(sourceMapper = None) should be (
+        Document(
+          Vector(
+            ObjectTypeDefinition(
+              "Hello",
+              Vector(
+                NamedType("Foo", Some(Position(47, 3, 15))),
+                NamedType("Baz", Some(Position(65, 4, 15)))),
+              Vector(
+                FieldDefinition("foo", NamedType("Bar", Some(Position(98, 6, 18))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(93, 6, 13)))),
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(11, 2, 11))
+            )),
+          Vector.empty,
+          Some(Position(11, 2, 11)),
+          None
+        ))
+    }
+
+    "Simple type inheriting multiple interfaces (legacy syntax)" in {
+      val Success(ast) = QueryParser.parse(
+        "type Hello implements Wo, rld { foo: Bar }", legacyImplementsInterface = true)
 
       ast.copy(sourceMapper = None) should be (
         Document(

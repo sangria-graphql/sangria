@@ -147,6 +147,7 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
 }
 
 trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directives with Types with Operations with Values with Fragments ⇒
+  def legacyImplementsInterface: Boolean
 
   def scalar = rule { Keyword("scalar") }
   def `type` = rule { Keyword("type") }
@@ -196,7 +197,10 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
       (descr, comment, pos, name, interfaces) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, Vector.empty, Vector.empty, descr, comment, Vector.empty, Some(pos)), Vector.empty, Some(pos))))
   }
 
-  def ImplementsInterfaces = rule { implements ~ NamedType.+ ~> (_.toVector) }
+  def ImplementsInterfaces = rule {
+    test(legacyImplementsInterface) ~ implements ~ NamedType.+ ~> (_.toVector) |
+    implements ~ ws('&').? ~ NamedType.+(ws('&')) ~> (_.toVector)
+  }
 
   def FieldDefinitions = rule {
     wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}')
@@ -417,15 +421,22 @@ trait Types { this: Parser with Tokens with Ignored ⇒
   }
 }
 
-class QueryParser private (val input: ParserInput) 
+class QueryParser private (val input: ParserInput, val legacyImplementsInterface: Boolean = false, val legacyEmptyFields: Boolean = false)
     extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types with TypeSystemDefinitions
 
 object QueryParser {
-  def parse(input: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
-    parse(ParserInput(input))(scheme)
+  def parse(
+    input: String,
+    @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.3.4")
+    legacyImplementsInterface: Boolean = false,
+    @deprecated("Use new syntax: `type Foo` intead of legacy `type Foo {}`", "1.3.4")
+    legacyEmptyFields: Boolean = false
+  )(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+    parse(ParserInput(input), legacyImplementsInterface, legacyEmptyFields)(scheme)
+  }
 
-  def parse(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
-    val parser = new QueryParser(input)
+  def parse(input: ParserInput, legacyImplementsInterface: Boolean, legacyEmptyFields: Boolean)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+    val parser = new QueryParser(input, legacyImplementsInterface, legacyEmptyFields)
 
     parser.Document.run() match {
       case Success(res) ⇒
