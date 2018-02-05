@@ -37,11 +37,17 @@ case class DynamicDirectiveFieldProvider[Ctx, A](
 
 case class DirectiveInputTypeResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveInputTypeContext ⇒ InputType[Any]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveInputTypeContext[Ctx] ⇒ InputType[Any]) extends AstSchemaResolver[Ctx]
 
 case class DirectiveOutputTypeResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveOutputTypeContext ⇒ OutputType[Any]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveOutputTypeContext[Ctx] ⇒ OutputType[Any]) extends AstSchemaResolver[Ctx]
+
+case class InputTypeResolver[Ctx](
+  resolve: PartialFunction[AstInputTypeContext[Ctx], InputType[Any]]) extends AstSchemaResolver[Ctx]
+
+case class OutputTypeResolver[Ctx](
+  resolve: PartialFunction[AstOutputTypeContext[Ctx], OutputType[Any]]) extends AstSchemaResolver[Ctx]
 
 case class DirectiveScalarResolver[Ctx](
   directive: Directive,
@@ -149,8 +155,8 @@ case class GenericDirectiveResolver[T](
 }
 
 trait WithTypeLookup[Ctx] {
-  def materializer: AstSchemaMaterializer[Ctx]
   def origin: MatOrigin
+  def materializer: AstSchemaMaterializer[Ctx]
 
   def objectType(typeName: String): ObjectType[Ctx, Any] =
     materializer.getObjectType(origin, ast.NamedType(typeName))
@@ -164,8 +170,14 @@ trait WithTypeLookup[Ctx] {
   def inputType(typeName: String): InputType[_] =
     materializer.getInputType(origin, ast.NamedType(typeName), optional = false)
 
+  def inputType(tpe: ast.Type, replacementNamedType: InputType[_]): InputType[_] =
+    materializer.getInputType(origin, tpe, Some(replacementNamedType))
+
   def outputType(typeName: String): OutputType[_] =
     materializer.getOutputType(origin, ast.NamedType(typeName), optional = false)
+
+  def outputType(tpe: ast.Type, replacementNamedType: OutputType[_]): OutputType[_] =
+    materializer.getOutputType(origin, tpe, Some(replacementNamedType))
 }
 
 case class GenericDynamicDirectiveResolver[T, A](
@@ -173,20 +185,35 @@ case class GenericDynamicDirectiveResolver[T, A](
   locations: Set[DirectiveLocation.Value] = Set.empty,
   resolve: GenericDynamicDirectiveContext[A] ⇒ Option[T])(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaGenericResolver[T]
 
-case class AstDirectiveInputTypeContext(
+case class AstDirectiveInputTypeContext[Ctx](
+  origin: MatOrigin,
   directive: ast.Directive,
   contextDefinition: Either[(TypeSystemDefinition, Option[FieldDefinition]), ast.InputObjectTypeDefinition],
   definition: ast.InputValueDefinition,
-  materializer: AstSchemaMaterializer[_],
-  args: Args) extends WithArguments
+  materializer: AstSchemaMaterializer[Ctx],
+  args: Args) extends WithArguments with WithTypeLookup[Ctx]
 
-case class AstDirectiveOutputTypeContext(
+case class AstDirectiveOutputTypeContext[Ctx](
+  origin: MatOrigin,
   directive: ast.Directive,
   typeDefinition: ast.TypeDefinition,
   fieldDefinition: ast.FieldDefinition,
   extensions: Vector[ast.TypeExtensionDefinition],
-  materializer: AstSchemaMaterializer[_],
-  args: Args) extends WithArguments
+  materializer: AstSchemaMaterializer[Ctx],
+  args: Args) extends WithArguments with WithTypeLookup[Ctx]
+
+case class AstInputTypeContext[Ctx](
+  origin: MatOrigin,
+  contextDefinition: Either[(TypeSystemDefinition, Option[FieldDefinition]), ast.InputObjectTypeDefinition],
+  definition: ast.InputValueDefinition,
+  materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
+
+case class AstOutputTypeContext[Ctx](
+  origin: MatOrigin,
+  typeDefinition: ast.TypeDefinition,
+  fieldDefinition: ast.FieldDefinition,
+  extensions: Vector[ast.TypeExtensionDefinition],
+  materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
 
 case class AstDirectiveContext[Ctx](
   directive: ast.Directive,

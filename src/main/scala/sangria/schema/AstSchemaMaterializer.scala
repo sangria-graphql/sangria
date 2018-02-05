@@ -211,45 +211,45 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
         this)
 
   def getObjectType(origin: MatOrigin, tpe: ast.NamedType): ObjectType[Ctx, Any] =
-    getOutputType(origin, tpe, false) match {
+    getOutputType(origin, tpe, optional = false) match {
       case obj: ObjectType[_, _] ⇒ obj.asInstanceOf[ObjectType[Ctx, Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an object type.")
     }
 
   def getScalarType(origin: MatOrigin, tpe: ast.NamedType): ScalarType[Any] =
-    getOutputType(origin, tpe, false) match {
+    getOutputType(origin, tpe, optional = false) match {
       case obj: ScalarType[_] ⇒ obj.asInstanceOf[ScalarType[Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not a scalar type.")
     }
 
   def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType): InterfaceType[Ctx, Any] =
-    getOutputType(origin, tpe, false) match {
+    getOutputType(origin, tpe, optional = false) match {
       case obj: InterfaceType[_, _] ⇒ obj.asInstanceOf[InterfaceType[Ctx, Any]]
       case _ ⇒ throw new SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an interface type.")
     }
 
-  def getInputType(origin: MatOrigin, tpe: ast.Type, optional: Boolean = true): InputType[_] =
+  def getInputType(origin: MatOrigin, tpe: ast.Type, replacementNamedType: Option[InputType[_]] = None, optional: Boolean = true): InputType[_] =
     tpe match {
-      case ast.ListType(ofType, _) if optional ⇒ OptionInputType(ListInputType(getInputType(origin, ofType, true)))
-      case ast.ListType(ofType, _) ⇒ ListInputType(getInputType(origin, ofType, true))
-      case ast.NotNullType(ofType, _) ⇒ getInputType(origin, ofType, false)
+      case ast.ListType(ofType, _) if optional ⇒ OptionInputType(ListInputType(getInputType(origin, ofType, replacementNamedType, true)))
+      case ast.ListType(ofType, _) ⇒ ListInputType(getInputType(origin, ofType, replacementNamedType, true))
+      case ast.NotNullType(ofType, _) ⇒ getInputType(origin, ofType, replacementNamedType, false)
       case ast.NamedType(name, _) ⇒
-        getNamedType(origin, name) match {
+        replacementNamedType getOrElse getNamedType(origin, name) match {
           case input: InputType[_] if optional ⇒ OptionInputType(input)
           case input: InputType[_] ⇒ input
           case _ ⇒ throw new SchemaMaterializationException(s"Type '$name' is not an input type, but was used in input type position!")
         }
     }
 
-  def getOutputType(origin: MatOrigin, tpe: ast.Type, optional: Boolean = true): OutputType[_] =
+  def getOutputType(origin: MatOrigin, tpe: ast.Type, replacementNamedType: Option[OutputType[_]] = None, optional: Boolean = true): OutputType[_] =
     tpe match {
-      case ast.ListType(ofType, _) if optional ⇒ OptionType(ListType(getOutputType(origin, ofType, true)))
-      case ast.ListType(ofType, _) ⇒ ListType(getOutputType(origin, ofType, true))
-      case ast.NotNullType(ofType, _) ⇒ getOutputType(origin, ofType, false)
+      case ast.ListType(ofType, _) if optional ⇒ OptionType(ListType(getOutputType(origin, ofType, replacementNamedType, true)))
+      case ast.ListType(ofType, _) ⇒ ListType(getOutputType(origin, ofType, replacementNamedType, true))
+      case ast.NotNullType(ofType, _) ⇒ getOutputType(origin, ofType, replacementNamedType, false)
       case ast.NamedType(name, _) ⇒
-        getNamedType(origin, name) match {
-          case input: OutputType[_] if optional ⇒ OptionType(input)
-          case input: OutputType[_] ⇒ input
+        replacementNamedType getOrElse getNamedType(origin, name) match {
+          case out: OutputType[_] if optional ⇒ OptionType(out)
+          case out: OutputType[_] ⇒ out
           case _ ⇒ throw new SchemaMaterializationException(s"Type '$name' is not an output type, but was used in output type position!")
         }
     }

@@ -1,3 +1,7 @@
+## Upcoming
+
+* Improved `ResolverBasedAstSchemaBuilder` and introduced `InputTypeResolver`/`OutputTypeResolver`.
+
 ## v1.3.3 (2017-12-03)
 
 * Added support for string-based descriptions in SDL and implement most recent SDL-related changes (#303, #304, #305) (spec change). **Breaking change** for all SDL users. The type, field and enum value descriptions are now handled differently in the SDL.

@@ -156,27 +156,37 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     arguments: List[Argument[_]],
     mat: AstSchemaMaterializer[Ctx]
   ) = {
+    val ctx = AstOutputTypeContext(origin, typeDefinition, definition, extensions, mat)
+
     val tpe =
       resolvers.collectFirst {
         case DirectiveOutputTypeResolver(d, fn) if definition.directives.exists(_.name == d.name) ⇒
           val astDirective = definition.directives.find(_.name == d.name).get
 
-          fn(AstDirectiveOutputTypeContext(astDirective, typeDefinition, definition, extensions, mat, Args(d, astDirective)))
+          fn(AstDirectiveOutputTypeContext(origin, astDirective, typeDefinition, definition, extensions, mat, Args(d, astDirective)))
+
+        case OutputTypeResolver(fn) if fn isDefinedAt ctx ⇒ fn(ctx)
       }
 
     tpe getOrElse super.buildFieldType(origin, typeDefinition, extensions, definition, arguments, mat)
   }
 
   private def buildInputTypeResolver(
+      origin: MatOrigin,
       contextDefinition: Either[(ast.TypeSystemDefinition, Option[ast.FieldDefinition]), ast.InputObjectTypeDefinition],
       definition: ast.InputValueDefinition,
-      mat: AstSchemaMaterializer[Ctx]) =
+      mat: AstSchemaMaterializer[Ctx]) = {
+    val ctx = AstInputTypeContext(origin, contextDefinition, definition, mat)
+
     resolvers.collectFirst {
       case DirectiveInputTypeResolver(d, fn) if definition.directives.exists(_.name == d.name) ⇒
         val astDirective = definition.directives.find(_.name == d.name).get
 
-        fn(AstDirectiveInputTypeContext(astDirective, contextDefinition, definition, mat, Args(d, astDirective)))
+        fn(AstDirectiveInputTypeContext(origin, astDirective, contextDefinition, definition, mat, Args(d, astDirective)))
+
+      case InputTypeResolver(fn) if fn isDefinedAt ctx ⇒ fn(ctx)
     }
+  }
 
   override def buildArgumentType(
       origin: MatOrigin,
@@ -185,7 +195,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       definition: ast.InputValueDefinition,
       defaultValue: Option[Tuple2[_, ToInput[_, _]]],
       mat: AstSchemaMaterializer[Ctx]) =
-    buildInputTypeResolver(Left(typeDefinition → fieldDefinition), definition, mat) getOrElse
+    buildInputTypeResolver(origin, Left(typeDefinition → fieldDefinition), definition, mat) getOrElse
       super.buildArgumentType(origin, typeDefinition, fieldDefinition, definition, defaultValue, mat)
 
   override def buildInputFieldType(
@@ -194,7 +204,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       definition: ast.InputValueDefinition,
       defaultValue: Option[Tuple2[_, ToInput[_, _]]],
       mat: AstSchemaMaterializer[Ctx]) =
-    buildInputTypeResolver(Right(typeDefinition), definition, mat) getOrElse
+    buildInputTypeResolver(origin, Right(typeDefinition), definition, mat) getOrElse
       super.buildInputFieldType(origin, typeDefinition, definition, defaultValue, mat)
 
   override def buildScalarType(origin: MatOrigin, definition: ast.ScalarTypeDefinition, mat: AstSchemaMaterializer[Ctx]) = {
