@@ -65,7 +65,7 @@ object QueryRenderer {
         "}"
     } else ""
 
-  def renderFieldDefinitions(fields: Vector[FieldDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig) =
+  def renderFieldDefinitions(fields: Vector[FieldDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
     if (fields.nonEmpty) {
       val rendered = fields.zipWithIndex map {
         case (field, idx) ⇒
@@ -83,7 +83,8 @@ object QueryRenderer {
             trailing.fold("")(c ⇒ renderIndividualComment(c, " ", config))
       } mkString config.mandatoryLineBreak
 
-      "{" +
+      (if (frontSep) config.separator else "") +
+        "{" +
         config.lineBreak +
         rendered +
         renderTrailingComment(tc, fields.lastOption, indent.inc, config) +
@@ -92,8 +93,55 @@ object QueryRenderer {
         "}"
     } else ""
 
+  def renderInputFieldDefinitions(fields: Vector[InputValueDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
+    if (fields.nonEmpty) {
+      (if (frontSep) config.separator else "") +
+        "{" +
+        config.lineBreak +
+        renderInputObjectFieldDefs(fields, tc, indent, config) +
+        renderTrailingComment(tc, fields.lastOption, indent.inc, config) +
+        trailingLineBreak(tc, config) +
+        indent.str +
+        "}"
+    } else ""
+
+  def renderEnumValues(values: Vector[EnumValueDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
+    if (values.nonEmpty) {
+      val renderedValues = values.zipWithIndex map {
+        case (value, idx) ⇒
+          val prev = if (idx == 0) None else Some(values(idx - 1))
+          val next = if (idx == values.size - 1) None else Some(values(idx + 1))
+
+          val trailingNext =
+            for {
+              n ← next
+              c ← n.description.fold(n.comments)(_.comments).headOption
+              cp ← c.position
+              sp ← value.position
+              if cp.line == sp.line
+            } yield c
+
+          val trailing =
+            trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.position; sp ← value.position; if cp.line == sp.line) yield c)
+
+          (if (idx != 0 && (shouldRenderComment(value, prev, config) || shouldRenderDescription(value))) config.lineBreak else "") +
+            renderNode(value, config, indent.inc, prev = prev) +
+            trailing.fold("")(c ⇒ renderIndividualComment(c, " ", config))
+      } mkString config.mandatoryLineBreak
+
+
+      (if (frontSep) config.separator else "") +
+        "{" +
+        config.lineBreak +
+        renderedValues +
+        renderTrailingComment(tc, values.lastOption, indent.inc, config) +
+        trailingLineBreak(tc, config) +
+        indent.str +
+        "}"
+    } else ""
+
   def renderDirs(dirs: Vector[Directive], config: QueryRendererConfig, indent: Indent, frontSep: Boolean = false, withSep: Boolean = true) =
-    (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
+    (if (dirs.nonEmpty && frontSep && withSep) config.mandatorySeparator else "") +
       (dirs map (renderNode(_, config, indent.zero)) mkString config.separator) +
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
@@ -391,67 +439,35 @@ object QueryRenderer {
         renderDescription(itd, prev, indent, config) +
           renderComment(itd, description orElse prev, indent, config) +
           indent.str + "input" + config.mandatorySeparator + name +
-          config.mandatorySeparator +
-          renderDirs(dirs, config, indent) +
-          "{" +
-          config.lineBreak +
-          renderInputObjectFieldDefs(fields, itd, indent, config) +
-          renderTrailingComment(itd, fields.lastOption, indent.inc, config) +
-          trailingLineBreak(itd, config) +
-          indent.str +
-          "}"
+          renderDirs(dirs, config, indent, frontSep = true) +
+          renderInputFieldDefinitions(fields, itd, indent, config, frontSep = true)
 
       case itd @ InterfaceTypeDefinition(name, fields, dirs, description, _, _, _) ⇒
         renderDescription(itd, prev, indent, config) +
           renderComment(itd, description orElse prev, indent, config) +
           indent.str + "interface" + config.mandatorySeparator + name +
-          config.separator +
-          renderDirs(dirs, config, indent) +
-          renderFieldDefinitions(fields, itd, indent, config)
+          renderDirs(dirs, config, indent, frontSep = true) +
+          renderFieldDefinitions(fields, itd, indent, config, frontSep = true)
 
       case utd @ UnionTypeDefinition(name, types, dirs, description, _, _) ⇒
+        val typesString =
+          if (types.nonEmpty)
+            config.separator + "=" + config.separator +
+              (types map(renderNode(_, config, indent.zero)) mkString (config.separator + "|" + config.separator))
+          else
+            ""
         renderDescription(utd, prev, indent, config) +
           renderComment(utd, description orElse prev, indent, config) +
           indent.str + "union" + config.mandatorySeparator + name +
-            renderDirs(dirs, config, indent, frontSep = true) +
-            config.separator + "=" + config.separator +
-            (types map(renderNode(_, config, indent.zero)) mkString (config.separator + "|" + config.separator))
+          renderDirs(dirs, config, indent, frontSep = true) +
+          typesString
 
       case etd @ EnumTypeDefinition(name, values, dirs, description, _, _, _) ⇒
-        val renderedValues = values.zipWithIndex map {
-          case (value, idx) ⇒
-            val prev = if (idx == 0) None else Some(values(idx - 1))
-            val next = if (idx == values.size - 1) None else Some(values(idx + 1))
-
-            val trailingNext =
-              for {
-                n ← next
-                c ← n.description.fold(n.comments)(_.comments).headOption
-                cp ← c.position
-                sp ← value.position
-                if cp.line == sp.line
-              } yield c
-
-            val trailing =
-              trailingNext orElse (for (c ← etd.trailingComments.headOption; cp ← c.position; sp ← value.position; if cp.line == sp.line) yield c)
-
-            (if (idx != 0 && (shouldRenderComment(value, prev, config) || shouldRenderDescription(value))) config.lineBreak else "") +
-              renderNode(value, config, indent.inc, prev = prev) +
-              trailing.fold("")(c ⇒ renderIndividualComment(c, " ", config))
-        } mkString config.mandatoryLineBreak
-
         renderDescription(etd, prev, indent, config) +
           renderComment(etd, description orElse prev, indent, config) +
           indent.str + "enum" + config.mandatorySeparator + name +
-          config.separator +
-          renderDirs(dirs, config, indent) +
-          "{" +
-          config.lineBreak +
-          renderedValues +
-          renderTrailingComment(etd, values.lastOption, indent.inc, config) +
-          trailingLineBreak(etd, config) +
-          indent.str +
-          "}"
+          renderDirs(dirs, config, indent, frontSep = true) +
+          renderEnumValues(values, etd, indent, config, frontSep = true)
 
       case evd @ EnumValueDefinition(name, dirs, description, _, _) ⇒
         renderDescription(evd, prev, indent, config) +
@@ -482,7 +498,41 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
           renderFieldDefinitions(fields, ted, indent, config)
 
-        // TODO: [SDL] Render other type extensions
+      case ext @ InterfaceTypeExtensionDefinition(name, fields, dirs, _, _, _) ⇒
+        renderComment(ext, prev, indent, config) +
+          indent.str + "extend" + config.mandatorySeparator + "interface" + config.mandatorySeparator + name +
+          renderDirs(dirs, config, indent, frontSep = true) +
+          renderFieldDefinitions(fields, ext, indent, config, frontSep = true)
+
+      case ext @ UnionTypeExtensionDefinition(name, types, dirs, _, _) ⇒
+        val typesString =
+          if (types.nonEmpty)
+            config.separator + "=" + config.separator +
+              (types map(renderNode(_, config, indent.zero)) mkString (config.separator + "|" + config.separator))
+          else
+            ""
+
+        renderComment(ext, prev, indent, config) +
+          indent.str + "extend" + config.mandatorySeparator + "union" + config.mandatorySeparator + name +
+          renderDirs(dirs, config, indent, frontSep = true) +
+          typesString
+
+      case ext @ InputObjectTypeExtensionDefinition(name, fields, dirs, _, _, _) ⇒
+        renderComment(ext, prev, indent, config) +
+          indent.str + "extend" + config.mandatorySeparator + "input" + config.mandatorySeparator + name +
+          renderDirs(dirs, config, indent, frontSep = true) +
+          renderInputFieldDefinitions(fields, ext, indent, config, frontSep = true)
+
+      case ext @ EnumTypeExtensionDefinition(name, values, dirs, _, _, _) ⇒
+        renderComment(ext, prev, indent, config) +
+          indent.str + "extend" + config.mandatorySeparator + "enum" + config.mandatorySeparator + name +
+          renderDirs(dirs, config, indent, frontSep = true) +
+          renderEnumValues(values, ext, indent, config, frontSep = true)
+
+      case ext @ ScalarTypeExtensionDefinition(name, dirs, _, _) ⇒
+        renderComment(ext, prev, indent, config) +
+          indent.str + "extend" + config.mandatorySeparator + "scalar" + config.mandatorySeparator + name +
+          renderDirs(dirs, config, indent, frontSep = true)
 
       case dd @ DirectiveDefinition(name, args, locations, description, _, _) ⇒
         val locsRendered = locations.zipWithIndex map { case (l, idx) ⇒

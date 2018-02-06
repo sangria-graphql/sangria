@@ -6,12 +6,14 @@ import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{StringMatchers, FutureResultSupport}
+import sangria.util.{FutureResultSupport, StringMatchers}
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 import sangria.marshalling.ScalaInput.scalaInput
+import sangria.parser.QueryParser
 
 class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
   def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
@@ -933,5 +935,158 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       |  NON_NULL
       |}
       |""".stripMargin) (after being strippedOfCarriageReturns)
+  }
+
+  "Rendering extensions" should {
+    def cycleRender(document: ast.Document) = {
+      import sangria.parser.DeliveryScheme.Throw
+
+      val pretty = document.renderPretty
+      val compact = document.renderCompact
+
+      QueryParser.parse(pretty).renderPretty should be (pretty)
+      QueryParser.parse(compact).renderCompact should be (compact)
+
+      "\n" + pretty + "\n"
+    }
+
+    "render object types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend type Obj @someDir(arg: [
+            "foo"
+          ])
+
+          extend type ObjWithFields@someDir(arg: 1)@anotherDir{
+            "some docs"
+            foo: Bar @foo
+          }
+
+          extend type Obj1 implements Bar&Baz@foo(arg: 1)
+        """
+
+      cycleRender(schema) should equal ("""
+        |# just testing
+        |extend type Obj @someDir(arg: ["foo"])
+        |
+        |extend type ObjWithFields @someDir(arg: 1) @anotherDir {
+        |  "some docs"
+        |  foo: Bar @foo
+        |}
+        |
+        |extend type Obj1 implements Bar & Baz @foo(arg: 1)
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "render input types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend input Inp@someDir(arg: [
+            "foo"
+          ])
+
+          extend input InpWithFields@someDir(arg: 1)@anotherDir{
+            "some docs"
+            foo: Bar={
+              hello: "world"
+              }
+          }
+        """
+
+      cycleRender(schema) should equal ("""
+        |# just testing
+        |extend input Inp @someDir(arg: ["foo"])
+        |
+        |extend input InpWithFields @someDir(arg: 1) @anotherDir {
+        |  "some docs"
+        |  foo: Bar = {hello: "world"}
+        |}
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "render interface types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend interface Foo@someDir(arg: [
+            "foo"
+          ])
+
+          extend interface FooWithFields @someDir(arg: 1)@anotherDir{
+            "some docs"
+            foo(arg: Int = 1@hello): Bar @dir(test:true)
+          }
+        """
+      
+      cycleRender(schema) should equal ("""
+        |# just testing
+        |extend interface Foo @someDir(arg: ["foo"])
+        |
+        |extend interface FooWithFields @someDir(arg: 1) @anotherDir {
+        |  "some docs"
+        |  foo(arg: Int = 1 @hello): Bar @dir(test: true)
+        |}
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "render union types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend union Foo@someDir(arg: [
+            "foo"
+          ])
+
+          extend union FooWithStuff @someDir(arg: 1)@anotherDir=Hello|World
+        """
+
+      cycleRender(schema) should equal ("""
+        |# just testing
+        |extend union Foo @someDir(arg: ["foo"])
+        |
+        |extend union FooWithStuff @someDir(arg: 1) @anotherDir = Hello | World
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "render enum types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend enum Foo@someDir(arg: [
+            "foo"
+          ])
+
+          extend enum FooWithStuff @someDir(arg: 1)@anotherDir{Hello "docs"World}
+        """
+      
+      cycleRender(schema) should equal ("""
+        |# just testing
+        |extend enum Foo @someDir(arg: ["foo"])
+        |
+        |extend enum FooWithStuff @someDir(arg: 1) @anotherDir {
+        |  Hello
+        |
+        |  "docs"
+        |  World
+        |}
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "render scalar types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend scalar Int@someDir(arg: [
+            "foo"
+          ])
+        """
+      
+      cycleRender(schema) should equal ("""
+        |# just testing
+        |extend scalar Int @someDir(arg: ["foo"])
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
   }
 }
