@@ -474,9 +474,15 @@ object QueryRenderer {
           default.fold("")(d ⇒ config.separator + "=" + config.separator + renderNode(d, config, indent.zero)) +
           renderDirs(dirs, config, indent, frontSep = true)
 
-      case ted @ TypeExtensionDefinition(definition, _, _) ⇒
-        renderComment(definition, prev, indent, config) +
-          renderNode(definition.copy(comments = Vector.empty), config, indent, Some("extend" + config.mandatorySeparator))
+      case ted @ ObjectTypeExtensionDefinition(name, interfaces, fields, dirs, _, _, _) ⇒
+        renderComment(ted, prev, indent, config) +
+          indent.str + prefix.getOrElse("") + "extend" + config.mandatorySeparator + "type" + config.mandatorySeparator + name +
+          config.mandatorySeparator +
+          renderInterfaces(interfaces, config, indent) +
+          renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
+          renderFieldDefinitions(fields, ted, indent, config)
+
+        // TODO: [SDL] Render other type extensions
 
       case dd @ DirectiveDefinition(name, args, locations, description, _, _) ⇒
         val locsRendered = locations.zipWithIndex map { case (l, idx) ⇒

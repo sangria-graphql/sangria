@@ -247,38 +247,28 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
               Vector.empty,
               Some(Position(1369, 66, 1))
             ),
-            TypeExtensionDefinition(
-              ObjectTypeDefinition(
-                "Foo",
-                Vector.empty,
-                Vector(
-                  FieldDefinition("seven", NamedType("Type", Some(Position(1511, 72, 30))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(1501, 72, 20))), Some(Position(1500, 72, 19))), None, Vector.empty, None, Vector.empty, Some(Position(1490, 72, 9)))), Vector.empty, None, Vector.empty, Some(Position(1484, 72, 3)))),
-                Vector.empty,
-                None,
-                Vector.empty,
-                Vector.empty,
-                Some(Position(1464, 71, 1))
-              ),
+            ObjectTypeExtensionDefinition(
+              "Foo",
+              Vector.empty,
+              Vector(
+                FieldDefinition("seven", NamedType("Type", Some(Position(1511, 72, 30))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(1501, 72, 20))), Some(Position(1500, 72, 19))), None, Vector.empty, None, Vector.empty, Some(Position(1490, 72, 9)))), Vector.empty, None, Vector.empty, Some(Position(1484, 72, 3)))),
+              Vector.empty,
+              Vector.empty,
               Vector.empty,
               Some(Position(1464, 71, 1))
             ),
-            TypeExtensionDefinition(
-              ObjectTypeDefinition(
-                "Foo",
-                Vector.empty,
-                Vector.empty,
-                Vector(
-                  Directive(
-                    "onType",
-                    Vector.empty,
-                    Vector.empty,
-                    Some(Position(1535, 75, 17))
-                  )),
-                None,
-                Vector.empty,
-                Vector.empty,
-                Some(Position(1519, 75, 1))
-              ),
+            ObjectTypeExtensionDefinition(
+              "Foo",
+              Vector.empty,
+              Vector.empty,
+              Vector(
+                Directive(
+                  "onType",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(1535, 75, 17))
+                )),
+              Vector.empty,
               Vector.empty,
               Some(Position(1519, 75, 1))
             ),
@@ -310,7 +300,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
           Some(Position(0, 1, 1)),
           None
         )
-      
+
       QueryParser.parse(query) map (_.withoutSourceMapper) should be(Success(expectedAst))
     }
 
@@ -360,20 +350,15 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
       ast.withoutSourceMapper should be (
         Document(
           Vector(
-            TypeExtensionDefinition(
-              ObjectTypeDefinition(
-                "Hello",
-                Vector.empty,
-                Vector(
-                  FieldDefinition("world", NamedType("String", Some(Position(90, 5, 20))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(83, 5, 13)))),
-                Vector.empty,
-                None,
-                Vector(
-                  Comment(" my type", Some(Position(11, 2, 11))),
-                  Comment(" comment", Some(Position(31, 3, 11)))),
-                Vector.empty,
-                Some(Position(51, 4, 11))
-              ),
+            ObjectTypeExtensionDefinition(
+              "Hello",
+              Vector.empty,
+              Vector(
+                FieldDefinition("world", NamedType("String", Some(Position(90, 5, 20))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(83, 5, 13)))),
+              Vector.empty,
+              Vector(
+                Comment(" my type", Some(Position(11, 2, 11))),
+                Comment(" comment", Some(Position(31, 3, 11)))),
               Vector.empty,
               Some(Position(51, 4, 11))
             )),
@@ -767,7 +752,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
           }
         """)
       
-      ast.copy(sourceMapper = None) should be (
+      ast.withoutSourceMapper should be (
         Document(
           Vector(
             InputObjectTypeDefinition(
@@ -795,6 +780,333 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
             world(foo: Int): String
           }
         """)
+    }
+
+    "Allow legacy empty fields syntax" in {
+      val Success(ast) = QueryParser.parse(
+        """
+          type Foo @hello {}
+          interface Bar {}
+          input Baz {}
+        """, legacyEmptyFields = true)
+
+      ast.withoutSourceMapper should be(
+        Document(
+          Vector(
+            ObjectTypeDefinition(
+              "Foo",
+              Vector.empty,
+              Vector.empty,
+              Vector(
+                Directive(
+                  "hello",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(20, 2, 20))
+                )),
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(11, 2, 11))
+            ),
+            InterfaceTypeDefinition(
+              "Bar",
+              Vector.empty,
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(40, 3, 11))
+            ),
+            InputObjectTypeDefinition(
+              "Baz",
+              Vector.empty,
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(67, 4, 11))
+            )),
+          Vector.empty,
+          Some(Position(11, 2, 11)),
+          None
+        ))
+    }
+    
+    "Allow empty fields and values" in {
+      val Success(ast) = QueryParser.parse(
+        """
+          type Foo @hello
+          interface Bar
+          input Baz
+          enum Test
+          union Test @bar
+        """)
+
+      ast.withoutSourceMapper should be (
+        Document(
+          Vector(
+            ObjectTypeDefinition(
+              "Foo",
+              Vector.empty,
+              Vector.empty,
+              Vector(
+                Directive(
+                  "hello",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(20, 2, 20))
+                )),
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(11, 2, 11))
+            ),
+            InterfaceTypeDefinition(
+              "Bar",
+              Vector.empty,
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(37, 3, 11))
+            ),
+            InputObjectTypeDefinition(
+              "Baz",
+              Vector.empty,
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(61, 4, 11))
+            ),
+            EnumTypeDefinition(
+              "Test",
+              Vector.empty,
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(81, 5, 11))
+            ),
+            UnionTypeDefinition(
+              "Test",
+              Vector.empty,
+              Vector(
+                Directive(
+                  "bar",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(112, 6, 22))
+                )),
+              None,
+              Vector.empty,
+              Some(Position(101, 6, 11))
+            )),
+          Vector.empty,
+          Some(Position(11, 2, 11)),
+          None
+        ))
+    }
+
+    "Allow extensions on various types" in {
+      val Success(ast) = QueryParser.parse(
+        """
+          extend type Foo implements Hello & World @hello(ids: [1, 2]) {
+           f1: Int
+          }
+
+          extend interface Bar @dir {
+            "test field"
+            f2: [String!]
+          }
+
+          extend input Baz {
+           inp: Int = 1
+          }
+
+          extend enum Color {
+            MAGENTA
+          }
+
+          extend union Test @bar = More | Types
+
+          extend type EmptyFoo implements Hello1 & World1 @hello1(ids: [1, 2])
+          extend interface EmptyBar @dir1
+          extend input EmptyBaz @extraDir
+          extend enum EmptyColor @beautiful
+          extend union EmptyTest @bar
+        """)
+
+      ast.withoutSourceMapper should be (
+        Document(
+          Vector(
+            ObjectTypeExtensionDefinition(
+              "Foo",
+              Vector(
+                NamedType("Hello", Some(Position(38, 2, 38))),
+                NamedType("World", Some(Position(46, 2, 46)))),
+              Vector(
+                FieldDefinition("f1", NamedType("Int", Some(Position(89, 3, 16))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(85, 3, 12)))),
+              Vector(
+                Directive(
+                  "hello",
+                  Vector(
+                    Argument(
+                      "ids",
+                      ListValue(
+                        Vector(
+                          BigIntValue(1, Vector.empty, Some(Position(65, 2, 65))),
+                          BigIntValue(2, Vector.empty, Some(Position(68, 2, 68)))),
+                        Vector.empty,
+                        Some(Position(64, 2, 64))
+                      ),
+                      Vector.empty,
+                      Some(Position(59, 2, 59))
+                    )),
+                  Vector.empty,
+                  Some(Position(52, 2, 52))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(11, 2, 11))
+            ),
+            InterfaceTypeExtensionDefinition(
+              "Bar",
+              Vector(
+                FieldDefinition("f2", ListType(NotNullType(NamedType("String", Some(Position(186, 8, 18))), Some(Position(186, 8, 18))), Some(Position(185, 8, 17))), Vector.empty, Vector.empty, Some(StringValue("test field", false, None, Vector.empty, Some(Position(156, 7, 13)))), Vector.empty, Some(Position(181, 8, 13)))),
+              Vector(
+                Directive(
+                  "dir",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(137, 6, 32))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(116, 6, 11))
+            ),
+            InputObjectTypeExtensionDefinition(
+              "Baz",
+              Vector(
+                InputValueDefinition("inp", NamedType("Int", Some(Position(253, 12, 17))), Some(BigIntValue(1, Vector.empty, Some(Position(259, 12, 23)))), Vector.empty, None, Vector.empty, Some(Position(248, 12, 12)))),
+              Vector.empty,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(218, 11, 11))
+            ),
+            EnumTypeExtensionDefinition(
+              "Color",
+              Vector(
+                EnumValueDefinition("MAGENTA", Vector.empty, None, Vector.empty, Some(Position(316, 16, 13)))),
+              Vector.empty,
+              Vector.empty,
+              Vector.empty,
+              Some(Position(284, 15, 11))
+            ),
+            UnionTypeExtensionDefinition(
+              "Test",
+              Vector(
+                NamedType("More", Some(Position(372, 19, 36))),
+                NamedType("Types", Some(Position(379, 19, 43)))),
+              Vector(
+                Directive(
+                  "bar",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(365, 19, 29))
+                )),
+              Vector.empty,
+              Some(Position(347, 19, 11))
+            ),
+            ObjectTypeExtensionDefinition(
+              "EmptyFoo",
+              Vector(
+                NamedType("Hello1", Some(Position(428, 21, 43))),
+                NamedType("World1", Some(Position(437, 21, 52)))),
+              Vector.empty,
+              Vector(
+                Directive(
+                  "hello1",
+                  Vector(
+                    Argument(
+                      "ids",
+                      ListValue(
+                        Vector(
+                          BigIntValue(1, Vector.empty, Some(Position(458, 21, 73))),
+                          BigIntValue(2, Vector.empty, Some(Position(461, 21, 76)))),
+                        Vector.empty,
+                        Some(Position(457, 21, 72))
+                      ),
+                      Vector.empty,
+                      Some(Position(452, 21, 67))
+                    )),
+                  Vector.empty,
+                  Some(Position(444, 21, 59))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(396, 21, 11))
+            ),
+            InterfaceTypeExtensionDefinition(
+              "EmptyBar",
+              Vector.empty,
+              Vector(
+                Directive(
+                  "dir1",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(501, 22, 37))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(475, 22, 11))
+            ),
+            InputObjectTypeExtensionDefinition(
+              "EmptyBaz",
+              Vector.empty,
+              Vector(
+                Directive(
+                  "extraDir",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(539, 23, 33))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(517, 23, 11))
+            ),
+            EnumTypeExtensionDefinition(
+              "EmptyColor",
+              Vector.empty,
+              Vector(
+                Directive(
+                  "beautiful",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(582, 24, 34))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(559, 24, 11))
+            ),
+            UnionTypeExtensionDefinition(
+              "EmptyTest",
+              Vector.empty,
+              Vector(
+                Directive(
+                  "bar",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(626, 25, 34))
+                )),
+              Vector.empty,
+              Some(Position(603, 25, 11))
+            )),
+          Vector.empty,
+          Some(Position(11, 2, 11)),
+          None
+        ))
     }
   }
 }

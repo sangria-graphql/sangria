@@ -43,7 +43,7 @@ tests:
 
   - name: Simple type inheriting multiple interfaces
     given:
-      query: "type Hello implements Wo, rld { foo: Bar }"
+      query: "type Hello implements Wo & rld { foo: Bar }"
     when:
       parse:
     then:

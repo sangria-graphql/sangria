@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition, TypeExtensionDefinition}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition, ObjectTypeExtensionDefinition}
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
@@ -767,7 +767,12 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
           """
 
         val builder = new DefaultAstSchemaBuilder[Repo] {
-          override def resolveField(origin: MatOrigin, typeDefinition: TypeDefinition, extensions: Vector[TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Repo]) =
+          override def resolveField(
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Repo, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Repo]) =
             if (definition.directives.exists(_.name == "loadComments"))
               c ⇒ c.ctx.loadComments
             else
@@ -1090,7 +1095,12 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         val ReturnDog = Directive("returnDog", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ ⇒ true)
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-          override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Unit]) =
+          override def resolveField(
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Unit]) =
             if (definition.directives.exists(_.name == ReturnCat.name))
               _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
             else if (definition.directives.exists(_.name == ReturnDog.name))
@@ -1100,7 +1110,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             else
               _.value.asInstanceOf[Map[String, Any]](definition.name)
 
-          override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
+          override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]) =
             Some((value, _) ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name)
 
           override def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition) =
@@ -1228,7 +1238,12 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
           """
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-          override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Unit]) =
+          override def resolveField(
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Unit]) =
             if (definition.name == "foo")
               _ ⇒ Some(())
             else if (definition.name endsWith "None")

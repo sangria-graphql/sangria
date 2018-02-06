@@ -80,8 +80,19 @@ trait AstLiftable {
       q"_root_.sangria.ast.DirectiveDefinition($n, $a, $l, $desc, $c, $p)"
     case SchemaDefinition(o, d, c, tc, p) ⇒
       q"_root_.sangria.ast.SchemaDefinition($o, $d, $c, $tc, $p)"
-    case TypeExtensionDefinition(d, c, p) ⇒
-      q"_root_.sangria.ast.TypeExtensionDefinition($d, $c, $p)"
+
+    case ObjectTypeExtensionDefinition(n, i, f, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.ObjectTypeExtensionDefinition($n, $i, $f, $d, $c, $tc, $p)"
+    case InterfaceTypeExtensionDefinition(n, f, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.InterfaceTypeExtensionDefinition($n, $f, $d, $c, $tc, $p)"
+    case InputObjectTypeExtensionDefinition(n, f, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.InputObjectTypeExtensionDefinition($n, $f, $d, $c, $tc, $p)"
+    case UnionTypeExtensionDefinition(n, t, d, c, p) ⇒
+      q"_root_.sangria.ast.UnionTypeExtensionDefinition($n, $t, $d, $c, $p)"
+    case EnumTypeExtensionDefinition(n, v, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.EnumTypeExtensionDefinition($n, $v, $d, $c, $tc, $p)"
+    case ScalarTypeExtensionDefinition(n, d, c, p) ⇒
+      q"_root_.sangria.ast.ScalarTypeExtensionDefinition($n, $d, $c, $p)"
 
     case EnumTypeDefinition(n, v, d, desc, c, tc, p) ⇒
       q"_root_.sangria.ast.EnumTypeDefinition($n, $v, $d, $desc, $c, $tc, $p)"

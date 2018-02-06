@@ -8,7 +8,7 @@ import sangria.ast
 import sangria.execution.{Executor, QueryReducer, UserFacingError}
 import sangria.macros._
 import sangria.marshalling.InputUnmarshaller
-import sangria.schema.AstSchemaBuilder.{EnumName, FieldName, TypeName, resolverBased}
+import sangria.schema.AstSchemaBuilder.{FieldName, TypeName, resolverBased}
 import sangria.schema.{DirectiveLocation => DL}
 import sangria.util.{FutureResultSupport, Pos}
 import sangria.validation.BaseViolation
@@ -302,9 +302,9 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
     "resolve enum values" in {
       val builder = resolverBased[Any](
         SimpleEnumValueResolver {
-          case (EnumName("Color"), v) if v.name == "RED" ⇒ "#FF0000"
-          case (EnumName("Color"), v) if v.name == "GREEN" ⇒ "#00FF00"
-          case (EnumName("Color"), v) if v.name == "BLUE" ⇒ "#0000FF"
+          case (TypeName("Color"), v) if v.name == "RED" ⇒ "#FF0000"
+          case (TypeName("Color"), v) if v.name == "GREEN" ⇒ "#00FF00"
+          case (TypeName("Color"), v) if v.name == "BLUE" ⇒ "#0000FF"
         },
         FieldResolver {
           case (TypeName("Mutation"), FieldName("eat")) ⇒

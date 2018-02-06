@@ -15,7 +15,7 @@ import sangria.validation._
 class KnownTypeNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case _: ast.ObjectTypeDefinition | _: ast.InterfaceTypeDefinition | _: ast.UnionTypeDefinition | _: ast.InputObjectTypeDefinition ⇒
+      case _: ast.ObjectTypeDefinition | _: ast.InterfaceTypeDefinition | _: ast.UnionTypeDefinition | _: ast.InputObjectTypeDefinition | _: ast.TypeExtensionDefinition ⇒
         // TODO: when validating IDL, re-enable these. Experimental version does not
         // add unreferenced types, resulting in false-positive errors. Squelched
         // errors for now.
