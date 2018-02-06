@@ -141,7 +141,7 @@ object QueryRenderer {
     } else ""
 
   def renderDirs(dirs: Vector[Directive], config: QueryRendererConfig, indent: Indent, frontSep: Boolean = false, withSep: Boolean = true) =
-    (if (dirs.nonEmpty && frontSep && withSep) config.mandatorySeparator else "") +
+    (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
       (dirs map (renderNode(_, config, indent.zero)) mkString config.separator) +
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
