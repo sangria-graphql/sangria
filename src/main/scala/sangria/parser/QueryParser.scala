@@ -123,7 +123,7 @@ trait Ignored extends PositionTracking { this: Parser ⇒
 
   def ws(s: String): Rule0 = rule { quiet(Ignored.* ~ str(s) ~ Ignored.*) }
 
-  def wsCapture(s: String) = rule { quiet(Ignored.* ~ capture(str(s)) ~ Ignored.*) }
+  def wsCapture(s: String) = rule { quiet(Ignored.* ~ capture(str(s)) ~ IgnoredNoComment.*) }
 
 }
 
