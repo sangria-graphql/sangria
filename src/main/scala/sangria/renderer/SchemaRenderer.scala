@@ -288,7 +288,7 @@ object SchemaRenderer {
 }
 
 case class SchemaFilter(filterTypes: String ⇒ Boolean, filterDirectives: String ⇒ Boolean, renderSchema: Boolean = true, legacyCommentDescriptions: Boolean = false) {
-  @deprecated("Please migrate to new string-based description format", "1.3.4")
+  @deprecated("Please migrate to new string-based description format", "1.4.0")
   def withLegacyCommentDescriptions = copy(legacyCommentDescriptions = true)
 }
 

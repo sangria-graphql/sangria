@@ -503,9 +503,9 @@ class QueryParser private (val input: ParserInput, val legacyImplementsInterface
 object QueryParser {
   def parse(
     input: String,
-    @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.3.4")
+    @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
     legacyImplementsInterface: Boolean = false,
-    @deprecated("Use new syntax: `type Foo` intead of legacy `type Foo {}`", "1.3.4")
+    @deprecated("Use new syntax: `type Foo` intead of legacy `type Foo {}`", "1.4.0")
     legacyEmptyFields: Boolean = false
   )(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
     parse(ParserInput(input), legacyImplementsInterface, legacyEmptyFields)(scheme)

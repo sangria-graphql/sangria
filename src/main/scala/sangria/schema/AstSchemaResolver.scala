@@ -23,11 +23,11 @@ object AdditionalTypes {
 
 case class AdditionalDirectives[Ctx](additionalDirectives: Seq[Directive]) extends AstSchemaResolver[Ctx]
 
-@deprecated("Please migrate to new string-based description format", "1.3.4")
+@deprecated("Please migrate to new string-based description format", "1.4.0")
 class LegacyCommentDescriptionsResolver[Ctx] extends AstSchemaResolver[Ctx]
 
 object LegacyCommentDescriptionsResolver {
-  @deprecated("Please migrate to new string-based description format", "1.3.4")
+  @deprecated("Please migrate to new string-based description format", "1.4.0")
   def apply[Ctx]() = new LegacyCommentDescriptionsResolver[Ctx]
 }
 
