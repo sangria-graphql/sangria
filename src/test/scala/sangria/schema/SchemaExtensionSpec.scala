@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{TypeExtensionDefinition, FieldDefinition, ObjectTypeDefinition}
+import sangria.ast.{ObjectTypeExtensionDefinition, FieldDefinition, ObjectTypeDefinition}
 import sangria.renderer.{SchemaRenderer}
 import sangria.util.SimpleGraphQlSupport.check
 import sangria.util.{Pos, SimpleGraphQlSupport, FutureResultSupport, StringMatchers}
@@ -580,7 +580,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           |  fizz: String
           |}
           |
-          |type Foo implements NewInterface, SomeInterface {
+          |type Foo implements NewInterface & SomeInterface {
           |  name: String
           |  some: SomeInterface
           |  tree: [Foo]!
@@ -645,7 +645,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           |  foo: Foo
           |}
           |
-          |type Biz implements NewInterface, SomeInterface {
+          |type Biz implements NewInterface & SomeInterface {
           |  fizz: String
           |  buzz: String
           |  name: String
@@ -857,7 +857,12 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
         """
 
       val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-        override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Unit]) =
+        override def resolveField(
+            origin: MatOrigin,
+            typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+            extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+            definition: ast.FieldDefinition,
+            mat: AstSchemaMaterializer[Unit]) =
           if (definition.name == "animal1")
             _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
           else if (definition.name == "animal2")
@@ -867,14 +872,14 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           else
             _.value.asInstanceOf[Map[String, Any]](definition.name)
 
-        override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
+        override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]) =
           Some((value, clazz) ⇒ value match {
             case v: Map[_, _] if definition.name == "Hello" ⇒ true
             case v : Map[String, _] @unchecked if v contains "type" ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name
             case _ ⇒ false
           })
 
-        override def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Unit, _], extensions: List[TypeExtensionDefinition]) =
+        override def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Unit, _], extensions: List[ObjectTypeExtensionDefinition]) =
           Some((value, clazz) ⇒ value match {
             case v: Map[_, _] if tpe.name == "Hello" ⇒ true
             case v if clazz.isAssignableFrom(v.getClass) ⇒ true

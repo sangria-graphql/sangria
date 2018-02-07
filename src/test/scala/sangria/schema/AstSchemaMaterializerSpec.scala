@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition, TypeExtensionDefinition}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition, ObjectTypeExtensionDefinition}
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
@@ -767,7 +767,12 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
           """
 
         val builder = new DefaultAstSchemaBuilder[Repo] {
-          override def resolveField(origin: MatOrigin, typeDefinition: TypeDefinition, extensions: Vector[TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Repo]) =
+          override def resolveField(
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Repo, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Repo]) =
             if (definition.directives.exists(_.name == "loadComments"))
               c ⇒ c.ctx.loadComments
             else
@@ -1053,6 +1058,126 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         field.arguments(0).description should be (Some("first arg"))
         field.arguments(1).description should be (Some("secnd arg\nline 2"))
       }
+
+      "support type extensions" in {
+        val schemaDef =
+          """
+            schema {
+              query: Query
+            }
+
+            "My super query!"
+            type Query
+
+            input Complex {
+              name: String = "test"
+            }
+
+            enum Color {
+             Red, Green
+            }
+
+            interface Cool
+
+            interface Versioned {
+              id: ID!
+            }
+
+            union Pet @noTypesHere
+
+            extend type Query implements Cool @coolDir {
+              # not a description!
+              field1(
+                "first arg"
+                arg1: Int = 101,
+                arg2: String!
+              ): String
+            }
+
+            extend type Query implements Versioned @hello {
+              id: ID!
+              version: Long!
+              field2(a: Complex): Int
+            }
+
+            extend input Complex @advanced {
+              color: Color = Blue
+            }
+
+            extend enum Color @extra(id: 123) {
+              "forgot"
+              Blue
+            }
+
+            extend interface Versioned @test {
+              version: Long!
+            }
+
+            extend interface Cool {
+              field1(arg1: Int = 101, arg2: String!): String
+              pet: Pet
+            }
+
+            type Dog {name: String}
+            type Cat {cute: Boolean, size: PositiveInt!}
+
+            extend union Pet @yay = Dog | Cat
+
+            extend scalar PositiveInt @intConstraint(min: 0)
+            scalar PositiveInt
+          """
+
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+        
+        ("\n" + schema.renderPretty + "\n") should equal("""
+          |type Cat {
+          |  cute: Boolean
+          |  size: PositiveInt!
+          |}
+          |
+          |enum Color @extra(id: 123) {
+          |  Red
+          |  Green
+          |
+          |  "forgot"
+          |  Blue
+          |}
+          |
+          |input Complex @advanced {
+          |  name: String = "test"
+          |  color: Color = Blue
+          |}
+          |
+          |interface Cool {
+          |  field1(arg1: Int = 101, arg2: String!): String
+          |  pet: Pet
+          |}
+          |
+          |type Dog {
+          |  name: String
+          |}
+          |
+          |union Pet @noTypesHere @yay = Dog | Cat
+          |
+          |scalar PositiveInt @intConstraint(min: 0)
+          |
+          |"My super query!"
+          |type Query implements Cool & Versioned @coolDir @hello {
+          |  field1(
+          |    "first arg"
+          |    arg1: Int = 101, arg2: String!): String
+          |  id: ID!
+          |  version: Long!
+          |  field2(a: Complex): Int
+          |  pet: Pet
+          |}
+          |
+          |interface Versioned @test {
+          |  id: ID!
+          |  version: Long!
+          |}
+          |""".stripMargin) (after being strippedOfCarriageReturns)
+      }
     }
 
     "Execution" should {
@@ -1090,7 +1215,12 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         val ReturnDog = Directive("returnDog", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ ⇒ true)
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-          override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Unit]) =
+          override def resolveField(
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Unit]) =
             if (definition.directives.exists(_.name == ReturnCat.name))
               _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
             else if (definition.directives.exists(_.name == ReturnDog.name))
@@ -1100,7 +1230,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             else
               _.value.asInstanceOf[Map[String, Any]](definition.name)
 
-          override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
+          override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]) =
             Some((value, _) ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name)
 
           override def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition) =
@@ -1228,7 +1358,12 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
           """
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
-          override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Unit]) =
+          override def resolveField(
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Unit]) =
             if (definition.name == "foo")
               _ ⇒ Some(())
             else if (definition.name endsWith "None")

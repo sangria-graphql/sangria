@@ -31,6 +31,6 @@ class ExecutableDefinitions extends ValidationRule {
     case d: ast.TypeDefinition ⇒ Some(d.name)
     case d: ast.DirectiveDefinition ⇒ Some(d.name)
     case d: ast.SchemaDefinition ⇒ None
-    case d: ast.TypeExtensionDefinition ⇒ Some(d.definition.name)
+    case d: ast.TypeExtensionDefinition ⇒ Some(d.name)
   }
 }
