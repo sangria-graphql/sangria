@@ -430,6 +430,7 @@ object SchemaComparator {
 
 sealed trait SchemaChange {
   def breakingChange: Boolean
+  def dangerousChange: Boolean
   def description: String
 }
 
@@ -448,7 +449,7 @@ object SchemaChange {
     def newDescription: Option[String]
   }
 
-  sealed abstract class AbstractChange(val description: String, val breakingChange: Boolean) extends SchemaChange
+  sealed abstract class AbstractChange(val description: String, val breakingChange: Boolean, val dangerousChange: Boolean = false) extends SchemaChange
 
   // Breaking changes
 
@@ -502,7 +503,7 @@ object SchemaChange {
     extends AbstractChange(s"`${tpe.name}` type description is changed", false) with DescriptionChange
 
   case class EnumValueAdded(tpe: EnumType[_], value: EnumValue[_])
-    extends AbstractChange(s"Enum value `${value.name}` was added to enum `${tpe.name}`", false) with TypeChange
+    extends AbstractChange(s"Enum value `${value.name}` was added to enum `${tpe.name}`", false, true) with TypeChange
 
   case class EnumValueDescriptionChanged(tpe: EnumType[_], value: EnumValue[_], oldDescription: Option[String], newDescription: Option[String])
     extends AbstractChange(s"`${tpe.name}.${value.name}` description changed", false) with DescriptionChange
@@ -511,7 +512,7 @@ object SchemaChange {
     extends AbstractChange(s"Enum value `${value.name}` was deprecated in enum `${tpe.name}`", false) with DeprecationChange
 
   case class UnionMemberAdded(tpe: UnionType[_], member: ObjectType[_, _])
-    extends AbstractChange(s"`${member.name}` type was added to union `${tpe.name}`", false) with TypeChange
+    extends AbstractChange(s"`${member.name}` type was added to union `${tpe.name}`", false, true) with TypeChange
 
   case class InputFieldDescriptionChanged(tpe: InputObjectType[_], field: InputField[_], oldDescription: Option[String], newDescription: Option[String])
     extends AbstractChange(s"`${tpe.name}.${field.name}` description is changed", false) with DescriptionChange
@@ -535,13 +536,13 @@ object SchemaChange {
     extends AbstractChange(s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false) with TypeChange
 
   case class ObjectTypeArgumentDefaultChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
-    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false) with TypeChange
+    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false, true) with TypeChange
 
   case class DirectiveArgumentDefaultChanged(directive: Directive, argument: Argument[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
-    extends AbstractChange(s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false)
+    extends AbstractChange(s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false, true)
 
   case class ObjectTypeInterfaceAdded(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
-    extends AbstractChange(s"`${tpe.name}` object type now implements `${interface.name}` interface", false) with TypeChange
+    extends AbstractChange(s"`${tpe.name}` object type now implements `${interface.name}` interface", false, true) with TypeChange
 
   case class FieldAdded(tpe: ObjectLikeType[_, _], field: Field[_, _])
     extends AbstractChange(s"Field `${field.name}` was added to `${tpe.name}` type", false) with TypeChange
@@ -561,10 +562,12 @@ object SchemaChange {
 
   abstract class AbstractAstDirectiveAdded(val description: String, val location: DirectiveLocation.Value) extends AstDirectiveAdded {
     val breakingChange = false
+    val dangerousChange = false
   }
 
   abstract class AbstractAstDirectiveRemoved(val description: String, val location: DirectiveLocation.Value) extends AstDirectiveRemoved {
     val breakingChange = false
+    val dangerousChange = false
   }
 
   case class FieldAstDirectiveAdded(tpe: ObjectLikeType[_, _], field: Field[_, _], directive: ast.Directive)
