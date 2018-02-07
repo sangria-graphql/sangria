@@ -175,6 +175,7 @@ case class FragmentDefinition(
     typeCondition: NamedType,
     directives: Vector[Directive],
     selections: Vector[Selection],
+    variables: Vector[VariableDefinition] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
     position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer {
@@ -607,11 +608,12 @@ object AstVisitor {
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FragmentDefinition(_, cond, dirs, sels, comment, trailingComments, _) ⇒
+        case n @ FragmentDefinition(_, cond, dirs, sels, vars, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             loop(cond)
             dirs.foreach(d ⇒ loop(d))
             sels.foreach(s ⇒ loop(s))
+            vars.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))

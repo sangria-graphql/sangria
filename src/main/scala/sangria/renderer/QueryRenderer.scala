@@ -330,9 +330,9 @@ object QueryRenderer {
           renderDirs(dirs, config, indent) +
           renderSelections(sels, op, indent, config)
 
-      case fd @ FragmentDefinition(name, typeCondition, dirs, sels, _, _, _) ⇒
+      case fd @ FragmentDefinition(name, typeCondition, dirs, sels, vars, _, _, _) ⇒
         renderComment(fd, prev, indent, config) +
-          indent.str + "fragment" + config.mandatorySeparator + name + config.mandatorySeparator + "on" +
+          indent.str + "fragment" + config.mandatorySeparator + name + renderVarDefs(vars, indent, config, withSep = false) + config.mandatorySeparator + "on" +
           config.mandatorySeparator + typeCondition.name + config.separator +
           renderDirs(dirs, config, indent) +
           renderSelections(sels, fd, indent, config)

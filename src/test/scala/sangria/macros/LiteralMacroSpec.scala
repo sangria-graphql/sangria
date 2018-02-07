@@ -219,6 +219,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Some(Position(502, 19, 13))
                 )),
               Vector.empty,
+              Vector.empty,
               Vector(
                 Comment(" field in fragment!", Some(Position(506, 19, 17)))),
               Some(Position(455, 18, 11))
@@ -609,6 +610,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector.empty,
                   Some(Position(1311, 46, 13))
                 )),
+              Vector.empty,
               Vector.empty,
               Vector.empty,
               Some(Position(1273, 45, 11))

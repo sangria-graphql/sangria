@@ -73,8 +73,8 @@ trait AstLiftable {
   implicit def liftDefinition[T <: Definition]: Liftable[T] = Liftable {
     case OperationDefinition(o, n, v, d, s, c, tc, p) ⇒
       q"_root_.sangria.ast.OperationDefinition($o, $n, $v, $d, $s, $c, $tc, $p)"
-    case FragmentDefinition(n, t, d, s, c, tc, p) ⇒
-      q"_root_.sangria.ast.FragmentDefinition($n, $t, $d, $s, $c, $tc, $p)"
+    case FragmentDefinition(n, t, d, s, v, c, tc, p) ⇒
+      q"_root_.sangria.ast.FragmentDefinition($n, $t, $d, $s, $v, $c, $tc, $p)"
 
     case DirectiveDefinition(n, a, l, desc, c, p) ⇒
       q"_root_.sangria.ast.DirectiveDefinition($n, $a, $l, $desc, $c, $p)"

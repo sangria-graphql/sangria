@@ -403,6 +403,8 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
 trait Fragments { this: Parser with Tokens with Ignored with Directives with Types with Operations ⇒
 
+  def experimentalFragmentVariables: Boolean
+
   def FragmentSpread = rule { Comments ~ trackPos ~ Ellipsis ~ FragmentName ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~>
       ((comment, pos, name, dirs) ⇒ ast.FragmentSpread(name, dirs, comment, Some(pos))) }
 
@@ -413,8 +415,12 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 
   def Fragment = rule { Keyword("fragment") }
 
-  def FragmentDefinition = rule { Comments ~ trackPos ~ Fragment ~ FragmentName ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ SelectionSet ~>
-    ((comment, pos, name, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels._1, comment, sels._2, Some(pos))) }
+  def FragmentDefinition = rule { Comments ~ trackPos ~ Fragment ~ FragmentName ~ ExperimentalFragmentVariables ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ SelectionSet ~>
+    ((comment, pos, name, vars, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels._1, vars, comment, sels._2, Some(pos))) }
+
+  def ExperimentalFragmentVariables = rule {
+    test(experimentalFragmentVariables) ~ VariableDefinitions.? ~> (_ getOrElse Vector.empty) | push(Vector.empty)
+  }
 
   def FragmentName = rule { !on ~ Name }
 
@@ -497,7 +503,7 @@ trait Types { this: Parser with Tokens with Ignored ⇒
   }
 }
 
-class QueryParser private (val input: ParserInput, val legacyImplementsInterface: Boolean = false, val legacyEmptyFields: Boolean = false)
+class QueryParser private (val input: ParserInput, val legacyImplementsInterface: Boolean = false, val legacyEmptyFields: Boolean = false, val experimentalFragmentVariables: Boolean = false)
     extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types with TypeSystemDefinitions
 
 object QueryParser {
@@ -506,13 +512,14 @@ object QueryParser {
     @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
     legacyImplementsInterface: Boolean = false,
     @deprecated("Use new syntax: `type Foo` intead of legacy `type Foo {}`", "1.4.0")
-    legacyEmptyFields: Boolean = false
+    legacyEmptyFields: Boolean = false,
+    experimentalFragmentVariables: Boolean = false
   )(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
-    parse(ParserInput(input), legacyImplementsInterface, legacyEmptyFields)(scheme)
+    parse(ParserInput(input), legacyImplementsInterface, legacyEmptyFields, experimentalFragmentVariables)(scheme)
   }
 
-  def parse(input: ParserInput, legacyImplementsInterface: Boolean, legacyEmptyFields: Boolean)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
-    val parser = new QueryParser(input, legacyImplementsInterface, legacyEmptyFields)
+  def parse(input: ParserInput, legacyImplementsInterface: Boolean, legacyEmptyFields: Boolean, experimentalFragmentVariables: Boolean)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+    val parser = new QueryParser(input, legacyImplementsInterface, legacyEmptyFields, experimentalFragmentVariables)
 
     parser.Document.run() match {
       case Success(res) ⇒
