@@ -501,7 +501,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IntrospectionInputValue("color", None, IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
         IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
     }
-    "allow to set arguments descriptions and default values with config" in {
+    "allow to rename arguments, set arguments descriptions and default values with config" in {
       object MyJsonProtocol extends DefaultJsonProtocol {
         implicit val PetFormat = jsonFormat2(Pet.apply)
       }
@@ -524,9 +524,10 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
       val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar,
         IncludeMethods("hello", "opt"),
-        MethodArgumentDescription( "hello", "id", "`id`"),
-        MethodArgumentDescription( "hello", "songs", "`songs`"),
-        MethodArgumentsDescription("opt", "str"   -> "string", "color" -> "a color"),
+        MethodArgumentDescription("hello", "id", "`id`"),
+        MethodArgumentDescription("hello", "songs", "`songs`"),
+        MethodArgumentRename("opt", "str", "description"),
+        MethodArgumentsDescription("opt", "str" -> "Optional description", "color" -> "a color"),
         MethodArgumentDefault("hello", "songs",  "My favorite song" :: Nil),
         MethodArgument("hello", "pet", "`pet`", Pet("Octocat", None))
       )
@@ -561,9 +562,12 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       optField.args should have size 3
 
       optField.args should be (List(
-        IntrospectionInputValue("str", Some("string"), IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
-        IntrospectionInputValue("color", Some("a color"), IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
-        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
+        IntrospectionInputValue("description", Some("Optional description"),
+          IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
+        IntrospectionInputValue("color", Some("a color"),
+          IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
+        IntrospectionInputValue("pet", None,
+          IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
     }
 
     "validate known argument names" in {

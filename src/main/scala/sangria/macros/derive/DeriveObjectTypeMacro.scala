@@ -169,7 +169,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       val tpe = term.typeSignature.resultType
       val methodName = member.method.name.decodedName.toString
       val argName = term.name.decodedName.toString
-      val name = symbolName(term.annotations).collect {case q"${s: String}" ⇒ s} getOrElse argName
+
+      val name = collectArgRename(config, methodName, argName) orElse
+        symbolName(term.annotations).collect {case q"${s: String}" ⇒ s} getOrElse argName
 
       val description = collectArgDescription(config, methodName, argName) orElse symbolDescription(term.annotations)
       val default = collectArgDefault(config, methodName, argName) orElse symbolDefault(term.annotations)
@@ -309,6 +311,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       case MacroReplaceField(fieldName, _, pos) if !knownMembersSet.contains(fieldName) ⇒
         unknownMember(pos, fieldName) :: Nil
 
+      case MacroMethodArgumentRename(methodName, argName, _, pos) ⇒
+        validateHasArgument(pos, methodName, argName)
+
       case MacroMethodArgumentDescription(methodName, argName, _, pos) ⇒
         validateHasArgument(pos, methodName, argName)
 
@@ -379,6 +384,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
     case q"$setting.apply[$_, $_]($fn)" if checkSetting[TransformFieldNames.type](setting) ⇒
       Right(MacroTransformFieldNames(fn))
 
+    case tree @ q"$setting.apply[$_, $_](${methodName: String}, ${argName: String}, ${newName: String})" if checkSetting[MethodArgumentRename.type](setting) ⇒
+      Right(MacroMethodArgumentRename(methodName, argName, newName, tree.pos))
+
     case tree @ q"$setting.apply[$_, $_](${methodName: String}, ${argName: String}, $description)" if checkSetting[MethodArgumentDescription.type](setting) ⇒
       Right(MacroMethodArgumentDescription(methodName, argName, description, tree.pos))
 
@@ -428,19 +436,24 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   case class MacroReplaceField(fieldName: String, field: Tree, pos: Position) extends MacroDeriveObjectSetting
   case class MacroTransformFieldNames(transformer: Tree) extends MacroDeriveObjectSetting
 
+  case class MacroMethodArgumentRename(methodName: String, argName: String, newName: String, pos: Position) extends MacroDeriveObjectSetting
   case class MacroMethodArgumentDescription(methodName: String, argName: String, description: Tree, pos: Position) extends MacroDeriveObjectSetting
   case class MacroMethodArgumentsDescription(methodName: String, descriptions: Map[String, Tree], pos: Position) extends MacroDeriveObjectSetting
   case class MacroMethodArgumentDefault(methodName: String, argName: String, defaultType: Type, default: Tree, pos: Position) extends MacroDeriveObjectSetting
   case class MacroMethodArgument(methodName: String, argName: String, description: Tree, defaultType: Type, default: Tree, pos: Position) extends MacroDeriveObjectSetting
 
+  private def collectArgRename(config: Seq[MacroDeriveObjectSetting], methodName: String, argName: String) = config.collect{
+    case MacroMethodArgumentRename(`methodName`, `argName`, newName, _) => newName
+  }.lastOption
+
   private def collectArgDescription(config: Seq[MacroDeriveObjectSetting], methodName: String, argName: String) = config.collect{
-    case MacroMethodArgumentDescription(`methodName`, `argName`, description, _) => Some(description)
-    case MacroMethodArgumentsDescription(`methodName`, descriptions, _) => descriptions.get(argName)
-    case MacroMethodArgument(`methodName`, `argName`, description, _, _, _) => Some(description)
+    case MacroMethodArgumentDescription(`methodName`, `argName`, description, _) ⇒ Some(description)
+    case MacroMethodArgumentsDescription(`methodName`, descriptions, _) ⇒ descriptions.get(argName)
+    case MacroMethodArgument(`methodName`, `argName`, description, _, _, _) ⇒ Some(description)
   }.flatten.lastOption
 
   private def collectArgDefault(config: Seq[MacroDeriveObjectSetting], methodName: String, argName: String) = config.collect{
-    case MacroMethodArgumentDefault(`methodName`, `argName`, _, default, _) => default
-    case MacroMethodArgument(`methodName`, `argName`, _, _, default, _) => default
+    case MacroMethodArgumentDefault(`methodName`, `argName`, _, default, _) ⇒ default
+    case MacroMethodArgument(`methodName`, `argName`, _, _, default, _) ⇒ default
   }.lastOption
 }
