@@ -21,7 +21,7 @@ class LoneAnonymousOperation extends ValidationRule {
         AstVisitorCommand.RightContinue
       case op: ast.OperationDefinition ⇒
         if (op.name.isEmpty && operationCount > 1)
-          Left(Vector(AnonOperationNotAloneViolation(ctx.sourceMapper, op.position.toList)))
+          Left(Vector(AnonOperationNotAloneViolation(ctx.sourceMapper, op.location.toList)))
         else
           AstVisitorCommand.RightContinue
     }

@@ -1,6 +1,6 @@
 package sangria.execution
 
-import org.parboiled2.Position
+import sangria.ast.AstLocation
 import sangria.marshalling.ResultMarshaller
 import sangria.parser.SourceMapper
 import sangria.schema.{AbstractType, InterfaceType, ObjectType, UnionType}
@@ -23,7 +23,7 @@ trait ErrorWithResolver {
     new ResultResolver(marshaller, exceptionHandler, false).resolveError(this).asInstanceOf[marshaller.Node]
 }
 
-class ExecutionError(message: String, val exceptionHandler: ExceptionHandler, val sourceMapper: Option[SourceMapper] = None, val positions: List[Position] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError with ErrorWithResolver {
+class ExecutionError(message: String, val exceptionHandler: ExceptionHandler, val sourceMapper: Option[SourceMapper] = None, val locations: List[AstLocation] = Nil) extends Exception(message) with AstNodeLocation with UserFacingError with ErrorWithResolver {
   override def simpleErrorMessage = super.getMessage
   override def getMessage() = super.getMessage + astLocation
 }
@@ -33,7 +33,7 @@ abstract class InternalExecutionError(message: String) extends Exception(message
   override def getMessage() = super.getMessage + astLocation
 }
 
-case class UndefinedConcreteTypeError(path: ExecutionPath, abstractType: AbstractType, possibleTypes: Vector[ObjectType[_, _]], value: Any, exceptionHandler: ExceptionHandler, sourceMapper: Option[SourceMapper] = None, positions: List[Position] = Nil)
+case class UndefinedConcreteTypeError(path: ExecutionPath, abstractType: AbstractType, possibleTypes: Vector[ObjectType[_, _]], value: Any, exceptionHandler: ExceptionHandler, sourceMapper: Option[SourceMapper] = None, locations: List[AstLocation] = Nil)
   extends InternalExecutionError(s"Can't find appropriate subtype of ${UndefinedConcreteTypeError.renderAbstractType(abstractType)} type '${abstractType.name}' for value of class '${UndefinedConcreteTypeError.renderValueClass(value)}' at path '$path'. Possible types: ${UndefinedConcreteTypeError.renderPossibleTypes(possibleTypes)}. Got value: $value.")
 
 object UndefinedConcreteTypeError {
@@ -74,5 +74,5 @@ case class MaterializedSchemaValidationError(violations: Vector[Violation], eh: 
 
 case class QueryReducingError(cause: Throwable, exceptionHandler: ExceptionHandler) extends Exception(s"Query reducing error: ${cause.getMessage}", cause) with QueryAnalysisError
 
-case class OperationSelectionError(message: String, eh: ExceptionHandler, sm: Option[SourceMapper] = None, pos: List[Position] = Nil)
+case class OperationSelectionError(message: String, eh: ExceptionHandler, sm: Option[SourceMapper] = None, pos: List[AstLocation] = Nil)
   extends ExecutionError(message, eh, sm, pos) with QueryAnalysisError

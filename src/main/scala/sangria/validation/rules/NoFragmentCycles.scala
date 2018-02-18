@@ -43,7 +43,7 @@ class NoFragmentCycles extends ValidationRule {
                  spreadNode.name,
                  cyclePath map (_.name),
                  ctx.sourceMapper,
-                 (cyclePath :+ spreadNode).flatMap(_.position))
+                 (cyclePath :+ spreadNode).flatMap(_.location))
            }
          }
 

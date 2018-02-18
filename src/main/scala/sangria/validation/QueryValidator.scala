@@ -150,11 +150,11 @@ object ValidationContext {
         case (elem, idx) ⇒ isValidLiteralValue(ofType, elem, sourceMapper) map (ListValueViolation(idx, _, sourceMapper, pos.toList))
       }
     case (ListInputType(ofType), v) ⇒
-      isValidLiteralValue(ofType, v, sourceMapper) map (ListValueViolation(0, _, sourceMapper, v.position.toList))
+      isValidLiteralValue(ofType, v, sourceMapper) map (ListValueViolation(0, _, sourceMapper, v.location.toList))
     case (io: InputObjectType[_], ast.ObjectValue(fields, _, pos)) ⇒
       val unknownFields = fields.collect {
         case f if !io.fieldsByName.contains(f.name) ⇒
-          UnknownInputObjectFieldViolation(SchemaRenderer.renderTypeName(io, true), f.name, sourceMapper, f.position.toList)
+          UnknownInputObjectFieldViolation(SchemaRenderer.renderTypeName(io, true), f.name, sourceMapper, f.location.toList)
       }
 
       val fieldViolations =
@@ -167,13 +167,13 @@ object ValidationContext {
             case (None, t) ⇒
               Vector(NotNullInputObjectFieldMissingViolation(io.name, field.name, SchemaRenderer.renderTypeName(t), sourceMapper, pos.toList))
             case (Some(af), _) ⇒
-              isValidLiteralValue(field.fieldType, af.value, sourceMapper) map (MapValueViolation(field.name, _, sourceMapper, af.position.toList))
+              isValidLiteralValue(field.fieldType, af.value, sourceMapper) map (MapValueViolation(field.name, _, sourceMapper, af.location.toList))
           }
         }
 
       unknownFields ++ fieldViolations
     case (io: InputObjectType[_], v) ⇒
-      Vector(InputObjectIsOfWrongTypeMissingViolation(SchemaRenderer.renderTypeName(io, true), sourceMapper, v.position.toList))
+      Vector(InputObjectIsOfWrongTypeMissingViolation(SchemaRenderer.renderTypeName(io, true), sourceMapper, v.location.toList))
     case (s: ScalarType[_], v) ⇒
       s.coerceInput(v) match {
         case Left(violation) ⇒ Vector(violation)

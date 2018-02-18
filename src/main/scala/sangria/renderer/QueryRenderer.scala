@@ -1,6 +1,6 @@
 package sangria.renderer
 
-import org.parboiled2.Position
+import sangria.ast.AstLocation
 import sangria.util.StringUtil.{escapeString, escapeBlockString}
 import sangria.ast._
 
@@ -47,10 +47,10 @@ object QueryRenderer {
           val next = if (idx == sels.size - 1) None else Some(sels(idx + 1))
 
           val trailingNext =
-            for (n ← next; c ← n.comments.headOption; cp ← c.position; sp ← sel.position; if cp.line == sp.line) yield c
+            for (n ← next; c ← n.comments.headOption; cp ← c.location; sp ← sel.location; if cp.line == sp.line) yield c
 
           val trailing =
-            trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.position; sp ← sel.position; if cp.line == sp.line) yield c)
+            trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.location; sp ← sel.location; if cp.line == sp.line) yield c)
 
           (if (idx != 0 && shouldRenderComment(sel, prev, config)) config.lineBreak else "") + renderNode(sel, config, indent.inc, prev = prev) +
             trailing.fold("")(c ⇒ renderIndividualComment(c, " ", config))
@@ -73,10 +73,10 @@ object QueryRenderer {
           val next = if (idx == fields.size - 1) None else Some(fields(idx + 1))
 
           val trailingNext =
-            for (n ← next; c ← n.description.fold(n.comments)(_.comments).headOption; cp ← c.position; sp ← field.position; if cp.line == sp.line) yield c
+            for (n ← next; c ← n.description.fold(n.comments)(_.comments).headOption; cp ← c.location; sp ← field.location; if cp.line == sp.line) yield c
 
           val trailing =
-            trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.position; sp ← field.position; if cp.line == sp.line) yield c)
+            trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.location; sp ← field.location; if cp.line == sp.line) yield c)
 
           (if (idx != 0 && (shouldRenderComment(field, prev, config) || shouldRenderDescription(field))) config.lineBreak else "") +
             renderNode(field, config, indent.inc, prev = prev) +
@@ -116,13 +116,13 @@ object QueryRenderer {
             for {
               n ← next
               c ← n.description.fold(n.comments)(_.comments).headOption
-              cp ← c.position
-              sp ← value.position
+              cp ← c.location
+              sp ← value.location
               if cp.line == sp.line
             } yield c
 
           val trailing =
-            trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.position; sp ← value.position; if cp.line == sp.line) yield c)
+            trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.location; sp ← value.location; if cp.line == sp.line) yield c)
 
           (if (idx != 0 && (shouldRenderComment(value, prev, config) || shouldRenderDescription(value))) config.lineBreak else "") +
             renderNode(value, config, indent.inc, prev = prev) +
@@ -184,10 +184,10 @@ object QueryRenderer {
       val next = if (idx == fields.size - 1) None else Some(fields(idx + 1))
 
       val trailingNext =
-        for (n ← next; c ← n.description.fold(n.comments)(_.comments).headOption; cp ← c.position; sp ← f.position; if cp.line == sp.line) yield c
+        for (n ← next; c ← n.description.fold(n.comments)(_.comments).headOption; cp ← c.location; sp ← f.location; if cp.line == sp.line) yield c
 
       val trailing =
-        trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.position; sp ← f.position; if cp.line == sp.line) yield c)
+        trailingNext orElse (for (c ← tc.trailingComments.headOption; cp ← c.location; sp ← f.location; if cp.line == sp.line) yield c)
 
       (if (idx != 0 && (shouldRenderComment(f, prev, config) || shouldRenderDescription(f))) config.lineBreak else "") +
         renderNode(f, config, indent.inc, prev = prev) +
@@ -212,7 +212,7 @@ object QueryRenderer {
   }
 
   def actualComments(node: WithComments, prev: Option[AstNode]) = {
-    val ignoreFirst = for (ls ← prev; p ← ls.position; c ← node.comments.headOption; cp ← c.position) yield cp.line == p.line
+    val ignoreFirst = for (ls ← prev; p ← ls.location; c ← node.comments.headOption; cp ← c.location) yield cp.line == p.line
 
     ignoreFirst match {
       case Some(true) ⇒ node.comments.tail
@@ -254,18 +254,18 @@ object QueryRenderer {
     val comments = actualComments(node, prev)
 
     if (shouldRenderComment(comments, config)) {
-      val lines = renderCommentLines(comments, node.position, indent, config)
+      val lines = renderCommentLines(comments, node.location, indent, config)
 
       lines mkString ("", config.mandatoryLineBreak, config.mandatoryLineBreak)
     } else ""
   }
 
-  def renderCommentLines(comments: Vector[Comment], nodePos: Option[Position], indent: Indent, config: QueryRendererConfig) = {
-    val nodeLine = nodePos.map(_.line).orElse(comments.last.position.map(_.line + 1)).fold(1)(identity)
+  def renderCommentLines(comments: Vector[Comment], nodePos: Option[AstLocation], indent: Indent, config: QueryRendererConfig) = {
+    val nodeLine = nodePos.map(_.line).orElse(comments.last.location.map(_.line + 1)).fold(1)(identity)
 
     comments.foldRight((nodeLine, Vector.empty[String])) {
       case (c, (lastLine, acc)) ⇒
-        val currLine = c.position.fold(lastLine - 1)(_.line)
+        val currLine = c.location.fold(lastLine - 1)(_.line)
         val diffLines = lastLine - currLine
         val fill = if (diffLines  > 1) config.lineBreak else ""
 
@@ -274,7 +274,7 @@ object QueryRenderer {
   }
 
   def renderTrailingComment(node: WithTrailingComments, lastSelection: Option[AstNode], indent: Indent, config: QueryRendererConfig): String = {
-    val ignoreFirst = for (ls ← lastSelection; p ← ls.position; c ← node.trailingComments.headOption; cp ← c.position) yield cp.line == p.line
+    val ignoreFirst = for (ls ← lastSelection; p ← ls.location; c ← node.trailingComments.headOption; cp ← c.location) yield cp.line == p.line
     val comments = ignoreFirst match {
       case Some(true) ⇒ node.trailingComments.tail
       case _ ⇒ node.trailingComments

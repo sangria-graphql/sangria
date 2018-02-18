@@ -23,7 +23,7 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
         case (acc, varDef) ⇒
           val value = schema.getInputType(varDef.tpe)
             .map(coercionHelper.getVariableValue(varDef, _, um.getRootMapValue(inputVars, varDef.name), fromScalarMiddleware))
-            .getOrElse(Left(Vector(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.position.toList))))
+            .getOrElse(Left(Vector(UnknownVariableTypeViolation(varDef.name, QueryRenderer.render(varDef.tpe), sourceMapper, varDef.location.toList))))
 
           value match {
             case Right(Some(v)) ⇒ acc :+ (varDef.name → Right(v))
@@ -88,7 +88,7 @@ object ValueCollector {
               acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller, fromScalarMiddleware = fromScalarMiddleware, isArgument = true)))
           } catch {
             case InputParsingError(e) ⇒
-              errors ++= e.map(InvalidInputValueViolation(argDef.name, _, sourceMapper, astValue.flatMap(_.position).toList))
+              errors ++= e.map(InvalidInputValueViolation(argDef.name, _, sourceMapper, astValue.flatMap(_.location).toList))
               acc
           }
       }

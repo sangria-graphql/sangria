@@ -1,5 +1,7 @@
 package sangria.parser
 
+import java.util.UUID
+
 import org.parboiled2._
 import CharPredicate.{Digit19, HexDigit}
 import sangria.ast
@@ -280,7 +282,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   def EnumValuesDefinition = rule { wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ → _) }
 
   def EnumValueDefinition = rule {
-    Description ~ EnumValue ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> ((descr, v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, descr, v.comments, v.position))
+    Description ~ EnumValue ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> ((descr, v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, descr, v.comments, v.location))
   }
   
   def InputObjectTypeDefinition = rule {
@@ -346,7 +348,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
 trait Operations extends PositionTracking { this: Parser with Tokens with Ignored with Fragments with Values with Types with Directives ⇒
 
   def OperationDefinition = rule {
-    Comments ~ trackPos ~ SelectionSet ~> ((comment, pos, s) ⇒ ast.OperationDefinition(selections = s._1, comments = comment, trailingComments = s._2, position = Some(pos))) |
+    Comments ~ trackPos ~ SelectionSet ~> ((comment, pos, s) ⇒ ast.OperationDefinition(selections = s._1, comments = comment, trailingComments = s._2, location = Some(pos))) |
     Comments ~ trackPos ~ OperationType ~ OperationName.? ~ (VariableDefinitions.? ~> (_ getOrElse Vector.empty)) ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ SelectionSet ~>
         ((comment, pos, opType, name, vars, dirs, sels) ⇒ ast.OperationDefinition(opType, name, vars, dirs, sels._1, comment, sels._2, Some(pos)))
   }
@@ -503,27 +505,25 @@ trait Types { this: Parser with Tokens with Ignored ⇒
   }
 }
 
-class QueryParser private (val input: ParserInput, val legacyImplementsInterface: Boolean = false, val legacyEmptyFields: Boolean = false, val experimentalFragmentVariables: Boolean = false)
+class QueryParser private (val input: ParserInput, val sourceId: String, val legacyImplementsInterface: Boolean = false, val legacyEmptyFields: Boolean = false, val experimentalFragmentVariables: Boolean = false)
     extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types with TypeSystemDefinitions
 
 object QueryParser {
-  def parse(
-    input: String,
-    @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
-    legacyImplementsInterface: Boolean = false,
-    @deprecated("Use new syntax: `type Foo` intead of legacy `type Foo {}`", "1.4.0")
-    legacyEmptyFields: Boolean = false,
-    experimentalFragmentVariables: Boolean = false
-  )(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
-    parse(ParserInput(input), legacyImplementsInterface, legacyEmptyFields, experimentalFragmentVariables)(scheme)
+  def parse(input: String, config: ParserConfig = ParserConfig.default)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+    parse(ParserInput(input), config)(scheme)
   }
 
-  def parse(input: ParserInput, legacyImplementsInterface: Boolean, legacyEmptyFields: Boolean, experimentalFragmentVariables: Boolean)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
-    val parser = new QueryParser(input, legacyImplementsInterface, legacyEmptyFields, experimentalFragmentVariables)
+  def parse(input: ParserInput, config: ParserConfig)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+    val id = config.sourceIdFn(input)
+    val parser = new QueryParser(
+      input,
+      id,
+      config.legacyImplementsInterface,
+      config.legacyEmptyFields,
+      config.experimentalFragmentVariables)
 
     parser.Document.run() match {
-      case Success(res) ⇒
-        scheme.success(res.copy(sourceMapper = Some(new Parboiled2SourceMapper(input))))
+      case Success(res) ⇒ scheme.success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
       case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) ⇒ scheme.failure(e)
     }
@@ -533,7 +533,7 @@ object QueryParser {
     parseInput(ParserInput(input))(scheme)
 
   def parseInput(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result = {
-    val parser = new QueryParser(input)
+    val parser = new QueryParser(input, "")
 
     parser.InputDocument.run() match {
       case Success(res) if res.values.nonEmpty ⇒ scheme.success(res.values.head)
@@ -543,15 +543,15 @@ object QueryParser {
     }
   }
 
-  def parseInputDocument(input: String)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
-    parseInputDocument(ParserInput(input))(scheme)
+  def parseInputDocument(input: String, config: ParserConfig = ParserConfig.default)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
+    parseInputDocument(ParserInput(input), config)(scheme)
 
-  def parseInputDocument(input: ParserInput)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
-    val parser = new QueryParser(input)
+  def parseInputDocument(input: ParserInput, config: ParserConfig)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
+    val id = config.sourceIdFn(input)
+    val parser = new QueryParser(input, id)
 
     parser.InputDocument.run() match {
-      case Success(res) ⇒
-        scheme.success(res.copy(sourceMapper = Some(new Parboiled2SourceMapper(input))))
+      case Success(res) ⇒ scheme.success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
       case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) ⇒ scheme.failure(e)
     }
@@ -561,7 +561,7 @@ object QueryParser {
     parseInputWithVariables(ParserInput(input))( scheme)
 
   def parseInputWithVariables(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result = {
-    val parser = new QueryParser(input)
+    val parser = new QueryParser(input, "")
 
     parser.InputDocumentWithVariables.run() match {
       case Success(res) if res.values.nonEmpty ⇒ scheme.success(res.values.head)
@@ -571,17 +571,50 @@ object QueryParser {
     }
   }
 
-  def parseInputDocumentWithVariables(input: String)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
-    parseInputDocumentWithVariables(ParserInput(input))( scheme)
+  def parseInputDocumentWithVariables(input: String, config: ParserConfig = ParserConfig.default)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
+    parseInputDocumentWithVariables(ParserInput(input), config)( scheme)
 
-  def parseInputDocumentWithVariables(input: ParserInput)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
-    val parser = new QueryParser(input)
+  def parseInputDocumentWithVariables(input: ParserInput, config: ParserConfig)(implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
+    val id = config.sourceIdFn(input)
+    val parser = new QueryParser(input, id)
 
     parser.InputDocumentWithVariables.run() match {
-      case Success(res) ⇒
-        scheme.success(res.copy(sourceMapper = Some(new Parboiled2SourceMapper(input))))
+      case Success(res) ⇒ scheme.success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
       case Failure(e: ParseError) ⇒ scheme.failure(SyntaxError(parser, input, e))
       case Failure(e) ⇒ scheme.failure(e)
     }
   }
+}
+
+case class ParserConfig(
+  legacyImplementsInterface: Boolean = false,
+  legacyEmptyFields: Boolean = false,
+  experimentalFragmentVariables: Boolean = false,
+  sourceIdFn: ParserInput ⇒ String = ParserConfig.defaultSourceIdFn,
+  sourceMapperFn: (String, ParserInput) ⇒ Option[SourceMapper] = ParserConfig.defaultSourceMapperFn
+) {
+  @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
+  def withLegacyImplementsInterface = copy(legacyImplementsInterface = true)
+
+  @deprecated("Use new syntax: `type Foo` instead of legacy `type Foo {}`", "1.4.0")
+  def withLegacyEmptyFields = copy(legacyEmptyFields = true)
+
+  def withExperimentalFragmentVariables = copy(experimentalFragmentVariables = true)
+
+  def withEmptySourceId = copy(sourceIdFn = ParserConfig.emptySourceIdFn)
+
+  def withSourceMapper(fn: (String, ParserInput) ⇒ Option[SourceMapper]) = copy(sourceMapperFn = fn)
+
+  def withEmptySourceMapper = copy(sourceMapperFn = ParserConfig.emptySourceMapperFn)
+}
+
+object ParserConfig {
+  lazy val default: ParserConfig = ParserConfig()
+
+  lazy val emptySourceIdFn: ParserInput ⇒ String = _ ⇒ ""
+  lazy val defaultSourceIdFn: ParserInput ⇒ String = _ ⇒ UUID.randomUUID().toString
+
+  lazy val emptySourceMapperFn: (String, ParserInput) ⇒ Option[SourceMapper] = (_, _) ⇒ None
+  lazy val defaultSourceMapperFn: (String, ParserInput) ⇒ Option[SourceMapper] =
+    (id, input) ⇒ Some(new DefaultSourceMapper(id, input))
 }

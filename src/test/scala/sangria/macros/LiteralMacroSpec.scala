@@ -1,6 +1,6 @@
 package sangria.macros
 
-import org.parboiled2.Position
+import sangria.ast.AstLocation
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
 import sangria.util.DebugUtil
@@ -39,7 +39,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
 
       ast.sourceMapper should not be 'empty
 
-      ast.withoutSourceMapper should be (
+      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be (
         Document(
           Vector(
             OperationDefinition(
@@ -48,17 +48,17 @@ class LiteralMacroSpec extends WordSpec with Matchers {
               Vector(
                 VariableDefinition(
                   "someVar",
-                  NamedType("Int", Some(Position(74, 3, 51))),
-                  Some(BigDecimalValue(1.23, Vector.empty, Some(Position(80, 3, 57)))),
+                  NamedType("Int", None),
+                  Some(BigDecimalValue(1.23, Vector.empty, None)),
                   Vector.empty,
-                  Some(Position(64, 3, 41))
+                  None
                 ),
                 VariableDefinition(
                   "anotherVar",
-                  NamedType("Int", Some(Position(98, 3, 75))),
-                  Some(BigIntValue(123, Vector.empty, Some(Position(104, 3, 81)))),
+                  NamedType("Int", None),
+                  Some(BigIntValue(123, Vector.empty, None)),
                   Vector.empty,
-                  Some(Position(85, 3, 62))
+                  None
                 )),
               Vector(
                 Directive(
@@ -66,24 +66,24 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "if",
-                      BooleanValue(true, Vector.empty, Some(Position(121, 3, 98))),
+                      BooleanValue(true, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(117, 3, 94))
+                      None
                     )),
                   Vector.empty,
-                  Some(Position(108, 3, 85))
+                  None
                 ),
                 Directive(
                   "include",
                   Vector(
                     Argument(
                       "if",
-                      BooleanValue(false, Vector.empty, Some(Position(140, 3, 117))),
+                      BooleanValue(false, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(136, 3, 113))
+                      None
                     )),
                   Vector.empty,
-                  Some(Position(127, 3, 104))
+                  None
                 )),
               Vector(
                 Field(
@@ -92,9 +92,9 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("1000", false, None, Vector.empty, Some(Position(176, 4, 29))),
+                      StringValue("1000", false, None, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(172, 4, 25))
+                      None
                     )),
                   Vector(
                     Directive(
@@ -102,12 +102,12 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                       Vector(
                         Argument(
                           "if",
-                          BooleanValue(true, Vector.empty, Some(Position(196, 4, 49))),
+                          BooleanValue(true, Vector.empty, None),
                           Vector.empty,
-                          Some(Position(192, 4, 45))
+                          None
                         )),
                       Vector.empty,
-                      Some(Position(183, 4, 36))
+                      None
                     )),
                   Vector(
                     Field(
@@ -116,19 +116,19 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                       Vector(
                         Argument(
                           "sort",
-                          EnumValue("NAME", Vector.empty, Some(Position(231, 5, 29))),
+                          EnumValue("NAME", Vector.empty, None),
                           Vector.empty,
-                          Some(Position(225, 5, 23))
+                          None
                         )),
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(217, 5, 15))
+                      None
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(160, 4, 13))
+                  None
                 ),
                 Field(
                   Some("leia"),
@@ -136,9 +136,9 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("10103\n \u00F6 \u00F6", false, None, Vector.empty, Some(Position(284, 7, 34))),
+                      StringValue("10103\n \u00F6 \u00F6", false, None, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(275, 7, 25))
+                      None
                     )),
                   Vector.empty,
                   Vector(
@@ -150,15 +150,15 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(315, 8, 15))
+                      None
                     )),
                   Vector.empty,
                   Vector(
-                    Comment(" some name", Some(Position(320, 8, 20)))),
-                  Some(Position(263, 7, 13))
+                    Comment(" some name", None)),
+                  None
                 ),
                 InlineFragment(
-                  Some(NamedType("User", Some(Position(366, 11, 20)))),
+                  Some(NamedType("User", None)),
                   Vector.empty,
                   Vector(
                     Field(
@@ -175,37 +175,37 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                           Vector.empty,
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(393, 12, 21))
+                          None
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(387, 12, 15))
+                      None
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(359, 11, 13))
+                  None
                 ),
-                FragmentSpread("Foo", Vector.empty, Vector.empty, Some(Position(425, 15, 13)))),
+                FragmentSpread("Foo", Vector.empty, Vector.empty, None)),
               Vector(
-                Comment(" test query", Some(Position(11, 2, 11)))),
+                Comment(" test query", None)),
               Vector.empty,
-              Some(Position(34, 3, 11))
+              None
             ),
             FragmentDefinition(
               "Foo",
-              NamedType("User", Some(Position(471, 18, 27))),
+              NamedType("User", None),
               Vector(
                 Directive(
                   "foo",
                   Vector(
                     Argument(
                       "bar",
-                      BigIntValue(1, Vector.empty, Some(Position(486, 18, 42))),
+                      BigIntValue(1, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(481, 18, 37))
+                      None
                     )),
                   Vector.empty,
-                  Some(Position(476, 18, 32))
+                  None
                 )),
               Vector(
                 Field(
@@ -216,16 +216,16 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(502, 19, 13))
+                  None
                 )),
               Vector.empty,
               Vector.empty,
               Vector(
-                Comment(" field in fragment!", Some(Position(506, 19, 17)))),
-              Some(Position(455, 18, 11))
+                Comment(" field in fragment!", None)),
+              None
             )),
           Vector.empty,
-          Some(Position(11, 2, 11)),
+          None,
           None
         ))
     }
@@ -288,7 +288,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
 
       ast.sourceMapper should not be 'empty
 
-      ast.withoutSourceMapper should be (
+      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be (
         Document(
           Vector(
             OperationDefinition(
@@ -297,17 +297,17 @@ class LiteralMacroSpec extends WordSpec with Matchers {
               Vector(
                 VariableDefinition(
                   "foo",
-                  NamedType("ComplexType", Some(Position(381, 9, 33))),
+                  NamedType("ComplexType", None),
                   None,
                   Vector.empty,
-                  Some(Position(375, 9, 27))
+                  None
                 ),
                 VariableDefinition(
                   "site",
-                  NamedType("Site", Some(Position(401, 9, 53))),
-                  Some(EnumValue("MOBILE", Vector.empty, Some(Position(408, 9, 60)))),
+                  NamedType("Site", None),
+                  Some(EnumValue("MOBILE", Vector.empty, None)),
                   Vector.empty,
-                  Some(Position(394, 9, 46))
+                  None
                 )),
               Vector.empty,
               Vector(
@@ -319,13 +319,13 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                       "id",
                       ListValue(
                         Vector(
-                          BigIntValue(123, Vector.empty, Some(Position(454, 10, 37))),
-                          BigIntValue(456, Vector.empty, Some(Position(459, 10, 42)))),
+                          BigIntValue(123, Vector.empty, None),
+                          BigIntValue(456, Vector.empty, None)),
                         Vector.empty,
-                        Some(Position(453, 10, 36))
+                        None
                       ),
                       Vector.empty,
-                      Some(Position(449, 10, 32))
+                      None
                     )),
                   Vector.empty,
                   Vector(
@@ -337,16 +337,16 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(481, 11, 15))
+                      None
                     ),
                     InlineFragment(
-                      Some(NamedType("User", Some(Position(507, 12, 22)))),
+                      Some(NamedType("User", None)),
                       Vector(
                         Directive(
                           "defer",
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(512, 12, 27))
+                          None
                         )),
                       Vector(
                         Field(
@@ -363,7 +363,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                               Vector.empty,
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(564, 14, 19))
+                              None
                             ),
                             Field(
                               Some("alias"),
@@ -371,15 +371,15 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                               Vector(
                                 Argument(
                                   "first",
-                                  BigIntValue(10, Vector.empty, Some(Position(607, 15, 39))),
+                                  BigIntValue(10, Vector.empty, None),
                                   Vector.empty,
-                                  Some(Position(601, 15, 33))
+                                  None
                                 ),
                                 Argument(
                                   "after",
-                                  VariableValue("foo", Vector.empty, Some(Position(617, 15, 49))),
+                                  VariableValue("foo", Vector.empty, None),
                                   Vector.empty,
-                                  Some(Position(611, 15, 43))
+                                  None
                                 )),
                               Vector(
                                 Directive(
@@ -387,12 +387,12 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                                   Vector(
                                     Argument(
                                       "if",
-                                      VariableValue("foo", Vector.empty, Some(Position(637, 15, 69))),
+                                      VariableValue("foo", Vector.empty, None),
                                       Vector.empty,
-                                      Some(Position(633, 15, 65))
+                                      None
                                     )),
                                   Vector.empty,
-                                  Some(Position(624, 15, 56))
+                                  None
                                 )),
                               Vector(
                                 Field(
@@ -403,34 +403,34 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                                   Vector.empty,
                                   Vector.empty,
                                   Vector.empty,
-                                  Some(Position(665, 16, 21))
+                                  None
                                 ),
-                                FragmentSpread("frag", Vector.empty, Vector.empty, Some(Position(689, 17, 21)))),
+                                FragmentSpread("frag", Vector.empty, Vector.empty, None)),
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(587, 15, 19))
+                              None
                             )),
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(537, 13, 17))
+                          None
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(500, 12, 15))
+                      None
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(430, 10, 13))
+                  None
                 )),
               Vector(
-                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(Position(11, 2, 11))),
-                Comment(" All rights reserved.", Some(Position(58, 3, 11))),
-                Comment("", Some(Position(91, 4, 11))),
-                Comment(" This source code is licensed under the BSD-style license found in the", Some(Position(103, 5, 11))),
-                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(Position(185, 6, 11))),
-                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(Position(273, 7, 11)))),
+                Comment(" Copyright (c) 2015, Facebook, Inc.", None),
+                Comment(" All rights reserved.", None),
+                Comment("", None),
+                Comment(" This source code is licensed under the BSD-style license found in the", None),
+                Comment(" LICENSE file in the root directory of this source tree. An additional grant", None),
+                Comment(" of patent rights can be found in the PATENTS file in the same directory.", None)),
               Vector.empty,
-              Some(Position(359, 9, 11))
+              None
             ),
             OperationDefinition(
               OperationType.Subscription,
@@ -438,10 +438,10 @@ class LiteralMacroSpec extends WordSpec with Matchers {
               Vector(
                 VariableDefinition(
                   "input",
-                  NamedType("StoryLikeSubscribeInput", Some(Position(831, 24, 54))),
+                  NamedType("StoryLikeSubscribeInput", None),
                   None,
                   Vector.empty,
-                  Some(Position(823, 24, 46))
+                  None
                 )),
               Vector.empty,
               Vector(
@@ -451,9 +451,9 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "input",
-                      VariableValue("input", Vector.empty, Some(Position(896, 25, 39))),
+                      VariableValue("input", Vector.empty, None),
                       Vector.empty,
-                      Some(Position(889, 25, 32))
+                      None
                     )),
                   Vector.empty,
                   Vector(
@@ -477,11 +477,11 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                               Vector.empty,
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(971, 28, 19))
+                              None
                             )),
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(944, 27, 17))
+                          None
                         ),
                         Field(
                           None,
@@ -497,23 +497,23 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                               Vector.empty,
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(1044, 31, 19))
+                              None
                             )),
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(1011, 30, 17))
+                          None
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(920, 26, 15))
+                      None
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(870, 25, 13))
+                  None
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(788, 24, 11))
+              None
             ),
             OperationDefinition(
               OperationType.Mutation,
@@ -527,16 +527,16 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "story",
-                      BigIntValue(123, Vector.empty, Some(Position(1165, 38, 25))),
+                      BigIntValue(123, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(1158, 38, 18))
+                      None
                     )),
                   Vector(
                     Directive(
                       "defer",
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(1170, 38, 30))
+                      None
                     )),
                   Vector(
                     Field(
@@ -553,23 +553,23 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                           Vector.empty,
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(1217, 40, 17))
+                          None
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(1193, 39, 15))
+                      None
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1153, 38, 13))
+                  None
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(1120, 37, 11))
+              None
             ),
             FragmentDefinition(
               "frag",
-              NamedType("Friend", Some(Position(1290, 45, 28))),
+              NamedType("Friend", None),
               Vector.empty,
               Vector(
                 Field(
@@ -578,15 +578,15 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "size",
-                      VariableValue("size", Vector.empty, Some(Position(1321, 46, 23))),
+                      VariableValue("size", Vector.empty, None),
                       Vector.empty,
-                      Some(Position(1315, 46, 17))
+                      None
                     ),
                     Argument(
                       "bar",
-                      VariableValue("b", Vector.empty, Some(Position(1333, 46, 35))),
+                      VariableValue("b", Vector.empty, None),
                       Vector.empty,
-                      Some(Position(1328, 46, 30))
+                      None
                     ),
                     Argument(
                       "obj",
@@ -594,26 +594,26 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                         Vector(
                           ObjectField(
                             "key",
-                            StringValue("value", false, None, Vector.empty, Some(Position(1348, 46, 50))),
+                            StringValue("value", false, None, Vector.empty, None),
                             Vector.empty,
-                            Some(Position(1343, 46, 45))
+                            None
                           )),
                         Vector.empty,
-                        Some(Position(1342, 46, 44))
+                        None
                       ),
                       Vector.empty,
-                      Some(Position(1337, 46, 39))
+                      None
                     )),
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1311, 46, 13))
+                  None
                 )),
               Vector.empty,
               Vector.empty,
               Vector.empty,
-              Some(Position(1273, 45, 11))
+              None
             ),
             OperationDefinition(
               OperationType.Query,
@@ -627,21 +627,21 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector(
                     Argument(
                       "truthy",
-                      BooleanValue(true, Vector.empty, Some(Position(1411, 50, 29))),
+                      BooleanValue(true, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(1403, 50, 21))
+                      None
                     ),
                     Argument(
                       "falsey",
-                      BooleanValue(false, Vector.empty, Some(Position(1425, 50, 43))),
+                      BooleanValue(false, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(1417, 50, 35))
+                      None
                     )),
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1395, 50, 13))
+                  None
                 ),
                 Field(
                   None,
@@ -651,14 +651,14 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1445, 51, 13))
+                  None
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(1381, 49, 11))
+              None
             )),
           Vector.empty,
-          Some(Position(11, 2, 11)),
+          None,
           None
         )
       )
@@ -751,161 +751,161 @@ class LiteralMacroSpec extends WordSpec with Matchers {
 
       ast.sourceMapper should not be 'empty
 
-      ast.withoutSourceMapper should be (
+      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be (
         Document(
           Vector(
             SchemaDefinition(
               Vector(
-                OperationTypeDefinition(OperationType.Query, NamedType("QueryType", Some(Position(387, 10, 20))), Vector.empty, Some(Position(380, 10, 13))),
-                OperationTypeDefinition(OperationType.Mutation, NamedType("MutationType", Some(Position(419, 11, 23))), Vector.empty, Some(Position(409, 11, 13)))),
+                OperationTypeDefinition(OperationType.Query, NamedType("QueryType", None), Vector.empty, None),
+                OperationTypeDefinition(OperationType.Mutation, NamedType("MutationType", None), Vector.empty, None)),
               Vector.empty,
               Vector(
-                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(Position(11, 2, 11))),
-                Comment(" All rights reserved.", Some(Position(58, 3, 11))),
-                Comment("", Some(Position(91, 4, 11))),
-                Comment(" This source code is licensed under the BSD-style license found in the", Some(Position(103, 5, 11))),
-                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(Position(185, 6, 11))),
-                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(Position(273, 7, 11)))),
+                Comment(" Copyright (c) 2015, Facebook, Inc.", None),
+                Comment(" All rights reserved.", None),
+                Comment("", None),
+                Comment(" This source code is licensed under the BSD-style license found in the", None),
+                Comment(" LICENSE file in the root directory of this source tree. An additional grant", None),
+                Comment(" of patent rights can be found in the PATENTS file in the same directory.", None)),
               Vector.empty,
-              Some(Position(359, 9, 11))
+              None
             ),
             ObjectTypeDefinition(
               "Foo",
               Vector(
-                NamedType("Bar", Some(Position(511, 15, 31)))),
+                NamedType("Bar", None)),
               Vector(
-                FieldDefinition("one", NamedType("Type", Some(Position(534, 16, 18))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(529, 16, 13))),
-                FieldDefinition("two", NamedType("Type", Some(Position(612, 18, 40))), Vector(InputValueDefinition("argument", NotNullType(NamedType("InputType", Some(Position(599, 18, 27))), Some(Position(599, 18, 27))), None, Vector.empty, None, Vector.empty, Some(Position(589, 18, 17)))), Vector.empty, Some(StringValue("another description", false, None, Vector.empty, Some(Position(551, 17, 13)))), Vector.empty, Some(Position(585, 18, 13))),
-                FieldDefinition("three", NamedType("Int", Some(Position(672, 19, 56))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(Position(645, 19, 29))), None, Vector.empty, None, Vector.empty, Some(Position(635, 19, 19))), InputValueDefinition("other", NamedType("String", Some(Position(663, 19, 47))), None, Vector.empty, None, Vector.empty, Some(Position(656, 19, 40)))), Vector.empty, None, Vector.empty, Some(Position(629, 19, 13))),
-                FieldDefinition("four", NamedType("String", Some(Position(723, 20, 48))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(703, 20, 28))), Some(StringValue("string", false, None, Vector.empty, Some(Position(712, 20, 37)))), Vector.empty, None, Vector.empty, Some(Position(693, 20, 18)))), Vector.empty, None, Vector.empty, Some(Position(688, 20, 13))),
-                FieldDefinition("five", NamedType("String", Some(Position(791, 21, 62))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(758, 21, 29))), Some(Position(757, 21, 28))), Some(ListValue(
+                FieldDefinition("one", NamedType("Type", None), Vector.empty, Vector.empty, None, Vector.empty, None),
+                FieldDefinition("two", NamedType("Type", None), Vector(InputValueDefinition("argument", NotNullType(NamedType("InputType", None), None), None, Vector.empty, None, Vector.empty, None)), Vector.empty, Some(StringValue("another description", false, None, Vector.empty, None)), Vector.empty, None),
+                FieldDefinition("three", NamedType("Int", None), Vector(InputValueDefinition("argument", NamedType("InputType", None), None, Vector.empty, None, Vector.empty, None), InputValueDefinition("other", NamedType("String", None), None, Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None),
+                FieldDefinition("four", NamedType("String", None), Vector(InputValueDefinition("argument", NamedType("String", None), Some(StringValue("string", false, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None),
+                FieldDefinition("five", NamedType("String", None), Vector(InputValueDefinition("argument", ListType(NamedType("String", None), None), Some(ListValue(
                   Vector(
-                    StringValue("string", false, None, Vector.empty, Some(Position(769, 21, 40))),
-                    StringValue("string", false, None, Vector.empty, Some(Position(779, 21, 50)))),
+                    StringValue("string", false, None, Vector.empty, None),
+                    StringValue("string", false, None, Vector.empty, None)),
                   Vector.empty,
-                  Some(Position(768, 21, 39))
-                )), Vector.empty, None, Vector.empty, Some(Position(747, 21, 18)))), Vector.empty, None, Vector.empty, Some(Position(742, 21, 13))),
-                FieldDefinition("six", NamedType("Type", Some(Position(853, 22, 56))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(Position(824, 22, 27))), Some(ObjectValue(
+                  None
+                )), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None),
+                FieldDefinition("six", NamedType("Type", None), Vector(InputValueDefinition("argument", NamedType("InputType", None), Some(ObjectValue(
                   Vector(
                     ObjectField(
                       "key",
-                      StringValue("value", false, None, Vector.empty, Some(Position(842, 22, 45))),
+                      StringValue("value", false, None, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(837, 22, 40))
+                      None
                     )),
                   Vector.empty,
-                  Some(Position(836, 22, 39))
-                )), Vector.empty, None, Vector.empty, Some(Position(814, 22, 17)))), Vector.empty, None, Vector.empty, Some(Position(810, 22, 13)))),
+                  None
+                )), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
               Vector.empty,
-              Some(StringValue("Type description *test*", false, None, Vector.empty, Some(Position(455, 14, 11)))),
+              Some(StringValue("Type description *test*", false, None, Vector.empty, None)),
               Vector.empty,
               Vector.empty,
-              Some(Position(491, 15, 11))
+              None
             ),
             ObjectTypeDefinition(
               "AnnotatedObject",
               Vector.empty,
               Vector(
-                FieldDefinition("annotatedField", NamedType("Type", Some(Position(986, 26, 59))), Vector(InputValueDefinition("arg", NamedType("Type", Some(Position(960, 26, 33))), Some(StringValue("default", false, None, Vector.empty, Some(Position(967, 26, 40)))), Vector(Directive(
+                FieldDefinition("annotatedField", NamedType("Type", None), Vector(InputValueDefinition("arg", NamedType("Type", None), Some(StringValue("default", false, None, Vector.empty, None)), Vector(Directive(
                   "onArg",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(977, 26, 50))
-                )), None, Vector.empty, Some(Position(955, 26, 28)))), Vector(Directive(
+                  None
+                )), None, Vector.empty, None)), Vector(Directive(
                   "onField",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(991, 26, 64))
-                )), None, Vector.empty, Some(Position(940, 26, 13)))),
+                  None
+                )), None, Vector.empty, None)),
               Vector(
                 Directive(
                   "onObject",
                   Vector(
                     Argument(
                       "arg",
-                      StringValue("value", false, None, Vector.empty, Some(Position(917, 25, 47))),
+                      StringValue("value", false, None, Vector.empty, None),
                       Vector.empty,
-                      Some(Position(912, 25, 42))
+                      None
                     )),
                   Vector.empty,
-                  Some(Position(902, 25, 32))
+                  None
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(Position(881, 25, 11))
+              None
             ),
             InterfaceTypeDefinition(
               "Bar",
               Vector(
-                FieldDefinition("one", NamedType("Type", Some(Position(1087, 31, 18))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(1082, 31, 13))),
-                FieldDefinition("four", NamedType("String", Some(Position(1139, 32, 48))), Vector(InputValueDefinition("argument", NamedType("String", Some(Position(1119, 32, 28))), Some(StringValue("string", false, None, Vector.empty, Some(Position(1128, 32, 37)))), Vector.empty, None, Vector.empty, Some(Position(1109, 32, 18)))), Vector.empty, None, Vector.empty, Some(Position(1104, 32, 13)))),
+                FieldDefinition("one", NamedType("Type", None), Vector.empty, Vector.empty, None, Vector.empty, None),
+                FieldDefinition("four", NamedType("String", None), Vector(InputValueDefinition("argument", NamedType("String", None), Some(StringValue("string", false, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
               Vector.empty,
               None,
               Vector(
-                Comment(" It's an interface!", Some(Position(1023, 29, 11)))),
+                Comment(" It's an interface!", None)),
               Vector.empty,
-              Some(Position(1054, 30, 11))
+              None
             ),
             InterfaceTypeDefinition(
               "AnnotatedInterface",
               Vector(
-                FieldDefinition("annotatedField", NamedType("Type", Some(Position(1259, 36, 47))), Vector(InputValueDefinition("arg", NamedType("Type", Some(Position(1245, 36, 33))), None, Vector(Directive(
+                FieldDefinition("annotatedField", NamedType("Type", None), Vector(InputValueDefinition("arg", NamedType("Type", None), None, Vector(Directive(
                   "onArg",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1250, 36, 38))
-                )), None, Vector.empty, Some(Position(1240, 36, 28)))), Vector(Directive(
+                  None
+                )), None, Vector.empty, None)), Vector(Directive(
                   "onField",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1264, 36, 52))
-                )), None, Vector.empty, Some(Position(1225, 36, 13)))),
+                  None
+                )), None, Vector.empty, None)),
               Vector(
                 Directive(
                   "onInterface",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1198, 35, 40))
+                  None
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(Position(1169, 35, 11))
+              None
             ),
             UnionTypeDefinition(
               "Feed",
               Vector(
-                NamedType("Story", Some(Position(1309, 39, 24))),
-                NamedType("Article", Some(Position(1317, 39, 32))),
-                NamedType("Advert", Some(Position(1327, 39, 42)))),
+                NamedType("Story", None),
+                NamedType("Article", None),
+                NamedType("Advert", None)),
               Vector.empty,
               None,
               Vector.empty,
-              Some(Position(1296, 39, 11))
+              None
             ),
             UnionTypeDefinition(
               "AnnotatedUnion",
               Vector(
-                NamedType("A", Some(Position(1377, 41, 43))),
-                NamedType("B", Some(Position(1381, 41, 47)))),
+                NamedType("A", None),
+                NamedType("B", None)),
               Vector(
                 Directive(
                   "onUnion",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1366, 41, 32))
+                  None
                 )),
               None,
               Vector.empty,
-              Some(Position(1345, 41, 11))
+              None
             ),
             ScalarTypeDefinition(
               "CustomScalar",
               Vector.empty,
               None,
               Vector.empty,
-              Some(Position(1394, 43, 11))
+              None
             ),
             ScalarTypeDefinition(
               "AnnotatedScalar",
@@ -914,22 +914,22 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   "onScalar",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1448, 45, 34))
+                  None
                 )),
               None,
               Vector.empty,
-              Some(Position(1425, 45, 11))
+              None
             ),
             EnumTypeDefinition(
               "Site",
               Vector(
-                EnumValueDefinition("DESKTOP", Vector.empty, None, Vector(Comment(" value 1", Some(Position(1493, 48, 13)))), Some(Position(1515, 49, 13))),
-                EnumValueDefinition("MOBILE", Vector.empty, None, Vector(Comment(" value 2", Some(Position(1535, 50, 13)))), Some(Position(1557, 51, 13)))),
+                EnumValueDefinition("DESKTOP", Vector.empty, None, Vector(Comment(" value 1", None)), None),
+                EnumValueDefinition("MOBILE", Vector.empty, None, Vector(Comment(" value 2", None)), None)),
               Vector.empty,
               None,
               Vector.empty,
               Vector.empty,
-              Some(Position(1469, 47, 11))
+              None
             ),
             EnumTypeDefinition(
               "AnnotatedEnum",
@@ -938,105 +938,105 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   "onEnumValue",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1644, 55, 29))
-                )), None, Vector.empty, Some(Position(1628, 55, 13))),
-                EnumValueDefinition("OTHER_VALUE", Vector.empty, None, Vector.empty, Some(Position(1669, 56, 13)))),
+                  None
+                )), None, Vector.empty, None),
+                EnumValueDefinition("OTHER_VALUE", Vector.empty, None, Vector.empty, None)),
               Vector(
                 Directive(
                   "onEnum",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1606, 54, 30))
+                  None
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(Position(1587, 54, 11))
+              None
             ),
             InputObjectTypeDefinition(
               "InputType",
               Vector(
-                InputValueDefinition("key", NotNullType(NamedType("String", Some(Position(1739, 60, 18))), Some(Position(1739, 60, 18))), None, Vector.empty, None, Vector.empty, Some(Position(1734, 60, 13))),
-                InputValueDefinition("answer", NamedType("Int", Some(Position(1767, 61, 21))), Some(BigIntValue(42, Vector.empty, Some(Position(1773, 61, 27)))), Vector.empty, None, Vector.empty, Some(Position(1759, 61, 13)))),
+                InputValueDefinition("key", NotNullType(NamedType("String", None), None), None, Vector.empty, None, Vector.empty, None),
+                InputValueDefinition("answer", NamedType("Int", None), Some(BigIntValue(42, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
               Vector.empty,
               None,
               Vector.empty,
               Vector.empty,
-              Some(Position(1704, 59, 11))
+              None
             ),
             InputObjectTypeDefinition(
               "AnnotatedInput",
               Vector(
-                InputValueDefinition("annotatedField", NamedType("Type", Some(Position(1897, 66, 29))), None, Vector(Directive(
+                InputValueDefinition("annotatedField", NamedType("Type", None), None, Vector(Directive(
                   "onField",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1902, 66, 34))
-                )), None, Vector(Comment(" field comment", Some(Position(1853, 65, 13)))), Some(Position(1881, 66, 13)))),
+                  None
+                )), None, Vector(Comment(" field comment", None)), None)),
               Vector(
                 Directive(
                   "onInputObjectType",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1820, 64, 32))
+                  None
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(Position(1799, 64, 11))
+              None
             ),
             ObjectTypeExtensionDefinition(
               "Foo",
               Vector.empty,
               Vector(
-                FieldDefinition("seven", NamedType("Type", Some(Position(1991, 70, 40))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(1981, 70, 30))), Some(Position(1980, 70, 29))), None, Vector.empty, None, Vector.empty, Some(Position(1970, 70, 19)))), Vector.empty, None, Vector.empty, Some(Position(1964, 70, 13)))),
+                FieldDefinition("seven", NamedType("Type", None), Vector(InputValueDefinition("argument", ListType(NamedType("String", None), None), None, Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
               Vector.empty,
               Vector.empty,
               Vector.empty,
-              Some(Position(1934, 69, 11))
+              None
             ),
             ObjectTypeExtensionDefinition(
               "Foo",
               Vector.empty,
               Vector(
-                FieldDefinition("foo", NamedType("String", Some(Position(2062, 74, 18))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(2057, 74, 13)))),
+                FieldDefinition("foo", NamedType("String", None), Vector.empty, Vector.empty, None, Vector.empty, None)),
               Vector(
                 Directive(
                   "onType",
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(2035, 73, 27))
+                  None
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(2019, 73, 11))
+              None
             ),
             DirectiveDefinition(
               "skip",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(2112, 77, 31))), Some(Position(2112, 77, 31))), None, Vector.empty, None, Vector.empty, Some(Position(2108, 77, 27)))),
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", None), None), None, Vector.empty, None, Vector.empty, None)),
               Vector(
-                DirectiveLocation("FIELD", Vector.empty, Some(Position(2125, 77, 44))),
-                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(Position(2133, 77, 52))),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(Position(2151, 77, 70)))),
+                DirectiveLocation("FIELD", Vector.empty, None),
+                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, None),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)),
               None,
               Vector.empty,
-              Some(Position(2092, 77, 11))
+              None
             ),
             DirectiveDefinition(
               "include",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(2201, 79, 34))), Some(Position(2201, 79, 34))), None, Vector.empty, None, Vector.empty, Some(Position(2197, 79, 30)))),
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", None), None), None, Vector.empty, None, Vector.empty, None)),
               Vector(
-                DirectiveLocation("FIELD", Vector.empty, Some(Position(2226, 80, 16))),
-                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(Position(2234, 80, 24))),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(Position(2252, 80, 42)))),
+                DirectiveLocation("FIELD", Vector.empty, None),
+                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, None),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)),
               None,
               Vector.empty,
-              Some(Position(2178, 79, 11))
+              None
             )),
           Vector.empty,
-          Some(Position(11, 2, 11)),
+          None,
           None
         ))
     }
@@ -1060,16 +1060,16 @@ class LiteralMacroSpec extends WordSpec with Matchers {
           Vector(
             ObjectField(
               "a",
-              NullValue(Vector.empty, Some(Position(24, 3, 14))),
+              NullValue(Vector.empty, Some(AstLocation(24, 3, 14))),
               Vector.empty,
-              Some(Position(21, 3, 11))
+              Some(AstLocation(21, 3, 11))
             ),
             ObjectField(
               "b",
-              BigIntValue(1, Vector.empty, Some(Position(68, 6, 14))),
+              BigIntValue(1, Vector.empty, Some(AstLocation(68, 6, 14))),
               Vector(
-                Comment(" test comment", Some(Position(40, 5, 11)))),
-              Some(Position(65, 6, 11))
+                Comment(" test comment", Some(AstLocation(40, 5, 11)))),
+              Some(AstLocation(65, 6, 11))
             ),
             ObjectField(
               "c",
@@ -1077,24 +1077,24 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                 Vector(
                   ObjectField(
                     "someNull",
-                    NullValue(Vector.empty, Some(Position(107, 8, 23))),
+                    NullValue(Vector.empty, Some(AstLocation(107, 8, 23))),
                     Vector.empty,
-                    Some(Position(97, 8, 13))
+                    Some(AstLocation(97, 8, 13))
                   ),
                   ObjectField(
                     "enum",
-                    EnumValue("HELLO", Vector.empty, Some(Position(130, 9, 19))),
+                    EnumValue("HELLO", Vector.empty, Some(AstLocation(130, 9, 19))),
                     Vector.empty,
-                    Some(Position(124, 9, 13))
+                    Some(AstLocation(124, 9, 13))
                   )),
                 Vector.empty,
-                Some(Position(83, 7, 14))
+                Some(AstLocation(83, 7, 14))
               ),
               Vector.empty,
-              Some(Position(80, 7, 11))
+              Some(AstLocation(80, 7, 11))
             )),
           Vector.empty,
-          Some(Position(9, 2, 9))
+          Some(AstLocation(9, 2, 9))
         ))
     }
 

@@ -17,7 +17,7 @@ class ExecutableDefinitions extends ValidationRule {
         val errors =
           definitions.collect {
             case d if !d.isInstanceOf[ast.OperationDefinition] && !d.isInstanceOf[ast.FragmentDefinition] ⇒
-              NonExecutableDefinitionViolation(definitionName(d), d, ctx.sourceMapper, d.position.toList)
+              NonExecutableDefinitionViolation(definitionName(d), d, ctx.sourceMapper, d.location.toList)
           }
 
         if (errors.nonEmpty) Left(errors)

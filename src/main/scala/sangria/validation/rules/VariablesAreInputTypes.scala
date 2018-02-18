@@ -19,7 +19,7 @@ class VariablesAreInputTypes extends ValidationRule {
         ctx.schema.getInputType(tpe) match {
           case Some(_) ⇒ AstVisitorCommand.RightContinue
           case None ⇒ Left(Vector(
-            NonInputTypeOnVarViolation(name, QueryRenderer.render(tpe), ctx.sourceMapper, tpe.position.toList)))
+            NonInputTypeOnVarViolation(name, QueryRenderer.render(tpe), ctx.sourceMapper, tpe.location.toList)))
         }
     }
   }

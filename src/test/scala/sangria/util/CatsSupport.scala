@@ -318,10 +318,10 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
     val withLoc = violation.asInstanceOf[AstNodeLocation]
 
     withClue(s"Violation does not have all positions: ${violation.errorMessage}") {
-      withLoc.positions should have size locations.size
+      withLoc.locations should have size locations.size
     }
 
-    withLoc.positions.zipWithIndex foreach { case (pos, idx) ⇒
+    withLoc.locations.zipWithIndex foreach { case (pos, idx) ⇒
       withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(idx).column}): ${violation.errorMessage}") {
         ErrorLocation(pos.line, pos.column) should be(locations(idx))
       }

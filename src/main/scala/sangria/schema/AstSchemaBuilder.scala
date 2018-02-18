@@ -260,10 +260,10 @@ object AstSchemaBuilder {
 
   def extractDescription(node: ast.WithComments): Option[String] =
     if (node.comments.nonEmpty) {
-      node.position.map(_.line).orElse(node.comments.last.position.map(_.line + 1)) match {
+      node.location.map(_.line).orElse(node.comments.last.location.map(_.line + 1)) match {
         case Some(nodeLine) ⇒
           val (_, relevantComments) = node.comments.foldRight((nodeLine - 1, Vector.empty[String])) {
-            case (c, (expectedLine, acc)) if c.position.isDefined && c.position.get.line == expectedLine ⇒
+            case (c, (expectedLine, acc)) if c.location.isDefined && c.location.get.line == expectedLine ⇒
               (expectedLine - 1) → (c.text +: acc)
             case (c, acc ) ⇒ acc
           }

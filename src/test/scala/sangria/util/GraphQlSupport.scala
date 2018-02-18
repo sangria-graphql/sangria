@@ -110,7 +110,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
 
           message.contains(expected) && {
             error match {
-              case n: AstNodeLocation ⇒ n.positions.map(p ⇒ Pos(p.line, p.column)) == pos
+              case n: AstNodeLocation ⇒ n.locations.map(p ⇒ Pos(p.line, p.column)) == pos
               case _ ⇒ false
             }
           }

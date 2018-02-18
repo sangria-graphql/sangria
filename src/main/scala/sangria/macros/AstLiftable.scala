@@ -18,9 +18,9 @@ trait AstLiftable {
     q"_root_.scala.collection.immutable.Vector(..$seq)"
   }
 
-  implicit def liftPosition: Liftable[org.parboiled2.Position] = Liftable {
-    case org.parboiled2.Position(i, l, c) ⇒
-      q"_root_.org.parboiled2.Position($i, $l, $c)"
+  implicit def liftPosition: Liftable[sangria.ast.AstLocation] = Liftable {
+    case sangria.ast.AstLocation(id, i, l, c) ⇒
+      q"_root_.sangria.ast.AstLocation($id, $i, $l, $c)"
   }
 
   implicit def liftOperationType: Liftable[OperationType] = Liftable {
@@ -143,11 +143,11 @@ trait AstLiftable {
   }
 
   implicit def liftDocument: Liftable[Document] = Liftable {
-    case doc @ Document(d, c, p, _) ⇒ q"_root_.sangria.ast.Document($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.Parboiled2SourceMapper(_root_.org.parboiled2.ParserInput(${doc.source.get}))))"
+    case doc @ Document(d, c, p, _) ⇒ q"_root_.sangria.ast.Document($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.DefaultSourceMapper(${doc.sourceMapper.get.id}, _root_.org.parboiled2.ParserInput(${doc.source.get}))))"
   }
 
   implicit def liftInputDocument: Liftable[InputDocument] = Liftable {
-    case doc @ InputDocument(d, c, p, _) ⇒ q"_root_.sangria.ast.InputDocument($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.Parboiled2SourceMapper(_root_.org.parboiled2.ParserInput(${doc.source.get}))))"
+    case doc @ InputDocument(d, c, p, _) ⇒ q"_root_.sangria.ast.InputDocument($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.DefaultSourceMapper(${doc.sourceMapper.get.id}, _root_.org.parboiled2.ParserInput(${doc.source.get}))))"
   }
 }
 

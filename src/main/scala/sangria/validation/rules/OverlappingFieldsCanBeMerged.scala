@@ -88,7 +88,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
         val conflicts = findConflictsWithinSelectionSet(ctx.typeInfo.parentType, selCont, Set.empty)
 
         if (conflicts.nonEmpty)
-          Left(conflicts.toVector.map(c ⇒ FieldsConflictViolation(c.reason.fieldName, c.reason.reason, ctx.sourceMapper, (c.fields1 ++ c.fields2) flatMap (_.position))))
+          Left(conflicts.toVector.map(c ⇒ FieldsConflictViolation(c.reason.fieldName, c.reason.reason, ctx.sourceMapper, (c.fields1 ++ c.fields2) flatMap (_.location))))
         else
           AstVisitorCommand.RightContinue
     }

@@ -1,8 +1,9 @@
 package sangria.parser
 
 import language.postfixOps
-import org.parboiled2.Position
+import sangria.ast.AstLocation
 import org.scalatest.{Matchers, WordSpec}
+import sangria.ast
 import sangria.ast._
 import sangria.util.{DebugUtil, FileUtil, StringMatchers}
 
@@ -10,6 +11,9 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
+
+  def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
+    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withEmptySourceMapper)(scheme)
 
   "QueryParser" should {
     "parse complex query" in {
@@ -24,17 +28,17 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
               Vector(
                 VariableDefinition(
                   "someVar",
-                  NamedType("Int", Some(Position(53, 2, 41))),
-                  Some(BigDecimalValue(1.23, Vector.empty, Some(Position(59, 2, 47)))),
+                  NamedType("Int", Some(AstLocation(53, 2, 41))),
+                  Some(BigDecimalValue(1.23, Vector.empty, Some(AstLocation(59, 2, 47)))),
                   Vector.empty,
-                  Some(Position(43, 2, 31))
+                  Some(AstLocation(43, 2, 31))
                 ),
                 VariableDefinition(
                   "anotherVar",
-                  NamedType("Int", Some(Position(77, 2, 65))),
-                  Some(BigIntValue(123, Vector.empty, Some(Position(83, 2, 71)))),
+                  NamedType("Int", Some(AstLocation(77, 2, 65))),
+                  Some(BigIntValue(123, Vector.empty, Some(AstLocation(83, 2, 71)))),
                   Vector.empty,
-                  Some(Position(64, 2, 52))
+                  Some(AstLocation(64, 2, 52))
                 )),
               Vector(
                 Directive(
@@ -42,24 +46,24 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "if",
-                      BooleanValue(true, Vector.empty, Some(Position(100, 2, 88))),
+                      BooleanValue(true, Vector.empty, Some(AstLocation(100, 2, 88))),
                       Vector.empty,
-                      Some(Position(96, 2, 84))
+                      Some(AstLocation(96, 2, 84))
                     )),
                   Vector.empty,
-                  Some(Position(87, 2, 75))
+                  Some(AstLocation(87, 2, 75))
                 ),
                 Directive(
                   "include",
                   Vector(
                     Argument(
                       "if",
-                      BooleanValue(false, Vector.empty, Some(Position(119, 2, 107))),
+                      BooleanValue(false, Vector.empty, Some(AstLocation(119, 2, 107))),
                       Vector.empty,
-                      Some(Position(115, 2, 103))
+                      Some(AstLocation(115, 2, 103))
                     )),
                   Vector.empty,
-                  Some(Position(106, 2, 94))
+                  Some(AstLocation(106, 2, 94))
                 )),
               Vector(
                 Field(
@@ -68,9 +72,9 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("1000", false, None, Vector.empty, Some(Position(145, 3, 19))),
+                      StringValue("1000", false, None, Vector.empty, Some(AstLocation(145, 3, 19))),
                       Vector.empty,
-                      Some(Position(141, 3, 15))
+                      Some(AstLocation(141, 3, 15))
                     )),
                   Vector(
                     Directive(
@@ -78,12 +82,12 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector(
                         Argument(
                           "if",
-                          BooleanValue(true, Vector.empty, Some(Position(165, 3, 39))),
+                          BooleanValue(true, Vector.empty, Some(AstLocation(165, 3, 39))),
                           Vector.empty,
-                          Some(Position(161, 3, 35))
+                          Some(AstLocation(161, 3, 35))
                         )),
                       Vector.empty,
-                      Some(Position(152, 3, 26))
+                      Some(AstLocation(152, 3, 26))
                     )),
                   Vector(
                     Field(
@@ -92,19 +96,19 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector(
                         Argument(
                           "sort",
-                          EnumValue("NAME", Vector.empty, Some(Position(190, 4, 19))),
+                          EnumValue("NAME", Vector.empty, Some(AstLocation(190, 4, 19))),
                           Vector.empty,
-                          Some(Position(184, 4, 13))
+                          Some(AstLocation(184, 4, 13))
                         )),
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(176, 4, 5))
+                      Some(AstLocation(176, 4, 5))
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(129, 3, 3))
+                  Some(AstLocation(129, 3, 3))
                 ),
                 Field(
                   Some("leia"),
@@ -112,9 +116,9 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "id",
-                      StringValue("10103\n \u00F6 \u00F6", false, None, Vector.empty, Some(Position(223, 6, 24))),
+                      StringValue("10103\n \u00F6 \u00F6", false, None, Vector.empty, Some(AstLocation(223, 6, 24))),
                       Vector.empty,
-                      Some(Position(214, 6, 15))
+                      Some(AstLocation(214, 6, 15))
                     )),
                   Vector.empty,
                   Vector(
@@ -126,15 +130,15 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(249, 7, 5))
+                      Some(AstLocation(249, 7, 5))
                     )),
                   Vector.empty,
                   Vector(
-                    Comment(" some name", Some(Position(254, 7, 10)))),
-                  Some(Position(202, 6, 3))
+                    Comment(" some name", Some(AstLocation(254, 7, 10)))),
+                  Some(AstLocation(202, 6, 3))
                 ),
                 InlineFragment(
-                  Some(NamedType("User", Some(Position(280, 10, 10)))),
+                  Some(NamedType("User", Some(AstLocation(280, 10, 10)))),
                   Vector.empty,
                   Vector(
                     Field(
@@ -151,37 +155,37 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                           Vector.empty,
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(297, 11, 11))
+                          Some(AstLocation(297, 11, 11))
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(291, 11, 5))
+                      Some(AstLocation(291, 11, 5))
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(273, 10, 3))
+                  Some(AstLocation(273, 10, 3))
                 ),
-                FragmentSpread("Foo", Vector.empty, Vector.empty, Some(Position(309, 14, 3)))),
+                FragmentSpread("Foo", Vector.empty, Vector.empty, Some(AstLocation(309, 14, 3)))),
               Vector(
-                Comment(" test query", Some(Position(0, 1, 1)))),
+                Comment(" test query", Some(AstLocation(0, 1, 1)))),
               Vector.empty,
-              Some(Position(13, 2, 1))
+              Some(AstLocation(13, 2, 1))
             ),
             FragmentDefinition(
               "Foo",
-              NamedType("User", Some(Position(335, 17, 17))),
+              NamedType("User", Some(AstLocation(335, 17, 17))),
               Vector(
                 Directive(
                   "foo",
                   Vector(
                     Argument(
                       "bar",
-                      BigIntValue(1, Vector.empty, Some(Position(350, 17, 32))),
+                      BigIntValue(1, Vector.empty, Some(AstLocation(350, 17, 32))),
                       Vector.empty,
-                      Some(Position(345, 17, 27))
+                      Some(AstLocation(345, 17, 27))
                     )),
                   Vector.empty,
-                  Some(Position(340, 17, 22))
+                  Some(AstLocation(340, 17, 22))
                 )),
               Vector(
                 Field(
@@ -192,20 +196,20 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(356, 18, 3))
+                  Some(AstLocation(356, 18, 3))
                 )),
               Vector.empty,
               Vector.empty,
               Vector(
-                Comment(" field in fragment!", Some(Position(360, 18, 7)))),
-              Some(Position(319, 17, 1))
+                Comment(" field in fragment!", Some(AstLocation(360, 18, 7)))),
+              Some(AstLocation(319, 17, 1))
             )),
           Vector.empty,
-          Some(Position(0, 1, 1)),
+          Some(AstLocation(0, 1, 1)),
           None
         )
 
-      QueryParser.parse(query) map (_.withoutSourceMapper) should be (Success(expectedAst))
+      parseQuery(query) should be (Success(expectedAst))
     }
 
     "parse kitchen sink" in {
@@ -220,17 +224,17 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
               Vector(
                 VariableDefinition(
                   "foo",
-                  NamedType("ComplexType", Some(Position(310, 8, 23))),
+                  NamedType("ComplexType", Some(AstLocation(310, 8, 23))),
                   None,
                   Vector.empty,
-                  Some(Position(304, 8, 17))
+                  Some(AstLocation(304, 8, 17))
                 ),
                 VariableDefinition(
                   "site",
-                  NamedType("Site", Some(Position(330, 8, 43))),
-                  Some(EnumValue("MOBILE", Vector.empty, Some(Position(337, 8, 50)))),
+                  NamedType("Site", Some(AstLocation(330, 8, 43))),
+                  Some(EnumValue("MOBILE", Vector.empty, Some(AstLocation(337, 8, 50)))),
                   Vector.empty,
-                  Some(Position(323, 8, 36))
+                  Some(AstLocation(323, 8, 36))
                 )),
               Vector.empty,
               Vector(
@@ -242,13 +246,13 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       "id",
                       ListValue(
                         Vector(
-                          BigIntValue(123, Vector.empty, Some(Position(373, 9, 27))),
-                          BigIntValue(456, Vector.empty, Some(Position(378, 9, 32)))),
+                          BigIntValue(123, Vector.empty, Some(AstLocation(373, 9, 27))),
+                          BigIntValue(456, Vector.empty, Some(AstLocation(378, 9, 32)))),
                         Vector.empty,
-                        Some(Position(372, 9, 26))
+                        Some(AstLocation(372, 9, 26))
                       ),
                       Vector.empty,
-                      Some(Position(368, 9, 22))
+                      Some(AstLocation(368, 9, 22))
                     )),
                   Vector.empty,
                   Vector(
@@ -260,16 +264,16 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(390, 10, 5))
+                      Some(AstLocation(390, 10, 5))
                     ),
                     InlineFragment(
-                      Some(NamedType("User", Some(Position(406, 11, 12)))),
+                      Some(NamedType("User", Some(AstLocation(406, 11, 12)))),
                       Vector(
                         Directive(
                           "defer",
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(411, 11, 17))
+                          Some(AstLocation(411, 11, 17))
                         )),
                       Vector(
                         Field(
@@ -286,7 +290,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                               Vector.empty,
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(443, 13, 9))
+                              Some(AstLocation(443, 13, 9))
                             ),
                             Field(
                               Some("alias"),
@@ -294,15 +298,15 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                               Vector(
                                 Argument(
                                   "first",
-                                  BigIntValue(10, Vector.empty, Some(Position(476, 14, 29))),
+                                  BigIntValue(10, Vector.empty, Some(AstLocation(476, 14, 29))),
                                   Vector.empty,
-                                  Some(Position(470, 14, 23))
+                                  Some(AstLocation(470, 14, 23))
                                 ),
                                 Argument(
                                   "after",
-                                  VariableValue("foo", Vector.empty, Some(Position(486, 14, 39))),
+                                  VariableValue("foo", Vector.empty, Some(AstLocation(486, 14, 39))),
                                   Vector.empty,
-                                  Some(Position(480, 14, 33))
+                                  Some(AstLocation(480, 14, 33))
                                 )),
                               Vector(
                                 Directive(
@@ -310,12 +314,12 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                                   Vector(
                                     Argument(
                                       "if",
-                                      VariableValue("foo", Vector.empty, Some(Position(506, 14, 59))),
+                                      VariableValue("foo", Vector.empty, Some(AstLocation(506, 14, 59))),
                                       Vector.empty,
-                                      Some(Position(502, 14, 55))
+                                      Some(AstLocation(502, 14, 55))
                                     )),
                                   Vector.empty,
-                                  Some(Position(493, 14, 46))
+                                  Some(AstLocation(493, 14, 46))
                                 )),
                               Vector(
                                 Field(
@@ -326,34 +330,34 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                                   Vector.empty,
                                   Vector.empty,
                                   Vector.empty,
-                                  Some(Position(524, 15, 11))
+                                  Some(AstLocation(524, 15, 11))
                                 ),
-                                FragmentSpread("frag", Vector.empty, Vector.empty, Some(Position(538, 16, 11)))),
+                                FragmentSpread("frag", Vector.empty, Vector.empty, Some(AstLocation(538, 16, 11)))),
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(456, 14, 9))
+                              Some(AstLocation(456, 14, 9))
                             )),
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(426, 12, 7))
+                          Some(AstLocation(426, 12, 7))
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(399, 11, 5))
+                      Some(AstLocation(399, 11, 5))
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(349, 9, 3))
+                  Some(AstLocation(349, 9, 3))
                 )),
               Vector(
-                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(Position(0, 1, 1))),
-                Comment(" All rights reserved.", Some(Position(37, 2, 1))),
-                Comment("", Some(Position(60, 3, 1))),
-                Comment(" This source code is licensed under the BSD-style license found in the", Some(Position(62, 4, 1))),
-                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(Position(134, 5, 1))),
-                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(Position(212, 6, 1)))),
+                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(AstLocation(0, 1, 1))),
+                Comment(" All rights reserved.", Some(AstLocation(37, 2, 1))),
+                Comment("", Some(AstLocation(60, 3, 1))),
+                Comment(" This source code is licensed under the BSD-style license found in the", Some(AstLocation(62, 4, 1))),
+                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(AstLocation(134, 5, 1))),
+                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(AstLocation(212, 6, 1)))),
               Vector.empty,
-              Some(Position(288, 8, 1))
+              Some(AstLocation(288, 8, 1))
             ),
             OperationDefinition(
               OperationType.Mutation,
@@ -367,16 +371,16 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "story",
-                      BigIntValue(123, Vector.empty, Some(Position(612, 24, 15))),
+                      BigIntValue(123, Vector.empty, Some(AstLocation(612, 24, 15))),
                       Vector.empty,
-                      Some(Position(605, 24, 8))
+                      Some(AstLocation(605, 24, 8))
                     )),
                   Vector(
                     Directive(
                       "defer",
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(617, 24, 20))
+                      Some(AstLocation(617, 24, 20))
                     )),
                   Vector(
                     Field(
@@ -393,19 +397,19 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                           Vector.empty,
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(644, 26, 7))
+                          Some(AstLocation(644, 26, 7))
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(630, 25, 5))
+                      Some(AstLocation(630, 25, 5))
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(600, 24, 3))
+                  Some(AstLocation(600, 24, 3))
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(577, 23, 1))
+              Some(AstLocation(577, 23, 1))
             ),
             OperationDefinition(
               OperationType.Subscription,
@@ -413,10 +417,10 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
               Vector(
                 VariableDefinition(
                   "input",
-                  NamedType("StoryLikeSubscribeInput", Some(Position(703, 31, 44))),
+                  NamedType("StoryLikeSubscribeInput", Some(AstLocation(703, 31, 44))),
                   None,
                   Vector.empty,
-                  Some(Position(695, 31, 36))
+                  Some(AstLocation(695, 31, 36))
                 )),
               Vector.empty,
               Vector(
@@ -426,9 +430,9 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "input",
-                      VariableValue("input", Vector.empty, Some(Position(758, 32, 29))),
+                      VariableValue("input", Vector.empty, Some(AstLocation(758, 32, 29))),
                       Vector.empty,
-                      Some(Position(751, 32, 22))
+                      Some(AstLocation(751, 32, 22))
                     )),
                   Vector.empty,
                   Vector(
@@ -452,11 +456,11 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                               Vector.empty,
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(803, 35, 9))
+                              Some(AstLocation(803, 35, 9))
                             )),
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(786, 34, 7))
+                          Some(AstLocation(786, 34, 7))
                         ),
                         Field(
                           None,
@@ -472,27 +476,27 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                               Vector.empty,
                               Vector.empty,
                               Vector.empty,
-                              Some(Position(846, 38, 9))
+                              Some(AstLocation(846, 38, 9))
                             )),
                           Vector.empty,
                           Vector.empty,
-                          Some(Position(823, 37, 7))
+                          Some(AstLocation(823, 37, 7))
                         )),
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(772, 33, 5))
+                      Some(AstLocation(772, 33, 5))
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(732, 32, 3))
+                  Some(AstLocation(732, 32, 3))
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(660, 31, 1))
+              Some(AstLocation(660, 31, 1))
             ),
             FragmentDefinition(
               "frag",
-              NamedType("Friend", Some(Position(889, 44, 18))),
+              NamedType("Friend", Some(AstLocation(889, 44, 18))),
               Vector.empty,
               Vector(
                 Field(
@@ -501,15 +505,15 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "size",
-                      VariableValue("size", Vector.empty, Some(Position(910, 45, 13))),
+                      VariableValue("size", Vector.empty, Some(AstLocation(910, 45, 13))),
                       Vector.empty,
-                      Some(Position(904, 45, 7))
+                      Some(AstLocation(904, 45, 7))
                     ),
                     Argument(
                       "bar",
-                      VariableValue("b", Vector.empty, Some(Position(922, 45, 25))),
+                      VariableValue("b", Vector.empty, Some(AstLocation(922, 45, 25))),
                       Vector.empty,
-                      Some(Position(917, 45, 20))
+                      Some(AstLocation(917, 45, 20))
                     ),
                     Argument(
                       "obj",
@@ -517,26 +521,26 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                         Vector(
                           ObjectField(
                             "key",
-                            StringValue("value", false, None, Vector.empty, Some(Position(937, 45, 40))),
+                            StringValue("value", false, None, Vector.empty, Some(AstLocation(937, 45, 40))),
                             Vector.empty,
-                            Some(Position(932, 45, 35))
+                            Some(AstLocation(932, 45, 35))
                           )),
                         Vector.empty,
-                        Some(Position(931, 45, 34))
+                        Some(AstLocation(931, 45, 34))
                       ),
                       Vector.empty,
-                      Some(Position(926, 45, 29))
+                      Some(AstLocation(926, 45, 29))
                     )),
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(900, 45, 3))
+                  Some(AstLocation(900, 45, 3))
                 )),
               Vector.empty,
               Vector.empty,
               Vector.empty,
-              Some(Position(872, 44, 1))
+              Some(AstLocation(872, 44, 1))
             ),
             OperationDefinition(
               OperationType.Query,
@@ -550,21 +554,21 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "truthy",
-                      BooleanValue(true, Vector.empty, Some(Position(970, 49, 19))),
+                      BooleanValue(true, Vector.empty, Some(AstLocation(970, 49, 19))),
                       Vector.empty,
-                      Some(Position(962, 49, 11))
+                      Some(AstLocation(962, 49, 11))
                     ),
                     Argument(
                       "falsey",
-                      BooleanValue(false, Vector.empty, Some(Position(984, 49, 33))),
+                      BooleanValue(false, Vector.empty, Some(AstLocation(984, 49, 33))),
                       Vector.empty,
-                      Some(Position(976, 49, 25))
+                      Some(AstLocation(976, 49, 25))
                     )),
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(954, 49, 3))
+                  Some(AstLocation(954, 49, 3))
                 ),
                 Field(
                   None,
@@ -574,7 +578,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(994, 50, 3))
+                  Some(AstLocation(994, 50, 3))
                 ),
                 InlineFragment(
                   None,
@@ -584,12 +588,12 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector(
                         Argument(
                           "unless",
-                          VariableValue("foo", Vector.empty, Some(Position(1021, 52, 21))),
+                          VariableValue("foo", Vector.empty, Some(AstLocation(1021, 52, 21))),
                           Vector.empty,
-                          Some(Position(1013, 52, 13))
+                          Some(AstLocation(1013, 52, 13))
                         )),
                       Vector.empty,
-                      Some(Position(1007, 52, 7))
+                      Some(AstLocation(1007, 52, 7))
                     )),
                   Vector(
                     Field(
@@ -600,11 +604,11 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(1033, 53, 5))
+                      Some(AstLocation(1033, 53, 5))
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1003, 52, 3))
+                  Some(AstLocation(1003, 52, 3))
                 ),
                 InlineFragment(
                   None,
@@ -618,22 +622,22 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector.empty,
                       Vector.empty,
                       Vector.empty,
-                      Some(Position(1052, 56, 5))
+                      Some(AstLocation(1052, 56, 5))
                     )),
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(1042, 55, 3))
+                  Some(AstLocation(1042, 55, 3))
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(950, 48, 1))
+              Some(AstLocation(950, 48, 1))
             )),
           Vector.empty,
-          Some(Position(0, 1, 1)),
+          Some(AstLocation(0, 1, 1)),
           None
         )
 
-      QueryParser.parse(query) map (_.withoutSourceMapper) should be (Success(expectedAst))
+      parseQuery(query) should be (Success(expectedAst))
     }
 
     "parse anonymous query" in {
@@ -653,17 +657,17 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             Vector.empty,
             Vector.empty,
             Vector(
-              Field(None, "foo", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(31, 3, 13))),
-              Field(None, "bar", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(35, 3, 17))),
-              Field(None, "baz", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(52, 4, 13)))),
+              Field(None, "foo", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(31, 3, 13))),
+              Field(None, "bar", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(35, 3, 17))),
+              Field(None, "baz", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(52, 4, 13)))),
             Vector.empty,
             Vector.empty,
-            Some(Position(11, 2, 11)))),
+            Some(AstLocation(11, 2, 11)))),
           Vector.empty,
-          Some(Position(11, 2, 11)),
+          Some(AstLocation(11, 2, 11)),
           None)
 
-      QueryParser.parse(stripCarriageReturns(query)) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+      parseQuery(stripCarriageReturns(query)) should be (Success(expectedAst))
     }
 
     "parse inline fragments without type condition" in {
@@ -684,28 +688,28 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         Document(Vector(
           OperationDefinition(OperationType.Query, None, Vector.empty, Vector.empty, Vector(
             InlineFragment(None, Vector.empty, Vector(
-              Field(None, "foo", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(51, 4, 15))),
-              Field(None, "bar", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(55, 4, 19)))),
+              Field(None, "foo", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(51, 4, 15))),
+              Field(None, "bar", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(55, 4, 19)))),
               Vector.empty,
               Vector.empty,
-              Some(Position(31, 3, 13))),
+              Some(AstLocation(31, 3, 13))),
             InlineFragment(None,
               Vector(Directive("include", Vector(
-                Argument("if", BooleanValue(true, Vector.empty, Some(Position(103, 7, 30))),
-                  Vector.empty, Some(Position(99, 7, 26)))),
+                Argument("if", BooleanValue(true, Vector.empty, Some(AstLocation(103, 7, 30))),
+                  Vector.empty, Some(AstLocation(99, 7, 26)))),
                 Vector.empty,
-                Some(Position(90, 7, 17)))),
-              Vector(Field(None, "baz", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(125, 8, 15)))),
+                Some(AstLocation(90, 7, 17)))),
+              Vector(Field(None, "baz", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(125, 8, 15)))),
               Vector.empty,
               Vector.empty,
-              Some(Position(86, 7, 13)))),
+              Some(AstLocation(86, 7, 13)))),
             Vector.empty,
             Vector.empty,
-            Some(Position(11, 2, 11)))),
+            Some(AstLocation(11, 2, 11)))),
           Vector.empty,
-          Some(Position(11, 2, 11)), None)
+          Some(AstLocation(11, 2, 11)), None)
 
-      QueryParser.parse(stripCarriageReturns(query)) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+      parseQuery(stripCarriageReturns(query)) should be (Success(expectedAst))
     }
 
     "parse anonymous mutation" in {
@@ -725,21 +729,21 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             Vector.empty,
             Vector.empty,
             Vector(
-              Field(None, "foo", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(34, 3, 13))),
-              Field(None, "bar", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(38, 3, 17))),
-              Field(None, "baz", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(Position(55, 4, 13)))),
+              Field(None, "foo", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(34, 3, 13))),
+              Field(None, "bar", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(38, 3, 17))),
+              Field(None, "baz", Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Some(AstLocation(55, 4, 13)))),
             Vector.empty,
             Vector.empty,
-            Some(Position(11, 2, 11)))),
+            Some(AstLocation(11, 2, 11)))),
           Vector.empty,
-          Some(Position(11, 2, 11)),
+          Some(AstLocation(11, 2, 11)),
           None)
 
-      QueryParser.parse(stripCarriageReturns(query)) map (_.copy(sourceMapper = None)) should be (Success(expectedAst))
+      parseQuery(stripCarriageReturns(query)) should be (Success(expectedAst))
     }
 
     "provide useful error message (fragment `on`)" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         """
           { ...MissingOn }
           fragment MissingOn Type
@@ -752,7 +756,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "provide useful error message (braces)" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "{ field: {} }")
 
       error.formattedError should equal (
@@ -762,7 +766,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "provide useful error message (operation def)" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "notanoperation Foo { field }")
 
       error.formattedError should equal (
@@ -772,7 +776,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "provide useful error message (ellipsis)" in {
-      val Failure(error: SyntaxError) = QueryParser.parse("...")
+      val Failure(error: SyntaxError) = parseQuery("...")
 
       error.formattedError should equal (
         """Invalid input '.', expected OperationDefinition, FragmentDefinition or TypeSystemDefinition (line 1, column 1):
@@ -781,11 +785,11 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "parses constant default values" in {
-      QueryParser.parse("{ field(complex: { a: { b: [ $var ] } }) }").isSuccess should be (true)
+      parseQuery("{ field(complex: { a: { b: [ $var ] } }) }").isSuccess should be (true)
     }
 
     "parses variable inline values" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }")
 
       error.getMessage should equal (
@@ -795,7 +799,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.`" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "query Foo($x: Complex = 1.) { field }")
 
       error.formattedError should equal (
@@ -805,7 +809,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `.123`" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "query Foo($x: Complex = .123) { field }")
 
       error.formattedError should equal (
@@ -815,7 +819,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.0e`" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "query Foo($x: Complex = 1.0e) { field }")
 
       error.formattedError should equal (
@@ -825,7 +829,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.A`" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "query Foo($x: Complex = 1.A) { field }")
 
       error.formattedError should equal (
@@ -835,7 +839,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `+1`" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "query Foo($x: Complex = +1) { field }")
 
       error.formattedError should equal (
@@ -845,7 +849,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.0eA`" in {
-      val Failure(error: SyntaxError) = QueryParser.parse(
+      val Failure(error: SyntaxError) = parseQuery(
         "query Foo($x: Complex = 1.0eA) { field }")
 
       error.formattedError should equal (
@@ -855,33 +859,33 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     }
 
     "disallows uncommon control characters" in {
-      QueryParser.parse("{ field\u0007 }").isSuccess should be (false)
-      QueryParser.parse("{ field } \u0007").isSuccess should be (false)
+      parseQuery("{ field\u0007 }").isSuccess should be (false)
+      parseQuery("{ field } \u0007").isSuccess should be (false)
     }
 
     "accepts BOM header" in {
-      QueryParser.parse("\uFEFF{ field }").isSuccess should be (true)
+      parseQuery("\uFEFF{ field }").isSuccess should be (true)
     }
 
     "accepts new lines header" in {
-      QueryParser.parse("{ field \n another }").isSuccess should be (true)
-      QueryParser.parse("{ field \r\n another }").isSuccess should be (true)
+      parseQuery("{ field \n another }").isSuccess should be (true)
+      parseQuery("{ field \r\n another }").isSuccess should be (true)
     }
 
     "accepts escape sequences" in {
-      QueryParser.parse("{ field(id: \"\\u000A\") }").isSuccess should be (true)
-      QueryParser.parse("{ field(id: \"\\uXXXX\") }").isSuccess should be (false)
-      QueryParser.parse("{ field(id: \"\\x\") }").isSuccess should be (false)
+      parseQuery("{ field(id: \"\\u000A\") }").isSuccess should be (true)
+      parseQuery("{ field(id: \"\\uXXXX\") }").isSuccess should be (false)
+      parseQuery("{ field(id: \"\\x\") }").isSuccess should be (false)
     }
 
     "allow `null` to be the prefix of an enum value" in {
-      QueryParser.parse("query Foo($x: Complex = null111) { field }").isSuccess should be (true)
-      QueryParser.parse("query Foo($x: Complex = null_foo) { field }").isSuccess should be (true)
-      QueryParser.parse("query Foo($x: Complex = nullFoo) { field }").isSuccess should be (true)
+      parseQuery("query Foo($x: Complex = null111) { field }").isSuccess should be (true)
+      parseQuery("query Foo($x: Complex = null_foo) { field }").isSuccess should be (true)
+      parseQuery("query Foo($x: Complex = nullFoo) { field }").isSuccess should be (true)
     }
 
     "parse leading vertical bar in union types" in {
-      val Success(ast) = QueryParser.parse("union Hello = | Wo | Rld")
+      val Success(ast) = parseQuery("union Hello = | Wo | Rld")
 
       ast.withoutSourceMapper should be (
         Document(
@@ -889,28 +893,28 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             UnionTypeDefinition(
               "Hello",
               Vector(
-                NamedType("Wo", Some(Position(16, 1, 17))),
-                NamedType("Rld", Some(Position(21, 1, 22)))),
+                NamedType("Wo", Some(AstLocation(16, 1, 17))),
+                NamedType("Rld", Some(AstLocation(21, 1, 22)))),
               Vector.empty,
               None,
               Vector.empty,
-              Some(Position(0, 1, 1))
+              Some(AstLocation(0, 1, 1))
             )),
           Vector.empty,
-          Some(Position(0, 1, 1)),
+          Some(AstLocation(0, 1, 1)),
           None))
     }
 
     "not parse invalid usage of vertical bar on union types" in {
-      QueryParser.parse("union Hello = |").isSuccess should be (false)
-      QueryParser.parse("union Hello = Wo | Rld |").isSuccess should be (false)
-      QueryParser.parse("union Hello = || Wo | Rld").isSuccess should be (false)
-      QueryParser.parse("union Hello = Wo || Rld").isSuccess should be (false)
-      QueryParser.parse("union Hello = | Wo | Rld ||").isSuccess should be (false)
+      parseQuery("union Hello = |").isSuccess should be (false)
+      parseQuery("union Hello = Wo | Rld |").isSuccess should be (false)
+      parseQuery("union Hello = || Wo | Rld").isSuccess should be (false)
+      parseQuery("union Hello = Wo || Rld").isSuccess should be (false)
+      parseQuery("union Hello = | Wo | Rld ||").isSuccess should be (false)
     }
 
     "parse leading vertical bar in directive definitions" in {
-      val Success(ast) = QueryParser.parse(
+      val Success(ast) = parseQuery(
         """
         directive @include2(if: Boolean!) on
           | FIELD
@@ -924,17 +928,17 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             DirectiveDefinition(
               "include2",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(Position(33, 2, 33))), Some(Position(33, 2, 33))), None, Vector.empty, None, Vector.empty, Some(Position(29, 2, 29)))),
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(AstLocation(33, 2, 33))), Some(AstLocation(33, 2, 33))), None, Vector.empty, None, Vector.empty, Some(AstLocation(29, 2, 29)))),
               Vector(
-                DirectiveLocation("FIELD", Vector.empty, Some(Position(58, 3, 13))),
-                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(Position(76, 4, 13))),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(Position(104, 5, 13)))),
+                DirectiveLocation("FIELD", Vector.empty, Some(AstLocation(58, 3, 13))),
+                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(AstLocation(76, 4, 13))),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(AstLocation(104, 5, 13)))),
               None,
               Vector.empty,
-              Some(Position(9, 2, 9))
+              Some(AstLocation(9, 2, 9))
             )),
           Vector.empty,
-          Some(Position(9, 2, 9)),
+          Some(AstLocation(9, 2, 9)),
           None))
     }
 
@@ -957,8 +961,8 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
       )
 
       expectedTable foreach { expected ⇒
-        findAst[BigIntValue](QueryParser.parse(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be (
-          Some(BigIntValue(expected._2, Vector.empty, Some(Position(24, 1, 25)))))
+        findAst[BigIntValue](parseQuery(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be (
+          Some(BigIntValue(expected._2, Vector.empty, Some(AstLocation(24, 1, 25)))))
       }
     }
 
@@ -977,8 +981,8 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
       expectedTable foreach { expected ⇒
         withClue(s"Parsing ${expected._1}.") {
-          findAst[BigDecimalValue](QueryParser.parse(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be(
-            Some(BigDecimalValue(expected._2, Vector.empty, Some(Position(24, 1, 25)))))
+          findAst[BigDecimalValue](parseQuery(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be(
+            Some(BigDecimalValue(expected._2, Vector.empty, Some(AstLocation(24, 1, 25)))))
         }
       }
     }
@@ -995,38 +999,38 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         """
 
       QueryParser.parseInput(stripCarriageReturns(stringValue)) should be (
-        Success(StringValue("hello,\n  world", true, Some("\n            hello,\n              world\n          "), Vector.empty, Some(Position(11, 2, 11)))))
+        Success(StringValue("hello,\n  world", true, Some("\n            hello,\n              world\n          "), Vector.empty, Some(AstLocation(11, 2, 11)))))
     }
 
     "parse input values independently" in {
       val expectedTable = Vector(
-        "null" → NullValue(Vector.empty, Some(Position(0, 1, 1))),
-        "1.234" → BigDecimalValue(BigDecimal("1.234"), Vector.empty, Some(Position(0, 1, 1))),
-        "HELLO_WORLD" → EnumValue("HELLO_WORLD", Vector.empty, Some(Position(0, 1, 1))),
+        "null" → NullValue(Vector.empty, Some(AstLocation(0, 1, 1))),
+        "1.234" → BigDecimalValue(BigDecimal("1.234"), Vector.empty, Some(AstLocation(0, 1, 1))),
+        "HELLO_WORLD" → EnumValue("HELLO_WORLD", Vector.empty, Some(AstLocation(0, 1, 1))),
         "[1, 2 \"test\"]" → ListValue(
           Vector(
-            BigIntValue(1, Vector.empty, Some(Position(1, 1, 2))),
-            BigIntValue(2, Vector.empty, Some(Position(4, 1, 5))),
-            StringValue("test", false, None, Vector.empty, Some(Position(6, 1, 7)))),
+            BigIntValue(1, Vector.empty, Some(AstLocation(1, 1, 2))),
+            BigIntValue(2, Vector.empty, Some(AstLocation(4, 1, 5))),
+            StringValue("test", false, None, Vector.empty, Some(AstLocation(6, 1, 7)))),
           Vector.empty,
-          Some(Position(0, 1, 1))),
+          Some(AstLocation(0, 1, 1))),
         "{a: 1, b: \"foo\" c: {nest: true, oops: null, e: FOO_BAR}}" →
           ObjectValue(
             Vector(
-              ObjectField("a", BigIntValue(1, Vector.empty, Some(Position(4, 1, 5))), Vector.empty, Some(Position(1, 1, 2))),
-              ObjectField("b", StringValue("foo", false, None, Vector.empty, Some(Position(10, 1, 11))), Vector.empty, Some(Position(7, 1, 8))),
+              ObjectField("a", BigIntValue(1, Vector.empty, Some(AstLocation(4, 1, 5))), Vector.empty, Some(AstLocation(1, 1, 2))),
+              ObjectField("b", StringValue("foo", false, None, Vector.empty, Some(AstLocation(10, 1, 11))), Vector.empty, Some(AstLocation(7, 1, 8))),
               ObjectField("c",
                 ObjectValue(
                   Vector(
-                    ObjectField("nest", BooleanValue(true, Vector.empty, Some(Position(26, 1, 27))), Vector.empty, Some(Position(20, 1, 21))),
-                    ObjectField("oops", NullValue(Vector.empty, Some(Position(38, 1, 39))), Vector.empty, Some(Position(32, 1, 33))),
-                    ObjectField("e", EnumValue("FOO_BAR", Vector.empty, Some(Position(47, 1, 48))), Vector.empty, Some(Position(44, 1, 45)))),
+                    ObjectField("nest", BooleanValue(true, Vector.empty, Some(AstLocation(26, 1, 27))), Vector.empty, Some(AstLocation(20, 1, 21))),
+                    ObjectField("oops", NullValue(Vector.empty, Some(AstLocation(38, 1, 39))), Vector.empty, Some(AstLocation(32, 1, 33))),
+                    ObjectField("e", EnumValue("FOO_BAR", Vector.empty, Some(AstLocation(47, 1, 48))), Vector.empty, Some(AstLocation(44, 1, 45)))),
                   Vector.empty,
-                  Some(Position(19, 1, 20))),
+                  Some(AstLocation(19, 1, 20))),
                 Vector.empty,
-                Some(Position(16, 1, 17)))),
+                Some(AstLocation(16, 1, 17)))),
             Vector.empty,
-            Some(Position(0, 1, 1))),
+            Some(AstLocation(0, 1, 1))),
         """
          {
            a: 1
@@ -1037,12 +1041,12 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         """ →
           ObjectValue(
             Vector(
-              ObjectField("a", BigIntValue(1, Vector.empty, Some(Position(26, 3, 15))), Vector.empty, Some(Position(23, 3, 12))),
-              ObjectField("b", StringValue("foo", false, None, Vector.empty, Some(Position(80, 6, 15))),
-                Vector(Comment(" This is a test comment!", Some(Position(40, 5, 12)))),
-                Some(Position(77, 6, 12)))),
+              ObjectField("a", BigIntValue(1, Vector.empty, Some(AstLocation(26, 3, 15))), Vector.empty, Some(AstLocation(23, 3, 12))),
+              ObjectField("b", StringValue("foo", false, None, Vector.empty, Some(AstLocation(80, 6, 15))),
+                Vector(Comment(" This is a test comment!", Some(AstLocation(40, 5, 12)))),
+                Some(AstLocation(77, 6, 12)))),
               Vector.empty,
-            Some(Position(10, 2, 10)))
+            Some(AstLocation(10, 2, 10)))
 
       )
 
@@ -1065,77 +1069,77 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
               Vector(
                 VariableDefinition(
                   "foo",
-                  NamedType("ComplexType", Some(Position(434, 23, 1))),
+                  NamedType("ComplexType", Some(AstLocation(434, 23, 1))),
                   None,
                   Vector(
-                    Comment(" comment 5", Some(Position(354, 15, 1))),
-                    Comment(" comment 6", Some(Position(366, 16, 1)))),
-                  Some(Position(378, 17, 1))
+                    Comment(" comment 5", Some(AstLocation(354, 15, 1))),
+                    Comment(" comment 6", Some(AstLocation(366, 16, 1)))),
+                  Some(AstLocation(378, 17, 1))
                 ),
                 VariableDefinition(
                   "site",
-                  NamedType("Site", Some(Position(565, 36, 1))),
-                  Some(EnumValue("MOBILE", Vector(Comment(" comment 16.5", Some(Position(602, 40, 1))), Comment(" comment 16.6", Some(Position(617, 41, 1)))), Some(Position(632, 42, 1)))),
+                  NamedType("Site", Some(AstLocation(565, 36, 1))),
+                  Some(EnumValue("MOBILE", Vector(Comment(" comment 16.5", Some(AstLocation(602, 40, 1))), Comment(" comment 16.6", Some(AstLocation(617, 41, 1)))), Some(AstLocation(632, 42, 1)))),
                   Vector(
-                    Comment(" comment 11", Some(Position(446, 24, 1))),
-                    Comment(" comment 12", Some(Position(459, 25, 1))),
-                    Comment(" comment 13", Some(Position(475, 28, 1))),
-                    Comment(" comment 14", Some(Position(488, 29, 1)))),
-                  Some(Position(501, 30, 1))
+                    Comment(" comment 11", Some(AstLocation(446, 24, 1))),
+                    Comment(" comment 12", Some(AstLocation(459, 25, 1))),
+                    Comment(" comment 13", Some(AstLocation(475, 28, 1))),
+                    Comment(" comment 14", Some(AstLocation(488, 29, 1)))),
+                  Some(AstLocation(501, 30, 1))
                 ),
                 VariableDefinition(
                   "foo",
-                  NamedType("ComplexType", Some(Position(703, 48, 7))),
+                  NamedType("ComplexType", Some(AstLocation(703, 48, 7))),
                   Some(ObjectValue(
                     Vector(
                       ObjectField(
                         "field1",
-                        StringValue("val", false, None, Vector(Comment(" comment 18.11", Some(Position(849, 61, 1))), Comment(" comment 18.12", Some(Position(865, 62, 1)))), Some(Position(881, 63, 1))),
+                        StringValue("val", false, None, Vector(Comment(" comment 18.11", Some(AstLocation(849, 61, 1))), Comment(" comment 18.12", Some(AstLocation(865, 62, 1)))), Some(AstLocation(881, 63, 1))),
                         Vector(
-                          Comment(" comment 18.7", Some(Position(779, 55, 1))),
-                          Comment(" comment 18.8", Some(Position(794, 56, 1)))),
-                        Some(Position(809, 57, 1))
+                          Comment(" comment 18.7", Some(AstLocation(779, 55, 1))),
+                          Comment(" comment 18.8", Some(AstLocation(794, 56, 1)))),
+                        Some(AstLocation(809, 57, 1))
                       ),
                       ObjectField(
                         "list",
                         ListValue(
                           Vector(
-                            BigIntValue(1, Vector(Comment(" comment 18.21", Some(Position(1026, 76, 1))), Comment(" comment 18.22", Some(Position(1042, 77, 1)))), Some(Position(1058, 78, 1))),
-                            BigIntValue(2, Vector(Comment(" comment 18.23", Some(Position(1061, 79, 1))), Comment(" comment 18.24", Some(Position(1077, 80, 1)))), Some(Position(1093, 81, 1))),
-                            BigIntValue(3, Vector(Comment(" comment 18.25", Some(Position(1096, 82, 1))), Comment(" comment 18.26", Some(Position(1112, 83, 1)))), Some(Position(1128, 84, 1)))),
+                            BigIntValue(1, Vector(Comment(" comment 18.21", Some(AstLocation(1026, 76, 1))), Comment(" comment 18.22", Some(AstLocation(1042, 77, 1)))), Some(AstLocation(1058, 78, 1))),
+                            BigIntValue(2, Vector(Comment(" comment 18.23", Some(AstLocation(1061, 79, 1))), Comment(" comment 18.24", Some(AstLocation(1077, 80, 1)))), Some(AstLocation(1093, 81, 1))),
+                            BigIntValue(3, Vector(Comment(" comment 18.25", Some(AstLocation(1096, 82, 1))), Comment(" comment 18.26", Some(AstLocation(1112, 83, 1)))), Some(AstLocation(1128, 84, 1)))),
                           Vector(
-                            Comment(" comment 18.19", Some(Position(992, 73, 1))),
-                            Comment(" comment 18.20", Some(Position(1008, 74, 1)))),
-                          Some(Position(1024, 75, 1))
+                            Comment(" comment 18.19", Some(AstLocation(992, 73, 1))),
+                            Comment(" comment 18.20", Some(AstLocation(1008, 74, 1)))),
+                          Some(AstLocation(1024, 75, 1))
                         ),
                         Vector(
-                          Comment(" comment 18.13", Some(Position(887, 64, 1))),
-                          Comment(" comment 18.14", Some(Position(903, 65, 1))),
-                          Comment(" comment 18.15", Some(Position(921, 67, 1))),
-                          Comment(" comment 18.16", Some(Position(937, 68, 1)))),
-                        Some(Position(953, 69, 1))
+                          Comment(" comment 18.13", Some(AstLocation(887, 64, 1))),
+                          Comment(" comment 18.14", Some(AstLocation(903, 65, 1))),
+                          Comment(" comment 18.15", Some(AstLocation(921, 67, 1))),
+                          Comment(" comment 18.16", Some(AstLocation(937, 68, 1)))),
+                        Some(AstLocation(953, 69, 1))
                       ),
                       ObjectField(
                         "field2",
-                        BooleanValue(true, Vector(Comment(" comment 18.35", Some(Position(1271, 97, 1))), Comment(" comment 18.36", Some(Position(1287, 98, 1)))), Some(Position(1303, 99, 1))),
+                        BooleanValue(true, Vector(Comment(" comment 18.35", Some(AstLocation(1271, 97, 1))), Comment(" comment 18.36", Some(AstLocation(1287, 98, 1)))), Some(AstLocation(1303, 99, 1))),
                         Vector(
-                          Comment(" comment 18.29", Some(Position(1164, 88, 1))),
-                          Comment(" comment 18.30", Some(Position(1180, 89, 1))),
-                          Comment(" comment 18.31", Some(Position(1198, 91, 1))),
-                          Comment(" comment 18.32", Some(Position(1214, 92, 1)))),
-                        Some(Position(1230, 93, 1))
+                          Comment(" comment 18.29", Some(AstLocation(1164, 88, 1))),
+                          Comment(" comment 18.30", Some(AstLocation(1180, 89, 1))),
+                          Comment(" comment 18.31", Some(AstLocation(1198, 91, 1))),
+                          Comment(" comment 18.32", Some(AstLocation(1214, 92, 1)))),
+                        Some(AstLocation(1230, 93, 1))
                       )),
                     Vector(
-                      Comment(" comment 18.5", Some(Position(747, 52, 1))),
-                      Comment(" comment 18.6", Some(Position(762, 53, 1)))),
-                    Some(Position(777, 54, 1))
+                      Comment(" comment 18.5", Some(AstLocation(747, 52, 1))),
+                      Comment(" comment 18.6", Some(AstLocation(762, 53, 1)))),
+                    Some(AstLocation(777, 54, 1))
                   )),
                   Vector(
-                    Comment(" comment 17", Some(Position(639, 43, 1))),
-                    Comment(" comment 18", Some(Position(652, 44, 1))),
-                    Comment(" comment 18.1", Some(Position(667, 46, 1))),
-                    Comment(" comment 18.2", Some(Position(682, 47, 1)))),
-                  Some(Position(697, 48, 1))
+                    Comment(" comment 17", Some(AstLocation(639, 43, 1))),
+                    Comment(" comment 18", Some(AstLocation(652, 44, 1))),
+                    Comment(" comment 18.1", Some(AstLocation(667, 46, 1))),
+                    Comment(" comment 18.2", Some(AstLocation(682, 47, 1)))),
+                  Some(AstLocation(697, 48, 1))
                 )),
               Vector.empty,
               Vector(
@@ -1147,17 +1151,17 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       "id",
                       ListValue(
                         Vector(
-                          BigIntValue(123, Vector(Comment(" comment 35", Some(Position(1660, 130, 3))), Comment(" comment 36", Some(Position(1675, 131, 3)))), Some(Position(1690, 132, 3))),
-                          BigIntValue(456, Vector(Comment(" comment 37", Some(Position(1696, 133, 3))), Comment(" comment 38", Some(Position(1711, 134, 3)))), Some(Position(1726, 135, 3)))),
+                          BigIntValue(123, Vector(Comment(" comment 35", Some(AstLocation(1660, 130, 3))), Comment(" comment 36", Some(AstLocation(1675, 131, 3)))), Some(AstLocation(1690, 132, 3))),
+                          BigIntValue(456, Vector(Comment(" comment 37", Some(AstLocation(1696, 133, 3))), Comment(" comment 38", Some(AstLocation(1711, 134, 3)))), Some(AstLocation(1726, 135, 3)))),
                         Vector(
-                          Comment(" comment 33", Some(Position(1626, 127, 3))),
-                          Comment(" comment 34", Some(Position(1641, 128, 3)))),
-                        Some(Position(1656, 129, 3))
+                          Comment(" comment 33", Some(AstLocation(1626, 127, 3))),
+                          Comment(" comment 34", Some(AstLocation(1641, 128, 3)))),
+                        Some(AstLocation(1656, 129, 3))
                       ),
                       Vector(
-                        Comment(" comment 29", Some(Position(1557, 121, 3))),
-                        Comment(" comment 30", Some(Position(1572, 122, 3)))),
-                      Some(Position(1587, 123, 3))
+                        Comment(" comment 29", Some(AstLocation(1557, 121, 3))),
+                        Comment(" comment 30", Some(AstLocation(1572, 122, 3)))),
+                      Some(AstLocation(1587, 123, 3))
                     )),
                   Vector.empty,
                   Vector(
@@ -1168,21 +1172,21 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector.empty,
                       Vector.empty,
                       Vector(
-                        Comment(" comment 44", Some(Position(1837, 145, 4))),
-                        Comment(" comment 45", Some(Position(1853, 146, 4)))),
+                        Comment(" comment 44", Some(AstLocation(1837, 145, 4))),
+                        Comment(" comment 45", Some(AstLocation(1853, 146, 4)))),
                       Vector.empty,
-                      Some(Position(1870, 147, 5))
+                      Some(AstLocation(1870, 147, 5))
                     ),
                     InlineFragment(
-                      Some(NamedType("User", Some(Position(1996, 156, 5)))),
+                      Some(NamedType("User", Some(AstLocation(1996, 156, 5)))),
                       Vector(
                         Directive(
                           "defer",
                           Vector.empty,
                           Vector(
-                            Comment(" comment 52", Some(Position(2005, 157, 5))),
-                            Comment(" comment 53", Some(Position(2022, 158, 5)))),
-                          Some(Position(2039, 159, 5))
+                            Comment(" comment 52", Some(AstLocation(2005, 157, 5))),
+                            Comment(" comment 53", Some(AstLocation(2022, 158, 5)))),
+                          Some(AstLocation(2039, 159, 5))
                         )),
                       Vector(
                         Field(
@@ -1197,19 +1201,19 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                               Vector(
                                 Argument(
                                   "first",
-                                  BigIntValue(10, Vector(Comment(" comment 70", Some(Position(2474, 185, 9))), Comment(" comment 71", Some(Position(2495, 186, 9)))), Some(Position(2516, 187, 9))),
+                                  BigIntValue(10, Vector(Comment(" comment 70", Some(AstLocation(2474, 185, 9))), Comment(" comment 71", Some(AstLocation(2495, 186, 9)))), Some(AstLocation(2516, 187, 9))),
                                   Vector(
-                                    Comment(" comment 66", Some(Position(2366, 179, 9))),
-                                    Comment(" comment 67", Some(Position(2387, 180, 9)))),
-                                  Some(Position(2408, 181, 9))
+                                    Comment(" comment 66", Some(AstLocation(2366, 179, 9))),
+                                    Comment(" comment 67", Some(AstLocation(2387, 180, 9)))),
+                                  Some(AstLocation(2408, 181, 9))
                                 ),
                                 Argument(
                                   "after",
-                                  VariableValue("foo", Vector(Comment(" comment 76", Some(Position(2636, 194, 9))), Comment(" comment 77", Some(Position(2657, 195, 9)))), Some(Position(2678, 196, 9))),
+                                  VariableValue("foo", Vector(Comment(" comment 76", Some(AstLocation(2636, 194, 9))), Comment(" comment 77", Some(AstLocation(2657, 195, 9)))), Some(AstLocation(2678, 196, 9))),
                                   Vector(
-                                    Comment(" comment 72", Some(Position(2528, 188, 9))),
-                                    Comment(" comment 73", Some(Position(2549, 189, 9)))),
-                                  Some(Position(2570, 190, 9))
+                                    Comment(" comment 72", Some(AstLocation(2528, 188, 9))),
+                                    Comment(" comment 73", Some(AstLocation(2549, 189, 9)))),
+                                  Some(AstLocation(2570, 190, 9))
                                 )),
                               Vector(
                                 Directive(
@@ -1217,16 +1221,16 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                                   Vector(
                                     Argument(
                                       "if",
-                                      VariableValue("foo", Vector(Comment(" comment 88", Some(Position(2961, 212, 10))), Comment(" comment 89", Some(Position(2983, 213, 10)))), Some(Position(3005, 214, 10))),
+                                      VariableValue("foo", Vector(Comment(" comment 88", Some(AstLocation(2961, 212, 10))), Comment(" comment 89", Some(AstLocation(2983, 213, 10)))), Some(AstLocation(3005, 214, 10))),
                                       Vector(
-                                        Comment(" comment 84", Some(Position(2855, 206, 9))),
-                                        Comment(" comment 85", Some(Position(2876, 207, 9)))),
-                                      Some(Position(2897, 208, 9))
+                                        Comment(" comment 84", Some(AstLocation(2855, 206, 9))),
+                                        Comment(" comment 85", Some(AstLocation(2876, 207, 9)))),
+                                      Some(AstLocation(2897, 208, 9))
                                     )),
                                   Vector(
-                                    Comment(" comment 80", Some(Position(2744, 200, 9))),
-                                    Comment(" comment 81", Some(Position(2765, 201, 9)))),
-                                  Some(Position(2786, 202, 9))
+                                    Comment(" comment 80", Some(AstLocation(2744, 200, 9))),
+                                    Comment(" comment 81", Some(AstLocation(2765, 201, 9)))),
+                                  Some(AstLocation(2786, 202, 9))
                                 )),
                               Vector(
                                 Field(
@@ -1236,53 +1240,53 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                                   Vector.empty,
                                   Vector.empty,
                                   Vector(
-                                    Comment(" comment 94", Some(Position(3130, 221, 11))),
-                                    Comment(" comment 95", Some(Position(3153, 222, 11)))),
+                                    Comment(" comment 94", Some(AstLocation(3130, 221, 11))),
+                                    Comment(" comment 95", Some(AstLocation(3153, 222, 11)))),
                                   Vector.empty,
-                                  Some(Position(3176, 223, 11))
+                                  Some(AstLocation(3176, 223, 11))
                                 ),
-                                FragmentSpread("frag", Vector.empty, Vector(Comment(" comment 96", Some(Position(3190, 224, 11))), Comment(" comment 97", Some(Position(3213, 225, 11)))), Some(Position(3237, 227, 11)))),
+                                FragmentSpread("frag", Vector.empty, Vector(Comment(" comment 96", Some(AstLocation(3190, 224, 11))), Comment(" comment 97", Some(AstLocation(3213, 225, 11)))), Some(AstLocation(3237, 227, 11)))),
                               Vector(
-                                Comment(" comment 58", Some(Position(2151, 167, 7))),
-                                Comment(" comment 59", Some(Position(2170, 168, 7)))),
+                                Comment(" comment 58", Some(AstLocation(2151, 167, 7))),
+                                Comment(" comment 59", Some(AstLocation(2170, 168, 7)))),
                               Vector(
-                                Comment(" comment 100", Some(Position(3312, 231, 11))),
-                                Comment(" comment 101", Some(Position(3336, 232, 11)))),
-                              Some(Position(2191, 169, 9))
+                                Comment(" comment 100", Some(AstLocation(3312, 231, 11))),
+                                Comment(" comment 101", Some(AstLocation(3336, 232, 11)))),
+                              Some(AstLocation(2191, 169, 9))
                             )),
                           Vector.empty,
                           Vector(
-                            Comment(" comment 102", Some(Position(3368, 234, 9))),
-                            Comment(" comment 103", Some(Position(3390, 235, 9)))),
-                          Some(Position(2092, 163, 7))
+                            Comment(" comment 102", Some(AstLocation(3368, 234, 9))),
+                            Comment(" comment 103", Some(AstLocation(3390, 235, 9)))),
+                          Some(AstLocation(2092, 163, 7))
                         )),
                       Vector(
-                        Comment(" comment 46", Some(Position(1879, 148, 5))),
-                        Comment(" comment 47", Some(Position(1896, 149, 5)))),
+                        Comment(" comment 46", Some(AstLocation(1879, 148, 5))),
+                        Comment(" comment 47", Some(AstLocation(1896, 149, 5)))),
                       Vector(
-                        Comment(" comment 104", Some(Position(3418, 237, 7))),
-                        Comment(" comment 105", Some(Position(3438, 238, 7)))),
-                      Some(Position(1913, 150, 5))
+                        Comment(" comment 104", Some(AstLocation(3418, 237, 7))),
+                        Comment(" comment 105", Some(AstLocation(3438, 238, 7)))),
+                      Some(AstLocation(1913, 150, 5))
                     )),
                   Vector(
-                    Comment(" comment 21", Some(Position(1408, 109, 2))),
-                    Comment(" comment 22", Some(Position(1422, 110, 2)))),
+                    Comment(" comment 21", Some(AstLocation(1408, 109, 2))),
+                    Comment(" comment 22", Some(AstLocation(1422, 110, 2)))),
                   Vector(
-                    Comment(" comment 106", Some(Position(3462, 240, 5))),
-                    Comment(" comment 107", Some(Position(3480, 241, 5)))),
-                  Some(Position(1437, 111, 3))
+                    Comment(" comment 106", Some(AstLocation(3462, 240, 5))),
+                    Comment(" comment 107", Some(AstLocation(3480, 241, 5)))),
+                  Some(AstLocation(1437, 111, 3))
                 )),
               Vector(
-                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(Position(0, 1, 1))),
-                Comment(" All rights reserved.", Some(Position(37, 2, 1))),
-                Comment("", Some(Position(60, 3, 1))),
-                Comment(" This source code is licensed under the BSD-style license found in the", Some(Position(62, 4, 1))),
-                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(Position(134, 5, 1))),
-                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(Position(212, 6, 1)))),
+                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(AstLocation(0, 1, 1))),
+                Comment(" All rights reserved.", Some(AstLocation(37, 2, 1))),
+                Comment("", Some(AstLocation(60, 3, 1))),
+                Comment(" This source code is licensed under the BSD-style license found in the", Some(AstLocation(62, 4, 1))),
+                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(AstLocation(134, 5, 1))),
+                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(AstLocation(212, 6, 1)))),
               Vector(
-                Comment(" comment 108", Some(Position(3500, 243, 3))),
-                Comment(" comment 109", Some(Position(3516, 244, 3)))),
-              Some(Position(288, 8, 1))
+                Comment(" comment 108", Some(AstLocation(3500, 243, 3))),
+                Comment(" comment 109", Some(AstLocation(3516, 244, 3)))),
+              Some(AstLocation(288, 8, 1))
             ),
             OperationDefinition(
               OperationType.Mutation,
@@ -1296,20 +1300,20 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "story",
-                      BigIntValue(123, Vector(Comment(" comment 124", Some(Position(3793, 268, 3))), Comment(" comment 125", Some(Position(3809, 269, 3)))), Some(Position(3825, 270, 3))),
+                      BigIntValue(123, Vector(Comment(" comment 124", Some(AstLocation(3793, 268, 3))), Comment(" comment 125", Some(AstLocation(3809, 269, 3)))), Some(AstLocation(3825, 270, 3))),
                       Vector(
-                        Comment(" comment 120", Some(Position(3717, 262, 3))),
-                        Comment(" comment 121", Some(Position(3733, 263, 3)))),
-                      Some(Position(3749, 264, 3))
+                        Comment(" comment 120", Some(AstLocation(3717, 262, 3))),
+                        Comment(" comment 121", Some(AstLocation(3733, 263, 3)))),
+                      Some(AstLocation(3749, 264, 3))
                     )),
                   Vector(
                     Directive(
                       "defer",
                       Vector.empty,
                       Vector(
-                        Comment(" comment 128", Some(Position(3867, 274, 3))),
-                        Comment(" comment 129", Some(Position(3883, 275, 3)))),
-                      Some(Position(3899, 276, 3))
+                        Comment(" comment 128", Some(AstLocation(3867, 274, 3))),
+                        Comment(" comment 129", Some(AstLocation(3883, 275, 3)))),
+                      Some(AstLocation(3899, 276, 3))
                     )),
                   Vector(
                     Field(
@@ -1325,40 +1329,40 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                           Vector.empty,
                           Vector.empty,
                           Vector(
-                            Comment(" comment 136", Some(Position(4030, 286, 5))),
-                            Comment(" comment 137", Some(Position(4048, 287, 5))),
-                            Comment(" comment 138", Some(Position(4067, 289, 5))),
-                            Comment(" comment 139", Some(Position(4085, 290, 5)))),
+                            Comment(" comment 136", Some(AstLocation(4030, 286, 5))),
+                            Comment(" comment 137", Some(AstLocation(4048, 287, 5))),
+                            Comment(" comment 138", Some(AstLocation(4067, 289, 5))),
+                            Comment(" comment 139", Some(AstLocation(4085, 290, 5)))),
                           Vector.empty,
-                          Some(Position(4105, 291, 7))
+                          Some(AstLocation(4105, 291, 7))
                         )),
                       Vector(
-                        Comment(" comment 132", Some(Position(3944, 280, 3))),
-                        Comment(" comment 133", Some(Position(3960, 281, 3)))),
+                        Comment(" comment 132", Some(AstLocation(3944, 280, 3))),
+                        Comment(" comment 133", Some(AstLocation(3960, 281, 3)))),
                       Vector(
-                        Comment(" comment 140", Some(Position(4114, 292, 7))),
-                        Comment(" comment 141", Some(Position(4134, 293, 7)))),
-                      Some(Position(3978, 282, 5))
+                        Comment(" comment 140", Some(AstLocation(4114, 292, 7))),
+                        Comment(" comment 141", Some(AstLocation(4134, 293, 7)))),
+                      Some(AstLocation(3978, 282, 5))
                     )),
                   Vector(
-                    Comment(" comment 116", Some(Position(3644, 256, 1))),
-                    Comment(" comment 117", Some(Position(3658, 257, 1)))),
+                    Comment(" comment 116", Some(AstLocation(3644, 256, 1))),
+                    Comment(" comment 117", Some(AstLocation(3658, 257, 1)))),
                   Vector(
-                    Comment(" comment 142", Some(Position(4158, 295, 5))),
-                    Comment(" comment 143", Some(Position(4176, 296, 5)))),
-                  Some(Position(3674, 258, 3))
+                    Comment(" comment 142", Some(AstLocation(4158, 295, 5))),
+                    Comment(" comment 143", Some(AstLocation(4176, 296, 5)))),
+                  Some(AstLocation(3674, 258, 3))
                 )),
               Vector(
-                Comment(" comment 110", Some(Position(3536, 247, 4))),
-                Comment(" comment 111", Some(Position(3553, 248, 4)))),
+                Comment(" comment 110", Some(AstLocation(3536, 247, 4))),
+                Comment(" comment 111", Some(AstLocation(3553, 248, 4)))),
               Vector(
-                Comment(" comment 144", Some(Position(4196, 298, 3))),
-                Comment(" comment 145", Some(Position(4212, 299, 3)))),
-              Some(Position(3567, 249, 1))
+                Comment(" comment 144", Some(AstLocation(4196, 298, 3))),
+                Comment(" comment 145", Some(AstLocation(4212, 299, 3)))),
+              Some(AstLocation(3567, 249, 1))
             ),
             FragmentDefinition(
               "frag",
-              NamedType("Friend", Some(Position(4358, 312, 1))),
+              NamedType("Friend", Some(AstLocation(4358, 312, 1))),
               Vector.empty,
               Vector(
                 InlineFragment(
@@ -1369,16 +1373,16 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector(
                         Argument(
                           "unless",
-                          VariableValue("foo", Vector(Comment(" comment 168", Some(Position(4613, 334, 3))), Comment(" comment 169", Some(Position(4629, 335, 3)))), Some(Position(4645, 336, 3))),
+                          VariableValue("foo", Vector(Comment(" comment 168", Some(AstLocation(4613, 334, 3))), Comment(" comment 169", Some(AstLocation(4629, 335, 3)))), Some(AstLocation(4645, 336, 3))),
                           Vector(
-                            Comment(" comment 164", Some(Position(4536, 328, 3))),
-                            Comment(" comment 165", Some(Position(4552, 329, 3)))),
-                          Some(Position(4568, 330, 3))
+                            Comment(" comment 164", Some(AstLocation(4536, 328, 3))),
+                            Comment(" comment 165", Some(AstLocation(4552, 329, 3)))),
+                          Some(AstLocation(4568, 330, 3))
                         )),
                       Vector(
-                        Comment(" comment 160", Some(Position(4460, 322, 3))),
-                        Comment(" comment 161", Some(Position(4476, 323, 3)))),
-                      Some(Position(4492, 324, 3))
+                        Comment(" comment 160", Some(AstLocation(4460, 322, 3))),
+                        Comment(" comment 161", Some(AstLocation(4476, 323, 3)))),
+                      Some(AstLocation(4492, 324, 3))
                     )),
                   Vector(
                     Field(
@@ -1388,38 +1392,38 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Vector.empty,
                       Vector.empty,
                       Vector(
-                        Comment(" comment 174", Some(Position(4724, 343, 3))),
-                        Comment(" comment 175", Some(Position(4740, 344, 3)))),
+                        Comment(" comment 174", Some(AstLocation(4724, 343, 3))),
+                        Comment(" comment 175", Some(AstLocation(4740, 344, 3)))),
                       Vector.empty,
-                      Some(Position(4758, 345, 5))
+                      Some(AstLocation(4758, 345, 5))
                     )),
                   Vector(
-                    Comment(" comment 156", Some(Position(4395, 316, 1))),
-                    Comment(" comment 157", Some(Position(4409, 317, 1))),
-                    Comment(" comment 158", Some(Position(4424, 319, 1))),
-                    Comment(" comment 159", Some(Position(4438, 320, 1)))),
+                    Comment(" comment 156", Some(AstLocation(4395, 316, 1))),
+                    Comment(" comment 157", Some(AstLocation(4409, 317, 1))),
+                    Comment(" comment 158", Some(AstLocation(4424, 319, 1))),
+                    Comment(" comment 159", Some(AstLocation(4438, 320, 1)))),
                   Vector(
-                    Comment(" comment 176", Some(Position(4765, 346, 5))),
-                    Comment(" comment 177", Some(Position(4783, 347, 5)))),
-                  Some(Position(4454, 321, 3))
+                    Comment(" comment 176", Some(AstLocation(4765, 346, 5))),
+                    Comment(" comment 177", Some(AstLocation(4783, 347, 5)))),
+                  Some(AstLocation(4454, 321, 3))
                 )),
               Vector.empty,
               Vector(
-                Comment(" comment 146", Some(Position(4228, 300, 3))),
-                Comment(" comment 147", Some(Position(4242, 301, 1)))),
+                Comment(" comment 146", Some(AstLocation(4228, 300, 3))),
+                Comment(" comment 147", Some(AstLocation(4242, 301, 1)))),
               Vector(
-                Comment(" comment 178", Some(Position(4803, 349, 3))),
-                Comment(" comment 179", Some(Position(4819, 350, 3)))),
-              Some(Position(4257, 303, 1))
+                Comment(" comment 178", Some(AstLocation(4803, 349, 3))),
+                Comment(" comment 179", Some(AstLocation(4819, 350, 3)))),
+              Some(AstLocation(4257, 303, 1))
             )),
           Vector(
-            Comment(" comment 180", Some(Position(4835, 352, 1))),
-            Comment(" comment 181", Some(Position(4849, 353, 1)))),
-          Some(Position(0, 1, 1)),
+            Comment(" comment 180", Some(AstLocation(4835, 352, 1))),
+            Comment(" comment 181", Some(AstLocation(4849, 353, 1)))),
+          Some(AstLocation(0, 1, 1)),
           None
         )
 
-      QueryParser.parse(query) map (_.withoutSourceMapper) should be (Success(expected))
+      QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withEmptySourceMapper) should be (Success(expected))
     }
 
     "parse document with block strings" in {
@@ -1433,10 +1437,10 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
             Vector(
               VariableDefinition(
                 "someVar",
-                NamedType("String", Some(Position(40, 1, 41))),
-                Some(StringValue("hello \\\n  world", true, Some("\n    hello \\\n      world"), Vector.empty, Some(Position(53, 2, 5)))),
+                NamedType("String", Some(AstLocation(40, 1, 41))),
+                Some(StringValue("hello \\\n  world", true, Some("\n    hello \\\n      world"), Vector.empty, Some(AstLocation(53, 2, 5)))),
                 Vector.empty,
-                Some(Position(30, 1, 31))
+                Some(AstLocation(30, 1, 31))
               )),
             Vector.empty,
             Vector(
@@ -1446,42 +1450,42 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                 Vector(
                   Argument(
                     "id",
-                    StringValue("1000", false, None, Vector.empty, Some(Position(105, 3, 19))),
+                    StringValue("1000", false, None, Vector.empty, Some(AstLocation(105, 3, 19))),
                     Vector.empty,
-                    Some(Position(101, 3, 15))
+                    Some(AstLocation(101, 3, 15))
                   ),
                   Argument(
                     "bar",
-                    StringValue(" \\\"test\n123 \\u0000", true, Some(" \\\"test\n     123 \\u0000\n     "), Vector.empty, Some(Position(118, 3, 32))),
+                    StringValue(" \\\"test\n123 \\u0000", true, Some(" \\\"test\n     123 \\u0000\n     "), Vector.empty, Some(AstLocation(118, 3, 32))),
                     Vector.empty,
-                    Some(Position(113, 3, 27))
+                    Some(AstLocation(113, 3, 27))
                   )),
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
-                Some(Position(89, 3, 3))
+                Some(AstLocation(89, 3, 3))
               ),
-              FragmentSpread("Foo", Vector.empty, Vector.empty, Some(Position(158, 5, 3)))),
+              FragmentSpread("Foo", Vector.empty, Vector.empty, Some(AstLocation(158, 5, 3)))),
             Vector.empty,
             Vector.empty,
-            Some(Position(0, 1, 1))
+            Some(AstLocation(0, 1, 1))
           ),
           FragmentDefinition(
             "Foo",
-            NamedType("User", Some(Position(184, 8, 17))),
+            NamedType("User", Some(AstLocation(184, 8, 17))),
             Vector(
               Directive(
                 "foo",
                 Vector(
                   Argument(
                     "bar",
-                    BigIntValue(1, Vector.empty, Some(Position(199, 8, 32))),
+                    BigIntValue(1, Vector.empty, Some(AstLocation(199, 8, 32))),
                     Vector.empty,
-                    Some(Position(194, 8, 27))
+                    Some(AstLocation(194, 8, 27))
                   )),
                 Vector.empty,
-                Some(Position(189, 8, 22))
+                Some(AstLocation(189, 8, 22))
               )),
             Vector(
               Field(
@@ -1494,44 +1498,44 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                     Vector(
                       Argument(
                         "info",
-                        StringValue("\"\"\"\n\"\"\" this \" is \"\"\na description! \"\"\"", true, Some("\"\"\"\n    \"\"\" this \" is \"\"\n    a description! \"\"\"\n    "), Vector.empty, Some(Position(225, 10, 5))),
+                        StringValue("\"\"\"\n\"\"\" this \" is \"\"\na description! \"\"\"", true, Some("\"\"\"\n    \"\"\" this \" is \"\"\n    a description! \"\"\"\n    "), Vector.empty, Some(AstLocation(225, 10, 5))),
                         Vector.empty,
-                        Some(Position(215, 9, 13))
+                        Some(AstLocation(215, 9, 13))
                       )),
                     Vector.empty,
-                    Some(Position(209, 9, 7))
+                    Some(AstLocation(209, 9, 7))
                   )),
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
-                Some(Position(205, 9, 3))
+                Some(AstLocation(205, 9, 3))
               )),
             Vector.empty,
             Vector.empty,
             Vector.empty,
-            Some(Position(168, 8, 1))
+            Some(AstLocation(168, 8, 1))
           )),
         Vector.empty,
-        Some(Position(0, 1, 1)),
+        Some(AstLocation(0, 1, 1)),
         None
       )
 
-      QueryParser.parse(query) map (_.withoutSourceMapper) should be (Success(expected))
+      parseQuery(query) should be (Success(expected))
     }
     
     "Experimental: allows parsing fragment defined variables" in {
       val queryStr = "fragment a($v: Boolean = false) on t { f(v: $v) }"
 
-      QueryParser.parse(queryStr).isFailure should be (true)
+      parseQuery(queryStr).isFailure should be (true)
 
-      val Success(query) = QueryParser.parse(queryStr, experimentalFragmentVariables = true)
+      val Success(query) = QueryParser.parse(queryStr, ParserConfig.default.withEmptySourceId.withEmptySourceMapper.withExperimentalFragmentVariables)
 
-      query.withoutSourceMapper should be (
+      query should be (
         Document(
           Vector(
             FragmentDefinition(
               "a",
-              NamedType("t", Some(Position(35, 1, 36))),
+              NamedType("t", Some(AstLocation(35, 1, 36))),
               Vector.empty,
               Vector(
                 Field(
@@ -1540,30 +1544,30 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector(
                     Argument(
                       "v",
-                      VariableValue("v", Vector.empty, Some(Position(44, 1, 45))),
+                      VariableValue("v", Vector.empty, Some(AstLocation(44, 1, 45))),
                       Vector.empty,
-                      Some(Position(41, 1, 42))
+                      Some(AstLocation(41, 1, 42))
                     )),
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
                   Vector.empty,
-                  Some(Position(39, 1, 40))
+                  Some(AstLocation(39, 1, 40))
                 )),
               Vector(
                 VariableDefinition(
                   "v",
-                  NamedType("Boolean", Some(Position(15, 1, 16))),
-                  Some(BooleanValue(false, Vector.empty, Some(Position(25, 1, 26)))),
+                  NamedType("Boolean", Some(AstLocation(15, 1, 16))),
+                  Some(BooleanValue(false, Vector.empty, Some(AstLocation(25, 1, 26)))),
                   Vector.empty,
-                  Some(Position(11, 1, 12))
+                  Some(AstLocation(11, 1, 12))
                 )),
               Vector.empty,
               Vector.empty,
-              Some(Position(0, 1, 1))
+              Some(AstLocation(0, 1, 1))
             )),
           Vector.empty,
-          Some(Position(0, 1, 1)),
+          Some(AstLocation(0, 1, 1)),
           None
         ))
     }
@@ -1582,7 +1586,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
           }
         """
 
-      (QueryParser.parse(query) == QueryParser.parse(query)) should be (true)
+      (parseQuery(query) == parseQuery(query)) should be (true)
     }
 
     "not be equal for the same queries with different AST node positions" in {
@@ -1606,7 +1610,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
           }
         """
 
-      (QueryParser.parse(query1) == QueryParser.parse(query2)) should be (false)
+      (parseQuery(query1) == parseQuery(query2)) should be (false)
     }
   }
 }
