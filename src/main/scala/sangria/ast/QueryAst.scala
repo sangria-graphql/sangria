@@ -2,7 +2,7 @@ package sangria.ast
 
 import sangria.execution.InputDocumentMaterializer
 import sangria.marshalling.{FromInput, InputUnmarshaller}
-import sangria.parser.{DeliveryScheme, SourceMapper}
+import sangria.parser.{AggregateSourceMapper, DeliveryScheme, SourceMapper}
 import sangria.renderer.QueryRenderer
 import sangria.validation.DocumentAnalyzer
 import sangria.schema.{InputType, Schema}
@@ -68,11 +68,16 @@ object Document {
     * concatenate the ASTs together into batched AST, useful for validating many
     * GraphQL source files which together represent one conceptual application.
     *
-    * The result of the merge will loose the `sourceMapper` and `position` since
-    * connection to the original string source is lost.
+    * The result `Document` will retain correlation to the original `sourceMapper`s.
     */
-  def merge(documents: Traversable[Document]): Document =
-    Document(documents.toVector.flatMap(_.definitions))
+  def merge(documents: Traversable[Document]): Document = {
+    val originalSourceMappers = documents.flatMap(_.sourceMapper).toVector
+    val sourceMapper =
+      if (originalSourceMappers.nonEmpty) Some(new AggregateSourceMapper("MergedDocument", originalSourceMappers))
+      else None
+
+    Document(documents.toVector.flatMap(_.definitions), sourceMapper = sourceMapper)
+  }
 
   /**
     * The most basic, but valid document with a stub `Query` type
