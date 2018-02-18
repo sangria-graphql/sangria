@@ -576,13 +576,6 @@ object AstVisitor {
       onLeave: AstNode ⇒ VisitorCommand): T =
     sangria.visitor.visit[AstNode](root, Visit[AstNode](onEnter, onLeave)).asInstanceOf[T]
 
-  @deprecated("Please use `visit` instead. Its implementation is not recursive (so it will not overflow the stack) and allows AST modification.", "1.1.0")
-  def visitAst(
-      doc: AstNode,
-      onEnter: AstNode ⇒ AstVisitorCommand.Value = _ ⇒ Continue,
-      onLeave: AstNode ⇒ AstVisitorCommand.Value = _ ⇒ Continue): Unit =
-    visitAstRecursive(doc, onEnter, onLeave)
-
   private[sangria] def visitAstRecursive(
       doc: AstNode,
       onEnter: AstNode ⇒ AstVisitorCommand.Value = _ ⇒ Continue,

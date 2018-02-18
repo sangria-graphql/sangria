@@ -2,7 +2,7 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition, TypeDefinition, ObjectTypeExtensionDefinition}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition, ObjectTypeExtensionDefinition, TypeDefinition}
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
@@ -10,9 +10,10 @@ import sangria.util.{DebugUtil, FutureResultSupport, Pos, StringMatchers}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.macros._
 import sangria.macros.derive._
-import sangria.validation.IntCoercionViolation
+import sangria.validation.{IntCoercionViolation, UnknownDirectiveViolation}
 import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
@@ -1061,7 +1062,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
       "support type extensions" in {
         val schemaDef =
-          """
+          graphql"""
             schema {
               query: Query
             }
@@ -1127,7 +1128,13 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             scalar PositiveInt
           """
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+        val errors = ResolverBasedAstSchemaBuilder().validateSchema(schemaDef)
+
+        errors should have size 8
+
+        errors.foreach(_.isInstanceOf[UnknownDirectiveViolation] should be (true))
+
+        val schema = Schema.buildFromAst(schemaDef)
         
         ("\n" + schema.renderPretty + "\n") should equal("""
           |type Cat {

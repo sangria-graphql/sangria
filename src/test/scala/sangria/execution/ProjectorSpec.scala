@@ -16,8 +16,20 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
 
   case class ProductDefer(productIds: List[String]) extends Deferred[List[Right[String, Product]]]
 
+  val ProductAttributeType = InterfaceType("ProductAttribute", fields[Unit, (String, Any)](
+    Field("name", StringType, resolve = _.value._1)))
+
+  val StringAttributeType = ObjectType("StringAttribute", interfaces[Unit, (String, Any)](ProductAttributeType), fields[Unit, (String, Any)](
+    Field("name", StringType, resolve = _.value._1),
+    Field("strValue", StringType, resolve = _.value._2.asInstanceOf[String]))).withInstanceCheck((v, _, _) ⇒ v.asInstanceOf[(String, Any)]._2.isInstanceOf[String])
+
+  val IntAttributeType = ObjectType("IntAttribute", interfaces[Unit, (String, Any)](ProductAttributeType), fields[Unit, (String, Any)](
+    Field("name", StringType, resolve = _.value._1),
+    Field("intValue", IntType, resolve = _.value._2.asInstanceOf[Int]))).withInstanceCheck((v, _, _) ⇒ v.asInstanceOf[(String, Any)]._2.isInstanceOf[Int])
+
   val VariantType = ObjectType("Variant", () ⇒ fields[Unit, Variant](
     Field("id", IDType, resolve = _.value.id),
+    Field("attributes", ListType(ProductAttributeType), resolve = _ ⇒ List("foo" → "hello", "bar" → 123)),
     Field("mixed", StringType,
       tags = ProjectionName("mixed1") :: ProjectionName("mixed2") :: Nil,
       resolve = _.value.id),
@@ -55,7 +67,7 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
     }))
   ))
 
-  val schema = Schema(QueryType)
+  val schema = Schema(QueryType, additionalTypes = StringAttributeType :: IntAttributeType :: Nil)
 
   trait WithProducts {
     def products: List[Product]
@@ -93,6 +105,12 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
               typeId
               variants {
                 id
+                attributes {
+                  name
+
+                  ... on StringAttribute {strValue}
+                  ... on IntAttribute {intValue}
+                }
                 typeId
                 relatedProducts {
                   id
@@ -127,6 +145,9 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
                   "variants" → List(
                     Map(
                       "id" → "2",
+                      "attributes" → Vector(
+                        Map("name" → "foo", "strValue" → "hello"),
+                        Map("name" → "bar", "intValue" → 123)),
                       "typeId" → "variant",
                       "relatedProducts" → List(
                         Map(
@@ -161,6 +182,10 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
           ProjectedName("id", Vector.empty),
           ProjectedName("variants", Vector(
             ProjectedName("id", Vector.empty),
+            ProjectedName("attributes", Vector(
+              ProjectedName("strValue", Vector.empty),
+              ProjectedName("name", Vector.empty),
+              ProjectedName("intValue", Vector.empty))),
             ProjectedName("rp", Vector(
               ProjectedName("id", Vector.empty),
               ProjectedName("variants", Vector(

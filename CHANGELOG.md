@@ -2,7 +2,9 @@
 
 * Added support for rendering SDL with legacy comment-based descriptions (#334). You can use it with `SchemaFilter.default.withLegacyCommentDescriptions`.
 * Improved `ResolverBasedAstSchemaBuilder` and introduced `InputTypeResolver`/`OutputTypeResolver`.
-* Removed previously deprecated `SchemaRenderer.renderIntrospectionSchema`.
+* Removed previously deprecated methods:
+  * `SchemaRenderer.renderIntrospectionSchema`
+  * `AstVisitor.visitAst`
 
 ## v1.3.3 (2017-12-03)
 
