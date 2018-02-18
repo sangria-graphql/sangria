@@ -266,6 +266,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           pos → s"Cannot configure overloaded method '$name' using `DeriveObjectSetting` due to ambiguity, use annotations instead."
         ))
       }
+
     def getArgument(pos: Position, methodName: String, argName: String) = getMethod(pos, methodName).right.flatMap{ method ⇒
       val knownArguments = method.paramLists.flatten
       knownArguments.find(_.name.decodedName.toString == argName)
@@ -274,15 +275,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           pos → s"Unknown argument '$argName' of method '$method'. Known arguments are: ${knownArguments.map(_.name.decodedName) mkString ", "}"
         )))
     }
-    def validateHasArgument(pos: Position, methodName: String, argName: String) = getArgument(pos, methodName, argName).right.map(_ ⇒ Nil).merge
-    def validateArgumentDefault(pos: Position, methodName: String, argName: String, default: Tree, argType: Type) =
-      getArgument(pos, methodName, argName).right.map{
-        case arg if argType <:< arg.typeSignature.resultType ⇒ Nil
-        case arg ⇒ List(
-          pos → s"Wrong type of default value '$default' for argument '$argName' of method '$methodName': expected '${arg.typeSignature.resultType}', but got '$argType'."
-        )
-      }.merge
 
+    def validateHasArgument(pos: Position, methodName: String, argName: String) =
+      getArgument(pos, methodName, argName).right.map(_ ⇒ Nil).merge
 
     config.toList.flatMap {
       case MacroIncludeFields(fields, pos) if !fields.forall(knownMembersSet.contains) ⇒
@@ -322,11 +317,11 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       case MacroMethodArgumentsDescription(methodName, descriptions, pos) ⇒
         descriptions.keys.toList.flatMap(validateHasArgument(pos, methodName, _))
 
-      case MacroMethodArgumentDefault(methodName, argName, argType, default, pos) ⇒
-        validateArgumentDefault(pos, methodName, argName, default, argType)
+      case MacroMethodArgumentDefault(methodName, argName, _, _, pos) ⇒
+        validateHasArgument(pos, methodName, argName)
 
-      case MacroMethodArgument(methodName, argName, _, argType, default, pos) ⇒
-        validateArgumentDefault(pos, methodName, argName, default, argType)
+      case MacroMethodArgument(methodName, argName, _, _, _, pos) ⇒
+        validateHasArgument(pos, methodName, argName)
 
       case _ ⇒ Nil
     }
@@ -396,7 +391,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       val descriptionsMap = descriptions.map{
         case q"(${argName: String}, $description)" ⇒ argName → description
         case q"scala.this.Predef.ArrowAssoc[$_](${argName: String}).->[$_]($description)" ⇒ argName → description // scala 2.11
+        case q"scala.this.Predef.ArrowAssoc[$_](${argName: String}).→[$_]($description)" ⇒ argName → description // scala 2.11
         case q"scala.Predef.ArrowAssoc[$_](${argName: String}).->[$_]($description)" ⇒ argName → description      // scala 2.12
+        case q"scala.Predef.ArrowAssoc[$_](${argName: String}).→[$_]($description)" ⇒ argName → description      // scala 2.12
       }.toMap
       Right(MacroMethodArgumentsDescription(methodName, descriptionsMap, tree.pos))
 
