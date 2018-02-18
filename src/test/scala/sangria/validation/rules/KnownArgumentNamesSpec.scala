@@ -76,6 +76,16 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         "Unknown argument 'unless' on directive 'skip'." → Some(Pos(3, 21))
       ))
 
+    "misspelled directive args are reported" in expectFails(
+      """
+        {
+          dog @skip(iff: true)
+        }
+      """,
+      List(
+        "Unknown argument 'iff' on directive 'skip'. Did you mean 'if'?" → Some(Pos(3, 21))
+      ))
+
     "invalid arg name" in expectFails(
       """
         fragment invalidArgName on Dog {
@@ -84,6 +94,16 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
       """,
       List(
         "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." → Some(Pos(3, 27))
+      ))
+    
+    "misspelled arg name is reported" in expectFails(
+      """
+        fragment invalidArgName on Dog {
+          doesKnowCommand(dogcommand: true)
+        }
+      """,
+      List(
+        "Unknown argument 'dogcommand' on field 'doesKnowCommand' of type 'Dog'. Did you mean 'dogCommand'?" → Some(Pos(3, 27))
       ))
 
     "unknown args amongst known args" in expectFails(

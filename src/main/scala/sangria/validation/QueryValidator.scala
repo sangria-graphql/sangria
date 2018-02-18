@@ -146,7 +146,7 @@ object ValidationContext {
     case (OptionInputType(ofType), v) ⇒
       isValidLiteralValue(ofType, v, sourceMapper)
     case (ListInputType(ofType), ast.ListValue(values, _, pos)) ⇒
-      values.zipWithIndex.toVector.flatMap {
+      values.zipWithIndex.flatMap {
         case (elem, idx) ⇒ isValidLiteralValue(ofType, elem, sourceMapper) map (ListValueViolation(idx, _, sourceMapper, pos.toList))
       }
     case (ListInputType(ofType), v) ⇒
