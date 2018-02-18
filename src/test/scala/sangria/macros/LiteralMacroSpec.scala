@@ -219,6 +219,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   Some(Position(502, 19, 13))
                 )),
               Vector.empty,
+              Vector.empty,
               Vector(
                 Comment(" field in fragment!", Some(Position(506, 19, 17)))),
               Some(Position(455, 18, 11))
@@ -611,6 +612,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                 )),
               Vector.empty,
               Vector.empty,
+              Vector.empty,
               Some(Position(1273, 45, 11))
             ),
             OperationDefinition(
@@ -983,39 +985,29 @@ class LiteralMacroSpec extends WordSpec with Matchers {
               Vector.empty,
               Some(Position(1799, 64, 11))
             ),
-            TypeExtensionDefinition(
-              ObjectTypeDefinition(
-                "Foo",
-                Vector.empty,
-                Vector(
-                  FieldDefinition("seven", NamedType("Type", Some(Position(1991, 70, 40))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(1981, 70, 30))), Some(Position(1980, 70, 29))), None, Vector.empty, None, Vector.empty, Some(Position(1970, 70, 19)))), Vector.empty, None, Vector.empty, Some(Position(1964, 70, 13)))),
-                Vector.empty,
-                None,
-                Vector.empty,
-                Vector.empty,
-                Some(Position(1934, 69, 11))
-              ),
+            ObjectTypeExtensionDefinition(
+              "Foo",
+              Vector.empty,
+              Vector(
+                FieldDefinition("seven", NamedType("Type", Some(Position(1991, 70, 40))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(Position(1981, 70, 30))), Some(Position(1980, 70, 29))), None, Vector.empty, None, Vector.empty, Some(Position(1970, 70, 19)))), Vector.empty, None, Vector.empty, Some(Position(1964, 70, 13)))),
+              Vector.empty,
+              Vector.empty,
               Vector.empty,
               Some(Position(1934, 69, 11))
             ),
-            TypeExtensionDefinition(
-              ObjectTypeDefinition(
-                "Foo",
-                Vector.empty,
-                Vector(
-                  FieldDefinition("foo", NamedType("String", Some(Position(2062, 74, 18))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(2057, 74, 13)))),
-                Vector(
-                  Directive(
-                    "onType",
-                    Vector.empty,
-                    Vector.empty,
-                    Some(Position(2035, 73, 27))
-                  )),
-                None,
-                Vector.empty,
-                Vector.empty,
-                Some(Position(2019, 73, 11))
-              ),
+            ObjectTypeExtensionDefinition(
+              "Foo",
+              Vector.empty,
+              Vector(
+                FieldDefinition("foo", NamedType("String", Some(Position(2062, 74, 18))), Vector.empty, Vector.empty, None, Vector.empty, Some(Position(2057, 74, 13)))),
+              Vector(
+                Directive(
+                  "onType",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(2035, 73, 27))
+                )),
+              Vector.empty,
               Vector.empty,
               Some(Position(2019, 73, 11))
             ),

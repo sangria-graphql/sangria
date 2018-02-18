@@ -12,6 +12,7 @@ class TypeInfo(schema: Schema[_, _]) {
   private val inputTypeStack: ValidatorStack[Option[InputType[_]]] = ValidatorStack.empty
   private val fieldDefStack: ValidatorStack[Option[Field[_, _]]] = ValidatorStack.empty
   private val ancestorStack: ValidatorStack[ast.AstNode] = ValidatorStack.empty
+  private val documentStack: ValidatorStack[ast.Document] = ValidatorStack.empty
 
   var directive: Option[Directive] = None
   var enumValue: Option[EnumValue[_]] = None
@@ -23,6 +24,7 @@ class TypeInfo(schema: Schema[_, _]) {
   def inputType = inputTypeStack.headOption.flatten
   def fieldDef = fieldDefStack.headOption.flatten
   def ancestors: Seq[ast.AstNode] = ancestorStack.toSeq
+  def document = documentStack.headOption
 
   def withInputType(inputType: InputType[_]) = {
     inputTypeStack push Some(inputType)
@@ -34,6 +36,8 @@ class TypeInfo(schema: Schema[_, _]) {
     ancestorStack push node
 
     node match {
+      case document: ast.Document ⇒
+        documentStack push document
       case f: ast.Field ⇒
         val parent = parentType
         val fieldDef = parent flatMap (getFieldDef(_, f))
@@ -53,6 +57,10 @@ class TypeInfo(schema: Schema[_, _]) {
         pushParent()
       case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) ⇒
         typeStack push schema.subscription
+        pushParent()
+      case fs: ast.FragmentSpread ⇒
+        val fragment = document.flatMap(_.fragments.get(fs.name))
+        typeStack.push(fragment.flatMap(fd ⇒ schema.allTypes get fd.typeCondition.name))
         pushParent()
       case fd: ast.FragmentDefinition ⇒
         typeStack.push(schema.allTypes get fd.typeCondition.name)
@@ -106,6 +114,8 @@ class TypeInfo(schema: Schema[_, _]) {
 
   def leave(node: ast.AstNode) = {
     node match {
+      case document: ast.Document ⇒
+        documentStack.pop()
       case f: ast.Field ⇒
         fieldDefStack.pop()
         typeStack.pop()
@@ -119,6 +129,9 @@ class TypeInfo(schema: Schema[_, _]) {
         typeStack.pop()
         parentTypeStack.pop()
       case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) ⇒
+        typeStack.pop()
+        parentTypeStack.pop()
+      case fs: ast.FragmentSpread ⇒
         typeStack.pop()
         parentTypeStack.pop()
       case fd: ast.FragmentDefinition ⇒

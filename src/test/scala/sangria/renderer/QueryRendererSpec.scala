@@ -621,6 +621,24 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
 
         prettyRendered should equal (FileUtil loadQuery "block-string-rendered.graphql") (after being strippedOfCarriageReturns)
       }
+      
+      "Experimental: correctly prints fragment defined variables " in {
+        val query =
+          """
+            fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
+              id
+            }
+          """
+
+        QueryParser.parse(query).isFailure should be (true)
+
+        val Success(ast) = QueryParser.parse(query, experimentalFragmentVariables = true)
+
+        ast.renderPretty should equal (
+          """fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
+            |  id
+            |}""".stripMargin) (after being strippedOfCarriageReturns)
+      }
     }
 
     "rendering schema definition" should {
@@ -673,8 +691,8 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |scalar AnnotatedScalar@onScalar
             |enum Site{"description 1" DESKTOP "description 2" MOBILE}
             |enum AnnotatedEnum@onEnum{ANNOTATED_VALUE@onEnumValue OTHER_VALUE}
-            |input InputType {key:String! answer:Int=42}
-            |input AnnotatedInput @onInputObjectType{annotatedField:Type@onField}
+            |input InputType{key:String! answer:Int=42}
+            |input AnnotatedInput@onInputObjectType{annotatedField:Type@onField}
             |extend type Foo {seven(argument:[String]):Type}
             |extend type Foo @onType
             |"cool skip" directive@skip(if:Boolean!)on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
@@ -816,11 +834,11 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
             |scalar AnnotatedScalar@onScalar
             |enum Site{DESKTOP MOBILE}
             |enum AnnotatedEnum@onEnum{ANNOTATED_VALUE@onEnumValue OTHER_VALUE}
-            |input InputType {key:String! answer:Int=42}
-            |input AnnotatedInput @onInputObjectType{annotatedField:Type@onField key:String! answer:Int=42@foo(bar:baz)}
+            |input InputType{key:String! answer:Int=42}
+            |input AnnotatedInput@onInputObjectType{annotatedField:Type@onField key:String! answer:Int=42@foo(bar:baz)}
             |extend type Foo {seven(argument:[String]):Type}
             |directive@skip(if:Boolean!)on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
-            |schema@myDir(a:b)@another(a:b,c:1234.45){query:QueryType mutation:MutationType}""".stripMargin)  (after being strippedOfCarriageReturns)
+            |schema@myDir(a:b)@another(a:b,c:1234.45){query:QueryType mutation:MutationType}""".stripMargin) (after being strippedOfCarriageReturns)
 
         prettyRendered should equal (
           """# fdwfsdfsdfsd

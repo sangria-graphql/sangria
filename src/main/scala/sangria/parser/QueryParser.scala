@@ -123,6 +123,8 @@ trait Ignored extends PositionTracking { this: Parser ⇒
 
   def ws(s: String): Rule0 = rule { quiet(Ignored.* ~ str(s) ~ Ignored.*) }
 
+  def wsCapture(s: String) = rule { quiet(Ignored.* ~ capture(str(s)) ~ IgnoredNoComment.*) }
+
 }
 
 trait Document { this: Parser with Operations with Ignored with Fragments with Operations with Values with TypeSystemDefinitions ⇒
@@ -147,6 +149,8 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
 }
 
 trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directives with Types with Operations with Values with Fragments ⇒
+  def legacyImplementsInterface: Boolean
+  def legacyEmptyFields: Boolean
 
   def scalar = rule { Keyword("scalar") }
   def `type` = rule { Keyword("type") }
@@ -178,28 +182,68 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   }
 
   def ObjectTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
-      (descr, comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.toVector, dirs, descr, comment, tc, Some(pos)))
+    Description ~ Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldsDefinition.? ~> (
+      (descr, comment, pos, name, interfaces, dirs, fields) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector), dirs, descr, comment, fields.fold(Vector.empty[ast.Comment])(_._2), Some(pos)))
   }
-  
-  /** ObjectTypeExtension :
-    * - extend type Name ImplementsInterfaces? Directives[Const]? FieldDefinitions
-    * - extend type Name ImplementsInterfaces? Directives[Const]
-    * - extend type Name ImplementsInterfaces
-    */
+
   def TypeExtensionDefinition = rule {
-    (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
-      (descr, comment, pos, name, interfaces, dirs, fields, tc) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, fields.toVector, dirs, descr, comment, tc, Some(pos)), Vector.empty, Some(pos)))) |
-    (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ DirectivesConst ~> (
-      (descr, comment, pos, name, interfaces, dirs) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, Vector.empty, dirs, descr, comment, Vector.empty, Some(pos)), Vector.empty, Some(pos)))) |
-    (Description ~ Comments ~ trackPos ~ extend ~ `type` ~ Name ~ ImplementsInterfaces ~> (
-      (descr, comment, pos, name, interfaces) ⇒ ast.TypeExtensionDefinition(ast.ObjectTypeDefinition(name, interfaces, Vector.empty, Vector.empty, descr, comment, Vector.empty, Some(pos)), Vector.empty, Some(pos))))
+    ScalarTypeExtensionDefinition |
+    ObjectTypeExtensionDefinition |
+    InterfaceTypeExtensionDefinition |
+    UnionTypeExtensionDefinition |
+    EnumTypeExtensionDefinition |
+    InputObjectTypeExtensionDefinition
   }
 
-  def ImplementsInterfaces = rule { implements ~ NamedType.+ ~> (_.toVector) }
+  def ObjectTypeExtensionDefinition = rule {
+    (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldsDefinition ~> (
+      (comment, pos, name, interfaces, dirs, fields) ⇒ ast.ObjectTypeExtensionDefinition(name, interfaces, fields._1.toVector, dirs, comment, fields._2, Some(pos)))) |
+    (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_ getOrElse Vector.empty)) ~ DirectivesConst ~> (
+      (comment, pos, name, interfaces, dirs) ⇒ ast.ObjectTypeExtensionDefinition(name, interfaces, Vector.empty, dirs, comment, Vector.empty, Some(pos)))) |
+    (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ ImplementsInterfaces ~> (
+      (comment, pos, name, interfaces) ⇒ ast.ObjectTypeExtensionDefinition(name, interfaces, Vector.empty, Vector.empty, comment, Vector.empty, Some(pos))))
+  }
 
-  def FieldDefinitions = rule {
-    wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}')
+  def InterfaceTypeExtensionDefinition = rule {
+    (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldsDefinition ~> (
+      (comment, pos, name, dirs, fields) ⇒ ast.InterfaceTypeExtensionDefinition(name, fields._1.toVector, dirs, comment, fields._2, Some(pos)))) |
+    (Comments ~ trackPos ~ extend ~ interface ~ Name ~ DirectivesConst ~> (
+      (comment, pos, name, dirs) ⇒ ast.InterfaceTypeExtensionDefinition(name, Vector.empty, dirs, comment, Vector.empty, Some(pos))))
+  }
+
+  def UnionTypeExtensionDefinition = rule {
+    (Comments ~ trackPos ~ extend ~ union ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ UnionMemberTypes ~> (
+      (comment, pos, name, dirs, types) ⇒ ast.UnionTypeExtensionDefinition(name, types, dirs, comment, Some(pos)))) |
+    (Comments ~ trackPos ~ extend ~ union ~ Name ~ DirectivesConst ~> (
+      (comment, pos, name, dirs) ⇒ ast.UnionTypeExtensionDefinition(name, Vector.empty, dirs, comment, Some(pos))))
+  }
+
+  def EnumTypeExtensionDefinition = rule {
+    (Comments ~ trackPos ~ extend ~ enum ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ EnumValuesDefinition ~> (
+      (comment, pos, name, dirs, values) ⇒ ast.EnumTypeExtensionDefinition(name, values._1.toVector, dirs, comment, values._2, Some(pos)))) |
+    (Comments ~ trackPos ~ extend ~ enum ~ Name ~ DirectivesConst ~> (
+      (comment, pos, name, dirs) ⇒ ast.EnumTypeExtensionDefinition(name, Vector.empty, dirs, comment, Vector.empty, Some(pos))))
+  }
+
+  def InputObjectTypeExtensionDefinition = rule {
+    (Comments ~ trackPos ~ extend ~ inputType ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ InputFieldsDefinition ~> (
+      (comment, pos, name, dirs, fields) ⇒ ast.InputObjectTypeExtensionDefinition(name, fields._1.toVector, dirs, comment, fields._2, Some(pos)))) |
+    (Comments ~ trackPos ~ extend ~ inputType ~ Name ~ DirectivesConst ~> (
+      (comment, pos, name, dirs) ⇒ ast.InputObjectTypeExtensionDefinition(name, Vector.empty, dirs, comment, Vector.empty, Some(pos))))
+  }
+
+  def ScalarTypeExtensionDefinition = rule {
+    (Comments ~ trackPos ~ extend ~ scalar ~ Name ~ DirectivesConst ~> (
+      (comment, pos, name, dirs) ⇒ ast.ScalarTypeExtensionDefinition(name, dirs, comment, Some(pos))))
+  }
+
+  def ImplementsInterfaces = rule {
+    test(legacyImplementsInterface) ~ implements ~ NamedType.+ ~> (_.toVector) |
+    implements ~ ws('&').? ~ NamedType.+(ws('&')) ~> (_.toVector)
+  }
+
+  def FieldsDefinition = rule {
+    wsNoComment('{') ~ (test(legacyEmptyFields) ~ FieldDefinition.* | FieldDefinition.+) ~ Comments ~ wsNoComment('}') ~> (_ → _)
   }
 
   def FieldDefinition = rule {
@@ -215,29 +259,37 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   }
 
   def InterfaceTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldDefinitions ~> (
-      (descr, comment, pos, name, dirs, fields, tc) ⇒ ast.InterfaceTypeDefinition(name, fields.toVector, dirs, descr, comment, tc, Some(pos)))
+    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ FieldsDefinition.? ~> (
+      (descr, comment, pos, name, dirs, fields) ⇒ ast.InterfaceTypeDefinition(name, fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector), dirs, descr, comment, fields.fold(Vector.empty[ast.Comment])(_._2), Some(pos)))
   }
 
   def UnionTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ union ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('=') ~ UnionMembers ~> (
+    Description ~ Comments ~ trackPos ~ union ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ (UnionMemberTypes.? ~> (_ getOrElse Vector.empty)) ~> (
       (descr, comment, pos, name, dirs, members) ⇒ ast.UnionTypeDefinition(name, members, dirs, descr, comment, Some(pos)))
   }
+
+  def UnionMemberTypes = rule { wsNoComment('=') ~ UnionMembers }
 
   def UnionMembers = rule { ws('|').? ~ NamedType.+(ws('|')) ~> (_.toVector) }
 
   def EnumTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ enum ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
-      (descr, comment, pos, name, dirs, values, tc) ⇒ ast.EnumTypeDefinition(name, values.toVector, dirs, descr, comment, tc, Some(pos)))
+    Description ~ Comments ~ trackPos ~ enum ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ EnumValuesDefinition.? ~> (
+      (descr, comment, pos, name, dirs, values) ⇒ ast.EnumTypeDefinition(name, values.fold(Vector.empty[ast.EnumValueDefinition])(_._1.toVector), dirs, descr, comment, values.fold(Vector.empty[ast.Comment])(_._2), Some(pos)))
   }
+
+  def EnumValuesDefinition = rule { wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ → _) }
 
   def EnumValueDefinition = rule {
     Description ~ EnumValue ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> ((descr, v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, descr, v.comments, v.position))
   }
   
   def InputObjectTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ inputType ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ InputValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
-      (descr, comment, pos, name, dirs, fields, tc) ⇒ ast.InputObjectTypeDefinition(name, fields.toVector, dirs, descr, comment, tc, Some(pos)))
+    Description ~ Comments ~ trackPos ~ inputType ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ InputFieldsDefinition.? ~> (
+      (descr, comment, pos, name, dirs, fields) ⇒ ast.InputObjectTypeDefinition(name, fields.fold(Vector.empty[ast.InputValueDefinition])(_._1.toVector), dirs, descr, comment, fields.fold(Vector.empty[ast.Comment])(_._2), Some(pos)))
+  }
+
+  def InputFieldsDefinition = rule {
+    wsNoComment('{') ~ (test(legacyEmptyFields) ~ InputValueDefinition.* | InputValueDefinition.+) ~ Comments ~ wsNoComment('}') ~> (_ → _)
   }
 
   def DirectiveDefinition = rule {
@@ -247,7 +299,35 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
 
   def DirectiveLocations = rule { ws('|').? ~ DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector) }
 
-  def DirectiveLocation = rule { Comments ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
+  def DirectiveLocation = rule { Comments ~ trackPos ~ DirectiveLocationName ~> ((comment, pos, name) ⇒ ast.DirectiveLocation(name, comment, Some(pos))) }
+
+  def DirectiveLocationName = rule {
+    TypeSystemDirectiveLocation | ExecutableDirectiveLocation
+  }
+
+  def ExecutableDirectiveLocation = rule {
+    wsCapture("QUERY") |
+    wsCapture("MUTATION") |
+    wsCapture("SUBSCRIPTION") |
+    wsCapture("FIELD") |
+    wsCapture("FRAGMENT_DEFINITION") |
+    wsCapture("FRAGMENT_SPREAD") |
+    wsCapture("INLINE_FRAGMENT")
+  }
+
+  def TypeSystemDirectiveLocation = rule {
+    wsCapture("SCHEMA") |
+    wsCapture("SCALAR") |
+    wsCapture("OBJECT") |
+    wsCapture("FIELD_DEFINITION") |
+    wsCapture("ARGUMENT_DEFINITION") |
+    wsCapture("INTERFACE") |
+    wsCapture("UNION") |
+    wsCapture("ENUM_VALUE") |
+    wsCapture("ENUM") |
+    wsCapture("INPUT_OBJECT") |
+    wsCapture("INPUT_FIELD_DEFINITION")
+  }
 
   def SchemaDefinition = rule {
     Comments ~ trackPos ~ schema ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
@@ -323,6 +403,8 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
 trait Fragments { this: Parser with Tokens with Ignored with Directives with Types with Operations ⇒
 
+  def experimentalFragmentVariables: Boolean
+
   def FragmentSpread = rule { Comments ~ trackPos ~ Ellipsis ~ FragmentName ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~>
       ((comment, pos, name, dirs) ⇒ ast.FragmentSpread(name, dirs, comment, Some(pos))) }
 
@@ -333,8 +415,12 @@ trait Fragments { this: Parser with Tokens with Ignored with Directives with Typ
 
   def Fragment = rule { Keyword("fragment") }
 
-  def FragmentDefinition = rule { Comments ~ trackPos ~ Fragment ~ FragmentName ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ SelectionSet ~>
-    ((comment, pos, name, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels._1, comment, sels._2, Some(pos))) }
+  def FragmentDefinition = rule { Comments ~ trackPos ~ Fragment ~ FragmentName ~ ExperimentalFragmentVariables ~ TypeCondition ~ (Directives.? ~> (_ getOrElse Vector.empty)) ~ SelectionSet ~>
+    ((comment, pos, name, vars, typeCondition, dirs, sels) ⇒ ast.FragmentDefinition(name, typeCondition, dirs, sels._1, vars, comment, sels._2, Some(pos))) }
+
+  def ExperimentalFragmentVariables = rule {
+    test(experimentalFragmentVariables) ~ VariableDefinitions.? ~> (_ getOrElse Vector.empty) | push(Vector.empty)
+  }
 
   def FragmentName = rule { !on ~ Name }
 
@@ -417,15 +503,23 @@ trait Types { this: Parser with Tokens with Ignored ⇒
   }
 }
 
-class QueryParser private (val input: ParserInput) 
+class QueryParser private (val input: ParserInput, val legacyImplementsInterface: Boolean = false, val legacyEmptyFields: Boolean = false, val experimentalFragmentVariables: Boolean = false)
     extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types with TypeSystemDefinitions
 
 object QueryParser {
-  def parse(input: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
-    parse(ParserInput(input))(scheme)
+  def parse(
+    input: String,
+    @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
+    legacyImplementsInterface: Boolean = false,
+    @deprecated("Use new syntax: `type Foo` intead of legacy `type Foo {}`", "1.4.0")
+    legacyEmptyFields: Boolean = false,
+    experimentalFragmentVariables: Boolean = false
+  )(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+    parse(ParserInput(input), legacyImplementsInterface, legacyEmptyFields, experimentalFragmentVariables)(scheme)
+  }
 
-  def parse(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
-    val parser = new QueryParser(input)
+  def parse(input: ParserInput, legacyImplementsInterface: Boolean, legacyEmptyFields: Boolean, experimentalFragmentVariables: Boolean)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+    val parser = new QueryParser(input, legacyImplementsInterface, legacyEmptyFields, experimentalFragmentVariables)
 
     parser.Document.run() match {
       case Success(res) ⇒

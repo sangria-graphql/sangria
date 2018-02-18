@@ -175,6 +175,7 @@ case class FragmentDefinition(
     typeCondition: NamedType,
     directives: Vector[Directive],
     selections: Vector[Selection],
+    variables: Vector[VariableDefinition] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
     position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer {
@@ -381,10 +382,63 @@ case class InputObjectTypeDefinition(
   def rename(newName: String) = copy(name = newName)
 }
 
-case class TypeExtensionDefinition(
-  definition: ObjectTypeDefinition,
-  comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeSystemDefinition
+case class ObjectTypeExtensionDefinition(
+    name: String,
+    interfaces: Vector[NamedType],
+    fields: Vector[FieldDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends ObjectLikeTypeExtensionDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
+
+case class InterfaceTypeExtensionDefinition(
+    name: String,
+    fields: Vector[FieldDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends ObjectLikeTypeExtensionDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
+
+case class InputObjectTypeExtensionDefinition(
+    name: String,
+    fields: Vector[InputValueDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeExtensionDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
+
+case class EnumTypeExtensionDefinition(
+    name: String,
+    values: Vector[EnumValueDefinition],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    trailingComments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeExtensionDefinition with WithTrailingComments {
+  def rename(newName: String) = copy(name = newName)
+}
+
+case class UnionTypeExtensionDefinition(
+    name: String,
+    types: Vector[NamedType],
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeExtensionDefinition {
+  def rename(newName: String) = copy(name = newName)
+}
+
+case class ScalarTypeExtensionDefinition(
+    name: String,
+    directives: Vector[Directive] = Vector.empty,
+    comments: Vector[Comment] = Vector.empty,
+    position: Option[Position] = None) extends TypeExtensionDefinition {
+  def rename(newName: String) = copy(name = newName)
+}
 
 case class DirectiveDefinition(
   name: String,
@@ -422,9 +476,19 @@ sealed trait AstNode {
 
 sealed trait SchemaAstNode extends AstNode with WithComments
 sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
+
 sealed trait TypeDefinition extends TypeSystemDefinition with WithDirectives with WithDescription {
   def name: String
   def rename(newName: String): TypeDefinition
+}
+
+sealed trait TypeExtensionDefinition extends TypeSystemDefinition with WithDirectives {
+  def name: String
+  def rename(newName: String): TypeExtensionDefinition
+}
+
+sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
+  def fields: Vector[FieldDefinition]
 }
 
 object AstNode {
@@ -544,11 +608,12 @@ object AstVisitor {
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FragmentDefinition(_, cond, dirs, sels, comment, trailingComments, _) ⇒
+        case n @ FragmentDefinition(_, cond, dirs, sels, vars, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             loop(cond)
             dirs.foreach(d ⇒ loop(d))
             sels.foreach(s ⇒ loop(s))
+            vars.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
@@ -687,7 +752,7 @@ object AstVisitor {
             breakOrSkip(onLeave(n))
           }
 
-        // IDL schema definition
+        // SDL schema definition
 
         case n @ ScalarTypeDefinition(_, dirs, description, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
@@ -765,9 +830,49 @@ object AstVisitor {
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ TypeExtensionDefinition(definition, comment, _) ⇒
+        case n @ ObjectTypeExtensionDefinition(_, ints, fields, dirs, comment, tc, _) ⇒
           if (breakOrSkip(onEnter(n))) {
-            loop(definition)
+            ints.foreach(d ⇒ loop(d))
+            fields.foreach(d ⇒ loop(d))
+            dirs.foreach(d ⇒ loop(d))
+            comment.foreach(s ⇒ loop(s))
+            tc.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ InterfaceTypeExtensionDefinition(_, fields, dirs, comment, tc, _) ⇒
+          if (breakOrSkip(onEnter(n))) {
+            fields.foreach(d ⇒ loop(d))
+            dirs.foreach(d ⇒ loop(d))
+            comment.foreach(s ⇒ loop(s))
+            tc.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ InputObjectTypeExtensionDefinition(_, fields, dirs, comment, tc, _) ⇒
+          if (breakOrSkip(onEnter(n))) {
+            fields.foreach(d ⇒ loop(d))
+            dirs.foreach(d ⇒ loop(d))
+            comment.foreach(s ⇒ loop(s))
+            tc.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ UnionTypeExtensionDefinition(_, types, dirs, comment, _) ⇒
+          if (breakOrSkip(onEnter(n))) {
+            types.foreach(t ⇒ loop(t))
+            dirs.foreach(d ⇒ loop(d))
+            comment.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ EnumTypeExtensionDefinition(_, values, dirs, comment, tc, _) ⇒
+          if (breakOrSkip(onEnter(n))) {
+            values.foreach(t ⇒ loop(t))
+            dirs.foreach(d ⇒ loop(d))
+            comment.foreach(s ⇒ loop(s))
+            tc.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ ScalarTypeExtensionDefinition(_, dirs, comment, _) ⇒
+          if (breakOrSkip(onEnter(n))) {
+            dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }

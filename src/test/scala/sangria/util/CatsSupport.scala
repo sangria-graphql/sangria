@@ -172,7 +172,12 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
         c ⇒ PartialFutureValue(Future.successful(PartialValue[Any, Any](correctValue(c.field.fieldType, values), errors.toVector)))
       })
 
-    override def resolveField(origin: MatOrigin, typeDefinition: ast.TypeDefinition, extensions: Vector[ast.TypeExtensionDefinition], definition: FieldDefinition, mat: AstSchemaMaterializer[Any]) =
+    override def resolveField(
+        origin: MatOrigin,
+        typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Any, _]],
+        extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+        definition: ast.FieldDefinition,
+        mat: AstSchemaMaterializer[Any]) =
       definition.directives.find(d ⇒ directiveMapping contains d.name) match {
         case Some(dir) ⇒
           directiveMapping(dir.name)(dir, definition)
@@ -180,7 +185,7 @@ trait CatsSupport extends FutureResultSupport { this: WordSpec with Matchers ⇒
           c ⇒ extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(definition.name), testData)
       }
 
-    override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.TypeExtensionDefinition]) =
+    override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]) =
       Some((value, _) ⇒ value.asInstanceOf[JsValue].get("type").exists(_.stringValue == definition.name))
   }
 

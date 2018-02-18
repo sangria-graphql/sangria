@@ -4,6 +4,7 @@ import language.existentials
 import sangria.ast
 import sangria.ast.{FieldDefinition, TypeSystemDefinition}
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType}
+import sangria.schema.AstSchemaBuilder.TypeName
 
 sealed trait AstSchemaResolver[Ctx]
 
@@ -22,6 +23,14 @@ object AdditionalTypes {
 
 case class AdditionalDirectives[Ctx](additionalDirectives: Seq[Directive]) extends AstSchemaResolver[Ctx]
 
+@deprecated("Please migrate to new string-based description format", "1.4.0")
+class LegacyCommentDescriptionsResolver[Ctx] extends AstSchemaResolver[Ctx]
+
+object LegacyCommentDescriptionsResolver {
+  @deprecated("Please migrate to new string-based description format", "1.4.0")
+  def apply[Ctx]() = new LegacyCommentDescriptionsResolver[Ctx]
+}
+
 case class DirectiveResolver[Ctx](
   directive: Directive,
   resolve: AstDirectiveContext[Ctx] ⇒ Action[Ctx, Any],
@@ -37,18 +46,24 @@ case class DynamicDirectiveFieldProvider[Ctx, A](
 
 case class DirectiveInputTypeResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveInputTypeContext ⇒ InputType[Any]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveInputTypeContext[Ctx] ⇒ InputType[Any]) extends AstSchemaResolver[Ctx]
 
 case class DirectiveOutputTypeResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveOutputTypeContext ⇒ OutputType[Any]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveOutputTypeContext[Ctx] ⇒ OutputType[Any]) extends AstSchemaResolver[Ctx]
+
+case class InputTypeResolver[Ctx](
+  resolve: PartialFunction[AstInputTypeContext[Ctx], InputType[Any]]) extends AstSchemaResolver[Ctx]
+
+case class OutputTypeResolver[Ctx](
+  resolve: PartialFunction[AstOutputTypeContext[Ctx], OutputType[Any]]) extends AstSchemaResolver[Ctx]
 
 case class DirectiveScalarResolver[Ctx](
   directive: Directive,
   resolve: AstDirectiveScalarContext ⇒ ScalarType[_]) extends AstSchemaResolver[Ctx]
 
 case class SimpleEnumValueResolver[Ctx](
-  resolve: PartialFunction[(ast.EnumTypeDefinition, ast.EnumValueDefinition), String]) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[(Either[ast.EnumTypeDefinition, EnumType[_]], ast.EnumValueDefinition), String]) extends AstSchemaResolver[Ctx]
 
 case class ExistingScalarResolver[Ctx](
   resolve: PartialFunction[ExistingScalarContext[Ctx], ScalarType[Any]]) extends AstSchemaResolver[Ctx]
@@ -64,16 +79,16 @@ case class DynamicDirectiveResolver[Ctx, T](
   complexity: Option[ComplexityDynamicDirectiveContext[Ctx, T] ⇒ (Ctx, Args, Double) ⇒ Double] = None)(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaResolver[Ctx]
 
 case class FieldResolver[Ctx](
-  resolve: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), Context[Ctx, _] ⇒ Action[Ctx, Any]],
-  complexity: PartialFunction[(ast.TypeDefinition, ast.FieldDefinition), (Ctx, Args, Double) ⇒ Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[(Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], ast.FieldDefinition), Context[Ctx, _] ⇒ Action[Ctx, Any]],
+  complexity: PartialFunction[(Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], ast.FieldDefinition), (Ctx, Args, Double) ⇒ Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
 
 object FieldResolver {
   def map[Ctx](config: (String, Map[String, Context[Ctx, _] ⇒ Action[Ctx, Any]])*): FieldResolver[Ctx] = {
     val configMap = config.toMap
 
     FieldResolver {
-      case (tpe, field) if configMap.contains(tpe.name) && configMap(tpe.name).contains(field.name) ⇒
-        configMap(tpe.name)(field.name)
+      case (TypeName(name), field) if configMap.contains(name) && configMap(name).contains(field.name) ⇒
+        configMap(name)(field.name)
     }
   }
 
@@ -149,8 +164,8 @@ case class GenericDirectiveResolver[T](
 }
 
 trait WithTypeLookup[Ctx] {
-  def materializer: AstSchemaMaterializer[Ctx]
   def origin: MatOrigin
+  def materializer: AstSchemaMaterializer[Ctx]
 
   def objectType(typeName: String): ObjectType[Ctx, Any] =
     materializer.getObjectType(origin, ast.NamedType(typeName))
@@ -164,8 +179,14 @@ trait WithTypeLookup[Ctx] {
   def inputType(typeName: String): InputType[_] =
     materializer.getInputType(origin, ast.NamedType(typeName), optional = false)
 
+  def inputType(tpe: ast.Type, replacementNamedType: InputType[_]): InputType[_] =
+    materializer.getInputType(origin, tpe, Some(replacementNamedType))
+
   def outputType(typeName: String): OutputType[_] =
     materializer.getOutputType(origin, ast.NamedType(typeName), optional = false)
+
+  def outputType(tpe: ast.Type, replacementNamedType: OutputType[_]): OutputType[_] =
+    materializer.getOutputType(origin, tpe, Some(replacementNamedType))
 }
 
 case class GenericDynamicDirectiveResolver[T, A](
@@ -173,26 +194,45 @@ case class GenericDynamicDirectiveResolver[T, A](
   locations: Set[DirectiveLocation.Value] = Set.empty,
   resolve: GenericDynamicDirectiveContext[A] ⇒ Option[T])(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaGenericResolver[T]
 
-case class AstDirectiveInputTypeContext(
+case class AstDirectiveInputTypeContext[Ctx](
+  origin: MatOrigin,
   directive: ast.Directive,
-  contextDefinition: Either[(TypeSystemDefinition, Option[FieldDefinition]), ast.InputObjectTypeDefinition],
+  schemaDefinition: Option[Type with Named],
+  astDefinition: Option[ast.TypeSystemDefinition],
+  astField: Option[ast.FieldDefinition],
   definition: ast.InputValueDefinition,
-  materializer: AstSchemaMaterializer[_],
-  args: Args) extends WithArguments
+  materializer: AstSchemaMaterializer[Ctx],
+  args: Args) extends WithArguments with WithTypeLookup[Ctx]
 
-case class AstDirectiveOutputTypeContext(
+case class AstDirectiveOutputTypeContext[Ctx](
+  origin: MatOrigin,
   directive: ast.Directive,
-  typeDefinition: ast.TypeDefinition,
+  typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
   fieldDefinition: ast.FieldDefinition,
-  extensions: Vector[ast.TypeExtensionDefinition],
-  materializer: AstSchemaMaterializer[_],
-  args: Args) extends WithArguments
+  extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+  materializer: AstSchemaMaterializer[Ctx],
+  args: Args) extends WithArguments with WithTypeLookup[Ctx]
+
+case class AstInputTypeContext[Ctx](
+  origin: MatOrigin,
+  schemaDefinition: Option[Type with Named],
+  astDefinition: Option[ast.TypeSystemDefinition],
+  astField: Option[ast.FieldDefinition],
+  definition: ast.InputValueDefinition,
+  materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
+
+case class AstOutputTypeContext[Ctx](
+  origin: MatOrigin,
+  typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
+  fieldDefinition: ast.FieldDefinition,
+  extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+  materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
 
 case class AstDirectiveContext[Ctx](
   directive: ast.Directive,
-  typeDefinition: ast.TypeDefinition,
+  typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
   fieldDefinition: ast.FieldDefinition,
-  extensions: Vector[ast.TypeExtensionDefinition],
+  extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
   ctx: Context[Ctx, _],
   lastValue: Option[Action[Ctx, Any]],
   args: Args) extends WithArguments
@@ -201,7 +241,7 @@ case class DirectiveFieldProviderContext[Ctx](
   origin: MatOrigin,
   directive: ast.Directive,
   typeDefinition: ast.TypeDefinition,
-  extensions: Vector[ast.TypeExtensionDefinition],
+  extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
   materializer: AstSchemaMaterializer[Ctx],
   args: Args) extends WithArguments with WithTypeLookup[Ctx]
 
@@ -209,7 +249,7 @@ case class DynamicDirectiveFieldProviderContext[Ctx, A](
   origin: MatOrigin,
   directive: ast.Directive,
   typeDefinition: ast.TypeDefinition,
-  extensions: Vector[ast.TypeExtensionDefinition],
+  extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
   materializer: AstSchemaMaterializer[Ctx],
   args: A) extends WithTypeLookup[Ctx]
 
@@ -230,41 +270,43 @@ case class AstDirectiveScalarContext(
 
 case class ExistingScalarContext[Ctx](
   origin: MatOrigin,
+  extensions: Vector[ast.ScalarTypeExtensionDefinition],
   existing: ScalarType[Any],
   materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
 
 case class ExistingEnumContext[Ctx](
   origin: MatOrigin,
+  extensions: Vector[ast.EnumTypeExtensionDefinition],
   existing: EnumType[Any],
   materializer: AstSchemaMaterializer[Ctx]) extends WithTypeLookup[Ctx]
 
 case class DynamicDirectiveContext[Ctx, In](
   directive: ast.Directive,
-  typeDefinition: ast.TypeDefinition,
+  typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
   fieldDefinition: ast.FieldDefinition,
-  extensions: Vector[ast.TypeExtensionDefinition],
+  extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
   ctx: Context[Ctx, _],
   lastValue: Option[Action[Ctx, Any]],
   args: In)
 
 case class ComplexityDynamicDirectiveContext[Ctx, In](
   directive: ast.Directive,
-  typeDefinition: ast.TypeDefinition,
+  typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
   fieldDefinition: ast.FieldDefinition,
   args: In)
 
 case class ComplexityDirectiveContext[Ctx](
   directive: ast.Directive,
-  typeDefinition: ast.TypeDefinition,
+  typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
   fieldDefinition: ast.FieldDefinition,
   args: Args)
 
 case class InstanceCheckContext[Ctx](
   origin: MatOrigin,
   definition: ast.ObjectTypeDefinition,
-  extensions: List[ast.TypeExtensionDefinition])
+  extensions: List[ast.ObjectTypeExtensionDefinition])
 
 case class ExistingInstanceCheckContext[Ctx](
   origin: MatOrigin,
   tpe: ObjectType[Ctx, _],
-  extensions: List[ast.TypeExtensionDefinition])
+  extensions: List[ast.ObjectTypeExtensionDefinition])

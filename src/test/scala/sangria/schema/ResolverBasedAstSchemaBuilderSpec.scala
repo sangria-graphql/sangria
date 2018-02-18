@@ -5,18 +5,18 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.execution.{Executor, QueryReducer}
+import sangria.execution.{Executor, QueryReducer, UserFacingError}
 import sangria.macros._
-import sangria.marshalling.{InputUnmarshaller, ScalaInput}
-import sangria.schema.AstSchemaBuilder.{EnumName, FieldName, TypeName, resolverBased}
+import sangria.marshalling.InputUnmarshaller
+import sangria.schema.AstSchemaBuilder.{FieldName, TypeName, resolverBased}
 import sangria.schema.{DirectiveLocation => DL}
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.{FutureResultSupport, Pos}
 import sangria.validation.BaseViolation
-import sangria.schema.ResolverBasedAstSchemaBuilder._
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
+import sangria.util.SimpleGraphQlSupport._
 
 class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with FutureResultSupport {
   case object UUIDViolation extends BaseViolation("Invalid UUID")
@@ -74,11 +74,13 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
           Field("extraDynField", c.materializer.getScalarType(c.origin, ast.NamedType("String")),
             resolve = (_: Context[Any, Any]) ⇒ "foo")))),
         AdditionalDirectives(Seq(NumDir)),
-        DirectiveInputTypeResolver(ValidateIntDir, _.withArgs(MinArg, MaxArg)(intValidationAlias(_, _))),
+        DirectiveInputTypeResolver(ValidateIntDir, c ⇒ c.withArgs(MinArg, MaxArg)((min, max) ⇒
+          c.inputType(c.definition.valueType, intValidationAlias(min, max)))),
         DirectiveScalarResolver(CoolDir, _ ⇒ StringType),
         DirectiveResolver(TestDir, resolve = _.arg(ValueArg)),
         DynamicDirectiveResolver[Any, JsValue]("json", resolve = _.args),
         FieldResolver {case (TypeName("Query"), FieldName("id")) ⇒ _ ⇒ UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")},
+        LegacyCommentDescriptionsResolver(),
         AnyFieldResolver.defaultInput[Any, JsValue])
 
       val schemaAst =
@@ -300,9 +302,9 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
     "resolve enum values" in {
       val builder = resolverBased[Any](
         SimpleEnumValueResolver {
-          case (EnumName("Color"), v) if v.name == "RED" ⇒ "#FF0000"
-          case (EnumName("Color"), v) if v.name == "GREEN" ⇒ "#00FF00"
-          case (EnumName("Color"), v) if v.name == "BLUE" ⇒ "#0000FF"
+          case (TypeName("Color"), v) if v.name == "RED" ⇒ "#FF0000"
+          case (TypeName("Color"), v) if v.name == "GREEN" ⇒ "#00FF00"
+          case (TypeName("Color"), v) if v.name == "BLUE" ⇒ "#0000FF"
         },
         FieldResolver {
           case (TypeName("Mutation"), FieldName("eat")) ⇒
@@ -662,6 +664,122 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
                 "size": 50
               }]
             }
+          }
+        """.parseJson)
+    }
+
+    "support generic InputTypeResolver/OutputTypeResolver" in {
+      import sangria.marshalling.sprayJson._
+
+      case object EmptyIdViolation extends BaseViolation("ID cannot be an empty string")
+      case object EmptyIdError extends Exception("ID cannot be an empty string") with UserFacingError
+
+      val MyIdType = ScalarAlias[String, String](IDType,
+        toScalar = s ⇒
+          if (s.trim.isEmpty) throw EmptyIdError // sanity check
+          else s,
+        fromScalar = id ⇒
+          if (id.trim.isEmpty) Left(EmptyIdViolation)
+          else Right(id))
+
+      val builder = resolverBased[Unit](
+        InputTypeResolver {
+          case c if c.definition.valueType.namedType.name == "ID" ⇒
+            c.inputType(c.definition.valueType, MyIdType)
+        },
+        OutputTypeResolver {
+          case c if c.fieldDefinition.fieldType.namedType.name == "ID" ⇒
+            c.outputType(c.fieldDefinition.fieldType, MyIdType)
+        },
+        AnyFieldResolver.defaultInput[Unit, JsValue])
+
+      val schemaAst =
+        gql"""
+          type Article {
+            id: ID
+            name: String
+          }
+
+          type Query {
+            article(ids: [ID!]): [Article]
+          }
+        """
+
+      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query =
+        gql"""
+          query Foo($$id: ID!) {
+            article(ids: ["test", "", "  ", $$id]) {id}
+          }
+        """
+
+      val data =
+        """
+          {
+            "article": [{
+              "id": "1",
+              "name": "foo"
+            }, {
+              "id": "   ",
+              "name": "bar"
+            }]
+          }
+        """.parseJson
+
+      val vars = InputUnmarshaller.mapVars(
+        "id" → "   ")
+
+      checkContainsViolations(
+        Executor.execute(schema, query, variables = vars, root = data).await,
+        List(
+          "Argument 'ids' expected type '[ID!]' but got: [\"test\", \"\", \"  \", $id]. Reason: '[1]' ID cannot be an empty string" → List(Pos(3, 26)),
+          "Argument 'ids' expected type '[ID!]' but got: [\"test\", \"\", \"  \", $id]. Reason: '[2]' ID cannot be an empty string" → List(Pos(3, 26))))
+
+      val query1 =
+        gql"""
+          query Foo($$id: ID!) {
+            article(ids: ["test", $$id]) {id}
+          }
+        """
+
+      Executor.execute(schema, query1, variables = vars, root = data).await should be (
+        """
+          {
+            "data": {
+              "article": null
+            },
+            "errors": [{
+              "message": "Field '$id' has wrong value: ID cannot be an empty string.",
+              "path": ["article"]
+            }]
+          }
+        """.parseJson)
+
+      val query2 =
+        gql"""
+          {
+            article(ids: "test") {id name}
+          }
+        """
+
+      Executor.execute(schema, query2, variables = vars, root = data).await should be (
+        """
+          {
+            "data": {
+              "article": [{
+                "id": "1",
+                "name": "foo"
+              }, {
+                "id": null,
+                "name": "bar"
+              }]
+            },
+            "errors": [{
+              "message": "ID cannot be an empty string",
+              "path": ["article", 1, "id"],
+              "locations": [{"line": 3, "column": 35}]
+            }]
           }
         """.parseJson)
     }

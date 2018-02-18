@@ -195,6 +195,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   Some(Position(356, 18, 3))
                 )),
               Vector.empty,
+              Vector.empty,
               Vector(
                 Comment(" field in fragment!", Some(Position(360, 18, 7)))),
               Some(Position(319, 17, 1))
@@ -534,6 +535,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                 )),
               Vector.empty,
               Vector.empty,
+              Vector.empty,
               Some(Position(872, 44, 1))
             ),
             OperationDefinition(
@@ -744,7 +746,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         """)
 
       error.formattedError should equal (
-        """Invalid input 'T', expected TypeCondition (line 3, column 30):
+        """Invalid input 'T', expected ExperimentalFragmentVariables or TypeCondition (line 3, column 30):
           |          fragment MissingOn Type
           |                             ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1401,6 +1403,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                     Comment(" comment 177", Some(Position(4783, 347, 5)))),
                   Some(Position(4454, 321, 3))
                 )),
+              Vector.empty,
               Vector(
                 Comment(" comment 146", Some(Position(4228, 300, 3))),
                 Comment(" comment 147", Some(Position(4242, 301, 1)))),
@@ -1505,6 +1508,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
               )),
             Vector.empty,
             Vector.empty,
+            Vector.empty,
             Some(Position(168, 8, 1))
           )),
         Vector.empty,
@@ -1513,6 +1517,55 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
       )
 
       QueryParser.parse(query) map (_.withoutSourceMapper) should be (Success(expected))
+    }
+    
+    "Experimental: allows parsing fragment defined variables" in {
+      val queryStr = "fragment a($v: Boolean = false) on t { f(v: $v) }"
+
+      QueryParser.parse(queryStr).isFailure should be (true)
+
+      val Success(query) = QueryParser.parse(queryStr, experimentalFragmentVariables = true)
+
+      query.withoutSourceMapper should be (
+        Document(
+          Vector(
+            FragmentDefinition(
+              "a",
+              NamedType("t", Some(Position(35, 1, 36))),
+              Vector.empty,
+              Vector(
+                Field(
+                  None,
+                  "f",
+                  Vector(
+                    Argument(
+                      "v",
+                      VariableValue("v", Vector.empty, Some(Position(44, 1, 45))),
+                      Vector.empty,
+                      Some(Position(41, 1, 42))
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Some(Position(39, 1, 40))
+                )),
+              Vector(
+                VariableDefinition(
+                  "v",
+                  NamedType("Boolean", Some(Position(15, 1, 16))),
+                  Some(BooleanValue(false, Vector.empty, Some(Position(25, 1, 26)))),
+                  Vector.empty,
+                  Some(Position(11, 1, 12))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(Position(0, 1, 1))
+            )),
+          Vector.empty,
+          Some(Position(0, 1, 1)),
+          None
+        ))
     }
   }
 

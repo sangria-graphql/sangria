@@ -22,7 +22,7 @@ class FragmentsOnCompositeType extends ValidationRule {
           case _ ⇒
             AstVisitorCommand.RightContinue
         }
-      case ast.FragmentDefinition(name, cond, _, _, _, _, pos) ⇒
+      case ast.FragmentDefinition(name, cond, _, _, _, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] ⇒
             Left(Vector(FragmentOnNonCompositeErrorViolation(name, cond.name, ctx.sourceMapper, cond.position.toList)))
