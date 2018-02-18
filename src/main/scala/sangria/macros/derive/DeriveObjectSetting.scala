@@ -22,3 +22,9 @@ case class ReplaceField[Ctx, Val](fieldName: String, field: Field[Ctx, Val]) ext
 case class AddFields[Ctx, Val](fields: Field[Ctx, Val]*) extends DeriveObjectSetting[Ctx, Val]
 
 case class TransformFieldNames[Ctx, Val](transformer: String ⇒ String) extends DeriveObjectSetting[Ctx, Val]
+
+case class MethodArgumentRename[Ctx, Val](methodName: String, argName: String, newName: String) extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgumentDescription[Ctx, Val](methodName: String, argName: String, description: String) extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgumentsDescription[Ctx, Val](methodName: String, descriptions: (String, String)*) extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgumentDefault[Ctx, Val, Arg](methodName: String, argName: String, default: Arg) extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgument[Ctx, Val, Arg](methodName: String, argName: String, description: String, default: Arg) extends DeriveObjectSetting[Ctx, Val]
