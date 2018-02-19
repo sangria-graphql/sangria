@@ -196,9 +196,9 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
       val error = intercept[SchemaValidationException](
         Schema(QueryType, additionalTypes = AppleType :: AppleBasketType :: Nil))
-
-      error.violations should contain(
-        InvalidImplementationFieldTypeViolation("Basket", "AppleBasket", "fruit", "Fruit!", "SomeOtherInterfaceType!"))
+      
+      error.violations.map(_.errorMessage).head should include (
+        "Basket.fruit expects type 'Fruit!', but AppleBasket.fruit provides type 'SomeOtherInterfaceType!'.")
     }
 
     "ensure that all interface field arguments are present in the implementation" in {
@@ -222,9 +222,9 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
       val error = intercept[SchemaValidationException](
         Schema(QueryType, additionalTypes = AppleType :: Nil))
-
-      error.violations should contain(
-        MissingImplementationFieldArgumentViolation("Fruit", "Apple", "slice", "parts"))
+      
+      error.violations.head.errorMessage should include (
+        "Fruit.slice expects argument 'parts', but Apple.slice does not provide it.")
     }
 
     "ensure that all interface field argument types are the same in the implementation" in {
@@ -248,9 +248,9 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
       val error = intercept[SchemaValidationException](
         Schema(QueryType, additionalTypes = AppleType :: Nil))
-
-      error.violations should contain(
-        InvalidImplementationFieldArgumentTypeViolation("Fruit", "Apple", "slice", "parts", "Int!", "String!"))
+      
+      error.violations.head.errorMessage should include (
+        "Fruit.slice(parts) expects type 'Int!', but Apple.slice(parts) provides type 'String!'.")
     }
 
     "ensure that all implementation extra field arguments are optional" in {
@@ -274,9 +274,9 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
       val error = intercept[SchemaValidationException](
         Schema(QueryType, additionalTypes = AppleType :: Nil))
-
-      error.violations should contain(
-        ImplementationExtraFieldArgumentNotOptionalViolation("Fruit", "Apple", "slice", "careful", "Boolean!"))
+      
+      error.violations.head.errorMessage should include (
+        "Apple.slice(careful) is of required type 'Boolean!', but is not also provided by the interface Fruit.slice.")
     }
 
     "allow covariant return types" in {

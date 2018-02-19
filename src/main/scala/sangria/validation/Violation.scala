@@ -305,20 +305,20 @@ case class DuplicateInputFieldViolation(name: String, sourceMapper: Option[Sourc
   lazy val simpleErrorMessage = s"There can be only one input field named '$name'."
 }
 
-case class InvalidImplementationFieldTypeViolation(interfaceName: String, objectName: String, fieldName: String, interfaceFieldType: String, objectFieldType: String) extends Violation {
-  lazy val errorMessage = s"$interfaceName.$fieldName expects type '$interfaceFieldType', but $objectName.$fieldName provides type '$objectFieldType'."
+case class InvalidImplementationFieldTypeViolation(interfaceName: String, objectName: String, fieldName: String, interfaceFieldType: String, objectFieldType: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"$interfaceName.$fieldName expects type '$interfaceFieldType', but $objectName.$fieldName provides type '$objectFieldType'."
 }
 
-case class MissingImplementationFieldArgumentViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String) extends Violation {
-  lazy val errorMessage = s"$interfaceName.$fieldName expects argument '$argumentName', but $objectName.$fieldName does not provide it."
+case class MissingImplementationFieldArgumentViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"$interfaceName.$fieldName expects argument '$argumentName', but $objectName.$fieldName does not provide it."
 }
 
-case class InvalidImplementationFieldArgumentTypeViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String, interfaceFieldType: String, objectFieldType: String) extends Violation {
-  lazy val errorMessage = s"$interfaceName.$fieldName($argumentName) expects type '$interfaceFieldType', but $objectName.$fieldName($argumentName) provides type '$objectFieldType'."
+case class InvalidImplementationFieldArgumentTypeViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String, interfaceFieldType: String, objectFieldType: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"$interfaceName.$fieldName($argumentName) expects type '$interfaceFieldType', but $objectName.$fieldName($argumentName) provides type '$objectFieldType'."
 }
 
-case class ImplementationExtraFieldArgumentNotOptionalViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String, objectFieldType: String) extends Violation {
-  lazy val errorMessage = s"$objectName.$fieldName($argumentName) is of required type '$objectFieldType', but is not also provided by the interface $interfaceName.$fieldName."
+case class ImplementationExtraFieldArgumentNotOptionalViolation(interfaceName: String, objectName: String, fieldName: String, argumentName: String, objectFieldType: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"$objectName.$fieldName($argumentName) is of required type '$objectFieldType', but is not also provided by the interface $interfaceName.$fieldName."
 }
 
 case class InvalidSubscriptionFieldViolation(typeName: String, fieldName: String) extends Violation {

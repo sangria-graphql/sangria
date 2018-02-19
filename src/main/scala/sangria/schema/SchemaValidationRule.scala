@@ -77,39 +77,45 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
 }
 
 object InterfaceImplementationValidationRule extends SchemaValidationRule {
-  private def validateObjectType[Ctx, Val](schema: Schema[Ctx, Val], objTpe: ObjectType[_, _], intTpe: InterfaceType[_, _]): List[Violation] = {
+  private def validateObjectType[Ctx, Val](schema: Schema[Ctx, Val], objTpe: ObjectType[_, _], intTpe: InterfaceType[_, _]): Vector[Violation] = {
     val objFields: Map[String, Vector[Field[_, _]]] = objTpe.ownFields.groupBy(_.name)
 
-    intTpe.ownFields.toList.flatMap { intField ⇒
+    intTpe.ownFields.flatMap { intField ⇒
       objFields.get(intField.name) match {
         case None ⇒
           // we allow object type to inherit fields from the interfaces
           // without explicitly defining them, but only when it is not
           // defined though SDL.
-          Nil
+          Vector.empty
 
         case Some(objField) if !TypeComparators.isSubType(schema, objField.head.fieldType, intField.fieldType) ⇒
-          InvalidImplementationFieldTypeViolation(
+          Vector(InvalidImplementationFieldTypeViolation(
             intTpe.name,
             objTpe.name,
             intField.name,
             SchemaRenderer.renderTypeName(intField.fieldType),
-            SchemaRenderer.renderTypeName(objField.head.fieldType)) :: Nil
+            SchemaRenderer.renderTypeName(objField.head.fieldType),
+            SchemaElementValidator.sourceMapper(schema),
+            SchemaElementValidator.location(objField.head) ++ SchemaElementValidator.location(intField)))
 
         case Some(objField) ⇒
           val intArgViolations = intField.arguments.flatMap { iarg ⇒
             objField.head.arguments.find(_.name == iarg.name) match {
               case None ⇒
-                MissingImplementationFieldArgumentViolation(intTpe.name, objTpe.name, intField.name, iarg.name) :: Nil
+                Vector(MissingImplementationFieldArgumentViolation(intTpe.name, objTpe.name, intField.name, iarg.name,
+                  SchemaElementValidator.sourceMapper(schema),
+                  SchemaElementValidator.location(iarg)))
 
               case Some(oarg) if !TypeComparators.isEqualType(iarg.argumentType, oarg.argumentType) ⇒
-                InvalidImplementationFieldArgumentTypeViolation(
+                Vector(InvalidImplementationFieldArgumentTypeViolation(
                   intTpe.name,
                   objTpe.name,
                   intField.name,
                   iarg.name,
                   SchemaRenderer.renderTypeName(iarg.argumentType),
-                  SchemaRenderer.renderTypeName(oarg.argumentType)) :: Nil
+                  SchemaRenderer.renderTypeName(oarg.argumentType),
+                  SchemaElementValidator.sourceMapper(schema),
+                  SchemaElementValidator.location(iarg) ++ SchemaElementValidator.location(oarg)))
 
               case _ ⇒ Nil
             }
@@ -119,12 +125,14 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
             .filterNot(oa ⇒ intField.arguments.exists(_.name == oa.name))
             .flatMap {
               case oarg if !oarg.argumentType.isInstanceOf[OptionInputType[_]] ⇒
-                ImplementationExtraFieldArgumentNotOptionalViolation(
+                Vector(ImplementationExtraFieldArgumentNotOptionalViolation(
                   intTpe.name,
                   objTpe.name,
                   intField.name,
                   oarg.name,
-                  SchemaRenderer.renderTypeName(oarg.argumentType)) :: Nil
+                  SchemaRenderer.renderTypeName(oarg.argumentType),
+                  SchemaElementValidator.sourceMapper(schema),
+                  SchemaElementValidator.location(oarg)))
               case _ ⇒ Nil
             }
 
@@ -409,6 +417,11 @@ trait SchemaElementValidator {
 
   def validateScalarType(schema: Schema[_, _], tpe: ScalarType[_]): Vector[Violation] = Vector.empty
 
+  def sourceMapper(schema: Schema[_, _]): Option[SourceMapper] = SchemaElementValidator.sourceMapper(schema)
+  def location(elem: HasAstInfo): List[AstLocation] = SchemaElementValidator.location(elem)
+}
+
+object SchemaElementValidator {
   def sourceMapper(schema: Schema[_, _]): Option[SourceMapper] =
     schema.astNodes.collectFirst{case doc: Document ⇒ doc.sourceMapper}.flatten
 
