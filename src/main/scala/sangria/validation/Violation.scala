@@ -450,3 +450,35 @@ case class ReservedEnumValueNameViolation(typeName: String, valueName: String) e
 case class VariableInferenceViolation(variableName: String, type1: String, type2: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Inferred variable '$$$variableName' is used with two conflicting types: '$type1' and '$type2'."
 }
+
+case class NonUniqueRootTypeViolation(operationType: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Must provide only one $operationType type in schema."
+}
+
+case class NonUniqueSchemaDefinitionViolation(sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = "Must provide only one schema definition."
+}
+
+case class NoQueryTypeViolation(sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = "Must provide schema definition with query type or a type named Query."
+}
+
+case class NonUniqueTypeDefinitionViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Type '$typeName' is defined more than once."
+}
+
+case class NonUniqueDirectiveDefinitionViolation(name: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Directive '$name' is defined more than once."
+}
+
+case class TypeExtensionOnWrongKindViolation(typeKind: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Cannot extend non-$typeKind type '$typeName'."
+}
+
+case class TypeExtensionOnNonExistingTypeViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Cannot extend type '$typeName' because it does not exist."
+}
+
+case class ExistingTypeViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Type '$typeName' already exists in the schema. It cannot also be defined in this type definition."
+}

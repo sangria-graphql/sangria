@@ -2,10 +2,11 @@ package sangria.schema
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
-import sangria.ast.{ObjectTypeExtensionDefinition, FieldDefinition, ObjectTypeDefinition}
-import sangria.renderer.{SchemaRenderer}
+import sangria.ast.{FieldDefinition, ObjectTypeDefinition, ObjectTypeExtensionDefinition}
+import sangria.execution.MaterializedSchemaValidationError
+import sangria.renderer.SchemaRenderer
 import sangria.util.SimpleGraphQlSupport.check
-import sangria.util.{Pos, SimpleGraphQlSupport, FutureResultSupport, StringMatchers}
+import sangria.util.{FutureResultSupport, Pos, SimpleGraphQlSupport, StringMatchers}
 import sangria.validation.IntCoercionViolation
 import sangria.macros._
 
@@ -738,9 +739,9 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
 
-      error.message should include ("Type 'Bar' already exists in the schema.")
+      error.getMessage should include ("Type 'Bar' already exists in the schema.")
     }
 
     "does not allow replacing an existing field" in {
@@ -779,7 +780,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
       val error = intercept[SchemaMaterializationException](schema.extend(ast))
 
-      error.message should include ("Invalid or incomplete schema, unknown type: Quix.")
+      error.getMessage should include ("Invalid or incomplete schema, unknown type: Quix.")
     }
 
     "does not allow extending an unknown type" in {
@@ -790,9 +791,9 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
 
-      error.message should include ("Cannot extend type 'UnknownType' because it does not exist.")
+      error.getMessage should include ("Cannot extend type 'UnknownType' because it does not exist.")
     }
 
     "does not allow extending a non-object type: not an interface" in {
@@ -803,9 +804,9 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
 
-      error.message should include ("Cannot extend non-object type 'SomeInterface'.")
+      error.getMessage should include ("Cannot extend non-object type 'SomeInterface'.")
     }
 
     "does not allow extending a non-object type: not a scalar" in {
@@ -816,9 +817,9 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
 
-      error.message should include ("Cannot extend non-object type 'String'.")
+      error.getMessage should include ("Cannot extend non-object type 'String'.")
     }
 
     "be able to resolve existing fields and use builder logic for new fields" in {

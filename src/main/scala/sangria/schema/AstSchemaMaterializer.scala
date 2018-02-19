@@ -1,10 +1,11 @@
 package sangria.schema
 
-import language.{postfixOps, existentials}
-
+import language.{existentials, postfixOps}
 import sangria.ast
 import sangria.ast.{OperationType, TypeDefinition}
+import sangria.execution.MaterializedSchemaValidationError
 import sangria.renderer.QueryRenderer
+import sangria.validation._
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.ClassTag
@@ -63,7 +64,9 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
     val existingOrigin = ExistingSchemaOrigin(schema)
 
-    validateExtensions(schema)
+    val defErrors = validateExtensions(schema)
+
+    if (defErrors.nonEmpty) throw MaterializedSchemaValidationError(defErrors)
 
     if (typeDefs.isEmpty &&
         objectTypeExtensionDefs.isEmpty &&
@@ -96,26 +99,32 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   }
 
   lazy val build: Schema[Ctx, Any] = {
-    validateDefinitions()
+    val defErrors = validateDefinitions
 
-    val schemaInfo = extractSchemaInfo(document, typeDefs)
-    val queryType = getObjectType(sdlOrigin, schemaInfo.query)
-    val mutationType = schemaInfo.mutation map (getObjectType(sdlOrigin, _))
-    val subscriptionType = schemaInfo.subscription map (getObjectType(sdlOrigin, _))
-    val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
+    extractSchemaInfo(document, typeDefs) match {
+      case Left(schemaErrors) ⇒ throw MaterializedSchemaValidationError(schemaErrors ++ defErrors)
+      case _ if defErrors.nonEmpty ⇒ throw MaterializedSchemaValidationError(defErrors)
+      case Right(schemaInfo) ⇒
+        val queryType = getObjectType(sdlOrigin, schemaInfo.query)
+        val mutationType = schemaInfo.mutation map (getObjectType(sdlOrigin, _))
+        val subscriptionType = schemaInfo.subscription map (getObjectType(sdlOrigin, _))
+        val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
 
-    builder.buildSchema(
-      schemaInfo.definition,
-      queryType,
-      mutationType,
-      subscriptionType,
-      findUnusedTypes()._2.toList,
-      BuiltinDirectives ++ directives,
-      this)
+        builder.buildSchema(
+          schemaInfo.definition,
+          queryType,
+          mutationType,
+          subscriptionType,
+          findUnusedTypes()._2.toList,
+          BuiltinDirectives ++ directives,
+          this)
+    }
   }
 
   lazy val definitions: Vector[Named] = {
-    validateDefinitions()
+    val defErrors = validateDefinitions
+
+    if (defErrors.nonEmpty) throw MaterializedSchemaValidationError(defErrors)
 
     val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
     val unused = findUnusedTypes()
@@ -123,71 +132,70 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     unused._1.toVector.map(getNamedType(sdlOrigin, _)) ++ unused._2 ++ directives
   }
 
-  def validateExtensions(schema: Schema[Ctx, _]): Unit = {
-    typeDefsMap foreach {
-      case (name, defs) if defs.size > 1 ⇒
-        throw SchemaMaterializationException(s"Type '$name' is defined more than once.")
-      case (name, _) if schema.allTypes contains name ⇒
-        throw SchemaMaterializationException(
-          s"Type '$name' already exists in the schema. It cannot also be defined in this type definition.")
-      case _ ⇒ // everything is fine
-    }
+  def validateExtensions(schema: Schema[Ctx, _]): Vector[Violation] = {
+    val nestedErrors = Vector(
+      typeDefsMap.toVector collect  {
+        case (name, defs) if defs.size > 1 ⇒
+          NonUniqueTypeDefinitionViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
+        case (name, defs) if schema.allTypes contains name ⇒
+          ExistingTypeViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
+      },
+      directiveDefsMap.toVector collect {
+        case (name, defs) if defs.size > 1 ⇒
+          NonUniqueDirectiveDefinitionViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
+        case (name, defs) if schema.directivesByName contains name ⇒
+          NonUniqueDirectiveDefinitionViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
+      },
+      objectTypeExtensionDefs flatMap (validateExtensions[ObjectType[_, _]](schema, _, "object")),
+      interfaceTypeExtensionDefs flatMap (validateExtensions[InterfaceType[_, _]](schema, _, "interface")),
+      enumTypeExtensionDefs flatMap (validateExtensions[EnumType[_]](schema, _, "enum")),
+      inputObjectTypeExtensionDefs flatMap (validateExtensions[InputObjectType[_]](schema, _, "input-object")),
+      scalarTypeExtensionDefs flatMap (validateExtensions[ScalarType[_]](schema, _, "scalar")),
+      unionTypeExtensionDefs flatMap (validateExtensions[UnionType[_]](schema, _, "union")))
 
-    directiveDefsMap foreach {
-      case (name, defs) if defs.size > 1 ⇒
-        throw SchemaMaterializationException(s"Directive '$name' is defined more than once.")
-      case (name, _) if schema.directivesByName contains name ⇒
-        throw SchemaMaterializationException(s"Directive '$name' already exists in the schema.")
-      case _ ⇒ // everything is fine
-    }
-
-    objectTypeExtensionDefs foreach (validateExtensions[ObjectType[_, _]](schema, _, "object"))
-    interfaceTypeExtensionDefs foreach (validateExtensions[InterfaceType[_, _]](schema, _, "interface"))
-    enumTypeExtensionDefs foreach (validateExtensions[EnumType[_]](schema, _, "enum"))
-    inputObjectTypeExtensionDefs foreach (validateExtensions[InputObjectType[_]](schema, _, "input-object"))
-    scalarTypeExtensionDefs foreach (validateExtensions[ScalarType[_]](schema, _, "scalar"))
-    unionTypeExtensionDefs foreach (validateExtensions[UnionType[_]](schema, _, "union"))
+    nestedErrors.flatten
   }
 
-  private def validateExtensions[T : ClassTag](schema: Schema[Ctx, _], ext: ast.TypeExtensionDefinition, typeKind: String): Unit = {
+  private def validateExtensions[T : ClassTag](schema: Schema[Ctx, _], ext: ast.TypeExtensionDefinition, typeKind: String): Option[Violation] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
 
     typeDefsMap.get(ext.name).map(_.head) match {
-      case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ // everything is fine
-      case Some(tpe) ⇒ throw SchemaMaterializationException(s"Cannot extend non-$typeKind type '${tpe.name}'.")
+      case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ None
+      case Some(tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
       case None ⇒
         schema.allTypes.get(ext.name) match {
-          case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ // everything is fine
-          case Some(tpe) ⇒ throw SchemaMaterializationException(s"Cannot extend non-$typeKind type '${tpe.name}'.")
-          case None ⇒ throw SchemaMaterializationException(s"Cannot extend type '${ext.name}' because it does not exist.")
+          case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ None
+          case Some(tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
+          case None ⇒ Some(TypeExtensionOnNonExistingTypeViolation(ext.name, document.sourceMapper, ext.location.toList))
         }
     }
   }
 
-  def validateDefinitions(): Unit = {
-    typeDefsMap.find(_._2.size > 1) foreach { case (name, _) ⇒
-      throw SchemaMaterializationException(s"Type '$name' is defined more than once.")
-    }
+  def validateDefinitions: Vector[Violation] = {
+    val nestedErrors = Vector (
+      typeDefsMap.find(_._2.size > 1).toVector.map { case (name, defs) ⇒
+        NonUniqueTypeDefinitionViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
+      },
+      directiveDefsMap.find(_._2.size > 1).toVector.map { case (name, defs) ⇒
+        NonUniqueDirectiveDefinitionViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
+      },
+      objectTypeExtensionDefs flatMap (validateExtensionsAst[ast.ObjectTypeDefinition](_, "object")),
+      interfaceTypeExtensionDefs flatMap (validateExtensionsAst[ast.InterfaceTypeDefinition](_, "interface")),
+      enumTypeExtensionDefs flatMap (validateExtensionsAst[ast.EnumTypeDefinition](_, "enum")),
+      inputObjectTypeExtensionDefs flatMap (validateExtensionsAst[ast.InputObjectTypeDefinition](_, "input-object")),
+      scalarTypeExtensionDefs flatMap (validateExtensionsAst[ast.ScalarTypeDefinition](_, "scalar")),
+      unionTypeExtensionDefs flatMap (validateExtensionsAst[ast.UnionTypeDefinition](_, "union")))
 
-    directiveDefsMap.find(_._2.size > 1) foreach { case (name, _) ⇒
-      throw SchemaMaterializationException(s"Directive '$name' is defined more than once.")
-    }
-
-    objectTypeExtensionDefs foreach (validateExtensionsAst[ast.ObjectTypeDefinition](_, "object"))
-    interfaceTypeExtensionDefs foreach (validateExtensionsAst[ast.InterfaceTypeDefinition](_, "interface"))
-    enumTypeExtensionDefs foreach (validateExtensionsAst[ast.EnumTypeDefinition](_, "enum"))
-    inputObjectTypeExtensionDefs foreach (validateExtensionsAst[ast.InputObjectTypeDefinition](_, "input-object"))
-    scalarTypeExtensionDefs foreach (validateExtensionsAst[ast.ScalarTypeDefinition](_, "scalar"))
-    unionTypeExtensionDefs foreach (validateExtensionsAst[ast.UnionTypeDefinition](_, "union"))
+    nestedErrors.flatten
   }
 
-  private def validateExtensionsAst[T : ClassTag](ext: ast.TypeExtensionDefinition, typeKind: String): Unit = {
+  private def validateExtensionsAst[T : ClassTag](ext: ast.TypeExtensionDefinition, typeKind: String): Option[Violation] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
 
     typeDefsMap.get(ext.name).map(_.head) match {
-      case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ // everything is fine
-      case Some(tpe) ⇒ throw SchemaMaterializationException(s"Cannot extend non-object type '${tpe.name}'.")
-      case None ⇒ throw SchemaMaterializationException(s"Cannot extend type '${ext.name}' because it does not exist.")
+      case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ None
+      case Some(tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
+      case None ⇒ Some(TypeExtensionOnNonExistingTypeViolation(ext.name, document.sourceMapper, ext.location.toList))
     }
   }
 
@@ -626,35 +634,59 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 object AstSchemaMaterializer {
   case class SchemaInfo(query: ast.NamedType, mutation: Option[ast.NamedType], subscription: Option[ast.NamedType], definition: Option[ast.SchemaDefinition])
 
-  def extractSchemaInfo(document: ast.Document, typeDefs: Vector[ast.TypeDefinition]): SchemaInfo = {
+  def extractSchemaInfo(document: ast.Document, typeDefs: Vector[ast.TypeDefinition]): Either[Vector[Violation], SchemaInfo] = {
     val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
 
-    if (schemas.size > 1)
-      throw SchemaMaterializationException("Must provide only one schema definition.")
-    else if (schemas.nonEmpty) {
-      val schema = schemas.head
+    val schemaErrors =
+      if (schemas.size > 1)
+        Vector(NonUniqueSchemaDefinitionViolation(document.sourceMapper, schemas.flatMap(_.location).toList))
+      else Vector.empty
 
-      val queries = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Query, tpe, _, _) ⇒ tpe}
-      val mutations = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Mutation, tpe, _, _) ⇒ tpe}
-      val subscriptions = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Subscription, tpe, _, _) ⇒ tpe}
+    if (schemas.nonEmpty) {
+      val validatedInfo =
+        schemas.map { schema ⇒
+          val queries = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Query, tpe, _, _) ⇒ tpe}
+          val mutations = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Mutation, tpe, _, _) ⇒ tpe}
+          val subscriptions = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Subscription, tpe, _, _) ⇒ tpe}
 
-      if (queries.size != 1)
-        throw SchemaMaterializationException("Must provide only one query type in schema.")
 
-      if (mutations.size > 1)
-        throw SchemaMaterializationException("Must provide only one mutation type in schema.")
+          val qErrors =
+            if (queries.size != 1)
+              Vector(NonUniqueRootTypeViolation("query", document.sourceMapper, queries.flatMap(_.location).toList))
+            else Vector.empty
 
-      if (subscriptions.size > 1)
-        throw SchemaMaterializationException("Must provide only one subscription type in schema.")
+          val mErrors =
+            if (mutations.size > 1)
+              qErrors :+ NonUniqueRootTypeViolation("mutation", document.sourceMapper, queries.flatMap(_.location).toList)
+            else qErrors
 
-      SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, Some(schema))
+          val sErrors =
+            if (subscriptions.size > 1)
+              mErrors :+ NonUniqueRootTypeViolation("subscription", document.sourceMapper, queries.flatMap(_.location).toList)
+            else mErrors
+
+          if (sErrors.nonEmpty) Left(sErrors)
+          else Right(SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, Some(schema)))
+        }
+
+      val typeErrors = validatedInfo.collect{case Left(errors) ⇒ errors}.flatten
+
+      if (schemaErrors.nonEmpty || typeErrors.nonEmpty) Left(schemaErrors ++ typeErrors)
+      else validatedInfo.head
     } else {
-      val query = typeDefs.find(_.name == "Query") getOrElse (
-          throw SchemaMaterializationException("Must provide schema definition with query type or a type named Query."))
-      val mutation = typeDefs.find(_.name == "Mutation") map (t ⇒ ast.NamedType(t.name))
-      val subscription = typeDefs.find(_.name == "Subscription") map (t ⇒ ast.NamedType(t.name))
+      typeDefs.find(_.name == "Query") match {
+        case None ⇒
+          Left(schemaErrors :+ NoQueryTypeViolation(document.sourceMapper, document.location.toList))
 
-      SchemaInfo(ast.NamedType(query.name), mutation, subscription, None)
+        case Some(_) if schemaErrors.nonEmpty ⇒
+          Left(schemaErrors)
+
+        case Some(query) ⇒
+          val mutation = typeDefs.find(_.name == "Mutation") map (t ⇒ ast.NamedType(t.name))
+          val subscription = typeDefs.find(_.name == "Subscription") map (t ⇒ ast.NamedType(t.name))
+
+          Right(SchemaInfo(ast.NamedType(query.name), mutation, subscription, None))
+      }
     }
   }
 

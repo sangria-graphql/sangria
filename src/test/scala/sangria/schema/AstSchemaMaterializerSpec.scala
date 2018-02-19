@@ -3,7 +3,7 @@ package sangria.schema
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast.{FieldDefinition, ObjectTypeDefinition, ObjectTypeExtensionDefinition, TypeDefinition}
-import sangria.execution.Executor
+import sangria.execution.{Executor, MaterializedSchemaValidationError}
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
 import sangria.util.{DebugUtil, FutureResultSupport, Pos, StringMatchers}
@@ -449,9 +449,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide schema definition with query type or a type named Query.")
+        error.getMessage should include ("Must provide schema definition with query type or a type named Query.")
       }
 
       "Allows only a single schema definition" in {
@@ -470,9 +470,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide only one schema definition.")
+        error.getMessage should include ("Must provide only one schema definition.")
       }
 
       "Requires a query type" in {
@@ -487,9 +487,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide only one query type in schema.")
+        error.getMessage should include ("Must provide only one query type in schema.")
       }
 
       "Allows only a single query type" in {
@@ -509,9 +509,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide only one query type in schema.")
+        error.getMessage should include ("Must provide only one query type in schema.")
       }
 
       "Allows only a single mutation type" in {
@@ -532,9 +532,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide only one mutation type in schema.")
+        error.getMessage should include ("Must provide only one mutation type in schema.")
       }
 
       "Allows only a single subscription type" in {
@@ -555,9 +555,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Must provide only one subscription type in schema.")
+        error.getMessage should include ("Must provide only one subscription type in schema.")
       }
 
       "Unknown type in interface list" in {
@@ -899,9 +899,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Cannot extend type 'Foo' because it does not exist.")
+        error.getMessage should include ("Cannot extend type 'Foo' because it does not exist.")
       }
 
       "don't allow to have extensions on non-object types" in {
@@ -926,9 +926,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Cannot extend non-object type 'Foo'.")
+        error.getMessage should include ("Cannot extend non-object type 'Foo'.")
       }
     }
 
