@@ -482,3 +482,7 @@ case class TypeExtensionOnNonExistingTypeViolation(typeName: String, sourceMappe
 case class ExistingTypeViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Type '$typeName' already exists in the schema. It cannot also be defined in this type definition."
 }
+
+case class InvalidTypeUsageViolation(expectedTypeKind: String, tpe: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Type '$tpe' is not an $expectedTypeKind type."
+}

@@ -778,9 +778,9 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
 
-      error.getMessage should include ("Invalid or incomplete schema, unknown type: Quix.")
+      error.getMessage should include ("Unknown type 'Quix'.")
     }
 
     "does not allow extending an unknown type" in {

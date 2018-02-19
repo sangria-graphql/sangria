@@ -6,6 +6,7 @@ sealed trait MaterializedType {
   def origin: MatOrigin
   def name: String
   def rename(newName: String): MaterializedType
+  def location: Option[ast.AstLocation]
 }
 
 object MaterializedType {
@@ -16,16 +17,19 @@ object MaterializedType {
 case class MaterializedTypeAst(origin: MatOrigin, tpe: ast.TypeDefinition) extends MaterializedType {
   def name = tpe.name
   def rename(newName: String) = copy(tpe = tpe.rename(newName))
+  def location = tpe.location
 }
 
 case class MaterializedTypeInst(origin: MatOrigin, tpe: Type with Named) extends MaterializedType {
   def name = tpe.name
   def rename(newName: String) = copy(tpe = tpe.rename(newName))
+  def location = None
 }
 
 case class BuiltMaterializedTypeInst(origin: MatOrigin, tpe: Type with Named) extends MaterializedType {
   def name = tpe.name
   def rename(newName: String) = copy(tpe = tpe.rename(newName))
+  def location = None
 }
 
 sealed trait MaterializedField[Ctx, +Val] {

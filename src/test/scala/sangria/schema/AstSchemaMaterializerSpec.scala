@@ -572,9 +572,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Invalid or incomplete schema, unknown type: Bar.")
+        error.getMessage should include ("Unknown type 'Bar'.")
       }
 
       "Unknown type in union list" in {
@@ -588,9 +588,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             type Hello { testUnion: TestUnion }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Invalid or incomplete schema, unknown type: Bar.")
+        error.getMessage should include ("Unknown type 'Bar'.")
       }
 
       "Unknown query type" in {
@@ -605,9 +605,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Invalid or incomplete schema, unknown type: Wat.")
+        error.getMessage should include ("Unknown type 'Wat'.")
       }
 
       "Unknown mutation type" in {
@@ -623,9 +623,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Invalid or incomplete schema, unknown type: Wat.")
+        error.getMessage should include ("Unknown type 'Wat'.")
       }
 
       "Unknown subscription type" in {
@@ -646,9 +646,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Invalid or incomplete schema, unknown type: Awesome.")
+        error.getMessage should include ("Unknown type 'Awesome'.")
       }
 
       "Does not consider operation names" in {
@@ -661,9 +661,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             query Foo { field }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Invalid or incomplete schema, unknown type: Foo.")
+        error.getMessage should include ("Unknown type 'Foo'.")
       }
 
       "Does not consider fragment names" in {
@@ -676,9 +676,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             fragment Foo on Type { field }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Invalid or incomplete schema, unknown type: Foo.")
+        error.getMessage should include ("Unknown type 'Foo'.")
       }
     }
 

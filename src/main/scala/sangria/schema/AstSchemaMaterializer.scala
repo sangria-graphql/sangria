@@ -2,7 +2,7 @@ package sangria.schema
 
 import language.{existentials, postfixOps}
 import sangria.ast
-import sangria.ast.{OperationType, TypeDefinition}
+import sangria.ast.{AstLocation, OperationType, TypeDefinition}
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.renderer.QueryRenderer
 import sangria.validation._
@@ -129,7 +129,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     val directives = directiveDefs filterNot (d ⇒ Schema.isBuiltInDirective(d.name)) flatMap (buildDirective(sdlOrigin, _))
     val unused = findUnusedTypes()
 
-    unused._1.toVector.map(getNamedType(sdlOrigin, _)) ++ unused._2 ++ directives
+    unused._1.toVector.map(getNamedType(sdlOrigin, _, None)) ++ unused._2 ++ directives
   }
 
   def validateExtensions(schema: Schema[Ctx, _]): Vector[Violation] = {
@@ -206,7 +206,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
     val notReferencedAdd = builder.additionalTypes.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
-    referenced → (notReferenced.map(tpe ⇒ getNamedType(sdlOrigin, tpe.name)) ++ notReferencedAdd.map(tpe ⇒ getNamedType(tpe.origin, tpe.name)))
+    referenced → (notReferenced.map(tpe ⇒ getNamedType(sdlOrigin, tpe.name, tpe.location)) ++ notReferencedAdd.map(tpe ⇒ getNamedType(tpe.origin, tpe.name, tpe.location)))
   }
 
   def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): Vector[Type with Named] = {
@@ -258,7 +258,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
           extendScalarAlias(origin, alias)
         }).asInstanceOf[T]
       case _ ⇒
-        getNamedType(origin, tpe.name).asInstanceOf[T]
+        getNamedType(origin, tpe.name, None).asInstanceOf[T]
     }
 
 
@@ -274,19 +274,19 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def getObjectType(origin: MatOrigin, tpe: ast.NamedType): ObjectType[Ctx, Any] =
     getOutputType(origin, tpe, optional = false) match {
       case obj: ObjectType[_, _] ⇒ obj.asInstanceOf[ObjectType[Ctx, Any]]
-      case _ ⇒ throw SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an object type.")
+      case _ ⇒ throw MaterializedSchemaValidationError(Vector(InvalidTypeUsageViolation("object", QueryRenderer.render(tpe), document.sourceMapper, tpe.location.toList)))
     }
 
   def getScalarType(origin: MatOrigin, tpe: ast.NamedType): ScalarType[Any] =
     getOutputType(origin, tpe, optional = false) match {
       case obj: ScalarType[_] ⇒ obj.asInstanceOf[ScalarType[Any]]
-      case _ ⇒ throw SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not a scalar type.")
+      case _ ⇒ throw MaterializedSchemaValidationError(Vector(InvalidTypeUsageViolation("scalar", QueryRenderer.render(tpe), document.sourceMapper, tpe.location.toList)))
     }
 
   def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType): InterfaceType[Ctx, Any] =
     getOutputType(origin, tpe, optional = false) match {
       case obj: InterfaceType[_, _] ⇒ obj.asInstanceOf[InterfaceType[Ctx, Any]]
-      case _ ⇒ throw SchemaMaterializationException(s"Type '${QueryRenderer.render(tpe)}' is not an interface type.")
+      case _ ⇒ throw MaterializedSchemaValidationError(Vector(InvalidTypeUsageViolation("interface", QueryRenderer.render(tpe), document.sourceMapper, tpe.location.toList)))
     }
 
   def getInputType(origin: MatOrigin, tpe: ast.Type, replacementNamedType: Option[InputType[_]] = None, optional: Boolean = true): InputType[_] =
@@ -295,10 +295,10 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case ast.ListType(ofType, _) ⇒ ListInputType(getInputType(origin, ofType, replacementNamedType, true))
       case ast.NotNullType(ofType, _) ⇒ getInputType(origin, ofType, replacementNamedType, false)
       case ast.NamedType(name, _) ⇒
-        replacementNamedType getOrElse getNamedType(origin, name) match {
+        replacementNamedType getOrElse getNamedType(origin, name, tpe.location) match {
           case input: InputType[_] if optional ⇒ OptionInputType(input)
           case input: InputType[_] ⇒ input
-          case _ ⇒ throw SchemaMaterializationException(s"Type '$name' is not an input type, but was used in input type position!")
+          case _ ⇒ throw MaterializedSchemaValidationError(Vector(InvalidTypeUsageViolation("input type", QueryRenderer.render(tpe), document.sourceMapper, tpe.location.toList)))
         }
     }
 
@@ -308,14 +308,14 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
       case ast.ListType(ofType, _) ⇒ ListType(getOutputType(origin, ofType, replacementNamedType, true))
       case ast.NotNullType(ofType, _) ⇒ getOutputType(origin, ofType, replacementNamedType, false)
       case ast.NamedType(name, _) ⇒
-        replacementNamedType getOrElse getNamedType(origin, name) match {
+        replacementNamedType getOrElse getNamedType(origin, name, tpe.location) match {
           case out: OutputType[_] if optional ⇒ OptionType(out)
           case out: OutputType[_] ⇒ out
-          case _ ⇒ throw SchemaMaterializationException(s"Type '$name' is not an output type, but was used in output type position!")
+          case _ ⇒ throw MaterializedSchemaValidationError(Vector(InvalidTypeUsageViolation("output type", QueryRenderer.render(tpe), document.sourceMapper, tpe.location.toList)))
         }
     }
 
-  def getNamedType(origin: MatOrigin, typeName: String): Type with Named =
+  def getNamedType(origin: MatOrigin, typeName: String, location: Option[AstLocation]): Type with Named =
     typeDefCache.getOrElseUpdate(origin → typeName, Schema.getBuiltInType(typeName) getOrElse {
       val existing = existingDefsMat.get(typeName).toVector
       val sdl = typeDefsMat.filter(_.name == typeName)
@@ -338,7 +338,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
           getNamedType(origin, allCandidates.head)
         } else None
 
-      builtType getOrElse (throw SchemaMaterializationException(s"Invalid or incomplete schema, unknown type: $typeName."))
+      builtType getOrElse (throw MaterializedSchemaValidationError(Vector(UnknownTypeViolation(typeName, Seq.empty, document.sourceMapper, location.toList))))
     })
 
   def getNamedType(origin: MatOrigin, tpe: MaterializedType): Option[Type with Named] =
