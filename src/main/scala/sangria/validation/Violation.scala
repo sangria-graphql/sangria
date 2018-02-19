@@ -241,6 +241,10 @@ case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, s
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must not have a sub selection."
 }
 
+case class SubscriptionSingleFieldOnlyViolation(opName: Option[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"${opName.fold("Anonymous Subscription")(n ⇒ s"Subscription '$n'")} must select only one top level field."
+}
+
 case class RequiredSubselectionViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must have a sub selection."
 }

@@ -8,7 +8,8 @@ import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.validation.rules._
 
-import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet, Map ⇒ MutableMap}
+import scala.collection.mutable.{ListBuffer, Map => MutableMap, Set => MutableSet}
+import scala.reflect.{ClassTag, classTag}
 
 trait QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
@@ -43,7 +44,8 @@ object QueryValidator {
     new VariablesAreInputTypes,
     new VariablesInAllowedPosition,
     new InputDocumentOfCorrectType,
-    new InputDocumentNonConflictingVariableInference
+    new InputDocumentNonConflictingVariableInference,
+    new SingleFieldSubscriptions
   )
 
   def ruleBased(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
@@ -52,7 +54,7 @@ object QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = Vector.empty
   }
 
-  val default = ruleBased(allRules)
+  val default: RuleBasedQueryValidator = ruleBased(allRules)
 }
 
 class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
@@ -118,6 +120,13 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
         ctx.ignoredVisitors += visitor
       case _ ⇒ // do nothing
     }
+
+  def withoutValidation[T : ClassTag] = {
+    val cls = classTag[T].runtimeClass
+    val newRules = rules.filterNot(r ⇒ cls.isAssignableFrom(r.getClass))
+
+    new RuleBasedQueryValidator(newRules)
+  }
 }
 
 class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val sourceMapper: Option[SourceMapper], val typeInfo: TypeInfo) {

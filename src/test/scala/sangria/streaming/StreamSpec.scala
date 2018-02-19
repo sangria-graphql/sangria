@@ -8,6 +8,8 @@ import sangria.util.FutureResultSupport
 import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
+import sangria.validation.QueryValidator
+import sangria.validation.rules.SingleFieldSubscriptions
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -43,7 +45,8 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         import sangria.execution.ExecutionScheme.Stream
 
         val stream: Observable[JsValue] =
-          Executor.execute(schema, graphql"subscription { letters numbers }")
+          Executor.execute(schema, graphql"subscription { letters numbers }",
+            queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions])
 
         val result = stream.toBlocking.toList
 
@@ -83,7 +86,8 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         import sangria.execution.ExecutionScheme.Stream
 
         val stream: Observable[JsValue] =
-          Executor.execute(schema, graphql"subscription { letters numbers }")
+          Executor.execute(schema, graphql"subscription { letters numbers }",
+            queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions])
 
         val result = stream.toListL.runAsync.await(timeout)
 
@@ -116,7 +120,9 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         }
 
         val stream: Observable[JsValue] =
-          Executor.execute(schema, graphql"subscription { letters numbers }", exceptionHandler = exceptionHandler)
+          Executor.execute(schema, graphql"subscription { letters numbers }",
+            queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions],
+            exceptionHandler = exceptionHandler)
 
         val result = stream.toListL.runAsync.await(timeout)
 
@@ -360,7 +366,8 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val schema = Schema(QueryType, subscription = Some(SubscriptionType))
 
-        val result = Executor.execute(schema, graphql"subscription { letters numbers }").await(timeout)
+        val result = Executor.execute(schema, graphql"subscription { letters numbers }",
+          queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions]).await(timeout)
 
         List(result) should contain oneOf (
           """{"data":{"letters": "a"}}""".parseJson,
@@ -380,7 +387,8 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         import sangria.execution.ExecutionScheme.Stream
 
-        val stream = Executor.execute(schema, graphql"subscription { letters numbers }")
+        val stream = Executor.execute(schema, graphql"subscription { letters numbers }",
+          queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions])
 
         val result = stream.toListL.runAsync.await(timeout)
 
