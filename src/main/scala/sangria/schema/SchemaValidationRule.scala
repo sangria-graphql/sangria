@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.ast.{AstLocation, Document}
+import sangria.ast._
 
 import language.higherKinds
 import sangria.execution._
@@ -104,7 +104,7 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
               case None ⇒
                 Vector(MissingImplementationFieldArgumentViolation(intTpe.name, objTpe.name, intField.name, iarg.name,
                   SchemaElementValidator.sourceMapper(schema),
-                  SchemaElementValidator.location(iarg)))
+                  SchemaElementValidator.location(iarg) ++ SchemaElementValidator.location(objField.head)))
 
               case Some(oarg) if !TypeComparators.isEqualType(iarg.argumentType, oarg.argumentType) ⇒
                 Vector(InvalidImplementationFieldArgumentTypeViolation(
@@ -132,7 +132,7 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
                   oarg.name,
                   SchemaRenderer.renderTypeName(oarg.argumentType),
                   SchemaElementValidator.sourceMapper(schema),
-                  SchemaElementValidator.location(oarg)))
+                  SchemaElementValidator.location(oarg) ++ SchemaElementValidator.location(intField)))
               case _ ⇒ Nil
             }
 
@@ -310,7 +310,13 @@ object ContainerMembersValidator extends SchemaElementValidator {
     val nonUnique =
       tpe.types.groupBy(_.name).toVector.collect {
         case (memberName, dup) if dup.size > 1 ⇒
-          NonUniqueUnionMembersViolation(tpe.name, memberName, sourceMapper(schema), dup.flatMap(location))
+          val astMembers = tpe.astNodes.collect {
+            case astUnion: UnionTypeDefinition ⇒ astUnion.types
+            case astUnion: UnionTypeExtensionDefinition ⇒ astUnion.types
+          }
+          val locations = astMembers.flatten.filter(_.name == memberName).flatMap(_.location).toList
+
+          NonUniqueUnionMembersViolation(tpe.name, memberName, sourceMapper(schema), locations)
       }
 
     emptyErrors ++ nonUnique
@@ -352,7 +358,13 @@ object ContainerMembersValidator extends SchemaElementValidator {
     val nonUnique =
       tpe.interfaces.groupBy(_.name).toVector.collect {
         case (intName, dup) if dup.size > 1 ⇒
-          NonUniqueInterfacesViolation(tpe.name, intName, sourceMapper(schema), dup.flatMap(location))
+          val astMembers = tpe.astNodes.collect {
+            case astUnion: ObjectTypeDefinition ⇒ astUnion.interfaces
+            case astUnion: ObjectTypeExtensionDefinition ⇒ astUnion.interfaces
+          }
+          val locations = astMembers.flatten.filter(_.name == intName).flatMap(_.location).toList
+
+          NonUniqueInterfacesViolation(tpe.name, intName, sourceMapper(schema), locations)
       }
 
     generalErrors ++ nonUnique

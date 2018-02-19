@@ -21,7 +21,7 @@ class ParseMacro(context: blackbox.Context) extends {
           val q"${gql: String}" = t
 
           try {
-            q"${QueryParser.parse(gql.stripMargin).get}"
+            q"${QueryParser.parse(gql).get}"
           } catch {
             case error: SyntaxError ⇒ syntaxError(error)
           }
@@ -40,7 +40,7 @@ class ParseMacro(context: blackbox.Context) extends {
           val q"${gql: String}" = t
 
           try {
-            q"${QueryParser.parseInput(gql.stripMargin).get}"
+            q"${QueryParser.parseInput(gql).get}"
           } catch {
             case error: SyntaxError ⇒ syntaxError(error)
           }
@@ -59,7 +59,7 @@ class ParseMacro(context: blackbox.Context) extends {
           val q"${gql: String}" = t
 
           try {
-            q"${QueryParser.parseInputDocument(gql.stripMargin).get}"
+            q"${QueryParser.parseInputDocument(gql).get}"
           } catch {
             case error: SyntaxError ⇒ syntaxError(error)
           }

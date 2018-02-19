@@ -73,7 +73,7 @@ object Document {
   def merge(documents: Traversable[Document]): Document = {
     val originalSourceMappers = documents.flatMap(_.sourceMapper).toVector
     val sourceMapper =
-      if (originalSourceMappers.nonEmpty) Some(new AggregateSourceMapper("MergedDocument", originalSourceMappers))
+      if (originalSourceMappers.nonEmpty) Some(AggregateSourceMapper.merge(originalSourceMappers))
       else None
 
     Document(documents.toVector.flatMap(_.definitions), sourceMapper = sourceMapper)

@@ -320,7 +320,14 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
       directives = directives,
-      validationRules = originalSchema.validationRules)
+      validationRules = originalSchema.validationRules,
+      astDirectives = originalSchema.astDirectives,
+      astNodes = {
+        val (docs, other) = originalSchema.astNodes.partition(_.isInstanceOf[ast.Document])
+        val newDoc = ast.Document.merge(docs.asInstanceOf[Vector[ast.Document]] :+ mat.document)
+
+        newDoc +: other
+      })
 
   def buildObjectType(
       origin: MatOrigin,

@@ -17,6 +17,7 @@ object TypeComparators {
     (subType, superType) match {
       case (OptionType(ofType1), OptionType(ofType2)) ⇒ isSubType(schema, ofType1, ofType2)
       case (OptionInputType(ofType1), OptionInputType(ofType2)) ⇒ isSubType(schema, ofType1, ofType2)
+      case (sub, OptionType(ofType2)) ⇒ isSubType(schema, sub, ofType2)
       case (sub, OptionInputType(ofType2)) ⇒ isSubType(schema, sub, ofType2)
       case (ListType(ofType1), ListType(ofType2)) ⇒ isSubType(schema, ofType1, ofType2)
       case (ListInputType(ofType1), ListInputType(ofType2)) ⇒ isSubType(schema, ofType1, ofType2)
