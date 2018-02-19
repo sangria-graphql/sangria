@@ -221,10 +221,10 @@ object Executor {
       Success(schema.query)
     case ast.OperationType.Mutation ⇒
       schema.mutation map (Success(_)) getOrElse
-        Failure(OperationSelectionError("Schema is not configured for mutations", exceptionHandler, sourceMapper, operation.position.toList))
+        Failure(OperationSelectionError("Schema is not configured for mutations", exceptionHandler, sourceMapper, operation.location.toList))
     case ast.OperationType.Subscription ⇒
       schema.subscription map (Success(_)) getOrElse
-        Failure(OperationSelectionError("Schema is not configured for subscriptions", exceptionHandler, sourceMapper, operation.position.toList))
+        Failure(OperationSelectionError("Schema is not configured for subscriptions", exceptionHandler, sourceMapper, operation.location.toList))
   }
 
   def getOperation(exceptionHandler: ExceptionHandler, document: ast.Document, operationName: Option[String]): Try[ast.OperationDefinition] =

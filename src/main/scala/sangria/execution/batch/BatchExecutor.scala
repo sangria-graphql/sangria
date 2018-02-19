@@ -299,7 +299,7 @@ object BatchExecutor {
         else {
           val violations =
             exportedAll.values.flatMap { op ⇒
-              findUndefinedVariableUsages(op).map(UndefinedVariableDefinitionViolation(op.operationName, _, queryAst.sourceMapper, op.variableUsages.flatMap(_.node.position).toList))
+              findUndefinedVariableUsages(op).map(UndefinedVariableDefinitionViolation(op.operationName, _, queryAst.sourceMapper, op.variableUsages.flatMap(_.node.location).toList))
             }
 
           if (violations.nonEmpty)
@@ -324,7 +324,7 @@ object BatchExecutor {
 
     def loop(src: String, deps: Vector[(String, Set[String])], path: Vector[(String, String)]): Unit =
       if (path.exists(_._1 == src))
-        violations += CircularOperationDependencyViolation(src, path.map(_._2), queryAst.sourceMapper, queryAst.operations(Some(src)).position.toList)
+        violations += CircularOperationDependencyViolation(src, path.map(_._2), queryAst.sourceMapper, queryAst.operations(Some(src)).location.toList)
       else {
         deps.foreach { d ⇒
           loop(d._1, dependencies(d._1), path :+ ((src, s"$src(${d._2.map("$" + _).mkString(", ")})")))
@@ -386,7 +386,7 @@ object BatchExecutor {
                   firstAstType.renderPretty,
                   currAstType.renderPretty,
                   queryAst.sourceMapper,
-                  first.node.position.toList ++ curr.node.position.toList)
+                  first.node.location.toList ++ curr.node.location.toList)
             }
 
             if (violations.nonEmpty)

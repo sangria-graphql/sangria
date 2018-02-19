@@ -2,7 +2,7 @@ package sangria.renderer
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
-import sangria.parser.QueryParser
+import sangria.parser.{ParserConfig, QueryParser}
 import sangria.util.{DebugUtil, FileUtil, StringMatchers}
 import sangria.ast
 import sangria.macros._
@@ -24,9 +24,9 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutPosition(ast) should be (AstNode.withoutPosition(prettyParsed))
-        AstNode.withoutPosition(ast, stripComments = true) should be (
-          AstNode.withoutPosition(compactParsed, stripComments = true))
+        AstNode.withoutAstLocations(ast) should be (AstNode.withoutAstLocations(prettyParsed))
+        AstNode.withoutAstLocations(ast, stripComments = true) should be (
+          AstNode.withoutAstLocations(compactParsed, stripComments = true))
 
         compactRendered should be (
           "query queryName($foo:ComplexType,$site:Site=MOBILE){whoever123is:node(id:[123,456]){" +
@@ -575,9 +575,9 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutPosition(ast) should be (AstNode.withoutPosition(prettyParsed))
-        AstNode.withoutPosition(ast, stripComments = true) should be (
-          AstNode.withoutPosition(compactParsed, stripComments = true))
+        AstNode.withoutAstLocations(ast) should be (AstNode.withoutAstLocations(prettyParsed))
+        AstNode.withoutAstLocations(ast, stripComments = true) should be (
+          AstNode.withoutAstLocations(compactParsed, stripComments = true))
 
         compactRendered should be (
           "query FetchLukeAndLeiaAliased($someVar:String=\"hello \\\\\\n  world\"" +
@@ -609,9 +609,9 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutPosition(withoutRaw(ast)) should be (AstNode.withoutPosition(withoutRaw(prettyParsed)))
-        AstNode.withoutPosition(withoutRaw(ast, block = false), stripComments = true) should be (
-          AstNode.withoutPosition(withoutRaw(compactParsed, block = false), stripComments = true))
+        AstNode.withoutAstLocations(withoutRaw(ast)) should be (AstNode.withoutAstLocations(withoutRaw(prettyParsed)))
+        AstNode.withoutAstLocations(withoutRaw(ast, block = false), stripComments = true) should be (
+          AstNode.withoutAstLocations(withoutRaw(compactParsed, block = false), stripComments = true))
 
         compactRendered should be (
           "query FetchLukeAndLeiaAliased($someVar:String=\"hello \\\\\\n  world\"" +
@@ -632,7 +632,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
 
         QueryParser.parse(query).isFailure should be (true)
 
-        val Success(ast) = QueryParser.parse(query, experimentalFragmentVariables = true)
+        val Success(ast) = QueryParser.parse(query, ParserConfig.default.withExperimentalFragmentVariables)
 
         ast.renderPretty should equal (
           """fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
@@ -673,11 +673,11 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutPosition(ast, stripComments = true) should be (
-          AstNode.withoutPosition(prettyParsed, stripComments = true))
+        AstNode.withoutAstLocations(ast, stripComments = true) should be (
+          AstNode.withoutAstLocations(prettyParsed, stripComments = true))
 
-        AstNode.withoutPosition(noBlock(ast), stripComments = true) should be (
-          AstNode.withoutPosition(noBlock(compactParsed), stripComments = true))
+        AstNode.withoutAstLocations(noBlock(ast), stripComments = true) should be (
+          AstNode.withoutAstLocations(noBlock(compactParsed), stripComments = true))
 
         compactRendered should equal (
           """schema{query:QueryType mutation:MutationType}
@@ -818,11 +818,11 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutPosition(ast, stripComments = true) should be (
-          AstNode.withoutPosition(prettyParsed, stripComments = true))
+        AstNode.withoutAstLocations(ast, stripComments = true) should be (
+          AstNode.withoutAstLocations(prettyParsed, stripComments = true))
 
-        AstNode.withoutPosition(ast, stripComments = true) should be (
-            AstNode.withoutPosition(compactParsed, stripComments = true))
+        AstNode.withoutAstLocations(ast, stripComments = true) should be (
+            AstNode.withoutAstLocations(compactParsed, stripComments = true))
 
         compactRendered should equal (
           """type Foo implements Bar@dfdsfsdf(aaa:1)@qqq(aaa:[1,2]){one:Type two(argument:InputType!):Type three(argument:InputType@aaa(c:b),other:String@ddd(aa:1)@xxx(ttt:"sdfdsf")):Int four(argument:String="string"):String five(argument:[String]=["string","string"]):String@aaaa(if:true) six(argument:InputType={key:"value"}):Type another(argument:InputType={key:"value"},mylist:[String]=["string","string"]):Type}

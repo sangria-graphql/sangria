@@ -1,6 +1,6 @@
 package sangria.validation.rules
 
-import org.parboiled2.Position
+import sangria.ast.AstLocation
 
 import scala.collection.mutable.{Map ⇒ MutableMap}
 
@@ -16,13 +16,13 @@ import sangria.validation._
  */
 class UniqueInputFieldNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    val knownNameStack = ValidatorStack.empty[MutableMap[String, Option[Position]]]
-    var knownNames = MutableMap[String, Option[Position]]()
+    val knownNameStack = ValidatorStack.empty[MutableMap[String, Option[AstLocation]]]
+    var knownNames = MutableMap[String, Option[AstLocation]]()
 
     override val onEnter: ValidationVisit = {
       case ast.ObjectValue(_, _, _) ⇒
         knownNameStack.push(knownNames)
-        knownNames = MutableMap[String, Option[Position]]()
+        knownNames = MutableMap[String, Option[AstLocation]]()
 
         AstVisitorCommand.RightContinue
 

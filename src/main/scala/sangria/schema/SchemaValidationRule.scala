@@ -16,6 +16,7 @@ trait SchemaValidationRule {
 
 object SchemaValidationRule {
   val empty: List[SchemaValidationRule] = Nil
+
   val default: List[SchemaValidationRule] = List(
     new DefaultValuesValidationRule,
     new InterfaceImplementationValidationRule,
@@ -24,6 +25,15 @@ object SchemaValidationRule {
     new FieldValidationRule,
     new EnumValueNameValidationRule)
 
+  def validate[Ctx, Val](schema: Schema[Ctx, Val], validationRules: List[SchemaValidationRule]): List[Violation] =
+    validationRules flatMap (_.validate(schema))
+
+  def validateWithException[Ctx, Val](schema: Schema[Ctx, Val], validationRules: List[SchemaValidationRule]): Schema[Ctx, Val] = {
+    val validationErrors = validate(schema, validationRules)
+
+    if (validationErrors.nonEmpty) throw SchemaValidationException(validationErrors)
+    else schema
+  }
 }
 
 class DefaultValuesValidationRule extends SchemaValidationRule {

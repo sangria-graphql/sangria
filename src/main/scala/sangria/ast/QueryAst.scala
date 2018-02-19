@@ -1,9 +1,8 @@
 package sangria.ast
 
-import org.parboiled2.Position
 import sangria.execution.InputDocumentMaterializer
 import sangria.marshalling.{FromInput, InputUnmarshaller}
-import sangria.parser.{DeliveryScheme, SourceMapper}
+import sangria.parser.{AggregateSourceMapper, DeliveryScheme, SourceMapper}
 import sangria.renderer.QueryRenderer
 import sangria.validation.DocumentAnalyzer
 import sangria.schema.{InputType, Schema}
@@ -13,7 +12,7 @@ import sangria.visitor._
 import scala.util.control.Breaks._
 import scala.collection.immutable.ListMap
 
-case class Document(definitions: Vector[Definition], trailingComments: Vector[Comment] = Vector.empty, position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode with WithTrailingComments {
+case class Document(definitions: Vector[Definition], trailingComments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode with WithTrailingComments {
   lazy val operations = Map(definitions collect {case op: OperationDefinition ⇒ op.name → op}: _*)
   lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition ⇒ fragment.name → fragment}: _*)
   lazy val source: Option[String] = sourceMapper map (_.source)
@@ -54,11 +53,11 @@ case class Document(definitions: Vector[Definition], trailingComments: Vector[Co
     case that: Document ⇒
       (that canEqual this) &&
           definitions == that.definitions &&
-          position == that.position
+          location == that.location
     case _ ⇒ false
   }
 
-  private lazy val hash = Seq(definitions, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+  private lazy val hash = Seq(definitions, location).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
 
   override def hashCode(): Int = hash
 }
@@ -69,11 +68,16 @@ object Document {
     * concatenate the ASTs together into batched AST, useful for validating many
     * GraphQL source files which together represent one conceptual application.
     *
-    * The result of the merge will loose the `sourceMapper` and `position` since
-    * connection to the original string source is lost.
+    * The result `Document` will retain correlation to the original `sourceMapper`s.
     */
-  def merge(documents: Traversable[Document]): Document =
-    Document(documents.toVector.flatMap(_.definitions))
+  def merge(documents: Traversable[Document]): Document = {
+    val originalSourceMappers = documents.flatMap(_.sourceMapper).toVector
+    val sourceMapper =
+      if (originalSourceMappers.nonEmpty) Some(new AggregateSourceMapper("MergedDocument", originalSourceMappers))
+      else None
+
+    Document(documents.toVector.flatMap(_.definitions), sourceMapper = sourceMapper)
+  }
 
   /**
     * The most basic, but valid document with a stub `Query` type
@@ -84,7 +88,7 @@ object Document {
         FieldDefinition("stub", NamedType("String"), Vector.empty)))))
 }
 
-case class InputDocument(values: Vector[Value], trailingComments: Vector[Comment] = Vector.empty, position: Option[Position] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode with WithTrailingComments {
+case class InputDocument(values: Vector[Value], trailingComments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode with WithTrailingComments {
   lazy val source: Option[String] = sourceMapper map (_.source)
 
   /**
@@ -124,12 +128,12 @@ case class InputDocument(values: Vector[Value], trailingComments: Vector[Comment
     case that: InputDocument ⇒
       (that canEqual this) &&
           values == that.values &&
-          position == that.position
+          location == that.location
     case _ ⇒ false
   }
 
   override def hashCode(): Int =
-    Seq(values, position).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+    Seq(values, location).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
 }
 
 object InputDocument {
@@ -155,7 +159,7 @@ sealed trait WithTrailingComments {
 
 sealed trait SelectionContainer extends AstNode with WithComments with WithTrailingComments {
   def selections: Vector[Selection]
-  def position: Option[Position]
+  def location: Option[AstLocation]
 }
 
 sealed trait Definition extends AstNode
@@ -168,7 +172,7 @@ case class OperationDefinition(
   selections: Vector[Selection],
   comments: Vector[Comment] = Vector.empty,
   trailingComments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends Definition with WithDirectives with SelectionContainer
+  location: Option[AstLocation] = None) extends Definition with WithDirectives with SelectionContainer
 
 case class FragmentDefinition(
     name: String,
@@ -178,7 +182,7 @@ case class FragmentDefinition(
     variables: Vector[VariableDefinition] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer {
+    location: Option[AstLocation] = None) extends Definition with ConditionalFragment with WithDirectives with SelectionContainer {
   lazy val typeConditionOpt = Some(typeCondition)
 }
 
@@ -195,7 +199,7 @@ case class VariableDefinition(
   tpe: Type,
   defaultValue: Option[Value],
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends AstNode with WithComments
+  location: Option[AstLocation] = None) extends AstNode with WithComments
 
 sealed trait Type extends AstNode {
   def namedType: NamedType = {
@@ -210,9 +214,9 @@ sealed trait Type extends AstNode {
   }
 }
 
-case class NamedType(name: String, position: Option[Position] = None) extends Type
-case class NotNullType(ofType: Type, position: Option[Position] = None) extends Type
-case class ListType(ofType: Type, position: Option[Position] = None) extends Type
+case class NamedType(name: String, location: Option[AstLocation] = None) extends Type
+case class NotNullType(ofType: Type, location: Option[AstLocation] = None) extends Type
+case class ListType(ofType: Type, location: Option[AstLocation] = None) extends Type
 
 sealed trait WithArguments extends AstNode {
   def arguments: Vector[Argument]
@@ -228,7 +232,7 @@ case class Field(
     selections: Vector[Selection],
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends Selection with SelectionContainer with WithArguments {
+    location: Option[AstLocation] = None) extends Selection with SelectionContainer with WithArguments {
   lazy val outputName = alias getOrElse name
 }
 
@@ -236,7 +240,7 @@ case class FragmentSpread(
   name: String,
   directives: Vector[Directive],
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends Selection
+  location: Option[AstLocation] = None) extends Selection
 
 case class InlineFragment(
     typeCondition: Option[NamedType],
@@ -244,7 +248,7 @@ case class InlineFragment(
     selections: Vector[Selection],
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends Selection with ConditionalFragment with SelectionContainer {
+    location: Option[AstLocation] = None) extends Selection with ConditionalFragment with SelectionContainer {
   def typeConditionOpt = typeCondition
 }
 
@@ -257,8 +261,8 @@ sealed trait WithDirectives extends AstNode {
   def directives: Vector[Directive]
 }
 
-case class Directive(name: String, arguments: Vector[Argument], comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends AstNode with WithArguments
-case class Argument(name: String, value: Value, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends NameValue
+case class Directive(name: String, arguments: Vector[Argument], comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends AstNode with WithArguments
+case class Argument(name: String, value: Value, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends NameValue
 
 sealed trait Value extends AstNode with WithComments {
   override def renderPretty: String = QueryRenderer.render(this, QueryRenderer.PrettyInput)
@@ -266,17 +270,17 @@ sealed trait Value extends AstNode with WithComments {
 
 sealed trait ScalarValue extends Value
 
-case class IntValue(value: Int, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
-case class BigIntValue(value: BigInt, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
-case class FloatValue(value: Double, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
-case class BigDecimalValue(value: BigDecimal, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
-case class StringValue(value: String, block: Boolean = false, blockRawValue: Option[String] = None, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
-case class BooleanValue(value: Boolean, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends ScalarValue
-case class EnumValue(value: String, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends Value
-case class ListValue(values: Vector[Value], comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends Value
-case class VariableValue(name: String, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends Value
-case class NullValue(comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends Value
-case class ObjectValue(fields: Vector[ObjectField], comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends Value {
+case class IntValue(value: Int, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends ScalarValue
+case class BigIntValue(value: BigInt, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends ScalarValue
+case class FloatValue(value: Double, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends ScalarValue
+case class BigDecimalValue(value: BigDecimal, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends ScalarValue
+case class StringValue(value: String, block: Boolean = false, blockRawValue: Option[String] = None, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends ScalarValue
+case class BooleanValue(value: Boolean, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends ScalarValue
+case class EnumValue(value: String, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends Value
+case class ListValue(values: Vector[Value], comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends Value
+case class VariableValue(name: String, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends Value
+case class NullValue(comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends Value
+case class ObjectValue(fields: Vector[ObjectField], comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends Value {
   lazy val fieldsByName =
     fields.foldLeft(ListMap.empty[String, Value]) {
       case (acc, field) ⇒ acc + (field.name → field.value)
@@ -287,9 +291,9 @@ object ObjectValue {
   def apply(fields: (String, Value)*): ObjectValue = ObjectValue(fields.toVector map (f ⇒ ObjectField(f._1, f._2)))
 }
 
-case class ObjectField(name: String, value: Value, comments: Vector[Comment] = Vector.empty, position: Option[Position] = None) extends NameValue
+case class ObjectField(name: String, value: Value, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends NameValue
 
-case class Comment(text: String, position: Option[Position] = None) extends AstNode
+case class Comment(text: String, location: Option[AstLocation] = None) extends AstNode
 
 // Schema Definition
 
@@ -298,7 +302,7 @@ case class ScalarTypeDefinition(
     directives: Vector[Directive] = Vector.empty,
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithDescription {
+    location: Option[AstLocation] = None) extends TypeDefinition with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -309,7 +313,7 @@ case class FieldDefinition(
   directives: Vector[Directive] = Vector.empty,
   description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode with WithDirectives with WithDescription
+  location: Option[AstLocation] = None) extends SchemaAstNode with WithDirectives with WithDescription
 
 case class InputValueDefinition(
   name: String,
@@ -318,7 +322,7 @@ case class InputValueDefinition(
   directives: Vector[Directive] = Vector.empty,
   description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode with WithDirectives with WithDescription
+  location: Option[AstLocation] = None) extends SchemaAstNode with WithDirectives with WithDescription
 
 case class ObjectTypeDefinition(
     name: String,
@@ -328,7 +332,7 @@ case class ObjectTypeDefinition(
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
+    location: Option[AstLocation] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -339,7 +343,7 @@ case class InterfaceTypeDefinition(
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
+    location: Option[AstLocation] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -349,7 +353,7 @@ case class UnionTypeDefinition(
     directives: Vector[Directive] = Vector.empty,
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithDescription {
+    location: Option[AstLocation] = None) extends TypeDefinition with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -360,7 +364,7 @@ case class EnumTypeDefinition(
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
+    location: Option[AstLocation] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -369,7 +373,7 @@ case class EnumValueDefinition(
   directives: Vector[Directive] = Vector.empty,
   description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode with WithDirectives with WithDescription
+  location: Option[AstLocation] = None) extends SchemaAstNode with WithDirectives with WithDescription
 
 case class InputObjectTypeDefinition(
     name: String,
@@ -378,7 +382,7 @@ case class InputObjectTypeDefinition(
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
+    location: Option[AstLocation] = None) extends TypeDefinition with WithTrailingComments with WithDescription {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -389,7 +393,7 @@ case class ObjectTypeExtensionDefinition(
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends ObjectLikeTypeExtensionDefinition with WithTrailingComments {
+    location: Option[AstLocation] = None) extends ObjectLikeTypeExtensionDefinition with WithTrailingComments {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -399,7 +403,7 @@ case class InterfaceTypeExtensionDefinition(
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends ObjectLikeTypeExtensionDefinition with WithTrailingComments {
+    location: Option[AstLocation] = None) extends ObjectLikeTypeExtensionDefinition with WithTrailingComments {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -409,7 +413,7 @@ case class InputObjectTypeExtensionDefinition(
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeExtensionDefinition with WithTrailingComments {
+    location: Option[AstLocation] = None) extends TypeExtensionDefinition with WithTrailingComments {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -419,7 +423,7 @@ case class EnumTypeExtensionDefinition(
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeExtensionDefinition with WithTrailingComments {
+    location: Option[AstLocation] = None) extends TypeExtensionDefinition with WithTrailingComments {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -428,7 +432,7 @@ case class UnionTypeExtensionDefinition(
     types: Vector[NamedType],
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeExtensionDefinition {
+    location: Option[AstLocation] = None) extends TypeExtensionDefinition {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -436,7 +440,7 @@ case class ScalarTypeExtensionDefinition(
     name: String,
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
-    position: Option[Position] = None) extends TypeExtensionDefinition {
+    location: Option[AstLocation] = None) extends TypeExtensionDefinition {
   def rename(newName: String) = copy(name = newName)
 }
 
@@ -446,28 +450,35 @@ case class DirectiveDefinition(
   locations: Vector[DirectiveLocation],
   description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeSystemDefinition with WithDescription
+  location: Option[AstLocation] = None) extends TypeSystemDefinition with WithDescription
 
 case class DirectiveLocation(
   name: String,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode
+  location: Option[AstLocation] = None) extends SchemaAstNode
 
 case class SchemaDefinition(
   operationTypes: Vector[OperationTypeDefinition],
   directives: Vector[Directive] = Vector.empty,
   comments: Vector[Comment] = Vector.empty,
   trailingComments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends TypeSystemDefinition with WithTrailingComments with WithDirectives
+  location: Option[AstLocation] = None) extends TypeSystemDefinition with WithTrailingComments with WithDirectives
 
 case class OperationTypeDefinition(
   operation: OperationType,
   tpe: NamedType,
   comments: Vector[Comment] = Vector.empty,
-  position: Option[Position] = None) extends SchemaAstNode
+  location: Option[AstLocation] = None) extends SchemaAstNode
+
+case class AstLocation(sourceId: String, index: Int, line: Int, column: Int)
+
+object AstLocation {
+  def apply(index: Int, line: Int, column: Int): AstLocation =
+    AstLocation("", index, line, column)
+}
 
 sealed trait AstNode {
-  def position: Option[Position]
+  def location: Option[AstLocation]
   def cacheKeyHash: Int = System.identityHashCode(this)
 
   def renderPretty: String = QueryRenderer.render(this, QueryRenderer.Pretty)
@@ -492,12 +503,12 @@ sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
 }
 
 object AstNode {
-  def withoutPosition[T <: AstNode](node: T, stripComments: Boolean = false): T = {
-    val enterComment = (_: Comment) ⇒ if (stripComments) VisitorCommand.Delete else VisitorCommand.Skip
+  def withoutAstLocations[T <: AstNode](node: T, stripComments: Boolean = false): T = {
+    val enterComment = (_: Comment) ⇒ if (stripComments) VisitorCommand.Delete else VisitorCommand.Continue
 
     visit[AstNode](node,
       Visit[Comment](enterComment),
-      VisitAnyField[AstNode, Option[Position]]((_, _) ⇒ VisitorCommand.Transform(None))).asInstanceOf[T]
+      VisitAnyField[AstNode, Option[AstLocation]]((_, _) ⇒ VisitorCommand.Transform(None))).asInstanceOf[T]
   }
 }
 

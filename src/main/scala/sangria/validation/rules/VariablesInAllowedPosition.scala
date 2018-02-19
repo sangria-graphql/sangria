@@ -47,7 +47,7 @@ class VariablesInAllowedPosition extends ValidationRule {
             SchemaRenderer.renderTypeName(inputTpe),
             SchemaRenderer.renderTypeName(tpe),
             ctx.sourceMapper,
-            varDef.position.toList ++ usage.node.position.toList)
+            varDef.location.toList ++ usage.node.location.toList)
         }
 
         if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue

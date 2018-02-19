@@ -33,9 +33,9 @@ class NoUndefinedVariables extends ValidationRule {
         val errors = usages.filterNot(vu ⇒ variableNameDefined.contains(vu.node.name)).toVector.map { vu ⇒
           operation.name match {
             case Some(opName) ⇒
-              UndefinedVarByOpViolation(vu.node.name, opName, ctx.sourceMapper, vu.node.position.toList ++ operation.position.toList)
+              UndefinedVarByOpViolation(vu.node.name, opName, ctx.sourceMapper, vu.node.location.toList ++ operation.location.toList)
             case None ⇒
-              UndefinedVarViolation(vu.node.name, ctx.sourceMapper, vu.node.position.toList ++ operation.position.toList)
+              UndefinedVarViolation(vu.node.name, ctx.sourceMapper, vu.node.location.toList ++ operation.location.toList)
           }
         }
 

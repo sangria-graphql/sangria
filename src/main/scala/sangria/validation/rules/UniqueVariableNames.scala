@@ -1,8 +1,6 @@
 package sangria.validation.rules
 
-import org.parboiled2.Position
-
-
+import sangria.ast.AstLocation
 import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
@@ -16,7 +14,7 @@ import scala.collection.mutable.{Map ⇒ MutableMap}
   */
 class UniqueVariableNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    val knownVariableNames = MutableMap[String, List[Position]]()
+    val knownVariableNames = MutableMap[String, List[AstLocation]]()
 
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition ⇒

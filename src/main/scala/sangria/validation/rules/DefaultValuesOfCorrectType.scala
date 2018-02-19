@@ -25,7 +25,7 @@ class DefaultValuesOfCorrectType extends ValidationRule {
                 SchemaRenderer.renderTypeName(it),
                 SchemaRenderer.renderTypeName(OptionInputType(it)),
                 ctx.sourceMapper,
-                d.position.toList))
+                d.location.toList))
             case _ ⇒ Vector.empty
           }
 
@@ -42,7 +42,7 @@ class DefaultValuesOfCorrectType extends ValidationRule {
                     QueryRenderer.render(defaultValue),
                     violation,
                     ctx.sourceMapper,
-                    defaultValue.position.toList))
+                    defaultValue.location.toList))
               else
                 Vector.empty
             case _ ⇒ Vector.empty

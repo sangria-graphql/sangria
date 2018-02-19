@@ -32,7 +32,7 @@ class NoUnusedVariables extends ValidationRule {
         val variableNameUsed = usages.map(_.node.name).toSet
 
         val errors = variableDefs.filterNot(vd ⇒ variableNameUsed.contains(vd.name)).toVector.map(vd ⇒
-          UnusedVariableViolation(vd.name, operation.name, ctx.sourceMapper, vd.position.toList))
+          UnusedVariableViolation(vd.name, operation.name, ctx.sourceMapper, vd.location.toList))
 
         if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
     }

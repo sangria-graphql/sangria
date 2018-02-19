@@ -18,7 +18,7 @@ class UniqueFragmentNames extends ValidationRule {
     override val onEnter: ValidationVisit = {
       case fragDef: ast.FragmentDefinition ⇒
         if (knownFragmentNames contains fragDef.name)
-          Left(Vector(DuplicateFragmentNameViolation(fragDef.name, ctx.sourceMapper, fragDef.position.toList)))
+          Left(Vector(DuplicateFragmentNameViolation(fragDef.name, ctx.sourceMapper, fragDef.location.toList)))
         else {
           knownFragmentNames += fragDef.name
           AstVisitorCommand.RightContinue

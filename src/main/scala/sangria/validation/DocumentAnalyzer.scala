@@ -72,7 +72,7 @@ case class DocumentAnalyzer(document: ast.Document) {
     }
 
   def separateOperation(definition: OperationDefinition): ast.Document = {
-    val definitions = (definition +: getRecursivelyReferencedFragments(definition)).sortBy(_.position match {
+    val definitions = (definition +: getRecursivelyReferencedFragments(definition)).sortBy(_.location match {
       case Some(pos) ⇒ pos.line
       case _ ⇒ 0
     })

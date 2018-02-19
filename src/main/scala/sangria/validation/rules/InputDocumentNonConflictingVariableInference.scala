@@ -1,6 +1,6 @@
 package sangria.validation.rules
 
-import org.parboiled2.Position
+import sangria.ast.AstLocation
 import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.renderer.SchemaRenderer
@@ -14,7 +14,7 @@ import scala.collection.mutable
 class InputDocumentNonConflictingVariableInference extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     private var inInputDocument = false
-    private val usedVariables = new mutable.HashMap[String, (ast.Type, List[Position])]
+    private val usedVariables = new mutable.HashMap[String, (ast.Type, List[AstLocation])]
 
     override val onEnter: ValidationVisit = {
       case _: ast.InputDocument ⇒
@@ -27,9 +27,9 @@ class InputDocumentNonConflictingVariableInference extends ValidationRule {
 
         usedVariables.get(v.name) match {
           case Some((existing, otherPos)) if existing != parentTypeAst ⇒
-            Left(Vector(VariableInferenceViolation(v.name, existing.renderCompact, parentTypeAst.renderCompact, ctx.sourceMapper, v.position.toList ++ otherPos)))
+            Left(Vector(VariableInferenceViolation(v.name, existing.renderCompact, parentTypeAst.renderCompact, ctx.sourceMapper, v.location.toList ++ otherPos)))
           case None ⇒
-            usedVariables(v.name) = (parentTypeAst, v.position.toList)
+            usedVariables(v.name) = (parentTypeAst, v.location.toList)
             AstVisitorCommand.RightContinue
           case _ ⇒ AstVisitorCommand.RightContinue
         }

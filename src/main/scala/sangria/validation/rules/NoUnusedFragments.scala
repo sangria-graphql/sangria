@@ -37,7 +37,7 @@ class NoUnusedFragments extends ValidationRule {
 
         val errors = fragmentDefs.toVector
           .filter(fd ⇒ !fragmentNameUsed.contains(fd.name))
-          .map(fd ⇒ UnusedFragmentViolation(fd.name, ctx.sourceMapper, fd.position.toList))
+          .map(fd ⇒ UnusedFragmentViolation(fd.name, ctx.sourceMapper, fd.location.toList))
 
         if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
     }

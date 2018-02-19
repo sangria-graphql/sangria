@@ -88,22 +88,22 @@ class FieldCollector[Ctx, Val](
           .get(d.name)
           .map(dd ⇒ selection match {
             case _: ast.Field if !dd.locations.contains(DirectiveLocation.Field) ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", exceptionHandler, sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", exceptionHandler, sourceMapper, d.location.toList))
             case _: ast.InlineFragment if !dd.locations.contains(DirectiveLocation.InlineFragment) ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on inline fragment", exceptionHandler, sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on inline fragment", exceptionHandler, sourceMapper, d.location.toList))
             case _: ast.FragmentSpread if !dd.locations.contains(DirectiveLocation.FragmentSpread) ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment spread", exceptionHandler, sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment spread", exceptionHandler, sourceMapper, d.location.toList))
             case _: ast.FragmentDefinition if !dd.locations.contains(DirectiveLocation.FragmentDefinition) ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment definition", exceptionHandler, sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment definition", exceptionHandler, sourceMapper, d.location.toList))
             case op: ast.OperationDefinition if op.operationType == OperationType.Query && !dd.locations.contains(DirectiveLocation.Query) ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on query operation", exceptionHandler, sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on query operation", exceptionHandler, sourceMapper, d.location.toList))
             case op: ast.OperationDefinition if op.operationType == OperationType.Mutation && !dd.locations.contains(DirectiveLocation.Mutation) ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on mutation operation", exceptionHandler, sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on mutation operation", exceptionHandler, sourceMapper, d.location.toList))
             case op: ast.OperationDefinition if op.operationType == OperationType.Subscription && !dd.locations.contains(DirectiveLocation.Subscription) ⇒
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on subscription operation", exceptionHandler, sourceMapper, d.position.toList))
+              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on subscription operation", exceptionHandler, sourceMapper, d.location.toList))
             case _ ⇒ Success(d → dd)
           })
-          .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", exceptionHandler, sourceMapper, d.position.toList))))
+          .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", exceptionHandler, sourceMapper, d.location.toList))))
         .map(_.flatMap{case (astDir, dir) ⇒ valueCollector.getArgumentValues(dir.arguments, astDir.arguments, variables) map (dir → _)})
 
     possibleDirs.collect{case Failure(error) ⇒ error}.headOption map (Failure(_)) getOrElse {
@@ -119,7 +119,7 @@ class FieldCollector[Ctx, Val](
       case Some(tc) ⇒
         schema.outputTypes.get(tc.name)
           .map(condTpe ⇒ Success(condTpe.name == tpe.name || (condTpe.isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
-          .getOrElse(Failure(new ExecutionError(s"Unknown type '${tc.name}'.", exceptionHandler, sourceMapper, conditional.position.toList)))
+          .getOrElse(Failure(new ExecutionError(s"Unknown type '${tc.name}'.", exceptionHandler, sourceMapper, conditional.location.toList)))
       case None ⇒ Success(true)
     }
 }

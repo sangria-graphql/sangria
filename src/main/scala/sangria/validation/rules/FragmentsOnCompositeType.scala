@@ -18,14 +18,14 @@ class FragmentsOnCompositeType extends ValidationRule {
       case ast.InlineFragment(Some(cond), _, _, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] ⇒
-            Left(Vector(InlineFragmentOnNonCompositeErrorViolation(cond.name, ctx.sourceMapper, cond.position.toList)))
+            Left(Vector(InlineFragmentOnNonCompositeErrorViolation(cond.name, ctx.sourceMapper, cond.location.toList)))
           case _ ⇒
             AstVisitorCommand.RightContinue
         }
       case ast.FragmentDefinition(name, cond, _, _, _, _, _, pos) ⇒
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] ⇒
-            Left(Vector(FragmentOnNonCompositeErrorViolation(name, cond.name, ctx.sourceMapper, cond.position.toList)))
+            Left(Vector(FragmentOnNonCompositeErrorViolation(name, cond.name, ctx.sourceMapper, cond.location.toList)))
           case _ ⇒
             AstVisitorCommand.RightContinue
         }

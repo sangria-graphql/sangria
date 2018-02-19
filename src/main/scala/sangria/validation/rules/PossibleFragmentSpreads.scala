@@ -27,7 +27,7 @@ class PossibleFragmentSpreads extends ValidationRule {
               SchemaRenderer.renderTypeName(parent, topLevel = true),
               SchemaRenderer.renderTypeName(tpe, topLevel = true),
               ctx.sourceMapper,
-              f.position.toList
+              f.location.toList
             ))
         else Vector.empty
 
@@ -46,7 +46,7 @@ class PossibleFragmentSpreads extends ValidationRule {
               SchemaRenderer.renderTypeName(parent, topLevel = true),
               SchemaRenderer.renderTypeName(tpe, topLevel = true),
               ctx.sourceMapper,
-              fs.position.toList
+              fs.location.toList
             ))
           else Vector.empty
 

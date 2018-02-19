@@ -154,7 +154,8 @@ case class ScalarType[T](
   coerceInput: ast.Value ⇒ Either[Violation, T],
   complexity: Double = 0.0D,
   scalarInfo: Set[ScalarValueInfo] = Set.empty,
-  astDirectives: Vector[ast.Directive] = Vector.empty
+  astDirectives: Vector[ast.Directive] = Vector.empty,
+  astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
   Named.checkName(name)
 
@@ -174,6 +175,7 @@ case class ScalarAlias[T, ST](
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named {
   def interfaces: List[InterfaceType[Ctx, _]]
   def astDirectives: Vector[ast.Directive]
+  def astNodes: Vector[ast.AstNode]
 
   def fieldsFn: () ⇒ List[Field[Ctx, Val]]
 
@@ -209,7 +211,8 @@ case class ObjectType[Ctx, Val: ClassTag] (
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]],
   instanceCheck: (Any, Class[_], ObjectType[Ctx, Val]) ⇒ Boolean,
-  astDirectives: Vector[ast.Directive]
+  astDirectives: Vector[ast.Directive],
+  astNodes: Vector[ast.AstNode]
 ) extends ObjectLikeType[Ctx, Val] {
   lazy val valClass = implicitly[ClassTag[Val]].runtimeClass
 
@@ -223,25 +226,25 @@ case class ObjectType[Ctx, Val: ClassTag] (
 
 object ObjectType {
   def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(name, fields), Nil, instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(name, fields), Nil, instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(name, fields), Nil, instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(name, fields), Nil, instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
   def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(name, fields), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), None, fieldsFn = Named.checkObjFieldsFn(name, fields), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
   def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(name, fields), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkObjFieldsFn(name, fields), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
 
   def apply[Ctx, Val: ClassTag](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, Named.checkObjFields(name, fieldsFn), Nil, instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), None, Named.checkObjFields(name, fieldsFn), Nil, instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
   def apply[Ctx, Val: ClassTag](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(name, fieldsFn), Nil, instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(name, fieldsFn), Nil, instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
   def apply[Ctx, Val: ClassTag](name: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), None, Named.checkObjFields(name, fieldsFn), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), None, Named.checkObjFields(name, fieldsFn), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
   def apply[Ctx, Val: ClassTag](name: String, description: String, interfaces: List[PossibleInterface[Ctx, Val]], fieldsFn: () ⇒ List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
-    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(name, fieldsFn), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), Some(description), Named.checkObjFields(name, fieldsFn), interfaces map (_.interfaceType), instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
 
   def createFromMacro[Ctx, Val: ClassTag](name: String, description: Option[String], interfaces: List[InterfaceType[Ctx, _]], fieldsFn: () ⇒ List[Field[Ctx, Val]]) =
-    ObjectType(Named.checkName(name), description, Named.checkObjFields(name, fieldsFn), interfaces, instanceCheck = defaultInstanceCheck, Vector.empty)
+    ObjectType(Named.checkName(name), description, Named.checkObjFields(name, fieldsFn), interfaces, instanceCheck = defaultInstanceCheck, Vector.empty, Vector.empty)
 
   implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
     objectType.asInstanceOf[ObjectType[Ctx, Val]]
@@ -256,7 +259,8 @@ case class InterfaceType[Ctx, Val](
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]],
   manualPossibleTypes: () ⇒ List[ObjectType[_, _]],
-  astDirectives: Vector[ast.Directive]
+  astDirectives: Vector[ast.Directive],
+  astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends ObjectLikeType[Ctx, Val] with AbstractType {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
@@ -267,22 +271,22 @@ object InterfaceType {
   val emptyPossibleTypes: () ⇒ List[ObjectType[_, _]] = () ⇒ Nil
 
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(name, fields), Nil, emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(name, fields), Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(name, fields), Nil, emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(name, fields), Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(name, fields), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(name, fields), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(name, fields), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(name, fields), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
 
   def apply[Ctx, Val](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), None, Named.checkIntFields(name, fieldsFn), Nil, emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), None, Named.checkIntFields(name, fieldsFn), Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(name, fieldsFn), Nil, emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(name, fieldsFn), Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), None, Named.checkIntFields(name, fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), None, Named.checkIntFields(name, fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(name, fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty)
+    InterfaceType(Named.checkName(name), Some(description), Named.checkIntFields(name, fieldsFn), interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
 }
 
 case class PossibleInterface[Ctx, Concrete](interfaceType: InterfaceType[Ctx, _])
@@ -322,7 +326,8 @@ case class UnionType[Ctx](
     name: String,
     description: Option[String] = None,
     types: List[ObjectType[Ctx, _]],
-    astDirectives: Vector[ast.Directive] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType {
+    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astNodes: Vector[ast.AstNode] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
@@ -336,7 +341,8 @@ case class Field[Ctx, Val](
     tags: List[FieldTag],
     complexity: Option[(Ctx, Args, Double) ⇒ Double],
     manualPossibleTypes: () ⇒ List[ObjectType[_, _]],
-    astDirectives: Vector[ast.Directive]) extends Named with HasArguments with HasDeprecation {
+    astDirectives: Vector[ast.Directive],
+    astNodes: Vector[ast.AstNode]) extends Named with HasArguments with HasDeprecation {
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
@@ -353,7 +359,7 @@ object Field {
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) ⇒ Double] = None,
       deprecationReason: Option[String] = None)(implicit ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
-    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, complexity, () ⇒ possibleTypes map (_.objectType), Vector.empty)
+    Field[Ctx, Val](Named.checkName(name), fieldType, description, arguments, resolve, deprecationReason, tags, complexity, () ⇒ possibleTypes map (_.objectType), Vector.empty, Vector.empty)
 
   def subs[Ctx, Val, StreamSource, Res, Out](
     name: String,
@@ -378,6 +384,7 @@ object Field {
       SubscriptionField[stream.StreamSource](s) +: tags,
       complexity,
       () ⇒ possibleTypes map (_.objectType),
+      Vector.empty,
       Vector.empty)
   }
 }
@@ -406,7 +413,8 @@ case class Argument[T](
     description: Option[String],
     defaultValue: Option[(_, ToInput[_, _])],
     fromInput: FromInput[_],
-    astDirectives: Vector[ast.Directive]) extends InputValue[T] with Named {
+    astDirectives: Vector[ast.Directive],
+    astNodes: Vector[ast.AstNode]) extends InputValue[T] with Named {
 
   if (!argumentType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
     throw new IllegalArgumentException(s"Argument '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this argument nullable or remove the default value.")
@@ -421,37 +429,37 @@ object Argument {
       argumentType: InputType[T],
       description: String,
       defaultValue: Default)(implicit toInput: ToInput[Default, _], fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, Some(description), Some(defaultValue → toInput), fromInput, Vector.empty)
+    Argument(Named.checkName(name), argumentType, Some(description), Some(defaultValue → toInput), fromInput, Vector.empty, Vector.empty)
 
   def apply[T, Default](
       name: String,
       argumentType: InputType[T],
       defaultValue: Default)(implicit toInput: ToInput[Default, _], fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, None, Some(defaultValue → toInput), fromInput, Vector.empty)
+    Argument(Named.checkName(name), argumentType, None, Some(defaultValue → toInput), fromInput, Vector.empty, Vector.empty)
 
   def apply[T](
       name: String,
       argumentType: InputType[T],
       description: String)(implicit fromInput: FromInput[T], res: WithoutInputTypeTags[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, Some(description), None, fromInput, Vector.empty)
+    Argument(Named.checkName(name), argumentType, Some(description), None, fromInput, Vector.empty, Vector.empty)
 
   def apply[T](
       name: String,
       argumentType: InputType[T])(implicit fromInput: FromInput[T], res: WithoutInputTypeTags[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, None, None, fromInput, Vector.empty)
+    Argument(Named.checkName(name), argumentType, None, None, fromInput, Vector.empty, Vector.empty)
 
   def createWithoutDefault[T](
       name: String,
       argumentType: InputType[T],
       description: Option[String])(implicit fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, description, None, fromInput, Vector.empty)
+    Argument(Named.checkName(name), argumentType, description, None, fromInput, Vector.empty, Vector.empty)
 
   def createWithDefault[T, Default](
       name: String,
       argumentType: InputType[T],
       description: Option[String],
       defaultValue: Default)(implicit toInput: ToInput[Default, _], fromInput: FromInput[T], res: ArgumentType[T]): Argument[res.Res] =
-    Argument(Named.checkName(name), argumentType, description, Some(defaultValue → toInput), fromInput, Vector.empty)
+    Argument(Named.checkName(name), argumentType, description, Some(defaultValue → toInput), fromInput, Vector.empty, Vector.empty)
 }
 
 trait WithoutInputTypeTags[T] {
@@ -568,7 +576,8 @@ case class EnumType[T](
     name: String,
     description: Option[String] = None,
     values: List[EnumValue[T]],
-    astDirectives: Vector[ast.Directive] = Vector.empty) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
+    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astNodes: Vector[ast.AstNode] = Vector.empty) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
   Named.checkName(name)
 
   lazy val byName = values groupBy (_.name) mapValues (_.head)
@@ -595,7 +604,8 @@ case class EnumValue[+T](
     description: Option[String] = None,
     value: T,
     deprecationReason: Option[String] = None,
-    astDirectives: Vector[ast.Directive] = Vector.empty) extends Named with HasDeprecation {
+    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astNodes: Vector[ast.AstNode] = Vector.empty) extends Named with HasDeprecation {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
@@ -603,7 +613,8 @@ case class InputObjectType[T](
   name: String,
   description: Option[String] = None,
   fieldsFn: () ⇒ List[InputField[_]],
-  astDirectives: Vector[ast.Directive]
+  astDirectives: Vector[ast.Directive],
+  astNodes: Vector[ast.AstNode]
 ) extends InputType[T @@ InputObjectResult] with NullableType with UnmodifiedType with Named {
   lazy val fields = fieldsFn()
   lazy val fieldsByName = fields groupBy(_.name) mapValues(_.head)
@@ -615,17 +626,17 @@ object InputObjectType {
   type DefaultInput = Map[String, Any]
 
   def apply[T](name: String, fields: List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
-    InputObjectType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(name, fields), Vector.empty)
+    InputObjectType(Named.checkName(name), None, fieldsFn = Named.checkIntFieldsFn(name, fields), Vector.empty, Vector.empty)
   def apply[T](name: String, description: String, fields: List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
-    InputObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(name, fields), Vector.empty)
+    InputObjectType(Named.checkName(name), Some(description), fieldsFn = Named.checkIntFieldsFn(name, fields), Vector.empty, Vector.empty)
 
   def apply[T](name: String, fieldsFn: () ⇒ List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
-    InputObjectType(Named.checkName(name), None, Named.checkIntFields(name, fieldsFn), Vector.empty)
+    InputObjectType(Named.checkName(name), None, Named.checkIntFields(name, fieldsFn), Vector.empty, Vector.empty)
   def apply[T](name: String, description: String, fieldsFn: () ⇒ List[InputField[_]])(implicit res: InputObjectDefaultResult[T]): InputObjectType[res.Res] =
-    InputObjectType(Named.checkName(name), Some(description), Named.checkIntFields(name, fieldsFn), Vector.empty)
+    InputObjectType(Named.checkName(name), Some(description), Named.checkIntFields(name, fieldsFn), Vector.empty, Vector.empty)
 
   def createFromMacro[T](name: String, description: Option[String] = None, fieldsFn: () ⇒ List[InputField[_]]) =
-    InputObjectType[T](Named.checkName(name), description, Named.checkIntFields(name, fieldsFn), Vector.empty)
+    InputObjectType[T](Named.checkName(name), description, Named.checkIntFields(name, fieldsFn), Vector.empty, Vector.empty)
 }
 
 trait InputObjectDefaultResult[T] {
@@ -649,7 +660,8 @@ case class InputField[T](
   fieldType: InputType[T],
   description: Option[String],
   defaultValue: Option[(_, ToInput[_, _])],
-  astDirectives: Vector[ast.Directive]
+  astDirectives: Vector[ast.Directive],
+  astNodes: Vector[ast.AstNode]
 ) extends InputValue[T] with Named {
   if (!fieldType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
     throw new IllegalArgumentException(s"Input field '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this fields nullable or remove the default value.")
@@ -660,24 +672,24 @@ case class InputField[T](
 
 object InputField {
   def apply[T, Default](name: String, fieldType: InputType[T], description: String, defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
-    InputField(name, fieldType, Some(description), Some(defaultValue → toInput), Vector.empty).asInstanceOf[InputField[res.Res]]
+    InputField(name, fieldType, Some(description), Some(defaultValue → toInput), Vector.empty, Vector.empty).asInstanceOf[InputField[res.Res]]
 
   def apply[T, Default](name: String, fieldType: InputType[T], defaultValue: Default)(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
-    InputField(name, fieldType, None, Some(defaultValue → toInput), Vector.empty).asInstanceOf[InputField[res.Res]]
+    InputField(name, fieldType, None, Some(defaultValue → toInput), Vector.empty, Vector.empty).asInstanceOf[InputField[res.Res]]
 
   def apply[T](name: String, fieldType: InputType[T], description: String)(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
-    InputField(name, fieldType, Some(description), None, Vector.empty).asInstanceOf[InputField[res.Res]]
+    InputField(name, fieldType, Some(description), None, Vector.empty, Vector.empty).asInstanceOf[InputField[res.Res]]
 
   def apply[T](name: String, fieldType: InputType[T])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
-    InputField(name, fieldType, None, None, Vector.empty).asInstanceOf[InputField[res.Res]]
+    InputField(name, fieldType, None, None, Vector.empty, Vector.empty).asInstanceOf[InputField[res.Res]]
 
   def createFromMacroWithDefault[T, Default](
     name: String, fieldType: InputType[T], description: Option[String], defaultValue: Default
   )(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
-    InputField(name, fieldType, description, Some(defaultValue → toInput), Vector.empty).asInstanceOf[InputField[res.Res]]
+    InputField(name, fieldType, description, Some(defaultValue → toInput), Vector.empty, Vector.empty).asInstanceOf[InputField[res.Res]]
 
   def createFromMacroWithoutDefault[T](name: String, fieldType: InputType[T], description: Option[String])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
-    InputField(name, fieldType, description, None, Vector.empty).asInstanceOf[InputField[res.Res]]
+    InputField(name, fieldType, description, None, Vector.empty, Vector.empty).asInstanceOf[InputField[res.Res]]
 }
 
 case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType
@@ -754,7 +766,8 @@ case class Schema[Ctx, Val](
     additionalTypes: List[Type with Named] = Nil,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default,
-    astDirectives: Vector[ast.Directive] = Vector.empty) {
+    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astNodes: Vector[ast.AstNode] = Vector.empty) {
   def extend(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
     AstSchemaMaterializer.extendSchema(this, document, builder)
 
@@ -804,11 +817,11 @@ case class Schema[Ctx, Val](
         case ListType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
         case ListInputType(ofType) ⇒ collectTypes(parentInfo, priority, ofType, result)
 
-        case t @ ScalarType(name, _, _, _, _, _, _, _) if BuiltinScalars.contains(t) ⇒ updated(40, name, t, result, parentInfo)
-        case t @ ScalarType(name, _, _, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
+        case t @ ScalarType(name, _, _, _, _, _, _, _, _) if BuiltinScalars.contains(t) ⇒ updated(40, name, t, result, parentInfo)
+        case t @ ScalarType(name, _, _, _, _, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
         case ScalarAlias(aliasFor, _, _) ⇒ updated(priority, aliasFor.name, aliasFor, result, parentInfo)
-        case t @ EnumType(name, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
-        case t @ InputObjectType(name, _, _, _) ⇒
+        case t @ EnumType(name, _, _, _, _) ⇒ updated(priority, name, t, result, parentInfo)
+        case t @ InputObjectType(name, _, _, _, _) ⇒
           t.fields.foldLeft(updated(priority, name, t, result, parentInfo)) {
             case (acc, field) ⇒
               collectTypes(s"a field '${field.name}' of '$name' input object type", priority, field.fieldType, acc)
@@ -836,7 +849,7 @@ case class Schema[Ctx, Val](
           t.interfaces.foldLeft(withPossible) {
             case (acc, interface) ⇒ collectTypes(s"an interface defined in '${t.name}' type", priority, interface, acc)
           }
-        case t @ UnionType(name, _, types, _) ⇒
+        case t @ UnionType(name, _, types, _, _) ⇒
           types.foldLeft(updated(priority, name, t, result, parentInfo)) {case (acc, tpe) ⇒ collectTypes(s"a '$name' type", priority, tpe, acc)}
       }
     }
@@ -907,9 +920,7 @@ case class Schema[Ctx, Val](
 
   def analyzer(query: Document) = SchemaBasedDocumentAnalyzer(this, query)
 
-  val validationErrors = validationRules flatMap (_.validate(this))
-
-  if (validationErrors.nonEmpty) throw SchemaValidationException(validationErrors)
+  SchemaValidationRule.validateWithException(this, validationRules)
 }
 
 object Schema {

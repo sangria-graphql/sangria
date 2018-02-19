@@ -323,8 +323,8 @@ object SchemaComparator {
     added: (ast.Directive) ⇒ SchemaChange,
     removed: (ast.Directive) ⇒ SchemaChange
   ): Vector[SchemaChange] = {
-    val oldD = oldDirectives.map(AstNode.withoutPosition(_)).toSet
-    val newD = newDirectives.map(AstNode.withoutPosition(_)).toSet
+    val oldD = oldDirectives.map(AstNode.withoutAstLocations(_)).toSet
+    val newD = newDirectives.map(AstNode.withoutAstLocations(_)).toSet
 
     val remove = oldD.diff(newD).toVector map removed
     val add = newD.diff(oldD).toVector map added
@@ -340,8 +340,8 @@ object SchemaComparator {
     dirAdded: ast.Directive ⇒ SchemaChange,
     dirRemoved: ast.Directive ⇒ SchemaChange
   ): Vector[SchemaChange] = {
-    val oldDefault = oldArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
-    val newDefault = newArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
+    val oldDefault = oldArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
+    val newDefault = newArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
 
     val withDefault =
       if (oldDefault != newDefault)
@@ -366,8 +366,8 @@ object SchemaComparator {
   }
 
   private def findInInputFields(oldType: InputObjectType[_], newType: InputObjectType[_], oldField: InputField[_], newField: InputField[_]): Vector[SchemaChange] = {
-    val oldDefault = oldField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
-    val newDefault = newField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutPosition(v)))
+    val oldDefault = oldField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
+    val newDefault = newField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
 
     val withDefault =
       if (oldDefault != newDefault)

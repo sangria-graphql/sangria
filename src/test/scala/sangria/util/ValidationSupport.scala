@@ -212,7 +212,7 @@ trait ValidationSupport extends Matchers {
       withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString "; "}. Actual:\n${errors map (_.errorMessage) mkString "\n"}") {
         errors exists { error ⇒
           error.errorMessage.contains(expected) && {
-            val errorPositions = error.asInstanceOf[AstNodeViolation].positions
+            val errorPositions = error.asInstanceOf[AstNodeViolation].locations
 
             errorPositions should have size pos.size
 

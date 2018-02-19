@@ -1,6 +1,6 @@
 package sangria.execution
 
-import org.parboiled2.Position
+import sangria.ast.AstLocation
 import sangria.ast
 import sangria.marshalling.{InputUnmarshaller, RawResultMarshaller, ResultMarshaller, ToInput}
 import sangria.parser.SourceMapper
@@ -18,7 +18,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       ofType: InputType[_],
       fieldPath: List[String],
       marshaller: ResultMarshaller,
-      pos: List[Position] = Nil)(value: Either[Vector[Violation], Trinary[Any]]): Either[Vector[Violation], marshaller.Node] = value match {
+      pos: List[AstLocation] = Nil)(value: Either[Vector[Violation], Trinary[Any]]): Either[Vector[Violation], marshaller.Node] = value match {
     case Right(v) if ofType.isOptional ⇒ Right(marshaller.optionalArrayNodeValue(v.asInstanceOf[Trinary[marshaller.Node]].toOption))
     case Right(Trinary.Defined(v)) ⇒ Right(v.asInstanceOf[marshaller.Node])
     case Right(Trinary.Undefined) | Right(Trinary.Null) ⇒ Left(Vector(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos)))
@@ -33,7 +33,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       marshaller: ResultMarshaller,
       firstKindMarshaller: ResultMarshaller,
       errors: VectorBuilder[Violation],
-      pos: List[Position] = Nil,
+      pos: List[AstLocation] = Nil,
       isArgument: Boolean,
       fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]],
       allowErrorsOnDefault: Boolean = false,
@@ -348,12 +348,12 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
     }
   }
 
-  private def valuePosition[T](value: T*): List[Position] = {
+  private def valuePosition[T](value: T*): List[AstLocation] = {
     val values = value.view.collect {
-      case node: ast.AstNode if node.position.isDefined ⇒ node.position.toList
+      case node: ast.AstNode if node.location.isDefined ⇒ node.location.toList
     }
 
-    values.headOption.fold(Nil: List[Position])(identity)
+    values.headOption.fold(Nil: List[AstLocation])(identity)
   }
 
   def isValidValue[In](tpe: InputType[_], input: Option[In])(implicit um: InputUnmarshaller[In]): Vector[Violation] = (tpe, input) match {
@@ -456,7 +456,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
         Right(Some(VariableValue((marshaller, firstKindMarshaller, actualType) ⇒
           coerceInputValue(actualType, fieldPath, input.get, None, marshaller, firstKindMarshaller, fromScalarMiddleware = fromScalarMiddleware, isArgument = false))))
     } else Left(violations.map(violation ⇒
-      VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.position.toList)))
+      VarTypeMismatchViolation(definition.name, QueryRenderer.render(definition.tpe), input map um.render, violation: Violation, sourceMapper, definition.location.toList)))
   }
 }
 

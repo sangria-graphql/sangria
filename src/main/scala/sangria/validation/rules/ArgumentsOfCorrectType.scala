@@ -26,7 +26,7 @@ class ArgumentsOfCorrectType extends ValidationRule {
               QueryRenderer.render(value),
               violation,
               ctx.sourceMapper,
-              value.position.toList)))
+              value.location.toList)))
           else
             AstVisitorCommand.RightContinue
         } getOrElse AstVisitorCommand.RightContinue
