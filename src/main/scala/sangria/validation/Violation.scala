@@ -3,6 +3,7 @@ package sangria.validation
 import sangria.ast.AstLocation
 import sangria.ast.Definition
 import sangria.parser.SourceMapper
+import sangria.schema.Named.NameRegexp
 import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
 
@@ -431,20 +432,88 @@ case class ConflictingTypeDefinitionViolation(typeName: String, conflictingTypes
   lazy val errorMessage = s"Type name '$typeName' is used for several conflicting GraphQL type kinds: ${conflictingTypes mkString ", "}. Conflict found in $parentInfo."
 }
 
-case class ReservedTypeNameViolation(typeName: String) extends Violation {
-  lazy val errorMessage = s"Type name '$typeName' must not begin with '__', which is reserved by GraphQL introspection."
+case class ReservedTypeNameViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Type name '$typeName' must not begin with '__', which is reserved by GraphQL introspection."
 }
 
-case class ReservedNameViolation(typeName: String, name: String) extends Violation {
-  lazy val errorMessage = s"Name '$typeName.$name' must not begin with '__', which is reserved by GraphQL introspection."
+case class ReservedNameViolation(typeName: String, name: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Name '$typeName.$name' must not begin with '__', which is reserved by GraphQL introspection."
 }
 
-case class EmptyFieldListViolation(typeName: String) extends Violation {
-  lazy val errorMessage = s"Type '$typeName' must have at least one field in a field list."
+case class InvalidTypeNameViolation(kind: String, typeName: String, explanation: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"$kind type name '$typeName' is invalid. $explanation"
 }
 
-case class ReservedEnumValueNameViolation(typeName: String, valueName: String) extends Violation {
-  lazy val errorMessage = s"'Name '$typeName.$valueName' can not be used as an Enum value."
+case class InvalidDirectiveNameViolation(dirName: String, explanation: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Directive name '$dirName' is invalid. $explanation"
+}
+
+case class InvalidEnumValueNameViolation(typeName: String, valueName: String, explanation: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Enum value name '$valueName' defined in enum type '$typeName' is invalid. $explanation"
+}
+
+case class InvalidFieldNameViolation(typeName: String, fieldName: String, explanation: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Field name '$fieldName' defined in type '$typeName' is invalid. $explanation"
+}
+
+case class InvalidInputFieldNameViolation(typeName: String, fieldName: String, explanation: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Field name '$fieldName' defined in input type '$typeName' is invalid. $explanation"
+}
+
+case class InvalidFieldArgumentNameViolation(typeName: String, fieldName: String, argName: String, explanation: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Argument name '$argName' defined in '$typeName.$fieldName' is invalid. $explanation"
+}
+
+case class InvalidDirectiveArgumentNameViolation(dirName: String, argName: String, explanation: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Argument name '$argName' defined in directive '$dirName' is invalid. $explanation"
+}
+
+case class EmptyUnionMembersViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Union type '$typeName' must define one or more member types."
+}
+
+case class NonUniqueUnionMembersViolation(typeName: String, memberName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Union type '$typeName' can only include type '$memberName' once."
+}
+
+case class EmptyEnumValuesMembersViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Enum type '$typeName' must define one or more values."
+}
+
+case class NonUniqueEnumValuesViolation(typeName: String, valueName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Enum type '$typeName' can include value '$valueName' only once."
+}
+
+case class EmptyInputFieldsViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Input type '$typeName' must define one or more fields."
+}
+
+case class NonUniqueInputFieldsViolation(typeName: String, fieldName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Input type '$typeName' can include field '$fieldName' only once."
+}
+
+case class EmptyFieldsViolation(kind: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"$kind type '$typeName' must define one or more fields."
+}
+
+case class NonUniqueFieldsViolation(kind: String, typeName: String, fieldName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"$kind type '$typeName' can include field '$fieldName' only once."
+}
+
+case class NonUniqueInterfacesViolation(typeName: String, interfaceName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Object type '$typeName' can implement interface '$interfaceName' only once."
+}
+
+case class NonUniqueFieldArgumentsViolation(typeName: String, fieldName: String, argName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Field '$typeName.$fieldName' can include argument '$argName' only once."
+}
+
+case class NonUniqueDirectiveArgumentsViolation(dirName: String, argName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage = s"Directive '$dirName' can include argument '$argName' only once."
+}
+
+case class ReservedEnumValueNameViolation(typeName: String, valueName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Name '$typeName.$valueName' can not be used as an Enum value."
 }
 
 case class VariableInferenceViolation(variableName: String, type1: String, type2: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {

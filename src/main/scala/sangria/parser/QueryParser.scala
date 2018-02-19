@@ -282,9 +282,9 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   def EnumValuesDefinition = rule { wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ → _) }
 
   def EnumValueDefinition = rule {
-    Description ~ EnumValue ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> ((descr, v, dirs) ⇒ ast.EnumValueDefinition(v.value, dirs, descr, v.comments, v.location))
+    Description ~ Comments ~ trackPos ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~> ((descr, comments, pos, name, dirs) ⇒ ast.EnumValueDefinition(name, dirs, descr, comments, Some(pos)))
   }
-  
+
   def InputObjectTypeDefinition = rule {
     Description ~ Comments ~ trackPos ~ inputType ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ InputFieldsDefinition.? ~> (
       (descr, comment, pos, name, dirs, fields) ⇒ ast.InputObjectTypeDefinition(name, fields.fold(Vector.empty[ast.InputValueDefinition])(_._1.toVector), dirs, descr, comment, fields.fold(Vector.empty[ast.Comment])(_._2), Some(pos)))
@@ -460,7 +460,7 @@ trait Values { this: Parser with Tokens with Ignored with Operations ⇒
 
   def NullValue = rule { Comments ~ trackPos ~ Null ~> ((comment, pos) ⇒ ast.NullValue(comment, Some(pos))) }
 
-  def EnumValue = rule { Comments ~ !True ~ !False ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.EnumValue(name, comment, Some(pos))) }
+  def EnumValue = rule { Comments ~ !(True | False) ~ trackPos ~ Name ~> ((comment, pos, name) ⇒ ast.EnumValue(name, comment, Some(pos))) }
 
   def ListValueConst = rule { Comments ~ trackPos ~ wsNoComment('[') ~ ValueConst.* ~ wsNoComment(']')  ~> ((comment, pos, v) ⇒ ast.ListValue(v.toVector, comment, Some(pos))) }
 

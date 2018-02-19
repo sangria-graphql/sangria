@@ -752,9 +752,9 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+      val error = intercept[SchemaValidationException](schema.extend(ast))
 
-      error.message should include ("Field 'Bar.foo' already exists in the schema.")
+      error.getMessage should include ("Object type 'Bar' can include field 'foo' only once.")
     }
 
     "does not allow implementing an existing interface" in {
@@ -765,9 +765,9 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      val error = intercept[SchemaMaterializationException](schema.extend(ast))
+      val error = intercept[SchemaValidationException](schema.extend(ast))
 
-      error.message should include ("Type 'Foo' already implements 'SomeInterface'.")
+      error.getMessage should include ("Object type 'Foo' can implement interface 'SomeInterface' only once.")
     }
 
     "does not allow referencing an unknown type" in {

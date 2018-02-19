@@ -853,9 +853,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Type 'Query' already implements 'Foo'. It cannot also be implemented in this type extension.")
+        error.getMessage should include ("Object type 'Query' can implement interface 'Foo' only once.")
       }
 
       "don't allow to have duplicate fields in the extension" in {
@@ -876,9 +876,9 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
             }
           """
 
-        val error = intercept [SchemaMaterializationException] (Schema.buildFromAst(ast))
+        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
 
-        error.getMessage should be ("Field 'Query.field1' already exists in the schema. It cannot also be defined in this type extension.")
+        error.getMessage should include ("Object type 'Query' can include field 'field1' only once.")
       }
 
       "don't allow to have extensions on non-existing types" in {
@@ -1043,7 +1043,7 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
              |    secnd arg
              |    line 2
              |    $quotes
-             |    arg1: String!
+             |    arg2: String!
              |  ): String
              |}""".stripMargin
 

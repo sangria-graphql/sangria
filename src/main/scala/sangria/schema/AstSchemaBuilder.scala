@@ -304,7 +304,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       additionalTypes = additionalTypes,
       directives = directives,
       astDirectives = definition.fold(Vector.empty[ast.Directive])(_.directives),
-      astNodes = definition.toVector)
+      astNodes = Vector(mat.document) ++ definition.toVector)
 
   def extendSchema[Val](
       originalSchema: Schema[Ctx, Val],
@@ -337,7 +337,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
-            fieldsFn = Named.checkObjFields(typeName(definition), fields),
+            fieldsFn = fields,
             interfaces = interfaces,
             instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz),
             astDirectives = directives,
@@ -346,7 +346,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
-            fieldsFn = Named.checkObjFields(typeName(definition), fields),
+            fieldsFn = fields,
             interfaces = interfaces,
             instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any],
             astDirectives = directives,
@@ -366,14 +366,14 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     extendedObjectTypeInstanceCheck(origin, existing, extensions) match {
       case Some(fn) ⇒
         existing.copy(
-          fieldsFn = Named.checkObjFields(existing.name, fields),
+          fieldsFn = fields,
           interfaces = interfaces,
           astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
           astNodes = existing.astNodes ++ extensions,
           instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))(ClassTag(existing.valClass))
       case None ⇒
         existing.copy(
-          fieldsFn = Named.checkObjFields(existing.name, fields),
+          fieldsFn = fields,
           interfaces = interfaces,
           astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
           astNodes = existing.astNodes ++ extensions,
@@ -389,7 +389,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(InputObjectType(
       name = typeName(definition),
       description = typeDescription(definition),
-      fieldsFn = Named.checkIntFields(typeName(definition), fields),
+      fieldsFn = fields,
       astDirectives = definition.directives ++ extensions.flatMap(_.directives),
       astNodes = definition +: extensions))
 
@@ -404,7 +404,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(InterfaceType[Ctx, Any](
       name = typeName(definition),
       description = typeDescription(definition),
-      fieldsFn = Named.checkIntFields(typeName(definition), fields),
+      fieldsFn = fields,
       interfaces = Nil,
       manualPossibleTypes = () ⇒ Nil,
       astDirectives = directives,
@@ -732,22 +732,22 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     }
 
   def typeName(definition: ast.TypeDefinition): String =
-    Named.checkName(definition.name)
+    definition.name
 
   def fieldName(definition: ast.FieldDefinition): String =
-    Named.checkName(definition.name)
+    definition.name
 
   def enumValueName(definition: ast.EnumValueDefinition): String =
-    Named.checkName(definition.name)
+    definition.name
 
   def argumentName(definition: ast.InputValueDefinition): String =
-    Named.checkName(definition.name)
+    definition.name
 
   def inputFieldName(definition: ast.InputValueDefinition): String =
-    Named.checkName(definition.name)
+    definition.name
 
   def directiveName(definition: ast.DirectiveDefinition): String =
-    Named.checkName(definition.name)
+    definition.name
 
   @deprecated("Please migrate to new string-based description format", "1.3.3")
   def useLegacyCommentDescriptions: Boolean = false

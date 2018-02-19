@@ -10,7 +10,7 @@ import sangria.validation._
 import scala.collection.concurrent.TrieMap
 import scala.reflect.ClassTag
 
-class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
+class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
   import AstSchemaMaterializer.extractSchemaInfo
 
   private val sdlOrigin = SDLOrigin(document)
@@ -421,11 +421,6 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
     val extraValues = extensions.flatMap(_.values)
     val extraDirs = extensions.flatMap(_.directives)
 
-    extraValues.foreach { v ⇒
-      if (tpe.byName.contains(v.name))
-        throw SchemaMaterializationException(s"Enum value '${tpe.name}.${v.name}' already exists in the schema. It cannot also be defined in this type extension.")
-    }
-
     val ev = extraValues flatMap (buildEnumValue(origin, Right(tpe), _, extensions))
 
     val extendedType =
@@ -438,11 +433,6 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def extendInputObjectType(origin: MatOrigin, tpe: InputObjectType[_]) = {
     val extensions = findInputObjectExtensions(tpe.name)
     val extraFields = extensions.flatMap(_.fields)
-
-    extraFields.foreach { f ⇒
-      if (tpe.fieldsByName.contains(f.name))
-        throw SchemaMaterializationException(s"Input field '${tpe.name}.${f.name}' already exists in the schema. It cannot also be defined in this type extension.")
-    }
 
     val fieldsFn = () ⇒ {
       val ef = extraFields flatMap (buildInputField(origin, Right(tpe), _, extensions)) toList
@@ -462,12 +452,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
 
   def buildInterfaces(origin: MatOrigin, tpe: ast.ObjectTypeDefinition, interfaces: Vector[ast.NamedType], extensions: Vector[ast.ObjectTypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.interfaces)
-
-    val allInts = extraInts.foldLeft(interfaces) {
-      case (acc, interface) if acc.exists(_.name == interface.name) ⇒
-        throw SchemaMaterializationException(s"Type '${tpe.name}' already implements '${interface.name}'. It cannot also be implemented in this type extension.")
-      case (acc, interface) ⇒ acc :+ interface
-    }
+    val allInts = interfaces ++ extraInts
 
     allInts map (getInterfaceType(origin, _))
   }
@@ -475,26 +460,16 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def extendInterfaces(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: Vector[ast.ObjectTypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.interfaces)
 
-    val allInts = extraInts.foldLeft(List.empty[ast.NamedType]) {
-      case (acc, interface) if tpe.allInterfaces.exists(_.name == interface.name) || acc.exists(_.name == interface.name) ⇒
-        throw SchemaMaterializationException(s"Type '${tpe.name}' already implements '${interface.name}'. It cannot also be implemented in this type extension.")
-      case (acc, interface) ⇒ acc :+ interface
-    }
-
-    val ei = allInts map (getInterfaceType(origin, _))
+    val ei = extraInts map (getInterfaceType(origin, _))
     val oi = tpe.interfaces map (getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any]])
 
-    ei ++ oi
+    (ei ++ oi).toList
   }
 
   def buildFields(origin: MatOrigin, tpe: TypeDefinition, fieldDefs: Vector[ast.FieldDefinition], extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(_.fields)
 
-    val withExtensions = extraFields.foldLeft(fieldDefs) {
-      case (acc, field) if acc.exists(_.name == field.name) ⇒
-        throw SchemaMaterializationException(s"Field '${tpe.name}.${field.name}' already exists in the schema. It cannot also be defined in this type extension.")
-      case (acc, field) ⇒ acc :+ field
-    }
+    val withExtensions = fieldDefs ++ extraFields
 
     val addFields = builder.buildAdditionalFields(origin, extensions, tpe, this).flatMap {
       case MaterializedFieldAst(o, ast) ⇒ buildField(o, Left(tpe), extensions, ast)
@@ -507,13 +482,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def extendFields(origin: MatOrigin, tpe: ObjectLikeType[Ctx, _], extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(e ⇒ e.fields map (e → _))
 
-    val extensionFields = extraFields.foldLeft(List.empty[(ast.ObjectLikeTypeExtensionDefinition, ast.FieldDefinition)]) {
-      case (acc, field) if tpe.fieldsByName.contains(field._2.name) || acc.exists(_._2.name == field._2.name) ⇒
-        throw SchemaMaterializationException(s"Field '${tpe.name}.${field._2.name}' already exists in the schema. It cannot also be defined in this type extension.")
-      case (acc, field) ⇒ acc :+ field
-    }
-
-    val ef = extensionFields flatMap (f ⇒ buildField(origin, Right(tpe), extensions, f._2))
+    val ef = extraFields flatMap (f ⇒ buildField(origin, Right(tpe), extensions, f._2))
     val of = tpe.uniqueFields.toList map (extendField(origin, Some(tpe), _))
 
     of ++ ef
@@ -540,12 +509,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def buildUnionDef(origin: MatOrigin, tpe: ast.UnionTypeDefinition) = {
     val extensions = findUnionExtensions(tpe.name)
     val extraTypes = extensions.flatMap(_.types)
-
-    val withExtensions = extraTypes.foldLeft(tpe.types) {
-      case (acc, t) if acc.exists(_.name == t.name) ⇒
-        throw SchemaMaterializationException(s"Union '${tpe.name}' member type '${t.name}' already exists in the schema. It cannot also be defined in this type extension.")
-      case (acc, t) ⇒ acc :+ t
-    }
+    val withExtensions = tpe.types ++ extraTypes
 
     builder.buildUnionType(origin, extensions, tpe, withExtensions map (getObjectType(origin, _)) toList, this)
   }
@@ -553,11 +517,6 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def extendUnionType(origin: MatOrigin, tpe: UnionType[Ctx]) = {
     val extensions = findUnionExtensions(tpe.name)
     val extraTypes = extensions.flatMap(_.types)
-
-    extraTypes.foreach { t ⇒
-      if (tpe.types.exists(_.name == t.name))
-        throw SchemaMaterializationException(s"Union '${tpe.name}' member type '${t.name}' already exists in the schema. It cannot also be defined in this type extension.")
-    }
 
     val t = tpe.types map (getTypeFromDef(origin, _))
     val et = extraTypes map (getObjectType(origin, _)) toList
@@ -574,12 +533,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   def buildInputObjectDef(origin: MatOrigin, tpe: ast.InputObjectTypeDefinition) = {
     val extensions = findInputObjectExtensions(tpe.name)
     val extraFields = extensions.flatMap(_.fields)
-
-    val withExtensions = extraFields.foldLeft(tpe.fields) {
-      case (acc, f) if acc.exists(_.name == f.name) ⇒
-        throw SchemaMaterializationException(s"Input field '${tpe.name}.${f.name}' already exists in the schema. It cannot also be defined in this type extension.")
-      case (acc, f) ⇒ acc :+ f
-    }
+    val withExtensions = tpe.fields ++ extraFields
 
     builder.buildInputObjectType(origin, extensions, tpe, () ⇒ withExtensions flatMap (buildInputField(origin, Left(tpe), _, extensions)) toList, this)
   }
@@ -593,12 +547,7 @@ class AstSchemaMaterializer[Ctx] private (document: ast.Document, builder: AstSc
   private def buildEnumDef(origin: MatOrigin, tpe: ast.EnumTypeDefinition) = {
     val extensions = findEnumExtensions(tpe.name)
     val extraValues = extensions.flatMap(_.values)
-
-    val withExtensions = extraValues.foldLeft(tpe.values) {
-      case (acc, v) if acc.exists(_.name == v.name) ⇒
-        throw SchemaMaterializationException(s"Enum value '${tpe.name}.${v.name}' already exists in the schema. It cannot also be defined in this type extension.")
-      case (acc, v) ⇒ acc :+ v
-    }
+    val withExtensions = tpe.values ++ extraValues
 
     builder.buildEnumType(origin, extensions, tpe, withExtensions flatMap (buildEnumValue(origin, Left(tpe), _, extensions)) toList, this)
   }

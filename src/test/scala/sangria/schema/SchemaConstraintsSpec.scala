@@ -88,16 +88,16 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
 
       val error = intercept [SchemaValidationException] (Schema(queryType, additionalTypes = inputType :: Nil))
 
-      error.violations.toSet should be (Set(
-        ReservedTypeNameViolation("__Bar"),
-        ReservedTypeNameViolation("__Baz"),
-        ReservedTypeNameViolation("__Color"),
-        ReservedTypeNameViolation("__Point"),
-        ReservedTypeNameViolation("__Input"),
-        ReservedNameViolation("Query", "__foo"),
-        ReservedNameViolation("__Input", "__y"),
-        ReservedNameViolation("__Color", "__GREEN"),
-        ReservedNameViolation("__Color", "__BLUE")))
+      error.violations.map(_.errorMessage).toSet should be (Set(
+        "Input type name '__Input' is invalid. The name is reserved for GraphQL introspection API.",
+        "Field name '__y' defined in input type '__Input' is invalid. The name is reserved for GraphQL introspection API.",
+        "Field name '__foo' defined in type 'Query' is invalid. The name is reserved for GraphQL introspection API.",
+        "Object type name '__Bar' is invalid. The name is reserved for GraphQL introspection API.",
+        "Interface type name '__Baz' is invalid. The name is reserved for GraphQL introspection API.",
+        "Enum type name '__Color' is invalid. The name is reserved for GraphQL introspection API.",
+        "Enum value name '__GREEN' defined in enum type '__Color' is invalid. The name is reserved for GraphQL introspection API.",
+        "Enum value name '__BLUE' defined in enum type '__Color' is invalid. The name is reserved for GraphQL introspection API.",
+        "Scalar type name '__Point' is invalid. The name is reserved for GraphQL introspection API."))
     }
 
     "reject an Enum type with incorrectly named values" in {
@@ -112,10 +112,10 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
 
       val error = intercept [SchemaValidationException] (Schema(queryType))
 
-      error.violations.toSet should be (Set(
-        ReservedEnumValueNameViolation("Color", "true"),
-        ReservedEnumValueNameViolation("Color", "false"),
-        ReservedEnumValueNameViolation("Color", "null")))
+      error.violations.map(_.errorMessage).toSet should be (Set(
+        "Name 'Color.true' can not be used as an Enum value.",
+        "Name 'Color.false' can not be used as an Enum value.",
+        "Name 'Color.null' can not be used as an Enum value."))
     }
 
     "not allow empty list of fields" in {
@@ -130,11 +130,11 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
 
       val error = intercept [SchemaValidationException] (Schema(queryType))
 
-      error.violations.toSet should be (Set(
-        EmptyFieldListViolation("Input"),
-        EmptyFieldListViolation("Interface1"),
-        EmptyFieldListViolation("Interface2"),
-        EmptyFieldListViolation("Output")))
+      error.violations.map(_.errorMessage).toSet should be (Set(
+        "Input type 'Input' must define one or more fields.",
+        "Interface type 'Interface1' must define one or more fields.",
+        "Interface type 'Interface2' must define one or more fields.",
+        "Object type 'Output' must define one or more fields."))
     }
   }
 }

@@ -23,37 +23,22 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
     }
 
     "disallow non-unique fields" in {
-      val e1 = intercept [NonUniqueFieldsError] {
-        ObjectType("Test", fields[Unit, Unit](
+      val e = intercept [SchemaValidationException] {
+        Schema(ObjectType("Test", fields[Unit, Unit](
           Field("a", StringType, resolve = _ ⇒ "foo"),
           Field("b", StringType, resolve = _ ⇒ "foo"),
           Field("a", StringType, resolve = _ ⇒ "foo")
-        ))
-      }
-      
-      val e2 = intercept [NonUniqueFieldsError] {
-        ObjectType("Test", () ⇒ fields[Unit, Unit](
-          Field("a", StringType, resolve = _ ⇒ "foo"),
-          Field("b", StringType, resolve = _ ⇒ "foo"),
-          Field("a", StringType, resolve = _ ⇒ "foo")
-        )).fields
+        )))
       }
 
-      List(e1, e2) map (_.getMessage) foreach (_ should be (
-        "All fields within 'Test' type should have unique names! Non-unique fields: 'a'."))
+      e.getMessage should include ("Object type 'Test' can include field 'a' only once.")
     }
 
     "disallow invalid names" in {
-      an [IllegalArgumentException] should be thrownBy {
-        ObjectType("Test-object", fields[Unit, Unit](
+      an [SchemaValidationException] should be thrownBy {
+        Schema(ObjectType("Test-object", fields[Unit, Unit](
           Field("a", StringType, resolve = _ ⇒ "foo")
-        ))
-      }
-
-      an [IllegalArgumentException] should be thrownBy {
-        ObjectType("Test", () ⇒ fields[Unit, Unit](
-          Field("a-b-c", StringType, resolve = _ ⇒ "foo")
-        )).fields
+        )))
       }
     }
   }
@@ -74,34 +59,28 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
     }
 
     "disallow non-unique fields" in {
-      an [IllegalArgumentException] should be thrownBy {
-        InterfaceType("Test", fields[Unit, Unit](
+      an [SchemaValidationException] should be thrownBy {
+        val TestType = InterfaceType("Test", fields[Unit, Unit](
           Field("a", StringType, resolve = _ ⇒ "foo"),
           Field("b", StringType, resolve = _ ⇒ "foo"),
           Field("a", StringType, resolve = _ ⇒ "foo")
         ))
-      }
 
-      an [IllegalArgumentException] should be thrownBy {
-        InterfaceType("Test", () ⇒ fields[Unit, Unit](
-          Field("a", StringType, resolve = _ ⇒ "foo"),
-          Field("b", StringType, resolve = _ ⇒ "foo"),
-          Field("a", StringType, resolve = _ ⇒ "foo")
-        )).fields
+        Schema(ObjectType("Foo", interfaces[Unit, Unit](TestType), fields[Unit, Unit](
+          Field("d", StringType, resolve = _ ⇒ "foo")
+        )))
       }
     }
 
     "disallow invalid names" in {
-      an [IllegalArgumentException] should be thrownBy {
-        InterfaceType("Test-int", fields[Unit, Unit](
+      an [SchemaValidationException] should be thrownBy {
+        val TestType = InterfaceType("Test-int", fields[Unit, Unit](
           Field("a", StringType, resolve = _ ⇒ "foo")
         ))
-      }
 
-      an [IllegalArgumentException] should be thrownBy {
-        InterfaceType("Test", fields[Unit, Unit](
-          Field("a-b-c", StringType, resolve = _ ⇒ "foo")
-        )).fields
+        Schema(ObjectType("Foo", interfaces[Unit, Unit](TestType), fields[Unit, Unit](
+          Field("d", StringType, resolve = _ ⇒ "foo")
+        )))
       }
     }
   }
@@ -122,36 +101,46 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
     }
 
     "disallow non-unique fields" in {
-      an [IllegalArgumentException] should be thrownBy {
-        InputObjectType("Test", List(
+      an [SchemaValidationException] should be thrownBy {
+        val TestType = InputObjectType("Test", List(
           InputField("a", StringType),
           InputField("b", StringType),
           InputField("a", StringType)
         ))
-      }
 
-      an [IllegalArgumentException] should be thrownBy {
-        InputObjectType("Test", () ⇒ List(
-          InputField("a", StringType),
-          InputField("b", StringType),
-          InputField("a", StringType)
-        )).fields
+        Schema(ObjectType("Foo", fields[Unit, Unit](
+          Field("d", StringType,
+            arguments = Argument("test", TestType) :: Nil,
+            resolve = _ ⇒ "foo")
+        )))
       }
     }
 
     "disallow invalid names" in {
-      an [IllegalArgumentException] should be thrownBy {
-        InputObjectType("Test-ab", List(
+      an [SchemaValidationException] should be thrownBy {
+        val TestType = InputObjectType("Test-ab", List(
           InputField("a", StringType),
           InputField("b", StringType),
           InputField("a", StringType)
         ))
+
+        Schema(ObjectType("Foo", fields[Unit, Unit](
+          Field("d", StringType,
+            arguments = Argument("test", TestType) :: Nil,
+            resolve = _ ⇒ "foo")
+        )))
       }
 
-      an [IllegalArgumentException] should be thrownBy {
-        InputObjectType("Test", List(
+      an [SchemaValidationException] should be thrownBy {
+        val TestType = InputObjectType("Test", List(
           InputField("a-b", StringType)
         ))
+
+        Schema(ObjectType("Foo", fields[Unit, Unit](
+          Field("d", StringType,
+            arguments = Argument("test", TestType) :: Nil,
+            resolve = _ ⇒ "foo")
+        )))
       }
     }
   }
