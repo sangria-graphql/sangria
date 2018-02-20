@@ -1,9 +1,11 @@
-## v1.4.0 (2017-02-20)
+## v1.4.0 (2018-02-20)
 
 The v1.4.0 a lot of improvements and minor changes, in particular around SDL parsing and materialization. Although some of these changes a **minor breaking changes**, they can be divided in following 2 categories:
 
 * Simple routine refactorings with updated method signatures. For example most of the method signatures in `AstSchemaBuilder` are updated and now include more information (type extensions in particular). In all of these cases issues will manifest themselves as compilation errors and can be fixed by simple signature updates.
-* GraphQL query and SDL syntax updates. Based on the feedback from #308 and other sources, extra attention was put in ensuring that syntax is either backwards compatible or an option is available to enable the support of legacy GraphQL syntax. These options can be enabled though new `ParserConfig` which can be provided to `QueryParser`.
+* GraphQL query and SDL syntax updates. Based on the feedback from #308 and other sources, extra attention was put in ensuring that syntax is either backwards compatible or an option is available to enable support for a legacy GraphQL syntax. These options can be enabled though new `ParserConfig` which can be provided to `QueryParser`.
+
+If you are facing issues with migration to the new Sangria version, please let us know by creating a [new GH issue](https://github.com/sangria-graphql/sangria/issues/new). 
 
 **Changes:**
     
@@ -11,7 +13,7 @@ The v1.4.0 a lot of improvements and minor changes, in particular around SDL par
   
   ```graphql
   # old syntax 
-  type User implements Node & Profile {
+  type User implements Node, Profile {
     id: ID!
   }
   
@@ -20,7 +22,7 @@ The v1.4.0 a lot of improvements and minor changes, in particular around SDL par
     id: ID!
   }
   ```
-* All of the SDL types now support type extensions (#337) (spec change). Previously only object types supported this feature. Example:
+* All of the SDL types now support type extensions (#337) (spec change). Previously only object types supported this feature. Some examples:
   
   ```graphql
   extend type Foo implements ExtraInterface1 & ExtraInterface2 {
@@ -44,7 +46,7 @@ The v1.4.0 a lot of improvements and minor changes, in particular around SDL par
   
   extend scalar Date @extraDirective
   ```
-* All SDL type definitions now allowed have empty field/value/member lists (#337) (spec change). Examples of now valid syntax:
+* All SDL type definitions are now allowed to have empty field/value/member lists (#337) (spec change). Examples of now valid syntax:
   
   ```graphql 
   type User 
@@ -71,7 +73,7 @@ The v1.4.0 a lot of improvements and minor changes, in particular around SDL par
     f(size: $size)
   }
   ```
-* Improved AST location handling and support for multi-source AST `Document`s (#343). These improvements might also be quite helpful for recently discussed "import" functionality where the schema SDL is defined in multiple files. Improvements include:
+* Improved AST location handling and support for multi-source AST `Document`s (#343). These improvements might be quite helpful for recently discussed "import" functionality where the schema SDL is defined in multiple files. Improvements include:
   * Different schema elements retain the information about SDL `AstNode`s that were used to create them (in addition to the directives). This might be quite helpful in multiple scenarios. It was already used to greatly improve the quality of the error messages. 
   * `AstLocation` now replaces the `Position` and holds additional field: `sourceId`.
   * Introduced `AggregateSourceMapper` and improved `Document` merge. It is now possible to show proper error messages and source locations even for AST that was parsed from different sources (files, URLs, etc.).
@@ -86,12 +88,13 @@ The v1.4.0 a lot of improvements and minor changes, in particular around SDL par
 * Replaced Exception with Throwable to match all possible results of Future.failed (#329, #327). Big thanks to @lgmyrek for this contribution! 
 * Initialize symbols before checking their annotations (#317). This will improve `derive*` macros in same edge-cases. Big thanks to @dragos for this contribution!
 * Added support for rendering SDL with legacy comment-based descriptions (#334). You can use it with `SchemaFilter.default.withLegacyCommentDescriptions`.
-* Improved `ResolverBasedAstSchemaBuilder` and introduced `InputTypeResolver`/`OutputTypeResolver`.
+* Improved `ResolverBasedAstSchemaBuilder` and introduced `InputTypeResolver`/`OutputTypeResolver`.  
+* Updated `sangria-marshalling-api` to version 1.0.1 (should be backwards compatible with v1.0.0)
+* Other minor improvements coming from the reference implementation (#336, #311).
 * Removed previously deprecated methods:
   * `SchemaRenderer.renderIntrospectionSchema`
   * `AstVisitor.visitAst`
-* Other minor improvements coming from the reference implementation (#336, #311).  
-* Updated `sangria-marshalling-api` to version 1.0.1 (should be backwards compatible with v1.0.0)
+
 
 ## v1.3.3 (2017-12-03)
 
