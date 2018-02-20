@@ -6,18 +6,19 @@ import eu.timepit.refined._
 import eu.timepit.refined.numeric._
 import eu.timepit.refined.api.Refined
 import org.scalatest.{Matchers, WordSpec}
-import sangria.util.FutureResultSupport
+import sangria.util.{FutureResultSupport, Pos}
 import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.validation.{AstNodeViolation, ValueCoercionViolation}
+import sangria.util.SimpleGraphQlSupport._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 case class UserId(id: String) extends AnyVal
 
-class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
+class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport  {
   case class User(id: UserId, id2: Option[UserId], name: String, num: Int Refined Positive)
 
   case class RefineViolation(error: String) extends ValueCoercionViolation(error)
@@ -233,17 +234,10 @@ class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val error = intercept [ValidationError] (Executor.execute(schema, query).await)
 
-      val violations = error.violations.map {
-        case a: AstNodeViolation ⇒ a.simpleErrorMessage
-        case o ⇒ o.errorMessage
-      }
-
-      violations should (
-        have(size(3)) and
-        contain("Argument 'n' expected type 'Int!' but got: -123. Reason: Predicate failed: (-123 > 0).") and
-        contain("Argument 'c' expected type 'Complex!' but got: {userId: 1, userNum: -5}. Reason: 'userId' String value expected") and
-        contain("Argument 'c' expected type 'Complex!' but got: {userId: 1, userNum: -5}. Reason: 'userNum' Predicate failed: (-5 > 0).")
-      )
+      assertViolations(error.violations,
+        "Expected type 'Int!', found '-123'. Predicate failed: (-123 > 0)." → Seq(Pos(3, 33)),
+        "Expected type 'String', found '1'. String value expected" → Seq(Pos(3, 51)),
+        "Expected type 'Int', found '-5'. Predicate failed: (-5 > 0)." → Seq(Pos(3, 63)))
     }
   }
 }

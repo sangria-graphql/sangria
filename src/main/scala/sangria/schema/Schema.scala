@@ -45,6 +45,13 @@ sealed trait InputType[+T] extends Type {
   }
 
   lazy val isNamed = !(isOptional && isList)
+
+  lazy val nonOptionalType = this match {
+    case tpe: OptionInputType[_] ⇒ tpe.ofType
+    case tpe ⇒ tpe
+  }
+
+  def namedInputType: InputType[_] = namedType.asInstanceOf[InputType[_]]
 }
 
 sealed trait OutputType[+T] extends Type
@@ -532,8 +539,6 @@ case class EnumType[T](
     values: List[EnumValue[T]],
     astDirectives: Vector[ast.Directive] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named with HasAstInfo {
-  name
-
   lazy val byName = values groupBy (_.name) mapValues (_.head)
   lazy val byValue = values groupBy (_.value) mapValues (_.head)
 
@@ -650,7 +655,7 @@ case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with Nu
 case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with NullableType
 
 case class OptionType[T](ofType: OutputType[T]) extends OutputType[Option[T]]
-case class OptionInputType[T] (ofType: InputType[T]) extends InputType[Option[T]]
+case class OptionInputType[T](ofType: InputType[T]) extends InputType[Option[T]]
 
 sealed trait HasArguments {
   def arguments: List[Argument[_]]

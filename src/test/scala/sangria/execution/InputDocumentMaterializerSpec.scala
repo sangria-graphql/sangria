@@ -9,9 +9,10 @@ import sangria.marshalling.sprayJson._
 import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.StringMatchers
+import sangria.util.{Pos, StringMatchers}
 import sangria.validation.QueryValidator
 import spray.json.{DefaultJsonProtocol, JsValue, pimpString}
+import sangria.util.SimpleGraphQlSupport._
 
 class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMatchers {
   case class Comment(author: String, text: Option[String])
@@ -35,7 +36,7 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
     InputField("tags", OptionInputType(ListInputType(StringType))),
     InputField("comments", ListInputType(OptionInputType(CommentType)))))
 
-  val ConfigType = InputObjectType[JsValue]("Article", List(
+  val ConfigType = InputObjectType[JsValue]("Config", List(
     InputField("hosts", ListInputType(StringType)),
     InputField("port", OptionInputType(IntType), 1234)))
 
@@ -100,25 +101,13 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
 
       val errors = QueryValidator.default.validateInputDocument(schema, inp, "Config")
 
-      errors should have size 6
-
-      errors(0).errorMessage should include (
-        "At path 'bar' Int value expected")
-
-      errors(1).errorMessage should include (
-        "At path 'list[1].baz' Enum value 'FOO_BAR' is undefined in enum type 'Color'. Known values are: RED, GREEN, BLUE.")
-
-      errors(2).errorMessage should include (
-        "At path 'list[2].test' Field 'test' is not defined in the input type 'Foo'.")
-
-      errors(3).errorMessage should include (
-        "At path 'list[2].baz' Not-null field 'baz' of type 'Color!' defined in the 'Foo' input type is missing.")
-
-      errors(4).errorMessage should include (
-        "At path 'list[3].baz' Not-null field 'baz' of type 'Color!' defined in the 'Foo' input type is missing.")
-
-      errors(5).errorMessage should include (
-        "At path 'doo' Field 'doo' is not defined in the input type 'Config'.")
+      assertViolations(errors,
+        "Expected type 'Int', found '\"foo\"'. Int value expected" → Seq(Pos(4, 18)),
+        "Expected type 'Color!', found 'FOO_BAR'. Enum value 'FOO_BAR' is undefined in enum type 'Color'. Known values are: RED, GREEN, BLUE." → Seq(Pos(7, 21)),
+        "Field 'Foo.baz' of required type 'Color!' was not provided." → Seq(Pos(8, 15)),
+        "Field 'test' is not defined by type 'Foo'." → Seq(Pos(8, 16)),
+        "Field 'Foo.baz' of required type 'Color!' was not provided." → Seq(Pos(9, 15)),
+        "Field 'doo' is not defined by type 'Config'; Did you mean foo?" → Seq(Pos(14, 13)))
     }
 
     "support `Any` value" in {
@@ -160,13 +149,9 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
 
       val errors = QueryValidator.default.validateInputDocument(schema, inp, "Config")
 
-      errors should have size 2
-
-      errors(0).errorMessage should include (
-        "At path 'bar' Int value expected")
-
-      errors(1).errorMessage should include (
-        "At path 'test' Not-null field 'test' of type 'Any!' defined in the 'Config' input type is missing.")
+      assertViolations(errors,
+        "Field 'Config.test' of required type 'Any!' was not provided." → Seq(Pos(2, 11)),
+        "Expected type 'Int', found '\"foo\"'. Int value expected" → Seq(Pos(4, 18)))
     }
 
     "support `to` with `FromInput` type class" in {

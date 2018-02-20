@@ -1,12 +1,13 @@
 package sangria.util
 
 import org.scalatest.Matchers
+import sangria.ast.AstLocation
 import sangria.execution.deferred.DeferredResolver
 import sangria.execution.{ExceptionHandler, Executor, HandledException, WithViolations}
 import sangria.marshalling.InputUnmarshaller
-import sangria.parser.QueryParser
+import sangria.parser.{QueryParser, SourceMapper}
 import sangria.schema.Schema
-import sangria.validation.{AstNodeLocation, QueryValidator}
+import sangria.validation.{AstNodeLocation, AstNodeViolation, QueryValidator, Violation}
 import spray.json.{JsObject, JsValue}
 
 import scala.util.Success
@@ -59,7 +60,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
     data: T,
     query: String,
     expectedData: Map[String, Any],
-    expectedErrorStrings: List[(String, List[Pos])],
+    expectedErrorStrings: Seq[(String, Seq[Pos])],
     args: JsValue = JsObject.empty,
     userContext: Any = (),
     resolver: DeferredResolver[_] = DeferredResolver.empty,
@@ -74,49 +75,68 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
 
     val errors = result.getOrElse("errors", Vector.empty).asInstanceOf[Seq[Map[String, Any]]]
 
-    errors should have size expectedErrorStrings.size
+    val violations =
+      errors.map { error ⇒
+        val message = error("message").asInstanceOf[String]
+        val locs =
+          error.get("locations") match {
+            case Some(locs: Seq[Map[String, Any]] @unchecked) ⇒
+              locs.map(loc ⇒ AstLocation(0, loc("line").asInstanceOf[Int], loc("column").asInstanceOf[Int])).toList
+            case _ ⇒ Nil
+          }
 
-    expectedErrorStrings foreach { case(expected, pos) ⇒
-      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString ","}. Actual:\n$errors") {
+        StubViolation(message, None, locs)
+      }
+
+    assertViolations(violations.toVector, expectedErrorStrings: _*)
+  }
+
+  def renderViolations(violations: Vector[Violation]) = {
+    val renderedHelpers =
+      violations.zipWithIndex.map {
+        case (v, idx) ⇒
+          v match {
+            case n: AstNodeLocation ⇒ "\"" + n.simpleErrorMessage + "\" → Seq(" + n.locations.map(l ⇒ s"Pos(${l.line}, ${l.column})").mkString(", ") + ")"
+            case n ⇒ n.errorMessage
+          }
+      }.mkString(",\n")
+
+    val rendered =
+      violations.zipWithIndex.map {
+        case (v, idx) ⇒ s"(${idx + 1}) " + v.errorMessage
+      }.mkString("\n\n")
+
+    "Actual violations:\n\n" + renderedHelpers + "\n\n" + rendered + "\n\n"
+  }
+
+  def assertViolations(errors: Vector[Violation], expectedErrors: (String, Seq[Pos])*) = withClue("Should not validate") {
+    withClue(renderViolations(errors)) {
+      errors should have size expectedErrors.size
+    }
+
+    expectedErrors foreach { case(expected, pos) ⇒
+      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString "; "}. ${renderViolations(errors)}") {
         errors exists { error ⇒
-          val message = error("message").asInstanceOf[String]
+          error.errorMessage.contains(expected) && {
+            val errorPositions = error.asInstanceOf[AstNodeViolation].locations
 
-          message.contains(expected) && {
-            error.get("locations") match {
-              case None if pos.nonEmpty ⇒ false
-              case None ⇒ true
-              case Some(locs: Seq[Map[String, Any]] @unchecked) ⇒
-                locs.map(loc ⇒ Pos(loc("line").asInstanceOf[Int], loc("column").asInstanceOf[Int])) == pos
+            errorPositions should have size pos.size
+
+            errorPositions zip pos forall { case (actualPos, expectedPos) ⇒
+              expectedPos.line == actualPos.line && expectedPos.col == actualPos.column
             }
           }
-        } should be(true)
+        } should be (true)
       }
     }
   }
 
-  def checkContainsViolations(execute: ⇒ Unit, expected: Seq[(String, Seq[Pos])]) = {
-    val error = intercept [WithViolations] (execute)
+  def checkContainsViolations(execute: ⇒ Unit, expected: (String, Seq[Pos])*) =
+    assertViolations(intercept [WithViolations] (execute).violations, expected: _*)
 
-    val prettyViolations = error.violations.map(_.errorMessage).mkString("\n", "\n", "\n")
 
-    withClue(s"Invalid size. Expected ${expected.size}. Actual (${error.violations.size}):\n$prettyViolations") {
-      error.violations should have size expected.size
-    }
-
-    expected foreach { case(expected, pos) ⇒
-      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString ","}. Actual:\n$prettyViolations") {
-        error.violations exists { error ⇒
-          val message = error.errorMessage
-
-          message.contains(expected) && {
-            error match {
-              case n: AstNodeLocation ⇒ n.locations.map(p ⇒ Pos(p.line, p.column)) == pos
-              case _ ⇒ false
-            }
-          }
-        } should be(true)
-      }
-    }
+  case class StubViolation(message: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+    lazy val simpleErrorMessage = message
   }
 }
 
@@ -132,7 +152,7 @@ trait GraphQlSupport extends FutureResultSupport with Matchers {
   def checkErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrors: List[Map[String, Any]], args: JsValue = JsObject.empty, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true): Unit =
     SimpleGraphQlSupport.checkErrors(schema, data, query, expectedData, expectedErrors, args, userContext, resolver, validateQuery)
 
-  def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: List[(String, List[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
+  def checkContainsErrors[T](data: T, query: String, expectedData: Map[String, Any], expectedErrorStrings: Seq[(String, Seq[Pos])], args: JsValue = JsObject.empty, validateQuery: Boolean = true): Unit =
     SimpleGraphQlSupport.checkContainsErrors(schema, data, query, expectedData, expectedErrorStrings, args = args, validateQuery = validateQuery)
 }
 

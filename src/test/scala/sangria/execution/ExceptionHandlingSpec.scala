@@ -144,7 +144,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         """)
 
       val exceptionHandler = ExceptionHandler (onViolation = {
-        case (m, BadValueViolation(_, _, _, v: EmailTypeViolation.type, _, _)) ⇒
+        case (m, BadValueViolation(_, _, Some(v: EmailTypeViolation.type), _, _)) ⇒
           HandledException("Scalar", Map("original" → m.scalarNode(v.errorMessage, "String", Set.empty)))
         case (m, v: UndefinedFieldViolation) ⇒
           HandledException("Field is missing!!! D:", Map("fieldName" → m.scalarNode(v.fieldName, "String", Set.empty)))
@@ -156,7 +156,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         Executor.execute(schema, doc, exceptionHandler = exceptionHandler).recover {
           case analysis: QueryAnalysisError ⇒ analysis.resolveError
         }
-
+      
       res.await should be  (
         Map(
           "data" → null,
@@ -166,7 +166,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
               "locations" → Vector(Map("line" → 3, "column" → 11)),
               "fieldName" → "nonExistingField"),
             Map(
-              "message" → "Argument 'num' expected type 'Int' but got: \"One\". Reason: Int value expected [with extras]",
+              "message" → "Expected type 'Int', found '\"One\"'. Int value expected [with extras]",
               "locations" → Vector(Map("line" → 4, "column" → 24))),
             Map(
               "message" → "Scalar",

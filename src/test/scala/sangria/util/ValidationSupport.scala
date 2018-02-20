@@ -3,11 +3,12 @@ package sangria.util
 import org.scalatest.Matchers
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.validation.{AstNodeViolation, RuleBasedQueryValidator, ValidationRule, Violation}
+import sangria.validation._
+import sangria.util.SimpleGraphQlSupport._
 
 import scala.util.Success
 
-trait ValidationSupport extends Matchers {
+trait ValidationSupport extends Matchers  {
   type TestField = Field[Unit, Unit]
 
   val Being = InterfaceType("Being", List[TestField](
@@ -176,12 +177,25 @@ trait ValidationSupport extends Matchers {
     Directive("onInputFieldDefinition", locations = Set(DirectiveLocation.InputFieldDefinition), shouldInclude = alwaysInclude)))
 
   def defaultRule: Option[ValidationRule] = None
+  
+  def expectInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: Seq[(String, Seq[Pos])]) = {
+    val Success(doc) = QueryParser.parse(query)
+
+    assertViolations(validator(rules).validateQuery(s, doc), expectedErrors: _*)
+  }
+
+  def expectInputInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, List[Pos])], typeName: String) = {
+    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
+
+    assertViolations(validator(rules).validateInputDocument(s, doc, typeName), expectedErrors: _*)
+  }
 
   def expectValid(s: Schema[_, _], rules: List[ValidationRule], query: String) = {
     val Success(doc) = QueryParser.parse(query)
+    val errors = validator(rules).validateQuery(s, doc)
 
-    withClue("Should validate") {
-      validator(rules).validateQuery(s, doc) should have size 0
+    withClue(renderViolations(errors)) {
+       errors should have size 0
     }
   }
 
@@ -190,38 +204,6 @@ trait ValidationSupport extends Matchers {
 
     withClue("Should validate") {
       validator(rules).validateInputDocument(s, doc, typeName) should have size 0
-    }
-  }
-
-  def expectInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, List[Pos])]) = {
-    val Success(doc) = QueryParser.parse(query)
-
-    assertViolations(expectedErrors, validator(rules).validateQuery(s, doc))
-  }
-
-  def expectInputInvalid(s: Schema[_, _], rules: List[ValidationRule], query: String, expectedErrors: List[(String, List[Pos])], typeName: String) = {
-    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
-
-    assertViolations(expectedErrors, validator(rules).validateInputDocument(s, doc, typeName))
-  }
-
-  def assertViolations(expectedErrors: List[(String, List[Pos])], errors: Vector[Violation]) = withClue("Should not validate") {
-    errors should have size expectedErrors.size
-
-    expectedErrors foreach { case(expected, pos) ⇒
-      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString "; "}. Actual:\n${errors map (_.errorMessage) mkString "\n"}") {
-        errors exists { error ⇒
-          error.errorMessage.contains(expected) && {
-            val errorPositions = error.asInstanceOf[AstNodeViolation].locations
-
-            errorPositions should have size pos.size
-
-            errorPositions zip pos forall { case (actualPos, expectedPos) ⇒
-              expectedPos.line == actualPos.line && expectedPos.col == actualPos.column
-            }
-          }
-        } should be (true)
-      }
     }
   }
 
@@ -244,6 +226,9 @@ trait ValidationSupport extends Matchers {
     expectInputInvalid(schema, defaultRule.get :: Nil, query, expectedErrors, typeName)
 
   def expectFailsPosList(query: String, expectedErrors: List[(String, List[Pos])]) =
+    expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors)
+
+  def expectFailsSimple(query: String, expectedErrors: (String, Seq[Pos])*) =
     expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors)
 
   def validator(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)

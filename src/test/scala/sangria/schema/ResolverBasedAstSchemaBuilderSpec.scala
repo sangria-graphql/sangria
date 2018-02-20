@@ -732,9 +732,8 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
 
       checkContainsViolations(
         Executor.execute(schema, query, variables = vars, root = data).await,
-        List(
-          "Argument 'ids' expected type '[ID!]' but got: [\"test\", \"\", \"  \", $id]. Reason: '[1]' ID cannot be an empty string" → List(Pos(3, 26)),
-          "Argument 'ids' expected type '[ID!]' but got: [\"test\", \"\", \"  \", $id]. Reason: '[2]' ID cannot be an empty string" → List(Pos(3, 26))))
+        "Expected type 'ID!', found '\"\"'. ID cannot be an empty string" → Seq(Pos(3, 35)),
+        "Expected type 'ID!', found '\"  \"'. ID cannot be an empty string" → Seq(Pos(3, 39)))
 
       val query1 =
         gql"""

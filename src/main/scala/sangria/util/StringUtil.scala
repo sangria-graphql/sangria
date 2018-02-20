@@ -10,20 +10,23 @@ object StringUtil {
   def camelCaseToUnderscore(name: String) =
     camelToUpper findAllMatchIn name map (_.group(1).toLowerCase) mkString "_"
 
-  /**
-    * Given [ A, B, C ] return '"A", "B" or "C"'.
-    */
-  def quotedOrList(items: Seq[String], limit: Int = 5): String =
+  def orList(items: Seq[String], limit: Int = 5) =
     if (items.isEmpty)
       throw new IllegalArgumentException("List is empty")
     else {
-      val quoted = items map ("'" + _ + "'") take limit
-      val start = quoted dropRight 1
-      val last = quoted.last
+      val limited = items take limit
+      val start = limited dropRight 1
+      val last = limited.last
 
       if (start.nonEmpty) s"${start mkString ", "} or $last"
       else last
     }
+
+  /**
+    * Given [ A, B, C ] return '"A", "B" or "C"'.
+    */
+  def quotedOrList(items: Seq[String], limit: Int = 5): String =
+    orList(items map ("'" + _ + "'"))
 
   /**
     * Given an invalid input string and a list of valid options, returns a filtered

@@ -64,7 +64,7 @@ class CustomScalarSpec extends WordSpec with Matchers {
           }
         """,
         null,
-        List("""Argument 'dateInput' expected type 'Date!' but got: "2015-05-test". Reason: Date value expected""" → List(Pos(3, 28)))
+        List("""Expected type 'Date!', found '"2015-05-test"'. Date value expected""" → List(Pos(3, 28)))
       )
     }
   }

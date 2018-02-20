@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 import sangria.schema._
 
-class TypeInfo(schema: Schema[_, _]) {
+class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val typeStack: ValidatorStack[Option[Type]] = ValidatorStack.empty
@@ -14,6 +14,8 @@ class TypeInfo(schema: Schema[_, _]) {
   private val ancestorStack: ValidatorStack[ast.AstNode] = ValidatorStack.empty
   private val documentStack: ValidatorStack[ast.Document] = ValidatorStack.empty
 
+  initialType.foreach(forcePushType)
+
   var directive: Option[Directive] = None
   var enumValue: Option[EnumValue[_]] = None
   var argument: Option[Argument[_]] = None
@@ -22,9 +24,27 @@ class TypeInfo(schema: Schema[_, _]) {
   def previousParentType = parentTypeStack.headOption(1).flatten
   def parentType = parentTypeStack.headOption.flatten
   def inputType = inputTypeStack.headOption.flatten
+  def parentInputType = inputTypeStack.headOption(1).flatten
   def fieldDef = fieldDefStack.headOption.flatten
   def ancestors: Seq[ast.AstNode] = ancestorStack.toSeq
   def document = documentStack.headOption
+
+  def forcePushType(tpe: Type): Unit = {
+    tpe match {
+      case t: InputType[_] ⇒ inputTypeStack.push(Some(t))
+      case _ ⇒ // do nothing
+    }
+
+    tpe match {
+      case t: CompositeType[_] ⇒ parentTypeStack.push(Some(t))
+      case _ ⇒ // do nothing
+    }
+
+    tpe match {
+      case t: OutputType[_] ⇒ typeStack.push(Some(t))
+      case _ ⇒ // do nothing
+    }
+  }
 
   def withInputType(inputType: InputType[_]) = {
     inputTypeStack push Some(inputType)
@@ -77,7 +97,7 @@ class TypeInfo(schema: Schema[_, _]) {
         inputTypeStack push argument.map(_.inputValueType)
       case ast.ListValue(values, _, _) ⇒
         inputType match {
-          case Some(it) ⇒ getNotNullType(it) match {
+          case Some(it) ⇒ it.nonOptionalType match {
             case it: ListInputType[_] ⇒ inputTypeStack push Some(it.ofType)
             case _ ⇒ inputTypeStack push None
           }
@@ -155,11 +175,6 @@ class TypeInfo(schema: Schema[_, _]) {
     }
 
     ancestorStack.pop()
-  }
-
-  def getNotNullType(it: InputType[_]): InputType[_] = it match {
-    case OptionInputType(ofType) ⇒ ofType
-    case n ⇒ n
   }
 
   def getFieldDef(parent: CompositeType[_], astField: ast.Field): Option[Field[_, _]] = {

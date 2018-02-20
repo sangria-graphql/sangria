@@ -1,0 +1,55 @@
+scenario: "Validate: Variable default value is allowed"
+background:
+  schema-file: validation.schema.graphql
+tests:
+  - name: variables with no default values
+    given:
+      query: |
+        query NullableValues($a: Int, $b: String, $c: ComplexInput) {
+          dog { name }
+        }
+    when:
+      validate: [VariablesDefaultValueAllowed]
+    then:
+      passes:
+
+  - name: required variables without default values
+    given:
+      query: |
+        query RequiredValues($a: Int!, $b: String!) {
+          dog { name }
+        }
+    when:
+      validate: [VariablesDefaultValueAllowed]
+    then:
+      passes:
+
+  - name: variables with valid default values
+    given:
+      query: |
+        query WithDefaultValues(
+          $a: Int = 1,
+          $b: String = "ok",
+          $c: ComplexInput = { requiredField: true, intField: 3 }
+        ) {
+          dog { name }
+        }
+    when:
+      validate: [VariablesDefaultValueAllowed]
+    then:
+      passes:
+
+  - name: no required variables with default values
+    given:
+      query: |
+        query UnreachableDefaultValues($a: Int! = 3, $b: String! = "default") {
+          dog { name }
+        }
+    when:
+      validate: [VariablesDefaultValueAllowed]
+    then:
+      - error-count: 2
+      - error: Variable '$a' of type 'Int!' is required and will never use the default value. Perhaps you meant to use type 'Int'.
+        loc: {line: 1, column: 43}
+      - error: Variable '$b' of type 'String!' is required and will never use the default value. Perhaps you meant to use type 'String'.
+        loc: {line: 1, column: 60}

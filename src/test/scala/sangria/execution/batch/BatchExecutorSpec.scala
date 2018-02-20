@@ -10,7 +10,7 @@ import spray.json._
 import monix.execution.Scheduler.Implicits.global
 import sangria.marshalling.sprayJson._
 import sangria.streaming.monix._
-import sangria.util.SimpleGraphQlSupport.checkContainsViolations
+import sangria.util.SimpleGraphQlSupport._
 
 class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
   val IdsArg = Argument("ids", ListInputType(IntType))
@@ -321,9 +321,8 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       checkContainsViolations(
         BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2")).toListL.runAsync.await,
-        List(
-          "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'Int!'." → List(Pos(7, 24), Pos(8, 24)),
-          "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'String!'." → List(Pos(7, 24), Pos(10, 25))))
+        "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'Int!'." → List(Pos(7, 24), Pos(8, 24)),
+        "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'String!'." → List(Pos(7, 24), Pos(10, 25)))
     }
 
     "not allow circular dependencies" in {
@@ -355,10 +354,9 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       checkContainsViolations(
         BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2", "q3")).toListL.runAsync.await,
-        List(
-          "Operation 'q1' has a circular dependency at path 'q1($from3) -> q3($from2) -> q2($from1) -> q1'." → List(Pos(2, 11)),
-          "Operation 'q3' has a circular dependency at path 'q3($from2) -> q2($from1) -> q1($from3) -> q3'." → List(Pos(20, 11)),
-          "Operation 'q2' has a circular dependency at path 'q2($from1) -> q1($from3) -> q3($from2) -> q2'." → List(Pos(14, 11))))
+        "Operation 'q1' has a circular dependency at path 'q1($from3) -> q3($from2) -> q2($from1) -> q1'." → List(Pos(2, 11)),
+        "Operation 'q3' has a circular dependency at path 'q3($from2) -> q2($from1) -> q1($from3) -> q3'." → List(Pos(20, 11)),
+        "Operation 'q2' has a circular dependency at path 'q2($from1) -> q1($from3) -> q3($from2) -> q2'." → List(Pos(14, 11)))
     }
   }
 

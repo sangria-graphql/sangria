@@ -17,8 +17,8 @@ trait QueryValidator {
 
 object QueryValidator {
   val allRules: List[ValidationRule] = List(
-    new ArgumentsOfCorrectType,
-    new DefaultValuesOfCorrectType,
+    new ValuesOfCorrectType,
+    new VariablesDefaultValueAllowed,
     new ExecutableDefinitions,
     new FieldsOnCorrectType,
     new FragmentsOnCompositeType,
@@ -43,7 +43,6 @@ object QueryValidator {
     new UniqueVariableNames,
     new VariablesAreInputTypes,
     new VariablesInAllowedPosition,
-    new InputDocumentOfCorrectType,
     new InputDocumentNonConflictingVariableInference,
     new SingleFieldSubscriptions
   )
@@ -73,7 +72,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     }
 
   def validateInputDocument(schema: Schema[_, _], doc: ast.InputDocument, inputType: InputType[_]): Vector[Violation] = {
-    val typeInfo = new TypeInfo(schema).withInputType(inputType)
+    val typeInfo = new TypeInfo(schema, Some(inputType))
 
     val ctx = new ValidationContext(schema, ast.Document.emptyStub, doc.sourceMapper, typeInfo)
 
@@ -149,6 +148,7 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val sou
 }
 
 object ValidationContext {
+  @deprecated("The validations are now implemented as a part of `ValuesOfCorrectType` validation.", "1.4.0")
   def isValidLiteralValue(tpe: InputType[_], value: ast.Value, sourceMapper: Option[SourceMapper]): Vector[Violation] = (tpe, value) match {
     case (_, _: ast.VariableValue) ⇒ Vector.empty
     case (OptionInputType(ofType), _: ast.NullValue) ⇒ Vector.empty
