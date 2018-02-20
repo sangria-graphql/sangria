@@ -7,7 +7,7 @@
 SBT Configuration:
 
 ```scala
-libraryDependencies += "org.sangria-graphql" %% "sangria" % "1.3.3"
+libraryDependencies += "org.sangria-graphql" %% "sangria" % "1.4.0"
 ```
 
 You can find an example application that uses akka-http with sangria here:
