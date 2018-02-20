@@ -105,7 +105,7 @@ object BatchExecutor {
   }
 
   private def convertVariables[In, M](variables: In, marshaller: SymmetricMarshaller[M])(implicit iu: InputUnmarshaller[In]): Map[String, M] = {
-    import sangria.marshalling.ImprovedMarshallingUtil._
+    import sangria.marshalling.MarshallingUtil._
 
     implicit val m = SimpleResultMarshallerForType[M](marshaller.marshaller)
 

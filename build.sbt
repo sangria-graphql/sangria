@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.3.4-SNAPSHOT"
+version := "1.4.0-SNAPSHOT"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
@@ -31,7 +31,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "macro-visit" % "0.1.1",
 
   // Marshalling
-  "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.0",
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.1",
 
   // Streaming
   "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.0",

@@ -1,10 +1,97 @@
-## Upcoming
+## v1.4.0 (2017-02-20)
 
+The v1.4.0 a lot of improvements and minor changes, in particular around SDL parsing and materialization. Although some of these changes a **minor breaking changes**, they can be divided in following 2 categories:
+
+* Simple routine refactorings with updated method signatures. For example most of the method signatures in `AstSchemaBuilder` are updated and now include more information (type extensions in particular). In all of these cases issues will manifest themselves as compilation errors and can be fixed by simple signature updates.
+* GraphQL query and SDL syntax updates. Based on the feedback from #308 and other sources, extra attention was put in ensuring that syntax is either backwards compatible or an option is available to enable the support of legacy GraphQL syntax. These options can be enabled though new `ParserConfig` which can be provided to `QueryParser`.
+
+**Changes:**
+    
+* New "implements" syntax (old syntax can be enabled via `ParserConfig.legacyImplementsInterface`) (#337) (spec change). Example:
+  
+  ```graphql
+  # old syntax 
+  type User implements Node & Profile {
+    id: ID!
+  }
+  
+  # new syntax
+  type User implements Node & Profile {
+    id: ID!
+  }
+  ```
+* All of the SDL types now support type extensions (#337) (spec change). Previously only object types supported this feature. Example:
+  
+  ```graphql
+  extend type Foo implements ExtraInterface1 & ExtraInterface2 {
+   extraField: Int
+  }
+
+  extend interface Bar @extraDirective {
+    extraField: Int
+  }
+
+  extend input Baz {
+    extraField: Int = 123
+  }
+
+  extend enum Color {
+    "the best color"
+    MAGENTA
+  }
+
+  extend union Test @extraDirective = More | Types
+  
+  extend scalar Date @extraDirective
+  ```
+* All SDL type definitions now allowed have empty field/value/member lists (#337) (spec change). Examples of now valid syntax:
+  
+  ```graphql 
+  type User 
+  union Pet
+  enum Color
+  ```  
+  
+  All of the appropriate checks are now implemented as a `SchemaValidationRule` (instead of being part of the syntax).
+  
+  Moreover, old syntax for this is now deprecated and can be enabled with `ParserConfig.legacyEmptyFields`. Example of the old syntax: 
+  
+  ```graphql 
+  # don't do it! it is now deprecated
+  type User {} 
+  ```
+* Add experimental support for parsing variable definitions in fragments (#313). Primary goal of it is to enable the experimentation. The support for this syntax needs to be explicitly enabled via `ParserConfig`. Here is how new syntax look like:
+
+  ```graphql
+  query q () {
+    ...a
+  }
+  
+  fragment a on t ($size: Int = 0) {
+    f(size: $size)
+  }
+  ```
+* Improved AST location handling and support for multi-source AST `Document`s (#343). These improvements might also be quite helpful for recently discussed "import" functionality where the schema SDL is defined in multiple files. Improvements include:
+  * Different schema elements retain the information about SDL `AstNode`s that were used to create them (in addition to the directives). This might be quite helpful in multiple scenarios. It was already used to greatly improve the quality of the error messages. 
+  * `AstLocation` now replaces the `Position` and holds additional field: `sourceId`.
+  * Introduced `AggregateSourceMapper` and improved `Document` merge. It is now possible to show proper error messages and source locations even for AST that was parsed from different sources (files, URLs, etc.).
+* A lot of improvement to the schema validation (#312, #315). All of the validations are now implemented as `SchemaValidationRule` (no in-place runtime checks anymore). This can be quite helpful if you, for instance, need to customize the validation rules or disable the validations altogether.
+* Validate literals in a single rule with finer precision (#314). This generalizes the "arguments of correct type" and "default values of correct type" to a single rule "values of correct type" which has been re-written to rely on a traversal rather than the utility function `isValidLiteralValue`. `isValidLiteralValue` is now deprecated.
+* `AstSchemaMaterializer` now fully supports all of the new type extensions (#309) .
+* `SchemaComparator` is improved and now includes information about "dangerous" changes (#335).
+* Simplify Unknown Args Validation (#316). 
+* Added new validation rule `SingleFieldSubscriptions` (#254) (spec change).
+* Resolve type info for fragment spreads (#278). Big thanks to @jonas for this contribution!
+* Allow to rename, describe and set default arguments using `DeriveObjectSetting`s (#339). Big thanks to @fehu for this contribution!  
+* Replaced Exception with Throwable to match all possible results of Future.failed (#329, #327). Big thanks to @lgmyrek for this contribution! 
+* Initialize symbols before checking their annotations (#317). This will improve `derive*` macros in same edge-cases. Big thanks to @dragos for this contribution!
 * Added support for rendering SDL with legacy comment-based descriptions (#334). You can use it with `SchemaFilter.default.withLegacyCommentDescriptions`.
 * Improved `ResolverBasedAstSchemaBuilder` and introduced `InputTypeResolver`/`OutputTypeResolver`.
 * Removed previously deprecated methods:
   * `SchemaRenderer.renderIntrospectionSchema`
   * `AstVisitor.visitAst`
+* Other minor improvements coming from the reference implementation (#336, #311).  
+* Updated `sangria-marshalling-api` to version 1.0.1 (should be backwards compatible with v1.0.0)
 
 ## v1.3.3 (2017-12-03)
 

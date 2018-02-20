@@ -533,7 +533,7 @@ object ResolverBasedAstSchemaBuilder {
 
   def createDynamicArgs[T : ResultMarshallerForType](astDirective: ast.Directive): T = {
     import sangria.marshalling.queryAst._
-    import sangria.marshalling.ImprovedMarshallingUtil._
+    import sangria.marshalling.MarshallingUtil._
 
     val value: ast.Value = ast.ObjectValue(astDirective.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value)))
 
