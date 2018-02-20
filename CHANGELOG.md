@@ -5,7 +5,7 @@ The v1.4.0 a lot of improvements and minor changes, in particular around SDL par
 * Simple routine refactorings with updated method signatures. For example most of the method signatures in `AstSchemaBuilder` are updated and now include more information (type extensions in particular). In all of these cases issues will manifest themselves as compilation errors and can be fixed by simple signature updates.
 * GraphQL query and SDL syntax updates. Based on the feedback from #308 and other sources, extra attention was put in ensuring that syntax is either backwards compatible or an option is available to enable support for a legacy GraphQL syntax. These options can be enabled though new `ParserConfig` which can be provided to `QueryParser`.
 
-If you are facing issues with migration to the new Sangria version, please let us know by creating a [new GH issue](https://github.com/sangria-graphql/sangria/issues/new). 
+If you are facing unexpected issues with migration to the new Sangria version, please let us know by creating a [new GH issue](https://github.com/sangria-graphql/sangria/issues/new). 
 
 **Changes:**
     
