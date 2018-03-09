@@ -5,6 +5,7 @@ import sangria.ast
 import sangria.execution.{MaterializedSchemaValidationError, WithViolations}
 import sangria.validation._
 import sangria.macros._
+import sangria.macros.derive.{ObjectTypeName, deriveObjectType}
 import sangria.parser.QueryParser
 import sangria.util.Pos
 
@@ -141,6 +142,35 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
         "Interface type 'Interface1' must define one or more fields.",
         "Interface type 'Interface2' must define one or more fields.",
         "Object type 'Output' must define one or more fields."))
+    }
+
+    "Not allow ObjectTypes with same name to be based on different case classes" in {
+
+      implicit val fooBazType = deriveObjectType[Unit, foo.Baz]()
+      implicit val barBazType = deriveObjectType[Unit, bar.Baz]()
+
+      val queryType = ObjectType("Query", fields[Unit, Unit](
+        Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(foo.Baz(1))),
+        Field("barBaz", barBazType, resolve = _ => bar.Baz("2", 3.0))
+      ))
+
+      val error = intercept [SchemaValidationException] (Schema(queryType))
+
+      error.getMessage should include (
+        """Type name 'Baz' is used for several conflicting GraphQL ObjectTypes based on different classes. Conflict found in a field 'barBaz' of 'Query' type. One possible fix is to use ObjectTypeName like this: deriveObjectType[Foo, Bar](ObjectTypeName("OtherBar")) to avoid that two ObjectTypes have the same name.""")
+    }
+
+    "Allow ObjectTypes based on different case classes but with different names" in {
+
+      implicit val fooBazType = deriveObjectType[Unit, foo.Baz]()
+      implicit val barBazType = deriveObjectType[Unit, bar.Baz](ObjectTypeName("BazWithNewName"))
+
+      val queryType = ObjectType("Query", fields[Unit, Unit](
+        Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(foo.Baz(1))),
+        Field("barBaz", barBazType, resolve = _ => bar.Baz("2", 3.0))
+      ))
+
+      Schema(queryType) // Should not throw any SchemaValidationExceptions
     }
   }
 

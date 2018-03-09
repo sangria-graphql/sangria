@@ -444,6 +444,11 @@ case class ConflictingTypeDefinitionViolation(typeName: String, conflictingTypes
   lazy val errorMessage = s"Type name '$typeName' is used for several conflicting GraphQL type kinds: ${conflictingTypes mkString ", "}. Conflict found in $parentInfo."
 }
 
+case class ConflictingObjectTypeCaseClassViolation(typeName: String, parentInfo: String) extends Violation {
+  // Ideally this error message should include the conflicting classes canonical names but due to https://issues.scala-lang.org/browse/SI-2034 that's not possible
+  lazy val errorMessage = s"""Type name '$typeName' is used for several conflicting GraphQL ObjectTypes based on different classes. Conflict found in $parentInfo. One possible fix is to use ObjectTypeName like this: deriveObjectType[Foo, Bar](ObjectTypeName("OtherBar")) to avoid that two ObjectTypes have the same name."""
+}
+
 case class ReservedTypeNameViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Type name '$typeName' must not begin with '__', which is reserved by GraphQL introspection."
 }
