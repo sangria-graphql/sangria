@@ -145,13 +145,12 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
     }
 
     "Not allow ObjectTypes with same name to be based on different case classes" in {
-
-      implicit val fooBazType = deriveObjectType[Unit, foo.Baz]()
-      implicit val barBazType = deriveObjectType[Unit, bar.Baz]()
+      implicit val fooBazType = deriveObjectType[Unit, test.foo.Baz]()
+      implicit val barBazType = deriveObjectType[Unit, test.bar.Baz]()
 
       val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(foo.Baz(1))),
-        Field("barBaz", barBazType, resolve = _ => bar.Baz("2", 3.0))
+        Field("fooBaz", OptionType(fooBazType), resolve = _ ⇒ Some(test.foo.Baz(1))),
+        Field("barBaz", barBazType, resolve = _ ⇒ test.bar.Baz("2", 3.0))
       ))
 
       val error = intercept [SchemaValidationException] (Schema(queryType))
@@ -161,13 +160,12 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
     }
 
     "Allow ObjectTypes based on different case classes but with different names" in {
-
-      implicit val fooBazType = deriveObjectType[Unit, foo.Baz]()
-      implicit val barBazType = deriveObjectType[Unit, bar.Baz](ObjectTypeName("BazWithNewName"))
+      implicit val fooBazType = deriveObjectType[Unit, test.foo.Baz]()
+      implicit val barBazType = deriveObjectType[Unit, test.bar.Baz](ObjectTypeName("BazWithNewName"))
 
       val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(foo.Baz(1))),
-        Field("barBaz", barBazType, resolve = _ => bar.Baz("2", 3.0))
+        Field("fooBaz", OptionType(fooBazType), resolve = _ ⇒ Some(test.foo.Baz(1))),
+        Field("barBaz", barBazType, resolve = _ ⇒ test.bar.Baz("2", 3.0))
       ))
 
       Schema(queryType) // Should not throw any SchemaValidationExceptions

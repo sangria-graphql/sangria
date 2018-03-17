@@ -743,7 +743,6 @@ case class Schema[Ctx, Val](
   def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
 
   lazy val types: Map[String, (Int, Type with Named)] = {
-
     def sameType(t1: Type, t2: Type): Boolean = {
       val sameSangriaType = t1.getClass.getName == t2.getClass.getName
 
@@ -753,19 +752,17 @@ case class Schema[Ctx, Val](
       }
     }
 
-    def typeConflict(name: String, t1: Type, t2: Type, parentInfo: String) = {
-
+    def typeConflict(name: String, t1: Type, t2: Type, parentInfo: String) =
       (t1, t2) match {
-        case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) ⇒ {
+        case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) ⇒
           throw SchemaValidationException(Vector(ConflictingObjectTypeCaseClassViolation(name, parentInfo)))
-        }
-        case _ => {
+
+        case _ ⇒
           val conflictingTypes = List(t1, t2).map(_.getClass.getSimpleName)
+
           throw SchemaValidationException(Vector(ConflictingTypeDefinitionViolation(
             name, conflictingTypes, parentInfo)))
-        }
       }
-    }
 
     def updated(priority: Int, name: String, tpe: Type with Named, result: Map[String, (Int, Type with Named)], parentInfo: String) =
       result get name match {
