@@ -1,3 +1,7 @@
+## Upcoming
+
+* Fixed new line tracking when parsing block-strings
+
 ## v1.4.0 (2018-02-20)
 
 The v1.4.0 a lot of improvements and minor changes, in particular around SDL parsing and materialization. Although some of these changes a **minor breaking changes**, they can be divided in following 2 categories:

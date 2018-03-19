@@ -1450,42 +1450,42 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                 Vector(
                   Argument(
                     "id",
-                    StringValue("1000", false, None, Vector.empty, Some(AstLocation(105, 3, 19))),
+                    StringValue("1000", false, None, Vector.empty, Some(AstLocation(105, 5, 19))),
                     Vector.empty,
-                    Some(AstLocation(101, 3, 15))
+                    Some(AstLocation(101, 5, 15))
                   ),
                   Argument(
                     "bar",
-                    StringValue(" \\\"test\n123 \\u0000", true, Some(" \\\"test\n     123 \\u0000\n     "), Vector.empty, Some(AstLocation(118, 3, 32))),
+                    StringValue(" \\\"test\n123 \\u0000", true, Some(" \\\"test\n     123 \\u0000\n     "), Vector.empty, Some(AstLocation(118, 5, 32))),
                     Vector.empty,
-                    Some(AstLocation(113, 3, 27))
+                    Some(AstLocation(113, 5, 27))
                   )),
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
-                Some(AstLocation(89, 3, 3))
+                Some(AstLocation(89, 5, 3))
               ),
-              FragmentSpread("Foo", Vector.empty, Vector.empty, Some(AstLocation(158, 5, 3)))),
+              FragmentSpread("Foo", Vector.empty, Vector.empty, Some(AstLocation(158, 9, 3)))),
             Vector.empty,
             Vector.empty,
             Some(AstLocation(0, 1, 1))
           ),
           FragmentDefinition(
             "Foo",
-            NamedType("User", Some(AstLocation(184, 8, 17))),
+            NamedType("User", Some(AstLocation(184, 12, 17))),
             Vector(
               Directive(
                 "foo",
                 Vector(
                   Argument(
                     "bar",
-                    BigIntValue(1, Vector.empty, Some(AstLocation(199, 8, 32))),
+                    BigIntValue(1, Vector.empty, Some(AstLocation(199, 12, 32))),
                     Vector.empty,
-                    Some(AstLocation(194, 8, 27))
+                    Some(AstLocation(194, 12, 27))
                   )),
                 Vector.empty,
-                Some(AstLocation(189, 8, 22))
+                Some(AstLocation(189, 12, 22))
               )),
             Vector(
               Field(
@@ -1498,28 +1498,28 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                     Vector(
                       Argument(
                         "info",
-                        StringValue("\"\"\"\n\"\"\" this \" is \"\"\na description! \"\"\"", true, Some("\"\"\"\n    \"\"\" this \" is \"\"\n    a description! \"\"\"\n    "), Vector.empty, Some(AstLocation(225, 10, 5))),
+                        StringValue("\"\"\"\n\"\"\" this \" is \"\"\na description! \"\"\"", true, Some("\"\"\"\n    \"\"\" this \" is \"\"\n    a description! \"\"\"\n    "), Vector.empty, Some(AstLocation(225, 14, 5))),
                         Vector.empty,
-                        Some(AstLocation(215, 9, 13))
+                        Some(AstLocation(215, 13, 13))
                       )),
                     Vector.empty,
-                    Some(AstLocation(209, 9, 7))
+                    Some(AstLocation(209, 13, 7))
                   )),
                 Vector.empty,
                 Vector.empty,
                 Vector.empty,
-                Some(AstLocation(205, 9, 3))
+                Some(AstLocation(205, 13, 3))
               )),
             Vector.empty,
             Vector.empty,
             Vector.empty,
-            Some(AstLocation(168, 8, 1))
+            Some(AstLocation(168, 12, 1))
           )),
         Vector.empty,
         Some(AstLocation(0, 1, 1)),
         None
       )
-
+      
       parseQuery(query) should be (Success(expected))
     }
     

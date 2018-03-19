@@ -65,7 +65,7 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 
   def QuotedBlockString = rule { str("\\\"\"\"") }
 
-  def BlockStringCharacter = rule { !(QuotedBlockString | BlockString) ~ ANY ~ appendSB() }
+  def BlockStringCharacter = rule { !(QuotedBlockString | BlockString) ~ ((CRLF | LineTerminator) ~ trackNewLine | ANY) ~ appendSB() }
 
   def BlockStringEscapedChar = rule {
     QuotedBlockString ~ appendSB("\"\"\"")
