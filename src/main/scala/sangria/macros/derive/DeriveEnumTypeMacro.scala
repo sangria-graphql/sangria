@@ -82,11 +82,17 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
         val name = value.name.decodedName.toString.trim
         val annotationName = symbolName(value.annotations)
         val configName = config.collect{case MacroRenameValue(`name`, tree, _) ⇒ tree}.lastOption
-        val actualName =
-          if (config.exists(_.isInstanceOf[MacroUppercaseValues]))
-            q"sangria.util.StringUtil.camelCaseToUnderscore(${configName orElse annotationName getOrElse q"$name"}).toUpperCase"
+        val actualName = {
+          val nonTransformedName = configName orElse annotationName getOrElse q"$name"
+          val transformFnOpt = config.collect{case MacroTransformValueNames(fn) ⇒ fn}.lastOption
+          val upperCase = config.exists(_.isInstanceOf[MacroUppercaseValues])
+
+          val transformed = transformFnOpt.map(fn => q"$fn($nonTransformedName)").getOrElse(nonTransformedName)
+          if (upperCase)
+            q"sangria.util.StringUtil.camelCaseToUnderscore($transformed).toUpperCase"
           else
-            q"${configName orElse annotationName getOrElse q"$name"}"
+            q"$transformed"
+        }
 
         val annotationDescr = symbolDescription(value.annotations)
         val configDescr = config.collect{case MacroDocumentValue(`name`, tree, _, _) ⇒ tree}.lastOption
@@ -197,6 +203,9 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
     case tree @ q"$setting.apply(..${values: List[String]})" if checkSetting[ExcludeValues.type](setting) ⇒
       Right(MacroExcludeValues(values.toSet, tree.pos))
 
+    case tree @ q"$setting.apply($fn)" if checkSetting[TransformValueNames.type](setting) ⇒
+      Right(MacroTransformValueNames(fn))
+
     case tree ⇒ Left(tree.pos →
         "Unsupported shape of derivation config. Please define subclasses of `DeriveEnumTypeConfig` directly in the argument list of the macro.")
   }
@@ -214,4 +223,6 @@ class DeriveEnumTypeMacro(context: blackbox.Context) extends {
 
   case class MacroIncludeValues(values: Set[String], pos: Position) extends MacroDeriveEnumSetting
   case class MacroExcludeValues(fieldNames: Set[String], pos: Position) extends MacroDeriveEnumSetting
+
+  case class MacroTransformValueNames(transformer: Tree) extends MacroDeriveEnumSetting
 }
