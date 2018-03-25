@@ -26,6 +26,8 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
 
   private lazy val allDefinitions = document.definitions ++ builder.additionalTypeExtensionDefs ++ builder.additionalDirectiveDefs
 
+  private lazy val additionalTypeDefsMap = builder.additionalTypes.groupBy(_.name).mapValues(_.head)
+
   private lazy val objectTypeExtensionDefs: Vector[ast.ObjectTypeExtensionDefinition] = allDefinitions.collect {
     case d: ast.ObjectTypeExtensionDefinition ⇒ d
   }
@@ -146,27 +148,28 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
         case (name, defs) if schema.directivesByName contains name ⇒
           NonUniqueDirectiveDefinitionViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
       },
-      objectTypeExtensionDefs flatMap (validateExtensions[ObjectType[_, _]](schema, _, "object")),
-      interfaceTypeExtensionDefs flatMap (validateExtensions[InterfaceType[_, _]](schema, _, "interface")),
-      enumTypeExtensionDefs flatMap (validateExtensions[EnumType[_]](schema, _, "enum")),
-      inputObjectTypeExtensionDefs flatMap (validateExtensions[InputObjectType[_]](schema, _, "input-object")),
-      scalarTypeExtensionDefs flatMap (validateExtensions[ScalarType[_]](schema, _, "scalar")),
-      unionTypeExtensionDefs flatMap (validateExtensions[UnionType[_]](schema, _, "union")))
+      objectTypeExtensionDefs flatMap (validateExtensions[ObjectType[_, _], ast.ObjectTypeDefinition](schema, _, "object")),
+      interfaceTypeExtensionDefs flatMap (validateExtensions[InterfaceType[_, _], ast.InterfaceTypeDefinition](schema, _, "interface")),
+      enumTypeExtensionDefs flatMap (validateExtensions[EnumType[_], ast.EnumTypeDefinition](schema, _, "enum")),
+      inputObjectTypeExtensionDefs flatMap (validateExtensions[InputObjectType[_], ast.InputObjectTypeDefinition](schema, _, "input-object")),
+      scalarTypeExtensionDefs flatMap (validateExtensions[ScalarType[_], ast.ScalarTypeDefinition](schema, _, "scalar")),
+      unionTypeExtensionDefs flatMap (validateExtensions[UnionType[_], ast.UnionTypeDefinition](schema, _, "union")))
 
     nestedErrors.flatten
   }
 
-  private def validateExtensions[T : ClassTag](schema: Schema[Ctx, _], ext: ast.TypeExtensionDefinition, typeKind: String): Option[Violation] = {
-    val clazz = implicitly[ClassTag[T]].runtimeClass
+  private def validateExtensions[T1 : ClassTag, T2 : ClassTag](schema: Schema[Ctx, _], ext: ast.TypeExtensionDefinition, typeKind: String): Option[Violation] = {
+    val instClass = implicitly[ClassTag[T1]].runtimeClass
+    val astClass = implicitly[ClassTag[T2]].runtimeClass
 
     typeDefsMap.get(ext.name).map(_.head) match {
-      case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ None
+      case Some(tpe) if astClass.isAssignableFrom(tpe.getClass) ⇒ None
       case Some(tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
       case None ⇒
         schema.allTypes.get(ext.name) match {
-          case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ None
+          case Some(tpe) if instClass.isAssignableFrom(tpe.getClass) ⇒ None
           case Some(tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
-          case None ⇒ Some(TypeExtensionOnNonExistingTypeViolation(ext.name, document.sourceMapper, ext.location.toList))
+          case None ⇒ validateExtensionsAdditional(instClass, astClass, ext, typeKind)
         }
     }
   }
@@ -179,22 +182,37 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
       directiveDefsMap.find(_._2.size > 1).toVector.map { case (name, defs) ⇒
         NonUniqueDirectiveDefinitionViolation(name, document.sourceMapper, defs.flatMap(_.location).toList)
       },
-      objectTypeExtensionDefs flatMap (validateExtensionsAst[ast.ObjectTypeDefinition](_, "object")),
-      interfaceTypeExtensionDefs flatMap (validateExtensionsAst[ast.InterfaceTypeDefinition](_, "interface")),
-      enumTypeExtensionDefs flatMap (validateExtensionsAst[ast.EnumTypeDefinition](_, "enum")),
-      inputObjectTypeExtensionDefs flatMap (validateExtensionsAst[ast.InputObjectTypeDefinition](_, "input-object")),
-      scalarTypeExtensionDefs flatMap (validateExtensionsAst[ast.ScalarTypeDefinition](_, "scalar")),
-      unionTypeExtensionDefs flatMap (validateExtensionsAst[ast.UnionTypeDefinition](_, "union")))
+      objectTypeExtensionDefs flatMap (validateExtensionsAst[ObjectType[_, _], ast.ObjectTypeDefinition](_, "object")),
+      interfaceTypeExtensionDefs flatMap (validateExtensionsAst[InterfaceType[_, _], ast.InterfaceTypeDefinition](_, "interface")),
+      enumTypeExtensionDefs flatMap (validateExtensionsAst[EnumType[_], ast.EnumTypeDefinition](_, "enum")),
+      inputObjectTypeExtensionDefs flatMap (validateExtensionsAst[InputObjectType[_], ast.InputObjectTypeDefinition](_, "input-object")),
+      scalarTypeExtensionDefs flatMap (validateExtensionsAst[ScalarType[_], ast.ScalarTypeDefinition](_, "scalar")),
+      unionTypeExtensionDefs flatMap (validateExtensionsAst[UnionType[_], ast.UnionTypeDefinition](_, "union")))
 
     nestedErrors.flatten
   }
 
-  private def validateExtensionsAst[T : ClassTag](ext: ast.TypeExtensionDefinition, typeKind: String): Option[Violation] = {
-    val clazz = implicitly[ClassTag[T]].runtimeClass
+  private def validateExtensionsAst[T1 : ClassTag, T2 : ClassTag](ext: ast.TypeExtensionDefinition, typeKind: String): Option[Violation] = {
+    val instClass = implicitly[ClassTag[T1]].runtimeClass
+    val astClass = implicitly[ClassTag[T2]].runtimeClass
 
     typeDefsMap.get(ext.name).map(_.head) match {
-      case Some(tpe) if clazz.isAssignableFrom(tpe.getClass) ⇒ None
+      case Some(tpe) if astClass.isAssignableFrom(tpe.getClass) ⇒ None
       case Some(tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
+      case None ⇒ validateExtensionsAdditional(instClass, astClass, ext, typeKind)
+    }
+  }
+
+  private def validateExtensionsAdditional(instClass: Class[_], astClass: Class[_], ext: ast.TypeExtensionDefinition, typeKind: String) = {
+    additionalTypeDefsMap.get(ext.name) match {
+      case Some(t) ⇒ t match {
+        case BuiltMaterializedTypeInst(_, tpe) if instClass.isAssignableFrom(tpe.getClass) ⇒ None
+        case BuiltMaterializedTypeInst(_, tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
+        case MaterializedTypeInst(_, tpe) if instClass.isAssignableFrom(tpe.getClass) ⇒ None
+        case MaterializedTypeInst(_, tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
+        case MaterializedTypeAst(_, tpe) if astClass.isAssignableFrom(tpe.getClass) ⇒ None
+        case MaterializedTypeAst(_, tpe) ⇒ Some(TypeExtensionOnWrongKindViolation(typeKind, tpe.name, document.sourceMapper, ext.location.toList))
+      }
       case None ⇒ Some(TypeExtensionOnNonExistingTypeViolation(ext.name, document.sourceMapper, ext.location.toList))
     }
   }
