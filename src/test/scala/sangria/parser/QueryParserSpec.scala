@@ -642,7 +642,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
     "parse kitchen sink without comments and locations" in {
       val config = ParserConfig.default
-          .withoutLocation
+          .withoutLocations
           .withoutComments
           .withEmptySourceId
           .withoutSourceMapper

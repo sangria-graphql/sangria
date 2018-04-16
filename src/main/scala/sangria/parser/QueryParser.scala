@@ -514,7 +514,7 @@ class QueryParser private (
   val legacyImplementsInterface: Boolean = false,
   val legacyEmptyFields: Boolean = false,
   val experimentalFragmentVariables: Boolean = false,
-  val parseLocation: Boolean = true,
+  val parseLocations: Boolean = true,
   val parseComments: Boolean = true
 ) extends Parser with Tokens with Ignored with Document with Operations with Fragments with Values with Directives with Types with TypeSystemDefinitions
 
@@ -531,7 +531,7 @@ object QueryParser {
       config.legacyImplementsInterface,
       config.legacyEmptyFields,
       config.experimentalFragmentVariables,
-      config.parseLocation,
+      config.parseLocations,
       config.parseComments)
 
     parser.Document.run() match {
@@ -566,7 +566,7 @@ object QueryParser {
       config.legacyImplementsInterface,
       config.legacyEmptyFields,
       config.experimentalFragmentVariables,
-      config.parseLocation,
+      config.parseLocations,
       config.parseComments)
 
     parser.InputDocument.run() match {
@@ -611,7 +611,7 @@ case class ParserConfig(
   experimentalFragmentVariables: Boolean = false,
   sourceIdFn: ParserInput ⇒ String = ParserConfig.defaultSourceIdFn,
   sourceMapperFn: (String, ParserInput) ⇒ Option[SourceMapper] = ParserConfig.defaultSourceMapperFn,
-  parseLocation: Boolean = true,
+  parseLocations: Boolean = true,
   parseComments: Boolean = true
 ) {
   @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
@@ -628,7 +628,7 @@ case class ParserConfig(
 
   def withoutSourceMapper: ParserConfig = copy(sourceMapperFn = ParserConfig.emptySourceMapperFn)
 
-  def withoutLocation: ParserConfig = copy(parseLocation = false)
+  def withoutLocations: ParserConfig = copy(parseLocations = false)
 
   def withoutComments: ParserConfig = copy(parseComments = false)
 }

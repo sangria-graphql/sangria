@@ -8,17 +8,17 @@ import scala.annotation.tailrec
 trait PositionTracking { this: Parser ⇒
   private var lineIdx = Array(0)
 
-  def parseLocation: Boolean
+  def parseLocations: Boolean
   def sourceId: String
 
   def trackNewLine: Rule0 = rule {
-    test(parseLocation) ~ run {
+    test(parseLocations) ~ run {
       if (!contains(lineIdx, cursor)) lineIdx = lineIdx :+ cursor
     } | MATCH
   }
 
   def trackPos: Rule1[Option[AstLocation]] = rule {
-    test(parseLocation) ~ push {
+    test(parseLocations) ~ push {
       val (size, lastCursor) = findLastItem(lineIdx, cursor)
 
       Some(AstLocation(sourceId, cursor, size, cursor - lastCursor + 1))
