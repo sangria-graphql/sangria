@@ -668,6 +668,61 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
         """.parseJson)
     }
 
+    "support mutations execution" in {
+      import sangria.marshalling.sprayJson._
+
+      val schemaDocument =
+        graphql"""
+          type Query {
+            person: Person!
+          }
+
+          type Person {
+            name: String!
+          }
+
+          type Mutation {
+            createPerson(name:String): Person
+          }
+
+          schema {
+            query: Query
+            mutation: Mutation
+          }
+        """
+
+      val query =
+        graphql"""
+          mutation {
+            createPerson(name: "Hello World") {
+              name
+            }
+          }
+        """
+
+      val builder = resolverBased[Any](
+        FieldResolver {
+          case (_, FieldName("name")) => _ => "test"
+          case (_, _) => _ => ()
+        })
+
+      val resolverBuilder = builder.validateSchemaWithException(schemaDocument)
+
+      val schema: Schema[Any, Any] =
+        Schema.buildFromAst[Any](schemaDocument, resolverBuilder)
+
+      Executor.execute(schema, query).await should be (
+        """
+          {
+            "data": {
+              "createPerson": {
+                "name": "test"
+              }
+            }
+          }
+        """.parseJson)
+    }
+
     "support generic InputTypeResolver/OutputTypeResolver" in {
       import sangria.marshalling.sprayJson._
 
