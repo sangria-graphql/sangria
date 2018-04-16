@@ -11,7 +11,7 @@ import scala.util.Success
 class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
 
   def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
-    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withEmptySourceMapper)(scheme)
+    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
 
   "QueryParser" should {
     "parse schema kitchen sink" in {
@@ -485,7 +485,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
 
     "Simple type inheriting multiple interfaces (legacy syntax)" in {
       val Success(ast) = QueryParser.parse(
-        "type Hello implements Wo, rld { foo: Bar }", ParserConfig.default.withEmptySourceId.withEmptySourceMapper.withLegacyImplementsInterface)
+        "type Hello implements Wo, rld { foo: Bar }", ParserConfig.default.withEmptySourceId.withoutSourceMapper.withLegacyImplementsInterface)
 
       ast.withoutSourceMapper should be (
         Document(
@@ -792,9 +792,9 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
           type Foo @hello {}
           interface Bar {}
           input Baz {}
-        """, ParserConfig.default.withEmptySourceId.withEmptySourceMapper.withLegacyEmptyFields)
+        """, ParserConfig.default.withEmptySourceId.withoutSourceMapper.withLegacyEmptyFields)
 
-      ast.withoutSourceMapper should be(
+      ast should be(
         Document(
           Vector(
             ObjectTypeDefinition(

@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
   def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
-    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withEmptySourceMapper)(scheme)
+    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
 
   "QueryParser" should {
     "parse complex query" in {
@@ -638,6 +638,434 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         )
 
       parseQuery(query) should be (Success(expectedAst))
+    }
+
+    "parse kitchen sink without comments and locations" in {
+      val config = ParserConfig.default
+          .withoutLocation
+          .withoutComments
+          .withEmptySourceId
+          .withoutSourceMapper
+
+      val query = FileUtil loadQuery "kitchen-sink.graphql"
+
+      val expectedAst =
+        Document(
+          Vector(
+            OperationDefinition(
+              OperationType.Query,
+              Some("queryName"),
+              Vector(
+                VariableDefinition(
+                  "foo",
+                  NamedType("ComplexType", None),
+                  None,
+                  Vector.empty,
+                  None
+                ),
+                VariableDefinition(
+                  "site",
+                  NamedType("Site", None),
+                  Some(EnumValue("MOBILE", Vector.empty, None)),
+                  Vector.empty,
+                  None
+                )),
+              Vector.empty,
+              Vector(
+                Field(
+                  Some("whoever123is"),
+                  "node",
+                  Vector(
+                    Argument(
+                      "id",
+                      ListValue(
+                        Vector(
+                          BigIntValue(123, Vector.empty, None),
+                          BigIntValue(456, Vector.empty, None)),
+                        Vector.empty,
+                        None
+                      ),
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector(
+                    Field(
+                      None,
+                      "id",
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    ),
+                    InlineFragment(
+                      Some(NamedType("User", None)),
+                      Vector(
+                        Directive(
+                          "defer",
+                          Vector.empty,
+                          Vector.empty,
+                          None
+                        )),
+                      Vector(
+                        Field(
+                          None,
+                          "field2",
+                          Vector.empty,
+                          Vector.empty,
+                          Vector(
+                            Field(
+                              None,
+                              "id",
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              None
+                            ),
+                            Field(
+                              Some("alias"),
+                              "field1",
+                              Vector(
+                                Argument(
+                                  "first",
+                                  BigIntValue(10, Vector.empty, None),
+                                  Vector.empty,
+                                  None
+                                ),
+                                Argument(
+                                  "after",
+                                  VariableValue("foo", Vector.empty, None),
+                                  Vector.empty,
+                                  None
+                                )),
+                              Vector(
+                                Directive(
+                                  "include",
+                                  Vector(
+                                    Argument(
+                                      "if",
+                                      VariableValue("foo", Vector.empty, None),
+                                      Vector.empty,
+                                      None
+                                    )),
+                                  Vector.empty,
+                                  None
+                                )),
+                              Vector(
+                                Field(
+                                  None,
+                                  "id",
+                                  Vector.empty,
+                                  Vector.empty,
+                                  Vector.empty,
+                                  Vector.empty,
+                                  Vector.empty,
+                                  None
+                                ),
+                                FragmentSpread("frag", Vector.empty, Vector.empty, None)),
+                              Vector.empty,
+                              Vector.empty,
+                              None
+                            )),
+                          Vector.empty,
+                          Vector.empty,
+                          None
+                        )),
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                )),
+              Vector.empty,
+              Vector.empty,
+              None
+            ),
+            OperationDefinition(
+              OperationType.Mutation,
+              Some("likeStory"),
+              Vector.empty,
+              Vector.empty,
+              Vector(
+                Field(
+                  None,
+                  "like",
+                  Vector(
+                    Argument(
+                      "story",
+                      BigIntValue(123, Vector.empty, None),
+                      Vector.empty,
+                      None
+                    )),
+                  Vector(
+                    Directive(
+                      "defer",
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )),
+                  Vector(
+                    Field(
+                      None,
+                      "story",
+                      Vector.empty,
+                      Vector.empty,
+                      Vector(
+                        Field(
+                          None,
+                          "id",
+                          Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          None
+                        )),
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                )),
+              Vector.empty,
+              Vector.empty,
+              None
+            ),
+            OperationDefinition(
+              OperationType.Subscription,
+              Some("StoryLikeSubscription"),
+              Vector(
+                VariableDefinition(
+                  "input",
+                  NamedType("StoryLikeSubscribeInput", None),
+                  None,
+                  Vector.empty,
+                  None
+                )),
+              Vector.empty,
+              Vector(
+                Field(
+                  None,
+                  "storyLikeSubscribe",
+                  Vector(
+                    Argument(
+                      "input",
+                      VariableValue("input", Vector.empty, None),
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector(
+                    Field(
+                      None,
+                      "story",
+                      Vector.empty,
+                      Vector.empty,
+                      Vector(
+                        Field(
+                          None,
+                          "likers",
+                          Vector.empty,
+                          Vector.empty,
+                          Vector(
+                            Field(
+                              None,
+                              "count",
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              None
+                            )),
+                          Vector.empty,
+                          Vector.empty,
+                          None
+                        ),
+                        Field(
+                          None,
+                          "likeSentence",
+                          Vector.empty,
+                          Vector.empty,
+                          Vector(
+                            Field(
+                              None,
+                              "text",
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              Vector.empty,
+                              None
+                            )),
+                          Vector.empty,
+                          Vector.empty,
+                          None
+                        )),
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                )),
+              Vector.empty,
+              Vector.empty,
+              None
+            ),
+            FragmentDefinition(
+              "frag",
+              NamedType("Friend", None),
+              Vector.empty,
+              Vector(
+                Field(
+                  None,
+                  "foo",
+                  Vector(
+                    Argument(
+                      "size",
+                      VariableValue("size", Vector.empty, None),
+                      Vector.empty,
+                      None
+                    ),
+                    Argument(
+                      "bar",
+                      VariableValue("b", Vector.empty, None),
+                      Vector.empty,
+                      None
+                    ),
+                    Argument(
+                      "obj",
+                      ObjectValue(
+                        Vector(
+                          ObjectField(
+                            "key",
+                            StringValue("value", false, None, Vector.empty, None),
+                            Vector.empty,
+                            None
+                          )),
+                        Vector.empty,
+                        None
+                      ),
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                )),
+              Vector.empty,
+              Vector.empty,
+              Vector.empty,
+              None
+            ),
+            OperationDefinition(
+              OperationType.Query,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Vector(
+                Field(
+                  None,
+                  "unnamed",
+                  Vector(
+                    Argument(
+                      "truthy",
+                      BooleanValue(true, Vector.empty, None),
+                      Vector.empty,
+                      None
+                    ),
+                    Argument(
+                      "falsey",
+                      BooleanValue(false, Vector.empty, None),
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                ),
+                Field(
+                  None,
+                  "query",
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                ),
+                InlineFragment(
+                  None,
+                  Vector(
+                    Directive(
+                      "skip",
+                      Vector(
+                        Argument(
+                          "unless",
+                          VariableValue("foo", Vector.empty, None),
+                          Vector.empty,
+                          None
+                        )),
+                      Vector.empty,
+                      None
+                    )),
+                  Vector(
+                    Field(
+                      None,
+                      "id",
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                ),
+                InlineFragment(
+                  None,
+                  Vector.empty,
+                  Vector(
+                    Field(
+                      None,
+                      "id",
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )),
+                  Vector.empty,
+                  Vector.empty,
+                  None
+                )),
+              Vector.empty,
+              Vector.empty,
+              None
+            )),
+          Vector.empty,
+          None,
+          None
+        )
+
+      QueryParser.parse(query, config) should be (Success(expectedAst))
     }
 
     "parse anonymous query" in {
@@ -1423,7 +1851,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
           None
         )
 
-      QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withEmptySourceMapper) should be (Success(expected))
+      QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper) should be (Success(expected))
     }
 
     "parse document with block strings" in {
@@ -1528,7 +1956,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
       parseQuery(queryStr).isFailure should be (true)
 
-      val Success(query) = QueryParser.parse(queryStr, ParserConfig.default.withEmptySourceId.withEmptySourceMapper.withExperimentalFragmentVariables)
+      val Success(query) = QueryParser.parse(queryStr, ParserConfig.default.withEmptySourceId.withoutSourceMapper.withExperimentalFragmentVariables)
 
       query should be (
         Document(
