@@ -120,7 +120,7 @@ case class MiddlewareQueryContext[+Ctx, RootVal, Input](
   queryReducerTiming: TimeMeasurement)
 
 case class BeforeFieldResult[Ctx, FieldVal](
-  fileVal: FieldVal = (),
+  fieldVal: FieldVal = (),
   actionOverride: Option[Action[Ctx, _]] = None,
   attachment: Option[MiddlewareAttachment] = None)
 
