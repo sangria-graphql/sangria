@@ -723,6 +723,34 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
         """.parseJson)
     }
 
+    "validate directives" in {
+      val schemaDocument =
+        graphql"""
+          type Query @objectDir(name: "foo") {
+            person: String!
+          }
+
+          extend type Query @objectDir(name: true) {
+            person: String! @objectDir
+          }
+
+          extend input Foo @objectDir(name: "wrong")
+        """
+
+      val NameArg = Argument("name", OptionInputType(StringType))
+      val TestDir = Directive("objectDir", arguments = NameArg :: Nil, locations = Set(DL.Object))
+
+      val builder = resolverBased[Any](
+        AdditionalDirectives(Seq(TestDir)))
+
+      val violations = builder.validateSchema(schemaDocument)
+
+      assertViolations(violations,
+        "Directive 'objectDir' may not be used on field definition." → Seq(Pos(7, 29)),
+        "Expected type 'String', found 'true'. String value expected" → Seq(Pos(6, 46)),
+        "Directive 'objectDir' may not be used on input object type extension definition." → Seq(Pos(10, 28)))
+    }
+
     "support generic InputTypeResolver/OutputTypeResolver" in {
       import sangria.marshalling.sprayJson._
 

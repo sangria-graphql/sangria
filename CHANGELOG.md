@@ -2,6 +2,7 @@
 
 * Fixed new line tracking when parsing block-strings
 * Ast schema builder now considers `additionalTypes` when it validates the type extensions
+* `KnownDirectives` validation now correctly handles type and schema extensions
 
 ## v1.4.0 (2018-02-20)
 
