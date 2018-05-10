@@ -153,6 +153,18 @@ class DeriveEnumTypeMacroSpec extends WordSpec with Matchers {
       enum.values.map(_.name).sorted should be ("DARK1_BLUE_FOO_STUFF" :: "DARK_BLUE" :: "NORMAL_RED" :: Nil)
     }
 
+    "allow transformation of GraphQL enum values' names" in {
+      val singletonEnum = deriveEnumType[Difficulty](TransformValueNames("Difficulty" + _))
+      val singletonEnumUpperCase = deriveEnumType[Difficulty](TransformValueNames("Difficulty" + _), UppercaseValues)
+      val enum = deriveEnumType[ColorAnnotated.Value](TransformValueNames("Color" + _))
+      val enumUpperCase = deriveEnumType[ColorAnnotated.Value](TransformValueNames("Color" + _), UppercaseValues)
+
+      singletonEnum.values.map(_.name).sorted should be ("DifficultyEasy" :: "DifficultyHard" :: "DifficultyMedium" :: Nil)
+      singletonEnumUpperCase.values.map(_.name).sorted should be ("DIFFICULTY_EASY" :: "DIFFICULTY_HARD" :: "DIFFICULTY_MEDIUM" :: Nil)
+      enum.values.map(_.name).sorted should be ("ColorDark1Blue_FooStuff" :: "ColorDarkBlue" :: "ColorNormalRed" :: Nil)
+      enumUpperCase.values.map(_.name).sorted should be ("COLOR_DARK1_BLUE_FOO_STUFF" :: "COLOR_DARK_BLUE" :: "COLOR_NORMAL_RED" :: Nil)
+    }
+
     "allow to set name, description and deprecationReason with config" in {
       val singletonEnum = deriveEnumType[Fruit](
         DocumentValue("RedApple", "apple!", deprecationReason = Some("foo")),
