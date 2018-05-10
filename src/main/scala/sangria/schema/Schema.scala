@@ -121,6 +121,7 @@ case class ScalarType[T](
   astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends InputType[T @@ CoercedScalaResult] with OutputType[T] with LeafType with NullableType with UnmodifiedType with Named {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 case class ScalarAlias[T, ST](
@@ -134,6 +135,7 @@ case class ScalarAlias[T, ST](
 
   def astDirectives = aliasFor.astDirectives
   def astNodes = aliasFor.astNodes
+  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType[Val] with NullableType with UnmodifiedType with Named with HasAstInfo {
@@ -164,6 +166,8 @@ sealed trait ObjectLikeType[Ctx, Val] extends OutputType[Val] with CompositeType
       else if (fieldName == TypeNameMetaField.name) Vector(TypeNameMetaField.asInstanceOf[Field[Ctx, _]])
       else Vector.empty
     else fieldsByName.getOrElse(fieldName, Vector.empty)
+
+  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 case class ObjectType[Ctx, Val: ClassTag] (
@@ -290,6 +294,7 @@ case class UnionType[Ctx](
     astDirectives: Vector[ast.Directive] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType with HasAstInfo {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 case class Field[Ctx, Val](
@@ -307,6 +312,7 @@ case class Field[Ctx, Val](
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.FieldDefinition = SchemaRenderer.renderField(this)
 }
 
 object Field {
@@ -382,6 +388,7 @@ case class Argument[T](
 
   def inputValueType = argumentType
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.InputValueDefinition = SchemaRenderer.renderArg(this)
 }
 
 object Argument {
@@ -556,6 +563,7 @@ case class EnumType[T](
   def coerceOutput(value: T): String = byValue(value).name
 
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 case class EnumValue[+T](
@@ -566,6 +574,7 @@ case class EnumValue[+T](
     astDirectives: Vector[ast.Directive] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty) extends Named with HasDeprecation with HasAstInfo {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.EnumValueDefinition = SchemaRenderer.renderEnumValue(this)
 }
 
 case class InputObjectType[T](
@@ -579,6 +588,7 @@ case class InputObjectType[T](
   lazy val fieldsByName = fields groupBy(_.name) mapValues(_.head)
 
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 object InputObjectType {
@@ -627,6 +637,7 @@ case class InputField[T](
 
   def inputValueType = fieldType
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.InputValueDefinition = SchemaRenderer.renderInputField(this)
 }
 
 object InputField {
@@ -716,6 +727,7 @@ case class Directive(
     locations: Set[DirectiveLocation.Value] = Set.empty,
     shouldInclude: DirectiveContext ⇒ Boolean = _ ⇒ true) extends HasArguments with Named {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def toAst: ast.DirectiveDefinition = SchemaRenderer.renderDirective(this)
 }
 
 case class Schema[Ctx, Val](

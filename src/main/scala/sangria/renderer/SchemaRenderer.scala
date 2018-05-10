@@ -39,16 +39,16 @@ object SchemaRenderer {
     loop(tpe, !topLevel)
   }
 
-  private def renderDescription(description: Option[String]): Option[ast.StringValue] =
+  def renderDescription(description: Option[String]): Option[ast.StringValue] =
     description.flatMap { d ⇒
       if (d.trim.nonEmpty) Some(ast.StringValue(d, block = d.indexOf('\n') > 0))
       else None
     }
 
-  private def renderImplementedInterfaces(tpe: IntrospectionObjectType) =
+  def renderImplementedInterfaces(tpe: IntrospectionObjectType) =
     tpe.interfaces.map(t ⇒ ast.NamedType(t.name)).toVector
 
-  private def renderImplementedInterfaces(tpe: ObjectLikeType[_, _]) =
+  def renderImplementedInterfaces(tpe: ObjectLikeType[_, _]) =
     tpe.allInterfaces.map(t ⇒ ast.NamedType(t.name))
 
   def renderTypeName(tpe: IntrospectionTypeRef): ast.Type =
@@ -58,19 +58,19 @@ object SchemaRenderer {
       case IntrospectionNamedTypeRef(_, name) ⇒ ast.NamedType(name)
     }
 
-  private def renderDefault(defaultValue: Option[String]) =
+  def renderDefault(defaultValue: Option[String]) =
     defaultValue.flatMap(d ⇒ QueryParser.parseInput(d).toOption)
 
-  private def renderDefault(value: (Any, ToInput[_, _]), tpe: InputType[_]) = {
+  def renderDefault(value: (Any, ToInput[_, _]), tpe: InputType[_]) = {
     val coercionHelper = new ValueCoercionHelper[Any]
 
     DefaultValueRenderer.renderInputValue(value, tpe, coercionHelper)
   }
 
-  private def renderArg(arg: IntrospectionInputValue) =
+  def renderArg(arg: IntrospectionInputValue) =
     ast.InputValueDefinition(arg.name, renderTypeName(arg.tpe), renderDefault(arg.defaultValue), description = renderDescription(arg.description))
 
-  private def renderArg(arg: Argument[_]) =
+  def renderArg(arg: Argument[_]) =
     ast.InputValueDefinition(
       arg.name,
       renderTypeNameAst(arg.argumentType),
@@ -78,9 +78,9 @@ object SchemaRenderer {
       arg.astDirectives,
       renderDescription(arg.description))
 
-  private def withoutDeprecated(dirs: Vector[ast.Directive]) = dirs.filterNot(_.name == "deprecated")
+  def withoutDeprecated(dirs: Vector[ast.Directive]) = dirs.filterNot(_.name == "deprecated")
 
-  private def renderDeprecation(isDeprecated: Boolean, reason: Option[String]) = (isDeprecated, reason) match {
+  def renderDeprecation(isDeprecated: Boolean, reason: Option[String]) = (isDeprecated, reason) match {
     case (true, Some(r)) if r.trim == DefaultDeprecationReason ⇒ Vector(ast.Directive("deprecated", Vector.empty))
     case (true, Some(r)) if r.trim.nonEmpty ⇒ Vector(ast.Directive("deprecated", Vector(ast.Argument("reason", ast.StringValue(r.trim)))))
     case (true, _) ⇒ Vector(ast.Directive("deprecated", Vector.empty))
@@ -90,73 +90,76 @@ object SchemaRenderer {
   def renderArgsI(args: Seq[IntrospectionInputValue]) =
     args.map(renderArg).toVector
 
-  private def renderArgs(args: Seq[Argument[_]]) =
+  def renderArgs(args: Seq[Argument[_]]) =
     args.map(renderArg).toVector
 
-  private def renderFieldsI(fields: Seq[IntrospectionField]) =
+  def renderFieldsI(fields: Seq[IntrospectionField]) =
     fields.map(renderField).toVector
 
-  private def renderFields(fields: Seq[Field[_, _]]) =
+  def renderFields(fields: Seq[Field[_, _]]) =
     fields.map(renderField).toVector
 
-  private def renderInputFieldsI(fields: Seq[IntrospectionInputValue]) =
+  def renderInputFieldsI(fields: Seq[IntrospectionInputValue]) =
     fields.map(renderInputField).toVector
 
-  private def renderInputFields(fields: Seq[InputField[_]]) =
+  def renderInputFields(fields: Seq[InputField[_]]) =
     fields.map(renderInputField).toVector
 
-  private def renderField(field: IntrospectionField) =
+  def renderField(field: IntrospectionField) =
     ast.FieldDefinition(field.name, renderTypeName(field.tpe), renderArgsI(field.args), renderDeprecation(field.isDeprecated, field.deprecationReason), renderDescription(field.description))
 
-  private def renderField(field: Field[_, _]) =
+  def renderField(field: Field[_, _]) =
     ast.FieldDefinition(field.name, renderTypeNameAst(field.fieldType), renderArgs(field.arguments), withoutDeprecated(field.astDirectives) ++ renderDeprecation(field.deprecationReason.isDefined, field.deprecationReason), renderDescription(field.description))
 
-  private def renderInputField(field: IntrospectionInputValue) =
+  def renderInputField(field: IntrospectionInputValue) =
     ast.InputValueDefinition(field.name, renderTypeName(field.tpe), renderDefault(field.defaultValue), description = renderDescription(field.description))
 
-  private def renderInputField(field: InputField[_]) =
+  def renderInputField(field: InputField[_]) =
     ast.InputValueDefinition(field.name, renderTypeNameAst(field.fieldType), field.defaultValue.flatMap(renderDefault(_, field.fieldType)), field.astDirectives, renderDescription(field.description))
 
-  private def renderObject(tpe: IntrospectionObjectType) =
+  def renderObject(tpe: IntrospectionObjectType) =
     ast.ObjectTypeDefinition(tpe.name, renderImplementedInterfaces(tpe), renderFieldsI(tpe.fields), description = renderDescription(tpe.description))
 
-  private def renderObject(tpe: ObjectType[_, _]) =
+  def renderObject(tpe: ObjectType[_, _]) =
     ast.ObjectTypeDefinition(tpe.name, renderImplementedInterfaces(tpe), renderFields(tpe.uniqueFields), tpe.astDirectives, renderDescription(tpe.description))
 
-  private def renderEnum(tpe: IntrospectionEnumType) =
+  def renderEnum(tpe: IntrospectionEnumType) =
     ast.EnumTypeDefinition(tpe.name, renderEnumValuesI(tpe.enumValues), description = renderDescription(tpe.description))
 
-  private def renderEnum(tpe: EnumType[_]) =
+  def renderEnum(tpe: EnumType[_]) =
     ast.EnumTypeDefinition(tpe.name, renderEnumValues(tpe.values), tpe.astDirectives, renderDescription(tpe.description))
 
-  private def renderEnumValuesI(values: Seq[IntrospectionEnumValue]) =
+  def renderEnumValuesI(values: Seq[IntrospectionEnumValue]) =
     values.map(v ⇒ ast.EnumValueDefinition(v.name, renderDeprecation(v.isDeprecated, v.deprecationReason), renderDescription(v.description))).toVector
 
-  private def renderEnumValues(values: Seq[EnumValue[_]]) =
-    values.map(v ⇒ ast.EnumValueDefinition(v.name, withoutDeprecated(v.astDirectives) ++ renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason), renderDescription(v.description))).toVector
+  def renderEnumValues(values: Seq[EnumValue[_]]) =
+    values.map(renderEnumValue).toVector
 
-  private def renderScalar(tpe: IntrospectionScalarType) =
+  def renderEnumValue(v: EnumValue[_]) =
+    ast.EnumValueDefinition(v.name, withoutDeprecated(v.astDirectives) ++ renderDeprecation(v.deprecationReason.isDefined, v.deprecationReason), renderDescription(v.description))
+
+  def renderScalar(tpe: IntrospectionScalarType) =
     ast.ScalarTypeDefinition(tpe.name, description = renderDescription(tpe.description))
 
-  private def renderScalar(tpe: ScalarType[_]) =
+  def renderScalar(tpe: ScalarType[_]) =
     ast.ScalarTypeDefinition(tpe.name, tpe.astDirectives, renderDescription(tpe.description))
 
-  private def renderInputObject(tpe: IntrospectionInputObjectType) =
+  def renderInputObject(tpe: IntrospectionInputObjectType) =
     ast.InputObjectTypeDefinition(tpe.name, renderInputFieldsI(tpe.inputFields), description = renderDescription(tpe.description))
 
-  private def renderInputObject(tpe: InputObjectType[_]) =
+  def renderInputObject(tpe: InputObjectType[_]) =
     ast.InputObjectTypeDefinition(tpe.name, renderInputFields(tpe.fields), tpe.astDirectives, renderDescription(tpe.description))
 
-  private def renderInterface(tpe: IntrospectionInterfaceType) =
+  def renderInterface(tpe: IntrospectionInterfaceType) =
     ast.InterfaceTypeDefinition(tpe.name, renderFieldsI(tpe.fields), description = renderDescription(tpe.description))
 
-  private def renderInterface(tpe: InterfaceType[_, _]) =
+  def renderInterface(tpe: InterfaceType[_, _]) =
     ast.InterfaceTypeDefinition(tpe.name, renderFields(tpe.uniqueFields), tpe.astDirectives, renderDescription(tpe.description))
 
-  private def renderUnion(tpe: IntrospectionUnionType) =
+  def renderUnion(tpe: IntrospectionUnionType) =
     ast.UnionTypeDefinition(tpe.name, tpe.possibleTypes.map(t ⇒ ast.NamedType(t.name)).toVector, description = renderDescription(tpe.description))
 
-  private def renderUnion(tpe: UnionType[_]) =
+  def renderUnion(tpe: UnionType[_]) =
     ast.UnionTypeDefinition(tpe.name, tpe.types.map(t ⇒ ast.NamedType(t.name)).toVector, tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderSchemaDefinition(schema: IntrospectionSchema): Option[ast.SchemaDefinition] =
@@ -184,7 +187,7 @@ object SchemaRenderer {
   private def isSchemaOfCommonNames(query: String, mutation: Option[String], subscription: Option[String]) =
     query == "Query" && mutation.fold(true)(_ == "Mutation") && subscription.fold(true)(_ == "Subscription")
 
-  private def renderType(tpe: IntrospectionType): ast.TypeDefinition =
+  def renderType(tpe: IntrospectionType): ast.TypeDefinition =
     tpe match {
       case o: IntrospectionObjectType ⇒ renderObject(o)
       case u: IntrospectionUnionType ⇒ renderUnion(u)
@@ -195,7 +198,7 @@ object SchemaRenderer {
       case kind ⇒ throw new IllegalArgumentException(s"Unsupported kind: $kind")
     }
 
-  private def renderType(tpe: Type): ast.TypeDefinition =
+  def renderType(tpe: Type with Named): ast.TypeDefinition =
     tpe match {
       case o: ObjectType[_, _] ⇒ renderObject(o)
       case u: UnionType[_] ⇒ renderUnion(u)
@@ -207,13 +210,13 @@ object SchemaRenderer {
       case _ ⇒ throw new IllegalArgumentException(s"Unsupported type: $tpe")
     }
 
-  private def renderDirectiveLocation(loc: DirectiveLocation.Value) =
+  def renderDirectiveLocation(loc: DirectiveLocation.Value) =
     ast.DirectiveLocation(__DirectiveLocation.byValue(loc).name)
 
-  private def renderDirective(dir: Directive) =
+  def renderDirective(dir: Directive) =
     ast.DirectiveDefinition(dir.name, renderArgs(dir.arguments), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
 
-  private def renderDirective(dir: IntrospectionDirective) =
+  def renderDirective(dir: IntrospectionDirective) =
     ast.DirectiveDefinition(dir.name, renderArgsI(dir.args), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
 
   def schemaAstFromIntrospection(introspectionSchema: IntrospectionSchema, filter: SchemaFilter = SchemaFilter.default): ast.Document = {
