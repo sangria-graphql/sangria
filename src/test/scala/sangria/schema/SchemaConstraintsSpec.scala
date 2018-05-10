@@ -461,7 +461,9 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
           newInterfaceField: MismatchingInterface
         }
       """),
-      "AnotherInterface.newInterfaceField expects type 'NewInterface', but AnotherObject.newInterfaceField provides type 'MismatchingInterface'." → Seq(Pos(15, 11), Pos(3, 11)))
+      "AnotherInterface.newInterfaceField expects type 'NewInterface', but AnotherObject.newInterfaceField provides type 'MismatchingInterface'." → Seq(Pos(15, 11), Pos(3, 11)),
+      "Interface 'MismatchingInterface' must be implemented by at least one object type." → Seq(Pos(10, 9)),
+      "Interface 'NewInterface' must be implemented by at least one object type." → Seq(Pos(6, 9)))
   }
 
   "Type System: Interface fields must have output types" should {
@@ -773,6 +775,18 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
         }
       """,
       "AnotherInterface.field expects type 'String!', but AnotherObject.field provides type 'String'." → Seq(Pos(11, 11), Pos(7, 11)))
+
+    "rejects an interface not implemented by at least one object" in invalidSchema(
+      graphql"""
+        type Query {
+          test: SomeInterface
+        }
+
+        interface SomeInterface {
+          foo: String
+        }
+      """,
+      "Interface 'SomeInterface' must be implemented by at least one object type." → Seq(Pos(6, 9)))
   }
 
   def buildSchema(document: ast.Document) = {

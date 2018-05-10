@@ -35,15 +35,23 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
     "should detect if a type changed its kind" in checkChanges(
       graphql"""
         interface Type1 {field1: String}
+        type Foo implements Type1 {
+          test: String
+        }
       """,
 
       graphql"""
         type ObjectType {field1: String}
         union Type1 = ObjectType
+        type Foo {
+          test: String
+        }
       """,
 
       nonBreakingChange[TypeAdded]("`ObjectType` type was added"),
-      breakingChange[TypeKindChanged]("`Type1` changed from an Interface type to a Union type"))
+      breakingChange[TypeKindChanged]("`Type1` changed from an Interface type to a Union type"),
+      breakingChange[ObjectTypeInterfaceRemoved]("`Foo` object type no longer implements `Type1` interface"),
+      breakingChange[FieldRemoved]("Field `field1` was removed from `Foo` type"))
 
     "detect if a type description changed " in checkChanges(
       graphql"""
@@ -507,8 +515,9 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
 
     "detect changes in type AST directives" in checkChangesWithoutQueryType(
       gql"""
-        type Query {
+        type Query implements Foo2 {
           foo: String
+          a: Int
         }
 
         input Foo @bar(ids: [1, 2]) {
@@ -533,8 +542,9 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       """,
 
       gql"""
-        type Query {
+        type Query implements Foo2 {
           foo: String
+          a: Int
         }
 
         input Foo @bar(ids: [1]) {

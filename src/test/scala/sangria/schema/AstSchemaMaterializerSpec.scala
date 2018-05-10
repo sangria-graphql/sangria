@@ -707,9 +707,10 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
               field2: Int
             }
 
-            extend type Query implements Bar {
+            extend type Query implements Bar & Baz {
               field3: String
               field4: String
+              add: Int
             }
           """
 
@@ -717,8 +718,8 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
-        query.ownFields.map(_.name) should be (List("field1", "field2", "field3", "field4"))
-        query.interfaces.map(_.name) should be (List("Foo", "Bar"))
+        query.ownFields.map(_.name) should be (List("field1", "field2", "field3", "field4", "add"))
+        query.interfaces.map(_.name) should be (List("Foo", "Bar", "Baz"))
       }
 
       "allow extending static schema" in {

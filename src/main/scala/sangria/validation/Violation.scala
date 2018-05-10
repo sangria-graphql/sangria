@@ -325,6 +325,10 @@ case class ImplementationExtraFieldArgumentNotOptionalViolation(interfaceName: S
   lazy val simpleErrorMessage = s"$objectName.$fieldName($argumentName) is of required type '$objectFieldType', but is not also provided by the interface $interfaceName.$fieldName."
 }
 
+case class NoInterfaceImplementationViolation(interfaceName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Interface '$interfaceName' must be implemented by at least one object type."
+}
+
 case class InvalidSubscriptionFieldViolation(typeName: String, fieldName: String) extends Violation {
   lazy val errorMessage = s"Field '$typeName.$fieldName' is defined as a subscription field, but type '$typeName' is not used as a subscription type."
 }
