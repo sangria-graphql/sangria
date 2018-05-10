@@ -26,11 +26,35 @@ If you want to use sangria with [react-relay](https://facebook.github.io/relay) 
 
 Sangria is a spec compliant GraphQL implementation, so it works out of the box with [Apollo](https://github.com/apollographql/apollo-client), [Relay](https://facebook.github.io/relay/), [GraphiQL](https://github.com/graphql/graphiql) and other GraphQL tools and libraries.
 
-## Mailing List
+## Issues, Bugs, Ideas
 
-If you would like to discuss something about sangria or have some questions, please feel free to join our mailing list:
+If you've got some interesting ideas to share or discovered a nasty bug, feel free to use
+[Sangria's issue tracker](https://github.com/sangria-graphql/sangria/issues).
+Also feel free to fork project and create the pull requests - they are highly appreciated!
 
-[https://groups.google.com/forum/#!forum/sangria-graphql](https://groups.google.com/forum/#!forum/sangria-graphql)
+## StackOverflow
+
+In case you need some help or support, then you can use [StackOverflow](http://stackoverflow.com/questions/tagged/sangria) for this.
+When you are [asking a question](http://stackoverflow.com/questions/ask?tags=scala,graphql,sangria),
+be sure to add `scala`, `graphql` and `sangria` tags, so that other people can easily find them.
+
+## Gitter & Mailing List 
+
+For more general, lengthy discussions or pretty much anything else please join us in the 
+[gitter chat](https://gitter.im/sangria-graphql/sangria) (you also use a button at the bottom right) and [google groups](https://groups.google.com/forum/#!forum/sangria-graphql).
+
+## Contribute
+
+If you like the project and would like to support it or contribute to it, then you are very welcome to do so.
+You can spread the word and tweet about the project or even better - create a small blog post, video, example project and show how you use sangria and GraphQL.
+I'm pretty sure it would be interesting for many people.
+
+Also you can contribute to [the documentation](https://github.com/sangria-graphql/sangria-website) or help others by answering questions on
+[StackOverflow](http://stackoverflow.com/questions/tagged/sangria) or joining discussions at [the mailing list](https://groups.google.com/forum/#!forum/sangria-graphql) and [gitter chat](https://gitter.im/sangria-graphql/sangria).
+It would be very helpful!
+
+Not to mention the code itself. There is nothing more exciting than hacking some stuff together :)
+So please feel free to materialize your ideas in form of code and send pull requests! 
 
 ## License
 
