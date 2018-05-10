@@ -4,6 +4,7 @@ import language.{existentials, postfixOps}
 import sangria.ast
 import sangria.ast.{AstLocation, OperationType, TypeDefinition}
 import sangria.execution.MaterializedSchemaValidationError
+import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.validation._
 
@@ -52,6 +53,10 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
     case d: ast.ScalarTypeExtensionDefinition ⇒ d
   }
 
+  private lazy val schemaExtensionDefs: Vector[ast.SchemaExtensionDefinition] = allDefinitions.collect {
+    case d: ast.SchemaExtensionDefinition ⇒ d
+  }
+
   private lazy val directiveDefs: Vector[ast.DirectiveDefinition] = allDefinitions.collect {
     case d: ast.DirectiveDefinition ⇒ d
   }
@@ -83,27 +88,37 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
       existingDefsMat = schema.allTypes.mapValues(MaterializedType(existingOrigin, _))
 
       val queryType = getTypeFromDef(existingOrigin, schema.query)
-      val mutationType = schema.mutation map (getTypeFromDef(existingOrigin, _))
-      val subscriptionType = schema.subscription map (getTypeFromDef(existingOrigin, _))
-      val directives = directiveDefs flatMap (buildDirective(existingOrigin, _))
 
-      val (referenced, notReferenced) = findUnusedTypes()
+      AstSchemaMaterializer.findOperationsTypes(schemaExtensionDefs.flatMap(_.operationTypes), document.sourceMapper, true, schema.mutation.isDefined, schema.subscription.isDefined) match {
+        case Left(errors) ⇒ throw MaterializedSchemaValidationError(errors)
+        case Right((_, mutationExt, subscriptionExt)) ⇒
+          val mutationType =
+            mutationExt.map(getObjectType(sdlOrigin, _).asInstanceOf[ObjectType[Ctx, Val]]) orElse
+              schema.mutation map (getTypeFromDef(existingOrigin, _))
+          val subscriptionType =
+            subscriptionExt.map(getObjectType(sdlOrigin, _).asInstanceOf[ObjectType[Ctx, Val]]) orElse
+              schema.subscription map (getTypeFromDef(existingOrigin, _))
+          val directives = directiveDefs flatMap (buildDirective(existingOrigin, _))
 
-      builder.extendSchema[Val](
-        schema,
-        queryType,
-        mutationType,
-        subscriptionType,
-        (notReferenced ++ findUnusedTypes(schema, referenced)).toList,
-        schema.directives.map(builder.transformDirective(existingOrigin, _, this)) ++ directives,
-        this)
+          val (referenced, notReferenced) = findUnusedTypes()
+
+          builder.extendSchema[Val](
+            schema,
+            schemaExtensionDefs.toList,
+            queryType,
+            mutationType,
+            subscriptionType,
+            (notReferenced ++ findUnusedTypes(schema, referenced)).toList,
+            schema.directives.map(builder.transformDirective(existingOrigin, _, this)) ++ directives,
+            this)
+      }
     }
   }
 
   lazy val build: Schema[Ctx, Any] = {
     val defErrors = validateDefinitions
 
-    extractSchemaInfo(document, typeDefs) match {
+    extractSchemaInfo(document, typeDefs, schemaExtensionDefs) match {
       case Left(schemaErrors) ⇒ throw MaterializedSchemaValidationError(schemaErrors ++ defErrors)
       case _ if defErrors.nonEmpty ⇒ throw MaterializedSchemaValidationError(defErrors)
       case Right(schemaInfo) ⇒
@@ -114,6 +129,7 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
 
         builder.buildSchema(
           schemaInfo.definition,
+          schemaExtensionDefs.toList,
           queryType,
           mutationType,
           subscriptionType,
@@ -601,7 +617,7 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
 object AstSchemaMaterializer {
   case class SchemaInfo(query: ast.NamedType, mutation: Option[ast.NamedType], subscription: Option[ast.NamedType], definition: Option[ast.SchemaDefinition])
 
-  def extractSchemaInfo(document: ast.Document, typeDefs: Vector[ast.TypeDefinition]): Either[Vector[Violation], SchemaInfo] = {
+  def extractSchemaInfo(document: ast.Document, typeDefs: Vector[ast.TypeDefinition], extensions: Vector[ast.SchemaExtensionDefinition]): Either[Vector[Violation], SchemaInfo] = {
     val schemas = document.definitions.collect {case s: ast.SchemaDefinition ⇒ s}
 
     val schemaErrors =
@@ -612,28 +628,10 @@ object AstSchemaMaterializer {
     if (schemas.nonEmpty) {
       val validatedInfo =
         schemas.map { schema ⇒
-          val queries = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Query, tpe, _, _) ⇒ tpe}
-          val mutations = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Mutation, tpe, _, _) ⇒ tpe}
-          val subscriptions = schema.operationTypes.collect {case ast.OperationTypeDefinition(OperationType.Subscription, tpe, _, _) ⇒ tpe}
+          val allOperationTypes = schema.operationTypes ++ extensions.flatMap(_.operationTypes)
 
-
-          val qErrors =
-            if (queries.size != 1)
-              Vector(NonUniqueRootTypeViolation("query", document.sourceMapper, queries.flatMap(_.location).toList))
-            else Vector.empty
-
-          val mErrors =
-            if (mutations.size > 1)
-              qErrors :+ NonUniqueRootTypeViolation("mutation", document.sourceMapper, queries.flatMap(_.location).toList)
-            else qErrors
-
-          val sErrors =
-            if (subscriptions.size > 1)
-              mErrors :+ NonUniqueRootTypeViolation("subscription", document.sourceMapper, queries.flatMap(_.location).toList)
-            else mErrors
-
-          if (sErrors.nonEmpty) Left(sErrors)
-          else Right(SchemaInfo(queries.head, mutations.headOption, subscriptions.headOption, Some(schema)))
+          findOperationsTypes(allOperationTypes, document.sourceMapper, false, false, false)
+            .right.map {case (query, mutation, subscription) ⇒ SchemaInfo(query.get, mutation, subscription, Some(schema))}
         }
 
       val typeErrors = validatedInfo.collect{case Left(errors) ⇒ errors}.flatten
@@ -652,9 +650,35 @@ object AstSchemaMaterializer {
           val mutation = typeDefs.find(_.name == "Mutation") map (t ⇒ ast.NamedType(t.name))
           val subscription = typeDefs.find(_.name == "Subscription") map (t ⇒ ast.NamedType(t.name))
 
-          Right(SchemaInfo(ast.NamedType(query.name), mutation, subscription, None))
+          findOperationsTypes(extensions.flatMap(_.operationTypes), document.sourceMapper, true, mutation.isDefined, subscription.isDefined).right.map {
+            case (_, mutationExt, subscriptionExt) ⇒ SchemaInfo(ast.NamedType(query.name), mutationExt orElse mutation, subscriptionExt orElse subscription, None)
+          }
       }
     }
+  }
+
+  def findOperationsTypes(allOperationTypes: Vector[ast.OperationTypeDefinition], sourceMapper: Option[SourceMapper], queryAlreadyExists: Boolean, mutationAlreadyExists: Boolean, subscriptionAlreadyExists: Boolean): Either[Vector[Violation], (Option[ast.NamedType], Option[ast.NamedType], Option[ast.NamedType])] = {
+    val queries = allOperationTypes.collect {case ast.OperationTypeDefinition(OperationType.Query, tpe, _, _) ⇒ tpe}
+    val mutations = allOperationTypes.collect {case ast.OperationTypeDefinition(OperationType.Mutation, tpe, _, _) ⇒ tpe}
+    val subscriptions = allOperationTypes.collect {case ast.OperationTypeDefinition(OperationType.Subscription, tpe, _, _) ⇒ tpe}
+
+    val qErrors =
+      if ((!queryAlreadyExists && queries.size != 1) || (queryAlreadyExists && queries.nonEmpty))
+        Vector(NonUniqueRootTypeViolation("query", sourceMapper, queries.flatMap(_.location).toList))
+      else Vector.empty
+
+    val mErrors =
+      if ((!mutationAlreadyExists && mutations.size > 1) || (mutationAlreadyExists && mutations.nonEmpty))
+        qErrors :+ NonUniqueRootTypeViolation("mutation", sourceMapper, queries.flatMap(_.location).toList)
+      else qErrors
+
+    val sErrors =
+      if ((!subscriptionAlreadyExists && subscriptions.size > 1) || (subscriptionAlreadyExists && subscriptions.nonEmpty))
+        mErrors :+ NonUniqueRootTypeViolation("subscription", sourceMapper, queries.flatMap(_.location).toList)
+      else mErrors
+
+    if (sErrors.nonEmpty) Left(sErrors)
+    else Right((queries.headOption, mutations.headOption, subscriptions.headOption))
   }
 
   def buildSchema(document: ast.Document): Schema[Any, Any] = {

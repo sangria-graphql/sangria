@@ -444,6 +444,13 @@ case class ScalarTypeExtensionDefinition(
   def rename(newName: String) = copy(name = newName)
 }
 
+case class SchemaExtensionDefinition(
+  operationTypes: Vector[OperationTypeDefinition],
+  directives: Vector[Directive] = Vector.empty,
+  comments: Vector[Comment] = Vector.empty,
+  trailingComments: Vector[Comment] = Vector.empty,
+  location: Option[AstLocation] = None) extends TypeSystemExtensionDefinition with WithDirectives with WithTrailingComments
+
 case class DirectiveDefinition(
   name: String,
   arguments: Vector[InputValueDefinition],
@@ -487,13 +494,14 @@ sealed trait AstNode {
 
 sealed trait SchemaAstNode extends AstNode with WithComments
 sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
+sealed trait TypeSystemExtensionDefinition extends SchemaAstNode with Definition
 
 sealed trait TypeDefinition extends TypeSystemDefinition with WithDirectives with WithDescription {
   def name: String
   def rename(newName: String): TypeDefinition
 }
 
-sealed trait TypeExtensionDefinition extends TypeSystemDefinition with WithDirectives {
+sealed trait TypeExtensionDefinition extends TypeSystemExtensionDefinition with WithDirectives {
   def name: String
   def rename(newName: String): TypeExtensionDefinition
 }
@@ -878,6 +886,14 @@ object AstVisitor {
           if (breakOrSkip(onEnter(n))) {
             dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ SchemaExtensionDefinition(ops, dirs, comment, tc, _) ⇒
+          if (breakOrSkip(onEnter(n))) {
+            ops.foreach(op ⇒ loop(op))
+            dirs.foreach(d ⇒ loop(d))
+            comment.foreach(s ⇒ loop(s))
+            tc.foreach(c ⇒ loop(c))
             breakOrSkip(onLeave(n))
           }
         case n @ DirectiveDefinition(_, args, locations, description, comment, _) ⇒

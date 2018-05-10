@@ -140,6 +140,22 @@ object QueryRenderer {
         "}"
     } else ""
 
+  def renderOperationTypeDefinitions(ops: Vector[OperationTypeDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
+    if (ops.nonEmpty) {
+      val renderedOps = ops.zipWithIndex map { case (op, idx) ⇒
+        (if (idx != 0 && shouldRenderComment(op, None, config)) config.lineBreak else "") +
+            renderNode(op, config, indent.inc)
+      } mkString config.mandatoryLineBreak
+
+      (if (frontSep) config.separator else "") +
+        "{" +
+        config.lineBreak +
+        renderedOps +
+        renderTrailingComment(tc, None, indent.inc, config) +
+        trailingLineBreak(tc, config) +
+        indent.str + "}"
+    } else ""
+
   def renderDirs(dirs: Vector[Directive], config: QueryRendererConfig, indent: Indent, frontSep: Boolean = false, withSep: Boolean = true) =
     (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
       (dirs map (renderNode(_, config, indent.zero)) mkString config.separator) +
@@ -534,6 +550,12 @@ object QueryRenderer {
           indent.str + "extend" + config.mandatorySeparator + "scalar" + config.mandatorySeparator + name +
           renderDirs(dirs, config, indent, frontSep = true)
 
+      case ext @ SchemaExtensionDefinition(ops, dirs, _, _, _) ⇒
+        renderComment(ext, prev, indent, config) +
+          indent.str + "extend" + config.mandatorySeparator + "schema" +
+          renderDirs(dirs, config, indent, frontSep = true) +
+          renderOperationTypeDefinitions(ops, ext, indent, config, frontSep = true)
+
       case dd @ DirectiveDefinition(name, args, locations, description, _, _) ⇒
         val locsRendered = locations.zipWithIndex map { case (l, idx) ⇒
           (if (idx != 0 && shouldRenderComment(l, None, config)) config.lineBreak else "") +
@@ -560,12 +582,7 @@ object QueryRenderer {
         renderComment(sd, prev, indent, config) +
           indent.str + "schema"  + config.separator +
           renderDirs(dirs, config, indent) +
-          "{" +
-          config.lineBreak +
-          renderedOps +
-          renderTrailingComment(sd, None, indent.inc, config) +
-          trailingLineBreak(sd, config) +
-          indent.str + "}"
+          renderOperationTypeDefinitions(ops, sd, indent, config)
 
       case otd @ OperationTypeDefinition(op, tpe, _, _) ⇒
         renderComment(otd, prev, indent, config) +

@@ -1188,7 +1188,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "{ field: {} }")
 
       error.formattedError should equal (
-        """Invalid input "{ field: {", expected OperationDefinition, FragmentDefinition or TypeSystemDefinition (line 1, column 1):
+        """Invalid input "{ field: {", expected ExecutableDefinition or TypeSystemDefinition (line 1, column 1):
           |{ field: {} }
           |^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1198,7 +1198,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "notanoperation Foo { field }")
 
       error.formattedError should equal (
-        """Invalid input 'n', expected OperationDefinition, FragmentDefinition or TypeSystemDefinition (line 1, column 1):
+        """Invalid input 'n', expected ExecutableDefinition or TypeSystemDefinition (line 1, column 1):
           |notanoperation Foo { field }
           |^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1207,7 +1207,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
       val Failure(error: SyntaxError) = parseQuery("...")
 
       error.formattedError should equal (
-        """Invalid input '.', expected OperationDefinition, FragmentDefinition or TypeSystemDefinition (line 1, column 1):
+        """Invalid input '.', expected ExecutableDefinition or TypeSystemDefinition (line 1, column 1):
           |...
           |^""".stripMargin) (after being strippedOfCarriageReturns)
     }

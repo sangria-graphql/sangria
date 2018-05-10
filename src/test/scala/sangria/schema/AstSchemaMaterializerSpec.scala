@@ -1329,6 +1329,124 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         )
       }
 
+      "allows schema extensions" in {
+        val schemaAst =
+          graphql"""
+            extend schema @fromExt(test: true) {
+              mutation: Mut
+            }
+
+            schema {
+              query: Root
+            }
+
+            type Root {
+              test1: String
+            }
+
+            type Mut {
+              addUser(name: String!): String
+            }
+          """
+
+        val customBuilder = new DefaultAstSchemaBuilder[Unit] {
+          override def resolveField(
+            origin: MatOrigin,
+            typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+            extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+            definition: ast.FieldDefinition,
+            mat: AstSchemaMaterializer[Unit]) = c ⇒ "test " + c.arg[String]("name")
+        }
+
+        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+
+        check(schema, (),
+          """
+            mutation {
+              addUser(name: "Bob")
+            }
+          """,
+          Map("data" → Map("addUser" → "test Bob")))
+
+        schema.astDirectives.exists(_.name == "fromExt") should be (true)
+      }
+
+      "allows schema extensions without an explicit schema def" in {
+        val schemaAst =
+          graphql"""
+            extend schema @fromExt(test: true) {
+              mutation: Mut
+            }
+
+            type Query {
+              test1: String
+            }
+
+            type Mut {
+              addUser(name: String!): String
+            }
+          """
+
+        val customBuilder = new DefaultAstSchemaBuilder[Unit] {
+          override def resolveField(
+            origin: MatOrigin,
+            typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+            extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+            definition: ast.FieldDefinition,
+            mat: AstSchemaMaterializer[Unit]) = c ⇒ "test " + c.arg[String]("name")
+        }
+
+        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+
+        check(schema, (),
+          """
+            mutation {
+              addUser(name: "Bob")
+            }
+          """,
+          Map("data" → Map("addUser" → "test Bob")))
+
+        schema.astDirectives.exists(_.name == "fromExt") should be (true)
+      }
+
+      "allows schema extensions for existing schema" in {
+        val schemaAst =
+          graphql"""
+            extend schema @fromExt(test: true) {
+              mutation: Mut
+            }
+
+            type Mut {
+              addUser(name: String!): String
+            }
+          """
+
+        val existingSchema =
+          Schema(ObjectType("Query", fields[Unit, Unit](
+            Field("test", StringType, resolve = _ ⇒ "test"))))
+
+        val customBuilder = new DefaultAstSchemaBuilder[Unit] {
+          override def resolveField(
+            origin: MatOrigin,
+            typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+            extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+            definition: ast.FieldDefinition,
+            mat: AstSchemaMaterializer[Unit]) = c ⇒ "test " + c.arg[String]("name")
+        }
+
+        val schema = existingSchema.extend(schemaAst, customBuilder)
+
+        check(schema, (),
+          """
+            mutation {
+              addUser(name: "Bob")
+            }
+          """,
+          Map("data" → Map("addUser" → "test Bob")))
+
+        schema.astDirectives.exists(_.name == "fromExt") should be (true)
+      }
+
       "executor should properly handle undefined values (like `null` and `None`) even if GraphQL type is not null" in {
         val schemaAst =
           graphql"""

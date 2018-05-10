@@ -18,6 +18,7 @@ trait AstSchemaBuilder[Ctx] {
 
   def buildSchema(
     definition: Option[ast.SchemaDefinition],
+    extensions: List[ast.SchemaExtensionDefinition],
     queryType: ObjectType[Ctx, Any],
     mutationType: Option[ObjectType[Ctx, Any]],
     subscriptionType: Option[ObjectType[Ctx, Any]],
@@ -27,6 +28,7 @@ trait AstSchemaBuilder[Ctx] {
 
   def extendSchema[Val](
     originalSchema: Schema[Ctx, Val],
+    extensions: List[ast.SchemaExtensionDefinition],
     queryType: ObjectType[Ctx, Val],
     mutationType: Option[ObjectType[Ctx, Val]],
     subscriptionType: Option[ObjectType[Ctx, Val]],
@@ -291,6 +293,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
 
   def buildSchema(
       definition: Option[ast.SchemaDefinition],
+      extensions: List[ast.SchemaExtensionDefinition],
       queryType: ObjectType[Ctx, Any],
       mutationType: Option[ObjectType[Ctx, Any]],
       subscriptionType: Option[ObjectType[Ctx, Any]],
@@ -303,11 +306,12 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
       directives = directives,
-      astDirectives = definition.fold(Vector.empty[ast.Directive])(_.directives),
-      astNodes = Vector(mat.document) ++ definition.toVector)
+      astDirectives = definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(_.directives),
+      astNodes = Vector(mat.document) ++ extensions ++ definition.toVector)
 
   def extendSchema[Val](
       originalSchema: Schema[Ctx, Val],
+      extensions: List[ast.SchemaExtensionDefinition],
       queryType: ObjectType[Ctx, Val],
       mutationType: Option[ObjectType[Ctx, Val]],
       subscriptionType: Option[ObjectType[Ctx, Val]],
@@ -321,12 +325,12 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       additionalTypes = additionalTypes,
       directives = directives,
       validationRules = originalSchema.validationRules,
-      astDirectives = originalSchema.astDirectives,
+      astDirectives = originalSchema.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = {
         val (docs, other) = originalSchema.astNodes.partition(_.isInstanceOf[ast.Document])
         val newDoc = ast.Document.merge(docs.asInstanceOf[Vector[ast.Document]] :+ mat.document)
 
-        newDoc +: other
+        (newDoc +: other) ++ extensions
       })
 
   def buildObjectType(

@@ -93,6 +93,8 @@ trait AstLiftable {
       q"_root_.sangria.ast.EnumTypeExtensionDefinition($n, $v, $d, $c, $tc, $p)"
     case ScalarTypeExtensionDefinition(n, d, c, p) ⇒
       q"_root_.sangria.ast.ScalarTypeExtensionDefinition($n, $d, $c, $p)"
+    case SchemaExtensionDefinition(o, d, c, tc, p) ⇒
+      q"_root_.sangria.ast.SchemaExtensionDefinition($o, $d, $c, $tc, $p)"
 
     case EnumTypeDefinition(n, v, d, desc, c, tc, p) ⇒
       q"_root_.sangria.ast.EnumTypeDefinition($n, $v, $d, $desc, $c, $tc, $p)"

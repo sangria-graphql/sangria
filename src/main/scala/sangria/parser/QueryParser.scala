@@ -149,7 +149,16 @@ trait Document { this: Parser with Operations with Ignored with Fragments with O
       ((location, vs, comments) ⇒ ast.InputDocument(vs.toVector, comments, location))
   }
 
-  def Definition = rule { OperationDefinition | FragmentDefinition | TypeSystemDefinition }
+  def Definition = rule {
+    ExecutableDefinition |
+    TypeSystemDefinition |
+    TypeSystemExtension
+  }
+
+  def ExecutableDefinition = rule {
+    OperationDefinition |
+    FragmentDefinition
+  }
 
 }
 
@@ -169,7 +178,9 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   def schema = rule { Keyword("schema") }
 
   def TypeSystemDefinition = rule {
-    SchemaDefinition | TypeDefinition | TypeExtensionDefinition | DirectiveDefinition
+    SchemaDefinition |
+    TypeDefinition |
+    DirectiveDefinition
   }
 
   def TypeDefinition = rule {
@@ -191,13 +202,25 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
       (descr, comment, location, name, interfaces, dirs, fields) ⇒ ast.ObjectTypeDefinition(name, interfaces, fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector), dirs, descr, comment, fields.fold(Vector.empty[ast.Comment])(_._2), location))
   }
 
-  def TypeExtensionDefinition = rule {
+  def TypeSystemExtension = rule {
+    SchemaExtension |
+    TypeExtension
+  }
+
+  def TypeExtension = rule {
     ScalarTypeExtensionDefinition |
     ObjectTypeExtensionDefinition |
     InterfaceTypeExtensionDefinition |
     UnionTypeExtensionDefinition |
     EnumTypeExtensionDefinition |
     InputObjectTypeExtensionDefinition
+  }
+
+  def SchemaExtension = rule {
+    (Comments ~ trackPos ~ extend ~ schema ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+      (comment, location, dirs, ops, tc) ⇒ ast.SchemaExtensionDefinition(ops.toVector, dirs, comment, tc, location))) |
+    (Comments ~ trackPos ~ extend ~ schema ~ DirectivesConst ~> (
+      (comment, location, dirs) ⇒ ast.SchemaExtensionDefinition(Vector.empty, dirs, comment, Vector.empty, location)))
   }
 
   def ObjectTypeExtensionDefinition = rule {

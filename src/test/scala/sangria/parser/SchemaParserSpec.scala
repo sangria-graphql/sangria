@@ -1113,6 +1113,82 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
         ))
     }
 
+    "Allow extensions on the schema" in {
+      val Success(ast) = parseQuery(
+        """
+          extend schema @dir4
+
+          schema @dir1 {
+            query: Query
+          }
+
+          extend schema @dir2 @dir3(test: true) {
+            mutation: Mutation
+          }
+        """)
+
+      ast should be (
+        Document(
+          Vector(
+            SchemaExtensionDefinition(
+              Vector.empty,
+              Vector(
+                Directive(
+                  "dir4",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(AstLocation("", 25, 2, 25))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation("", 11, 2, 11))
+            ),
+            SchemaDefinition(
+              Vector(
+                OperationTypeDefinition(OperationType.Query, NamedType("Query", Some(AstLocation("", 76, 5, 20))), Vector.empty, Some(AstLocation("", 69, 5, 13)))),
+              Vector(
+                Directive(
+                  "dir1",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(AstLocation("", 49, 4, 18))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation("", 42, 4, 11))
+            ),
+            SchemaExtensionDefinition(
+              Vector(
+                OperationTypeDefinition(OperationType.Mutation, NamedType("Mutation", Some(AstLocation("", 167, 9, 23))), Vector.empty, Some(AstLocation("", 157, 9, 13)))),
+              Vector(
+                Directive(
+                  "dir2",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(AstLocation("", 119, 8, 25))
+                ),
+                Directive(
+                  "dir3",
+                  Vector(
+                    Argument(
+                      "test",
+                      BooleanValue(true, Vector.empty, Some(AstLocation("", 137, 8, 43))),
+                      Vector.empty,
+                      Some(AstLocation("", 131, 8, 37))
+                    )),
+                  Vector.empty,
+                  Some(AstLocation("", 125, 8, 31))
+                )),
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation("", 105, 8, 11))
+            )),
+          Vector.empty,
+          Some(AstLocation("", 11, 2, 11)),
+          None
+        ))
+    }
+
     "properly handle new lines in the block-string" in {
       val q = "\"\"\""
       val Success(ast) = parseQuery(

@@ -1074,6 +1074,41 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }
 
+    "render schema extensions" in {
+      val schema =
+        graphql"""
+          # comment 0
+          extend schema @dir4
+
+          schema @dir1 {
+            query: Query
+          }
+
+          # comment 1
+          extend schema @dir2 @dir3(test: true) {
+            mutation: Mutation
+
+            # another comment
+          }
+        """
+      
+      cycleRender(schema) should equal ("""
+        |# comment 0
+        |extend schema @dir4
+        |
+        |schema @dir1 {
+        |  query: Query
+        |}
+        |
+        |# comment 1
+        |extend schema @dir2 @dir3(test: true) {
+        |  mutation: Mutation
+        |
+        |  # another comment
+        |}
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
     "render scalar types" in {
       val schema =
         graphql"""
