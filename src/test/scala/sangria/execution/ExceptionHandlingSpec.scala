@@ -3,6 +3,7 @@ package sangria.execution
 import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
+import sangria.macros._
 import sangria.util.{DebugUtil, FutureResultSupport, OutputMatchers, StringMatchers}
 import sangria.validation.{AstNodeLocation, BadValueViolation, BaseViolation, UndefinedFieldViolation}
 
@@ -110,8 +111,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
 
       val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒
-          HandledException(e.getMessage,
-            Map("foo" → m.arrayNode(Vector(m.scalarNode("bar", "String", Set.empty), m.scalarNode(1234, "Int", Set.empty))), "baz" → m.scalarNode("Test", "String", Set.empty)))
+          HandledException(e.getMessage, Map("foo" → m.list(m.fromString("bar"), m.fromInt(1234)), "baz" → m.fromString("Test")))
       }
 
       Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (
@@ -123,15 +123,17 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
             Map(
               "message" → "Boom!",
               "path" → List("error"),
-              "foo" → List("bar", 1234),
-              "baz" → "Test",
-              "locations" → List(Map("line" → 3, "column" → 11))),
+              "locations" → List(Map("line" → 3, "column" → 11)),
+              "extensions" → Map(
+                "foo" → List("bar", 1234),
+                "baz" → "Test")),
             Map(
               "message" → "Boom!",
               "path" → List("futureError"),
-              "foo" → List("bar", 1234),
-              "baz" → "Test",
-              "locations" → List(Map("line" → 4, "column" → 11))))))
+              "locations" → List(Map("line" → 4, "column" → 11)),
+              "extensions" → Map(
+                "foo" → List("bar", 1234),
+                "baz" → "Test")))))
     }
 
     "handle violation-based errors" in {
@@ -164,14 +166,16 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
             Map(
               "message" → "Field is missing!!! D:",
               "locations" → Vector(Map("line" → 3, "column" → 11)),
-              "fieldName" → "nonExistingField"),
+              "extensions" → Map(
+                "fieldName" → "nonExistingField")),
             Map(
               "message" → "Expected type 'Int', found '\"One\"'. Int value expected [with extras]",
               "locations" → Vector(Map("line" → 4, "column" → 24))),
             Map(
               "message" → "Scalar",
               "locations" → Vector(Map("line" → 5, "column" → 32)),
-              "original" → "Invalid email"))))
+              "extensions" → Map(
+                "original" → "Invalid email")))))
     }
 
     "handle user-facing errors errors" in {
@@ -197,7 +201,8 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
           "errors" → Vector(
             Map(
               "message" → "Wrong operation?!",
-              "errorCode" → "AAAAAaaAA!"))))
+              "extensions" → Map(
+                "errorCode" → "AAAAAaaAA!")))))
     }
 
     "allow multiple handled errors with ast positions" in {
@@ -209,7 +214,7 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
 
       val exceptionHandler = ExceptionHandler {
         case (m, e: IllegalStateException) ⇒
-          HandledException(
+          HandledException.multiple(
             Vector(
               ("Error 1", Map("errorCode" → m.scalarNode("OOPS", "String", Set.empty)), Nil),
               ("Error 2", Map.empty[String, m.Node], doc.operations.head._2.location.toList)))
@@ -224,7 +229,8 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
               "path" → Vector("error"),
               "locations" → Vector(
                 Map("line" → 3, "column" → 11)),
-              "errorCode" → "OOPS"),
+              "extensions" → Map(
+                "errorCode" → "OOPS")),
             Map(
               "message" → "Error 2",
               "path" → Vector("error"),
@@ -232,6 +238,43 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
                 Map("line" → 3, "column" → 11),
                 Map("line" → 2, "column" → 9))))))
     }
-  }
 
+    "provide a way to add extension fields in the error itself (backwards compat)" in {
+      val exceptionHandler = ExceptionHandler {
+        case (m, e: IllegalStateException) ⇒
+          HandledException("Wrong operation?!", Map("errorCode" → m.fromString("Ooops!")), addFieldsInError = true)
+      }
+
+      Executor.execute(schema, gql"{error}", exceptionHandler = exceptionHandler).await should be  (
+        Map(
+          "data" → Map(
+            "error" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Wrong operation?!",
+              "path" → Vector("error"),
+              "locations" → Vector(Map("line" → 1, "column" → 2)),
+              "errorCode" → "Ooops!",
+              "extensions" → Map(
+                "errorCode" → "Ooops!")))))
+    }
+
+    "provide a way to remove extension fields (backwards compat)" in {
+      val exceptionHandler = ExceptionHandler {
+        case (m, e: IllegalStateException) ⇒
+          HandledException("Wrong operation?!", Map("errorCode" → m.fromString("Ooops!")), addFieldsInError = true, addFieldsInExtensions = false)
+      }
+
+      Executor.execute(schema, gql"{error}", exceptionHandler = exceptionHandler).await should be  (
+        Map(
+          "data" → Map(
+            "error" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Wrong operation?!",
+              "path" → Vector("error"),
+              "locations" → Vector(Map("line" → 1, "column" → 2)),
+              "errorCode" → "Ooops!"))))
+    }
+  }
 }

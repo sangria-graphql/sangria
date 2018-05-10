@@ -38,20 +38,25 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Excepti
   def resolveError(error: Throwable) =
     marshalResult(None, marshalErrors(ErrorRegistry(ExecutionPath.empty, error)), None)
 
-  def handleSupportedError(path: ExecutionPath, handledException: HandledException, positions: List[AstLocation]) = {
+  def handleSupportedError(path: ExecutionPath, handledException: HandledException, locations: List[AstLocation]) = {
     handledException match {
-      case SingleHandledException(message, additionalFields, newPositions) ⇒
+      case SingleHandledException(message, additionalFields, newLocations, addFieldsInExtensions, addFieldsInError) ⇒
         val msg = if (message == null) "" else message
+        val af = additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
 
         Vector(
-          errorNode(msg, path, positions ++ newPositions,
-            additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]))
-      case MultipleHandledExceptions(messages) ⇒
-        messages.map { case (message, additionalFields, newPositions) ⇒
+          errorNode(msg, path, locations ++ newLocations,
+            if (addFieldsInError) af else Seq.empty,
+            if (addFieldsInExtensions) af else Seq.empty))
+      case MultipleHandledExceptions(messages, addFieldsInExtensions, addFieldsInError) ⇒
+        messages.map { case (message, additionalFields, newLocations) ⇒
           val msg = if (message == null) "" else message
+          val af = additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]]
 
-          errorNode(msg, path, positions ++ newPositions,
-            additionalFields.toSeq.asInstanceOf[Seq[(String, marshaller.Node)]])        }
+          errorNode(msg, path, locations ++ newLocations,
+            if (addFieldsInError) af else Seq.empty,
+            if (addFieldsInExtensions) af else Seq.empty)
+        }
     }
   }
 
@@ -67,32 +72,33 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Excepti
       case _ ⇒ Nil
     }
 
-  private def createLocation(loc: AstLocation) = marshaller.mapNode(Seq(
-    "line" → marshaller.scalarNode(loc.line, "Int", Set.empty),
-    "column" → marshaller.scalarNode(loc.column, "Int", Set.empty)))
+  private def createLocation(loc: AstLocation) = marshaller.map(
+    "line" → marshaller.fromInt(loc.line),
+    "column" → marshaller.fromInt(loc.column))
 
-  def errorNode(message: String, path: ExecutionPath, positions: List[AstLocation], additionalFields: Seq[(String, marshaller.Node)] = Nil): marshaller.Node =
-    errorNode(
+  private def errorNode(message: String, path: ExecutionPath, positions: List[AstLocation], additionalFields: Seq[(String, marshaller.Node)] = Nil, additionalExtensionFields: Seq[(String, marshaller.Node)] = Nil): marshaller.Node =
+    mapNode(
       messageFields(message) ++
       pathFields(path) ++
       positionFields(positions) ++
-      additionalFields)
+      additionalFields ++
+      (if (additionalExtensionFields.nonEmpty) Seq("extensions" → mapNode(additionalExtensionFields)) else Seq.empty))
 
-  def errorNode(errorFields: Seq[(String, marshaller.Node)]): marshaller.Node =
-    marshaller.mapNode(errorFields.foldLeft(marshaller.emptyMapNode(errorFields.map(_._1))) {
+  private def mapNode(fields: Seq[(String, marshaller.Node)]): marshaller.Node =
+    marshaller.mapNode(fields.foldLeft(marshaller.emptyMapNode(fields.map(_._1))) {
       case (acc, (name, value)) ⇒ marshaller.addMapNodeElem(acc, name, value, optional = false)
     })
 
-  def messageFields(message: String): Seq[(String, marshaller.Node)] =
-    Seq("message" → marshaller.scalarNode(message, "String", Set.empty))
+  private def messageFields(message: String): Seq[(String, marshaller.Node)] =
+    Seq("message" → marshaller.fromString(message))
 
-  def pathFields(path: ExecutionPath): Seq[(String, marshaller.Node)] =
+  private def pathFields(path: ExecutionPath): Seq[(String, marshaller.Node)] =
     if (path.nonEmpty)
       Seq("path" → path.marshal(marshaller))
     else
       Seq.empty
 
-  def positionFields(positions: List[AstLocation]): Seq[(String, marshaller.Node)] =
+  private def positionFields(positions: List[AstLocation]): Seq[(String, marshaller.Node)] =
     if (positions.nonEmpty)
       Seq("locations" → marshallPositions(positions))
     else

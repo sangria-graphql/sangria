@@ -13,15 +13,21 @@ object ExceptionHandler {
   val empty = ExceptionHandler()
 }
 
-sealed trait HandledException
+sealed trait HandledException {
+  def addFieldsInExtensions: Boolean
+  def addFieldsInError: Boolean
+}
 
-case class SingleHandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty, positions: List[AstLocation] = Nil) extends HandledException
-case class MultipleHandledExceptions(messages: Vector[(String, Map[String, ResultMarshaller#Node], List[AstLocation])]) extends HandledException
+case class SingleHandledException(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty, locations: List[AstLocation] = Nil, addFieldsInExtensions: Boolean = true, addFieldsInError: Boolean = false) extends HandledException
+case class MultipleHandledExceptions(messages: Vector[(String, Map[String, ResultMarshaller#Node], List[AstLocation])], addFieldsInExtensions: Boolean = true, addFieldsInError: Boolean = false) extends HandledException
 
 object HandledException {
-  def apply(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty, positions: List[AstLocation] = Nil) =
-    SingleHandledException(message, additionalFields, positions)
+  def apply(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty, positions: List[AstLocation] = Nil, addFieldsInExtensions: Boolean = true, addFieldsInError: Boolean = false) =
+    single(message, additionalFields, positions, addFieldsInExtensions, addFieldsInError)
 
-  def apply(messages: Vector[(String, Map[String, ResultMarshaller#Node], List[AstLocation])]) =
-    MultipleHandledExceptions(messages)
+  def single(message: String, additionalFields: Map[String, ResultMarshaller#Node] = Map.empty, positions: List[AstLocation] = Nil, addFieldsInExtensions: Boolean = true, addFieldsInError: Boolean = false) =
+    SingleHandledException(message, additionalFields, positions, addFieldsInExtensions, addFieldsInError)
+
+  def multiple(messages: Vector[(String, Map[String, ResultMarshaller#Node], List[AstLocation])], addFieldsInExtensions: Boolean = true, addFieldsInError: Boolean = false) =
+    MultipleHandledExceptions(messages, addFieldsInExtensions, addFieldsInError)
 }
