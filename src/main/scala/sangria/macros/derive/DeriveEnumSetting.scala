@@ -5,6 +5,7 @@ sealed trait DeriveEnumSetting
 case class EnumTypeName(name: String) extends DeriveEnumSetting
 case class EnumTypeDescription(description: String) extends DeriveEnumSetting
 
+@deprecated("Use more generic `TransformValueNames` instead. Equivalent: `TransformValueNames(StringUtil.camelCaseToUnderscore(_).toUpperCase)`", "1.4.1")
 case object UppercaseValues extends DeriveEnumSetting
 
 case class DocumentValue(value: String, description: String, deprecationReason: Option[String] = None) extends DeriveEnumSetting
