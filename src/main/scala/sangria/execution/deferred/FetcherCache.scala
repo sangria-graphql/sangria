@@ -1,6 +1,6 @@
 package sangria.execution.deferred
 
-import scala.collection.concurrent.TrieMap
+import sangria.util.Cache
 
 trait FetcherCache {
   def cacheKey(id: Any): Any
@@ -26,8 +26,8 @@ object FetcherCache {
 }
 
 class SimpleFetcherCache extends FetcherCache {
-  private val cache = TrieMap[Any, Any]()
-  private val relCache = TrieMap[Any, Seq[Any]]()
+  private val cache = Cache.empty[Any, Any]
+  private val relCache = Cache.empty[Any, Seq[Any]]
 
   def cacheKey(id: Any) = id
   def cacheKeyRel(rel: Any, relId: Any) = rel → relId
@@ -43,7 +43,7 @@ class SimpleFetcherCache extends FetcherCache {
       cache.update(cacheKey(id), value)
   }
 
-  def updateRel[T](rel: Any, relId: Any, idFn: (T) ⇒ Any, values: Seq[T]) = {
+  def updateRel[T](rel: Any, relId: Any, idFn: T ⇒ Any, values: Seq[T]) = {
     if (cacheableRel(rel, relId)) {
       values.foreach { v ⇒
         update(idFn(v), v)
@@ -62,9 +62,9 @@ class SimpleFetcherCache extends FetcherCache {
     cache.remove(id)
 
   override def clearRel(rel: Any) =
-    relCache.keys.toVector.foreach {
-      case key @ (_, _) ⇒ relCache.remove(key)
-      case _ ⇒ // do nothing
+    relCache.removeKeys {
+      case key @ (r, _) if r == rel ⇒ true
+      case _ ⇒ false
     }
 
   override def clearRelId(rel: Any, relId: Any) =

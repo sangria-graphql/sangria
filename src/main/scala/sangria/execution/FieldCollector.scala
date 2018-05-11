@@ -4,11 +4,10 @@ import sangria.ast.OperationType
 import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.ast
+import sangria.util.Cache
 
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap, ArrayBuffer}
-
-import scala.util.{Try, Failure, Success}
+import scala.collection.mutable.{ArrayBuffer, Map => MutableMap, Set => MutableSet}
+import scala.util.{Failure, Success, Try}
 
 class FieldCollector[Ctx, Val](
     schema: Schema[Ctx, Val],
@@ -18,7 +17,7 @@ class FieldCollector[Ctx, Val](
     valueCollector: ValueCollector[Ctx, _],
     exceptionHandler: ExceptionHandler) {
 
-  private val resultCache = TrieMap[(ExecutionPath.PathCacheKey, String), Try[CollectedFields]]()
+  private val resultCache = Cache.empty[(ExecutionPath.PathCacheKey, String), Try[CollectedFields]]
 
   def collectFields(path: ExecutionPath, tpe: ObjectType[Ctx, _], selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
     resultCache.getOrElseUpdate(path.cacheKey → tpe.name, {

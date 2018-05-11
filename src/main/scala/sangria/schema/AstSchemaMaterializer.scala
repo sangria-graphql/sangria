@@ -6,18 +6,19 @@ import sangria.ast.{AstLocation, OperationType, TypeDefinition}
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
+import sangria.util.Cache
 import sangria.validation._
 
-import scala.collection.concurrent.TrieMap
 import scala.reflect.ClassTag
+import scala.collection.Set
 
 class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: AstSchemaBuilder[Ctx]) {
   import AstSchemaMaterializer.extractSchemaInfo
 
   private val sdlOrigin = SDLOrigin(document)
 
-  private val typeDefCache = TrieMap[(MatOrigin, String), Type with Named]()
-  private val scalarAliasCache = TrieMap[ScalarAlias[_, _], ScalarAlias[_, _]]()
+  private val typeDefCache = Cache.empty[(MatOrigin, String), Type with Named]
+  private val scalarAliasCache = Cache.empty[ScalarAlias[_, _], ScalarAlias[_, _]]
 
   private lazy val typeDefs: Vector[ast.TypeDefinition] = document.definitions.collect {
     case d: ast.TypeDefinition ⇒ d
@@ -236,7 +237,7 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
   def findUnusedTypes(): (Set[String], Vector[Type with Named]) = {
     resolveAllLazyFields()
 
-    val referenced = typeDefCache.map(_._2.name).toSet
+    val referenced = typeDefCache.mapToSet((_, v) ⇒ v.name)
     val notReferenced = typeDefs.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
     val notReferencedAdd = builder.additionalTypes.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
@@ -263,7 +264,7 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
       prevCount = typeDefCache.size
       iteration += 1
 
-      typeDefCache.values.foreach {
+      typeDefCache.forEachValue {
         case o: ObjectLikeType[_, _] ⇒ o.fields
         case o: InputObjectType[_] ⇒ o.fields
         case _ ⇒ // do nothing
@@ -362,9 +363,9 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
           val resolved = builder.resolveNameConflict(
             origin,
             allCandidates ++
-              typeDefCache.find(_._2.name == typeName).map{case ((o, _), v) ⇒ BuiltMaterializedTypeInst(o, v)}.toVector)
+              typeDefCache.find((_, v) ⇒ v.name == typeName).map{case ((o, _), v) ⇒ BuiltMaterializedTypeInst(o, v)}.toVector)
 
-          if (!resolved.isInstanceOf[BuiltMaterializedTypeInst] && typeDefCache.keySet.exists(_._2 == resolved.name))
+          if (!resolved.isInstanceOf[BuiltMaterializedTypeInst] && typeDefCache.keyExists(_._2 == resolved.name))
             throw SchemaMaterializationException("Name conflict resolution produced already existing type name")
           else
             getNamedType(origin, resolved)

@@ -1,21 +1,20 @@
 package sangria.validation
 
 import language.existentials
-
 import sangria.ast
 import sangria.ast.AstVisitor
 import sangria.visitor.VisitorCommand.{Continue, Skip}
 import sangria.schema._
 import sangria.introspection.isIntrospection
+import sangria.util.Cache
 
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.{ListBuffer, Map ⇒ MutableMap}
+import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
 case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
   import SchemaBasedDocumentAnalyzer._
 
-  private val variableUsages = TrieMap[Int, List[VariableUsage]]()
-  private val recursiveVariableUsages = TrieMap[Int, List[VariableUsage]]()
+  private val variableUsages = Cache.empty[Int, List[VariableUsage]]
+  private val recursiveVariableUsages = Cache.empty[Int, List[VariableUsage]]
 
   val documentAnalyzer = DocumentAnalyzer(document)
 

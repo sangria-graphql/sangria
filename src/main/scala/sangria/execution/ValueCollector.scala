@@ -5,15 +5,16 @@ import sangria.marshalling._
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema._
+import sangria.util.Cache
 import sangria.validation._
-import scala.collection.concurrent.TrieMap
+
 import scala.collection.immutable.VectorBuilder
 import scala.util.{Failure, Success, Try}
 
 class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceMapper: Option[SourceMapper], deprecationTracker: DeprecationTracker, userContext: Ctx, exceptionHandler: ExceptionHandler, fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]], ignoreErrors: Boolean)(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper = new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
-  private val argumentCache = TrieMap[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]()
+  private val argumentCache = Cache.empty[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]
 
   def getVariableValues(definitions: Vector[ast.VariableDefinition], fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]]): Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
@@ -72,7 +73,7 @@ object ValueCollector {
       val astArgMap = argumentAsts groupBy (_.name) mapValues (_.head)
       val marshaller = CoercedScalaResultMarshaller.default
       val errors = new VectorBuilder[Violation]
-      val defaultInfo = Some(TrieMap.empty[String, Any])
+      val defaultInfo = Some(Cache.empty[String, Any])
       val undefinedArgs = Some(new VectorBuilder[String])
 
       val res = argumentDefs.foldLeft(marshaller.emptyMapNode(argumentDefs.map(_.name)): marshaller.MapBuilder) {
@@ -107,7 +108,7 @@ object ValueCollector {
 }
 
 case class VariableValue(fn: (ResultMarshaller, ResultMarshaller, InputType[_]) ⇒ Either[Vector[Violation], Trinary[ResultMarshaller#Node]]) {
-  private val cache = TrieMap[(Int, Int), Either[Vector[Violation], Trinary[ResultMarshaller#Node]]]()
+  private val cache = Cache.empty[(Int, Int), Either[Vector[Violation], Trinary[ResultMarshaller#Node]]]
 
   def resolve(marshaller: ResultMarshaller, firstKindMarshaller: ResultMarshaller, actualType: InputType[_]): Either[Vector[Violation], Trinary[firstKindMarshaller.Node]] =
     cache.getOrElseUpdate(System.identityHashCode(firstKindMarshaller) → System.identityHashCode(actualType.namedType),

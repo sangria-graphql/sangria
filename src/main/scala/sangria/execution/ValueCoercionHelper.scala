@@ -6,9 +6,9 @@ import sangria.marshalling.{InputUnmarshaller, RawResultMarshaller, ResultMarsha
 import sangria.parser.SourceMapper
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema._
+import sangria.util.Cache
 import sangria.validation._
 
-import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.VectorBuilder
 
 class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprecationTracker: DeprecationTracker = DeprecationTracker.empty, userContext: Option[Ctx] = None) {
@@ -38,7 +38,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       fromScalarMiddleware: Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]],
       allowErrorsOnDefault: Boolean = false,
       valueMap: Nothing ⇒ Any = defaultValueMapFn,
-      defaultValueInfo: Option[TrieMap[String, Any]] = None,
+      defaultValueInfo: Option[Cache[String, Any]] = None,
       undefinedValues: Option[VectorBuilder[String]] = None
   )(
       acc: marshaller.MapBuilder,

@@ -8,9 +8,8 @@ import sangria.ast.Document
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.macros._
 import sangria.schema._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.{Cache, DebugUtil, FutureResultSupport}
 
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -34,11 +33,11 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
   case object Cached extends FieldTag
 
   class CachingMiddleware extends Middleware[Any] with MiddlewareAfterField[Any] {
-    type QueryVal = TrieMap[String, Action[Any, _]]
+    type QueryVal = Cache[String, Action[Any, _]]
     type FieldVal = Boolean
 
     def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) =
-      TrieMap()
+      Cache.empty
 
     def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = ()
 
@@ -57,7 +56,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
 
     def afterField(cache: QueryVal, fromCache: FieldVal, value: Any, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) = {
       if (ctx.field.tags.contains(Cached) && !fromCache)
-        cache += cacheKey(ctx) → Value(value)
+        cache(cacheKey(ctx)) = Value(value)
 
       None
     }
@@ -81,15 +80,15 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
   class Count {
     val count = new AtomicInteger(0)
     var context: Option[String] = None
-    var metrics: TrieMap[String, List[Long]] = TrieMap()
+    var metrics: Cache[String, List[Long]] = Cache.empty
   }
 
   class FieldMetrics extends Middleware[Count] with MiddlewareAfterField[Count] with MiddlewareErrorField[Count] {
-    type QueryVal = TrieMap[String, List[Long]]
+    type QueryVal = Cache[String, List[Long]]
     type FieldVal = Long
 
     def beforeQuery(context: MiddlewareQueryContext[Count, _, _]) =
-      TrieMap()
+      Cache.empty
 
     def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Count, _, _]) = {
       context.ctx.metrics = queryVal
@@ -241,14 +240,14 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(TestObject)
 
-      case class Capture(before: ArrayBuffer[String], after: TrieMap[String, Set[String]], error: TrieMap[String, Set[String]])
+      case class Capture(before: ArrayBuffer[String], after: Cache[String, Set[String]], error: Cache[String, Set[String]])
 
       class ErrorCapturingMiddleware extends Middleware[Any] with MiddlewareAfterField[Any] with MiddlewareErrorField[Any] {
         type QueryVal = Capture
         type FieldVal = Unit
 
         def beforeQuery(context: MiddlewareQueryContext[Any, _, _]) =
-          Capture(ArrayBuffer.empty, TrieMap(), TrieMap())
+          Capture(ArrayBuffer.empty, Cache.empty, Cache.empty)
 
         def afterQuery(queryVal: QueryVal, context: MiddlewareQueryContext[Any, _, _]) = ()
 
@@ -301,7 +300,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
       capture.before.toSet should be (Set(
         "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "s1", "s2", "s3", "s4", "s5"))
 
-      capture.after should be (TrieMap(
+      capture.after should be (Cache(
         "e7" → Set("e7 success"),
         "e8" → Set("e8 success"),
         "s1" → Set("s1 success"),
@@ -310,7 +309,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         "s4" → Set("deferred success"),
         "s5" → Set("deferred success")))
 
-      capture.error should be (TrieMap(
+      capture.error should be (Cache(
         "e1" → Set("e1 error"),
         "e2" → Set("e2 error"),
         "e3" → Set("e3 error"),

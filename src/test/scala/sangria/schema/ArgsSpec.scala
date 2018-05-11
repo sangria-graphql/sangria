@@ -4,9 +4,8 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import sangria.execution.AttributeCoercionError
 import sangria.marshalling.sprayJson._
+import sangria.util.Cache
 import spray.json._
-
-import scala.collection.concurrent.TrieMap
 
 class ArgsSpec extends WordSpec with Matchers {
   val NonDefaultArgumentName = "nonDefaultArgument"
@@ -56,7 +55,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set.empty)
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
       }
 
       "build with defined arguments" in {
@@ -66,7 +65,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set.empty)
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(nonDefaultArgument) should be (9001)
       }
@@ -81,7 +80,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OptionalArgumentName))
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(optionalArgument) should be (Some(9001))
       }
@@ -92,7 +91,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OptionalArgumentName))
         args.undefinedArgs should be (Set(OptionalArgumentName))
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(optionalArgument) should be (None)
       }
@@ -103,7 +102,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set(DefaultArgumentName))
         args.optionalArgs should be (Set(DefaultArgumentName))
         args.undefinedArgs should be (Set(DefaultArgumentName))
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(defaultArgument) should be (10)
       }
@@ -114,7 +113,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set(DefaultArgumentName))
         args.optionalArgs should be (Set(DefaultArgumentName))
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(defaultArgument) should be (9001)
       }
@@ -128,7 +127,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set.empty)
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(nonDefaultArgument) should be (10)
       }
@@ -144,7 +143,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OptionalArgumentName))
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(optionalArgument) should be (Some(9001))
       }
@@ -155,7 +154,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set.empty)
         args.optionalArgs should be (Set(OptionalArgumentName))
         args.undefinedArgs should be (Set(OptionalArgumentName))
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(optionalArgument) should be (None)
       }
@@ -167,7 +166,7 @@ class ArgsSpec extends WordSpec with Matchers {
         args.argsWithDefault should be (Set(DefaultArgumentName))
         args.optionalArgs should be (Set(DefaultArgumentName))
         args.undefinedArgs should be (Set.empty)
-        args.defaultInfo should be (TrieMap.empty)
+        args.defaultInfo should be (Cache.empty)
 
         args.arg(defaultArgument) should be (9001)
       }

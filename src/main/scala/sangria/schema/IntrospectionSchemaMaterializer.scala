@@ -4,12 +4,12 @@ import sangria.introspection._
 import sangria.marshalling._
 import sangria.parser.DeliveryScheme.Throw
 import sangria.renderer.SchemaRenderer
+import sangria.util.Cache
 
-import scala.collection.concurrent.TrieMap
 import scala.util.{Failure, Success}
 
 class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller](introspectionResult: T, builder: IntrospectionSchemaBuilder[Ctx]) {
-  private val typeDefCache = TrieMap[String, Type with Named]()
+  private val typeDefCache = Cache.empty[String, Type with Named]
 
   private lazy val schemaDef = IntrospectionParser.parse(introspectionResult)
 
@@ -27,13 +27,13 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller](introspectionR
 
   def findUnusedTypes(allTypes: Seq[IntrospectionType]): List[Type with Named] = {
     // first init all lazy fields. TODO: think about better solution
-    typeDefCache.values.foreach {
+    typeDefCache.forEachValue {
       case o: ObjectLikeType[_, _] ⇒ o.fields
       case o: InputObjectType[_] ⇒ o.fields
       case _ ⇒ // do nothing
     }
 
-    val referenced = typeDefCache.keySet
+    val referenced = typeDefCache
     val notReferenced = allTypes.filterNot(tpe ⇒ Schema.isBuiltInType(tpe.name) || referenced.contains(tpe.name))
 
     notReferenced.toList map (tpe ⇒ getNamedType(tpe.name))

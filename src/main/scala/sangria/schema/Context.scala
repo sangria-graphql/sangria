@@ -7,8 +7,8 @@ import sangria.parser.SourceMapper
 import sangria.{ast, introspection}
 import sangria.execution.deferred.Deferred
 import sangria.streaming.SubscriptionStream
+import sangria.util.Cache
 
-import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
@@ -296,7 +296,7 @@ case class Context[Ctx, Val](
   }
 }
 
-case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], undefinedArgs: Set[String], defaultInfo: TrieMap[String, Any]) {
+case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], undefinedArgs: Set[String], defaultInfo: Cache[String, Any]) {
   private def getAsOptional[T](name: String): Option[T] =
     raw.get(name).asInstanceOf[Option[Option[T]]].flatten
 
@@ -348,7 +348,7 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
 }
 
 object Args {
-  val empty = new Args(Map.empty, Set.empty, Set.empty, Set.empty, TrieMap.empty)
+  val empty = new Args(Map.empty, Set.empty, Set.empty, Set.empty, Cache.empty)
 
   def apply(definitions: List[Argument[_]], values: (String, Any)*): Args =
     apply(definitions, values.toMap)
