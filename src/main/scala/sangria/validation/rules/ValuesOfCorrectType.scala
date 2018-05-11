@@ -40,7 +40,7 @@ class ValuesOfCorrectType extends ValidationRule {
             val errors =
               tpe.fields.toVector.flatMap { fieldDef ⇒
                 v.fieldsByName.get(fieldDef.name) match {
-                  case None if !fieldDef.fieldType.isOptional ⇒
+                  case None if !fieldDef.fieldType.isOptional && fieldDef.defaultValue.isEmpty ⇒
                     Vector(RequiredFieldViolation(tpe.name, fieldDef.name, SchemaRenderer.renderTypeName(fieldDef.fieldType), ctx.sourceMapper, v.location.toList))
                   case _ ⇒ Vector.empty
                 }

@@ -39,17 +39,18 @@ class ValueCollector[Ctx, Input](schema: Schema[_, _], inputVars: Input, sourceM
       else Success(Map(values.collect {case (name, Right(v)) ⇒ name → v}: _*))
     }
 
-  def getFieldArgumentValues(path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
+  def getFieldArgumentValues(path: ExecutionPath, forAstNode: Option[ast.AstNode], argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument], variables: Map[String, VariableValue]): Try[Args] =
     if(argumentDefs.isEmpty)
       ValueCollector.emptyArgs
     else
-      argumentCache.getOrElseUpdate(path.cacheKey → argumentAsts, getArgumentValues(argumentDefs, argumentAsts, variables))
+      argumentCache.getOrElseUpdate(path.cacheKey → argumentAsts, getArgumentValues(forAstNode, argumentDefs, argumentAsts, variables))
 
   def getArgumentValues(
+    forAstNode: Option[ast.AstNode],
     argumentDefs: List[Argument[_]],
     argumentAsts: Vector[ast.Argument],
     variables: Map[String, VariableValue]
-  ): Try[Args] = ValueCollector.getArgumentValues(coercionHelper, argumentDefs, argumentAsts, variables, exceptionHandler, ignoreErrors, sourceMapper, fromScalarMiddleware)
+  ): Try[Args] = ValueCollector.getArgumentValues(coercionHelper, forAstNode, argumentDefs, argumentAsts, variables, exceptionHandler, ignoreErrors, sourceMapper, fromScalarMiddleware)
 }
 
 object ValueCollector {
@@ -57,6 +58,7 @@ object ValueCollector {
 
   def getArgumentValues[Ctx](
     coercionHelper: ValueCoercionHelper[Ctx],
+    forAstNode: Option[ast.AstNode],
     argumentDefs: List[Argument[_]],
     argumentAsts: Vector[ast.Argument],
     variables: Map[String, VariableValue],
@@ -85,8 +87,8 @@ object ValueCollector {
           implicit val um = sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
           try {
-            resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, argDef.name, marshaller, fromInput.marshaller,  errors = errors, valueMap = fromInput.fromResult, defaultValueInfo = defaultInfo, undefinedValues = undefinedArgs, isArgument = true, fromScalarMiddleware = fromScalarMiddleware)(
-              acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, Some(variables), marshaller, fromInput.marshaller, fromScalarMiddleware = fromScalarMiddleware, isArgument = true)))
+            resolveMapValue(argDef.argumentType, argPath, argDef.defaultValue, forAstNode, argDef.name, marshaller, fromInput.marshaller,  errors = errors, valueMap = fromInput.fromResult, defaultValueInfo = defaultInfo, undefinedValues = undefinedArgs, isArgument = true, fromScalarMiddleware = fromScalarMiddleware)(
+              acc, astValue map (coerceInputValue(argDef.argumentType, argPath, _, forAstNode, Some(variables), marshaller, fromInput.marshaller, fromScalarMiddleware = fromScalarMiddleware, isArgument = true)))
           } catch {
             case InputParsingError(e) ⇒
               errors ++= e.map(InvalidInputValueViolation(argDef.name, _, sourceMapper, astValue.flatMap(_.location).toList))

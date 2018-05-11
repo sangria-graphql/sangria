@@ -486,7 +486,7 @@ object BatchExecutor {
           VisitorCommand.Continue
 
         case vv: ast.VariableValue if currentOperation.isDefined || currentFragment.isDefined ⇒
-          currentVariables += VariableUsage(vv, typeInfo.inputType)
+          currentVariables += VariableUsage(vv, typeInfo.inputType, typeInfo.defaultValue)
           VisitorCommand.Continue
 
         case field: ast.Field if currentOperation.isDefined || currentFragment.isDefined ⇒

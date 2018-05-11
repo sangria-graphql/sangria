@@ -91,16 +91,6 @@ class DefaultValuesSpec extends WordSpec with Matchers with FutureResultSupport 
   case class Comment(author: String, text: String, likes: BigDecimal)
 
   "Default values" when {
-    "used with NotNull input types" should {
-      "not allow default values for NotNull arguments" in {
-        an [IllegalArgumentException] should be thrownBy Argument("boom", IntType, defaultValue = 1)
-      }
-
-      "not allow default values for NotNull input fields" in {
-        an [IllegalArgumentException] should be thrownBy InputField("boom", IntType, defaultValue = 1)
-      }
-    }
-
     "used with scala map-like data structures" should {
       "default Int" in check(IntType,
         defaultValue = 1,

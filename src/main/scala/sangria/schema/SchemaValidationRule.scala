@@ -52,7 +52,7 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
       val (default, toInput) = defaultValue.asInstanceOf[(Any, ToInput[Any, Any])]
       val (inputValue, iu) = toInput.toInput(default)
 
-      coercionHelper.coerceInputValue(tpe, path, inputValue, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default, false, prefix)(iu) match {
+      coercionHelper.coerceInputValue(tpe, path, inputValue, None, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default, false, prefix)(iu) match {
         case Left(violations) ⇒ violations
         case Right(violations) ⇒ Nil
       }

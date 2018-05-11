@@ -421,7 +421,7 @@ class Resolver[Ctx](
   }
 
   private def calcComplexity(path: ExecutionPath, astField: ast.Field, field: Field[Ctx, _], uc: Ctx) = {
-    val args = valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables)
+    val args = valueCollector.getFieldArgumentValues(path, Some(astField), field.arguments, astField.arguments, variables)
 
     args match {
       case Success(a) ⇒ a → field.complexity.fold(DefaultComplexity)(_(uc, a, DefaultComplexity))
@@ -959,7 +959,7 @@ class Resolver[Ctx](
     maxQueryDepth match {
       case Some(max) if path.size > max ⇒ ErrorFieldResolution(errors.add(path, new MaxQueryDepthReachedError(max), astField.location))
       case _ ⇒
-        valueCollector.getFieldArgumentValues(path, field.arguments, astField.arguments, variables) match {
+        valueCollector.getFieldArgumentValues(path, Some(astField), field.arguments, astField.arguments, variables) match {
           case Success(args) ⇒
             val ctx = Context[Ctx, Any](
               value,

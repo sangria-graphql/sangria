@@ -673,6 +673,19 @@ class ValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
         """,
         "Expected type 'String', found '2'. String value expected" → Seq(Pos(5, 42)))
 
+      "Partial object, null to non-null field" in expectFailsSimple(
+        """
+          {
+            complicatedArgs {
+              complexArgField(complexArg: {
+                requiredField: true,
+                nonNullField: null,
+              })
+            }
+          }
+        """,
+        "Expected type 'Boolean!', found 'null'." → Seq(Pos(6, 31)))
+
       "Partial object, unknown field arg" in expectFailsSimple(
         """
           {
@@ -684,7 +697,7 @@ class ValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
             }
           }
         """,
-        "Field 'unknownField' is not defined by type 'ComplexInput'; Did you mean intField or booleanField?" → Seq(Pos(6, 17)))
+        "Field 'unknownField' is not defined by type 'ComplexInput'; Did you mean nonNullField, intField or booleanField?" → Seq(Pos(6, 17)))
     }
 
     "Directive arguments" should {
@@ -714,12 +727,13 @@ class ValuesOfCorrectTypeSpec extends WordSpec with ValidationSupport {
   }
 
   "Variable default values" should {
-    "with directives of valid types" in expectPasses(
+    "variables with valid default values" in expectPasses(
       """
         query WithDefaultValues(
           $a: Int = 1,
           $b: String = "ok",
           $c: ComplexInput = { requiredField: true, intField: 3 }
+          $d: Int! = 123
         ) {
           dog { name }
         }

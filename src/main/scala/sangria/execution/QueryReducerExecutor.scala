@@ -73,7 +73,7 @@ object QueryReducerExecutor {
     userContext: Ctx)(implicit executionContext: ExecutionContext): Future[Ctx] = {
     val argumentValuesFn: QueryReducer.ArgumentValuesFn =
       (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) ⇒
-        valueCollector.getFieldArgumentValues(path, argumentDefs, argumentAsts, variables)
+        valueCollector.getFieldArgumentValues(path, None, argumentDefs, argumentAsts, variables)
 
     val initialValues: Vector[Any] = reducers map (_.initial)
 

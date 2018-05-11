@@ -99,13 +99,19 @@ class ScalarMiddlewareSpec extends WordSpec with Matchers with FutureResultSuppo
             "t3" → null),
           "errors" → Vector(
             Map(
-              "message" → "Argument 'id' has wrong value: invalid id. (line 5, column 26):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n                         ^",
-              "path" → Vector("t3"),
-              "locations" → Vector(Map("line" → 5, "column" → 26))),
+              "message" → "Argument 'id' has wrong value: invalid id. (line 5, column 13):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n            ^\n (line 5, column 26):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n                         ^",
+              "path" → Vector(
+                "t3"),
+              "locations" → Vector(
+                Map("line" → 5, "column" → 13),
+                Map("line" → 5, "column" → 26))),
             Map(
-              "message" → "Field 'c.userId' has wrong value: invalid id. (line 5, column 49):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n                                                ^",
-              "path" → Vector("t3"),
-              "locations" → Vector(Map("line" → 5, "column" → 49))))))
+              "message" → "Field 'c.userId' has wrong value: invalid id. (line 5, column 13):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n            ^\n (line 5, column 49):\n            t3: test(id: \"invalid\", c: {userId: \"yay\", name: \"foo\"})\n                                                ^",
+              "path" → Vector(
+                "t3"),
+              "locations" → Vector(
+                Map("line" → 5, "column" → 13),
+                Map("line" → 5, "column" → 49))))))
     }
 
     "encode and decode scalar value when argument has default value" in {
@@ -145,13 +151,13 @@ class ScalarMiddlewareSpec extends WordSpec with Matchers with FutureResultSuppo
             "t4" → null),
           "errors" → Vector(
             Map(
-              "message" → "Argument 'id' has wrong value: invalid id. (line 5, column 26):\n            t3: test(id: \"invalid\", c: {userId: \"test-yay\", name: \"foo\"})\n                         ^",
+              "message" → "Argument 'id' has wrong value: invalid id. (line 5, column 13):\n            t3: test(id: \"invalid\", c: {userId: \"test-yay\", name: \"foo\"})\n            ^\n (line 5, column 26):\n            t3: test(id: \"invalid\", c: {userId: \"test-yay\", name: \"foo\"})\n                         ^",
               "path" → Vector("t3"),
-              "locations" → Vector(Map("line" → 5, "column" → 26))),
+              "locations" → Vector(Map("line" → 5, "column" → 13), Map("line" → 5, "column" → 26))),
             Map(
-              "message" → "Field 'c.userId' has wrong value: invalid id. (line 6, column 52):\n            t4: test(id: \"test-valid\", c: {userId: \"yay\", name: \"foo\"})\n                                                   ^",
+              "message" → "Field 'c.userId' has wrong value: invalid id. (line 6, column 13):\n            t4: test(id: \"test-valid\", c: {userId: \"yay\", name: \"foo\"})\n            ^\n (line 6, column 52):\n            t4: test(id: \"test-valid\", c: {userId: \"yay\", name: \"foo\"})\n                                                   ^",
               "path" → Vector("t4"),
-              "locations" → Vector(Map("line" → 6, "column" → 52))))))
+              "locations" → Vector(Map("line" → 6, "column" → 13), Map("line" → 6, "column" → 52))))))
     }
 
     "applies to valid default values" in {
@@ -210,19 +216,21 @@ class ScalarMiddlewareSpec extends WordSpec with Matchers with FutureResultSuppo
             "t4" → null),
           "errors" → Vector(
             Map(
-              "message" → "Field '$id' has wrong value: invalid id. (line 2, column 36):\n          query Test($id: String = \"ID1\", $c: Complex = {userId: \"ID2\", name: \"foo\"}) {\n                                   ^",
+              "message" → "Field '$id' has wrong value: invalid id. (line 2, column 22):\n          query Test($id: String = \"ID1\", $c: Complex = {userId: \"ID2\", name: \"foo\"}) {\n                     ^\n (line 2, column 36):\n          query Test($id: String = \"ID1\", $c: Complex = {userId: \"ID2\", name: \"foo\"}) {\n                                   ^",
               "path" → Vector("t2"),
-              "locations" → Vector(Map("line" → 2, "column" → 36))),
+              "locations" → Vector(Map("line" → 2, "column" → 22), Map("line" → 2, "column" → 36))),
             Map(
-              "message" → "Field '$c.userId' has wrong value: invalid id. (line 2, column 66):\n          query Test($id: String = \"ID1\", $c: Complex = {userId: \"ID2\", name: \"foo\"}) {\n                                                                 ^",
+              "message" → "Field '$c.userId' has wrong value: invalid id. (line 2, column 43):\n          query Test($id: String = \"ID1\", $c: Complex = {userId: \"ID2\", name: \"foo\"}) {\n                                          ^\n (line 2, column 66):\n          query Test($id: String = \"ID1\", $c: Complex = {userId: \"ID2\", name: \"foo\"}) {\n                                                                 ^",
               "path" → Vector("t2"),
-              "locations" → Vector(Map("line" → 2, "column" → 66))),
+              "locations" → Vector(Map("line" → 2, "column" → 43), Map("line" → 2, "column" → 66))),
             Map(
-              "message" → "Argument 'id' has wrong value: invalid id.",
-              "path" → Vector("t3")),
+              "message" → "Argument 'id' has wrong value: invalid id. (line 4, column 13):\n            t3: test(c: {userId: \"test-yay\", name: \"foo\"})\n            ^",
+              "path" → Vector("t3"),
+              "locations" → Vector(Map("line" → 4, "column" → 13))),
             Map(
-              "message" → "Argument 'c.userId' has wrong value: invalid id.",
-              "path" → Vector("t4")))))
+              "message" → "Argument 'c.userId' has wrong value: invalid id. (line 5, column 13):\n            t4: test(id: \"test-valid\", c: {name: \"foo\"})\n            ^",
+              "path" → Vector("t4"),
+              "locations" → Vector(Map("line" → 5, "column" → 13))))))
     }
   }
 }

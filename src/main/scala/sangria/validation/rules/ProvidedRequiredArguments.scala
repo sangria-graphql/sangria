@@ -10,10 +10,9 @@ import sangria.validation._
 /**
  * Provided required arguments
  *
- * A field or directive is only valid if all required (non-null) field arguments
- * have been provided.
+ * A field or directive is only valid if all required (non-null without a default value) field arguments have been provided.
  */
-class ProvidedNonNullArguments extends ValidationRule {
+class ProvidedRequiredArguments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onLeave: ValidationVisit = {
       case ast.Field(_, name, args, _, _, _, _, pos) ⇒
@@ -23,7 +22,7 @@ class ProvidedNonNullArguments extends ValidationRule {
             val astArgs = args.map(_.name).toSet
 
             val errors = fieldDef.arguments.toVector.collect {
-              case argDef if !astArgs.contains(argDef.name) && !argDef.argumentType.isInstanceOf[OptionInputType[_]] ⇒
+              case argDef if !astArgs.contains(argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty ⇒
                 MissingFieldArgViolation(name, argDef.name, SchemaRenderer.renderTypeName(argDef.argumentType), ctx.sourceMapper, pos.toList)
             }
 
@@ -37,7 +36,7 @@ class ProvidedNonNullArguments extends ValidationRule {
             val astArgs = args.map(_.name).toSet
 
             val errors = dirDef.arguments.toVector.collect {
-              case argDef if !astArgs.contains(argDef.name) && !argDef.argumentType.isInstanceOf[OptionInputType[_]] ⇒
+              case argDef if !astArgs.contains(argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty ⇒
                 MissingFieldArgViolation(name, argDef.name, SchemaRenderer.renderTypeName(argDef.argumentType), ctx.sourceMapper, pos.toList)
             }
 

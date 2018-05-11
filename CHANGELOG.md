@@ -1,7 +1,7 @@
 ## Upcoming
 
 * Added a small `Cache` abstraction and replaced `TrieMap`-based cache implementation with `ConcurrentHashMap`. This change introduces 
-  potential minor performance improvements and compatibility with [GraalVM](https://www.graalvm.org/) `native-image`.  
+  potential minor performance improvements and compatibility with [GraalVM](https://www.graalvm.org/) `native-image`. 
 * Fixed new line tracking when parsing block-strings
 * Ast schema builder now considers `additionalTypes` when it validates the type extensions
 * `KnownDirectives` validation now correctly handles type and schema extensions

@@ -2,6 +2,7 @@ package sangria.validation
 
 import sangria.ast
 import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
+import sangria.marshalling.ToInput
 import sangria.schema._
 
 class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
@@ -13,6 +14,7 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
   private val fieldDefStack: ValidatorStack[Option[Field[_, _]]] = ValidatorStack.empty
   private val ancestorStack: ValidatorStack[ast.AstNode] = ValidatorStack.empty
   private val documentStack: ValidatorStack[ast.Document] = ValidatorStack.empty
+  private val defaultValueStack: ValidatorStack[Option[(_, ToInput[_, _])]] = ValidatorStack.empty
 
   initialType.foreach(forcePushType)
 
@@ -28,6 +30,7 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
   def fieldDef = fieldDefStack.headOption.flatten
   def ancestors: Seq[ast.AstNode] = ancestorStack.toSeq
   def document = documentStack.headOption
+  def defaultValue = defaultValueStack.headOption.flatten
 
   def forcePushType(tpe: Type): Unit = {
     tpe match {
@@ -94,8 +97,13 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         argument = directive orElse fieldDef flatMap { withArgs ⇒
           withArgs.arguments find (_.name == a.name)
         }
+
+        defaultValueStack push argument.flatMap(_.defaultValue)
         inputTypeStack push argument.map(_.inputValueType)
       case ast.ListValue(values, _, _) ⇒
+        // List positions never have a default value.
+        defaultValueStack push None
+
         inputType match {
           case Some(it) ⇒ it.nonOptionalType match {
             case it: ListInputType[_] ⇒ inputTypeStack push Some(it.ofType)
@@ -104,11 +112,20 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
           case None ⇒ inputTypeStack push None
         }
       case ast.ObjectField(name, value, _, _) ⇒
-        val fieldType = inputType flatMap (it ⇒ it.namedType match {
-          case obj: InputObjectType[_] ⇒ obj.fieldsByName.get(name) map (_.inputValueType)
-          case _ ⇒ None
-        })
+        val (fieldType, defaultValue) = inputType match {
+          case Some(it) if it.namedType.isInstanceOf[InputObjectType[_]] ⇒
+            it.namedType match {
+              case obj: InputObjectType[_] ⇒
+                val field = obj.fieldsByName.get(name)
 
+                field.map(_.inputValueType) → field.flatMap(_.defaultValue)
+              case _ ⇒ None → None
+            }
+
+          case _ ⇒ None → None
+        }
+
+        defaultValueStack push defaultValue
         inputTypeStack push fieldType
       case ast.EnumValue(name, _, _) ⇒
         enumValue = inputType match {
@@ -164,10 +181,13 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         inputTypeStack.pop()
       case a: ast.Argument ⇒
         argument = None
+        defaultValueStack.pop()
         inputTypeStack.pop()
       case ast.ListValue(_, _, _) ⇒
+        defaultValueStack.pop()
         inputTypeStack.pop()
       case ast.ObjectField(_, _, _, _) ⇒
+        defaultValueStack.pop()
         inputTypeStack.pop()
       case ast.EnumValue(_, _, _) ⇒
         enumValue = None

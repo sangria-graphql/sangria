@@ -176,7 +176,7 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
     val variables = valueCollector.getVariableValues(QueryParser.parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}").operations(Some("Foo")).variables, None).get
 
     val parsed = QueryParser.parseInputWithVariables(value)
-    val args = valueCollector.getArgumentValues(Argument("a", tpe) :: Nil, Vector(ast.Argument("a", parsed)), variables).get
+    val args = valueCollector.getArgumentValues(None, Argument("a", tpe) :: Nil, Vector(ast.Argument("a", parsed)), variables).get
 
     args.raw.get("a")
   }

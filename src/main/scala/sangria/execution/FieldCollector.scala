@@ -103,7 +103,7 @@ class FieldCollector[Ctx, Val](
             case _ ⇒ Success(d → dd)
           })
           .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", exceptionHandler, sourceMapper, d.location.toList))))
-        .map(_.flatMap{case (astDir, dir) ⇒ valueCollector.getArgumentValues(dir.arguments, astDir.arguments, variables) map (dir → _)})
+        .map(_.flatMap{case (astDir, dir) ⇒ valueCollector.getArgumentValues(Some(astDir), dir.arguments, astDir.arguments, variables) map (dir → _)})
 
     possibleDirs.collect{case Failure(error) ⇒ error}.headOption map (Failure(_)) getOrElse {
       val validDirs = possibleDirs collect {case Success(v) ⇒ v}

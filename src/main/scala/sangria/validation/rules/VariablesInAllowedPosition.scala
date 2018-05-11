@@ -1,14 +1,14 @@
 package sangria.validation.rules
 
 
-import sangria.schema.{OptionInputType, InputType}
-
+import sangria.schema.{InputType, Schema}
 import sangria.ast
 import sangria.ast.AstVisitorCommand
+import sangria.marshalling.ToInput
 import sangria.renderer.SchemaRenderer
 import sangria.validation._
 
-import scala.collection.mutable.{Map ⇒ MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 /**
  * Variables passed to field arguments conform to type
@@ -41,7 +41,7 @@ class VariablesInAllowedPosition extends ValidationRule {
             varDef ← varDefs.get(usage.node.name)
             tpe ← usage.tpe
             inputTpe ← ctx.schema.getInputType(varDef.tpe)
-            if !TypeComparators.isSubType(ctx.schema, effectiveType(inputTpe, varDef), tpe)
+            if !allowedVariableUsage(ctx.schema, inputTpe, varDef.defaultValue, tpe, usage.defaultValue)
           } yield BadVarPositionViolation(
             usage.node.name,
             SchemaRenderer.renderTypeName(inputTpe),
@@ -53,11 +53,24 @@ class VariablesInAllowedPosition extends ValidationRule {
         if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
     }
 
-    // If a variable definition has a default value, it's effectively non-null.
-    def effectiveType(varType: InputType[_], varDef: ast.VariableDefinition) =
-      if (varDef.defaultValue.isDefined && varType.isInstanceOf[OptionInputType[_]])
-        varType.asInstanceOf[OptionInputType[_]].ofType
-      else
-        varType
+    /**
+      * Returns true if the variable is allowed in the location it was found,
+      * which includes considering if default values exist for either the variable
+      * or the location at which it is located.
+      */
+    def allowedVariableUsage(
+      schema: Schema[_, _],
+      varType: InputType[_],
+      varDefaultValue: Option[ast.Value],
+      locationType: InputType[_],
+      locationDefaultValue: Option[(_, ToInput[_, _])]
+    ) =
+      if (!locationType.isOptional && varType.isOptional) {
+        val hasNonNullVariableDefaultValue = varDefaultValue.exists(default ⇒ !default.isInstanceOf[ast.NullValue])
+        val hasLocationDefaultValue = locationDefaultValue.isDefined
+
+        if (!hasNonNullVariableDefaultValue && !hasLocationDefaultValue) false
+        else TypeComparators.isSubType(schema, varType.nonOptionalType, locationType)
+      } else TypeComparators.isSubType(schema, varType, locationType)
   }
 }

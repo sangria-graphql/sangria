@@ -2,7 +2,8 @@ package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
-import sangria.util.{GraphQlSupport, FutureResultSupport}
+import sangria.util.{FutureResultSupport, GraphQlSupport, SimpleGraphQlSupport}
+import spray.json.{JsNull, JsObject, JsString}
 
 import scala.concurrent.Future
 
@@ -543,5 +544,100 @@ class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with G
       new NullingSubject,
       "query Q { NaN }",
       Map("data" → Map("NaN" → null)))
+
+    "Handles non-null argument" should {
+      val CannotBeNullArg = Argument("cannotBeNull", StringType)
+      val schemaWithNonNullArg = Schema(ObjectType("Query", fields[Unit, Unit](
+        Field("withNonNullArg", OptionType(StringType),
+          arguments = CannotBeNullArg :: Nil,
+          resolve = c ⇒ s"Passed: ${c arg CannotBeNullArg}"))))
+
+      "succeeds when passed non-null literal value" in SimpleGraphQlSupport.check(schemaWithNonNullArg, (),
+        """
+          query ($testVar: String!) {
+            withNonNullArg (cannotBeNull: $testVar)
+          }
+        """,
+        args = JsObject("testVar" → JsString("variable value")),
+        expected = Map("data" → Map("withNonNullArg" → "Passed: variable value")))
+
+      "succeeds when missing variable has default value" in SimpleGraphQlSupport.check(schemaWithNonNullArg, (),
+        """
+          query ($testVar: String = "default value") {
+            withNonNullArg (cannotBeNull: $testVar)
+          }
+        """,
+        args = JsObject(/* Intentionally missing variable */),
+        expected = Map("data" → Map("withNonNullArg" → "Passed: default value")))
+
+      // Note: validation should identify this issue first (missing args rule)
+      // however execution should still protect against this.
+      "field error when missing non-null arg" in SimpleGraphQlSupport.check(schemaWithNonNullArg, (),
+        """
+          query {
+            withNonNullArg
+          }
+        """,
+        Map(
+          "data" → Map("withNonNullArg" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Null value was provided for the NotNull Type 'String!' at path 'cannotBeNull'.",
+              "locations" → Vector(Map("line" → 3, "column" → 13)),
+              "path" → Vector("withNonNullArg")))),
+        validateQuery = false)
+      
+      // Note: validation should identify this issue first (values of correct
+      // type rule) however execution should still protect against this.
+      "field error when non-null arg provided null" in SimpleGraphQlSupport.check(schemaWithNonNullArg, (),
+        """
+          query {
+            withNonNullArg(cannotBeNull: null)
+          }
+        """,
+        Map(
+          "data" → Map("withNonNullArg" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Argument 'cannotBeNull' has wrong value: Null value was provided for the NotNull Type 'String!' at path 'cannotBeNull'..",
+              "path" → Vector("withNonNullArg"),
+              "locations" → Vector(
+                Map("line" → 3, "column" → 13),
+                Map("line" → 3, "column" → 42))))),
+        validateQuery = false)
+
+      // Note: validation should identify this issue first (variables in allowed
+      // position rule) however execution should still protect against this.
+      "field error when non-null arg not provided variable value" in SimpleGraphQlSupport.check(schemaWithNonNullArg, (),
+        """
+          query ($testVar: String) {
+            withNonNullArg(cannotBeNull: $testVar)
+          }
+        """,
+        args = JsObject(/* Intentionally missing variable */),
+        expected = Map(
+          "data" → Map("withNonNullArg" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Null value was provided for the NotNull Type 'String!' at path 'cannotBeNull'.",
+              "path" → Vector("withNonNullArg"),
+              "locations" → Vector(Map("line" → 3, "column" → 13))))),
+        validateQuery = false)
+
+      "field error when non-null arg provided variable with explicit null value" in SimpleGraphQlSupport.check(schemaWithNonNullArg, (),
+        """
+          query ($testVar: String = "default value") {
+            withNonNullArg (cannotBeNull: $testVar)
+          }
+        """,
+        args = JsObject("testVar" → JsNull),
+        expected = Map(
+          "data" → Map("withNonNullArg" → null),
+          "errors" → Vector(
+            Map(
+              "message" → "Null value was provided for the NotNull Type 'String!' at path 'cannotBeNull'.",
+              "path" → Vector("withNonNullArg"),
+              "locations" → Vector(Map("line" → 3, "column" → 13))))))
+    }
   }
 }

@@ -832,8 +832,9 @@ class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with Futu
               "article": null
             },
             "errors": [{
-              "message": "Field '$id' has wrong value: ID cannot be an empty string.",
-              "path": ["article"]
+              "message": "Field '$id' has wrong value: ID cannot be an empty string. (line 2, column 21):\n          query Foo($id: ID!) {\n                    ^",
+              "path": ["article"],
+              "locations": [{"line": 2, "column": 21}]
             }]
           }
         """.parseJson)

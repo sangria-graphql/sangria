@@ -382,10 +382,6 @@ case class Argument[T](
     fromInput: FromInput[_],
     astDirectives: Vector[ast.Directive],
     astNodes: Vector[ast.AstNode]) extends InputValue[T] with Named with HasAstInfo {
-
-  if (!argumentType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
-    throw new IllegalArgumentException(s"Argument '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this argument nullable or remove the default value.")
-
   def inputValueType = argumentType
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderArg(this)
@@ -632,9 +628,6 @@ case class InputField[T](
   astDirectives: Vector[ast.Directive],
   astNodes: Vector[ast.AstNode]
 ) extends InputValue[T] with Named with HasAstInfo {
-  if (!fieldType.isInstanceOf[OptionInputType[_]] && defaultValue.isDefined)
-    throw new IllegalArgumentException(s"Input field '$name' is has NotNull type and defines a default value, which is not allowed! You need to either make this fields nullable or remove the default value.")
-
   def inputValueType = fieldType
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderInputField(this)

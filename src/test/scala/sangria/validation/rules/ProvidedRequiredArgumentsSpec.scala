@@ -3,9 +3,9 @@ package sangria.validation.rules
 import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
 
-class ProvidedNonNullArgumentsSpec extends WordSpec with ValidationSupport {
+class ProvidedRequiredArgumentsSpec extends WordSpec with ValidationSupport {
 
-  override val defaultRule = Some(new ProvidedNonNullArguments)
+  override val defaultRule = Some(new ProvidedRequiredArguments)
 
   "Validate: Provided required arguments" should {
     "ignores unknown arguments" in expectPasses(
@@ -32,6 +32,15 @@ class ProvidedNonNullArgumentsSpec extends WordSpec with ValidationSupport {
           {
             dog {
               isHousetrained
+            }
+          }
+        """)
+
+      "No arg on non-null field with default" in expectPasses(
+        """
+          {
+            complicatedArgs {
+              nonNullFieldWithDefault
             }
           }
         """)

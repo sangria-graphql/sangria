@@ -47,7 +47,7 @@ case class Executor[Ctx, Root](
           case CollectedField(_, astField, Success(_)) ⇒
             val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
             val field = allFields.head
-            val args = valueCollector.getFieldArgumentValues(ExecutionPath.empty.add(astField, tpe), field.arguments, astField.arguments, unmarshalledVariables)
+            val args = valueCollector.getFieldArgumentValues(ExecutionPath.empty.add(astField, tpe), Some(astField), field.arguments, astField.arguments, unmarshalledVariables)
 
             args.toOption.map(PreparedField(field, _))
           case _ ⇒ None

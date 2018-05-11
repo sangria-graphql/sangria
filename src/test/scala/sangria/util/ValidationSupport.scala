@@ -84,6 +84,7 @@ trait ValidationSupport extends Matchers  {
 
   val ComplexInput = InputObjectType("ComplexInput", List(
     InputField("requiredField", BooleanType),
+    InputField("nonNullField", BooleanType, false),
     InputField("intField", OptionInputType(IntType)),
     InputField("stringField", OptionInputType(StringType)),
     InputField("booleanField", OptionInputType(BooleanType)),
@@ -126,6 +127,9 @@ trait ValidationSupport extends Matchers  {
       resolve = _ ⇒ None),
     Field("multipleReqs", OptionType(StringType),
       arguments = Argument("req1", IntType) :: Argument("req2", IntType) :: Nil,
+      resolve = _ ⇒ None),
+    Field("nonNullFieldWithDefault", OptionType(StringType),
+      arguments = Argument("arg", IntType, 0) :: Nil,
       resolve = _ ⇒ None),
     Field("multipleOpts", OptionType(StringType),
       arguments = Argument("opt1", OptionInputType(IntType), 0) :: Argument("opt2", OptionInputType(IntType), 0) :: Nil,

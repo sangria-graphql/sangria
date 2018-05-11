@@ -30,7 +30,7 @@ case class InputDocumentMaterializer[Vars](schema: Schema[_, _], variables: Vars
         case Success(vars) ⇒
           try {
             scheme.success(document.values flatMap { value ⇒
-              collector.coercionHelper.coerceInputValue(inputType, Nil, value, Some(vars), fromInput.marshaller, fromInput.marshaller, isArgument = false) match {
+              collector.coercionHelper.coerceInputValue(inputType, Nil, value, None, Some(vars), fromInput.marshaller, fromInput.marshaller, isArgument = false) match {
                 case Left(vs) ⇒ throw InputDocumentMaterializationError(vs, ExceptionHandler.empty)
                 case Right(coerced) ⇒ coerced.toOption.map(res ⇒ fromInput.fromResult(res))
               }

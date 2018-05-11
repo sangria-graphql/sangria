@@ -67,17 +67,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
           }
         }
       """)
-
-    "Int ⇒ Int! with default" in expectPasses(
-      """
-        query Query($intArg: Int = 1)
-        {
-          complicatedArgs {
-            nonNullIntArgField(nonNullIntArg: $intArg)
-          }
-        }
-      """)
-
+    
     "[String] ⇒ [String]" in expectPasses(
       """
         query Query($stringListVar: [String])
@@ -145,15 +135,7 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
           dog @include(if: $boolVar)
         }
       """)
-
-    "Boolean ⇒ Boolean! in directive with default" in expectPasses(
-      """
-        query Query($boolVar: Boolean = false)
-        {
-          dog @include(if: $boolVar)
-        }
-      """)
-
+    
     "Int ⇒ Int!" in expectFailsPosList(
       """
         query Query($intArg: Int)
@@ -252,5 +234,40 @@ class VariablesInAllowedPositionSpec extends WordSpec with ValidationSupport {
       List(
         "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean!'." → List(Pos(2, 21), Pos(4, 28))
       ))
+
+    "Allows optional (nullable) variables with default values" in expectFailsSimple(
+      """
+        query Query($intVar: Int = null) {
+          complicatedArgs {
+            nonNullIntArgField(nonNullIntArg: $intVar)
+          }
+        }
+      """,
+      "Variable '$intVar' of type 'Int' used in position expecting type 'Int!'." → Seq(Pos(2, 21), Pos(4, 47)))
+
+    "Int => Int! when variable provides non-null default value" in expectPasses(
+      """
+        query Query($intVar: Int = 1) {
+          complicatedArgs {
+            nonNullIntArgField(nonNullIntArg: $intVar)
+          }
+        }
+      """)
+
+    "Int => Int! when optional argument provides default value" in expectPasses(
+      """
+        query Query($intVar: Int) {
+          complicatedArgs {
+            nonNullFieldWithDefault(nonNullIntArg: $intVar)
+          }
+        }
+      """)
+
+    "Boolean => Boolean! in directive with default value with option" in expectPasses(
+      """
+        query Query($boolVar: Boolean = false) {
+          dog @include(if: $boolVar)
+        }
+      """)
   }
 }

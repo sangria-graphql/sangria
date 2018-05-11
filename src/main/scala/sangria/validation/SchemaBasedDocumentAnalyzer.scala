@@ -6,6 +6,7 @@ import sangria.ast.AstVisitor
 import sangria.visitor.VisitorCommand.{Continue, Skip}
 import sangria.schema._
 import sangria.introspection.isIntrospection
+import sangria.marshalling.ToInput
 import sangria.util.Cache
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
@@ -24,7 +25,7 @@ case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Docum
         AstVisitor {
           case _: ast.VariableDefinition ⇒ Skip
           case vv: ast.VariableValue ⇒
-            usages += VariableUsage(vv, typeInfo.inputType)
+            usages += VariableUsage(vv, typeInfo.inputType, typeInfo.defaultValue)
             Continue
         }
       }.toList
@@ -84,7 +85,7 @@ case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Docum
 }
 
 object SchemaBasedDocumentAnalyzer {
-  case class VariableUsage(node: ast.VariableValue, tpe: Option[InputType[_]])
+  case class VariableUsage(node: ast.VariableValue, tpe: Option[InputType[_]], defaultValue: Option[(_, ToInput[_, _])])
 
   sealed trait DeprecatedUsage extends Violation
 

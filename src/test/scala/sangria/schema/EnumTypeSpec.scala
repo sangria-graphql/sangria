@@ -61,14 +61,14 @@ class EnumTypeSpec extends WordSpec with Matchers with GraphQlSupport {
       (),
       """{ colorEnum(fromEnum: "GREEN") }""",
       Map("colorEnum" → null),
-      List("Argument 'fromEnum' has wrong value: Enum value expected." → List(Pos(1, 23))),
+      List("Argument 'fromEnum' has wrong value: Enum value expected." → List(Pos(1, 3), Pos(1, 23))),
       validateQuery = false)
 
     "does not accept internal value in place of enum literal" in checkContainsErrors(
       (),
       """{ colorEnum(fromEnum: 1) }""",
       Map("colorEnum" → null),
-      List("Argument 'fromEnum' has wrong value: Enum value expected." → List(Pos(1, 23))),
+      List("Argument 'fromEnum' has wrong value: Enum value expected." → List(Pos(1, 3), Pos(1, 23))),
       validateQuery = false)
 
     "accepts JSON string as enum variable" in check(

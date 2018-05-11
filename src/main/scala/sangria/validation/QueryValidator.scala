@@ -18,7 +18,6 @@ trait QueryValidator {
 object QueryValidator {
   val allRules: List[ValidationRule] = List(
     new ValuesOfCorrectType,
-    new VariablesDefaultValueAllowed,
     new ExecutableDefinitions,
     new FieldsOnCorrectType,
     new FragmentsOnCompositeType,
@@ -33,7 +32,7 @@ object QueryValidator {
     new NoUnusedVariables,
     new OverlappingFieldsCanBeMerged,
     new PossibleFragmentSpreads,
-    new ProvidedNonNullArguments,
+    new ProvidedRequiredArguments,
     new ScalarLeafs,
     new UniqueArgumentNames,
     new UniqueDirectivesPerLocation,
