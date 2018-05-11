@@ -72,9 +72,9 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Excepti
       case _ ⇒ Nil
     }
 
-  private def createLocation(loc: AstLocation) = marshaller.map(
-    "line" → marshaller.fromInt(loc.line),
-    "column" → marshaller.fromInt(loc.column))
+  private def createLocation(loc: AstLocation) = marshaller.mapNode(Seq(
+    "line" → marshaller.scalarNode(loc.line, "Int", Set.empty),
+    "column" → marshaller.scalarNode(loc.column, "Int", Set.empty)))
 
   private def errorNode(message: String, path: ExecutionPath, positions: List[AstLocation], additionalFields: Seq[(String, marshaller.Node)] = Nil, additionalExtensionFields: Seq[(String, marshaller.Node)] = Nil): marshaller.Node =
     mapNode(
@@ -90,7 +90,7 @@ class ResultResolver(val marshaller: ResultMarshaller, exceptionHandler: Excepti
     })
 
   private def messageFields(message: String): Seq[(String, marshaller.Node)] =
-    Seq("message" → marshaller.fromString(message))
+    Seq("message" → marshaller.scalarNode(message, "String", Set.empty))
 
   private def pathFields(path: ExecutionPath): Seq[(String, marshaller.Node)] =
     if (path.nonEmpty)

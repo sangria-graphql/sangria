@@ -6,6 +6,7 @@ import sangria.schema._
 import sangria.macros._
 import sangria.util.{DebugUtil, FutureResultSupport, OutputMatchers, StringMatchers}
 import sangria.validation.{AstNodeLocation, BadValueViolation, BaseViolation, UndefinedFieldViolation}
+import sangria.marshalling.MarshallingUtil._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
