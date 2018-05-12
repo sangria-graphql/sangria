@@ -10,10 +10,11 @@
 * Ambiguity with null variable values and default values **(spec change)** (#359). 
 * Add optional 'extensions' entry to errors **(spec change)** (#358). 
  
-  **CAUTION: breaking change.** All additional error object fields that were provided via `HandledException` are now added to the `extensions` field:
+  **CAUTION: breaking change.** All additional error object fields that were provided via `HandledException` are now added to the `extensions` field
   
-  ```graphql
-  // Before v1.4.1
+  Before v1.4.1:
+  
+  ```json
   {
     "data": {
       "books": null
@@ -26,8 +27,11 @@
       "mitigationStrategy": "Panic!"
     }]
   }
+  ```
   
-  // After v1.4.1
+  After v1.4.1:
+  
+  ```json
   {
     "data": {
       "books": null
@@ -44,8 +48,8 @@
   }
   ```
   
-  For backward-compatibility, `HandledException` now provides 2 additional fields: `addFieldsInExtensions` (by default `true`) and `addFieldsInError` (by default `false`). You can also set both of these flags to `true` in order to provide a migration path for the client applications.
-* Ensure interface has at least 1 concrete type **(spec change)** (#360). It is potentially a **minor breaking change**. You you have non-implemented interfaces in your schema, you temporary remove `InterfaceMustHaveImplementationValidationRule` schema validation rule.  
+  For backward-compatibility, `HandledException` now provides 2 additional fields: `addFieldsInExtensions` (by default `true`) and `addFieldsInError` (by default `false`). You can also set both flags to `true` in order to provide a migration path for the client applications.
+* Ensure interface has at least 1 concrete type **(spec change)** (#360). It is potentially a **minor breaking change**. If you have non-implemented interfaces in your schema, you can temporary remove `InterfaceMustHaveImplementationValidationRule` schema validation rule.  
 * Added a small `Cache` abstraction and replaced `TrieMap`-based cache implementation with `ConcurrentHashMap`. This change introduces potential minor performance improvements and compatibility with [GraalVM](https://www.graalvm.org/) `native-image`. 
 * Added `toAst` helper for different schema elements, like fields, enum values and types (#367)
 * Added macro setting to transform enum values' names with a macro setting (#350). Big thanks to @fehu for this contribution! The `UppercaseValues` macro setting is now deprecated in favour of more flexible `TransformValueNames`.   
