@@ -59,8 +59,9 @@ libraryDependencies ++= Seq(
 publishMavenStyle := true
 publishArtifact in Test := false
 pomIncludeRepository := (_ ⇒ false)
+PgpKeys.publishSignedConfiguration := PgpKeys.publishSignedConfiguration.value.withOverwrite(isSnapshot.value)
 publishTo := Some(
-  if (version.value.trim.endsWith("SNAPSHOT"))
+  if (isSnapshot.value)
     "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   else
     "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
