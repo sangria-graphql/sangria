@@ -250,7 +250,7 @@ package object introspection {
     fields = fields[Unit, Directive](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
-      Field("locations", ListType(__DirectiveLocation), resolve = _.value.locations.toVector.sortBy(_.toString)),
+      Field("locations", ListType(__DirectiveLocation), resolve = _.value.locations.toVector.sorted),
       Field("args", ListType(__InputValue), resolve = _.value.arguments),
       Field("onOperation", BooleanType,
         deprecationReason = Some("Use `locations`."),
