@@ -41,7 +41,7 @@ be sure to add `scala`, `graphql` and `sangria` tags, so that other people can e
 ## Gitter & Mailing List 
 
 For more general, lengthy discussions or pretty much anything else please join us in the 
-[gitter chat](https://gitter.im/sangria-graphql/sangria) (you also use a button at the bottom right) and [google groups](https://groups.google.com/forum/#!forum/sangria-graphql).
+[gitter chat](https://gitter.im/sangria-graphql/sangria) and [google groups](https://groups.google.com/forum/#!forum/sangria-graphql).
 
 ## Contribute
 
