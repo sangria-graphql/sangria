@@ -1,3 +1,8 @@
+## Upcoming
+
+* `AstSchemaMaterializer` now re-creates existing field argument types (thus able to use newly created input types)
+* Added visitor helpers in `AstNode` (they just delegate all functionality to `AstVisitor`)
+
 ## v1.4.1 (2018-05-12)
 
 * Added support for `extend schema` in SDL **(spec change)** (#362). It adds following syntax in the SDL:

@@ -412,7 +412,13 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
   def extendField(origin: MatOrigin, tpe: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]) = {
     val f = field.asInstanceOf[Field[Ctx, Any]]
 
-    builder.extendField(origin, tpe, f, builder.extendFieldType(origin, tpe, f, this), this)
+    builder.extendField(origin, tpe, f, builder.extendFieldType(origin, tpe, f, this), f.arguments.map(extendArgument(origin, tpe, f, _)), this)
+  }
+
+  def extendArgument(origin: MatOrigin, tpe: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, Any], argument: Argument[_]) = {
+    val a = argument.asInstanceOf[Argument[Any]]
+
+    builder.extendArgument(origin, tpe, field, a, builder.extendArgumentType(origin, tpe, field, a, this), this)
   }
 
   def extendInputField(origin: MatOrigin, tpe: InputObjectType[_], field: InputField[_]) = {

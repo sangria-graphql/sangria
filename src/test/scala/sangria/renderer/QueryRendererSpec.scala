@@ -565,7 +565,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
       "render queries with block strings (erase block meta-info)" in {
         val Success(origAst) = QueryParser.parse(FileUtil loadQuery "block-string.graphql")
 
-        val ast = AstVisitor.visit(origAst, AstVisitor {
+        val ast = origAst.visit(AstVisitor {
           case s: StringValue ⇒ VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
         })
 

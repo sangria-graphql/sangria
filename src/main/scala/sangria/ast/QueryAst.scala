@@ -490,6 +490,18 @@ sealed trait AstNode {
 
   def renderPretty: String = QueryRenderer.render(this, QueryRenderer.Pretty)
   def renderCompact: String = QueryRenderer.render(this, QueryRenderer.Compact)
+
+  def visit(visitor: AstVisitor): this.type =
+    AstVisitor.visit(this, visitor)
+
+  def visit(onEnter: AstNode ⇒ VisitorCommand, onLeave: AstNode ⇒ VisitorCommand): this.type =
+    AstVisitor.visit(this, onEnter, onLeave)
+
+  def visitAstWithTypeInfo(schema: Schema[_, _])(visitorFn: TypeInfo ⇒ AstVisitor): this.type =
+    AstVisitor.visitAstWithTypeInfo[this.type](schema, this)(visitorFn)
+
+  def visitAstWithState[S](schema: Schema[_, _], state: S)(visitorFn: (TypeInfo, S) ⇒ AstVisitor): S =
+    AstVisitor.visitAstWithState(schema, this, state)(visitorFn)
 }
 
 sealed trait SchemaAstNode extends AstNode with WithComments
