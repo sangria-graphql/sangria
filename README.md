@@ -8,7 +8,7 @@ SBT Configuration:
 
 ```scala
 libraryDependencies += "org.sangria-graphql" %% "sangria" % "1.4.1"
-```
+``` 
 
 You can find an example application that uses akka-http with sangria here:
 
@@ -25,6 +25,49 @@ where you can interactively execute GraphQL queries and play with some examples.
 If you want to use sangria with [react-relay](https://facebook.github.io/relay) framework, then you also may be interested in [sangria-relay](https://github.com/sangria-graphql/sangria-relay).
 
 Sangria is a spec compliant GraphQL implementation, so it works out of the box with [Apollo](https://github.com/apollographql/apollo-client), [Relay](https://facebook.github.io/relay/), [GraphiQL](https://github.com/graphql/graphiql) and other GraphQL tools and libraries.
+
+
+## Hello World Example
+
+In this example we will use [circe](https://github.com/circe/circe) JSON marshalling, so we also need to include following dependency:
+
+```scala
+libraryDependencies += "org.sangria-graphql" %% "sangria-circe" % "1.2.1"
+```
+
+The most simple Hello World application might look like this:
+
+```scala
+import sangria.schema._
+import sangria.execution._
+import sangria.macros._
+import sangria.marshalling.circe._
+import scala.concurrent.ExecutionContext.Implicits.global
+
+val QueryType = ObjectType("Query", fields[Unit, Unit](
+  Field("hello", StringType, resolve = _ ⇒ "Hello world!")
+))
+
+val schema = Schema(QueryType)
+
+val query = graphql"{ hello }"
+
+val result = Executor.execute(schema, query)
+
+result.foreach(res ⇒ println(res.spaces2))
+```
+
+this example will print following result JSON:
+
+```json
+{
+  "data" : {
+    "hello" : "Hello world!"
+  }
+}
+```
+
+For more complex example, I would recommend you to check out the [Getting Started Tutorial](https://sangria-graphql.org/getting-started/).
 
 ## Issues, Bugs, Ideas
 
