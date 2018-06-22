@@ -5,8 +5,8 @@ import scala.concurrent.Future
 
 class Fetcher[Ctx, Res, RelRes, Id](
   val idFn: Res ⇒ Id,
-  val fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]],
-  val fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+  val fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]],
+  val fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]],
   val config: FetcherConfig
 ) {
   def defer(id: Id) = FetcherDeferredOne(this, id)
@@ -91,28 +91,46 @@ class Fetcher[Ctx, Res, RelRes, Id](
 }
 
 object Fetcher {
-  private def relationUnsupported[Ctx, Id, Res]: (Ctx, RelationIds[Res]) ⇒ Future[Seq[Res]] =
+  private def relationUnsupported[Ctx, Id, Res]: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[Res]] =
     (_, _) ⇒ Future.failed(new RelationNotSupportedError)
 
-  private def relationOnlySupported[Ctx, Id, Res]: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]] =
+  private def relationOnlySupported[Ctx, Id, Res]: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]] =
     (_, _) ⇒ Future.failed(new RelationOnlySupportedError)
 
   def apply[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
+    new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), relationUnsupported, config)
+
+  def withContext[Ctx, Res, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
     new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), fetch, relationUnsupported, config)
 
   def rel[Ctx, Res, RelRes, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+    new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), (c, ids) ⇒ fetchRel(c.ctx, ids), config)
+
+  def relWithContext[Ctx, Res, RelRes, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), fetch, fetchRel, config)
 
   def relOnly[Ctx, Res, RelRes, Id](fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+    new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, (c, ids) ⇒ fetchRel(c.ctx, ids), config)
+
+  def relOnlyWithContext[Ctx, Res, RelRes, Id](fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, fetchRel, config)
 
   def caching[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
+    new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), relationUnsupported, config)
+
+  def cachingWithContext[Ctx, Res, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
     new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), fetch, relationUnsupported, config)
 
   def relCaching[Ctx, Res, RelRes, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+    new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), (c, ids) ⇒ fetchRel(c.ctx, ids), config)
+
+  def relCachingWithContext[Ctx, Res, RelRes, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), fetch, fetchRel, config)
 
   def relOnlyCaching[Ctx, Res, RelRes, Id](fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+    new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, (c, ids) ⇒ fetchRel(c.ctx, ids), config)
+
+  def relOnlyCachingWithContext[Ctx, Res, RelRes, Id](fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, fetchRel, config)
 }
 
@@ -210,6 +228,17 @@ case class RelationIds[Res](rawIds: Map[Relation[Res, _, _], Seq[_]]) {
 
   def get[RelId](relation: Relation[Res, _, RelId]): Option[Seq[RelId]] =
     rawIds.get(relation).asInstanceOf[Option[Seq[RelId]]]
+}
+
+case class FetcherContext[Ctx](
+  ctx: Ctx,
+  fetcher: Fetcher[Ctx, _, _, _],
+  cache: Option[FetcherCache],
+  allFetcherCaches: Map[AnyRef, FetcherCache],
+  allFetchers: Vector[Fetcher[Ctx, _, _, _]]
+) {
+  def cacheFor(fetcher: Fetcher[_, _, _, _]): Option[FetcherCache] =
+    allFetcherCaches.get(fetcher)
 }
 
 class RelationNotSupportedError extends Exception(s"Relations are not supported by Fetcher.")

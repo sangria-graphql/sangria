@@ -893,6 +893,52 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
               "name" → "Health potion")))),
       resolver = defaultResolver,
       userContext = new Repo)
+
+    "support manual cache updates" in {
+      var fetchedProdIds = Vector.empty[Seq[Int]]
+
+      val fetcherProd =
+        Fetcher.cachingWithContext[Repo, Product, Int] { (c, ids) ⇒
+          fetchedProdIds = fetchedProdIds :+ ids
+
+          c.ctx.loadProducts(ids)
+        }
+
+      val fetcherCat =
+        Fetcher.cachingWithContext[Repo, Category, String] { (c, ids) ⇒
+          c.ctx.loadCategories(ids).map { categories ⇒
+            c.cacheFor(fetcherProd).foreach { productCache ⇒
+              productCache.update(4, Product(4, "Manually Cached", categories.map(_.id).toVector))
+            }
+            
+            categories
+          }
+        }
+      
+      check(schema(fetcherCat, fetcherProd), (),
+        """
+          {
+            category(id: "5") {
+              name
+
+              products {
+                name
+              }
+            }
+          }
+        """,
+        Map(
+          "data" → Map(
+            "category" → Map(
+              "name" → "Cat 5",
+              "products" → Vector(
+                Map("name" → "Magic belt"),
+                Map("name" → "Manually Cached"))))),
+        resolver = DeferredResolver.fetchers(fetcherCat, fetcherProd),
+        userContext = new Repo)
+
+      fetchedProdIds.map(_.sorted) should be (Vector(Vector(2)))
+    }
   }
 
   "Fetcher" when {

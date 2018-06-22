@@ -46,9 +46,10 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
       case (Some(fetcher), d) ⇒
         val fetcherCache = fetcherCaches.get(fetcher)
         val (relDeferred, normalDeferred) = d partition fetcher.isRel
+        val fetcherContext = FetcherContext[Ctx](ctx, fetcher, fetcherCache, fetcherCaches, fetchers)
 
-        resolveRelations(ctx, fetcher, fetcherCache, relDeferred, resolved)
-        resolveEntities(ctx, fetcher, fetcherCache, normalDeferred, resolved)
+        resolveRelations(fetcherContext, relDeferred, resolved)
+        resolveEntities(fetcherContext, normalDeferred, resolved)
 
       case (None, deferred) ⇒
         fallback match {
@@ -68,27 +69,25 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
   }
 
   private def resolveRelations(
-    ctx: Ctx,
-    fetcher: Fetcher[_, _, _, _],
-    fetcherCache: Option[FetcherCache],
+    ctx: FetcherContext[Ctx] @uncheckedVariance,
     deferredToResolve: Vector[Deferred[Any]],
     resolved: MutableMap[Deferred[Any], Future[Any]]
   )(implicit ec: ExecutionContext) = {
-    val f = fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
-    val relIds = fetcher.relIds(deferredToResolve)
+    val f = ctx.fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
+    val relIds = ctx.fetcher.relIds(deferredToResolve)
 
-    val (nonCachedIds, cachedResults) = partitionCachedRel(fetcherCache, relIds)
+    val (nonCachedIds, cachedResults) = partitionCachedRel(ctx.cache, relIds)
 
     val newResults =
       if (nonCachedIds.nonEmpty)
         f.fetchRel(ctx, RelationIds(nonCachedIds.asInstanceOf[Map[Relation[Any, _, _], Seq[Any]]]))
-          .map(groupAndCacheRelations(fetcher, fetcherCache, nonCachedIds, _))
+          .map(groupAndCacheRelations(ctx, nonCachedIds, _))
       else
         Future.successful(MutableMap.empty[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]])
 
     deferredToResolve foreach { deferred ⇒
       resolved(deferred) = newResults.map { m ⇒
-        val f = fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
+        val f = ctx.fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
 
         deferred match {
           case FetcherDeferredRel(_, rel, relId) if cachedResults.contains(rel) && cachedResults(rel).contains(relId) ⇒
@@ -152,17 +151,15 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
   }
 
   private def resolveEntities(
-    ctx: Ctx,
-    fetcher: Fetcher[_, _, _, _],
-    fetcherCache: Option[FetcherCache],
+    ctx: FetcherContext[Ctx] @uncheckedVariance,
     deferredToResolve: Vector[Deferred[Any]],
     resolved: MutableMap[Deferred[Any], Future[Any]]
   )(implicit ec: ExecutionContext) = {
-    val f = fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
-    val ids = fetcher.ids(deferredToResolve)
-    val (nonCachedIds, cachedResults) = partitionCached(fetcherCache, ids)
+    val f = ctx.fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
+    val ids = ctx.fetcher.ids(deferredToResolve)
+    val (nonCachedIds, cachedResults) = partitionCached(ctx.cache, ids)
 
-    val groupedIds = fetcher.config.maxBatchSizeConfig match {
+    val groupedIds = ctx.fetcher.config.maxBatchSizeConfig match {
       case Some(size) ⇒ nonCachedIds.grouped(size)
       case None ⇒ Iterator(nonCachedIds)
     }
@@ -192,9 +189,9 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
     deferredToResolve foreach { deferred ⇒
       resolved(deferred) = futureRes.map { m ⇒
-        val f = fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
+        val f = ctx.fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
 
-        def updateCache[T](id: Any, v: T): T = fetcherCache match {
+        def updateCache[T](id: Any, v: T): T = ctx.cache match {
           case Some(cache) ⇒
             cache.update(id, v)
 
@@ -342,12 +339,12 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
         ids → MutableMap.empty
     }
 
-  private def groupAndCacheRelations(fetcher: Fetcher[_, _, _, _], fetcherCache: Option[FetcherCache], relIds: Map[Relation[Any, Any, Any], Vector[Any]], result: Seq[Any]): MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]] = {
+  private def groupAndCacheRelations(ctx: FetcherContext[_], relIds: Map[Relation[Any, Any, Any], Vector[Any]], result: Seq[Any]): MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]] = {
     val grouped = MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]]()
 
-    def updateCache[T](rel: Relation[Any, Any, Any], relId: Any, v: Seq[T]): Seq[T] = fetcherCache match {
+    def updateCache[T](rel: Relation[Any, Any, Any], relId: Any, v: Seq[T]): Seq[T] = ctx.cache match {
       case Some(cache) ⇒
-        cache.updateRel(rel, relId, fetcher.idFn.asInstanceOf[T ⇒ Any], v)
+        cache.updateRel(rel, relId, ctx.fetcher.idFn.asInstanceOf[T ⇒ Any], v)
 
         v
       case None ⇒ v
