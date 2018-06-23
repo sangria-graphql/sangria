@@ -19,6 +19,11 @@ object Violation {
       ""
 }
 
+trait SpecViolation {
+  def code: String
+  def args: Map[String, String]
+}
+
 abstract class BaseViolation(val errorMessage: String) extends Violation
 
 trait AstNodeLocation {
@@ -237,7 +242,10 @@ case class UnusedVariableViolation(name: String, operationName: Option[String], 
   lazy val simpleErrorMessage = s"Variable '$$$name' is not used${operationName.fold("")(" in operation " + _)}."
 }
 
-case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "noSubselectionAllowed"
+  val args = Map("fieldName" → fieldName, "type" → typeName)
+
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must not have a sub selection."
 }
 
@@ -245,7 +253,10 @@ case class SubscriptionSingleFieldOnlyViolation(opName: Option[String], sourceMa
   lazy val simpleErrorMessage = s"${opName.fold("Anonymous Subscription")(n ⇒ s"Subscription '$n'")} must select only one top level field."
 }
 
-case class RequiredSubselectionViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+case class RequiredSubselectionViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "requiredSubselection"
+  val args = Map("fieldName" → fieldName, "type" → typeName)
+
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must have a sub selection."
 }
 

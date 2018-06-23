@@ -1,0 +1,11 @@
+requiredSubselection:
+  message: Field "${fieldName}" of type "${type}" must have a selection of subfields. Did you mean "${fieldName} { ... }"?
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Leaf-Field-Selections
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/ScalarLeafs.js
+
+noSubselectionAllowed:
+  message: Field "${fieldName}" must not have a selection since type "${type}" has no subfields.
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Leaf-Field-Selections
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/ScalarLeafs.js

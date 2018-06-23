@@ -23,7 +23,7 @@ class ScalarLeafs extends ValidationRule {
               case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty ⇒
                 Left(Vector(NoSubselectionAllowedViolation(name, SchemaRenderer.renderTypeName(tpe, true), ctx.sourceMapper, pos.toList)))
               case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty ⇒
-                Left(Vector(RequiredSubselectionViolation(name, SchemaRenderer.renderTypeName(tpe, true), ctx.sourceMapper, pos.toList)))
+                Left(Vector(RequiredSubselectionViolation(name, SchemaRenderer.renderTypeName(fieldType, false), ctx.sourceMapper, pos.toList)))
               case _ ⇒ AstVisitorCommand.RightContinue
             }
           case None ⇒ AstVisitorCommand.RightContinue

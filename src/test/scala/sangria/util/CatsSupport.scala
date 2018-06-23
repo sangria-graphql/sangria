@@ -306,6 +306,19 @@ object CatsAssertions extends Matchers {
           assertLocations(v.get, locations)
       }
 
+    case (ValidationResult(violations), ErrorCode(code, args, locations)) ⇒
+      val v = withClue(s"Can't find error code '$code'${if (args.nonEmpty) s" with args: ${args.map{case (k, v) ⇒ k + " = " + v}.mkString(", ")}" else ""}") {
+        val v = violations.collect{case v: SpecViolation ⇒ v}.find(v ⇒ v.code == code && v.args == args)
+
+        withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
+          v should not be 'empty
+        }
+
+        v
+      }
+
+      assertLocations(v.get, locations)
+
     case (ExecutionResult(res), ExceptionContain(message)) ⇒
       res match {
         case Failure(error) ⇒
@@ -382,6 +395,7 @@ object CatsScenarioData {
   case class Data(json: JsValue) extends Assertion
   case class ErrorsCount(count: Int) extends Assertion
   case class ErrorsContain(message: Either[String, Pattern], locations: List[ErrorLocation]) extends Assertion
+  case class ErrorCode(code: String, args: Map[String, String], locations: List[ErrorLocation]) extends Assertion
   case class ExceptionContain(message: Either[String, Pattern]) extends Assertion
 
   case class ErrorLocation(line: Int, column: Int)
@@ -435,6 +449,11 @@ object CatsScenarioData {
     case obj ⇒ ErrorLocation(obj("line").intValue, obj("column").intValue)
   }
 
+  def getErrorArgs(value: YamlValue) = value.get("args") match {
+    case Some(YamlObject(elems)) ⇒ elems.map {case (key, value) ⇒ key.stringValue → value.stringValue}
+    case _ ⇒ Map.empty[String, String]
+  }
+
   def getErrorLocations(value: YamlValue) =
     value.get("loc") match {
       case Some(YamlArray(values)) ⇒ values map getErrorLocation
@@ -447,6 +466,7 @@ object CatsScenarioData {
       .orElse(value.get("error-count").map(v ⇒ ErrorsCount(v.intValue)))
       .orElse(value.get("error").map(v ⇒ ErrorsContain(Left(v.stringValue), getErrorLocations(value).toList)))
       .orElse(value.get("error-regex").map(v ⇒ ErrorsContain(Right(v.stringValue.r.pattern), getErrorLocations(value).toList)))
+      .orElse(value.get("error-code").map(v ⇒ ErrorCode(v.stringValue, getErrorArgs(value), getErrorLocations(value).toList)))
       .orElse(value.get("exception").map(v ⇒ ExceptionContain(Left(v.stringValue))))
       .orElse(value.get("exception-regex").map(v ⇒ ExceptionContain(Right(v.stringValue.r.pattern))))
       .orElse(value.get("data").map(v ⇒ Data(convertToJson(v))))

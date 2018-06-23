@@ -32,7 +32,7 @@ class ScalarLeafsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'pets' of type 'Pet' must have a sub selection." → Some(Pos(3, 19))
+        "Field 'pets' of type '[Pet]' must have a sub selection." → Some(Pos(3, 19))
       ))
 
     "valid scalar selection with args" in expectPasses(
