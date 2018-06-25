@@ -250,6 +250,17 @@ object CatsAssertions extends Matchers {
     }
   }
 
+  def sameLocations(violation: Violation, locations: List[ErrorLocation]) = {
+    if (!violation.isInstanceOf[AstNodeLocation] && locations.nonEmpty) false
+    else {
+      val withLoc = violation.asInstanceOf[AstNodeLocation]
+
+      withLoc.locations.size == locations.size && withLoc.locations.zipWithIndex.forall { case (pos, idx) ⇒
+        ErrorLocation(pos.line, pos.column) == locations(idx)
+      }
+    }
+  }
+
   def assertLocations(error: JsValue, locations: List[ErrorLocation]) = {
     val actualLocs = error.get("locations") map (_.arrayValue) getOrElse Vector.empty
 
@@ -307,17 +318,13 @@ object CatsAssertions extends Matchers {
       }
 
     case (ValidationResult(violations), ErrorCode(code, args, locations)) ⇒
-      val v = withClue(s"Can't find error code '$code'${if (args.nonEmpty) s" with args: ${args.map{case (k, v) ⇒ k + " = " + v}.mkString(", ")}" else ""}") {
-        val v = violations.collect{case v: SpecViolation ⇒ v}.find(v ⇒ v.code == code && v.args == args)
+      withClue(s"Can't find error code '$code'${if (args.nonEmpty) s" with args: ${args.map{case (k, v) ⇒ k + " = " + v}.mkString(", ")}" else ""}${if (locations.nonEmpty) s" ${locations.map{case l ⇒ l.line + ":" + l.column}.mkString("(",", ", ")")}" else ""}.") {
+        val v = violations.collect {case v: SpecViolation ⇒ v}.find(v ⇒ v.code == code && v.args == args && sameLocations(v, locations))
 
-        withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
+        withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString("\n", "\n", "\n")}") {
           v should not be 'empty
         }
-
-        v
       }
-
-      assertLocations(v.get, locations)
 
     case (ExecutionResult(res), ExceptionContain(message)) ⇒
       res match {

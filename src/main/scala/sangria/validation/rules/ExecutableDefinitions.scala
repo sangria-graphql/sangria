@@ -25,12 +25,13 @@ class ExecutableDefinitions extends ValidationRule {
     }
   }
   
-  def definitionName(definition: ast.Definition): Option[String] = definition match {
-    case d: ast.FragmentDefinition ⇒ Some(d.name)
-    case d: ast.OperationDefinition ⇒ d.name
-    case d: ast.TypeDefinition ⇒ Some(d.name)
-    case d: ast.DirectiveDefinition ⇒ Some(d.name)
-    case d: ast.SchemaDefinition ⇒ None
-    case d: ast.TypeExtensionDefinition ⇒ Some(d.name)
+  def definitionName(definition: ast.Definition): String = definition match {
+    case d: ast.FragmentDefinition ⇒ d.name
+    case d: ast.OperationDefinition ⇒ d.name getOrElse "unnamed operation"
+    case d: ast.TypeDefinition ⇒ d.name
+    case d: ast.DirectiveDefinition ⇒ d.name
+    case d: ast.SchemaDefinition ⇒ "schema"
+    case d: ast.TypeExtensionDefinition ⇒ d.name
+    case d: ast.SchemaExtensionDefinition ⇒ "schema"
   }
 }

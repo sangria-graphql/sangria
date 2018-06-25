@@ -260,11 +260,11 @@ case class RequiredSubselectionViolation(fieldName: String, typeName: String, so
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must have a sub selection."
 }
 
-case class NonExecutableDefinitionViolation(name: Option[String], definition: Definition, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = name match {
-    case Some(n) ⇒ s"The '$n' definition is not executable."
-    case None ⇒ "Query document contains non-executable definitions."
-  }
+case class NonExecutableDefinitionViolation(definitionName: String, definition: Definition, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "nonExecutableDefinition"
+  val args = Map("defName" → definitionName)
+
+  lazy val simpleErrorMessage = s"The '$definitionName' definition is not executable."
 }
 
 case class DuplicateDirectiveViolation(directiveName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
