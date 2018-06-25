@@ -321,7 +321,7 @@ object CatsAssertions extends Matchers {
       withClue(s"Can't find error code '$code'${if (args.nonEmpty) s" with args: ${args.map{case (k, v) ⇒ k + " = " + v}.mkString(", ")}" else ""}${if (locations.nonEmpty) s" ${locations.map{case l ⇒ l.line + ":" + l.column}.mkString("(",", ", ")")}" else ""}.") {
         val v = violations.collect {case v: SpecViolation ⇒ v}.find(v ⇒ v.code == code && v.args == args && sameLocations(v, locations))
 
-        withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString("\n", "\n", "\n")}") {
+        withClue(s"Actual violations:\n${violations map (v ⇒ "* " + s"[${v.getClass.getSimpleName}] " + v.errorMessage) mkString("\n", "\n", "\n")}") {
           v should not be 'empty
         }
       }

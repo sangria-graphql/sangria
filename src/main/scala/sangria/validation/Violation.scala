@@ -179,7 +179,10 @@ case class UndefinedFieldViolation(
   suggestedFieldNames: Seq[String],
   sourceMapper: Option[SourceMapper],
   locations: List[AstLocation]
-) extends AstNodeViolation {
+) extends AstNodeViolation  with SpecViolation {
+  val code = "undefinedField"
+  val args = Map("fieldName" → fieldName, "type" → typeName)
+
   lazy val simpleErrorMessage = {
     val message = s"Cannot query field '$fieldName' on type '$typeName'."
     val didYouMean =

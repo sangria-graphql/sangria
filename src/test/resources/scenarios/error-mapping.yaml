@@ -15,3 +15,9 @@ nonExecutableDefinition:
   references:
     spec: http://facebook.github.io/graphql/June2018/#sec-Executable-Definitions
     implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/ExecutableDefinitions.js
+
+undefinedField:
+  message: Cannot query field "${fieldName}" on type "${type}".
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/FieldsOnCorrectType.js
