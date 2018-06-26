@@ -12,7 +12,7 @@ import sangria.validation.{InlineFragmentOnNonCompositeErrorViolation, FragmentO
  * can only be spread into a composite type (object, interface, or union), the
  * type condition must also be a composite type.
  */
-class FragmentsOnCompositeType extends ValidationRule {
+class FragmentsOnCompositeTypes extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
       case ast.InlineFragment(Some(cond), _, _, _, _, pos) ⇒

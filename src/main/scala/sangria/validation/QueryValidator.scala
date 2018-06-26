@@ -20,7 +20,7 @@ object QueryValidator {
     new ValuesOfCorrectType,
     new ExecutableDefinitions,
     new FieldsOnCorrectType,
-    new FragmentsOnCompositeType,
+    new FragmentsOnCompositeTypes,
     new KnownArgumentNames,
     new KnownDirectives,
     new KnownFragmentNames,

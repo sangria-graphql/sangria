@@ -3,9 +3,9 @@ package sangria.validation.rules
 import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
 
-class FragmentsOnCompositeTypeSpec extends WordSpec with ValidationSupport {
+class FragmentsOnCompositeTypesSpec extends WordSpec with ValidationSupport {
 
-  override val defaultRule = Some(new FragmentsOnCompositeType)
+  override val defaultRule = Some(new FragmentsOnCompositeTypes)
 
   "Validate: Fragments on composite types" should {
     "object is valid fragment type" in expectPasses(

@@ -21,3 +21,14 @@ undefinedField:
   references:
     spec: http://facebook.github.io/graphql/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
     implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/FieldsOnCorrectType.js
+
+fragmentOnNonCompositeType:
+  message: Fragment "${fragmentName}" cannot condition on non composite type "${type}".
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Fragments-On-Composite-Types
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/FragmentsOnCompositeTypes.js
+
+inlineFragmentOnNonCompositeType:
+  message: Fragment cannot condition on non composite type "${type}".
+  references: http://facebook.github.io/graphql/June2018/#sec-Fragments-On-Composite-Types
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/FragmentsOnCompositeTypes.js

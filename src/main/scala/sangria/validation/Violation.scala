@@ -193,11 +193,17 @@ case class UndefinedFieldViolation(
   }
 }
 
-case class InlineFragmentOnNonCompositeErrorViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+case class InlineFragmentOnNonCompositeErrorViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with  SpecViolation {
+  val code = "inlineFragmentOnNonCompositeType"
+  val args = Map("type" → typeName)
+
   lazy val simpleErrorMessage = s"Fragment cannot condition on non composite type '$typeName'."
 }
 
-case class FragmentOnNonCompositeErrorViolation(fragName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+case class FragmentOnNonCompositeErrorViolation(fragName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "fragmentOnNonCompositeType"
+  val args = Map("fragmentName" → fragName, "type" → typeName)
+
   lazy val simpleErrorMessage = s"Fragment '$fragName' cannot condition on non composite type '$typeName'."
 }
 
