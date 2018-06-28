@@ -207,11 +207,17 @@ case class FragmentOnNonCompositeErrorViolation(fragName: String, typeName: Stri
   lazy val simpleErrorMessage = s"Fragment '$fragName' cannot condition on non composite type '$typeName'."
 }
 
-case class UnknownArgViolation(argName: String, fieldName: String, typeName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+case class UnknownArgViolation(argName: String, fieldName: String, typeName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "unknownArgument"
+  val args = Map("argumentName" → argName, "fieldName" → fieldName, "typeName" → typeName)
+
   lazy val simpleErrorMessage = s"Unknown argument '$argName' on field '$fieldName' of type '$typeName'.${Violation.didYouMean(suggestedArgs)}"
 }
 
-case class UnknownDirectiveArgViolation(argName: String, dirName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+case class UnknownDirectiveArgViolation(argName: String, dirName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "unknownDirectiveArgument"
+  val args = Map("argumentName" → argName, "directiveName" → dirName)
+
   lazy val simpleErrorMessage = s"Unknown argument '$argName' on directive '$dirName'.${Violation.didYouMean(suggestedArgs)}"
 }
 

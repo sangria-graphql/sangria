@@ -30,5 +30,18 @@ fragmentOnNonCompositeType:
 
 inlineFragmentOnNonCompositeType:
   message: Fragment cannot condition on non composite type "${type}".
-  references: http://facebook.github.io/graphql/June2018/#sec-Fragments-On-Composite-Types
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Fragments-On-Composite-Types
     implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/FragmentsOnCompositeTypes.js
+
+unknownArgument:
+  message: Unknown argument "${argumentName}" on field "${fieldName}" of type "${typeName}".
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Argument-Names
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/KnownArgumentNames.js
+
+unknownDirectiveArgument:
+  message: Unknown argument "${argumentName}" on directive "@${directiveName}".
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Argument-Names
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/KnownArgumentNames.js
