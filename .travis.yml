@@ -4,12 +4,12 @@ scala:
   - 2.11.12
 jdk:
   - oraclejdk8
-  - oraclejdk9
+  - oraclejdk10
 
 matrix:
   exclude:
     - scala: 2.11.12
-      jdk: oraclejdk9
+      jdk: oraclejdk10
 
 script: |
   sbt ++$TRAVIS_SCALA_VERSION clean coverage test
