@@ -43,8 +43,16 @@ class Resolver[Ctx](
 
   def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val actions = collectActionsPar(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, userContext)
+    val resolvedActionPar = resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)
 
-   handleScheme(processFinalResolve(resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)) map (_ → userContext), scheme)
+    val newCtx = resolvedActionPar match {
+      case Result(_, _, Some(ctx)) => ctx
+      case _ => userContext
+    }
+
+    val finalResolve = processFinalResolve(resolvedActionPar) map (_ -> newCtx)
+
+    handleScheme(finalResolve, scheme)
   }
 
   def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
@@ -727,7 +735,7 @@ class Resolver[Ctx](
         val simpleRes = resolvedValues.collect {case (af, r: Result) ⇒ af → r}
 
         val resSoFar = simpleRes.foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
-          case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path.add(astField, tpe), astField.location, res.errors)
+          case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path.add(astField, tpe), astField.location, res.errors, other.userContext)
         }
 
         val complexRes = resolvedValues.collect{case (af, r: DeferredResult) ⇒ af → r}
@@ -737,7 +745,7 @@ class Resolver[Ctx](
           val allDeferred = complexRes.flatMap(_._2.deferred)
           val finalValue = Future.sequence(complexRes.map {case (astField, DeferredResult(_, future)) ⇒  future map (astField → _)}) map { results ⇒
             results.foldLeft(resSoFar) {
-              case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path.add(astField, tpe), astField.location, res.errors)
+              case (res, (astField, other)) ⇒ res addToMap (other, astField.outputName, isOptional(tpe, astField.name), path.add(astField, tpe), astField.location, res.errors, other.userContext)
             }.buildValue
           }
 
@@ -868,7 +876,7 @@ class Resolver[Ctx](
 
                 Some(marshalScalarValue(coercedWithMiddleware, marshaller, scalar.name, scalar.scalarInfo))
               }
-            })
+              },Some(userCtx))
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
@@ -886,7 +894,7 @@ class Resolver[Ctx](
                 None
               else
                 Some(marshalEnumValue(coerced, marshaller, enum.name))
-            })
+              }, Some(userCtx))
         } catch {
           case NonFatal(e) ⇒ Result(ErrorRegistry(path, e), None)
         }
@@ -1113,6 +1121,18 @@ class Resolver[Ctx](
                           res.nextCtx,
                           if (mAfter.nonEmpty) doAfterMiddlewareWithMap(res.mapFn) else res.mapFn,
                           if (mError.nonEmpty) doErrorMiddleware else identity)))
+
+                    case res: MappedActionAndUpdateCtx[Ctx, Any @unchecked, Any @unchecked] => {
+                      StandardFieldResolution(
+                        errors,
+                        res.action,
+                        Some(MappedCtxUpdate(
+                          res.nextCtx,
+                          if (mAfter.nonEmpty) doAfterMiddlewareWithMap(res.mapFn) else res.mapFn,
+                          if (mError.nonEmpty) doErrorMiddleware else identity)
+                      ))
+                    }
+
                   }
 
                 res match {
@@ -1195,7 +1215,7 @@ class Resolver[Ctx](
 
   case class Defer(promise: Promise[(ChildDeferredContext, Any, Vector[Throwable])], deferred: Deferred[Any], complexity: Double, field: Field[_, _], astFields: Vector[ast.Field], args: Args) extends DeferredWithInfo
   case class Result(errors: ErrorRegistry, value: Option[Any /* Either marshaller.Node or marshaller.MapBuilder */], userContext: Option[Ctx] = None) extends Resolve {
-    def addToMap(other: Result, key: String, optional: Boolean, path: ExecutionPath, position: Option[AstLocation], updatedErrors: ErrorRegistry) =
+    def addToMap(other: Result, key: String, optional: Boolean, path: ExecutionPath, position: Option[AstLocation], updatedErrors: ErrorRegistry, updatedContext: Option[Ctx] = None) =
       copy(
         errors =
             if (!optional && other.value.isEmpty && other.errors.isEmpty)
@@ -1206,7 +1226,9 @@ class Resolver[Ctx](
             if (optional && other.value.isEmpty)
               value map (v ⇒ marshaller.addMapNodeElem(v.asInstanceOf[marshaller.MapBuilder], key, marshaller.nullNode, optional = false))
             else
-              for {myVal ← value; otherVal ← other.value} yield marshaller.addMapNodeElem(myVal.asInstanceOf[marshaller.MapBuilder], key, otherVal.asInstanceOf[marshaller.Node], optional = false))
+              for {myVal ← value; otherVal ← other.value} yield marshaller.addMapNodeElem(myVal.asInstanceOf[marshaller.MapBuilder], key, otherVal.asInstanceOf[marshaller.Node], optional = false),
+        userContext = if(updatedContext.isDefined) updatedContext else userContext
+      )
 
     def nodeValue = value.asInstanceOf[Option[marshaller.Node]]
     def builderValue = value.asInstanceOf[Option[marshaller.MapBuilder]]

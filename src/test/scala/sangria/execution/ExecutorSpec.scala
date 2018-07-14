@@ -1067,5 +1067,98 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
                 "locations" → Vector(Map("line" → 1, "column" → (5 + offset)))))))
       }
     }
+
+    "support for ActionAndUpdateCtx in queries" in {
+      import ExecutionScheme.Extended
+
+      case class MyCtx(info: String)
+
+      case class ComplexModel(name: String, surname: String)
+      case class BasicModel(name: String)
+      case class WrappedModel[T](value: T, meta: String)
+
+      val BasicModelType = ObjectType[Unit, BasicModel](
+        "BasicModel",
+        fields[Unit, BasicModel](
+          Field("name", StringType, resolve = _.value.name)
+        )
+      )
+
+      val ctx = MyCtx("EMPTY")
+
+      def wrapped: WrappedModel[ComplexModel] = WrappedModel(ComplexModel("John", "Doe"), "META INFO")
+
+      val QueryType = ObjectType("Query", fields[MyCtx, Unit](
+        Field("basic", BasicModelType,
+          resolve = ctx => ActionAndUpdateCtx[MyCtx, WrappedModel[ComplexModel], BasicModel](wrapped, cm => BasicModel(s"${cm.value.name} ${cm.value.surname}")){
+            wrapped =>
+              ctx.ctx.copy(info = wrapped.meta)
+          })))
+
+      val schema = Schema(QueryType)
+
+      val exceptionHandler = ExceptionHandler {
+        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+      }
+
+      val query =
+        graphql"""
+          query {
+            q1: basic {
+             name
+            }
+          }
+        """
+
+      val result = Executor.execute(schema, query, ctx,
+        exceptionHandler = exceptionHandler).await
+
+      result.result.asInstanceOf[Map[String, Any]]("data") should be (
+        Map("q1" → Map("name" -> "John Doe")))
+
+      result.ctx.info shouldEqual "META INFO"
+    }
+
+    "support for ActionAndUpdateCtx in mutations" in {
+      import ExecutionScheme.Extended
+
+      case class MyCtx(acc: String)
+
+      val ctx = MyCtx("")
+
+      case class BasicModel(name: String)
+
+      val QueryType = ObjectType("Query", fields[MyCtx, Unit](
+        Field("hello", StringType, resolve = _ ⇒ "world")))
+
+      val MutationType = ObjectType("Mutation", fields[MyCtx, Unit](
+        Field("addModel", StringType,
+          arguments = Argument("name", StringType) :: Nil,
+          resolve = c => ActionAndUpdateCtx[MyCtx, BasicModel, String](Future(BasicModel(c.ctx.acc + c.arg[String]("name"))),_.name ){
+            bm =>
+              c.ctx.copy(bm.name+" ")
+          }
+      )))
+
+      val schema = Schema(QueryType, Some(MutationType))
+
+      val query =
+        graphql"""
+          mutation {
+            a1: addModel(name: "One")
+            a2: addModel(name: "Two")
+            a3: addModel(name: "Three")
+          }
+        """
+
+      val result = Executor.execute(schema, query, ctx).await
+
+      result.result.asInstanceOf[Map[String, Any]]("data") should be (
+        Map("a1" → "One", "a2" → "One Two", "a3" → "One Two Three"))
+
+      result.ctx.acc shouldEqual "One Two Three "
+    }
+
+
   }
 }
