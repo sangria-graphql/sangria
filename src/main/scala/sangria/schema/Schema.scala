@@ -706,6 +706,28 @@ object DirectiveLocation extends Enumeration {
     case "INPUT_OBJECT" ⇒ InputObject
     case "INPUT_FIELD_DEFINITION" ⇒ InputFieldDefinition
   }
+
+  def toSpecString(location: DirectiveLocation.Value): String = location match {
+    case Query ⇒ "QUERY"
+    case Mutation ⇒ "MUTATION"
+    case Subscription ⇒ "SUBSCRIPTION"
+    case Field ⇒ "FIELD"
+    case FragmentDefinition ⇒ "FRAGMENT_DEFINITION"
+    case FragmentSpread ⇒ "FRAGMENT_SPREAD"
+    case InlineFragment ⇒ "INLINE_FRAGMENT"
+
+    case Schema ⇒ "SCHEMA"
+    case Scalar ⇒ "SCALAR"
+    case Object ⇒ "OBJECT"
+    case FieldDefinition ⇒ "FIELD_DEFINITION"
+    case ArgumentDefinition ⇒ "ARGUMENT_DEFINITION"
+    case Interface ⇒ "INTERFACE"
+    case Union ⇒ "UNION"
+    case Enum ⇒ "ENUM"
+    case EnumValue ⇒ "ENUM_VALUE"
+    case InputObject ⇒ "INPUT_OBJECT"
+    case InputFieldDefinition ⇒ "INPUT_FIELD_DEFINITION"
+  }
 }
 
 case class Directive(

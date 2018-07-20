@@ -1,8 +1,8 @@
 package sangria.validation
 
-import sangria.ast.AstLocation
-import sangria.ast.Definition
+import sangria.ast.{AstLocation, Definition}
 import sangria.parser.SourceMapper
+import sangria.schema.DirectiveLocation
 import sangria.schema.Named.NameRegexp
 import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
@@ -221,12 +221,18 @@ case class UnknownDirectiveArgViolation(argName: String, dirName: String, sugges
   lazy val simpleErrorMessage = s"Unknown argument '$argName' on directive '$dirName'.${Violation.didYouMean(suggestedArgs)}"
 }
 
-case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
+case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "unknownDirective"
+  val args = Map("directiveName" → name)
+
   lazy val simpleErrorMessage = s"Unknown directive '$name'."
 }
 
-case class MisplacedDirectiveViolation(name: String, placement: Option[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Directive '$name' may not be used ${placement.fold("here")("on " + _)}."
+case class MisplacedDirectiveViolation(name: String, correctPlacement: Option[(DirectiveLocation.Value, String)], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
+  val code = "misplacedDirective"
+  val args = Map("directiveName" → name, "location" → correctPlacement.map(loc ⇒ DirectiveLocation.toSpecString(loc._1)).getOrElse("here"))
+
+  lazy val simpleErrorMessage = s"Directive '$name' may not be used ${correctPlacement.fold("here")("on " + _._2)}."
 }
 
 case class UnknownFragmentViolation(name: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {

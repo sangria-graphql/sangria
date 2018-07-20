@@ -45,3 +45,15 @@ unknownDirectiveArgument:
   references:
     spec: http://facebook.github.io/graphql/June2018/#sec-Argument-Names
     implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/KnownArgumentNames.js
+
+unknownDirective:
+  message: Unknown directive "${directiveName}".
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Directives-Are-Defined
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/KnownDirectives.js
+
+misplacedDirective:
+  message: Directive "${directiveName}" may not be used on ${location}.
+  references:
+    spec: http://facebook.github.io/graphql/June2018/#sec-Directives-Are-In-Valid-Locations
+    implementation: https://github.com/graphql/graphql-js/blob/master/src/validation/rules/KnownDirectives.js
