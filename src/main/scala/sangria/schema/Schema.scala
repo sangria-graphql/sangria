@@ -223,35 +223,39 @@ case class InterfaceType[Ctx, Val](
   description: Option[String] = None,
   fieldsFn: () ⇒ List[Field[Ctx, Val]],
   interfaces: List[InterfaceType[Ctx, _]],
+  manualPossibleInterfaces: () ⇒ List[InterfaceType[_, _]],
   manualPossibleTypes: () ⇒ List[ObjectType[_, _]],
   astDirectives: Vector[ast.Directive],
   astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends ObjectLikeType[Ctx, Val] with AbstractType {
+  def withPossibleInterfaces(possible: PossibleInterface[Ctx, Val]*) = copy(manualPossibleInterfaces = () ⇒ possible.toList map (_.interfaceType))
+  def withPossibleInterfaces(possible: () ⇒ List[PossibleInterface[Ctx, Val]]) = copy(manualPossibleInterfaces = () ⇒ possible() map (_.interfaceType))
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) = copy(manualPossibleTypes = () ⇒ possible.toList map (_.objectType))
   def withPossibleTypes(possible: () ⇒ List[PossibleObject[Ctx, Val]]) = copy(manualPossibleTypes = () ⇒ possible() map (_.objectType))
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object InterfaceType {
+  val emptyPossibleInterfaces: () ⇒ List[InterfaceType[_, _]] = () ⇒ Nil
   val emptyPossibleTypes: () ⇒ List[ObjectType[_, _]] = () ⇒ Nil
 
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = () ⇒ fields, Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, None, fieldsFn = () ⇒ fields, Nil, emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = () ⇒ fields, Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, Some(description), fieldsFn = () ⇒ fields, Nil, emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn = () ⇒ fields, interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, None, fieldsFn = () ⇒ fields, interfaces map (_.interfaceType), emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fields: List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn = () ⇒ fields, interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, Some(description), fieldsFn = () ⇒ fields, interfaces map (_.interfaceType), emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
 
   def apply[Ctx, Val](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn, Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, None, fieldsFn, Nil, emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn, Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, Some(description), fieldsFn, Nil, emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, fieldsFn: () ⇒ List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, None, fieldsFn, interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, None, fieldsFn, interfaces map (_.interfaceType), emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
   def apply[Ctx, Val](name: String, description: String, fieldsFn: () ⇒ List[Field[Ctx, Val]], interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
-    InterfaceType(name, Some(description), fieldsFn, interfaces map (_.interfaceType), emptyPossibleTypes, Vector.empty, Vector.empty)
+    InterfaceType(name, Some(description), fieldsFn, interfaces map (_.interfaceType), emptyPossibleInterfaces, emptyPossibleTypes, Vector.empty, Vector.empty)
 }
 
 case class PossibleInterface[Ctx, Concrete](interfaceType: InterfaceType[Ctx, _])
@@ -290,6 +294,7 @@ object PossibleType {
 case class UnionType[Ctx](
     name: String,
     description: Option[String] = None,
+    interfaces: List[InterfaceType[Ctx, _]],
     types: List[ObjectType[Ctx, _]],
     astDirectives: Vector[ast.Directive] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType with HasAstInfo {
@@ -844,8 +849,11 @@ case class Schema[Ctx, Val](
           t.interfaces.foldLeft(withPossible) {
             case (acc, interface) ⇒ collectTypes(s"an interface defined in '${t.name}' type", priority, interface, acc)
           }
-        case t @ UnionType(name, _, types, _, _) ⇒
-          types.foldLeft(updated(priority, name, t, result, parentInfo)) {case (acc, tpe) ⇒ collectTypes(s"a '$name' type", priority, tpe, acc)}
+        case t @ UnionType(name, _, interfaces, types, _, _) ⇒
+          val c0 = updated(priority, name, t, result, parentInfo)
+          val c1 = interfaces.foldLeft(c0) {case (acc, tpe) ⇒ collectTypes(s"a '$name' type", priority, tpe, acc)}
+          val c2 = types.foldLeft(c1) {case (acc, tpe) ⇒ collectTypes(s"a '$name' type", priority, tpe, acc)}
+          c2
       }
     }
 
@@ -887,6 +895,36 @@ case class Schema[Ctx, Val](
     case ast.NotNullType(ofType, _) ⇒ getOutputType(ofType) collect {case OptionType(ot) ⇒ ot}
     case ast.ListType(ofType, _) ⇒ getOutputType(ofType) map (ListType(_))
   }
+
+  lazy val directInterfaces: Map[String, Vector[InterfaceType[_, _]]] = {
+    typeList
+      .collect{case interface: InterfaceType[_, _] ⇒ interface}
+      .flatMap(interface ⇒ interface.interfaces map (_.name → interface))
+      .groupBy(_._1)
+      .mapValues(_ map (_._2))
+  }
+
+  lazy val interfaces: Map[String, Vector[InterfaceType[_, _]]] = {
+    def findRefinedInterfaces(tpe: InterfaceType[_, _]): Vector[InterfaceType[_, _]] = tpe match {
+      case interface: InterfaceType[_, _] ⇒
+        val result = directInterfaces.getOrElse(interface.name, Vector.empty) flatMap { x =>
+          x +: findRefinedInterfaces(x)
+        }
+        result
+    }
+
+    directInterfaces map {
+      case (name, refinedInterfaces) ⇒
+        val all = refinedInterfaces.flatMap { ri => ri +: findRefinedInterfaces(ri) }.groupBy(_.name).map(_._2.head).toVector
+        name → all
+    }
+  }
+
+  lazy val possibleInterfaces: Map[String, Vector[InterfaceType[_, _]]] =
+    interfaces ++ unionTypes.values.map(ut ⇒ ut.name → ut.interfaces.toVector)
+
+  def isPossibleInterface(baseTypeName: String, tpe: InterfaceType[_, _]) =
+    possibleInterfaces get baseTypeName exists (_ exists (_.name == tpe.name))
 
   lazy val directImplementations: Map[String, Vector[ObjectLikeType[_, _]]] = {
     typeList

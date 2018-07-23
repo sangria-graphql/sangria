@@ -251,7 +251,7 @@ class SchemaConstraintsSpec extends WordSpec with Matchers {
           | String
           | TypeB
       """,
-      "Type 'String' is not an object type." → Seq(Pos(16, 13)))
+      "Type 'union BadUnion = TypeA | String | TypeB' is not an union (interface or type) type." → Seq(Pos(14, 9)))
   }
 
   "Type System: Input Objects must have fields" should {

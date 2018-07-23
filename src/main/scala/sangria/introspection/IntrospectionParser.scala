@@ -43,6 +43,7 @@ object IntrospectionParser {
       name = mapStringField(tpe, "name", path),
       description = mapStringFieldOpt(tpe, "description", path),
       fields = mapFieldOpt(tpe, "fields") map um.getListValue getOrElse Vector.empty map (field ⇒ parseField(field, path :+ "fields")),
+      possibleInterfaces = mapFieldOpt(tpe, "possibleInterfaces") map um.getListValue getOrElse Vector.empty  map (i ⇒ parseNamedTypeRef(i, path :+ "possibleInterfaces")),
       possibleTypes = mapFieldOpt(tpe, "possibleTypes") map um.getListValue getOrElse Vector.empty  map (i ⇒ parseNamedTypeRef(i, path :+ "possibleTypes"))
     )
 
@@ -50,6 +51,7 @@ object IntrospectionParser {
     IntrospectionUnionType(
       name = mapStringField(tpe, "name", path),
       description = mapStringFieldOpt(tpe, "description", path),
+      possibleInterfaces = mapFieldOpt(tpe, "possibleInterfaces") map um.getListValue getOrElse Vector.empty  map (i ⇒ parseNamedTypeRef(i, path :+ "possibleInterfaces")),
       possibleTypes = mapFieldOpt(tpe, "possibleTypes") map um.getListValue getOrElse Vector.empty  map (i ⇒ parseNamedTypeRef(i, path :+ "possibleTypes"))
     )
 

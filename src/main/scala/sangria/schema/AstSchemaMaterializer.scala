@@ -306,6 +306,12 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
         directive.locations map buildDirectiveLocation toSet,
         this)
 
+  def filterObjectType(origin: MatOrigin, tpe: ast.NamedType): Option[ObjectType[Ctx, Any]] =
+    getOutputType(origin, tpe, optional = false) match {
+      case obj: ObjectType[_, _] ⇒ Some(obj.asInstanceOf[ObjectType[Ctx, Any]])
+      case _ ⇒ None
+    }
+
   def getObjectType(origin: MatOrigin, tpe: ast.NamedType): ObjectType[Ctx, Any] =
     getOutputType(origin, tpe, optional = false) match {
       case obj: ObjectType[_, _] ⇒ obj.asInstanceOf[ObjectType[Ctx, Any]]
@@ -316,6 +322,12 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
     getOutputType(origin, tpe, optional = false) match {
       case obj: ScalarType[_] ⇒ obj.asInstanceOf[ScalarType[Any]]
       case _ ⇒ throw MaterializedSchemaValidationError(Vector(InvalidTypeUsageViolation("scalar", QueryRenderer.render(tpe), document.sourceMapper, tpe.location.toList)))
+    }
+
+  def filterInterfaceType(origin: MatOrigin, tpe: ast.NamedType): Option[InterfaceType[Ctx, Any]] =
+    getOutputType(origin, tpe, optional = false) match {
+      case obj: InterfaceType[_, _] ⇒ Some(obj.asInstanceOf[InterfaceType[Ctx, Any]])
+      case _ ⇒ None
     }
 
   def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType): InterfaceType[Ctx, Any] =
@@ -549,20 +561,29 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
 
   def buildUnionDef(origin: MatOrigin, tpe: ast.UnionTypeDefinition) = {
     val extensions = findUnionExtensions(tpe.name)
-    val extraTypes = extensions.flatMap(_.types)
+    val extraTypes = extensions.flatMap(_.interfaces_or_types)
     val withExtensions = tpe.types ++ extraTypes
 
-    builder.buildUnionType(origin, extensions, tpe, withExtensions map (getObjectType(origin, _)) toList, this)
+    val interfaces = withExtensions flatMap (filterInterfaceType(origin, _)) toList
+    val types = withExtensions flatMap (filterObjectType(origin, _)) toList
+
+    if ((interfaces.size + types.size) != withExtensions.size)
+      throw MaterializedSchemaValidationError(Vector(InvalidTypeUsageViolation("union (interface or type)", QueryRenderer.render(tpe), document.sourceMapper, tpe.location.toList)))
+
+    builder.buildUnionType(origin, extensions, tpe, interfaces, types, this)
   }
 
   def extendUnionType(origin: MatOrigin, tpe: UnionType[Ctx]) = {
     val extensions = findUnionExtensions(tpe.name)
-    val extraTypes = extensions.flatMap(_.types)
+    val extraTypes = extensions.flatMap(_.interfaces_or_types)
+
+    val i = tpe.interfaces map (getTypeFromDef(origin, _))
+    val ei = extraTypes map (getInterfaceType(origin, _)) toList
 
     val t = tpe.types map (getTypeFromDef(origin, _))
     val et = extraTypes map (getObjectType(origin, _)) toList
 
-    builder.extendUnionType(origin, extensions, tpe, t ++ et, this)
+    builder.extendUnionType(origin, extensions, tpe, i ++ ei, t ++ et, this)
   }
 
   def extendScalarAlias(origin: MatOrigin, alias: ScalarAlias[Any, Any]) = {

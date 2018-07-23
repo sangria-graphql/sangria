@@ -84,6 +84,7 @@ trait AstSchemaBuilder[Ctx] {
     origin: MatOrigin,
     extensions: Vector[ast.UnionTypeExtensionDefinition],
     definition: ast.UnionTypeDefinition,
+    interfaces: List[InterfaceType[Ctx, _]],
     types: List[ObjectType[Ctx, _]],
     mat: AstSchemaMaterializer[Ctx]): Option[UnionType[Ctx]]
 
@@ -91,6 +92,7 @@ trait AstSchemaBuilder[Ctx] {
     origin: MatOrigin,
     extensions: Vector[ast.UnionTypeExtensionDefinition],
     existing: UnionType[Ctx],
+    interfaces: List[InterfaceType[Ctx, _]],
     types: List[ObjectType[Ctx, _]],
     mat: AstSchemaMaterializer[Ctx]): UnionType[Ctx]
 
@@ -433,6 +435,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       description = typeDescription(definition),
       fieldsFn = fields,
       interfaces = Nil,
+      manualPossibleInterfaces = () => Nil,
       manualPossibleTypes = () ⇒ Nil,
       astDirectives = directives,
       astNodes = (definition +: extensions).toVector))
@@ -452,11 +455,13 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       origin: MatOrigin,
       extensions: Vector[ast.UnionTypeExtensionDefinition],
       definition: ast.UnionTypeDefinition,
+      interfaces: List[InterfaceType[Ctx, _]],
       types: List[ObjectType[Ctx, _]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(UnionType[Ctx](
       name = typeName(definition),
       description = typeDescription(definition),
+      interfaces = interfaces,
       types = types,
       astDirectives = definition.directives ++ extensions.flatMap(_.directives),
       astNodes = definition +: extensions))
@@ -465,9 +470,12 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       origin: MatOrigin,
       extensions: Vector[ast.UnionTypeExtensionDefinition],
       existing: UnionType[Ctx],
+      interfaces: List[InterfaceType[Ctx, _]],
       types: List[ObjectType[Ctx, _]],
       mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(types = types,
+    existing.copy(
+      interfaces = interfaces,
+      types = types,
       astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = existing.astNodes ++ extensions)
 

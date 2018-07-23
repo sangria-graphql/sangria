@@ -354,7 +354,7 @@ class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport 
         Map(
           "data" → Map(
             "hero" → Map(
-              "__typename" → "Droid",
+              "__typename" → "PrimaryDroid",
               "name" → "R2-D2")
           )
         ))

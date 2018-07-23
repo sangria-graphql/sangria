@@ -39,6 +39,7 @@ trait IntrospectionSchemaBuilder[Ctx] {
 
   def buildUnionType(
     definition: IntrospectionUnionType,
+    interfaces: List[InterfaceType[Ctx, _]],
     types: List[ObjectType[Ctx, _]],
     mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[UnionType[Ctx]]
 
@@ -156,17 +157,20 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       description = typeDescription(definition),
       fieldsFn = fields,
       interfaces = Nil,
+      manualPossibleInterfaces = () => Nil,
       manualPossibleTypes = () ⇒ Nil,
       astDirectives = Vector.empty,
       astNodes = Vector.empty))
 
   def buildUnionType(
       definition: IntrospectionUnionType,
+      interfaces: List[InterfaceType[Ctx, _]],
       types: List[ObjectType[Ctx, _]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]) =
     Some(UnionType[Ctx](
       name = typeName(definition),
       description = typeDescription(definition),
+      interfaces = interfaces,
       types = types))
 
   def buildScalarType(

@@ -43,6 +43,8 @@ object TestSchema {
           Some("Where are they from and how they came to be who they are."),
           resolve = _ ⇒ throw PrivacyError("secretBackstory is secret."))),
       interfaces = Nil,
+      manualPossibleInterfaces =
+        () => List(Humanoid, Droid, HumanoDroid, MonoDroid),
       manualPossibleTypes =
         () => List(Human, PrimaryDroid, SecondaryDroid),
       astDirectives = Vector.empty,
@@ -68,6 +70,8 @@ object TestSchema {
           resolve = _.value.appearsIn map (e ⇒ Some(e)))
       ),
       interfaces = List(Character),
+      manualPossibleInterfaces =
+        () => Nil,
       manualPossibleTypes =
         () => List(Human),
       astDirectives = Vector.empty,
@@ -122,6 +126,8 @@ object TestSchema {
           resolve = ctx => ctx.value.follows)
       ),
       interfaces = List(Character),
+      manualPossibleInterfaces =
+        () => List(HumanoDroid, MonoDroid),
       manualPossibleTypes =
         () => List(PrimaryDroid, SecondaryDroid),
       astDirectives = Vector.empty,
@@ -153,6 +159,8 @@ object TestSchema {
           resolve = ctx => ctx.value.follows)
       ),
       interfaces = List(Droid),
+      manualPossibleInterfaces =
+        () => Nil,
       manualPossibleTypes =
         () => List(PrimaryDroid),
       astDirectives = Vector.empty,
@@ -184,6 +192,8 @@ object TestSchema {
           resolve = ctx => ctx.value.follows)
       ),
       interfaces = List(Droid),
+      manualPossibleInterfaces =
+        () => Nil,
       manualPossibleTypes =
         () => List(SecondaryDroid),
       astDirectives = Vector.empty,

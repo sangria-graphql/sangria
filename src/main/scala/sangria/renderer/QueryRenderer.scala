@@ -520,11 +520,11 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, frontSep = true) +
           renderFieldDefinitions(fields, ext, indent, config, frontSep = true)
 
-      case ext @ UnionTypeExtensionDefinition(name, types, dirs, _, _) ⇒
+      case ext @ UnionTypeExtensionDefinition(name, interfaces_or_types, dirs, _, _) ⇒
         val typesString =
-          if (types.nonEmpty)
+          if (interfaces_or_types.nonEmpty)
             config.separator + "=" + config.separator +
-              (types map(renderNode(_, config, indent.zero)) mkString (config.separator + "|" + config.separator))
+              (interfaces_or_types map(renderNode(_, config, indent.zero)) mkString (config.separator + "|" + config.separator))
           else
             ""
 

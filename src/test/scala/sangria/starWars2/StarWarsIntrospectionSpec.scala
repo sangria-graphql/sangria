@@ -32,7 +32,12 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
                 Map("name" → "Droid"),
                 Map("name" → "Episode"),
                 Map("name" → "Human"),
+                Map("name" -> "HumanoDroid"),
+                Map("name" -> "Humanoid"),
+                Map("name" -> "MonoDroid"),
+                Map("name" -> "PrimaryDroid"),
                 Map("name" → "Query"),
+                Map("name" -> "SecondaryDroid"),
                 Map("name" → "__Directive"),
                 Map("name" → "__DirectiveLocation"),
                 Map("name" → "__EnumValue"),
@@ -106,7 +111,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
           "data" → Map(
             "__type" → Map(
               "name" → "Droid",
-              "kind" → "OBJECT"
+              "kind" → "INTERFACE"
             )
           )
         ))
@@ -136,7 +141,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
     "Allows querying the schema for object fields" in {
       val Success(query) = QueryParser.parse("""
         query IntrospectionDroidFieldsQuery {
-          __type(name: "Droid") {
+          __type(name: "PrimaryDroid") {
             name
             fields {
               name
@@ -153,7 +158,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         Map(
           "data" → Map(
             "__type" → Map(
-              "name" → "Droid",
+              "name" → "PrimaryDroid",
               "fields" → List(
                 Map(
                   "name" → "id",
@@ -191,6 +196,13 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
                   )
                 ),
                 Map(
+                  "name" -> "follows",
+                  "type" -> Map(
+                    "name" -> "Humanoid",
+                    "kind" -> "INTERFACE"
+                  )
+                ),
+                Map(
                   "name" → "secretBackstory",
                   "type" → Map(
                     "name" → "String",
@@ -206,7 +218,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
     "Allows querying the schema for nested object fields" in {
       val Success(query) = QueryParser.parse("""
         query IntrospectionDroidNestedFieldsQuery {
-          __type(name: "Droid") {
+          __type(name: "PrimaryDroid") {
             name
             fields {
               name
@@ -227,7 +239,7 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
         Map(
           "data" → Map(
             "__type" → Map(
-              "name" → "Droid",
+              "name" → "PrimaryDroid",
               "fields" → List(
                 Map(
                   "name" → "id",
@@ -276,6 +288,14 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
                     "name" → "String",
                     "kind" → "SCALAR",
                     "ofType" → null
+                  )
+                ),
+                Map(
+                  "name" -> "follows",
+                  "type" -> Map(
+                    "name" -> "Humanoid",
+                    "kind" -> "INTERFACE",
+                    "ofType" -> null
                   )
                 ),
                 Map(

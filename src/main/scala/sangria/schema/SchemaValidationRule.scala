@@ -332,7 +332,7 @@ object ContainerMembersValidator extends SchemaElementValidator {
         case (memberName, dup) if dup.size > 1 ⇒
           val astMembers = tpe.astNodes.collect {
             case astUnion: UnionTypeDefinition ⇒ astUnion.types
-            case astUnion: UnionTypeExtensionDefinition ⇒ astUnion.types
+            case astUnion: UnionTypeExtensionDefinition ⇒ astUnion.interfaces_or_types
           }
           val locations = astMembers.flatten.filter(_.name == memberName).flatMap(_.location).toList
 

@@ -106,7 +106,7 @@ class IntrospectionSchemaMaterializer[Ctx, T : InputUnmarshaller](introspectionR
     builder.buildInterfaceType(tpe, () ⇒ tpe.fields.toList flatMap (buildField(tpe, _)), this)
 
   def buildUnionDef(tpe: IntrospectionUnionType) =
-    builder.buildUnionType(tpe, tpe.possibleTypes.toList map getObjectType, this)
+    builder.buildUnionType(tpe, tpe.possibleInterfaces.toList map getInterfaceType, tpe.possibleTypes.toList map getObjectType, this)
 
   def buildInputObjectDef(tpe: IntrospectionInputObjectType) =
     builder.buildInputObjectType(tpe, () ⇒ tpe.inputFields.toList flatMap (buildInputField(tpe, _)), this)
