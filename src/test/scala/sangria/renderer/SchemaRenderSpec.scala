@@ -367,8 +367,8 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         Field("str", OptionType(StringType), resolve = _ ⇒ "f")
       ))
 
-      val singleUnion = UnionType("SingleUnion", types = foo :: Nil)
-      val multipleUnion = UnionType("MultipleUnion", types = foo :: bar :: Nil)
+      val singleUnion = UnionType("SingleUnion", interfaces = Nil, types = foo :: Nil)
+      val multipleUnion = UnionType("MultipleUnion", interfaces = Nil, types = foo :: bar :: Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
         Field("single", OptionType(singleUnion), resolve = _ ⇒ ()),

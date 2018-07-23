@@ -53,7 +53,7 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
   val CatType = ObjectType("Cat", interfaces[Any, Cat](NamedType), fields[Any, Cat](
     Field("meows", OptionType(BooleanType), resolve = _.value.meows)))
 
-  val PetType = UnionType[Any]("Pet", types = DogType :: CatType :: Nil)
+  val PetType = UnionType[Any]("Pet", interfaces = Nil, types = DogType :: CatType :: Nil)
 
   lazy val TestType: ObjectType[Info, Unit] = ObjectType("Test", () ⇒ fields[Info, Unit](
     Field("scalar", StringType, resolve = _ ⇒ "tests"),

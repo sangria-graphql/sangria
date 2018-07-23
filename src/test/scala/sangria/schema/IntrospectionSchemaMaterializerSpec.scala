@@ -57,7 +57,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
     Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ ⇒ None)
   ))
 
-  lazy val FriendlyUnionType = UnionType("Friendly", types = DogUnionType :: HumanUnionType :: Nil)
+  lazy val FriendlyUnionType = UnionType("Friendly", interfaces = Nil, types = DogUnionType :: HumanUnionType :: Nil)
 
   val CustomScalar = ScalarType[Int]("Custom",
     description = Some("Some custom"),

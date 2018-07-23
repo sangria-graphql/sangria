@@ -186,7 +186,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
           Field("fruit", FruitType, resolve = c ⇒ cherryPicker.defer(c.value.id))
         ))
 
-        val FruitEventType = UnionType("FruitEvent", types = FruitEatenType :: FruitSmashedType :: Nil)
+        val FruitEventType = UnionType("FruitEvent", interfaces = Nil, types = FruitEatenType :: FruitSmashedType :: Nil)
 
         val QueryType = ObjectType("QueryType", fields[Ctx, Unit](
           Field("hello", StringType, resolve = _ ⇒ "world")))

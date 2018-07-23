@@ -429,7 +429,7 @@ case class EnumTypeExtensionDefinition(
 
 case class UnionTypeExtensionDefinition(
     name: String,
-    types: Vector[NamedType],
+    interfaces_or_types: Vector[NamedType],
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None) extends TypeExtensionDefinition {
@@ -879,9 +879,9 @@ object AstVisitor {
             tc.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ UnionTypeExtensionDefinition(_, types, dirs, comment, _) ⇒
+        case n @ UnionTypeExtensionDefinition(_, interfaces_or_types, dirs, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
-            types.foreach(t ⇒ loop(t))
+            interfaces_or_types.foreach(t ⇒ loop(t))
             dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))

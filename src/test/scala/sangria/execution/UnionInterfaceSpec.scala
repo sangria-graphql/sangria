@@ -24,7 +24,7 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
   val CatType = ObjectType("Cat", interfaces[Unit, Cat](NamedType), fields[Unit, Cat](
     Field("meows", OptionType(BooleanType), resolve = _.value.meows)))
 
-  val PetType = UnionType[Unit]("Pet", types = DogType :: CatType :: Nil)
+  val PetType = UnionType[Unit]("Pet", interfaces = Nil, types = DogType :: CatType :: Nil)
 
   val PersonType = ObjectType("Person", interfaces[Unit, Person](NamedType), fields[Unit, Person](
     Field("pets", OptionType(ListType(OptionType(PetType))), resolve = _.value.pets),
@@ -297,7 +297,7 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
 
       val FooType = ObjectType("Foo", interfaces[Unit, Foo](FooBarType), fields[Unit, Foo]())
       val BarType = ObjectType("Bar", interfaces[Unit, Bar](FooBarType), fields[Unit, Bar]())
-      val FooBarBazType = UnionType("FooBarBaz", types = FooType :: BarType :: BazType :: Nil)
+      val FooBarBazType = UnionType("FooBarBaz", interfaces = Nil, types = FooType :: BarType :: BazType :: Nil)
 
       val QueryType = ObjectType("Query", fields[Unit, List[Any]](
         Field("foo", OptionType(ListType(OptionType(FooBarBazType))), resolve = _.value map (Some(_)))))

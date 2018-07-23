@@ -41,7 +41,7 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
     Field("fizz", OptionType(StringType), resolve = _ ⇒ None)
   ))
 
-  val SomeUnionType = UnionType("SomeUnion", types = FooType :: BizType :: Nil)
+  val SomeUnionType = UnionType("SomeUnion", interfaces = Nil, types = FooType :: BizType :: Nil)
 
   val SomeEnumType = EnumType("SomeEnum", values = List(
     EnumValue("ONE", value = 1),

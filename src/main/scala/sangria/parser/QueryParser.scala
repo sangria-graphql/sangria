@@ -241,7 +241,7 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
 
   def UnionTypeExtensionDefinition = rule {
     (Comments ~ trackPos ~ extend ~ union ~ Name ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ UnionMemberTypes ~> (
-      (comment, location, name, dirs, types) ⇒ ast.UnionTypeExtensionDefinition(name, types, dirs, comment, location))) |
+      (comment, location, name, dirs, interfaces_or_types) ⇒ ast.UnionTypeExtensionDefinition(name, interfaces_or_types, dirs, comment, location))) |
     (Comments ~ trackPos ~ extend ~ union ~ Name ~ DirectivesConst ~> (
       (comment, location, name, dirs) ⇒ ast.UnionTypeExtensionDefinition(name, Vector.empty, dirs, comment, location)))
   }

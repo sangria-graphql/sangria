@@ -87,8 +87,8 @@ trait AstLiftable {
       q"_root_.sangria.ast.InterfaceTypeExtensionDefinition($n, $f, $d, $c, $tc, $p)"
     case InputObjectTypeExtensionDefinition(n, f, d, c, tc, p) ⇒
       q"_root_.sangria.ast.InputObjectTypeExtensionDefinition($n, $f, $d, $c, $tc, $p)"
-    case UnionTypeExtensionDefinition(n, t, d, c, p) ⇒
-      q"_root_.sangria.ast.UnionTypeExtensionDefinition($n, $t, $d, $c, $p)"
+    case UnionTypeExtensionDefinition(n, i_or_t, d, c, p) ⇒
+      q"_root_.sangria.ast.UnionTypeExtensionDefinition($n, $i_or_t, $d, $c, $p)"
     case EnumTypeExtensionDefinition(n, v, d, c, tc, p) ⇒
       q"_root_.sangria.ast.EnumTypeExtensionDefinition($n, $v, $d, $c, $tc, $p)"
     case ScalarTypeExtensionDefinition(n, d, c, p) ⇒
