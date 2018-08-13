@@ -8,7 +8,7 @@ jdk:
 
 matrix:
   exclude:
-    - scala: 2.11.12
+    - scala: 2.11.11
       jdk: oraclejdk10
 
 script: |
