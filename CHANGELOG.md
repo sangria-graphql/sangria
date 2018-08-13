@@ -1,9 +1,11 @@
 ## Upcoming
 
+* Remove `InterfaceMustHaveImplementationValidationRule` validation rule **(spec change)** (#379). Since its introduction in previous release, it caused some issues (to sangria users as well users of other implementations). So it was removed from the spec.  
+* Expose more contextual information to a fetcher, including fetcher cache (#377). Fetcher now can be created with a set of new helper methods `*WithContext` which provide `FetcherContext` as an argument to fetch functions.  
 * `AstSchemaMaterializer` now re-creates existing field argument types (thus able to use newly created input types)
 * Added visitor helpers in `AstNode` (they just delegate all functionality to `AstVisitor`)
 * More minor improvements for better compatibility with [GraalVM](https://www.graalvm.org/) `native-image`.
-* Continued support for [GraphQL CATs](https://github.com/graphql-cats/graphql-cats) (Compatibility Acceptance Tests). Most recent changes and validation scenarios were added.
+* Continued work on [GraphQL CATs](https://github.com/graphql-cats/graphql-cats) (Compatibility Acceptance Tests). Most recent changes and validation scenarios were added. Some `Violation`s now implement `SpecViolation` which has [CATSs-compliant](https://github.com/graphql-cats/graphql-cats/blob/master/scenarios/error-mapping.yaml) error `code` and arguments.
 
 ## v1.4.1 (2018-05-12)
 
