@@ -1,13 +1,13 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.4.2-SNAPSHOT"
+version := "1.4.2"
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq("Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 scalaVersion := "2.12.6"
-crossScalaVersions := Seq("2.11.12", "2.12.6")
+crossScalaVersions := Seq("2.11.11", "2.12.6")
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -42,16 +42,16 @@ libraryDependencies ++= Seq(
   // Testing
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.1" % Test,
-  "org.sangria-graphql" %% "sangria-spray-json" % "1.0.0" % Test,
+  "org.sangria-graphql" %% "sangria-spray-json" % "1.0.1" % Test,
   "org.sangria-graphql" %% "sangria-argonaut" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-ion" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-monix" % "1.0.0" % Test,
   "org.sangria-graphql" %% "sangria-rxscala" % "1.0.0" % Test,
-  "eu.timepit" %% "refined" % "0.8.7" % Test,
+  "eu.timepit" %% "refined" % "0.9.2" % Test,
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.4.0" % Test,
-  "io.github.lukehutch" % "fast-classpath-scanner" % "2.18.2" % Test
+  "io.github.classgraph" % "classgraph" % "4.0.6" % Test
 )
 
 // Publishing

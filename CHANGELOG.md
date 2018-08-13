@@ -1,4 +1,4 @@
-## Upcoming
+## v1.4.2 (2018-08-13)
 
 * Removed `InterfaceMustHaveImplementationValidationRule` validation rule **(spec change)** (#379). Since its introduction in previous release, it caused some issues (to sangria users as well users of other implementations). So it was removed from the GraphQL spec and sangria for now.  
 * Exposed more contextual information to a fetcher, including fetcher cache (#377). Fetcher now can be created with a set of new helper methods `*WithContext` which provide `FetcherContext` as an argument to fetch functions.  
