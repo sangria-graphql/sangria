@@ -75,6 +75,8 @@ If you've got some interesting ideas to share or discovered a nasty bug, feel fr
 [Sangria's issue tracker](https://github.com/sangria-graphql/sangria/issues).
 Also feel free to fork project and create the pull requests - they are highly appreciated!
 
+If you are facing an issue and not sure what would be the best way to describe it, the I would recommend you to use [this minimal gist](https://gist.github.com/OlegIlyenko/4068ad92e008cd4b5def1baa4ec3a67c) as a template. 
+
 ## StackOverflow
 
 In case you need some help or support, then you can use [StackOverflow](http://stackoverflow.com/questions/tagged/sangria) for this.
