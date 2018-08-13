@@ -2,6 +2,8 @@
 
 * `AstSchemaMaterializer` now re-creates existing field argument types (thus able to use newly created input types)
 * Added visitor helpers in `AstNode` (they just delegate all functionality to `AstVisitor`)
+* More minor improvements for better compatibility with [GraalVM](https://www.graalvm.org/) `native-image`.
+* Continued support for [GraphQL CATs](https://github.com/graphql-cats/graphql-cats) (Compatibility Acceptance Tests). Most recent changes and validation scenarios were added.
 
 ## v1.4.1 (2018-05-12)
 

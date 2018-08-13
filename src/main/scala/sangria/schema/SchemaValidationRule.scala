@@ -29,7 +29,6 @@ object SchemaValidationRule {
   val default: List[SchemaValidationRule] = List(
     DefaultValuesValidationRule,
     InterfaceImplementationValidationRule,
-    InterfaceMustHaveImplementationValidationRule,
     SubscriptionFieldsValidationRule,
     defaultFullSchemaTraversalValidationRule)
 
@@ -150,25 +149,6 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
           case _ ⇒ Nil
         }
     }
-}
-
-object InterfaceMustHaveImplementationValidationRule extends SchemaValidationRule {
-  def validate[Ctx, Val](schema: Schema[Ctx, Val]) =
-    schema.typeList
-      .collect {
-        case interface: InterfaceType[_, _] ⇒ interface
-      }
-      .filter(interface ⇒
-        schema.possibleTypes.get(interface.name) match {
-          case Some(list) if list.nonEmpty ⇒ false
-          case _ ⇒ true
-        }
-      )
-      .map(interface ⇒ NoInterfaceImplementationViolation(
-        interface.name,
-        SchemaElementValidator.sourceMapper(schema),
-        SchemaElementValidator.location(interface)))
-      .toList
 }
 
 object SubscriptionFieldsValidationRule extends SchemaValidationRule {
