@@ -3,7 +3,7 @@ package sangria.marshalling
 import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
 import sangria.util.SimpleGraphQlSupport._
-import spray.json.{JsValue, pimpString, DefaultJsonProtocol}
+import spray.json._
 
 class FromInputSpec extends WordSpec with Matchers {
   case class Comment(author: String, text: Option[String])

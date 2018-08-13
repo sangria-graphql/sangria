@@ -2,16 +2,15 @@ package sangria.util
 
 import java.io.File
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
-import io.github.lukehutch.fastclasspathscanner.matchprocessor.FileMatchContentsProcessorWithContext
+import io.github.classgraph.ClassGraph
 import sangria.parser.QueryParser
 import sangria.parser.DeliveryScheme.Throw
 import spray.json._
 
-import scala.collection.immutable.VectorBuilder
 import scala.io.Source
-
 import net.jcazevedo.moultingyaml._
+
+import scala.collection.JavaConverters._
 
 
 object FileUtil extends StringMatchers {
@@ -22,15 +21,23 @@ object FileUtil extends StringMatchers {
     loadResource(root + "/" + name).parseYaml
 
   def loadScenarios(path: String, root: String = "scenarios") = this.synchronized {
-    val builder = new VectorBuilder[ScenarioFile]
+    val yamlResources = new ClassGraph()
+      .whitelistPackages(root + "." + path)
+      .scan()
+      .getResourcesWithExtension("yaml")
+      .asScala
+      .groupBy(_.getPath).mapValues(_.head) // deduplicate (`ClassGraph` gives duplicates for some reason)
+      .values
+      .toVector
 
-    new FastClasspathScanner(root + "." + path).matchFilenameExtension("yaml", new FileMatchContentsProcessorWithContext {
-      override def processMatch(file: File, relativePath: String, fileContents: Array[Byte]) = {
-        builder += ScenarioFile(file.getName, relativePath, new String(fileContents, "UTF-8").parseYaml)
-      }
-    }).scan()
+    yamlResources.map { resource ⇒
+      val name = resource.getPath.substring(resource.getPath.lastIndexOf("/") + 1)
+      val relativePath = resource.getPathRelativeToClasspathElement
+      val stream = this.getClass.getResourceAsStream("/" + relativePath)
+      val contents = Source.fromInputStream(stream, "UTF-8").mkString.parseYaml
 
-    builder.result()
+      ScenarioFile(name, relativePath, contents)
+    }
   }
 
   def loadSchema(path: String) =

@@ -1,7 +1,6 @@
 package sangria.execution
 
 import org.scalatest.{Matchers, WordSpec}
-import sangria.ast.ScalarTypeDefinition
 import sangria.macros._
 import sangria.ast
 import sangria.marshalling.ScalaInput.scalaInput
@@ -11,7 +10,7 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{Pos, StringMatchers}
 import sangria.validation.QueryValidator
-import spray.json.{DefaultJsonProtocol, JsValue, pimpString}
+import spray.json._
 import sangria.util.SimpleGraphQlSupport._
 
 class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMatchers {
