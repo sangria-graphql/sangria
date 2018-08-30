@@ -299,7 +299,7 @@ case class UnionType[Ctx](
     astNodes: Vector[ast.AstNode] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType with HasAstInfo {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
-  def map[T](func: T => Any): OutputType[T] with MappedAbstractType[T] = new UnionType[Ctx](name, description, types, astDirectives, astNodes) with MappedAbstractType[T] {
+  def mapValue[T](func: T => Any): OutputType[T] with MappedAbstractType[T] = new UnionType[Ctx](name, description, types, astDirectives, astNodes) with MappedAbstractType[T] {
     override def contraMap(value: T): Any = func(value)
   }.asInstanceOf[OutputType[T] with MappedAbstractType[T]]
 }

@@ -901,26 +901,22 @@ class Resolver[Ctx](
               resolveActionsPar(path, obj, actions, userCtx, fields.namesOrdered)
             case Failure(error) ⇒ Result(ErrorRegistry(path, error), None)
           }
-      case abst: MappedAbstractType[Any @unchecked] ⇒
-        val newValue = abst.contraMap(value)
-        if (isUndefinedValue(value))
-          Result(ErrorRegistry.empty, None)
-        else
-          abst.typeOf(newValue, schema) match {
-            case Some(obj) ⇒ resolveValue(path, astFields, obj, field, newValue, userCtx)
-            case None ⇒ Result(ErrorRegistry(path,
-              UndefinedConcreteTypeError(path, abst, schema.possibleTypes.getOrElse(abst.name, Vector.empty), newValue, exceptionHandler, sourceMapper, astFields.head.location.toList)), None)
-          }
-
       case abst: AbstractType ⇒
         if (isUndefinedValue(value))
           Result(ErrorRegistry.empty, None)
-        else
-          abst.typeOf(value, schema) match {
-            case Some(obj) ⇒ resolveValue(path, astFields, obj, field, value, userCtx)
+        else {
+          val actualValue =
+            abst match {
+              case abst: MappedAbstractType[Any @unchecked] ⇒ abst.contraMap(value)
+              case _ ⇒ value
+            }
+
+          abst.typeOf(actualValue, schema) match {
+            case Some(obj) ⇒ resolveValue(path, astFields, obj, field, actualValue, userCtx)
             case None ⇒ Result(ErrorRegistry(path,
-              UndefinedConcreteTypeError(path, abst, schema.possibleTypes.getOrElse(abst.name, Vector.empty), value, exceptionHandler, sourceMapper, astFields.head.location.toList)), None)
+              UndefinedConcreteTypeError(path, abst, schema.possibleTypes.getOrElse(abst.name, Vector.empty), actualValue, exceptionHandler, sourceMapper, astFields.head.location.toList)), None)
           }
+        }
     }
 
   def isUndefinedValue(value: Any) =

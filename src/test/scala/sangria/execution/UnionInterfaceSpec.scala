@@ -31,7 +31,7 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
 
   val PetType = UnionType[Unit]("Pet", types = DogType :: CatType :: Nil)
 
-  val Pet2Type = UnionType[Unit]("Pet2", types = DogType :: CatType :: Nil).map[Either[Dog, Cat]](_.fold(dog => dog: Any, cat => cat: Any))
+  val Pet2Type = UnionType[Unit]("Pet2", types = DogType :: CatType :: Nil).mapValue[Either[Dog, Cat]](_.fold(dog => dog: Any, cat => cat: Any))
 
   val PersonType = ObjectType("Person", interfaces[Unit, Person](NamedType), fields[Unit, Person](
     Field("pets", OptionType(ListType(OptionType(PetType))), resolve = _.value.pets),
