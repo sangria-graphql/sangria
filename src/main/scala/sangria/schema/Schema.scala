@@ -301,7 +301,7 @@ case class UnionType[Ctx](
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 
   /**
-    * Creates a type-safe version of a union type, which might be useful in cases where the value is wrapped in a type like `Either`.
+    * Creates a type-safe version of union type which might be useful in cases where the value is wrapped in a type like `Either`.
     */
   def mapValue[T](func: T ⇒ Any): OutputType[T] = new UnionType[Ctx](name, description, types, astDirectives, astNodes) with MappedAbstractType[T] {
     override def contraMap(value: T): Any = func(value)
