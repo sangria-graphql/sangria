@@ -13,7 +13,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
 
   case class Dog(name: Option[String], barks: Option[Boolean]) extends Named
   case class Cat(name: Option[String], meows: Option[Boolean]) extends Named
-  case class Person(name: Option[String], pets: Option[List[Option[Any]]], friends: Option[List[Option[Named]]]) extends Named
+  case class Person(name: Option[String], pets: Option[List[Option[Any]]], friends: Option[List[Option[Named]]]) extends Named {
+    def eitherPets: Option[List[Option[Either[Dog, Cat]]]] = pets.map(_.map(_.map {
+      case d: Dog => Left(d)
+      case c: Cat => Right(c)
+    }))
+  }
 
   val NamedType = InterfaceType("Named", fields[Unit, Named](
     Field("name", OptionType(StringType), resolve = _.value.name)))
@@ -26,8 +31,11 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
 
   val PetType = UnionType[Unit]("Pet", types = DogType :: CatType :: Nil)
 
+  val Pet2Type = UnionType[Unit]("Pet2", types = DogType :: CatType :: Nil).mapValue[Either[Dog, Cat]](_.fold(dog => dog: Any, cat => cat: Any))
+
   val PersonType = ObjectType("Person", interfaces[Unit, Person](NamedType), fields[Unit, Person](
     Field("pets", OptionType(ListType(OptionType(PetType))), resolve = _.value.pets),
+    Field("pets2", OptionType(ListType(OptionType(Pet2Type))), resolve = _.value.eitherPets),
     Field("favouritePet", PetType, resolve = _.value.pets.flatMap(_.headOption.flatMap(identity)).get),
     Field("favouritePetList", ListType(PetType), resolve = _.value.pets.getOrElse(Nil).flatMap(x ⇒ x).toSeq),
     Field("favouritePetOpt", OptionType(PetType), resolve = _.value.pets.flatMap(_.headOption.flatMap(identity))),
@@ -123,6 +131,47 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
           "favouritePet" → Map("name" → "Garfield"),
           "favouritePetOpt" → Map("name" → "Garfield"),
           "pets" → List(
+            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+          )
+        )
+      ) ,
+      validateQuery = false
+    )
+
+    "executes using mapped union types" in check(
+      bob,
+      """
+       {
+         __typename
+         name
+         favouritePet {name}
+         favouritePetOpt {name}
+         pets {
+           __typename
+           name
+           barks
+           meows
+         }
+         pets2 {
+           __typename
+           name
+           barks
+           meows
+         }
+       }
+      """,
+      Map(
+        "data" → Map(
+          "__typename" → "Person",
+          "name" → "Bob",
+          "favouritePet" → Map("name" → "Garfield"),
+          "favouritePetOpt" → Map("name" → "Garfield"),
+          "pets" → List(
+            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
+            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+          ),
+          "pets2" → List(
             Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
             Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
           )

@@ -65,6 +65,10 @@ sealed trait AbstractType extends Type with Named {
     schema.possibleTypes get name flatMap (_.find(_ isInstanceOf value).asInstanceOf[Option[ObjectType[Ctx, _]]])
 }
 
+sealed trait MappedAbstractType[T] extends Type with AbstractType with OutputType[T] {
+  def contraMap(value: T): Any
+}
+
 sealed trait NullableType
 sealed trait UnmodifiedType
 
@@ -295,6 +299,9 @@ case class UnionType[Ctx](
     astNodes: Vector[ast.AstNode] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType with HasAstInfo {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
+  def mapValue[T](func: T => Any): OutputType[T] with MappedAbstractType[T] = new UnionType[Ctx](name, description, types, astDirectives, astNodes) with MappedAbstractType[T] {
+    override def contraMap(value: T): Any = func(value)
+  }.asInstanceOf[OutputType[T] with MappedAbstractType[T]]
 }
 
 case class Field[Ctx, Val](
@@ -760,7 +767,7 @@ case class Schema[Ctx, Val](
 
   def renderPretty: String = toAst.renderPretty
   def renderPretty(filter: SchemaFilter): String = toAst(filter).renderPretty
-  
+
   def renderCompact: String = toAst.renderCompact
   def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
 

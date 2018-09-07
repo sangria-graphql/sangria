@@ -904,12 +904,19 @@ class Resolver[Ctx](
       case abst: AbstractType ⇒
         if (isUndefinedValue(value))
           Result(ErrorRegistry.empty, None)
-        else
-          abst.typeOf(value, schema) match {
-            case Some(obj) ⇒ resolveValue(path, astFields, obj, field, value, userCtx)
+        else {
+          val actualValue =
+            abst match {
+              case abst: MappedAbstractType[Any @unchecked] ⇒ abst.contraMap(value)
+              case _ ⇒ value
+            }
+
+          abst.typeOf(actualValue, schema) match {
+            case Some(obj) ⇒ resolveValue(path, astFields, obj, field, actualValue, userCtx)
             case None ⇒ Result(ErrorRegistry(path,
-              UndefinedConcreteTypeError(path, abst, schema.possibleTypes.getOrElse(abst.name, Vector.empty), value, exceptionHandler, sourceMapper, astFields.head.location.toList)), None)
+              UndefinedConcreteTypeError(path, abst, schema.possibleTypes.getOrElse(abst.name, Vector.empty), actualValue, exceptionHandler, sourceMapper, astFields.head.location.toList)), None)
           }
+        }
     }
 
   def isUndefinedValue(value: Any) =
