@@ -123,11 +123,24 @@ class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒
 
 class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx, val mapFn: Val ⇒ NewVal) extends Action[Ctx, NewVal] {
   override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
-    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v ⇒ fn(mapFn(v)))
+    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, (v: Val) ⇒ fn(mapFn(v)))
 }
 
 object UpdateCtx {
   def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val ⇒ Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
+}
+
+class MappedActionAndUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx, val mapFn: Val ⇒ NewVal) extends Action[Ctx, NewVal] {
+  override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedActionAndUpdateCtx[Ctx, Val, NewNewVal] =
+    new MappedActionAndUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, (v: Val) ⇒ fn(mapFn(v)))
+}
+
+object ActionAndUpdateCtx {
+  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val ⇒ Ctx): MappedActionAndUpdateCtx[Ctx, Val, Val] =
+    new MappedActionAndUpdateCtx(action, newCtx, identity)
+
+  def apply[Ctx, Val, NewVal](action: LeafAction[Ctx, Val], convert: Val => NewVal)(newCtx: Val => Ctx): MappedActionAndUpdateCtx[Ctx, Val, NewVal] =
+    new MappedActionAndUpdateCtx(action, newCtx, convert)
 }
 
 private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](source: Val, stream: SubscriptionStream[S]) extends LeafAction[Ctx, Val] {
