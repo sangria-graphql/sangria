@@ -59,7 +59,8 @@ object LeafAction {
 
 case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
-    try Value(fn(value)) catch {
+    try Value(fn(value))
+    catch {
       case NonFatal(e) ⇒ TryValue(Failure(e))
     }
 }
@@ -71,7 +72,8 @@ case class TryValue[Ctx, Val](value: Try[Val]) extends LeafAction[Ctx, Val] with
 
 case class PartialValue[Ctx, Val](value: Val, errors: Vector[Throwable]) extends LeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
-    try PartialValue(fn(value), errors) catch {
+    try PartialValue(fn(value), errors)
+    catch {
       case NonFatal(e) ⇒ TryValue(Failure(e))
     }
 }
@@ -94,7 +96,9 @@ case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx,
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, (v: Val) ⇒ (fn(v), Vector.empty)))
 
-  def mapWithErrors[NewVal](fn: Val ⇒ (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
+  def mapWithErrors[NewVal](
+    fn: Val ⇒ (NewVal, Vector[Throwable])
+  )(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, fn))
 }
 
@@ -102,17 +106,24 @@ case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends L
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
     DeferredFutureValue(value map (MappingDeferred(_, (v: Val) ⇒ (fn(v), Vector.empty))))
 
-  def mapWithErrors[NewVal](fn: Val ⇒ (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
+  def mapWithErrors[NewVal](
+    fn: Val ⇒ (NewVal, Vector[Throwable])
+  )(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
     DeferredFutureValue(value map (MappingDeferred(_, fn)))
 }
 
 case class SequenceLeafAction[Ctx, Val](value: Seq[LeafAction[Ctx, Val]]) extends LeafAction[Ctx, Seq[Val]] {
-  override def map[NewVal](fn: Seq[Val] ⇒ NewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewVal] =
+  override def map[NewVal](
+    fn: Seq[Val] ⇒ NewVal
+  )(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewVal] =
     new MappedSequenceLeafAction[Ctx, Val, NewVal](this, fn)
 }
 
-class MappedSequenceLeafAction[Ctx, Val, NewVal](val action: SequenceLeafAction[Ctx, Val], val mapFn: Seq[Val] ⇒ NewVal) extends LeafAction[Ctx, NewVal] {
-  override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewNewVal] =
+class MappedSequenceLeafAction[Ctx, Val, NewVal](val action: SequenceLeafAction[Ctx, Val], val mapFn: Seq[Val] ⇒ NewVal)
+    extends LeafAction[Ctx, NewVal] {
+  override def map[NewNewVal](
+    fn: NewVal ⇒ NewNewVal
+  )(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewNewVal] =
     new MappedSequenceLeafAction[Ctx, Val, NewNewVal](action, v ⇒ fn(mapFn(v)))
 }
 
@@ -121,18 +132,28 @@ class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒
     new MappedUpdateCtx[Ctx, Val, NewVal](action, nextCtx, fn)
 }
 
-class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx, val mapFn: Val ⇒ NewVal) extends Action[Ctx, NewVal] {
-  override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
+class MappedUpdateCtx[Ctx, Val, NewVal](
+  val action: LeafAction[Ctx, Val],
+  val nextCtx: Val ⇒ Ctx,
+  val mapFn: Val ⇒ NewVal
+) extends Action[Ctx, NewVal] {
+  override def map[NewNewVal](
+    fn: NewVal ⇒ NewNewVal
+  )(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
     new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v ⇒ fn(mapFn(v)))
 }
 
 object UpdateCtx {
-  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val ⇒ Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
+  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val ⇒ Ctx): UpdateCtx[Ctx, Val] =
+    new UpdateCtx(action, newCtx)
 }
 
-private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](source: Val, stream: SubscriptionStream[S]) extends LeafAction[Ctx, Val] {
+private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](source: Val, stream: SubscriptionStream[S])
+    extends LeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): SubscriptionValue[Ctx, NewVal, S] =
-    throw new IllegalStateException("`map` is not supported subscription actions. Action is only intended for internal use.")
+    throw new IllegalStateException(
+      "`map` is not supported subscription actions. Action is only intended for internal use."
+    )
 }
 
 case class ProjectionName(name: String) extends FieldTag
@@ -147,14 +168,16 @@ object Projector {
   def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) ⇒ Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
       def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
-      override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException("Default apply should not be called on projector!")
+      override def apply(ctx: Context[Ctx, Val]) =
+        throw new IllegalStateException("Default apply should not be called on projector!")
     }
 
   def apply[Ctx, Val, Res](levels: Int, fn: (Context[Ctx, Val], Vector[ProjectedName]) ⇒ Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
       override val maxLevel = levels
       def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
-      override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException("Default apply should not be called on projector!")
+      override def apply(ctx: Context[Ctx, Val]) =
+        throw new IllegalStateException("Default apply should not be called on projector!")
     }
 }
 
@@ -183,12 +206,45 @@ trait WithArguments {
 
   def withArgs[A1, R](arg1: Argument[A1])(fn: A1 ⇒ R): R = args.withArgs(arg1)(fn)
   def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) ⇒ R): R = args.withArgs(arg1, arg2)(fn)
-  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R = args.withArgs(arg1, arg2, arg3)(fn)
-  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4)(fn)
-  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5)(fn)
-  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6)(fn)
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7)(fn)
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)(fn)
+  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R =
+    args.withArgs(arg1, arg2, arg3)(fn)
+  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(
+    fn: (A1, A2, A3, A4) ⇒ R
+  ): R = args.withArgs(arg1, arg2, arg3, arg4)(fn)
+  def withArgs[A1, A2, A3, A4, A5, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5]
+  )(fn: (A1, A2, A3, A4, A5) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5],
+    arg6: Argument[A6]
+  )(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5],
+    arg6: Argument[A6],
+    arg7: Argument[A7]
+  )(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5],
+    arg6: Argument[A6],
+    arg7: Argument[A7],
+    arg8: Argument[A8]
+  )(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)(fn)
 }
 
 trait WithInputTypeRendering[Ctx] {
@@ -213,20 +269,41 @@ object DefaultValueParser {
 object DefaultValueRenderer {
   implicit val marshaller = sangria.marshalling.queryAst.queryAstResultMarshaller
 
-  def renderInputValueCompact[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): Option[String] =
+  def renderInputValueCompact[T, Ctx](
+    value: (_, ToInput[_, _]),
+    tpe: InputType[T],
+    coercionHelper: ValueCoercionHelper[Ctx]
+  ): Option[String] =
     renderInputValue(value, tpe, coercionHelper) map marshaller.renderCompact
 
-  def renderInputValuePretty[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): Option[String] =
+  def renderInputValuePretty[T, Ctx](
+    value: (_, ToInput[_, _]),
+    tpe: InputType[T],
+    coercionHelper: ValueCoercionHelper[Ctx]
+  ): Option[String] =
     renderInputValue(value, tpe, coercionHelper) map marshaller.renderPretty
 
-  def renderInputValue[T, Ctx](value: (_, ToInput[_, _]), tpe: InputType[T], coercionHelper: ValueCoercionHelper[Ctx]): Option[marshaller.Node] = {
+  def renderInputValue[T, Ctx](
+    value: (_, ToInput[_, _]),
+    tpe: InputType[T],
+    coercionHelper: ValueCoercionHelper[Ctx]
+  ): Option[marshaller.Node] = {
     val (v, toInput) = value.asInstanceOf[(Any, ToInput[Any, Any])]
     val (inputValue, iu) = toInput.toInput(v)
 
     if (!iu.isDefined(inputValue))
       None
     else
-      coercionHelper.coerceInputValue(tpe, Nil, inputValue, None, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default, isArgument = false)(iu) match {
+      coercionHelper.coerceInputValue(
+        tpe,
+        Nil,
+        inputValue,
+        None,
+        None,
+        CoercedScalaResultMarshaller.default,
+        CoercedScalaResultMarshaller.default,
+        isArgument = false
+      )(iu) match {
         case Right(Trinary.Defined(coerced)) ⇒ Some(renderCoercedInputValue(tpe, coerced))
         case _ ⇒ None
       }
@@ -240,7 +317,8 @@ object DefaultValueRenderer {
 
   def renderCoercedInputValue(t: InputType[_], v: Any): marshaller.Node = t match {
     case _ if v == null ⇒ marshaller.nullNode
-    case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, marshaller.capabilities), marshaller, s.name, s.scalarInfo)
+    case s: ScalarType[Any @unchecked] ⇒
+      Resolver.marshalScalarValue(s.coerceOutput(v, marshaller.capabilities), marshaller, s.name, s.scalarInfo)
     case s: ScalarAlias[Any @unchecked, Any @unchecked] ⇒ renderCoercedInputValue(s.aliasFor, s.toScalar(v))
     case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), marshaller, e.name)
     case io: InputObjectType[_] ⇒
@@ -248,7 +326,12 @@ object DefaultValueRenderer {
 
       val builder = io.fields.foldLeft(marshaller.emptyMapNode(io.fields.map(_.name))) {
         case (acc, field) if mapValue contains field.name ⇒
-          marshaller.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name)), optional = false)
+          marshaller.addMapNodeElem(
+            acc,
+            field.name,
+            renderCoercedInputValue(field.fieldType, mapValue(field.name)),
+            optional = false
+          )
         case (acc, _) ⇒ acc
       }
 
@@ -257,11 +340,12 @@ object DefaultValueRenderer {
       val listValue = v.asInstanceOf[Seq[Any]]
 
       marshaller.mapAndMarshal[Any](listValue, renderCoercedInputValue(l.ofType, _))
-    case o: OptionInputType[_] ⇒ v match {
-      case Some(optVal) ⇒ renderCoercedInputValue(o.ofType, optVal)
-      case None ⇒ marshaller.nullNode
-      case other ⇒ renderCoercedInputValue(o.ofType, other)
-    }
+    case o: OptionInputType[_] ⇒
+      v match {
+        case Some(optVal) ⇒ renderCoercedInputValue(o.ofType, optVal)
+        case None ⇒ marshaller.nullNode
+        case other ⇒ renderCoercedInputValue(o.ofType, other)
+      }
   }
 }
 
@@ -280,31 +364,42 @@ case class Context[Ctx, Val](
   path: ExecutionPath,
   deferredResolverState: Any,
   middlewareAttachments: Vector[MiddlewareAttachment] = Vector.empty
-) extends WithArguments with WithInputTypeRendering[Ctx] {
+) extends WithArguments
+    with WithInputTypeRendering[Ctx] {
   def isIntrospection: Boolean = introspection.isIntrospection(parentType, field)
 
   def attachment[T <: MiddlewareAttachment : ClassTag]: Option[T] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
 
-    middlewareAttachments.collectFirst {case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T]}
+    middlewareAttachments.collectFirst { case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T] }
   }
 
   def attachments[T <: MiddlewareAttachment : ClassTag]: Vector[T] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
 
-    middlewareAttachments.collect {case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T]}
+    middlewareAttachments.collect { case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T] }
   }
 }
 
-case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArgs: Set[String], undefinedArgs: Set[String], defaultInfo: Cache[String, Any]) {
+case class Args(
+  raw: Map[String, Any],
+  argsWithDefault: Set[String],
+  optionalArgs: Set[String],
+  undefinedArgs: Set[String],
+  defaultInfo: Cache[String, Any]
+) {
   private def getAsOptional[T](name: String): Option[T] =
     raw.get(name).asInstanceOf[Option[Option[T]]].flatten
 
   private def invariantExplicitlyNull(name: String) =
-    throw new IllegalArgumentException(s"Optional argument '$name' accessed as a non-optional argument (it has a default value), but query explicitly set argument to `null`.")
+    throw new IllegalArgumentException(
+      s"Optional argument '$name' accessed as a non-optional argument (it has a default value), but query explicitly set argument to `null`."
+    )
 
   private def invariantNotProvided(name: String) =
-    throw new IllegalArgumentException(s"Optional argument '$name' accessed as a non-optional argument, but it was not provided in the query and argument does not define a default value.")
+    throw new IllegalArgumentException(
+      s"Optional argument '$name' accessed as a non-optional argument, but it was not provided in the query and argument does not define a default value."
+    )
 
   def arg[T](arg: Argument[T]): T =
     if (optionalArgs.contains(arg.name) && argsWithDefault.contains(arg.name) && defaultInfo.contains(arg.name))
@@ -339,12 +434,47 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
 
   def withArgs[A1, R](arg1: Argument[A1])(fn: A1 ⇒ R): R = fn(arg(arg1))
   def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) ⇒ R): R = fn(arg(arg1), arg(arg2))
-  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3))
-  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4))
-  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5))
-  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6))
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7))
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7), arg(arg8))
+  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R =
+    fn(arg(arg1), arg(arg2), arg(arg3))
+  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(
+    fn: (A1, A2, A3, A4) ⇒ R
+  ): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4))
+  def withArgs[A1, A2, A3, A4, A5, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5]
+  )(fn: (A1, A2, A3, A4, A5) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5))
+  def withArgs[A1, A2, A3, A4, A5, A6, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5],
+    arg6: Argument[A6]
+  )(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6))
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5],
+    arg6: Argument[A6],
+    arg7: Argument[A7]
+  )(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R =
+    fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7))
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](
+    arg1: Argument[A1],
+    arg2: Argument[A2],
+    arg3: Argument[A3],
+    arg4: Argument[A4],
+    arg5: Argument[A5],
+    arg6: Argument[A6],
+    arg7: Argument[A7],
+    arg8: Argument[A8]
+  )(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R =
+    fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7), arg(arg8))
 }
 
 object Args {
@@ -356,7 +486,7 @@ object Args {
   def apply(definitions: List[Argument[_]], values: Map[String, Any]): Args =
     apply(definitions, input = ScalaInput.scalaInput(values))
 
-  def apply[In: InputUnmarshaller](definitions: List[Argument[_]], input: In): Args = {
+  def apply[In : InputUnmarshaller](definitions: List[Argument[_]], input: In): Args = {
     import sangria.marshalling.queryAst._
 
     val iu = implicitly[InputUnmarshaller[In]]
@@ -366,13 +496,23 @@ object Args {
     } else {
       val argsValues =
         iu.getMapKeys(input).flatMap(key ⇒ definitions.find(_.name == key)).map { arg ⇒
-          val astValue = iu.getRootMapValue(input, arg.name)
+          val astValue = iu
+            .getRootMapValue(input, arg.name)
             .flatMap(x ⇒ this.convert[In, ast.Value](x, arg.argumentType))
 
           ast.Argument(name = arg.name, value = astValue getOrElse ast.NullValue())
         }
 
-      ValueCollector.getArgumentValues(ValueCoercionHelper.default, None, definitions, argsValues.toVector, Map.empty, ExceptionHandler.empty).get
+      ValueCollector
+        .getArgumentValues(
+          ValueCoercionHelper.default,
+          None,
+          definitions,
+          argsValues.toVector,
+          Map.empty,
+          ExceptionHandler.empty
+        )
+        .get
     }
   }
 
@@ -381,13 +521,26 @@ object Args {
 
     apply(
       schemaElem.arguments,
-      ast.ObjectValue(astElem.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value))): ast.Value)
+      ast.ObjectValue(astElem.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value))): ast.Value
+    )
   }
 
-  private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](value: In, tpe: InputType[_]): Option[Out] = {
+  private def convert[In : InputUnmarshaller, Out : ResultMarshallerForType](
+    value: In,
+    tpe: InputType[_]
+  ): Option[Out] = {
     val rm = implicitly[ResultMarshallerForType[Out]]
 
-    ValueCoercionHelper.default.coerceInputValue(tpe, List("stub"), value, None, None, rm.marshaller, rm.marshaller, isArgument = false) match {
+    ValueCoercionHelper.default.coerceInputValue(
+      tpe,
+      List("stub"),
+      value,
+      None,
+      None,
+      rm.marshaller,
+      rm.marshaller,
+      isArgument = false
+    ) match {
       case Right(v) ⇒ v.toOption.asInstanceOf[Option[Out]]
       case Left(violations) ⇒ throw AttributeCoercionError(violations, ExceptionHandler.empty)
     }

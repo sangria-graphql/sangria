@@ -105,10 +105,11 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         defaultValueStack push None
 
         inputType match {
-          case Some(it) ⇒ it.nonOptionalType match {
-            case it: ListInputType[_] ⇒ inputTypeStack push Some(it.ofType)
-            case _ ⇒ inputTypeStack push None
-          }
+          case Some(it) ⇒
+            it.nonOptionalType match {
+              case it: ListInputType[_] ⇒ inputTypeStack push Some(it.ofType)
+              case _ ⇒ inputTypeStack push None
+            }
           case None ⇒ inputTypeStack push None
         }
       case ast.ObjectField(name, value, _, _) ⇒
@@ -129,10 +130,11 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         inputTypeStack push fieldType
       case ast.EnumValue(name, _, _) ⇒
         enumValue = inputType match {
-          case Some(it) ⇒ it.namedType match {
-            case enum: EnumType[_] ⇒ enum.byName.get(name)
-            case _ ⇒ None
-          }
+          case Some(it) ⇒
+            it.namedType match {
+              case enum: EnumType[_] ⇒ enum.byName.get(name)
+              case _ ⇒ None
+            }
           case None ⇒ None
         }
       case _ ⇒ // ignore
@@ -141,10 +143,11 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
 
   def pushParent(): Unit = {
     tpe match {
-      case Some(some) ⇒ some.namedType match {
-        case comp: CompositeType[_] ⇒ parentTypeStack push Some(comp)
-        case _ ⇒ parentTypeStack push None
-      }
+      case Some(some) ⇒
+        some.namedType match {
+          case comp: CompositeType[_] ⇒ parentTypeStack push Some(comp)
+          case _ ⇒ parentTypeStack push None
+        }
       case _ ⇒ parentTypeStack push None
     }
   }
@@ -204,9 +207,10 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
       Some(TypeMetaField)
     else if (astField.name == TypeNameMetaField.name)
       Some(TypeNameMetaField)
-    else parent match {
-      case o: ObjectLikeType[_, _] ⇒ o.getField(schema, astField.name).headOption
-      case _ ⇒ None
-    }
+    else
+      parent match {
+        case o: ObjectLikeType[_, _] ⇒ o.getField(schema, astField.name).headOption
+        case _ ⇒ None
+      }
   }
 }

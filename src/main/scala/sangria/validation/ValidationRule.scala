@@ -12,4 +12,3 @@ trait ValidationRule {
 
   def visitor(ctx: ValidationContext): AstValidatingVisitor
 }
-

@@ -36,10 +36,10 @@ object StringUtil {
     val inputThreshold = input.length / 2
 
     options
-      .map (opt ⇒ opt → lexicalDistance(input, opt))
-      .filter (opt ⇒ opt._2 <= math.max(math.max(inputThreshold, opt._1.length / 2), 1))
-      .sortBy (_._2)
-      .map (_._1)
+      .map(opt ⇒ opt → lexicalDistance(input, opt))
+      .filter(opt ⇒ opt._2 <= math.max(math.max(inputThreshold, opt._1.length / 2), 1))
+      .sortBy(_._2)
+      .map(_._1)
   }
 
   /**
@@ -108,7 +108,7 @@ object StringUtil {
   def blockStringValue(rawString: String): String = {
     val lines = rawString.split("""\r\n|[\n\r]""")
     val lineSizes = lines.map(l ⇒ l → leadingWhitespace(l))
-    val commonIndentLines = lineSizes.drop(1).collect {case (line, size) if size != line.length ⇒ size}
+    val commonIndentLines = lineSizes.drop(1).collect { case (line, size) if size != line.length ⇒ size }
     val strippedLines =
       if (commonIndentLines.nonEmpty) {
         val commonIndent = commonIndentLines.min
@@ -120,7 +120,7 @@ object StringUtil {
     trimmedLines.mkString("\n")
   }
 
-  private def leadingWhitespace(str: String) =  {
+  private def leadingWhitespace(str: String) = {
     var i = 0
 
     while (i < str.length && (str.charAt(i) == ' ' || str.charAt(i) == '\t')) i += 1

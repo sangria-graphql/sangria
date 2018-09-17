@@ -19,7 +19,8 @@ class Fetcher[Ctx, Res, RelRes, Id](
   def deferRel[RelId](rel: Relation[Res, RelRes, RelId], relId: RelId) = FetcherDeferredRel(this, rel, relId)
   def deferRelOpt[RelId](rel: Relation[Res, RelRes, RelId], relId: RelId) = FetcherDeferredRelOpt(this, rel, relId)
   def deferRelSeq[RelId](rel: Relation[Res, RelRes, RelId], relId: RelId) = FetcherDeferredRelSeq(this, rel, relId)
-  def deferRelSeqMany[RelId](rel: Relation[Res, RelRes, RelId], relIds: Seq[RelId]) = FetcherDeferredRelSeqMany(this, rel, relIds)
+  def deferRelSeqMany[RelId](rel: Relation[Res, RelRes, RelId], relIds: Seq[RelId]) =
+    FetcherDeferredRelSeqMany(this, rel, relIds)
 
   def clearCache(deferredResolverState: Any) =
     findCache(deferredResolverState)(_.clear())
@@ -35,15 +36,16 @@ class Fetcher[Ctx, Res, RelRes, Id](
 
   private def findCache(deferredResolverState: Any)(op: FetcherCache ⇒ Unit): Unit =
     deferredResolverState match {
-      case map: Map[AnyRef, FetcherCache] @unchecked ⇒ map.get(this) match {
-        case Some(cache) ⇒ op(cache)
-        case None ⇒ // just ignore
-      }
+      case map: Map[AnyRef, FetcherCache] @unchecked ⇒
+        map.get(this) match {
+          case Some(cache) ⇒ op(cache)
+          case None ⇒ // just ignore
+        }
       case _ ⇒ // just ignore
     }
 
   def ids(deferred: Vector[Deferred[Any]]): Vector[Id] = {
-    val allIds =  MutableSet[Id]()
+    val allIds = MutableSet[Id]()
 
     deferred foreach {
       case FetcherDeferredOne(s, id) if s eq this ⇒ allIds += id.asInstanceOf[Id]
@@ -59,7 +61,7 @@ class Fetcher[Ctx, Res, RelRes, Id](
   }
 
   def relIds(deferred: Vector[Deferred[Any]]): Map[Relation[Any, Any, Any], Vector[Any]] = {
-    val allIds =  MutableMap[Relation[Any, Any, Any], MutableSet[Any]]()
+    val allIds = MutableMap[Relation[Any, Any, Any], MutableSet[Any]]()
 
     def addToSet(rel: Relation[Any, Any, Any], id: Any) =
       allIds.get(rel) match {
@@ -78,14 +80,13 @@ class Fetcher[Ctx, Res, RelRes, Id](
       case _ ⇒ // skip
     }
 
-    allIds.map{case (k, v) ⇒ k → v.toVector}.toMap
+    allIds.map { case (k, v) ⇒ k → v.toVector }.toMap
   }
 
   def isRel(deferred: Deferred[Any]) = deferred match {
-    case FetcherDeferredRel(_, _, _) |
-         FetcherDeferredRelOpt(_, _, _) |
-         FetcherDeferredRelSeq(_, _, _) |
-         FetcherDeferredRelSeqMany(_, _, _) ⇒ true
+    case FetcherDeferredRel(_, _, _) | FetcherDeferredRelOpt(_, _, _) | FetcherDeferredRelSeq(_, _, _) |
+        FetcherDeferredRelSeqMany(_, _, _) ⇒
+      true
     case _ ⇒ false
   }
 }
@@ -97,40 +98,88 @@ object Fetcher {
   private def relationOnlySupported[Ctx, Id, Res]: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]] =
     (_, _) ⇒ Future.failed(new RelationOnlySupportedError)
 
-  def apply[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
+  def apply[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(
+    implicit id: HasId[Res, Id]
+  ): Fetcher[Ctx, Res, Res, Id] =
     new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), relationUnsupported, config)
 
-  def withContext[Ctx, Res, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
+  def withContext[Ctx, Res, Id](
+    fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]],
+    config: FetcherConfig = FetcherConfig.empty
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
     new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), fetch, relationUnsupported, config)
 
-  def rel[Ctx, Res, RelRes, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
-    new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), (c, ids) ⇒ fetchRel(c.ctx, ids), config)
+  def rel[Ctx, Res, RelRes, Id](
+    fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]],
+    fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.empty
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+    new Fetcher[Ctx, Res, RelRes, Id](
+      i ⇒ id.id(i),
+      (c, ids) ⇒ fetch(c.ctx, ids),
+      (c, ids) ⇒ fetchRel(c.ctx, ids),
+      config
+    )
 
-  def relWithContext[Ctx, Res, RelRes, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+  def relWithContext[Ctx, Res, RelRes, Id](
+    fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]],
+    fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.empty
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), fetch, fetchRel, config)
 
-  def relOnly[Ctx, Res, RelRes, Id](fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+  def relOnly[Ctx, Res, RelRes, Id](
+    fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.empty
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, (c, ids) ⇒ fetchRel(c.ctx, ids), config)
 
-  def relOnlyWithContext[Ctx, Res, RelRes, Id](fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.empty)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+  def relOnlyWithContext[Ctx, Res, RelRes, Id](
+    fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.empty
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, fetchRel, config)
 
-  def caching[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
+  def caching[Ctx, Res, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(
+    implicit id: HasId[Res, Id]
+  ): Fetcher[Ctx, Res, Res, Id] =
     new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), relationUnsupported, config)
 
-  def cachingWithContext[Ctx, Res, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
+  def cachingWithContext[Ctx, Res, Id](
+    fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]],
+    config: FetcherConfig = FetcherConfig.caching
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, Res, Id] =
     new Fetcher[Ctx, Res, Res, Id](i ⇒ id.id(i), fetch, relationUnsupported, config)
 
-  def relCaching[Ctx, Res, RelRes, Id](fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
-    new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), (c, ids) ⇒ fetch(c.ctx, ids), (c, ids) ⇒ fetchRel(c.ctx, ids), config)
+  def relCaching[Ctx, Res, RelRes, Id](
+    fetch: (Ctx, Seq[Id]) ⇒ Future[Seq[Res]],
+    fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.caching
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+    new Fetcher[Ctx, Res, RelRes, Id](
+      i ⇒ id.id(i),
+      (c, ids) ⇒ fetch(c.ctx, ids),
+      (c, ids) ⇒ fetchRel(c.ctx, ids),
+      config
+    )
 
-  def relCachingWithContext[Ctx, Res, RelRes, Id](fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]], fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+  def relCachingWithContext[Ctx, Res, RelRes, Id](
+    fetch: (FetcherContext[Ctx], Seq[Id]) ⇒ Future[Seq[Res]],
+    fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.caching
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), fetch, fetchRel, config)
 
-  def relOnlyCaching[Ctx, Res, RelRes, Id](fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+  def relOnlyCaching[Ctx, Res, RelRes, Id](
+    fetchRel: (Ctx, RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.caching
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, (c, ids) ⇒ fetchRel(c.ctx, ids), config)
 
-  def relOnlyCachingWithContext[Ctx, Res, RelRes, Id](fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]], config: FetcherConfig = FetcherConfig.caching)(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
+  def relOnlyCachingWithContext[Ctx, Res, RelRes, Id](
+    fetchRel: (FetcherContext[Ctx], RelationIds[Res]) ⇒ Future[Seq[RelRes]],
+    config: FetcherConfig = FetcherConfig.caching
+  )(implicit id: HasId[Res, Id]): Fetcher[Ctx, Res, RelRes, Id] =
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, fetchRel, config)
 }
 
@@ -192,15 +241,34 @@ trait DeferredRelSeqMany[T, RelId] extends Deferred[Seq[T]] {
 
 case class FetcherDeferredOne[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], id: Id) extends DeferredOne[T, Id]
 case class FetcherDeferredOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], id: Id) extends DeferredOpt[T, Id]
-case class FetcherDeferredOptOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], id: Option[Id]) extends DeferredOptOpt[T, Id]
+case class FetcherDeferredOptOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], id: Option[Id])
+    extends DeferredOptOpt[T, Id]
 case class FetcherDeferredSeq[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
-case class FetcherDeferredSeqOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id]) extends DeferredSeq[T, Id]
-case class FetcherDeferredSeqOptExplicit[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id]) extends DeferredSeqOpt[T, Id]
+case class FetcherDeferredSeqOpt[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id])
+    extends DeferredSeq[T, Id]
+case class FetcherDeferredSeqOptExplicit[Ctx, T, RT, Id](source: Fetcher[Ctx, T, RT, Id], ids: Seq[Id])
+    extends DeferredSeqOpt[T, Id]
 
-case class FetcherDeferredRel[Ctx, RelId, T, Tmp, Id](source: Fetcher[Ctx, T, Tmp, Id], rel: Relation[T, Tmp, RelId], relId: RelId) extends DeferredRel[T, RelId]
-case class FetcherDeferredRelOpt[Ctx, RelId, T, Tmp, Id](source: Fetcher[Ctx, T, Tmp, Id], rel: Relation[T, Tmp, RelId], relId: RelId) extends DeferredRelOpt[T, RelId]
-case class FetcherDeferredRelSeq[Ctx, RelId, T, Tmp, Id](source: Fetcher[Ctx, T, Tmp, Id], rel: Relation[T, Tmp, RelId], relId: RelId) extends DeferredRelSeq[T, RelId]
-case class FetcherDeferredRelSeqMany[Ctx, RelId, T, Tmp, Id](source: Fetcher[Ctx, T, Tmp, Id], rel: Relation[T, Tmp, RelId], relIds: Seq[RelId]) extends DeferredRelSeqMany[T, RelId]
+case class FetcherDeferredRel[Ctx, RelId, T, Tmp, Id](
+  source: Fetcher[Ctx, T, Tmp, Id],
+  rel: Relation[T, Tmp, RelId],
+  relId: RelId
+) extends DeferredRel[T, RelId]
+case class FetcherDeferredRelOpt[Ctx, RelId, T, Tmp, Id](
+  source: Fetcher[Ctx, T, Tmp, Id],
+  rel: Relation[T, Tmp, RelId],
+  relId: RelId
+) extends DeferredRelOpt[T, RelId]
+case class FetcherDeferredRelSeq[Ctx, RelId, T, Tmp, Id](
+  source: Fetcher[Ctx, T, Tmp, Id],
+  rel: Relation[T, Tmp, RelId],
+  relId: RelId
+) extends DeferredRelSeq[T, RelId]
+case class FetcherDeferredRelSeqMany[Ctx, RelId, T, Tmp, Id](
+  source: Fetcher[Ctx, T, Tmp, Id],
+  rel: Relation[T, Tmp, RelId],
+  relIds: Seq[RelId]
+) extends DeferredRelSeqMany[T, RelId]
 
 trait Relation[T, Tmp, RelId] {
   def relIds(value: Tmp): Seq[RelId]
@@ -220,7 +288,8 @@ abstract class AbstractRelation[T, Tmp, RelId](idFn: Tmp ⇒ Seq[RelId], mapFn: 
   def map(value: Tmp) = mapFn(value)
 }
 
-case class SimpleRelation[T, Tmp, RelId](name: String)(idFn: Tmp ⇒ Seq[RelId], mapFn: Tmp ⇒ T) extends AbstractRelation[T, Tmp, RelId](idFn, mapFn)
+case class SimpleRelation[T, Tmp, RelId](name: String)(idFn: Tmp ⇒ Seq[RelId], mapFn: Tmp ⇒ T)
+    extends AbstractRelation[T, Tmp, RelId](idFn, mapFn)
 
 case class RelationIds[Res](rawIds: Map[Relation[Res, _, _], Seq[_]]) {
   def apply[RelId](relation: Relation[Res, _, RelId]): Seq[RelId] =

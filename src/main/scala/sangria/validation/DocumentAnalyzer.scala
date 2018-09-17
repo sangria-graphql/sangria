@@ -15,56 +15,60 @@ case class DocumentAnalyzer(document: ast.Document) {
     ResolverBasedAstSchemaBuilder.resolveDirectives[T](document, resolvers: _*)
 
   def getFragmentSpreads(astNode: ast.SelectionContainer): Vector[FragmentSpread] =
-    fragmentSpreadsCache.getOrElseUpdate(astNode.cacheKeyHash, {
-      val spreads = ListBuffer[ast.FragmentSpread]()
-      val setsToVisit = ValidatorStack.empty[Vector[ast.Selection]]
+    fragmentSpreadsCache.getOrElseUpdate(
+      astNode.cacheKeyHash, {
+        val spreads = ListBuffer[ast.FragmentSpread]()
+        val setsToVisit = ValidatorStack.empty[Vector[ast.Selection]]
 
-      setsToVisit.push(astNode.selections)
+        setsToVisit.push(astNode.selections)
 
-      while (setsToVisit.nonEmpty) {
-        val set = setsToVisit.pop()
+        while (setsToVisit.nonEmpty) {
+          val set = setsToVisit.pop()
 
-        set.foreach {
-          case fs: ast.FragmentSpread ⇒
-            spreads += fs
-          case cont: ast.SelectionContainer ⇒
-            setsToVisit push cont.selections
+          set.foreach {
+            case fs: ast.FragmentSpread ⇒
+              spreads += fs
+            case cont: ast.SelectionContainer ⇒
+              setsToVisit push cont.selections
+          }
         }
-      }
 
-      spreads.toVector
-    })
+        spreads.toVector
+      }
+    )
 
   def getRecursivelyReferencedFragments(operation: ast.OperationDefinition): Vector[FragmentDefinition] =
-    recursivelyReferencedFragmentsCache.getOrElseUpdate(operation.cacheKeyHash, {
-      val frags = ListBuffer[ast.FragmentDefinition]()
-      val collectedNames = MutableSet[String]()
-      val nodesToVisit = ValidatorStack.empty[ast.SelectionContainer]
+    recursivelyReferencedFragmentsCache.getOrElseUpdate(
+      operation.cacheKeyHash, {
+        val frags = ListBuffer[ast.FragmentDefinition]()
+        val collectedNames = MutableSet[String]()
+        val nodesToVisit = ValidatorStack.empty[ast.SelectionContainer]
 
-      nodesToVisit.push(operation)
+        nodesToVisit.push(operation)
 
-      while (nodesToVisit.nonEmpty) {
-        val node = nodesToVisit.pop()
-        val spreads = getFragmentSpreads(node)
+        while (nodesToVisit.nonEmpty) {
+          val node = nodesToVisit.pop()
+          val spreads = getFragmentSpreads(node)
 
-        spreads.foreach { spread ⇒
-          val fragName = spread.name
+          spreads.foreach { spread ⇒
+            val fragName = spread.name
 
-          if (!collectedNames.contains(fragName)) {
-            collectedNames += fragName
+            if (!collectedNames.contains(fragName)) {
+              collectedNames += fragName
 
-            document.fragments.get(fragName) match {
-              case Some(frag) ⇒
-                frags += frag
-                nodesToVisit.push(frag)
-              case None ⇒ // do nothing
+              document.fragments.get(fragName) match {
+                case Some(frag) ⇒
+                  frags += frag
+                  nodesToVisit.push(frag)
+                case None ⇒ // do nothing
+              }
             }
           }
         }
-      }
 
-      frags.toVector
-    })
+        frags.toVector
+      }
+    )
 
   lazy val separateOperations: Map[Option[String], ast.Document] =
     document.operations.map {

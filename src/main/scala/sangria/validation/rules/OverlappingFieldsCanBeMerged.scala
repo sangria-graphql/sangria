@@ -11,12 +11,12 @@ import sangria.validation._
 import scala.collection.mutable.{ListBuffer, Set ⇒ MutableSet, ListMap ⇒ MutableMap, LinkedHashSet}
 
 /**
- * Overlapping fields can be merged
- *
- * A selection set is only valid if all fields (including spreading any
- * fragments) either correspond to distinct response names or can be merged
- * without ambiguity.
- */
+  * Overlapping fields can be merged
+  *
+  * A selection set is only valid if all fields (including spreading any
+  * fragments) either correspond to distinct response names or can be merged
+  * without ambiguity.
+  */
 class OverlappingFieldsCanBeMerged extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     // A memoization for when two fragments are compared "between" each other for
@@ -27,76 +27,94 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     // A cache for the "field map" and list of fragment names found in any given
     // selection set. Selection sets may be asked for this information multiple
     // times, so this improves the performance of this validator.
-    val cachedFieldsAndFragmentNames = new MutableMap[(Set[String], Vector[ast.Selection]), (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String])]()
+    val cachedFieldsAndFragmentNames = new MutableMap[
+      (Set[String], Vector[ast.Selection]),
+      (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String])
+    ]()
 
     /**
-     * Algorithm:
-     *
-     * Conflicts occur when two fields exist in a query which will produce the same
-     * response name, but represent differing values, thus creating a conflict.
-     * The algorithm below finds all conflicts via making a series of comparisons
-     * between fields. In order to compare as few fields as possible, this makes
-     * a series of comparisons "within" sets of fields and "between" sets of fields.
-     *
-     * Given any selection set, a collection produces both a set of fields by
-     * also including all inline fragments, as well as a list of fragments
-     * referenced by fragment spreads.
-     *
-     * A) Each selection set represented in the document first compares "within" its
-     * collected set of fields, finding any conflicts between every pair of
-     * overlapping fields.
-     * Note: This is the *only time* that a the fields "within" a set are compared
-     * to each other. After this only fields "between" sets are compared.
-     *
-     * B) Also, if any fragment is referenced in a selection set, then a
-     * comparison is made "between" the original set of fields and the
-     * referenced fragment.
-     *
-     * C) Also, if multiple fragments are referenced, then comparisons
-     * are made "between" each referenced fragment.
-     *
-     * D) When comparing "between" a set of fields and a referenced fragment, first
-     * a comparison is made between each field in the original set of fields and
-     * each field in the the referenced set of fields.
-     *
-     * E) Also, if any fragment is referenced in the referenced selection set,
-     * then a comparison is made "between" the original set of fields and the
-     * referenced fragment (recursively referring to step D).
-     *
-     * F) When comparing "between" two fragments, first a comparison is made between
-     * each field in the first referenced set of fields and each field in the the
-     * second referenced set of fields.
-     *
-     * G) Also, any fragments referenced by the first must be compared to the
-     * second, and any fragments referenced by the second must be compared to the
-     * first (recursively referring to step F).
-     *
-     * H) When comparing two fields, if both have selection sets, then a comparison
-     * is made "between" both selection sets, first comparing the set of fields in
-     * the first selection set with the set of fields in the second.
-     *
-     * I) Also, if any fragment is referenced in either selection set, then a
-     * comparison is made "between" the other set of fields and the
-     * referenced fragment.
-     *
-     * J) Also, if two fragments are referenced in both selection sets, then a
-     * comparison is made "between" the two fragments.
-     *
-     */
+      * Algorithm:
+      *
+      * Conflicts occur when two fields exist in a query which will produce the same
+      * response name, but represent differing values, thus creating a conflict.
+      * The algorithm below finds all conflicts via making a series of comparisons
+      * between fields. In order to compare as few fields as possible, this makes
+      * a series of comparisons "within" sets of fields and "between" sets of fields.
+      *
+      * Given any selection set, a collection produces both a set of fields by
+      * also including all inline fragments, as well as a list of fragments
+      * referenced by fragment spreads.
+      *
+      * A) Each selection set represented in the document first compares "within" its
+      * collected set of fields, finding any conflicts between every pair of
+      * overlapping fields.
+      * Note: This is the *only time* that a the fields "within" a set are compared
+      * to each other. After this only fields "between" sets are compared.
+      *
+      * B) Also, if any fragment is referenced in a selection set, then a
+      * comparison is made "between" the original set of fields and the
+      * referenced fragment.
+      *
+      * C) Also, if multiple fragments are referenced, then comparisons
+      * are made "between" each referenced fragment.
+      *
+      * D) When comparing "between" a set of fields and a referenced fragment, first
+      * a comparison is made between each field in the original set of fields and
+      * each field in the the referenced set of fields.
+      *
+      * E) Also, if any fragment is referenced in the referenced selection set,
+      * then a comparison is made "between" the original set of fields and the
+      * referenced fragment (recursively referring to step D).
+      *
+      * F) When comparing "between" two fragments, first a comparison is made between
+      * each field in the first referenced set of fields and each field in the the
+      * second referenced set of fields.
+      *
+      * G) Also, any fragments referenced by the first must be compared to the
+      * second, and any fragments referenced by the second must be compared to the
+      * first (recursively referring to step F).
+      *
+      * H) When comparing two fields, if both have selection sets, then a comparison
+      * is made "between" both selection sets, first comparing the set of fields in
+      * the first selection set with the set of fields in the second.
+      *
+      * I) Also, if any fragment is referenced in either selection set, then a
+      * comparison is made "between" the other set of fields and the
+      * referenced fragment.
+      *
+      * J) Also, if two fragments are referenced in both selection sets, then a
+      * comparison is made "between" the two fragments.
+      *
+      */
     override val onEnter: ValidationVisit = {
       case selCont: ast.SelectionContainer if selCont.selections.nonEmpty ⇒
         val conflicts = findConflictsWithinSelectionSet(ctx.typeInfo.parentType, selCont, Set.empty)
 
         if (conflicts.nonEmpty)
-          Left(conflicts.toVector.map(c ⇒ FieldsConflictViolation(c.reason.fieldName, c.reason.reason, ctx.sourceMapper, (c.fields1 ++ c.fields2) flatMap (_.location))))
+          Left(
+            conflicts.toVector.map(
+              c ⇒
+                FieldsConflictViolation(
+                  c.reason.fieldName,
+                  c.reason.reason,
+                  ctx.sourceMapper,
+                  (c.fields1 ++ c.fields2) flatMap (_.location)
+              )
+            )
+          )
         else
           AstVisitorCommand.RightContinue
     }
 
-    def findConflictsWithinSelectionSet(parentType: Option[Type], selCont: ast.SelectionContainer, visitedFragments: Set[String]): ListBuffer[Conflict] = {
+    def findConflictsWithinSelectionSet(
+      parentType: Option[Type],
+      selCont: ast.SelectionContainer,
+      visitedFragments: Set[String]
+    ): ListBuffer[Conflict] = {
       val conflicts = ListBuffer[Conflict]()
 
-      val (fieldMap, fragmentNames) = getFieldsAndFragmentNames(parentType.asInstanceOf[Option[CompositeType[_]]], selCont, visitedFragments)
+      val (fieldMap, fragmentNames) =
+        getFieldsAndFragmentNames(parentType.asInstanceOf[Option[CompositeType[_]]], selCont, visitedFragments)
 
       // (A) Find find all conflicts "within" the fields of this selection set.
       // Note: this is the *only place* `collectConflictsWithin` is called.
@@ -106,16 +124,25 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
       // (B) Then collect conflicts between these fields and those represented by
       // each spread fragment name found.
-      fragmentNames.zipWithIndex foreach { case (fragmentName, idx) ⇒
-        collectConflictsBetweenFieldsAndFragment(conflicts, fieldMap, fragmentName, false, visitedFragments + fragmentName)
-
-        for (i ← (idx + 1) until fragmentNamesList.size)
-          collectConflictsBetweenFragments(
+      fragmentNames.zipWithIndex foreach {
+        case (fragmentName, idx) ⇒
+          collectConflictsBetweenFieldsAndFragment(
             conflicts,
+            fieldMap,
             fragmentName,
-            fragmentNamesList(i),
-            visitedFragments + fragmentName,
-            visitedFragments + fragmentNamesList(i), false)
+            false,
+            visitedFragments + fragmentName
+          )
+
+          for (i ← (idx + 1) until fragmentNamesList.size)
+            collectConflictsBetweenFragments(
+              conflicts,
+              fragmentName,
+              fragmentNamesList(i),
+              visitedFragments + fragmentName,
+              visitedFragments + fragmentNamesList(i),
+              false
+            )
       }
 
       conflicts
@@ -127,12 +154,13 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     // provided collection of fields. This is true because this validator traverses
     // each individual selection set.
     def collectConflictsBetween(
-        conflicts: ListBuffer[Conflict],
-        fieldMap1: MutableMap[String, ListBuffer[AstAndDef]],
-        fieldMap2: MutableMap[String, ListBuffer[AstAndDef]],
-        visitedFragments1: Set[String],
-        visitedFragments2: Set[String],
-        parentFieldsAreMutuallyExclusive: Boolean): Unit = {
+      conflicts: ListBuffer[Conflict],
+      fieldMap1: MutableMap[String, ListBuffer[AstAndDef]],
+      fieldMap2: MutableMap[String, ListBuffer[AstAndDef]],
+      visitedFragments1: Set[String],
+      visitedFragments2: Set[String],
+      parentFieldsAreMutuallyExclusive: Boolean
+    ): Unit = {
       // A field map is a keyed collection, where each key represents a response
       // name and the value at that key is a list of all fields which provide that
       // response name. For any response name which appears in both provided field
@@ -154,7 +182,11 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     }
 
     // Collect all Conflicts "within" one collection of fields.
-    def collectConflictsWithin(conflicts: ListBuffer[Conflict], fieldMap: MutableMap[String, ListBuffer[AstAndDef]], visitedFragments: Set[String]): Unit = {
+    def collectConflictsWithin(
+      conflicts: ListBuffer[Conflict],
+      fieldMap: MutableMap[String, ListBuffer[AstAndDef]],
+      visitedFragments: Set[String]
+    ): Unit = {
       // A field map is a keyed collection, where each key represents a response
       // name and the value at that key is a list of all fields which provide that
       // response name. For every response name, if there are multiple fields, they
@@ -171,9 +203,10 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     }
 
     def getFieldsAndFragmentNames(
-        parentType: Option[CompositeType[_]],
-        selCont: ast.SelectionContainer,
-        visitedFragments: Set[String]): (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String]) = {
+      parentType: Option[CompositeType[_]],
+      selCont: ast.SelectionContainer,
+      visitedFragments: Set[String]
+    ): (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String]) = {
       val cacheKey = visitedFragments → selCont.selections
 
       cachedFieldsAndFragmentNames.get(cacheKey) match {
@@ -193,22 +226,27 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
     // Given a reference to a fragment, return the represented collection of fields
     // as well as a list of nested fragment names referenced via fragment spreads.
-    def getReferencedFieldsAndFragmentNames(fragment: ast.FragmentDefinition, visitedFragments: Set[String]): (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String]) = {
+    def getReferencedFieldsAndFragmentNames(
+      fragment: ast.FragmentDefinition,
+      visitedFragments: Set[String]
+    ): (MutableMap[String, ListBuffer[AstAndDef]], LinkedHashSet[String]) = {
       cachedFieldsAndFragmentNames.get(visitedFragments → fragment.selections) match {
         case Some(cached) ⇒ cached
         case None ⇒
-          val fragmentType = ctx.schema.getOutputType(fragment.typeCondition, true).asInstanceOf[Option[CompositeType[_]]]
+          val fragmentType =
+            ctx.schema.getOutputType(fragment.typeCondition, true).asInstanceOf[Option[CompositeType[_]]]
 
           getFieldsAndFragmentNames(fragmentType, fragment, visitedFragments)
       }
     }
 
     def collectFieldsAndFragmentNames(
-        parentType: Option[OutputType[_]],
-        selCont: ast.SelectionContainer,
-        astAndDefs: MutableMap[String, ListBuffer[AstAndDef]],
-        fragmentNames: MutableSet[String],
-        visitedFragments: Set[String]): Unit = {
+      parentType: Option[OutputType[_]],
+      selCont: ast.SelectionContainer,
+      astAndDefs: MutableMap[String, ListBuffer[AstAndDef]],
+      fragmentNames: MutableSet[String],
+      visitedFragments: Set[String]
+    ): Unit = {
       selCont.selections foreach {
         case field: ast.Field ⇒
           val fieldDef: Option[Field[_, _]] = parentType flatMap {
@@ -227,8 +265,8 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
           astAndDef += AstAndDef(field, parentType, fieldDef)
 
         case fragment: ast.FragmentSpread if visitedFragments contains fragment.name ⇒
-          // This means a fragment spread in itself. We're going to infinite loop
-          // if we try and collect all fields. Pretend we did not index that fragment
+        // This means a fragment spread in itself. We're going to infinite loop
+        // if we try and collect all fields. Pretend we did not index that fragment
 
         case fragment: ast.FragmentSpread ⇒
           fragmentNames += fragment.name
@@ -241,12 +279,13 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     }
 
     def findConflict(
-        outputName: String,
-        fieldInfo1: AstAndDef,
-        fieldInfo2: AstAndDef,
-        visitedFragments1: Set[String],
-        visitedFragments2: Set[String],
-        parentFieldsAreMutuallyExclusive: Boolean): Option[Conflict] = {
+      outputName: String,
+      fieldInfo1: AstAndDef,
+      fieldInfo2: AstAndDef,
+      visitedFragments1: Set[String],
+      visitedFragments2: Set[String],
+      parentFieldsAreMutuallyExclusive: Boolean
+    ): Option[Conflict] = {
       val AstAndDef(ast1, parentType1, def1) = fieldInfo1
       val AstAndDef(ast2, parentType2, def2) = fieldInfo2
 
@@ -264,19 +303,32 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
       })
 
       if (!areMutuallyExclusive && ast1.name != ast2.name)
-        Some(Conflict(ConflictReason(outputName, Left(s"'${ast1.name}' and '${ast2.name}' are different fields")), ast1 :: Nil, ast2 :: Nil))
+        Some(
+          Conflict(
+            ConflictReason(outputName, Left(s"'${ast1.name}' and '${ast2.name}' are different fields")),
+            ast1 :: Nil,
+            ast2 :: Nil
+          )
+        )
       else if (!areMutuallyExclusive && !sameArguments(ast1.arguments, ast2.arguments))
         Some(Conflict(ConflictReason(outputName, Left("they have differing arguments")), ast1 :: Nil, ast2 :: Nil))
       else {
         val typeRes = for {
           field1 ← def1
           field2 ← def2
-        } yield if (doTypesConflict(field1.fieldType, field2.fieldType)) {
-          val type1 = SchemaRenderer.renderTypeName(field1.fieldType)
-          val type2 = SchemaRenderer.renderTypeName(field2.fieldType)
+        } yield
+          if (doTypesConflict(field1.fieldType, field2.fieldType)) {
+            val type1 = SchemaRenderer.renderTypeName(field1.fieldType)
+            val type2 = SchemaRenderer.renderTypeName(field2.fieldType)
 
-          Some(Conflict(ConflictReason(outputName, Left(s"they return conflicting types '$type1' and '$type2'")), ast1 :: Nil, ast2 :: Nil))
-        } else None
+            Some(
+              Conflict(
+                ConflictReason(outputName, Left(s"they return conflicting types '$type1' and '$type2'")),
+                ast1 :: Nil,
+                ast2 :: Nil
+              )
+            )
+          } else None
 
         typeRes.flatten match {
           case s @ Some(_) ⇒ s
@@ -290,7 +342,8 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
               type2.asInstanceOf[Option[CompositeType[_]]],
               ast2,
               visitedFragments1,
-              visitedFragments2)
+              visitedFragments2
+            )
 
             subfieldConflicts(conflicts, outputName, ast1, ast2)
         }
@@ -301,30 +354,54 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     // via spreading in fragments. Called when determining if conflicts exist
     // between the sub-fields of two overlapping fields.
     def findConflictsBetweenSubSelectionSets(
-        areMutuallyExclusive: Boolean,
-        parentType1: Option[CompositeType[_]],
-        selCont1: ast.SelectionContainer,
-        parentType2: Option[CompositeType[_]],
-        selCont2: ast.SelectionContainer,
-        visitedFragments1: Set[String],
-        visitedFragments2: Set[String]): ListBuffer[Conflict] = {
+      areMutuallyExclusive: Boolean,
+      parentType1: Option[CompositeType[_]],
+      selCont1: ast.SelectionContainer,
+      parentType2: Option[CompositeType[_]],
+      selCont2: ast.SelectionContainer,
+      visitedFragments1: Set[String],
+      visitedFragments2: Set[String]
+    ): ListBuffer[Conflict] = {
       val conflicts = ListBuffer[Conflict]()
 
       val (fieldMap1, fragmentNames1) = getFieldsAndFragmentNames(parentType1, selCont1, visitedFragments1)
       val (fieldMap2, fragmentNames2) = getFieldsAndFragmentNames(parentType2, selCont2, visitedFragments2)
 
       // (H) First, collect all conflicts between these two collections of field.
-      collectConflictsBetween(conflicts, fieldMap1, fieldMap2, visitedFragments1, visitedFragments2, areMutuallyExclusive)
+      collectConflictsBetween(
+        conflicts,
+        fieldMap1,
+        fieldMap2,
+        visitedFragments1,
+        visitedFragments2,
+        areMutuallyExclusive
+      )
 
       // (I) Then collect conflicts between the first collection of fields and
       // those referenced by each fragment name associated with the second.
-      fragmentNames2 foreach (fragmentName ⇒
-        collectConflictsBetweenFieldsAndFragment(conflicts, fieldMap1, fragmentName, areMutuallyExclusive, visitedFragments2 + fragmentName))
+      fragmentNames2 foreach (
+        fragmentName ⇒
+          collectConflictsBetweenFieldsAndFragment(
+            conflicts,
+            fieldMap1,
+            fragmentName,
+            areMutuallyExclusive,
+            visitedFragments2 + fragmentName
+          )
+      )
 
       // (I) Then collect conflicts between the second collection of fields and
       // those referenced by each fragment name associated with the first.
-      fragmentNames1 foreach (fragmentName ⇒
-        collectConflictsBetweenFieldsAndFragment(conflicts, fieldMap2, fragmentName, areMutuallyExclusive, visitedFragments1 + fragmentName))
+      fragmentNames1 foreach (
+        fragmentName ⇒
+          collectConflictsBetweenFieldsAndFragment(
+            conflicts,
+            fieldMap2,
+            fragmentName,
+            areMutuallyExclusive,
+            visitedFragments1 + fragmentName
+          )
+      )
 
       // (J) Also collect conflicts between any fragment names by the first and
       // fragment names by the second. This compares each item in the first set of
@@ -332,7 +409,14 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
       for {
         fragmentName1 ← fragmentNames1
         fragmentName2 ← fragmentNames2
-      } collectConflictsBetweenFragments(conflicts, fragmentName1, fragmentName2, visitedFragments1 + fragmentName1, visitedFragments2 + fragmentName2, areMutuallyExclusive)
+      } collectConflictsBetweenFragments(
+        conflicts,
+        fragmentName1,
+        fragmentName2,
+        visitedFragments1 + fragmentName1,
+        visitedFragments2 + fragmentName2,
+        areMutuallyExclusive
+      )
 
       conflicts
     }
@@ -340,19 +424,20 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
     // Collect all conflicts found between two fragments, including via spreading in
     // any nested fragments.
     def collectConflictsBetweenFragments(
-        conflicts: ListBuffer[Conflict],
-        fragmentName1: String,
-        fragmentName2: String,
-        visitedFragments1: Set[String],
-        visitedFragments2: Set[String],
-        areMutuallyExclusive: Boolean): Unit = {
+      conflicts: ListBuffer[Conflict],
+      fragmentName1: String,
+      fragmentName2: String,
+      visitedFragments1: Set[String],
+      visitedFragments2: Set[String],
+      areMutuallyExclusive: Boolean
+    ): Unit = {
       (ctx.doc.fragments.get(fragmentName1), ctx.doc.fragments.get(fragmentName2)) match {
         case (None, _) | (_, None) ⇒ // do nothing
 
         case (Some(f1), Some(f2)) if f1.name == f2.name ⇒
-          // No need to compare a fragment to itself.
+        // No need to compare a fragment to itself.
         case (Some(f1), Some(f2)) if comparedFragments.contains(f1.name, f2.name, areMutuallyExclusive) ⇒
-          // Memoize so two fragments are not compared for conflicts more than once.
+        // Memoize so two fragments are not compared for conflicts more than once.
 
         case (Some(f1), Some(f2)) ⇒
           comparedFragments.add(f1.name, f2.name, areMutuallyExclusive)
@@ -362,49 +447,99 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
           // (F) First, collect all conflicts between these two collections of fields
           // (not including any nested fragments).
-          collectConflictsBetween(conflicts, fieldMap1, fieldMap2, visitedFragments1, visitedFragments2, areMutuallyExclusive)
+          collectConflictsBetween(
+            conflicts,
+            fieldMap1,
+            fieldMap2,
+            visitedFragments1,
+            visitedFragments2,
+            areMutuallyExclusive
+          )
 
           // (G) Then collect conflicts between the first fragment and any nested
           // fragments spread in the second fragment.
-          fragmentNames2 foreach (fragmentName ⇒
-            collectConflictsBetweenFragments(conflicts, fragmentName1, fragmentName, visitedFragments1, visitedFragments2 + fragmentName, areMutuallyExclusive))
+          fragmentNames2 foreach (
+            fragmentName ⇒
+              collectConflictsBetweenFragments(
+                conflicts,
+                fragmentName1,
+                fragmentName,
+                visitedFragments1,
+                visitedFragments2 + fragmentName,
+                areMutuallyExclusive
+              )
+          )
 
           // (G) Then collect conflicts between the first fragment and any nested
           // fragments spread in the second fragment.
-          fragmentNames1 foreach (fragmentName ⇒
-            collectConflictsBetweenFragments(conflicts, fragmentName, fragmentName2, visitedFragments1 + fragmentName, visitedFragments2, areMutuallyExclusive))
+          fragmentNames1 foreach (
+            fragmentName ⇒
+              collectConflictsBetweenFragments(
+                conflicts,
+                fragmentName,
+                fragmentName2,
+                visitedFragments1 + fragmentName,
+                visitedFragments2,
+                areMutuallyExclusive
+              )
+          )
       }
     }
 
     def collectConflictsBetweenFieldsAndFragment(
-        conflicts: ListBuffer[Conflict],
-        fieldMap: MutableMap[String, ListBuffer[AstAndDef]],
-        fragmentName: String,
-        areMutuallyExclusive: Boolean,
-        visitedFragments: Set[String]): Unit = {
+      conflicts: ListBuffer[Conflict],
+      fieldMap: MutableMap[String, ListBuffer[AstAndDef]],
+      fragmentName: String,
+      areMutuallyExclusive: Boolean,
+      visitedFragments: Set[String]
+    ): Unit = {
       ctx.doc.fragments.get(fragmentName) match {
         case Some(fragment) ⇒
           val (fieldMap2, fragmentNames2) = getReferencedFieldsAndFragmentNames(fragment, visitedFragments)
 
           // (D) First collect any conflicts between the provided collection of fields
           // and the collection of fields represented by the given fragment.
-          collectConflictsBetween(conflicts, fieldMap, fieldMap2, visitedFragments, visitedFragments, areMutuallyExclusive)
+          collectConflictsBetween(
+            conflicts,
+            fieldMap,
+            fieldMap2,
+            visitedFragments,
+            visitedFragments,
+            areMutuallyExclusive
+          )
 
           // (E) Then collect any conflicts between the provided collection of fields
           // and any fragment names found in the given fragment.
-          fragmentNames2 foreach (fragmentName ⇒
-            collectConflictsBetweenFieldsAndFragment(conflicts, fieldMap, fragmentName, areMutuallyExclusive, visitedFragments + fragmentName))
+          fragmentNames2 foreach (
+            fragmentName ⇒
+              collectConflictsBetweenFieldsAndFragment(
+                conflicts,
+                fieldMap,
+                fragmentName,
+                areMutuallyExclusive,
+                visitedFragments + fragmentName
+              )
+          )
 
         case None ⇒ // do nothing
       }
     }
 
     // Given a series of Conflicts which occurred between two sub-fields, generate a single Conflict.
-    def subfieldConflicts(conflicts: Seq[Conflict], outputName: String, ast1: ast.Field, ast2: ast.Field): Option[Conflict] =
+    def subfieldConflicts(
+      conflicts: Seq[Conflict],
+      outputName: String,
+      ast1: ast.Field,
+      ast2: ast.Field
+    ): Option[Conflict] =
       if (conflicts.nonEmpty)
-        Some(Conflict(ConflictReason(outputName, Right(conflicts map (_.reason) toVector)),
-          conflicts.foldLeft(ast1 :: Nil){case (acc, Conflict(_, fields, _)) ⇒ acc ++ fields},
-          conflicts.foldLeft(ast2 :: Nil){case (acc, Conflict(_, _, fields)) ⇒ acc ++ fields}))
+        Some(
+          Conflict(
+            ConflictReason(outputName, Right(conflicts map (_.reason) toVector)),
+            conflicts.foldLeft(ast1 :: Nil) { case (acc, Conflict(_, fields, _)) ⇒ acc ++ fields },
+            conflicts.foldLeft(ast2 :: Nil) { case (acc, Conflict(_, _, fields)) ⇒ acc ++ fields }
+          )
+        )
       else
         None
 
@@ -423,12 +558,13 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
     def sameArguments(args1: Vector[ast.Argument], args2: Vector[ast.Argument]) =
       if (args1.size != args2.size) false
-      else args1.forall { a1 ⇒
-        args2.find(_.name == a1.name) match {
-          case Some(a2) ⇒ sameValue(a1.value, a2.value)
-          case None ⇒ false
+      else
+        args1.forall { a1 ⇒
+          args2.find(_.name == a1.name) match {
+            case Some(a2) ⇒ sameValue(a1.value, a2.value)
+            case None ⇒ false
+          }
         }
-      }
 
     def sameValue(v1: ast.Value, v2: ast.Value) =
       QueryRenderer.render(v1, QueryRenderer.Compact) == QueryRenderer.render(v2, QueryRenderer.Compact)
@@ -441,9 +577,9 @@ case class ConflictReason(fieldName: String, reason: Either[String, Vector[Confl
 case class AstAndDef(astField: ast.Field, tpe: Option[OutputType[_]], field: Option[Field[_, _]])
 
 /**
- * A way to keep track of pairs of things when the ordering of the pair does
- * not matter. We do this by maintaining a sort of double adjacency sets.
- */
+  * A way to keep track of pairs of things when the ordering of the pair does
+  * not matter. We do this by maintaining a sort of double adjacency sets.
+  */
 private class PairSet[T] {
   private val data = MutableMap[(T, T), Boolean]()
 

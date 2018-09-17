@@ -1,6 +1,6 @@
 package sangria.macros.derive
 
-import sangria.marshalling.FromInput.{InputObjectResult, CoercedScalaResult}
+import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.util.tag.@@
 
 import language.higherKinds
@@ -9,23 +9,28 @@ import sangria.schema._
 
 import scala.annotation.implicitNotFound
 
-@implicitNotFound(msg = "Can't find suitable GraphQL input type for ${T}. If you have defined it already, please consider making it implicit and ensure that it's available in the scope.")
+@implicitNotFound(
+  msg = "Can't find suitable GraphQL input type for ${T}. If you have defined it already, please consider making it implicit and ensure that it's available in the scope."
+)
 trait GraphQLInputTypeLookup[T, G] {
   def graphqlType: InputType[G]
 }
 
 object GraphQLInputTypeLookup extends GraphQLInputTypeLookupLowPrio {
-  implicit def inCoercedLookup[T](implicit in: InputType[T @@ CoercedScalaResult]) = new GraphQLInputTypeLookup[T, T @@ CoercedScalaResult] {
-    def graphqlType = in
-  }
+  implicit def inCoercedLookup[T](implicit in: InputType[T @@ CoercedScalaResult]) =
+    new GraphQLInputTypeLookup[T, T @@ CoercedScalaResult] {
+      def graphqlType = in
+    }
 
-  implicit def inObjectLookup[T](implicit in: InputType[T @@ InputObjectResult]) = new GraphQLInputTypeLookup[T, T @@ InputObjectResult] {
-    def graphqlType = in
-  }
+  implicit def inObjectLookup[T](implicit in: InputType[T @@ InputObjectResult]) =
+    new GraphQLInputTypeLookup[T, T @@ InputObjectResult] {
+      def graphqlType = in
+    }
 
-  implicit def optionLookup[T, G](implicit ev: GraphQLInputTypeLookup[T, G]) = new GraphQLInputTypeLookup[Option[T], Option[G]] {
-    def graphqlType = OptionInputType(ev.graphqlType)
-  }
+  implicit def optionLookup[T, G](implicit ev: GraphQLInputTypeLookup[T, G]) =
+    new GraphQLInputTypeLookup[Option[T], Option[G]] {
+      def graphqlType = OptionInputType(ev.graphqlType)
+    }
 
   def finder[T] = new Finder[T]
 
@@ -39,8 +44,8 @@ trait GraphQLInputTypeLookupLowPrio {
     def graphqlType = in
   }
 
-  implicit def seqLookup[T, Coll[_] <: Seq[_], G](implicit ev: GraphQLInputTypeLookup[T, G]) = new GraphQLInputTypeLookup[Coll[T], Coll[G]] {
-    def graphqlType = ListInputType(ev.graphqlType).asInstanceOf[InputType[Coll[G]]]
-  }
+  implicit def seqLookup[T, Coll[_] <: Seq[_], G](implicit ev: GraphQLInputTypeLookup[T, G]) =
+    new GraphQLInputTypeLookup[Coll[T], Coll[G]] {
+      def graphqlType = ListInputType(ev.graphqlType).asInstanceOf[InputType[Coll[G]]]
+    }
 }
-

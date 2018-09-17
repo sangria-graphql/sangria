@@ -8,11 +8,11 @@ import sangria.util.StringUtil
 import sangria.validation._
 
 /**
- * Fields on correct type
- *
- * A GraphQL document is only valid if all fields selected are defined by the
- * parent type, or are an allowed meta field such as __typenamme
- */
+  * Fields on correct type
+  *
+  * A GraphQL document is only valid if all fields selected are defined by the
+  * parent type, or are an allowed meta field such as __typenamme
+  */
 class FieldsOnCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
@@ -24,13 +24,18 @@ class FieldsOnCorrectType extends ValidationRule {
               if (suggestedTypeNames.nonEmpty) Vector.empty
               else collectSuggestedFieldNames(ctx.schema, parent, name)
 
-            Left(Vector(UndefinedFieldViolation(
-              name,
-              SchemaRenderer.renderTypeName(parent, topLevel = true),
-              suggestedTypeNames,
-              suggestedFieldNames,
-              ctx.sourceMapper,
-              pos.toList)))
+            Left(
+              Vector(
+                UndefinedFieldViolation(
+                  name,
+                  SchemaRenderer.renderTypeName(parent, topLevel = true),
+                  suggestedTypeNames,
+                  suggestedFieldNames,
+                  ctx.sourceMapper,
+                  pos.toList
+                )
+              )
+            )
           case _ ⇒
             AstVisitorCommand.RightContinue
         }
@@ -62,21 +67,23 @@ class FieldsOnCorrectType extends ValidationRule {
       * interface.
       */
     private def siblingInterfacesIncludingField(tpe: AbstractType, fieldName: String) =
-      ctx.schema.possibleTypes(tpe.name)
+      ctx.schema
+        .possibleTypes(tpe.name)
         .foldLeft(Map.empty[String, Int]) {
-          case (oacc, obj) ⇒ obj.interfaces.foldLeft(oacc) {
-            case (iacc, i) if i.getField(ctx.schema, fieldName).isEmpty ⇒ iacc
-            case (iacc, i) if iacc contains i.name ⇒ iacc.updated(i.name, iacc(i.name) + 1)
-            case (iacc, i) ⇒ iacc + (i.name → 1)
-          }
+          case (oacc, obj) ⇒
+            obj.interfaces.foldLeft(oacc) {
+              case (iacc, i) if i.getField(ctx.schema, fieldName).isEmpty ⇒ iacc
+              case (iacc, i) if iacc contains i.name ⇒ iacc.updated(i.name, iacc(i.name) + 1)
+              case (iacc, i) ⇒ iacc + (i.name → 1)
+            }
         }
         .toVector
         .sortBy(-_._2)
         .map(_._1)
 
-
     private def implementationsIncludingField(tpe: AbstractType, fieldName: String) =
-      ctx.schema.possibleTypes(tpe.name)
+      ctx.schema
+        .possibleTypes(tpe.name)
         .filter(_.getField(ctx.schema, fieldName).nonEmpty)
         .map(_.name)
         .sorted

@@ -12,4 +12,4 @@ class GraphQLDeprecated(deprecationReason: String) extends StaticAnnotation
 class GraphQLFieldTags(fieldTags: FieldTag*) extends StaticAnnotation
 class GraphQLExclude extends StaticAnnotation
 class GraphQLField extends StaticAnnotation
-class GraphQLDefault(defaultValue: T forSome {type T}) extends StaticAnnotation
+class GraphQLDefault(defaultValue: T forSome { type T }) extends StaticAnnotation
