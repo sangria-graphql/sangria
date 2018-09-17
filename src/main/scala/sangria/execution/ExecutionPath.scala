@@ -16,17 +16,18 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
   /**
     * @return last index in the path, if available
     */
-  def lastIndex: Option[Int] = path.lastOption.collect {case i: Int ⇒ i}
+  def lastIndex: Option[Int] = path.lastOption.collect { case i: Int ⇒ i }
 
   /**
     * @return the size of the path excluding the indexes
     */
   def size = cacheKeyPath.size / 2
 
-  def marshal(m: ResultMarshaller): m.Node = m.arrayNode(path.map {
-    case s: String ⇒ m.scalarNode(s, "String", Set.empty)
-    case i: Int ⇒ m.scalarNode(i, "Int", Set.empty)
-  })
+  def marshal(m: ResultMarshaller): m.Node =
+    m.arrayNode(path.map {
+      case s: String ⇒ m.scalarNode(s, "String", Set.empty)
+      case i: Int ⇒ m.scalarNode(i, "Int", Set.empty)
+    })
 
   def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath
 

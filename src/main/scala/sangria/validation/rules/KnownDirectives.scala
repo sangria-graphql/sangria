@@ -1,6 +1,5 @@
 package sangria.validation.rules
 
-
 import sangria.ast.{AstNode, OperationType}
 import sangria.schema.DirectiveLocation
 
@@ -9,11 +8,11 @@ import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 /**
- * Known directives
- *
- * A GraphQL document is only valid if all `@directives` are known by the
- * schema and legally positioned.
- */
+  * Known directives
+  *
+  * A GraphQL document is only valid if all `@directives` are known by the
+  * schema and legally positioned.
+  */
 class KnownDirectives extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
@@ -44,7 +43,7 @@ object KnownDirectives {
     case op: ast.OperationDefinition if op.operationType == OperationType.Mutation ⇒
       Some(DirectiveLocation.Mutation → "mutation operation")
     case op: ast.OperationDefinition if op.operationType == OperationType.Subscription ⇒
-       Some(DirectiveLocation.Subscription → "subscription operation")
+      Some(DirectiveLocation.Subscription → "subscription operation")
 
     case _: ast.Field ⇒ Some(DirectiveLocation.Field → "field")
     case _: ast.FragmentDefinition ⇒ Some(DirectiveLocation.FragmentDefinition → "fragment definition")
@@ -66,7 +65,8 @@ object KnownDirectives {
     case _: ast.EnumTypeExtensionDefinition ⇒ Some(DirectiveLocation.Enum → "enum extension definition")
     case _: ast.EnumValueDefinition ⇒ Some(DirectiveLocation.EnumValue → "enum value definition")
     case _: ast.InputObjectTypeDefinition ⇒ Some(DirectiveLocation.InputObject → "input object type definition")
-    case _: ast.InputObjectTypeExtensionDefinition ⇒ Some(DirectiveLocation.InputObject → "input object type extension definition")
+    case _: ast.InputObjectTypeExtensionDefinition ⇒
+      Some(DirectiveLocation.InputObject → "input object type extension definition")
     case _: ast.InputValueDefinition ⇒
       parent match {
         case _: ast.InputObjectTypeDefinition ⇒ Some(DirectiveLocation.InputFieldDefinition → "input field definition")

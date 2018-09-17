@@ -2,7 +2,6 @@ package sangria.parser
 
 import scala.util.{Failure, Success, Try}
 
-
 trait DeliveryScheme[T] {
   type Result
 

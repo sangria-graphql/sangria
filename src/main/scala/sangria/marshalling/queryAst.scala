@@ -95,7 +95,7 @@ class QueryAstResultMarshaller extends ResultMarshaller {
 
   def mapNode(builder: MapBuilder) = mapNode(builder.toList)
   def mapNode(keyValues: Seq[(String, Node)]) =
-    ast.ObjectValue(keyValues.toVector.map{case (k, v) ⇒ ast.ObjectField(k, v)})
+    ast.ObjectValue(keyValues.toVector.map { case (k, v) ⇒ ast.ObjectField(k, v) })
 
   def nullNode = ast.NullValue()
 

@@ -11,11 +11,11 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
     val targetType = weakTypeTag[T].tpe
     val validatedConfig = validateObjectConfig(config, targetType)
 
-    val errors = validatedConfig.collect {case Left(error) ⇒ error}
+    val errors = validatedConfig.collect { case Left(error) ⇒ error }
 
     if (errors.nonEmpty) reportErrors(errors)
     else {
-      val validConfig = validatedConfig.collect {case Right(cfg) ⇒ cfg}
+      val validConfig = validatedConfig.collect { case Right(cfg) ⇒ cfg }
 
       collectFields(validConfig, targetType) match {
         case Left(errors) ⇒ reportErrors(errors)
@@ -23,10 +23,10 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
           val tpeName = q"${targetType.typeSymbol.name.decodedName.toString}"
 
           val annotationName = symbolName(targetType.typeSymbol.annotations)
-          val configName = validConfig.collect{case MacroName(name) ⇒ name}.lastOption
+          val configName = validConfig.collect { case MacroName(name) ⇒ name }.lastOption
 
           val annotationDesc = symbolDescription(targetType.typeSymbol.annotations)
-          val configDesc = validConfig.collect{case MacroDescription(name) ⇒ name}.lastOption
+          val configDesc = validConfig.collect { case MacroDescription(name) ⇒ name }.lastOption
 
           q"""
             sangria.schema.InputObjectType.createFromMacro[$targetType](
@@ -40,9 +40,10 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
 
   private def findApplyMethod(tpe: Type): Either[(Position, String), Option[(Type, MethodSymbol)]] =
     if (tpe.companion =:= NoType) {
-      Left(c.enclosingPosition → s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. Please consider defining it as a top-level object or directly inside of another class or object.")
-    }
-    else {
+      Left(
+        c.enclosingPosition → s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. Please consider defining it as a top-level object or directly inside of another class or object."
+      )
+    } else {
       val applyMethods = tpe.companion.members.collect {
         case m: MethodSymbol if m.name.decodedName.toString == "apply" ⇒ m
       }
@@ -67,19 +68,21 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
 
               val name = field.name
               val annotationName = symbolName(field.annotations)
-              val configName = config.collect{case MacroRenameField(`name`, tree, _) ⇒ tree}.lastOption
+              val configName = config.collect { case MacroRenameField(`name`, tree, _) ⇒ tree }.lastOption
 
               val annotationDescr = symbolDescription(field.annotations)
-              val configDescr = config.collect{case MacroDocumentField(`name`, tree, _) ⇒ tree}.lastOption
+              val configDescr = config.collect { case MacroDocumentField(`name`, tree, _) ⇒ tree }.lastOption
 
               val defaultAnnotation = symbolDefault(field.annotations)
-              val defaultSig = field.defaultValue.map {case (comp, defaultName) ⇒ q"${comp.typeSymbol.name.toTermName}.$defaultName"}
+              val defaultSig = field.defaultValue.map {
+                case (comp, defaultName) ⇒ q"${comp.typeSymbol.name.toTermName}.$defaultName"
+              }
               val default = defaultAnnotation orElse defaultSig
 
               val fieldName: c.universe.Tree = {
                 val nonTransformedName = configName orElse annotationName getOrElse q"$name"
 
-                config.collect{case MacroTransformFieldNames(fnt) ⇒ fnt}.lastOption match {
+                config.collect { case MacroTransformFieldNames(fnt) ⇒ fnt }.lastOption match {
                   case Some(fnt) ⇒ q"$fnt($nonTransformedName)"
                   case None ⇒ nonTransformedName
                 }
@@ -121,14 +124,21 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
     }
 
   private def findKnownMembers(tpe: Type, apply: Option[(Type, MethodSymbol)]): List[KnownMember] =
-    tpe.members.collect {
-      case m: MethodSymbol if m.isCaseAccessor ⇒
-        val (annotations, default) = findCaseClassAccessorAnnotations(tpe, m, apply)
+    tpe.members
+      .collect {
+        case m: MethodSymbol if m.isCaseAccessor ⇒
+          val (annotations, default) = findCaseClassAccessorAnnotations(tpe, m, apply)
 
-        KnownMember(tpe, m, annotations, default)
-    }.toList.reverse
+          KnownMember(tpe, m, annotations, default)
+      }
+      .toList
+      .reverse
 
-  private def findCaseClassAccessorAnnotations(tpe: Type, member: MethodSymbol, applyInfo: Option[(Type, MethodSymbol)]): (List[Annotation], Option[(Type, TermName)]) =
+  private def findCaseClassAccessorAnnotations(
+    tpe: Type,
+    member: MethodSymbol,
+    applyInfo: Option[(Type, MethodSymbol)]
+  ): (List[Annotation], Option[(Type, TermName)]) =
     applyInfo match {
       case Some((companion, apply)) ⇒
         val annotationsConstructors =
@@ -140,7 +150,8 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
           } yield p.annotations
 
         val defaults =
-          apply.paramLists.flatten.zipWithIndex.find(_._1.name.decodedName.toString == member.name.decodedName.toString) match {
+          apply.paramLists.flatten.zipWithIndex
+            .find(_._1.name.decodedName.toString == member.name.decodedName.toString) match {
             case Some((param: TermSymbol, idx)) if param.isParamWithDefault ⇒
               Some(companion → defaultMethodArgValue(apply.name.decodedName.toString, idx + 1).asInstanceOf[TermName])
             case _ ⇒ None
@@ -153,12 +164,12 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
     }
 
   private def extractFields(knownMembers: List[KnownMember], config: Seq[MacroSetting]) = {
-    val included = config.foldLeft(Set.empty[String]){
+    val included = config.foldLeft(Set.empty[String]) {
       case (acc, MacroIncludeFields(fields, _)) ⇒ acc ++ fields
       case (acc, _) ⇒ acc
     }
 
-    val excluded = config.foldLeft(Set.empty[String]){
+    val excluded = config.foldLeft(Set.empty[String]) {
       case (acc, MacroExcludeFields(fields, _)) ⇒ acc ++ fields
       case (acc, MacroReplaceField(fieldName, _, _)) ⇒ acc + fieldName
       case (acc, _) ⇒ acc
@@ -174,7 +185,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
   }
 
   private def additionalFields(config: Seq[MacroSetting]) =
-    config.foldLeft(List[Tree]()){
+    config.foldLeft(List[Tree]()) {
       case (acc, MacroReplaceField(_, field, _)) ⇒ acc :+ field
       case (acc, _) ⇒ acc
     }
@@ -216,7 +227,8 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
     case q"$setting.apply($description)" if checkSetting[InputObjectTypeDescription.type](setting) ⇒
       Right(MacroDescription(description))
 
-    case tree @ q"$setting.apply(${fieldName: String}, $description)" if checkSetting[DocumentInputField.type](setting) ⇒
+    case tree @ q"$setting.apply(${fieldName: String}, $description)"
+        if checkSetting[DocumentInputField.type](setting) ⇒
       Right(MacroDocumentField(fieldName, description, tree.pos))
 
     case tree @ q"$setting.apply(${fieldName: String}, $graphqlName)" if checkSetting[RenameInputField.type](setting) ⇒
@@ -234,11 +246,19 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
     case q"$setting.apply($fn)" if checkSetting[TransformInputFieldNames.type](setting) ⇒
       Right(MacroTransformFieldNames(fn))
 
-    case tree ⇒ Left(tree.pos →
-      "Unsupported shape of derivation config. Please define subclasses of `DeriveInputObjectTypeSetting` directly in the argument list of the macro.")
+    case tree ⇒
+      Left(
+        tree.pos →
+          "Unsupported shape of derivation config. Please define subclasses of `DeriveInputObjectTypeSetting` directly in the argument list of the macro."
+      )
   }
 
-  private case class KnownMember(onType: Type, method: MethodSymbol, annotations: List[Annotation], defaultValue: Option[(Type, TermName)]) {
+  private case class KnownMember(
+    onType: Type,
+    method: MethodSymbol,
+    annotations: List[Annotation],
+    defaultValue: Option[(Type, TermName)]
+  ) {
     lazy val name = method.name.decodedName.toString
   }
 

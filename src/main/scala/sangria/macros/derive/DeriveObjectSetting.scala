@@ -1,7 +1,7 @@
 package sangria.macros.derive
 
 import sangria.execution.FieldTag
-import sangria.schema.{Args, PossibleInterface, Field}
+import sangria.schema.{Args, Field, PossibleInterface}
 
 sealed trait DeriveObjectSetting[Ctx, Val]
 
@@ -9,11 +9,13 @@ case class ObjectTypeName[Ctx, Val](name: String) extends DeriveObjectSetting[Ct
 case class ObjectTypeDescription[Ctx, Val](description: String) extends DeriveObjectSetting[Ctx, Val]
 case class Interfaces[Ctx, Val](interfaces: PossibleInterface[Ctx, Val]*) extends DeriveObjectSetting[Ctx, Val]
 
-case class DocumentField[Ctx, Val](fieldName: String, description: String, deprecationReason: Option[String] = None) extends DeriveObjectSetting[Ctx, Val]
+case class DocumentField[Ctx, Val](fieldName: String, description: String, deprecationReason: Option[String] = None)
+    extends DeriveObjectSetting[Ctx, Val]
 case class DeprecateField[Ctx, Val](fieldName: String, deprecationReason: String) extends DeriveObjectSetting[Ctx, Val]
 case class RenameField[Ctx, Val](fieldName: String, graphqlName: String) extends DeriveObjectSetting[Ctx, Val]
 case class FieldTags[Ctx, Val](fieldName: String, tags: FieldTag*) extends DeriveObjectSetting[Ctx, Val]
-case class FieldComplexity[Ctx, Val](fieldName: String, complexity: (Ctx, Args, Double) ⇒ Double) extends DeriveObjectSetting[Ctx, Val]
+case class FieldComplexity[Ctx, Val](fieldName: String, complexity: (Ctx, Args, Double) ⇒ Double)
+    extends DeriveObjectSetting[Ctx, Val]
 
 case class IncludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectSetting[Ctx, Val]
 case class IncludeMethods[Ctx, Val](methodNames: String*) extends DeriveObjectSetting[Ctx, Val]
@@ -23,8 +25,13 @@ case class AddFields[Ctx, Val](fields: Field[Ctx, Val]*) extends DeriveObjectSet
 
 case class TransformFieldNames[Ctx, Val](transformer: String ⇒ String) extends DeriveObjectSetting[Ctx, Val]
 
-case class MethodArgumentRename[Ctx, Val](methodName: String, argName: String, newName: String) extends DeriveObjectSetting[Ctx, Val]
-case class MethodArgumentDescription[Ctx, Val](methodName: String, argName: String, description: String) extends DeriveObjectSetting[Ctx, Val]
-case class MethodArgumentsDescription[Ctx, Val](methodName: String, descriptions: (String, String)*) extends DeriveObjectSetting[Ctx, Val]
-case class MethodArgumentDefault[Ctx, Val, Arg](methodName: String, argName: String, default: Arg) extends DeriveObjectSetting[Ctx, Val]
-case class MethodArgument[Ctx, Val, Arg](methodName: String, argName: String, description: String, default: Arg) extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgumentRename[Ctx, Val](methodName: String, argName: String, newName: String)
+    extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgumentDescription[Ctx, Val](methodName: String, argName: String, description: String)
+    extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgumentsDescription[Ctx, Val](methodName: String, descriptions: (String, String)*)
+    extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgumentDefault[Ctx, Val, Arg](methodName: String, argName: String, default: Arg)
+    extends DeriveObjectSetting[Ctx, Val]
+case class MethodArgument[Ctx, Val, Arg](methodName: String, argName: String, description: String, default: Arg)
+    extends DeriveObjectSetting[Ctx, Val]

@@ -33,15 +33,23 @@ import BatchExecutionPlan._
 object BatchExecutor {
   val AsArg = Argument("as", StringType, "The variable name.")
 
-  val ExportDirective = Directive("export",
+  val ExportDirective = Directive(
+    "export",
     description = Some("Make the field value available for other operations via variable."),
     arguments = AsArg :: Nil,
     locations = Set(DirectiveLocation.Field),
-    shouldInclude = _ ⇒ true)
+    shouldInclude = _ ⇒ true
+  )
 
-  val OperationNameExtension: Middleware[Any] = Middleware.simpleExtension[Any](ctx ⇒
-    ast.ObjectValue("batch" → ast.ObjectValue("operationName" →
-      ctx.operationName.fold(ast.NullValue(): ast.Value)(ast.StringValue(_)))))
+  val OperationNameExtension: Middleware[Any] = Middleware.simpleExtension[Any](
+    ctx ⇒
+      ast.ObjectValue(
+        "batch" → ast.ObjectValue(
+          "operationName" →
+            ctx.operationName.fold(ast.NullValue(): ast.Value)(ast.StringValue(_))
+        )
+    )
+  )
 
   /** __EXPERIMENTAL__ */
   def executeBatch[Ctx, Root, Input, T](
@@ -59,16 +67,31 @@ object BatchExecutor {
     maxQueryDepth: Option[Int] = None,
     queryReducers: List[QueryReducer[Ctx, _]] = Nil,
     inferVariableDefinitions: Boolean = true
-  )(implicit executionContext: ExecutionContext, marshaller: SymmetricMarshaller[T], um: InputUnmarshaller[Input], scheme: ExecutionScheme): scheme.Result[Ctx, T] = {
-    val executor = Executor(schema, QueryValidator.empty, deferredResolver, exceptionHandler, deprecationTracker, middleware, maxQueryDepth, queryReducers)
+  )(
+    implicit executionContext: ExecutionContext,
+    marshaller: SymmetricMarshaller[T],
+    um: InputUnmarshaller[Input],
+    scheme: ExecutionScheme
+  ): scheme.Result[Ctx, T] = {
+    val executor = Executor(
+      schema,
+      QueryValidator.empty,
+      deferredResolver,
+      exceptionHandler,
+      deprecationTracker,
+      middleware,
+      maxQueryDepth,
+      queryReducers
+    )
     val validations =
       validateOperationNames(queryAst, operationNames, exceptionHandler)
         .flatMap(_ ⇒ calcExecutionPlan(schema, queryAst, operationNames, inferVariableDefinitions, exceptionHandler))
-        .flatMap { case res @ (updatedDocument, _) ⇒
-          val violations = queryValidator.validateQuery(schema, updatedDocument)
+        .flatMap {
+          case res @ (updatedDocument, _) ⇒
+            val violations = queryValidator.validateQuery(schema, updatedDocument)
 
-          if (violations.nonEmpty) Failure(ValidationError(violations, exceptionHandler))
-          else Success(res)
+            if (violations.nonEmpty) Failure(ValidationError(violations, exceptionHandler))
+            else Success(res)
         }
 
     implicit val m = marshaller.marshaller
@@ -83,28 +106,41 @@ object BatchExecutor {
             val childScheme = if (scheme.extended) ExecutionScheme.Extended else ExecutionScheme.Default
 
             val futures =
-              doExecuteBatchPlan(executionPlan, marshaller, variables, convertedVariables, childScheme.extended, single = false) { (opName, vars, iu) ⇒
+              doExecuteBatchPlan(
+                executionPlan,
+                marshaller,
+                variables,
+                convertedVariables,
+                childScheme.extended,
+                single = false
+              ) { (opName, vars, iu) ⇒
                 implicit val iiu = iu
 
-                executeIndividual(executor, updatedDocument, opName, userContext, root, vars, childScheme).asInstanceOf[Future[AnyRef]]
+                executeIndividual(executor, updatedDocument, opName, userContext, root, vars, childScheme)
+                  .asInstanceOf[Future[AnyRef]]
               }
 
-            ss.subscriptionStream.merge(futures.map(ss.subscriptionStream.singleFuture)).asInstanceOf[scheme.Result[Ctx, T]]
+            ss.subscriptionStream
+              .merge(futures.map(ss.subscriptionStream.singleFuture))
+              .asInstanceOf[scheme.Result[Ctx, T]]
           case es ⇒
             val futures =
-              doExecuteBatchPlan(executionPlan, marshaller, variables, convertedVariables, es.extended, single = true) { (opName, vars, iu) ⇒
-                implicit val iiu = iu
+              doExecuteBatchPlan(executionPlan, marshaller, variables, convertedVariables, es.extended, single = true) {
+                (opName, vars, iu) ⇒
+                  implicit val iiu = iu
 
-                executeIndividual(executor, updatedDocument, opName, userContext, root, variables, es).asInstanceOf[Future[AnyRef]]
+                  executeIndividual(executor, updatedDocument, opName, userContext, root, variables, es)
+                    .asInstanceOf[Future[AnyRef]]
               }
-
 
             futures.head.asInstanceOf[scheme.Result[Ctx, T]]
         }
     }
   }
 
-  private def convertVariables[In, M](variables: In, marshaller: SymmetricMarshaller[M])(implicit iu: InputUnmarshaller[In]): Map[String, M] = {
+  private def convertVariables[In, M](variables: In, marshaller: SymmetricMarshaller[M])(
+    implicit iu: InputUnmarshaller[In]
+  ): Map[String, M] = {
     import sangria.marshalling.MarshallingUtil._
 
     implicit val m = SimpleResultMarshallerForType[M](marshaller.marshaller)
@@ -115,7 +151,6 @@ object BatchExecutor {
       keys.flatMap(k ⇒ iu.getRootMapValue(variables, k).map(v ⇒ k → v.convertMarshaled[M])).toMap
     } else Map.empty
   }
-
 
   private def doExecuteBatchPlan[In, T, M](
     plan: BatchExecutionPlan,
@@ -130,36 +165,47 @@ object BatchExecutor {
     val inProgress = new mutable.HashMap[String, Future[T]]
 
     def loop(opName: String, deps: Vector[(String, Set[String])]): Future[T] = {
-      inProgress.getOrElseUpdate(opName, {
-        if (deps.nonEmpty) {
-          val depFutures = deps.map {case d @ (dep, _) ⇒ loop(dep, plan.dependencies(dep)).map(d → _)}
+      inProgress.getOrElseUpdate(
+        opName, {
+          if (deps.nonEmpty) {
+            val depFutures = deps.map { case d @ (dep, _) ⇒ loop(dep, plan.dependencies(dep)).map(d → _) }
 
-          Future.sequence(depFutures).flatMap { resolved ⇒
-            collectVariables(opName, plan, resolved, marshaller, convertedVariables, extendedScheme) match {
-              case Some(newVars) ⇒ executeFn(opName, newVars, marshaller.inputUnmarshaller.asInstanceOf[InputUnmarshaller[Any]])
-              case None ⇒ executeFn(opName, origVariables, inputUnmarshaller.asInstanceOf[InputUnmarshaller[Any]])
+            Future.sequence(depFutures).flatMap { resolved ⇒
+              collectVariables(opName, plan, resolved, marshaller, convertedVariables, extendedScheme) match {
+                case Some(newVars) ⇒
+                  executeFn(opName, newVars, marshaller.inputUnmarshaller.asInstanceOf[InputUnmarshaller[Any]])
+                case None ⇒ executeFn(opName, origVariables, inputUnmarshaller.asInstanceOf[InputUnmarshaller[Any]])
+              }
+
             }
-
+          } else {
+            if (single && inProgress.nonEmpty)
+              break()
+            else
+              executeFn(opName, origVariables, inputUnmarshaller.asInstanceOf[InputUnmarshaller[Any]])
           }
-        } else {
-          if (single && inProgress.nonEmpty)
-            break()
-          else
-            executeFn(opName, origVariables, inputUnmarshaller.asInstanceOf[InputUnmarshaller[Any]])
         }
-      })
+      )
     }
 
     breakable {
-      plan.dependencies.foreach { case (opName, deps) ⇒
-        loop(opName, deps)
+      plan.dependencies.foreach {
+        case (opName, deps) ⇒
+          loop(opName, deps)
       }
     }
 
     inProgress.values.toVector
   }
 
-  private def collectVariables[M](opName: String, plan: BatchExecutionPlan, depValues: Vector[((String, Set[String]), Any)], marshaller: SymmetricMarshaller[M], origVariables: Map[String, M], extendedScheme: Boolean): Option[M] = {
+  private def collectVariables[M](
+    opName: String,
+    plan: BatchExecutionPlan,
+    depValues: Vector[((String, Set[String]), Any)],
+    marshaller: SymmetricMarshaller[M],
+    origVariables: Map[String, M],
+    extendedScheme: Boolean
+  ): Option[M] = {
     val collectedValues = new mutable.HashMap[String, mutable.ListBuffer[M]]
     val iu = marshaller.inputUnmarshaller
     val m = marshaller.marshaller
@@ -167,7 +213,9 @@ object BatchExecutor {
     depValues.foreach { depVal ⇒
       val ((operationName, neededExports), executionResult) = depVal
       val exports = plan.exportOperations(operationName).exports.filter(e ⇒ neededExports contains e.exportedName)
-      val result = if (extendedScheme) executionResult.asInstanceOf[ExecutionResult[Any, M]].result else executionResult.asInstanceOf[M]
+      val result =
+        if (extendedScheme) executionResult.asInstanceOf[ExecutionResult[Any, M]].result
+        else executionResult.asInstanceOf[M]
 
       def visitPath(name: String, result: M, path: Vector[String]): Unit = {
         if (path.isEmpty) {
@@ -194,33 +242,35 @@ object BatchExecutor {
     }
 
     // merge in original variables with overlapping keys
-    origVariables.foreach { case (key, value) ⇒
-      collectedValues.get(key) match {
-        case Some(list) if iu.isListNode(value) ⇒
-          list ++= iu.getListValue(value)
-        case Some(list) ⇒
-          list += value
-        case _ ⇒ // do nothing
-      }
+    origVariables.foreach {
+      case (key, value) ⇒
+        collectedValues.get(key) match {
+          case Some(list) if iu.isListNode(value) ⇒
+            list ++= iu.getListValue(value)
+          case Some(list) ⇒
+            list += value
+          case _ ⇒ // do nothing
+        }
     }
-
 
     if (collectedValues.isEmpty) None
     else {
       val collectedKeys = collectedValues.keySet
       val builder = m.emptyMapNode(origVariables.keys.filterNot(collectedKeys.contains).toSeq ++ collectedKeys)
 
-      collectedValues.foreach { case (key, values) ⇒
-        if (isListVariable(opName, plan, key))
-          m.addMapNodeElem(builder, key, m.arrayNode(values.toVector.asInstanceOf[Vector[m.Node]]), false)
-        else if (values.nonEmpty)
-          m.addMapNodeElem(builder, key, values.head.asInstanceOf[m.Node], false)
+      collectedValues.foreach {
+        case (key, values) ⇒
+          if (isListVariable(opName, plan, key))
+            m.addMapNodeElem(builder, key, m.arrayNode(values.toVector.asInstanceOf[Vector[m.Node]]), false)
+          else if (values.nonEmpty)
+            m.addMapNodeElem(builder, key, values.head.asInstanceOf[m.Node], false)
       }
 
       // add original vars
-      origVariables.foreach { case (key, value) ⇒
-        if (!collectedValues.contains(key))
-          m.addMapNodeElem(builder, key, value.asInstanceOf[m.Node], false)
+      origVariables.foreach {
+        case (key, value) ⇒
+          if (!collectedValues.contains(key))
+            m.addMapNodeElem(builder, key, value.asInstanceOf[m.Node], false)
       }
 
       Some(m.mapNode(builder).asInstanceOf[M])
@@ -232,10 +282,11 @@ object BatchExecutor {
 
     op.variableDefs.find(_.name == variableName) match {
       case Some(definition) ⇒ isInputList(definition.tpe)
-      case None ⇒ op.variableUsages.find(_.node.name == variableName) match {
-        case Some(usage) if usage.tpe.isDefined ⇒ isInputList(usage.tpe.get)
-        case _ ⇒ true
-      }
+      case None ⇒
+        op.variableUsages.find(_.node.name == variableName) match {
+          case Some(usage) if usage.tpe.isDefined ⇒ isInputList(usage.tpe.get)
+          case _ ⇒ true
+        }
     }
   }
 
@@ -259,13 +310,23 @@ object BatchExecutor {
     root: Root = (),
     variables: Input,
     scheme: ExecutionScheme
-  )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): scheme.Result[Ctx, marshaller.Node] = {
+  )(
+    implicit executionContext: ExecutionContext,
+    marshaller: ResultMarshaller,
+    um: InputUnmarshaller[Input]
+  ): scheme.Result[Ctx, marshaller.Node] = {
     implicit val s = scheme
 
-    executor.execute(queryAst, userContext, root, Some(operationName), variables).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+    executor
+      .execute(queryAst, userContext, root, Some(operationName), variables)
+      .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
   }
 
-  private def validateOperationNames(document: ast.Document, operationNames: Seq[String], exceptionHandler: ExceptionHandler): Try[Unit] =
+  private def validateOperationNames(
+    document: ast.Document,
+    operationNames: Seq[String],
+    exceptionHandler: ExceptionHandler
+  ): Try[Unit] =
     if (operationNames.isEmpty)
       Failure(OperationSelectionError(s"List of operations to execute in batch is empty.", exceptionHandler))
     else
@@ -274,7 +335,13 @@ object BatchExecutor {
         case None ⇒ Success(())
       }
 
-  private def calcExecutionPlan(schema: Schema[_, _], queryAst: ast.Document, operationNames: Seq[String], allowedToInferVariableDefinitions: Boolean, exceptionHandler: ExceptionHandler): Try[(ast.Document, BatchExecutionPlan)] = {
+  private def calcExecutionPlan(
+    schema: Schema[_, _],
+    queryAst: ast.Document,
+    operationNames: Seq[String],
+    allowedToInferVariableDefinitions: Boolean,
+    exceptionHandler: ExceptionHandler
+  ): Try[(ast.Document, BatchExecutionPlan)] = {
     val (exportedAll, exportFragments) = findUsages(schema, queryAst)
 
     val collectResult =
@@ -299,7 +366,14 @@ object BatchExecutor {
         else {
           val violations =
             exportedAll.values.flatMap { op ⇒
-              findUndefinedVariableUsages(op).map(UndefinedVariableDefinitionViolation(op.operationName, _, queryAst.sourceMapper, op.variableUsages.flatMap(_.node.location).toList))
+              findUndefinedVariableUsages(op).map(
+                UndefinedVariableDefinitionViolation(
+                  op.operationName,
+                  _,
+                  queryAst.sourceMapper,
+                  op.variableUsages.flatMap(_.node.location).toList
+                )
+              )
             }
 
           if (violations.nonEmpty)
@@ -314,25 +388,36 @@ object BatchExecutor {
 
         validateCircularOperationDependencies(updatedQueryAst, dependencies, exceptionHandler)
       }
-      .map { case (updatedQueryAst, dependencies) ⇒
-        updatedQueryAst → BatchExecutionPlan(exportedRelevant, dependencies)
+      .map {
+        case (updatedQueryAst, dependencies) ⇒
+          updatedQueryAst → BatchExecutionPlan(exportedRelevant, dependencies)
       }
   }
 
-  private def validateCircularOperationDependencies(queryAst: ast.Document, dependencies: Map[String, Vector[(String, Set[String])]], exceptionHandler: ExceptionHandler): Try[(ast.Document, Map[String, Vector[(String, Set[String])]])] = {
+  private def validateCircularOperationDependencies(
+    queryAst: ast.Document,
+    dependencies: Map[String, Vector[(String, Set[String])]],
+    exceptionHandler: ExceptionHandler
+  ): Try[(ast.Document, Map[String, Vector[(String, Set[String])]])] = {
     val violations = new mutable.ListBuffer[Violation]
 
     def loop(src: String, deps: Vector[(String, Set[String])], path: Vector[(String, String)]): Unit =
       if (path.exists(_._1 == src))
-        violations += CircularOperationDependencyViolation(src, path.map(_._2), queryAst.sourceMapper, queryAst.operations(Some(src)).location.toList)
+        violations += CircularOperationDependencyViolation(
+          src,
+          path.map(_._2),
+          queryAst.sourceMapper,
+          queryAst.operations(Some(src)).location.toList
+        )
       else {
         deps.foreach { d ⇒
           loop(d._1, dependencies(d._1), path :+ ((src, s"$src(${d._2.map("$" + _).mkString(", ")})")))
         }
       }
 
-    dependencies.foreach { case (op, deps) ⇒
-      loop(op, deps, Vector.empty)
+    dependencies.foreach {
+      case (op, deps) ⇒
+        loop(op, deps, Vector.empty)
     }
 
     if (violations.nonEmpty)
@@ -341,11 +426,18 @@ object BatchExecutor {
       Success(queryAst → dependencies)
   }
 
-  private def findOperationDependencies(exportOperations: Map[String, ExportOperation], exportedVars: Set[String]): Map[String, Vector[(String, Set[String])]] =
+  private def findOperationDependencies(
+    exportOperations: Map[String, ExportOperation],
+    exportedVars: Set[String]
+  ): Map[String, Vector[(String, Set[String])]] =
     exportOperations.values.map { src ⇒
-      val requires = (src.variableDefs.map(_.name).filter(exportedVars.contains) ++ src.variableUsages.map(_.node.name).filter(exportedVars.contains)).toSet
+      val requires = (src.variableDefs.map(_.name).filter(exportedVars.contains) ++ src.variableUsages
+        .map(_.node.name)
+        .filter(exportedVars.contains)).toSet
 
-      val providers = exportOperations.values.map(dst ⇒ dst.operationName → dst.exports.map(_.exportedName).toSet.intersect(requires)).filter(_._2.nonEmpty)
+      val providers = exportOperations.values
+        .map(dst ⇒ dst.operationName → dst.exports.map(_.exportedName).toSet.intersect(requires))
+        .filter(_._2.nonEmpty)
 
       src.operationName → providers.toVector
     }.toMap
@@ -353,53 +445,70 @@ object BatchExecutor {
   private def findExportedVariableNames(exportOperations: Map[String, ExportOperation]): Set[String] =
     exportOperations.values.flatMap(_.exports.map(_.exportedName)).toSet
 
-  private def inferVariableDefinitions(exportOperations: mutable.HashMap[String, ExportOperation], queryAst: ast.Document, exceptionHandler: ExceptionHandler): Try[ast.Document] = {
+  private def inferVariableDefinitions(
+    exportOperations: mutable.HashMap[String, ExportOperation],
+    queryAst: ast.Document,
+    exceptionHandler: ExceptionHandler
+  ): Try[ast.Document] = {
     val inferenceViolations = new mutable.ListBuffer[Violation]
 
     val updatedDocument =
-      AstVisitor.visit(queryAst, AstVisitor {
-        case od: ast.OperationDefinition if od.name.isDefined && exportOperations.contains(od.name.get) ⇒
-          val exportOperation = exportOperations(od.name.get)
-          val undefined = findUndefinedVariableUsages(exportOperation)
+      AstVisitor.visit(
+        queryAst,
+        AstVisitor {
+          case od: ast.OperationDefinition if od.name.isDefined && exportOperations.contains(od.name.get) ⇒
+            val exportOperation = exportOperations(od.name.get)
+            val undefined = findUndefinedVariableUsages(exportOperation)
 
-          val usagesByName = exportOperation.variableUsages.groupBy(_.node.name)
+            val usagesByName = exportOperation.variableUsages.groupBy(_.node.name)
 
-          val newVariableDefs = new mutable.ListBuffer[ast.VariableDefinition]
+            val newVariableDefs = new mutable.ListBuffer[ast.VariableDefinition]
 
-          undefined.foreach { ud ⇒
-            val allUsages = usagesByName(ud)
-            val first = allUsages.head
-            val firstType = first.tpe.getOrElse(throw new IllegalStateException("Variable usage type is not detected, but expected at this point!"))
-            val firstAstType = SchemaRenderer.renderTypeNameAst(firstType)
-            val tail = allUsages.tail
+            undefined.foreach { ud ⇒
+              val allUsages = usagesByName(ud)
+              val first = allUsages.head
+              val firstType = first.tpe.getOrElse(
+                throw new IllegalStateException("Variable usage type is not detected, but expected at this point!")
+              )
+              val firstAstType = SchemaRenderer.renderTypeNameAst(firstType)
+              val tail = allUsages.tail
 
-            val violations = new mutable.ListBuffer[Violation]
+              val violations = new mutable.ListBuffer[Violation]
 
-            tail.foreach { curr ⇒
-              val currType = curr.tpe.getOrElse(throw new IllegalStateException("Variable usage type is not detected, but expected at this point!"))
-              val currAstType = SchemaRenderer.renderTypeNameAst(currType)
+              tail
+                .foreach {
+                  curr ⇒
+                    val currType = curr.tpe.getOrElse(
+                      throw new IllegalStateException(
+                        "Variable usage type is not detected, but expected at this point!"
+                      )
+                    )
+                    val currAstType = SchemaRenderer.renderTypeNameAst(currType)
 
-              if (firstAstType != currAstType)
-                violations += VariableDefinitionInferenceViolation(
-                  exportOperation.operationName,
-                  ud,
-                  firstAstType.renderPretty,
-                  currAstType.renderPretty,
-                  queryAst.sourceMapper,
-                  first.node.location.toList ++ curr.node.location.toList)
+                    if (firstAstType != currAstType)
+                      violations += VariableDefinitionInferenceViolation(
+                        exportOperation.operationName,
+                        ud,
+                        firstAstType.renderPretty,
+                        currAstType.renderPretty,
+                        queryAst.sourceMapper,
+                        first.node.location.toList ++ curr.node.location.toList
+                      )
+                }
+
+              if (violations.nonEmpty)
+                inferenceViolations ++= violations
+              else
+                newVariableDefs += ast
+                  .VariableDefinition(ud, firstAstType, None, Vector(ast.Comment("Inferred variable")))
             }
 
-            if (violations.nonEmpty)
-              inferenceViolations ++= violations
+            if (newVariableDefs.nonEmpty && inferenceViolations.isEmpty)
+              VisitorCommand.Transform(od.copy(variables = od.variables ++ newVariableDefs))
             else
-              newVariableDefs += ast.VariableDefinition(ud, firstAstType, None, Vector(ast.Comment("Inferred variable")))
-          }
-
-          if (newVariableDefs.nonEmpty && inferenceViolations.isEmpty)
-            VisitorCommand.Transform(od.copy(variables = od.variables ++ newVariableDefs))
-          else
-            VisitorCommand.Continue
-      })
+              VisitorCommand.Continue
+        }
+      )
 
     if (inferenceViolations.nonEmpty)
       Failure(BatchExecutionViolationError(inferenceViolations.toVector, exceptionHandler))
@@ -414,13 +523,16 @@ object BatchExecutor {
     usages diff defs
   }
 
-  private def collectFragmentInfo(exportOperation: ExportOperation, exportFragments: mutable.HashMap[String, ExportFragment], exceptionHandler: ExceptionHandler): Try[ExportOperation] = {
+  private def collectFragmentInfo(
+    exportOperation: ExportOperation,
+    exportFragments: mutable.HashMap[String, ExportFragment],
+    exceptionHandler: ExceptionHandler
+  ): Try[ExportOperation] = {
     val currentExports = new mutable.ListBuffer[Export]
     val currentVariables = new mutable.ListBuffer[VariableUsage]
 
     val recursive = new mutable.HashSet[String]
     val unknown = new mutable.HashSet[String]
-
 
     def loop(spreads: Set[SpreadInfo], seenFragmentNames: Set[String], path: Vector[String]): Unit = {
       spreads.foreach { s ⇒
@@ -444,18 +556,26 @@ object BatchExecutor {
     loop(exportOperation.fragmentSpreads, Set.empty, Vector.empty)
 
     if (recursive.nonEmpty)
-      Failure(BatchExecutionError(s"Query contains recursive fragments: ${recursive.mkString(", ")}.", exceptionHandler))
+      Failure(
+        BatchExecutionError(s"Query contains recursive fragments: ${recursive.mkString(", ")}.", exceptionHandler)
+      )
     else if (unknown.nonEmpty)
       Failure(BatchExecutionError(s"Query contains undefined fragments: ${unknown.mkString(", ")}.", exceptionHandler))
     else if (currentExports.nonEmpty || currentVariables.nonEmpty)
-      Success(exportOperation.copy(
-        exports = exportOperation.exports ++ currentExports.toVector,
-        variableUsages = exportOperation.variableUsages ++ currentVariables.toVector))
+      Success(
+        exportOperation.copy(
+          exports = exportOperation.exports ++ currentExports.toVector,
+          variableUsages = exportOperation.variableUsages ++ currentVariables.toVector
+        )
+      )
     else
       Success(exportOperation)
   }
 
-  private def findUsages(schema: Schema[_, _], queryAst: ast.Document): (mutable.HashMap[String, ExportOperation], mutable.HashMap[String, ExportFragment]) = {
+  private def findUsages(
+    schema: Schema[_, _],
+    queryAst: ast.Document
+  ): (mutable.HashMap[String, ExportOperation], mutable.HashMap[String, ExportFragment]) = {
     var currentOperation: Option[String] = None
     var currentFragment: Option[String] = None
 
@@ -467,79 +587,82 @@ object BatchExecutor {
     val exportOperations = new mutable.HashMap[String, ExportOperation]
     val exportFragments = new mutable.HashMap[String, ExportFragment]
 
-    AstVisitor.visitAstWithTypeInfo(schema, queryAst)(typeInfo ⇒ AstVisitor(
-      onEnter = {
-        case op: ast.OperationDefinition if op.name.isDefined ⇒
-          currentOperation = op.name
-          VisitorCommand.Continue
+    AstVisitor.visitAstWithTypeInfo(schema, queryAst)(
+      typeInfo ⇒
+        AstVisitor(
+          onEnter = {
+            case op: ast.OperationDefinition if op.name.isDefined ⇒
+              currentOperation = op.name
+              VisitorCommand.Continue
 
-        case fd: ast.FragmentDefinition ⇒
-          currentFragment = Some(fd.name)
-          VisitorCommand.Continue
+            case fd: ast.FragmentDefinition ⇒
+              currentFragment = Some(fd.name)
+              VisitorCommand.Continue
 
-        case fs: ast.FragmentSpread if currentOperation.isDefined || currentFragment.isDefined ⇒
-          currentSpreads += SpreadInfo(fs.name, calcPath(typeInfo))
-          VisitorCommand.Continue
+            case fs: ast.FragmentSpread if currentOperation.isDefined || currentFragment.isDefined ⇒
+              currentSpreads += SpreadInfo(fs.name, calcPath(typeInfo))
+              VisitorCommand.Continue
 
-        case vd: ast.VariableDefinition if currentOperation.isDefined || currentFragment.isDefined ⇒
-          currentVariableDefs += vd
-          VisitorCommand.Continue
+            case vd: ast.VariableDefinition if currentOperation.isDefined || currentFragment.isDefined ⇒
+              currentVariableDefs += vd
+              VisitorCommand.Continue
 
-        case vv: ast.VariableValue if currentOperation.isDefined || currentFragment.isDefined ⇒
-          currentVariables += VariableUsage(vv, typeInfo.inputType, typeInfo.defaultValue)
-          VisitorCommand.Continue
+            case vv: ast.VariableValue if currentOperation.isDefined || currentFragment.isDefined ⇒
+              currentVariables += VariableUsage(vv, typeInfo.inputType, typeInfo.defaultValue)
+              VisitorCommand.Continue
 
-        case field: ast.Field if currentOperation.isDefined || currentFragment.isDefined ⇒
-          field.directives.find(_.name == ExportDirective.name) match {
-            case Some(d) ⇒ d.arguments.find(_.name == AsArg.name) match {
-              case Some(ast.Argument(_, ast.StringValue(as, _, _, _, _), _, _)) if typeInfo.fieldDef.isDefined ⇒
-                currentDirectives += Export(as, calcPath(typeInfo), d, typeInfo.fieldDef.get.fieldType)
-                VisitorCommand.Continue
-              case _ ⇒ VisitorCommand.Continue
-            }
-            case None ⇒ VisitorCommand.Continue
+            case field: ast.Field if currentOperation.isDefined || currentFragment.isDefined ⇒
+              field.directives.find(_.name == ExportDirective.name) match {
+                case Some(d) ⇒
+                  d.arguments.find(_.name == AsArg.name) match {
+                    case Some(ast.Argument(_, ast.StringValue(as, _, _, _, _), _, _)) if typeInfo.fieldDef.isDefined ⇒
+                      currentDirectives += Export(as, calcPath(typeInfo), d, typeInfo.fieldDef.get.fieldType)
+                      VisitorCommand.Continue
+                    case _ ⇒ VisitorCommand.Continue
+                  }
+                case None ⇒ VisitorCommand.Continue
+              }
+          },
+          onLeave = {
+            case od: ast.OperationDefinition if od.name.isDefined ⇒
+              val name = od.name.get
+
+              currentOperation = None
+
+              exportOperations(name) = ExportOperation(
+                name,
+                currentVariableDefs.toVector,
+                currentVariables.toVector,
+                currentDirectives.toVector,
+                currentSpreads.toSet
+              )
+
+              currentSpreads.clear()
+              currentDirectives.clear()
+              currentVariableDefs.clear()
+              currentVariables.clear()
+
+              VisitorCommand.Continue
+
+            case fd: ast.FragmentDefinition ⇒
+              currentFragment = None
+
+              exportFragments(fd.name) =
+                ExportFragment(fd.name, currentVariables.toVector, currentDirectives.toVector, currentSpreads.toSet)
+
+              currentSpreads.clear()
+              currentDirectives.clear()
+              currentVariableDefs.clear()
+              currentVariables.clear()
+
+              VisitorCommand.Continue
           }
-      },
-
-      onLeave = {
-        case od: ast.OperationDefinition if od.name.isDefined ⇒
-          val name = od.name.get
-
-          currentOperation = None
-
-          exportOperations(name) = ExportOperation(name,
-            currentVariableDefs.toVector,
-            currentVariables.toVector,
-            currentDirectives.toVector,
-            currentSpreads.toSet)
-
-          currentSpreads.clear()
-          currentDirectives.clear()
-          currentVariableDefs.clear()
-          currentVariables.clear()
-
-          VisitorCommand.Continue
-
-        case fd: ast.FragmentDefinition ⇒
-          currentFragment = None
-
-          exportFragments(fd.name) = ExportFragment(fd.name,
-            currentVariables.toVector,
-            currentDirectives.toVector,
-            currentSpreads.toSet)
-
-          currentSpreads.clear()
-          currentDirectives.clear()
-          currentVariableDefs.clear()
-          currentVariables.clear()
-
-          VisitorCommand.Continue
-      }
-    ))
+      )
+    )
 
     exportOperations → exportFragments
   }
 
   private def calcPath(typeInfo: TypeInfo) =
-    typeInfo.ancestors.collect{case f: ast.Field ⇒ f.outputName}.toVector
+    typeInfo.ancestors.collect { case f: ast.Field ⇒ f.outputName }.toVector
 }

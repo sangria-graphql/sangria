@@ -13,21 +13,24 @@ import sangria.visitor.VisitorCommand
 import scala.collection.immutable.VectorBuilder
 import scala.util.control.NonFatal
 
-class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ctx]]) extends DefaultAstSchemaBuilder[Ctx] {
-  protected lazy val directiveResolvers = resolvers collect {case dr: DirectiveResolver[Ctx] ⇒ dr}
-  protected lazy val directiveScalarResolvers = resolvers collect {case dr: DirectiveScalarResolver[Ctx] ⇒ dr}
-  protected lazy val directiveInpResolvers = resolvers collect {case dr: DirectiveInputTypeResolver[Ctx] ⇒ dr}
-  protected lazy val directiveOutResolvers = resolvers collect {case dr: DirectiveOutputTypeResolver[Ctx] ⇒ dr}
-  protected lazy val directiveProviderDirs = resolvers collect {case dr: DirectiveFieldProvider[Ctx] ⇒ dr.directive}
-  protected lazy val directiveDynProviderDirNames = resolvers collect {case dr: DynamicDirectiveFieldProvider[Ctx, _] ⇒ dr.directiveName}
+class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ctx]])
+    extends DefaultAstSchemaBuilder[Ctx] {
+  protected lazy val directiveResolvers = resolvers collect { case dr: DirectiveResolver[Ctx] ⇒ dr }
+  protected lazy val directiveScalarResolvers = resolvers collect { case dr: DirectiveScalarResolver[Ctx] ⇒ dr }
+  protected lazy val directiveInpResolvers = resolvers collect { case dr: DirectiveInputTypeResolver[Ctx] ⇒ dr }
+  protected lazy val directiveOutResolvers = resolvers collect { case dr: DirectiveOutputTypeResolver[Ctx] ⇒ dr }
+  protected lazy val directiveProviderDirs = resolvers collect { case dr: DirectiveFieldProvider[Ctx] ⇒ dr.directive }
+  protected lazy val directiveDynProviderDirNames = resolvers collect {
+    case dr: DynamicDirectiveFieldProvider[Ctx, _] ⇒ dr.directiveName
+  }
   protected lazy val additionalDirectives = resolvers flatMap {
     case AdditionalDirectives(ad) ⇒ ad
     case _ ⇒ Nil
   }
 
   protected lazy val dynamicDirectiveNames =
-    resolvers.collect{case dr: DynamicDirectiveResolver[Ctx, _] ⇒ dr.directiveName}.toSet ++
-    directiveDynProviderDirNames
+    resolvers.collect { case dr: DynamicDirectiveResolver[Ctx, _] ⇒ dr.directiveName }.toSet ++
+      directiveDynProviderDirNames
 
   protected lazy val directives =
     directiveResolvers.map(_.directive) ++
@@ -37,7 +40,8 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       additionalDirectives ++
       directiveProviderDirs
 
-  protected lazy val stubQueryType = ObjectType("Query", fields[Unit, Unit](Field("stub", StringType, resolve = _ ⇒ "stub")))
+  protected lazy val stubQueryType =
+    ObjectType("Query", fields[Unit, Unit](Field("stub", StringType, resolve = _ ⇒ "stub")))
   protected lazy val validationSchema = Schema(stubQueryType, directives = directives.toList ++ BuiltinDirectives)
 
   override def useLegacyCommentDescriptions: Boolean =
@@ -48,10 +52,16 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     case _ ⇒ Nil
   }.toList
 
-  def validateSchema(schema: ast.Document, validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator): Vector[Violation] =
+  def validateSchema(
+    schema: ast.Document,
+    validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator
+  ): Vector[Violation] =
     allowKnownDynamicDirectives(validator.validateQuery(validationSchema, schema))
 
-  def validateSchemaWithException(schema: ast.Document, validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator): ResolverBasedAstSchemaBuilder[Ctx] = {
+  def validateSchemaWithException(
+    schema: ast.Document,
+    validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator
+  ): ResolverBasedAstSchemaBuilder[Ctx] = {
     val violations = validateSchema(schema, validator)
 
     if (violations.nonEmpty) throw MaterializedSchemaValidationError(violations)
@@ -64,17 +74,22 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       case _ ⇒ false
     }
 
-  protected def findResolver(directive: ast.Directive): Option[(ast.Directive, AstSchemaResolver[Ctx])] = resolvers.collectFirst {
-    case r @ DirectiveResolver(d, _, _) if d.name == directive.name ⇒ directive → r
-    case r @ DynamicDirectiveResolver(directive.name, _, _) ⇒ directive → r
-  }
+  protected def findResolver(directive: ast.Directive): Option[(ast.Directive, AstSchemaResolver[Ctx])] =
+    resolvers.collectFirst {
+      case r @ DirectiveResolver(d, _, _) if d.name == directive.name ⇒ directive → r
+      case r @ DynamicDirectiveResolver(directive.name, _, _) ⇒ directive → r
+    }
 
-  protected def findComplexityResolver(directive: ast.Directive): Option[(ast.Directive, AstSchemaResolver[Ctx])] = resolvers.collectFirst {
-    case r @ DirectiveResolver(d, _, _) if d.name == directive.name && r.complexity.isDefined ⇒ directive → r
-    case r @ DynamicDirectiveResolver(directive.name, _, _) if r.complexity.isDefined ⇒ directive → r
-  }
+  protected def findComplexityResolver(directive: ast.Directive): Option[(ast.Directive, AstSchemaResolver[Ctx])] =
+    resolvers.collectFirst {
+      case r @ DirectiveResolver(d, _, _) if d.name == directive.name && r.complexity.isDefined ⇒ directive → r
+      case r @ DynamicDirectiveResolver(directive.name, _, _) if r.complexity.isDefined ⇒ directive → r
+    }
 
-  protected def findResolver(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): Option[FieldResolver[Ctx]] = {
+  protected def findResolver(
+    typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
+    definition: ast.FieldDefinition
+  ): Option[FieldResolver[Ctx]] = {
     val arg = typeDefinition → definition
 
     resolvers.collectFirst {
@@ -82,7 +97,10 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
-  protected def findComplexityResolver(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): Option[FieldResolver[Ctx]] = {
+  protected def findComplexityResolver(
+    typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
+    definition: ast.FieldDefinition
+  ): Option[FieldResolver[Ctx]] = {
     val arg = typeDefinition → definition
 
     resolvers.collectFirst {
@@ -90,7 +108,11 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
-  protected def findExistingResolver(origin: MatOrigin, typeDefinition: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]): Option[ExistingFieldResolver[Ctx]] = {
+  protected def findExistingResolver(
+    origin: MatOrigin,
+    typeDefinition: Option[ObjectLikeType[Ctx, _]],
+    field: Field[Ctx, _]
+  ): Option[ExistingFieldResolver[Ctx]] = {
     val arg = (origin, typeDefinition, field)
 
     resolvers.collectFirst {
@@ -111,7 +133,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     mat: AstSchemaMaterializer[Ctx]
   ): Context[Ctx, _] ⇒ Action[Ctx, _] = {
     val dResolvers = definition.directives flatMap (findResolver(_))
-    
+
     if (dResolvers.nonEmpty)
       c ⇒ {
         val resultAction =
@@ -122,7 +144,19 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
             case (acc, (d, ddc @ DynamicDirectiveResolver(_, fn, _))) ⇒
               implicit val marshaller = ddc.marshaller
 
-              Some(fn(DynamicDirectiveContext[Ctx, Any](d, typeDefinition, definition, extensions, c, acc, ResolverBasedAstSchemaBuilder.createDynamicArgs(d))))
+              Some(
+                fn(
+                  DynamicDirectiveContext[Ctx, Any](
+                    d,
+                    typeDefinition,
+                    definition,
+                    extensions,
+                    c,
+                    acc,
+                    ResolverBasedAstSchemaBuilder.createDynamicArgs(d)
+                  )
+                )
+              )
 
             case (acc, _) ⇒
               acc
@@ -133,9 +167,10 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
           case Right(t) ⇒ t.name
         }
 
-        resultAction getOrElse (throw SchemaMaterializationException(s"Resolver for '$typeDefinitionName.${definition.name}' haven't returned any action!"))
-      }
-    else
+        resultAction getOrElse (throw SchemaMaterializationException(
+          s"Resolver for '$typeDefinitionName.${definition.name}' haven't returned any action!"
+        ))
+      } else
       findResolver(typeDefinition, definition) match {
         case Some(fResolver) ⇒
           fResolver.resolve(typeDefinition → definition)
@@ -149,7 +184,13 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       }
   }
 
-  override def extendFieldResolver(origin: MatOrigin, typeDefinition: Option[ObjectLikeType[Ctx, _]], existing: Field[Ctx, Any], fieldType: OutputType[_], mat: AstSchemaMaterializer[Ctx]) =
+  override def extendFieldResolver(
+    origin: MatOrigin,
+    typeDefinition: Option[ObjectLikeType[Ctx, _]],
+    existing: Field[Ctx, Any],
+    fieldType: OutputType[_],
+    mat: AstSchemaMaterializer[Ctx]
+  ) =
     findExistingResolver(origin, typeDefinition, existing) match {
       case Some(fResolver) ⇒
         fResolver.resolve((origin, typeDefinition, existing))
@@ -177,7 +218,17 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
         case DirectiveOutputTypeResolver(d, fn) if definition.directives.exists(_.name == d.name) ⇒
           val astDirective = definition.directives.find(_.name == d.name).get
 
-          fn(AstDirectiveOutputTypeContext(origin, astDirective, typeDefinition, definition, extensions, mat, Args(d, astDirective)))
+          fn(
+            AstDirectiveOutputTypeContext(
+              origin,
+              astDirective,
+              typeDefinition,
+              definition,
+              extensions,
+              mat,
+              Args(d, astDirective)
+            )
+          )
 
         case OutputTypeResolver(fn) if fn isDefinedAt ctx ⇒ fn(ctx)
       }
@@ -186,41 +237,62 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
   }
 
   private def buildInputTypeResolver(
-      origin: MatOrigin,
-      schemaDefinition: Option[Type with Named],
-      astDefinition: Option[ast.TypeSystemDefinition],
-      astField: Option[ast.FieldDefinition],
-      definition: ast.InputValueDefinition,
-      mat: AstSchemaMaterializer[Ctx]) = {
+    origin: MatOrigin,
+    schemaDefinition: Option[Type with Named],
+    astDefinition: Option[ast.TypeSystemDefinition],
+    astField: Option[ast.FieldDefinition],
+    definition: ast.InputValueDefinition,
+    mat: AstSchemaMaterializer[Ctx]
+  ) = {
     val ctx = AstInputTypeContext(origin, schemaDefinition, astDefinition, astField, definition, mat)
 
     resolvers.collectFirst {
       case DirectiveInputTypeResolver(d, fn) if definition.directives.exists(_.name == d.name) ⇒
         val astDirective = definition.directives.find(_.name == d.name).get
 
-        fn(AstDirectiveInputTypeContext(origin, astDirective, schemaDefinition, astDefinition, astField, definition, mat, Args(d, astDirective)))
+        fn(
+          AstDirectiveInputTypeContext(
+            origin,
+            astDirective,
+            schemaDefinition,
+            astDefinition,
+            astField,
+            definition,
+            mat,
+            Args(d, astDirective)
+          )
+        )
 
       case InputTypeResolver(fn) if fn isDefinedAt ctx ⇒ fn(ctx)
     }
   }
 
   override def buildArgumentType(
-      origin: MatOrigin,
-      typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]],
-      fieldDefinition: Option[ast.FieldDefinition],
-      definition: ast.InputValueDefinition,
-      defaultValue: Option[(_, ToInput[_, _])],
-      mat: AstSchemaMaterializer[Ctx]) =
-    buildInputTypeResolver(origin, typeDefinition.right.toOption, typeDefinition.left.toOption, fieldDefinition, definition, mat) getOrElse
+    origin: MatOrigin,
+    typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]],
+    fieldDefinition: Option[ast.FieldDefinition],
+    definition: ast.InputValueDefinition,
+    defaultValue: Option[(_, ToInput[_, _])],
+    mat: AstSchemaMaterializer[Ctx]
+  ) =
+    buildInputTypeResolver(
+      origin,
+      typeDefinition.right.toOption,
+      typeDefinition.left.toOption,
+      fieldDefinition,
+      definition,
+      mat
+    ) getOrElse
       super.buildArgumentType(origin, typeDefinition, fieldDefinition, definition, defaultValue, mat)
 
   override def buildInputFieldType(
-      origin: MatOrigin,
-      extensions: Vector[ast.InputObjectTypeExtensionDefinition],
-      typeDefinition: Either[ast.InputObjectTypeDefinition, InputObjectType[_]],
-      definition: ast.InputValueDefinition,
-      defaultValue: Option[(_, ToInput[_, _])],
-      mat: AstSchemaMaterializer[Ctx]) =
+    origin: MatOrigin,
+    extensions: Vector[ast.InputObjectTypeExtensionDefinition],
+    typeDefinition: Either[ast.InputObjectTypeDefinition, InputObjectType[_]],
+    definition: ast.InputValueDefinition,
+    defaultValue: Option[(_, ToInput[_, _])],
+    mat: AstSchemaMaterializer[Ctx]
+  ) =
     buildInputTypeResolver(origin, typeDefinition.right.toOption, typeDefinition.left.toOption, None, definition, mat) getOrElse
       super.buildInputFieldType(origin, extensions, typeDefinition, definition, defaultValue, mat)
 
@@ -248,10 +320,13 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
   }
 
   override def resolveNameConflict(fromOrigin: MatOrigin, types: Vector[MaterializedType]) =
-    resolvers.collectFirst {case r: ConflictResolver[Ctx] ⇒ r.resolve(fromOrigin, types)} getOrElse
+    resolvers.collectFirst { case r: ConflictResolver[Ctx] ⇒ r.resolve(fromOrigin, types) } getOrElse
       super.resolveNameConflict(fromOrigin, types)
 
-  override def fieldComplexity(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition) = {
+  override def fieldComplexity(
+    typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
+    definition: ast.FieldDefinition
+  ) = {
     val dResolvers = definition.directives flatMap (findComplexityResolver(_))
     val fromDirectives =
       dResolvers.foldLeft(None: Option[(Ctx, Args, Double) ⇒ Double]) {
@@ -261,7 +336,16 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
         case (None, (d, ddc @ DynamicDirectiveResolver(_, _, Some(complexity)))) ⇒
           implicit val marshaller = ddc.marshaller
 
-          Some(complexity(ComplexityDynamicDirectiveContext[Ctx, Any](d, typeDefinition, definition, ResolverBasedAstSchemaBuilder.createDynamicArgs(d))))
+          Some(
+            complexity(
+              ComplexityDynamicDirectiveContext[Ctx, Any](
+                d,
+                typeDefinition,
+                definition,
+                ResolverBasedAstSchemaBuilder.createDynamicArgs(d)
+              )
+            )
+          )
 
         case (acc, _) ⇒
           acc
@@ -284,12 +368,30 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       allAstDirectives.flatMap { astDir ⇒
         resolvers.collect {
           case DirectiveFieldProvider(directive, resolve) if directive.name == astDir.name ⇒
-            resolve(DirectiveFieldProviderContext[Ctx](origin, astDir, typeDefinition, extensions, mat, Args(directive, astDir)))
+            resolve(
+              DirectiveFieldProviderContext[Ctx](
+                origin,
+                astDir,
+                typeDefinition,
+                extensions,
+                mat,
+                Args(directive, astDir)
+              )
+            )
 
           case ddfp @ DynamicDirectiveFieldProvider(astDir.name, resolve) ⇒
             implicit val marshaller = ddfp.marshaller
 
-            resolve(DynamicDirectiveFieldProviderContext[Ctx, Any](origin, astDir, typeDefinition, extensions, mat, ResolverBasedAstSchemaBuilder.createDynamicArgs(astDir)))
+            resolve(
+              DynamicDirectiveFieldProviderContext[Ctx, Any](
+                origin,
+                astDir,
+                typeDefinition,
+                extensions,
+                mat,
+                ResolverBasedAstSchemaBuilder.createDynamicArgs(astDir)
+              )
+            )
         }
       }
 
@@ -327,7 +429,11 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     resolved getOrElse super.transformEnumType(origin, extensions, existing, mat)
   }
 
-  override def objectTypeInstanceCheck(origin: MatOrigin, definition: ast.ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] = {
+  override def objectTypeInstanceCheck(
+    origin: MatOrigin,
+    definition: ast.ObjectTypeDefinition,
+    extensions: List[ast.ObjectTypeExtensionDefinition]
+  ): Option[(Any, Class[_]) ⇒ Boolean] = {
     val ctx = InstanceCheckContext[Ctx](origin, definition, extensions)
 
     resolvers.collectFirst {
@@ -335,7 +441,11 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
-  override def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] = {
+  override def extendedObjectTypeInstanceCheck(
+    origin: MatOrigin,
+    tpe: ObjectType[Ctx, _],
+    extensions: List[ast.ObjectTypeExtensionDefinition]
+  ): Option[(Any, Class[_]) ⇒ Boolean] = {
     val ctx = ExistingInstanceCheckContext[Ctx](origin, tpe, extensions)
 
     resolvers.collectFirst {
@@ -343,7 +453,10 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
     }
   }
 
-  override def enumValue(typeDefinition: Either[ast.EnumTypeDefinition, EnumType[_]], definition: ast.EnumValueDefinition) = {
+  override def enumValue(
+    typeDefinition: Either[ast.EnumTypeDefinition, EnumType[_]],
+    definition: ast.EnumValueDefinition
+  ) = {
     val ctx = typeDefinition → definition
     val resolved =
       resolvers.collectFirst {
@@ -357,13 +470,15 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 object ResolverBasedAstSchemaBuilder {
   def apply[Ctx](resolvers: AstSchemaResolver[Ctx]*) = new ResolverBasedAstSchemaBuilder[Ctx](resolvers)
 
-  val validator: QueryValidator = QueryValidator.ruleBased(QueryValidator.allRules.filterNot(_.isInstanceOf[ExecutableDefinitions]))
+  val validator: QueryValidator =
+    QueryValidator.ruleBased(QueryValidator.allRules.filterNot(_.isInstanceOf[ExecutableDefinitions]))
 
   private def invalidType[In](expected: String, got: In)(implicit iu: InputUnmarshaller[In]) =
     throw InputMaterializationException(s"Expected $expected value, but got: " + iu.render(got))
 
   private def safe[T, In](op: ⇒ T, expected: String, got: In)(implicit iu: InputUnmarshaller[In]) =
-    try op catch {
+    try op
+    catch {
       case NonFatal(_) ⇒ invalidType(expected, got)
     }
 
@@ -372,7 +487,7 @@ object ResolverBasedAstSchemaBuilder {
 
     t match {
       case BooleanType ⇒
-        coerced match  {
+        coerced match {
           case v: Boolean ⇒ v
           case v: String ⇒ safe(v.toBoolean, "Boolean", value)
           case _ ⇒ invalidType("Boolean", value)
@@ -380,12 +495,12 @@ object ResolverBasedAstSchemaBuilder {
       case StringType ⇒
         coerced.toString
       case IDType ⇒
-        coerced match  {
+        coerced match {
           case s: String ⇒ s
           case _ ⇒ invalidType("ID", value)
         }
       case IntType ⇒
-        coerced match  {
+        coerced match {
           case v: Int ⇒ v
           case i: Long if i.isValidInt ⇒ i.toInt
           case v: BigInt if v.isValidInt ⇒ v.intValue
@@ -395,7 +510,7 @@ object ResolverBasedAstSchemaBuilder {
           case _ ⇒ invalidType("Int", value)
         }
       case LongType ⇒
-        coerced match  {
+        coerced match {
           case i: Int ⇒ i: Long
           case i: Long ⇒ i
           case i: BigInt if !i.isValidLong ⇒ invalidType("Long", value)
@@ -456,18 +571,24 @@ object ResolverBasedAstSchemaBuilder {
 
       if (iu.isMapNode(objValue)) objValue
       else invalidType("Object", objValue)
-    case t ⇒ throw SchemaMaterializationException(s"Extractor for a type '${SchemaRenderer.renderTypeName(t)}' is not supported yet.")
+    case t ⇒
+      throw SchemaMaterializationException(
+        s"Extractor for a type '${SchemaRenderer.renderTypeName(t)}' is not supported yet."
+      )
   }
 
   def extractFieldValue[Ctx, In](context: Context[Ctx, _])(implicit iu: InputUnmarshaller[In]): Any =
     extractFieldValue[In](context.parentType, context.field, context.value.asInstanceOf[In])
 
-  def extractFieldValue[In](parentType: CompositeType[_], field: Field[_, _], value: In)(implicit iu: InputUnmarshaller[In]): Any = {
-    try
-      if (!iu.isMapNode(value))
-        throw SchemaMaterializationException(s"Can't extract value for a field '${parentType.name}.${field.name}': not a map-like value.")
-      else
-        extractValue(field.fieldType, iu.getMapValue(value, field.name))
+  def extractFieldValue[In](parentType: CompositeType[_], field: Field[_, _], value: In)(
+    implicit iu: InputUnmarshaller[In]
+  ): Any = {
+    try if (!iu.isMapNode(value))
+      throw SchemaMaterializationException(
+        s"Can't extract value for a field '${parentType.name}.${field.name}': not a map-like value."
+      )
+    else
+      extractValue(field.fieldType, iu.getMapValue(value, field.name))
     catch {
       case e: SchemaMaterializationException ⇒
         throw e
@@ -497,36 +618,40 @@ object ResolverBasedAstSchemaBuilder {
     val resolversByName = resolvers.groupBy(_.directiveName)
     val stack = ValidatorStack.empty[ast.AstNode]
 
-    AstVisitor.visit(schema, AstVisitor(
-      onEnter = {
-        case node: ast.WithDirectives ⇒
-          stack.push(node)
+    AstVisitor.visit(
+      schema,
+      AstVisitor(
+        onEnter = {
+          case node: ast.WithDirectives ⇒
+            stack.push(node)
 
-          result ++=
-              node.directives.flatMap { astDir ⇒
-                findByLocation(stack, node, resolversByName.getOrElse(astDir.name, Nil))
-                  .flatMap {
-                    case GenericDirectiveResolver(directive, _, resolve) ⇒
-                      resolve(GenericDirectiveContext(astDir, node, Args(directive, astDir)))
-                    case gd @ GenericDynamicDirectiveResolver(_, _, resolve) ⇒
-                      implicit val marshaller = gd.marshaller
+            result ++=
+              node.directives.flatMap {
+                astDir ⇒
+                  findByLocation(stack, node, resolversByName.getOrElse(astDir.name, Nil))
+                    .flatMap {
+                      case GenericDirectiveResolver(directive, _, resolve) ⇒
+                        resolve(GenericDirectiveContext(astDir, node, Args(directive, astDir)))
+                      case gd @ GenericDynamicDirectiveResolver(_, _, resolve) ⇒
+                        implicit val marshaller = gd.marshaller
 
-                      resolve(GenericDynamicDirectiveContext(astDir, node, createDynamicArgs(astDir)))
-                  }
+                        resolve(GenericDynamicDirectiveContext(astDir, node, createDynamicArgs(astDir)))
+                    }
               }
 
-          VisitorCommand.Continue
+            VisitorCommand.Continue
 
-        case node ⇒
-          stack.push(node)
-          VisitorCommand.Continue
-      },
-      onLeave = {
-        case _ ⇒
-          stack.pop()
-          VisitorCommand.Continue
-      }
-    ))
+          case node ⇒
+            stack.push(node)
+            VisitorCommand.Continue
+        },
+        onLeave = {
+          case _ ⇒
+            stack.pop()
+            VisitorCommand.Continue
+        }
+      )
+    )
 
     result.result()
   }
@@ -540,6 +665,15 @@ object ResolverBasedAstSchemaBuilder {
     value.convertMarshaled[T]
   }
 
-  private def findByLocation[T](visitorStack: ValidatorStack[ast.AstNode], node: ast.AstNode, directives: Seq[AstSchemaGenericResolver[T]]) =
-    directives.filter(d ⇒ d.locations.isEmpty || KnownDirectives.getLocation(node, visitorStack.head(1)).fold(false)(l ⇒ d.locations contains l._1))
+  private def findByLocation[T](
+    visitorStack: ValidatorStack[ast.AstNode],
+    node: ast.AstNode,
+    directives: Seq[AstSchemaGenericResolver[T]]
+  ) =
+    directives.filter(
+      d ⇒
+        d.locations.isEmpty || KnownDirectives
+          .getLocation(node, visitorStack.head(1))
+          .fold(false)(l ⇒ d.locations contains l._1)
+    )
 }

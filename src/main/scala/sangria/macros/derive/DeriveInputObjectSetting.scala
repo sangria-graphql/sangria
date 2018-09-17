@@ -1,6 +1,5 @@
 package sangria.macros.derive
 
-
 import sangria.schema.InputField
 
 trait DeriveInputObjectSetting

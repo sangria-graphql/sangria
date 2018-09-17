@@ -46,12 +46,14 @@ object MaterializedField {
     MaterializedFieldInst[Ctx, Val](origin, field)
 }
 
-case class MaterializedFieldAst[Ctx](origin: MatOrigin, field: ast.FieldDefinition) extends MaterializedField[Ctx, Any] {
+case class MaterializedFieldAst[Ctx](origin: MatOrigin, field: ast.FieldDefinition)
+    extends MaterializedField[Ctx, Any] {
   def name = field.name
   def rename(newName: String) = copy(field = field.copy(name = newName))
 }
 
-case class MaterializedFieldInst[Ctx, Val](origin: MatOrigin, field: Field[Ctx, Val]) extends MaterializedField[Ctx, Val] {
+case class MaterializedFieldInst[Ctx, Val](origin: MatOrigin, field: Field[Ctx, Val])
+    extends MaterializedField[Ctx, Val] {
   def name = field.name
   def rename(newName: String) = copy(field = field.rename(newName))
 }

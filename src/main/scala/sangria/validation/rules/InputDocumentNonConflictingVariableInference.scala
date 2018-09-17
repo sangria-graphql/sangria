@@ -9,8 +9,8 @@ import sangria.validation.{ValidationContext, ValidationRule, VariableInferenceV
 import scala.collection.mutable
 
 /**
- * All inferred variables within input document should not conflict in it's inferred type
- */
+  * All inferred variables within input document should not conflict in it's inferred type
+  */
 class InputDocumentNonConflictingVariableInference extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     private var inInputDocument = false
@@ -27,7 +27,17 @@ class InputDocumentNonConflictingVariableInference extends ValidationRule {
 
         usedVariables.get(v.name) match {
           case Some((existing, otherPos)) if existing != parentTypeAst ⇒
-            Left(Vector(VariableInferenceViolation(v.name, existing.renderCompact, parentTypeAst.renderCompact, ctx.sourceMapper, v.location.toList ++ otherPos)))
+            Left(
+              Vector(
+                VariableInferenceViolation(
+                  v.name,
+                  existing.renderCompact,
+                  parentTypeAst.renderCompact,
+                  ctx.sourceMapper,
+                  v.location.toList ++ otherPos
+                )
+              )
+            )
           case None ⇒
             usedVariables(v.name) = (parentTypeAst, v.location.toList)
             AstVisitorCommand.RightContinue

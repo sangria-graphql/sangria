@@ -1,6 +1,6 @@
 package sangria.macros
 
-import sangria.parser.{SyntaxError, QueryParser}
+import sangria.parser.{QueryParser, SyntaxError}
 
 import scala.reflect.macros.blackbox
 
@@ -31,7 +31,10 @@ class ParseMacro(context: blackbox.Context) extends {
 
   def implInput(args: Expr[Any]*) =
     if (args.nonEmpty)
-      c.abort(c.enclosingPosition, "String interpolation is not supported for `graphqlInput`/`gqlInp` macro at the moment.")
+      c.abort(
+        c.enclosingPosition,
+        "String interpolation is not supported for `graphqlInput`/`gqlInp` macro at the moment."
+      )
     else
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any

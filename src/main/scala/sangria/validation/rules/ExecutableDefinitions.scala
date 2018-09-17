@@ -24,7 +24,7 @@ class ExecutableDefinitions extends ValidationRule {
         else AstVisitorCommand.RightContinue
     }
   }
-  
+
   def definitionName(definition: ast.Definition): String = definition match {
     case d: ast.FragmentDefinition ⇒ d.name
     case d: ast.OperationDefinition ⇒ d.name getOrElse "unnamed operation"

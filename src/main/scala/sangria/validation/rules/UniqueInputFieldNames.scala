@@ -9,11 +9,11 @@ import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
 /**
- * Unique input field names
- *
- * A GraphQL input object value is only valid if all supplied fields are
- * uniquely named.
- */
+  * Unique input field names
+  *
+  * A GraphQL input object value is only valid if all supplied fields are
+  * uniquely named.
+  */
 class UniqueInputFieldNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownNameStack = ValidatorStack.empty[MutableMap[String, Option[AstLocation]]]

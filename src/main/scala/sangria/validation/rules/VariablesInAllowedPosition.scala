@@ -1,6 +1,5 @@
 package sangria.validation.rules
 
-
 import sangria.schema.{InputType, Schema}
 import sangria.ast
 import sangria.ast.AstVisitorCommand
@@ -11,8 +10,8 @@ import sangria.validation._
 import scala.collection.mutable.{Map => MutableMap}
 
 /**
- * Variables passed to field arguments conform to type
- */
+  * Variables passed to field arguments conform to type
+  */
 class VariablesInAllowedPosition extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val varDefs = MutableMap[String, ast.VariableDefinition]()
@@ -42,12 +41,14 @@ class VariablesInAllowedPosition extends ValidationRule {
             tpe ← usage.tpe
             inputTpe ← ctx.schema.getInputType(varDef.tpe)
             if !allowedVariableUsage(ctx.schema, inputTpe, varDef.defaultValue, tpe, usage.defaultValue)
-          } yield BadVarPositionViolation(
-            usage.node.name,
-            SchemaRenderer.renderTypeName(inputTpe),
-            SchemaRenderer.renderTypeName(tpe),
-            ctx.sourceMapper,
-            varDef.location.toList ++ usage.node.location.toList)
+          } yield
+            BadVarPositionViolation(
+              usage.node.name,
+              SchemaRenderer.renderTypeName(inputTpe),
+              SchemaRenderer.renderTypeName(tpe),
+              ctx.sourceMapper,
+              varDef.location.toList ++ usage.node.location.toList
+            )
         }
 
         if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue

@@ -37,7 +37,7 @@ trait PositionTracking { this: Parser ⇒
       else if (arr(i) == item) true
       else go(i - 1)
     }
-    
+
     go(arr.length - 1)
   }
 

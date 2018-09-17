@@ -29,48 +29,48 @@ sealed trait IntrospectionType {
   def description: Option[String]
 }
 
-case class IntrospectionScalarType(
-    name: String,
-    description: Option[String]) extends IntrospectionType {
+case class IntrospectionScalarType(name: String, description: Option[String]) extends IntrospectionType {
   val kind = TypeKind.Scalar
 }
 
 case class IntrospectionObjectType(
-    name: String,
-    description: Option[String],
-    fields: Seq[IntrospectionField],
-    interfaces: Seq[IntrospectionNamedTypeRef]) extends IntrospectionType {
+  name: String,
+  description: Option[String],
+  fields: Seq[IntrospectionField],
+  interfaces: Seq[IntrospectionNamedTypeRef]
+) extends IntrospectionType {
   val kind = TypeKind.Object
   lazy val fieldsByName = fields.groupBy(_.name).mapValues(_.head)
 }
 
 case class IntrospectionInputObjectType(
-    name: String,
-    description: Option[String],
-    inputFields: Seq[IntrospectionInputValue]) extends IntrospectionType {
+  name: String,
+  description: Option[String],
+  inputFields: Seq[IntrospectionInputValue]
+) extends IntrospectionType {
   val kind = TypeKind.InputObject
   lazy val inputFieldsByName = inputFields.groupBy(_.name).mapValues(_.head)
 }
 
 case class IntrospectionInterfaceType(
-    name: String,
-    description: Option[String],
-    fields: Seq[IntrospectionField],
-    possibleTypes: Seq[IntrospectionNamedTypeRef]) extends IntrospectionType {
+  name: String,
+  description: Option[String],
+  fields: Seq[IntrospectionField],
+  possibleTypes: Seq[IntrospectionNamedTypeRef]
+) extends IntrospectionType {
   val kind = TypeKind.Interface
 }
 
 case class IntrospectionUnionType(
-    name: String,
-    description: Option[String],
-    possibleTypes: Seq[IntrospectionNamedTypeRef]) extends IntrospectionType {
+  name: String,
+  description: Option[String],
+  possibleTypes: Seq[IntrospectionNamedTypeRef]
+) extends IntrospectionType {
   val kind = TypeKind.Union
 }
 
-case class IntrospectionEnumType(
-    name: String,
-    description: Option[String],
-    enumValues: Seq[IntrospectionEnumValue]) extends IntrospectionType {
+case class IntrospectionEnumType(name: String, description: Option[String], enumValues: Seq[IntrospectionEnumValue])
+    extends IntrospectionType {
   val kind = TypeKind.Enum
 }
 
@@ -89,13 +89,15 @@ case class IntrospectionEnumValue(
   name: String,
   description: Option[String],
   isDeprecated: Boolean,
-  deprecationReason: Option[String])
+  deprecationReason: Option[String]
+)
 
 case class IntrospectionInputValue(
   name: String,
   description: Option[String],
   tpe: IntrospectionTypeRef,
-  defaultValue: Option[String])
+  defaultValue: Option[String]
+)
 
 sealed trait IntrospectionTypeRef {
   def kind: TypeKind.Value
@@ -115,4 +117,5 @@ case class IntrospectionDirective(
   name: String,
   description: Option[String],
   locations: Set[DirectiveLocation.Value],
-  args: Seq[IntrospectionInputValue])
+  args: Seq[IntrospectionInputValue]
+)

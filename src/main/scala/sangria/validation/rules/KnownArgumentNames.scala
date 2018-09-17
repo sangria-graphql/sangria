@@ -7,11 +7,11 @@ import sangria.util.StringUtil
 import sangria.validation._
 
 /**
- * Known argument names
- *
- * A GraphQL field is only valid if all supplied arguments are defined by
- * that field.
- */
+  * Known argument names
+  *
+  * A GraphQL field is only valid if all supplied arguments are defined by
+  * that field.
+  */
 class KnownArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
@@ -20,13 +20,18 @@ class KnownArgumentNames extends ValidationRule {
           case _: ast.Field ⇒
             ctx.typeInfo.fieldDef match {
               case Some(field) if !field.arguments.exists(_.name == name) ⇒
-                Left(Vector(UnknownArgViolation(
-                  name,
-                  field.name,
-                  ctx.typeInfo.previousParentType.fold("")(SchemaRenderer.renderTypeName(_, topLevel = true)),
-                  StringUtil.suggestionList(name, field.arguments map (_.name)),
-                  ctx.sourceMapper,
-                  pos.toList)))
+                Left(
+                  Vector(
+                    UnknownArgViolation(
+                      name,
+                      field.name,
+                      ctx.typeInfo.previousParentType.fold("")(SchemaRenderer.renderTypeName(_, topLevel = true)),
+                      StringUtil.suggestionList(name, field.arguments map (_.name)),
+                      ctx.sourceMapper,
+                      pos.toList
+                    )
+                  )
+                )
               case _ ⇒
                 AstVisitorCommand.RightContinue
             }
@@ -34,12 +39,17 @@ class KnownArgumentNames extends ValidationRule {
           case _: ast.Directive ⇒
             ctx.typeInfo.directive match {
               case Some(dir) if !dir.arguments.exists(_.name == name) ⇒
-                Left(Vector(UnknownDirectiveArgViolation(
-                  name,
-                  dir.name,
-                  StringUtil.suggestionList(name, dir.arguments map (_.name)),
-                  ctx.sourceMapper,
-                  pos.toList)))
+                Left(
+                  Vector(
+                    UnknownDirectiveArgViolation(
+                      name,
+                      dir.name,
+                      StringUtil.suggestionList(name, dir.arguments map (_.name)),
+                      ctx.sourceMapper,
+                      pos.toList
+                    )
+                  )
+                )
               case _ ⇒
                 AstVisitorCommand.RightContinue
             }

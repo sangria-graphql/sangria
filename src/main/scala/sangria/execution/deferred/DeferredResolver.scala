@@ -14,7 +14,9 @@ trait DeferredResolver[-Ctx] {
 
   def initialQueryState: Any = ()
 
-  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any)(implicit ec: ExecutionContext): Vector[Future[Any]]
+  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any)(
+    implicit ec: ExecutionContext
+  ): Vector[Future[Any]]
 }
 
 object DeferredResolver {
@@ -26,7 +28,10 @@ object DeferredResolver {
   def fetchers[Ctx](fetchers: Fetcher[Ctx, _, _, _]*): DeferredResolver[Ctx] =
     new FetcherBasedDeferredResolver[Ctx](fetchers.toVector, None)
 
-  def fetchersWithFallback[Ctx](fallback: DeferredResolver[Ctx], fetchers: Fetcher[Ctx, _, _, _]*): DeferredResolver[Ctx] =
+  def fetchersWithFallback[Ctx](
+    fallback: DeferredResolver[Ctx],
+    fetchers: Fetcher[Ctx, _, _, _]*
+  ): DeferredResolver[Ctx] =
     new FetcherBasedDeferredResolver[Ctx](fetchers.toVector, Some(fallback))
 }
 
