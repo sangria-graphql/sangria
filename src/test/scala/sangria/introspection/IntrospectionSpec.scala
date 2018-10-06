@@ -110,46 +110,7 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                             "name" → "__InputValue",
                             "ofType" → null)))),
                     "isDeprecated" → false,
-                    "deprecationReason" → null),
-                  Map(
-                    "name" → "onOperation",
-                    "description" → null,
-                    "args" → Vector.empty,
-                    "type" → Map(
-                      "kind" → "NON_NULL",
-                      "name" → null,
-                      "ofType" → Map(
-                        "kind" → "SCALAR",
-                        "name" → "Boolean",
-                        "ofType" → null)),
-                    "isDeprecated" → true,
-                    "deprecationReason" → "Use `locations`."),
-                  Map(
-                    "name" → "onFragment",
-                    "description" → null,
-                    "args" → Vector.empty,
-                    "type" → Map(
-                      "kind" → "NON_NULL",
-                      "name" → null,
-                      "ofType" → Map(
-                        "kind" → "SCALAR",
-                        "name" → "Boolean",
-                        "ofType" → null)),
-                    "isDeprecated" → true,
-                    "deprecationReason" → "Use `locations`."),
-                  Map(
-                    "name" → "onField",
-                    "description" → null,
-                    "args" → Vector.empty,
-                    "type" → Map(
-                      "kind" → "NON_NULL",
-                      "name" → null,
-                      "ofType" → Map(
-                        "kind" → "SCALAR",
-                        "name" → "Boolean",
-                        "ofType" → null)),
-                    "isDeprecated" → true,
-                    "deprecationReason" → "Use `locations`.")),
+                    "deprecationReason" → null)),
                 "inputFields" → null,
                 "interfaces" → Vector.empty,
                 "enumValues" → null,

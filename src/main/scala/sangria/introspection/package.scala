@@ -252,24 +252,7 @@ package object introspection {
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field("locations", ListType(__DirectiveLocation), resolve = _.value.locations.toVector.sorted),
-      Field("args", ListType(__InputValue), resolve = _.value.arguments),
-      Field("onOperation", BooleanType,
-        deprecationReason = Some("Use `locations`."),
-        resolve = c ⇒
-          c.value.locations.contains(DirectiveLocation.Query) ||
-          c.value.locations.contains(DirectiveLocation.Mutation) ||
-          c.value.locations.contains(DirectiveLocation.Subscription)),
-      Field("onFragment", BooleanType,
-        deprecationReason = Some("Use `locations`."),
-        resolve = c ⇒
-          c.value.locations.contains(DirectiveLocation.FragmentDefinition) ||
-          c.value.locations.contains(DirectiveLocation.FragmentSpread) ||
-          c.value.locations.contains(DirectiveLocation.InlineFragment)),
-      Field("onField", BooleanType,
-        deprecationReason = Some("Use `locations`."),
-        resolve = _.value.locations.contains(DirectiveLocation.Field))
-    ))
-
+      Field("args", ListType(__InputValue), resolve = _.value.arguments)))
 
   val __Schema = ObjectType(
     name = "__Schema",
