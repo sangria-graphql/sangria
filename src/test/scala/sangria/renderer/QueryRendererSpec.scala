@@ -622,7 +622,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         prettyRendered should equal (FileUtil loadQuery "block-string-rendered.graphql") (after being strippedOfCarriageReturns)
       }
       
-      "Experimental: correctly prints fragment defined variables " in {
+      "Experimental: correctly prints fragment defined variables" in {
         val query =
           """
             fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
@@ -636,6 +636,20 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
 
         ast.renderPretty should equal (
           """fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
+            |  id
+            |}""".stripMargin) (after being strippedOfCarriageReturns)
+      }
+
+      "correctly render variable definition directives" in {
+        val query =
+          """
+            query ($foo: TestType = {a: 123} @testDirective(if: true) @test) { id }
+          """
+
+        val Success(ast) = QueryParser.parse(query)
+
+        ast.renderPretty should equal (
+          """query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
             |  id
             |}""".stripMargin) (after being strippedOfCarriageReturns)
       }

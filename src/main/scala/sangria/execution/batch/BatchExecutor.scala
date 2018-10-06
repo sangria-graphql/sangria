@@ -392,7 +392,7 @@ object BatchExecutor {
             if (violations.nonEmpty)
               inferenceViolations ++= violations
             else
-              newVariableDefs += ast.VariableDefinition(ud, firstAstType, None, Vector(ast.Comment("Inferred variable")))
+              newVariableDefs += ast.VariableDefinition(ud, firstAstType, None, Vector.empty, Vector(ast.Comment("Inferred variable")))
           }
 
           if (newVariableDefs.nonEmpty && inferenceViolations.isEmpty)

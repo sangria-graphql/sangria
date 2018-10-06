@@ -354,7 +354,8 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
     wsCapture("ENUM_VALUE") |
     wsCapture("ENUM") |
     wsCapture("INPUT_OBJECT") |
-    wsCapture("INPUT_FIELD_DEFINITION")
+    wsCapture("INPUT_FIELD_DEFINITION") |
+    wsCapture("VARIABLE_DEFINITION")
   }
 
   def SchemaDefinition = rule {
@@ -395,8 +396,8 @@ trait Operations extends PositionTracking { this: Parser with Tokens with Ignore
 
   def VariableDefinitions = rule { wsNoComment('(') ~ VariableDefinition.+ ~ wsNoComment(')') ~> (_.toVector)}
 
-  def VariableDefinition = rule { Comments ~ trackPos ~ Variable ~ ws(':') ~ Type ~ DefaultValue.? ~>
-      ((comment, location, name, tpe, defaultValue) ⇒ ast.VariableDefinition(name, tpe, defaultValue, comment, location)) }
+  def VariableDefinition = rule { Comments ~ trackPos ~ Variable ~ ws(':') ~ Type ~ DefaultValue.? ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~>
+      ((comment, location, name, tpe, defaultValue, dirs) ⇒ ast.VariableDefinition(name, tpe, defaultValue, dirs, comment, location)) }
 
   def Variable = rule { Ignored.* ~ '$' ~ NameStrict }
 

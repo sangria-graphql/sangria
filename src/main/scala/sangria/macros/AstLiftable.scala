@@ -41,8 +41,8 @@ trait AstLiftable {
   }
 
   implicit def liftVarDef: Liftable[VariableDefinition] = Liftable {
-    case VariableDefinition(n, t, d, c, p) ⇒
-      q"_root_.sangria.ast.VariableDefinition($n, $t, $d, $c, $p)"
+    case VariableDefinition(n, t, d, dirs, c, p) ⇒
+      q"_root_.sangria.ast.VariableDefinition($n, $t, $d, $dirs, $c, $p)"
   }
 
   implicit def liftInpValDef: Liftable[InputValueDefinition] = Liftable {

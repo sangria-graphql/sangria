@@ -93,8 +93,8 @@ tests:
   - name: with well placed directives
     given:
       query: |-
-        query Foo @onQuery {
-          name @include(if: true)
+        query Foo($var: Boolean @onVariableDefinition) @onQuery {
+          name @include(if: $var)
           ...Frag @include(if: true)
           skippedField @skip(if: true)
           ...SkippedFrag @skip(if: true)
@@ -111,8 +111,8 @@ tests:
   - name: with misplaced directives
     given:
       query: |-
-        query Foo @include(if: true) {
-          name @onQuery
+        query Foo($var: Boolean @onField) @include(if: true) {
+          name @onQuery @include(if: $var)
           ...Frag @onQuery
         }
 
@@ -123,14 +123,21 @@ tests:
       validate:
         - KnownDirectives
     then:
-      - error-count: 4
+      - error-count: 5
+      - error-code: misplacedDirective
+        args:
+          directiveName: onField
+          location: VARIABLE_DEFINITION
+        loc:
+          line: 1
+          column: 25
       - error-code: misplacedDirective
         args:
           directiveName: include
           location: QUERY
         loc:
           line: 1
-          column: 11
+          column: 35
       - error-code: misplacedDirective
         args:
           directiveName: onQuery

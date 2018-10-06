@@ -159,6 +159,11 @@ class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport 
                     "isDeprecated" → false,
                     "deprecationReason" → null),
                   Map(
+                    "name" → "VARIABLE_DEFINITION",
+                    "description" → "Location adjacent to a variable definition.",
+                    "isDeprecated" → false,
+                    "deprecationReason" → null),
+                  Map(
                     "name" → "SCHEMA",
                     "description" → "Location adjacent to a schema definition.",
                     "isDeprecated" → false,

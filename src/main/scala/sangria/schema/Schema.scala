@@ -698,6 +698,7 @@ object DirectiveLocation extends Enumeration {
   val Schema = Value
   val Subscription = Value
   val Union = Value
+  val VariableDefinition = Value
 
   def fromString(location: String): DirectiveLocation.Value = location match {
     case "QUERY" ⇒ Query
@@ -707,6 +708,7 @@ object DirectiveLocation extends Enumeration {
     case "FRAGMENT_DEFINITION" ⇒ FragmentDefinition
     case "FRAGMENT_SPREAD" ⇒ FragmentSpread
     case "INLINE_FRAGMENT" ⇒ InlineFragment
+    case "VARIABLE_DEFINITION" ⇒ VariableDefinition
 
     case "SCHEMA" ⇒ Schema
     case "SCALAR" ⇒ Scalar
@@ -729,6 +731,7 @@ object DirectiveLocation extends Enumeration {
     case FragmentDefinition ⇒ "FRAGMENT_DEFINITION"
     case FragmentSpread ⇒ "FRAGMENT_SPREAD"
     case InlineFragment ⇒ "INLINE_FRAGMENT"
+    case VariableDefinition ⇒ "VARIABLE_DEFINITION"
 
     case Schema ⇒ "SCHEMA"
     case Scalar ⇒ "SCALAR"

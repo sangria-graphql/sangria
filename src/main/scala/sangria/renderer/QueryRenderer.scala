@@ -353,11 +353,12 @@ object QueryRenderer {
           renderDirs(dirs, config, indent) +
           renderSelections(sels, fd, indent, config)
 
-      case vd @ VariableDefinition(name, tpe, defaultValue, _, _) ⇒
+      case vd @ VariableDefinition(name, tpe, defaultValue, dirs, _, _) ⇒
         renderComment(vd, prev, indent, config) +
           indent.str + "$" + name + ":" + config.separator +
           renderNode(tpe, config, indent.zero) +
-          (defaultValue map (v ⇒ config.separator + "=" + config.separator + renderNode(v, config, indent.zero)) getOrElse "")
+          (defaultValue map (v ⇒ config.separator + "=" + config.separator + renderNode(v, config, indent.zero)) getOrElse "") +
+          renderDirs(dirs, config, indent, frontSep = true)
 
       case NotNullType(ofType, _) ⇒
         renderNode(ofType, config, indent.zero) + "!"

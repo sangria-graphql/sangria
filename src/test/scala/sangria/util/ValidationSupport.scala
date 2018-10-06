@@ -168,6 +168,7 @@ trait ValidationSupport extends Matchers  {
     Directive("onFragmentDefinition", locations = Set(DirectiveLocation.FragmentDefinition), shouldInclude = alwaysInclude),
     Directive("onFragmentSpread", locations = Set(DirectiveLocation.FragmentSpread), shouldInclude = alwaysInclude),
     Directive("onInlineFragment", locations = Set(DirectiveLocation.InlineFragment), shouldInclude = alwaysInclude),
+    Directive("onVariableDefinition", locations = Set(DirectiveLocation.VariableDefinition), shouldInclude = alwaysInclude),
     Directive("onSchema", locations = Set(DirectiveLocation.Schema), shouldInclude = alwaysInclude),
     Directive("onScalar", locations = Set(DirectiveLocation.Scalar), shouldInclude = alwaysInclude),
     Directive("onObject", locations = Set(DirectiveLocation.Object), shouldInclude = alwaysInclude),

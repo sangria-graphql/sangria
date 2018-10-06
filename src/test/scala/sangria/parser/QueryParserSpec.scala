@@ -11,7 +11,6 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
-
   def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
     QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
 
@@ -31,12 +30,14 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   NamedType("Int", Some(AstLocation(53, 2, 41))),
                   Some(BigDecimalValue(1.23, Vector.empty, Some(AstLocation(59, 2, 47)))),
                   Vector.empty,
+                  Vector.empty,
                   Some(AstLocation(43, 2, 31))
                 ),
                 VariableDefinition(
                   "anotherVar",
                   NamedType("Int", Some(AstLocation(77, 2, 65))),
                   Some(BigIntValue(123, Vector.empty, Some(AstLocation(83, 2, 71)))),
+                  Vector.empty,
                   Vector.empty,
                   Some(AstLocation(64, 2, 52))
                 )),
@@ -227,12 +228,14 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   NamedType("ComplexType", Some(AstLocation(310, 8, 23))),
                   None,
                   Vector.empty,
+                  Vector.empty,
                   Some(AstLocation(304, 8, 17))
                 ),
                 VariableDefinition(
                   "site",
                   NamedType("Site", Some(AstLocation(330, 8, 43))),
                   Some(EnumValue("MOBILE", Vector.empty, Some(AstLocation(337, 8, 50)))),
+                  Vector.empty,
                   Vector.empty,
                   Some(AstLocation(323, 8, 36))
                 )),
@@ -419,6 +422,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   "input",
                   NamedType("StoryLikeSubscribeInput", Some(AstLocation(703, 31, 44))),
                   None,
+                  Vector.empty,
                   Vector.empty,
                   Some(AstLocation(695, 31, 36))
                 )),
@@ -661,12 +665,14 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   NamedType("ComplexType", None),
                   None,
                   Vector.empty,
+                  Vector.empty,
                   None
                 ),
                 VariableDefinition(
                   "site",
                   NamedType("Site", None),
                   Some(EnumValue("MOBILE", Vector.empty, None)),
+                  Vector.empty,
                   Vector.empty,
                   None
                 )),
@@ -847,6 +853,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   "input",
                   NamedType("StoryLikeSubscribeInput", None),
                   None,
+                  Vector.empty,
                   Vector.empty,
                   None
                 )),
@@ -1215,6 +1222,10 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
     "parses constant default values" in {
       parseQuery("{ field(complex: { a: { b: [ $var ] } }) }").isSuccess should be (true)
     }
+    
+    "parses variable definition directives" in {
+      parseQuery("query Foo($x: Boolean = false @bar) { field }").isSuccess should be (true)
+    }
 
     "parses variable inline values" in {
       val Failure(error: SyntaxError) = parseQuery(
@@ -1231,7 +1242,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "query Foo($x: Complex = 1.) { field }")
 
       error.formattedError should equal (
-        """Invalid input "1.)", expected ValueConst or VariableDefinition (line 1, column 25):
+        """Invalid input "1.)", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
           |query Foo($x: Complex = 1.) { field }
           |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1251,7 +1262,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "query Foo($x: Complex = 1.0e) { field }")
 
       error.formattedError should equal (
-        """Invalid input "1.0e)", expected ValueConst or VariableDefinition (line 1, column 25):
+        """Invalid input "1.0e)", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
           |query Foo($x: Complex = 1.0e) { field }
           |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1261,7 +1272,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "query Foo($x: Complex = 1.A) { field }")
 
       error.formattedError should equal (
-        """Invalid input "1.A", expected ValueConst or VariableDefinition (line 1, column 25):
+        """Invalid input "1.A", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
           |query Foo($x: Complex = 1.A) { field }
           |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1281,7 +1292,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "query Foo($x: Complex = 1.0eA) { field }")
 
       error.formattedError should equal (
-        """Invalid input "1.0eA", expected ValueConst or VariableDefinition (line 1, column 25):
+        """Invalid input "1.0eA", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
           |query Foo($x: Complex = 1.0eA) { field }
           |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1375,7 +1386,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         case node if implicitly[ClassTag[T]].runtimeClass.isAssignableFrom(node.getClass) ⇒ Some(node.asInstanceOf[T])
         case Document(defs, _, _, _) ⇒ defs map findAst[T] find (_.isDefined) flatten
         case OperationDefinition(_, _, vars, _, _, _, _, _) ⇒ vars map findAst[T] find (_.isDefined) flatten
-        case VariableDefinition(_, _, default, _, _) ⇒ default flatMap findAst[T]
+        case VariableDefinition(_, _, default, _, _, _) ⇒ default flatMap findAst[T]
         case _ ⇒ None
       }
 
@@ -1499,6 +1510,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   "foo",
                   NamedType("ComplexType", Some(AstLocation(434, 23, 1))),
                   None,
+                  Vector.empty,
                   Vector(
                     Comment(" comment 5", Some(AstLocation(354, 15, 1))),
                     Comment(" comment 6", Some(AstLocation(366, 16, 1)))),
@@ -1508,6 +1520,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   "site",
                   NamedType("Site", Some(AstLocation(565, 36, 1))),
                   Some(EnumValue("MOBILE", Vector(Comment(" comment 16.5", Some(AstLocation(602, 40, 1))), Comment(" comment 16.6", Some(AstLocation(617, 41, 1)))), Some(AstLocation(632, 42, 1)))),
+                  Vector.empty,
                   Vector(
                     Comment(" comment 11", Some(AstLocation(446, 24, 1))),
                     Comment(" comment 12", Some(AstLocation(459, 25, 1))),
@@ -1562,6 +1575,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                       Comment(" comment 18.6", Some(AstLocation(762, 53, 1)))),
                     Some(AstLocation(777, 54, 1))
                   )),
+                  Vector.empty,
                   Vector(
                     Comment(" comment 17", Some(AstLocation(639, 43, 1))),
                     Comment(" comment 18", Some(AstLocation(652, 44, 1))),
@@ -1868,6 +1882,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                 NamedType("String", Some(AstLocation(40, 1, 41))),
                 Some(StringValue("hello \\\n  world", true, Some("\n    hello \\\n      world"), Vector.empty, Some(AstLocation(53, 2, 5)))),
                 Vector.empty,
+                Vector.empty,
                 Some(AstLocation(30, 1, 31))
               )),
             Vector.empty,
@@ -1987,6 +2002,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
                   "v",
                   NamedType("Boolean", Some(AstLocation(15, 1, 16))),
                   Some(BooleanValue(false, Vector.empty, Some(AstLocation(25, 1, 26)))),
+                  Vector.empty,
                   Vector.empty,
                   Some(AstLocation(11, 1, 12))
                 )),

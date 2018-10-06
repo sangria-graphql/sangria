@@ -50,6 +50,7 @@ object KnownDirectives {
     case _: ast.FragmentDefinition ⇒ Some(DirectiveLocation.FragmentDefinition → "fragment definition")
     case _: ast.FragmentSpread ⇒ Some(DirectiveLocation.FragmentSpread → "fragment spread")
     case _: ast.InlineFragment ⇒ Some(DirectiveLocation.InlineFragment → "inline fragment")
+    case _: ast.VariableDefinition ⇒ Some(DirectiveLocation.VariableDefinition → "variable definition")
 
     case _: ast.SchemaDefinition ⇒ Some(DirectiveLocation.Schema → "schema definition")
     case _: ast.SchemaExtensionDefinition ⇒ Some(DirectiveLocation.Schema → "schema extension definition")

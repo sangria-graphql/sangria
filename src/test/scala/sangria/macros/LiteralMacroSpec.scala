@@ -51,12 +51,14 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   NamedType("Int", None),
                   Some(BigDecimalValue(1.23, Vector.empty, None)),
                   Vector.empty,
+                  Vector.empty,
                   None
                 ),
                 VariableDefinition(
                   "anotherVar",
                   NamedType("Int", None),
                   Some(BigIntValue(123, Vector.empty, None)),
+                  Vector.empty,
                   Vector.empty,
                   None
                 )),
@@ -300,12 +302,14 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   NamedType("ComplexType", None),
                   None,
                   Vector.empty,
+                  Vector.empty,
                   None
                 ),
                 VariableDefinition(
                   "site",
                   NamedType("Site", None),
                   Some(EnumValue("MOBILE", Vector.empty, None)),
+                  Vector.empty,
                   Vector.empty,
                   None
                 )),
@@ -440,6 +444,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                   "input",
                   NamedType("StoryLikeSubscribeInput", None),
                   None,
+                  Vector.empty,
                   Vector.empty,
                   None
                 )),

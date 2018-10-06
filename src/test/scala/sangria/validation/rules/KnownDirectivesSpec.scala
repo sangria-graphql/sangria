@@ -67,8 +67,8 @@ class KnownDirectivesSpec extends WordSpec with ValidationSupport {
 
       "with well placed directives" in expectPasses(
         """
-          query Foo @onQuery {
-            name @include(if: true)
+          query Foo($var: Boolean @onVariableDefinition) @onQuery {
+            name @include(if: $var)
             ...Frag @include(if: true)
             skippedField @skip(if: true)
             ...SkippedFrag @skip(if: true)
@@ -79,10 +79,10 @@ class KnownDirectivesSpec extends WordSpec with ValidationSupport {
           }
         """)
 
-      "with misplaced directives" in expectFails(
+      "with misplaced directives" in expectFailsSimple(
         """
-          query Foo @include(if: true) {
-            name @onQuery
+          query Foo($var: Boolean @onField) @include(if: true) {
+            name @onQuery @include(if: $var)
             ...Frag @onQuery
           }
 
@@ -90,12 +90,11 @@ class KnownDirectivesSpec extends WordSpec with ValidationSupport {
             someField
           }
         """,
-        List(
-          "Directive 'include' may not be used on query operation." → Some(Pos(2, 21)),
-          "Directive 'onQuery' may not be used on field." → Some(Pos(3, 18)),
-          "Directive 'onQuery' may not be used on fragment spread." → Some(Pos(4, 21)),
-          "Directive 'onQuery' may not be used on mutation operation." → Some(Pos(7, 24))
-        ))
+        "Directive 'onField' may not be used on variable definition." → Seq(Pos(2, 35)),
+        "Directive 'include' may not be used on query operation." → Seq(Pos(2, 45)),
+        "Directive 'onQuery' may not be used on field." → Seq(Pos(3, 18)),
+        "Directive 'onQuery' may not be used on fragment spread." → Seq(Pos(4, 21)),
+        "Directive 'onQuery' may not be used on mutation operation." → Seq(Pos(7, 24)))
     }
 
     "within schema language" should {

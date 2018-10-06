@@ -198,8 +198,9 @@ case class VariableDefinition(
   name: String,
   tpe: Type,
   defaultValue: Option[Value],
+  directives: Vector[Directive] = Vector.empty,
   comments: Vector[Comment] = Vector.empty,
-  location: Option[AstLocation] = None) extends AstNode with WithComments
+  location: Option[AstLocation] = None) extends AstNode with WithComments with WithDirectives
 
 sealed trait Type extends AstNode {
   def namedType: NamedType = {
@@ -652,10 +653,11 @@ object AstVisitor {
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ VariableDefinition(_, tpe, default, comment, _) ⇒
+        case n @ VariableDefinition(_, tpe, default, dirs, comment, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             loop(tpe)
             default.foreach(d ⇒ loop(d))
+            dirs.foreach(d ⇒ loop(d))
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }

@@ -65,6 +65,8 @@ package object introspection {
         description = Some("Location adjacent to a fragment spread.")),
       EnumValue("INLINE_FRAGMENT", value = DirectiveLocation.InlineFragment,
         description = Some("Location adjacent to an inline fragment.")),
+      EnumValue("VARIABLE_DEFINITION", value = DirectiveLocation.VariableDefinition,
+        description = Some("Location adjacent to a variable definition.")),
 
       EnumValue("SCHEMA", value = DirectiveLocation.Schema,
         description = Some("Location adjacent to a schema definition.")),
