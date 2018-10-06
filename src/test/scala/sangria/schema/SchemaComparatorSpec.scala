@@ -513,6 +513,30 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
       nonBreakingChange[SchemaAstDirectiveAdded]("Directive `@bar(ids:[1,2])` added on a schema"),
       nonBreakingChange[SchemaAstDirectiveRemoved]("Directive `@foo` removed from a schema"))
 
+    "detect changes in schema description" in checkChangesWithoutQueryType(
+      gql"""
+        type Query {
+          foo: String
+        }
+
+        schema {
+          query: Query
+        }
+      """,
+
+      gql"""
+        type Query {
+          foo: String
+        }
+         
+        "new description"
+        schema {
+          query: Query
+        }
+      """,
+
+      nonBreakingChange[SchemaDescriptionChanged]("Schema description changed"))
+
     "detect changes in type AST directives" in checkChangesWithoutQueryType(
       gql"""
         type Query implements Foo2 {

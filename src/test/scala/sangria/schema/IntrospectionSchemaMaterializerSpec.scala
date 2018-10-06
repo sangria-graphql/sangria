@@ -239,6 +239,10 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
             EnumValue("MAUVE", Some("So sickening"), "MAUVE", deprecationReason = Some("No longer in fashion"))))),
           resolve = _ ⇒ None)))))
 
+    "builds a schema with description" in testSchema(
+      Schema(ObjectType("Simple", "This is a simple type", fields[Any, Any](Field("shinyString", OptionType(StringType), resolve = _ ⇒ None))),
+        description = Some("test")))
+
     "cannot use client schema for general execution" in {
       val clientSchema = testSchema(
         Schema(ObjectType("Query", fields[Any, Any](

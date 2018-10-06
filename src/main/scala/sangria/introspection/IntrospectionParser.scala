@@ -101,7 +101,8 @@ object IntrospectionParser {
       mutationType = mapFieldOpt(schema, "mutationType") map (parseNamedTypeRef(_, path :+ "mutationType")),
       subscriptionType = mapFieldOpt(schema, "subscriptionType") map (parseNamedTypeRef(_, path :+ "subscriptionType")),
       types = um.getListValue(mapField(schema, "types", path)) map (parseType(_, path :+ "types")),
-      directives = mapFieldOpt(schema, "directives") map um.getListValue getOrElse Vector.empty map (i ⇒ parseDirective(i, path :+ "directives")))
+      directives = mapFieldOpt(schema, "directives") map um.getListValue getOrElse Vector.empty map (i ⇒ parseDirective(i, path :+ "directives")),
+      description = mapStringFieldOpt(schema, "description", path))
 
   private def parseNamedTypeRef[In : InputUnmarshaller](in: In, path: Vector[String]) =
     IntrospectionNamedTypeRef(mapStringFieldOpt(in, "kind", path) map TypeKind.fromString getOrElse TypeKind.Object, mapStringField(in, "name", path))

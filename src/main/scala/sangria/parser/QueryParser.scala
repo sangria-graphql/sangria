@@ -358,8 +358,8 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
   }
 
   def SchemaDefinition = rule {
-    Comments ~ trackPos ~ schema ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
-      (comment, location, dirs, ops, tc) ⇒ ast.SchemaDefinition(ops.toVector, dirs, comment, tc, location))
+    Description ~ Comments ~ trackPos ~ schema ~ (DirectivesConst.? ~> (_ getOrElse Vector.empty)) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment('}') ~> (
+      (descr, comment, location, dirs, ops, tc) ⇒ ast.SchemaDefinition(ops.toVector, dirs, descr, comment, tc, location))
   }
 
   def OperationTypeDefinition = rule {

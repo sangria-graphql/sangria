@@ -6,7 +6,7 @@ import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{FutureResultSupport, StringMatchers}
+import sangria.util.{DebugUtil, FutureResultSupport, StringMatchers}
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 
@@ -709,6 +709,8 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |
         |"A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations."
         |type __Schema {
+        |  description: String
+        |
         |  "A list of all types supported by this server."
         |  types: [__Type!]!
         |
@@ -877,6 +879,8 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       |
       |# A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.
       |type __Schema {
+      |  description: String
+      |
       |  # A list of all types supported by this server.
       |  types: [__Type!]!
       |
@@ -1105,6 +1109,27 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         |  mutation: Mutation
         |
         |  # another comment
+        |}
+        |""".stripMargin) (after being strippedOfCarriageReturns)
+    }
+
+    "render schema description" in {
+      val schema =
+        graphql"""
+          #comment1
+          "test"
+          #comment 2
+          schema @dir1 {
+            query: Query
+          }
+        """
+
+      cycleRender(schema) should equal ("""
+        |# comment1
+        |"test"
+        |# comment 2
+        |schema @dir1 {
+        |  query: Query
         |}
         |""".stripMargin) (after being strippedOfCarriageReturns)
     }

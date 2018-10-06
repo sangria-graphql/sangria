@@ -759,6 +759,7 @@ class LiteralMacroSpec extends WordSpec with Matchers {
                 OperationTypeDefinition(OperationType.Query, NamedType("QueryType", None), Vector.empty, None),
                 OperationTypeDefinition(OperationType.Mutation, NamedType("MutationType", None), Vector.empty, None)),
               Vector.empty,
+              None,
               Vector(
                 Comment(" Copyright (c) 2015, Facebook, Inc.", None),
                 Comment(" All rights reserved.", None),

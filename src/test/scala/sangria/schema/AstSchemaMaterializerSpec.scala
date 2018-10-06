@@ -939,6 +939,14 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
       "Use SDL descriptions" in {
         val schemaDef =
           s"""$quotes
+             |test schema
+             |descr
+             |$quotes
+             |schema {
+             |  query: Query
+             |}
+             |
+             |$quotes
              |fooo bar
              |baz
              |$quotes
@@ -968,6 +976,8 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         cycleOutput(schemaDef) should equal (schemaDef) (after being strippedOfCarriageReturns)
 
         val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+
+        schema.description should be (Some("test schema\ndescr"))
 
         val myEnum = schema.inputTypes("MyEnum").asInstanceOf[EnumType[_]]
 

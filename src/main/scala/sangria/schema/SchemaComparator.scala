@@ -108,7 +108,10 @@ object SchemaComparator {
       added = SchemaChange.SchemaAstDirectiveAdded(newSchema, _),
       removed = SchemaChange.SchemaAstDirectiveRemoved(newSchema, _))
 
-    withSubscription ++ directiveChanges
+    val descriptionChanges =
+      findDescriptionChanged(oldSchema, newSchema, SchemaChange.SchemaDescriptionChanged)
+
+    withSubscription ++ directiveChanges ++ descriptionChanges
   }
 
   def findChangesInTypes(oldType: Type with Named, newType: Type with Named): Vector[SchemaChange] = {
@@ -417,7 +420,7 @@ object SchemaComparator {
     case tpe ⇒ tpe
   }
 
-  private def findDescriptionChanged(o: Named, n: Named, fn: (Option[String], Option[String]) ⇒ SchemaChange): Vector[SchemaChange] =
+  private def findDescriptionChanged(o: HasDescription, n: HasDescription, fn: (Option[String], Option[String]) ⇒ SchemaChange): Vector[SchemaChange] =
     if (o.description != n.description) Vector(fn(o.description, n.description))
     else Vector.empty
 
@@ -444,7 +447,7 @@ object SchemaChange {
     def newDeprecationReason: Option[String]
   }
 
-  sealed trait DescriptionChange extends TypeChange {
+  sealed trait DescriptionChange {
     def oldDescription: Option[String]
     def newDescription: Option[String]
   }
@@ -500,13 +503,16 @@ object SchemaChange {
   case class DirectiveAdded(directive: Directive) extends AbstractChange(s"`${directive.name}` directive was added", false)
 
   case class TypeDescriptionChanged(tpe: Type with Named, oldDescription: Option[String], newDescription: Option[String])
-    extends AbstractChange(s"`${tpe.name}` type description is changed", false) with DescriptionChange
+    extends AbstractChange(s"`${tpe.name}` type description is changed", false) with DescriptionChange with TypeChange
 
   case class EnumValueAdded(tpe: EnumType[_], value: EnumValue[_])
     extends AbstractChange(s"Enum value `${value.name}` was added to enum `${tpe.name}`", false, true) with TypeChange
 
   case class EnumValueDescriptionChanged(tpe: EnumType[_], value: EnumValue[_], oldDescription: Option[String], newDescription: Option[String])
-    extends AbstractChange(s"`${tpe.name}.${value.name}` description changed", false) with DescriptionChange
+    extends AbstractChange(s"`${tpe.name}.${value.name}` description changed", false) with DescriptionChange with TypeChange
+
+  case class SchemaDescriptionChanged(oldDescription: Option[String], newDescription: Option[String])
+    extends AbstractChange(s"Schema description changed", false) with DescriptionChange
 
   case class EnumValueDeprecated(tpe: EnumType[_], value: EnumValue[_], oldDeprecationReason: Option[String], newDeprecationReason: Option[String])
     extends AbstractChange(s"Enum value `${value.name}` was deprecated in enum `${tpe.name}`", false) with DeprecationChange
@@ -515,19 +521,19 @@ object SchemaChange {
     extends AbstractChange(s"`${member.name}` type was added to union `${tpe.name}`", false, true) with TypeChange
 
   case class InputFieldDescriptionChanged(tpe: InputObjectType[_], field: InputField[_], oldDescription: Option[String], newDescription: Option[String])
-    extends AbstractChange(s"`${tpe.name}.${field.name}` description is changed", false) with DescriptionChange
+    extends AbstractChange(s"`${tpe.name}.${field.name}` description is changed", false) with DescriptionChange with TypeChange
 
   case class DirectiveDescriptionChanged(directive: Directive, oldDescription: Option[String], newDescription: Option[String])
     extends AbstractChange(s"`${directive.name}` directive description is changed", false)
 
   case class FieldDescriptionChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], oldDescription: Option[String], newDescription: Option[String])
-    extends AbstractChange(s"`${tpe.name}.${field.name}` description is changed", false) with DescriptionChange
+    extends AbstractChange(s"`${tpe.name}.${field.name}` description is changed", false) with DescriptionChange with TypeChange
 
   case class ObjectTypeArgumentDescriptionChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], oldDescription: Option[String], newDescription: Option[String])
-    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` description is changed", false) with DescriptionChange
+    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` description is changed", false) with DescriptionChange with TypeChange
 
   case class DirectiveArgumentDescriptionChanged(directive: Directive, argument: Argument[_], oldDescription: Option[String], newDescription: Option[String])
-    extends AbstractChange(s"`${directive.name}(${argument.name})` description is changed", false)
+    extends AbstractChange(s"`${directive.name}(${argument.name})` description is changed", false) with DescriptionChange
 
   case class FieldDeprecationChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], oldDeprecationReason: Option[String], newDeprecationReason: Option[String])
     extends AbstractChange(s"Field `${field.name}` was deprecated in `${tpe.name}` type", false) with DeprecationChange

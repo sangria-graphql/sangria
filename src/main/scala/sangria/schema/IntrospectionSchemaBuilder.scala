@@ -104,7 +104,8 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       mutation = mutationType,
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
-      directives = directives)
+      directives = directives,
+      description = definition.description)
 
   def buildObjectType(
       definition: IntrospectionObjectType,

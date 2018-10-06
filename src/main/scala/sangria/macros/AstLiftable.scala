@@ -78,8 +78,8 @@ trait AstLiftable {
 
     case DirectiveDefinition(n, a, l, desc, c, p) ⇒
       q"_root_.sangria.ast.DirectiveDefinition($n, $a, $l, $desc, $c, $p)"
-    case SchemaDefinition(o, d, c, tc, p) ⇒
-      q"_root_.sangria.ast.SchemaDefinition($o, $d, $c, $tc, $p)"
+    case SchemaDefinition(o, d, desc, c, tc, p) ⇒
+      q"_root_.sangria.ast.SchemaDefinition($o, $d, $desc, $c, $tc, $p)"
 
     case ObjectTypeExtensionDefinition(n, i, f, d, c, tc, p) ⇒
       q"_root_.sangria.ast.ObjectTypeExtensionDefinition($n, $i, $f, $d, $c, $tc, $p)"

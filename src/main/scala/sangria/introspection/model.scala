@@ -9,7 +9,8 @@ case class IntrospectionSchema(
   mutationType: Option[IntrospectionNamedTypeRef],
   subscriptionType: Option[IntrospectionNamedTypeRef],
   types: Seq[IntrospectionType],
-  directives: Seq[IntrospectionDirective]
+  directives: Seq[IntrospectionDirective],
+  description: Option[String]
 ) {
   def toAst = SchemaRenderer.schemaAstFromIntrospection(this)
   def toAst(filter: SchemaFilter): Document = SchemaRenderer.schemaAstFromIntrospection(this, filter)

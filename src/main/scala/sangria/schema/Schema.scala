@@ -72,9 +72,12 @@ sealed trait MappedAbstractType[T] extends Type with AbstractType with OutputTyp
 sealed trait NullableType
 sealed trait UnmodifiedType
 
-sealed trait Named {
-  def name: String
+sealed trait HasDescription {
   def description: Option[String]
+}
+
+sealed trait Named extends HasDescription {
+  def name: String
 
   def rename(newName: String): this.type
 }
@@ -756,10 +759,11 @@ case class Schema[Ctx, Val](
     mutation: Option[ObjectType[Ctx, Val]] = None,
     subscription: Option[ObjectType[Ctx, Val]] = None,
     additionalTypes: List[Type with Named] = Nil,
+    description: Option[String] = None,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default,
     astDirectives: Vector[ast.Directive] = Vector.empty,
-    astNodes: Vector[ast.AstNode] = Vector.empty) extends HasAstInfo {
+    astNodes: Vector[ast.AstNode] = Vector.empty) extends HasAstInfo with HasDescription {
   def extend(document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
     AstSchemaMaterializer.extendSchema(this, document, builder)
 

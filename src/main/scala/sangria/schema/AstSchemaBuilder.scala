@@ -321,6 +321,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       mutation = mutationType,
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
+      description = definition.flatMap(_.description.map(_.value)),
       directives = directives,
       astDirectives = definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(_.directives),
       astNodes = Vector(mat.document) ++ extensions ++ definition.toVector)
@@ -340,6 +341,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       subscription = subscriptionType,
       additionalTypes = additionalTypes,
       directives = directives,
+      description = originalSchema.description,
       validationRules = originalSchema.validationRules,
       astDirectives = originalSchema.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = {

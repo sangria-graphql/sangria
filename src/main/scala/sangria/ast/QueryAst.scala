@@ -467,9 +467,10 @@ case class DirectiveLocation(
 case class SchemaDefinition(
   operationTypes: Vector[OperationTypeDefinition],
   directives: Vector[Directive] = Vector.empty,
+  description: Option[StringValue] = None,
   comments: Vector[Comment] = Vector.empty,
   trailingComments: Vector[Comment] = Vector.empty,
-  location: Option[AstLocation] = None) extends TypeSystemDefinition with WithTrailingComments with WithDirectives
+  location: Option[AstLocation] = None) extends TypeSystemDefinition with WithDescription with WithTrailingComments with WithDirectives
 
 case class OperationTypeDefinition(
   operation: OperationType,
@@ -921,10 +922,11 @@ object AstVisitor {
             comment.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ SchemaDefinition(ops, dirs, comment, trailingComments, _) ⇒
+        case n @ SchemaDefinition(ops, dirs, descr, comment, trailingComments, _) ⇒
           if (breakOrSkip(onEnter(n))) {
             ops.foreach(s ⇒ loop(s))
             dirs.foreach(s ⇒ loop(s))
+            descr.foreach(s ⇒ loop(s))
             comment.foreach(s ⇒ loop(s))
             trailingComments.foreach(s ⇒ loop(s))
             breakOrSkip(onLeave(n))

@@ -9,7 +9,6 @@ import sangria.util.{DebugUtil, FileUtil, StringMatchers}
 import scala.util.Success
 
 class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
-
   def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
     QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
 
@@ -25,6 +24,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
                 OperationTypeDefinition(OperationType.Query, NamedType("QueryType", Some(AstLocation(306, 9, 10))), Vector.empty, Some(AstLocation(299, 9, 3))),
                 OperationTypeDefinition(OperationType.Mutation, NamedType("MutationType", Some(AstLocation(328, 10, 13))), Vector.empty, Some(AstLocation(318, 10, 3)))),
               Vector.empty,
+              None,
               Vector(
                 Comment(" Copyright (c) 2015, Facebook, Inc.", Some(AstLocation(0, 1, 1))),
                 Comment(" All rights reserved.", Some(AstLocation(37, 2, 1))),
@@ -1113,6 +1113,39 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
         ))
     }
 
+    "Allow schema with description" in {
+      val Success(ast) = parseQuery(
+        """
+          "the best schema ever"
+          schema @dir1 {
+            query: Query
+          }
+        """)
+
+      ast should be (
+        Document(
+          Vector(
+            SchemaDefinition(
+              Vector(
+                OperationTypeDefinition(OperationType.Query, NamedType("Query", Some(AstLocation("", 78, 4, 20))), Vector.empty, Some(AstLocation("", 71, 4, 13)))),
+              Vector(
+                Directive(
+                  "dir1",
+                  Vector.empty,
+                  Vector.empty,
+                  Some(AstLocation("", 51, 3, 18))
+                )),
+              Some(StringValue("the best schema ever", false, None, Vector.empty, Some(AstLocation("", 11, 2, 11)))),
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation("", 44, 3, 11))
+            )),
+          Vector.empty,
+          Some(AstLocation("", 11, 2, 11)),
+          None
+        ))
+    }
+
     "Allow extensions on the schema" in {
       val Success(ast) = parseQuery(
         """
@@ -1144,8 +1177,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
               Some(AstLocation("", 11, 2, 11))
             ),
             SchemaDefinition(
-              Vector(
-                OperationTypeDefinition(OperationType.Query, NamedType("Query", Some(AstLocation("", 76, 5, 20))), Vector.empty, Some(AstLocation("", 69, 5, 13)))),
+              Vector(OperationTypeDefinition(OperationType.Query, NamedType("Query", Some(AstLocation("", 76, 5, 20))), Vector.empty, Some(AstLocation("", 69, 5, 13)))),
               Vector(
                 Directive(
                   "dir1",
@@ -1153,6 +1185,7 @@ class SchemaParserSpec extends WordSpec with Matchers with StringMatchers {
                   Vector.empty,
                   Some(AstLocation("", 49, 4, 18))
                 )),
+              None,
               Vector.empty,
               Vector.empty,
               Some(AstLocation("", 42, 4, 11))

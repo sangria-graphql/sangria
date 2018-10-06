@@ -573,13 +573,9 @@ object QueryRenderer {
       case dl @ DirectiveLocation(name, _, _) ⇒
         renderComment(dl, prev, indent, config) + indent.str + name
 
-      case sd @ SchemaDefinition(ops, dirs, _, _, _) ⇒
-        val renderedOps = ops.zipWithIndex map { case (op, idx) ⇒
-          (if (idx != 0 && shouldRenderComment(op, None, config)) config.lineBreak else "") +
-            renderNode(op, config, indent.inc)
-        } mkString config.mandatoryLineBreak
-
-        renderComment(sd, prev, indent, config) +
+      case sd @ SchemaDefinition(ops, dirs, description, _, _, _) ⇒
+        renderDescription(sd, prev, indent, config) +
+          renderComment(sd, description orElse prev, indent, config) +
           indent.str + "schema"  + config.separator +
           renderDirs(dirs, config, indent) +
           renderOperationTypeDefinitions(ops, sd, indent, config)

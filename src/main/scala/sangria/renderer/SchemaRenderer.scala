@@ -170,18 +170,18 @@ object SchemaRenderer {
       val withMutation = schema.mutationType.fold(withQuery)(t ⇒ withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
       val withSubs = schema.subscriptionType.fold(withMutation)(t ⇒ withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
 
-      Some(ast.SchemaDefinition(withSubs))
+      Some(ast.SchemaDefinition(withSubs, description = renderDescription(schema.description)))
     }
 
   private def renderSchemaDefinition(schema: Schema[_, _]): Option[ast.SchemaDefinition] =
-    if (isSchemaOfCommonNames(schema.query.name, schema.mutation.map(_.name), schema.subscription.map(_.name)))
+    if (isSchemaOfCommonNames(schema.query.name, schema.mutation.map(_.name), schema.subscription.map(_.name)) && schema.description.isEmpty && schema.astDirectives.isEmpty)
       None
     else {
       val withQuery = Vector(ast.OperationTypeDefinition(ast.OperationType.Query, ast.NamedType(schema.query.name)))
       val withMutation = schema.mutation.fold(withQuery)(t ⇒ withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
       val withSubs = schema.subscription.fold(withMutation)(t ⇒ withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
 
-      Some(ast.SchemaDefinition(withSubs, schema.astDirectives))
+      Some(ast.SchemaDefinition(withSubs, schema.astDirectives, renderDescription(schema.description)))
     }
 
   private def isSchemaOfCommonNames(query: String, mutation: Option[String], subscription: Option[String]) =
