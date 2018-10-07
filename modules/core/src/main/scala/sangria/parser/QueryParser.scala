@@ -320,9 +320,11 @@ trait TypeSystemDefinitions { this: Parser with Tokens with Ignored with Directi
     wsNoComment('{') ~ (test(legacyEmptyFields) ~ InputValueDefinition.* | InputValueDefinition.+) ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
+  def repeatable = rule { capture(Keyword("repeatable")).? ~> (_.isDefined)}
+
   def DirectiveDefinition = rule {
-    Description ~ Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_ getOrElse Vector.empty)) ~ on ~ DirectiveLocations ~> (
-      (descr, comment, location, name, args, locations) => ast.DirectiveDefinition(name, args, locations, descr, comment, location))
+    Description ~ Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_ getOrElse Vector.empty)) ~ repeatable ~ on ~ DirectiveLocations ~> (
+      (descr, comment, location, name, args, rep, locations)=> ast.DirectiveDefinition(name, args, locations, descr, rep, comment, location))
   }
 
   def DirectiveLocations = rule { ws('|').? ~ DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector) }

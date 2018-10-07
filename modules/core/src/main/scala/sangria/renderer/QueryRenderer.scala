@@ -557,7 +557,7 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, frontSep = true) +
           renderOperationTypeDefinitions(ops, ext, indent, config, frontSep = true)
 
-      case dd @ DirectiveDefinition(name, args, locations, description, _, _) =>
+      case dd @ DirectiveDefinition(name, args, locations, description, rep, _, _) =>
         val locsRendered = locations.zipWithIndex map { case (l, idx) =>
           (if (idx != 0 && shouldRenderComment(l, None, config)) config.lineBreak else "") +
             (if (shouldRenderComment(l, None, config)) config.lineBreak else if (idx != 0) config.separator else "") +
@@ -568,7 +568,9 @@ object QueryRenderer {
           renderComment(dd, description orElse prev, indent, config) +
           indent.str + "directive" + config.separator + "@" + name +
           renderInputValueDefs(args, indent, config) + (if (args.isEmpty) config.mandatorySeparator else "") +
-          "on" + (if (shouldRenderComment(locations.head, None, config)) "" else config.mandatorySeparator) +
+          (if (rep) "repeatable" + config.mandatorySeparator else "") +
+          "on" +
+          (if (shouldRenderComment(locations.head, None, config)) "" else config.mandatorySeparator) +
           locsRendered.mkString(config.separator + "|")
 
       case dl @ DirectiveLocation(name, _, _) =>

@@ -82,7 +82,8 @@ object IntrospectionParser {
       name = mapStringField(directive, "name", path),
       description = mapStringFieldOpt(directive, "description"),
       locations = um.getListValue(mapField(directive, "locations")).map(v => DirectiveLocation.fromString(stringValue(v, path :+ "locations"))).toSet,
-      args = mapFieldOpt(directive, "args") map um.getListValue getOrElse Vector.empty map (arg => parseInputValue(arg, path :+ "args")))
+      args = mapFieldOpt(directive, "args") map um.getListValue getOrElse Vector.empty map (arg => parseInputValue(arg, path :+ "args")),
+      repeatable = mapBooleanFieldOpt(directive, "isRepeatable") getOrElse false)
 
   private def parseType[In : InputUnmarshaller](tpe: In, path: Vector[String]) =
     mapStringField(tpe, "kind", path) match {
@@ -148,11 +149,14 @@ object IntrospectionParser {
   private def mapBooleanField[In : InputUnmarshaller](map: In, name: String, path: Vector[String]): Boolean =
     booleanValue(mapField(map, name, path), path :+ name)
 
+  private def mapBooleanFieldOpt[In : InputUnmarshaller](map: In, name: String, path: Vector[String] = Vector.empty): Option[Boolean] =
+    mapFieldOpt(map, name) filter um.isDefined map (booleanValue(_, path :+ name))
+
   private def mapFieldOpt[In : InputUnmarshaller](map: In, name: String): Option[In] =
     um.getMapValue(map, name) filter um.isDefined
 
   private def mapStringFieldOpt[In : InputUnmarshaller](map: In, name: String, path: Vector[String] = Vector.empty): Option[String] =
-    mapFieldOpt(map, name) filter um.isDefined map (s => stringValue(s, path :+ name) )
+    mapFieldOpt(map, name) filter um.isDefined map (stringValue(_, path :+ name))
 
   private def um[T: InputUnmarshaller] = implicitly[InputUnmarshaller[T]]
 

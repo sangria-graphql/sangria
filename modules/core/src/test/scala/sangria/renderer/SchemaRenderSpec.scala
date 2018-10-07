@@ -618,6 +618,9 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |  description: String
         |  locations: [__DirectiveLocation!]!
         |  args: [__InputValue!]!
+        |
+        |  "Permits using the directive multiple times at the same location."
+        |  isRepeatable: Boolean!
         |}
         |
         |"A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies."
@@ -788,6 +791,9 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
       |  description: String
       |  locations: [__DirectiveLocation!]!
       |  args: [__InputValue!]!
+      |
+      |  # Permits using the directive multiple times at the same location.
+      |  isRepeatable: Boolean!
       |}
       |
       |# A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.

@@ -59,6 +59,12 @@ object SchemaComparator {
   }
 
   private def findInDirective(oldDir: Directive, newDir: Directive): Vector[SchemaChange] = {
+    val repeatableChanged =
+      if (oldDir.repeatable != newDir.repeatable)
+        Vector(SchemaChange.DirectiveRepeatableChanged(newDir, oldDir.repeatable, newDir.repeatable, !newDir.repeatable))
+      else
+        Vector.empty
+
     val locationChanges = findInDirectiveLocations(oldDir, newDir)
     val fieldChanges = findInArgs(oldDir.arguments, newDir.arguments,
       added = SchemaChange.DirectiveArgumentAdded(newDir, _, _),
@@ -69,7 +75,7 @@ object SchemaComparator {
       dirAdded = SchemaChange.DirectiveArgumentAstDirectiveAdded(newDir, _, _),
       dirRemoved = SchemaChange.DirectiveArgumentAstDirectiveRemoved(newDir, _, _))
 
-    locationChanges ++ fieldChanges
+    repeatableChanged ++ locationChanges ++ fieldChanges
   }
 
   private def findInDirectiveLocations(oldDir: Directive, newDir: Directive): Vector[SchemaChange] = {
@@ -659,8 +665,11 @@ object SchemaChange {
   case class DirectiveArgumentAdded(directive: Directive, argument: Argument[_], breaking: Boolean)
     extends AbstractChange(s"Argument `${argument.name}` was added to `${directive.name}` directive", breaking)
 
-  case class InputFieldTypeChanged(tpe: InputObjectType[_], field: InputField[_], breaking: Boolean, oldFieldType: InputType[_], newFieldType: InputType[_])
-    extends AbstractChange(s"`${tpe.name}.${field.name}` input field type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
+  case class DirectiveRepeatableChanged(directive: Directive, oldRepeatable: Boolean, newRepeatable: Boolean, breaking: Boolean)
+    extends AbstractChange(if (newRepeatable) s"Directive `${directive.name}` was made repeatable per location" else s"Directive `${directive.name}` was made unique per location", breaking)
+
+  case class InputFieldTypeChanged(tpe: InputObjectType[_], field: InputField[_], breaking: Boolean, oldFiledType: InputType[_], newFieldType: InputType[_])
+    extends AbstractChange(s"`${tpe.name}.${field.name}` input field type changed from `${SchemaRenderer.renderTypeName(oldFiledType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
 
   case class ObjectTypeArgumentTypeChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], breaking: Boolean, oldFieldType: InputType[_], newFieldType: InputType[_])
     extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange

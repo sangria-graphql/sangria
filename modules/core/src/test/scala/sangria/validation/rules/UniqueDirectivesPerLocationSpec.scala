@@ -17,74 +17,95 @@ class UniqueDirectivesPerLocationSpec extends AnyWordSpec with ValidationSupport
 
     "unique directives in different locations" in expectPasses(
       """
-        fragment Test on Type @directiveA {
-          field @directiveB
+        fragment Test on Type @genericDirectiveA {
+          field @genericDirectiveB
         }
       """)
 
     "unique directives in same locations" in expectPasses(
       """
-        fragment Test on Type @directiveA @directiveB {
-          field @directiveA @directiveB
+        fragment Test on Type @genericDirectiveA @genericDirectiveB {
+          field @genericDirectiveA @genericDirectiveB
         }
       """)
 
     "same directives in different locations" in expectPasses(
       """
-        fragment Test on Type @directiveA {
-          field @directiveA
+        fragment Test on Type @genericDirectiveA {
+          field @genericDirectiveA
         }
       """)
 
     "same directives in similar locations" in expectPasses(
       """
         fragment Test on Type {
-          field @directive
-          field @directive
+          field @genericDirectiveA
+          field @genericDirectiveA
         }
       """)
 
-    "duplicate directives in one location" in expectFailsPosList(
+    "repeatable directives in same location" in expectPasses(
+      """
+        type Test @repeatableDirective(id: 1) @repeatableDirective(id: 2) {
+          field: String!
+        }
+      """)
+
+    "repeatable directives in similar locations" in expectPasses(
+      """
+        type Test @repeatableDirective(id: 1) {
+          field: String!
+        }
+
+        extend type Test @repeatableDirective(id: 2) {
+          anotherField: String!
+        }
+      """)
+
+    "unknown directives must be ignored" in expectPasses(
+      """
+        type Test @unknownDirective @unknownDirective {
+          field: String!
+        }
+        
+        extend type Test @unknownDirective {
+          anotherField: String!
+        }
+      """)
+
+    "duplicate directives in one location" in expectFailsSimple(
       """
         fragment Test on Type {
-          field @directive @directive
+          field @genericDirectiveA @genericDirectiveA
         }
       """,
-      List(
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 28))
-      ))
+      "The directive 'genericDirectiveA' can only be used once at this location." → Seq(Pos(3, 17), Pos(3, 36)))
 
-    "many duplicate directives in one location" in expectFailsPosList(
+    "many duplicate directives in one location" in expectFailsSimple(
       """
         fragment Test on Type {
-          field @directive @directive @directive
+          field @genericDirectiveA @genericDirectiveA @genericDirectiveA
         }
       """,
-      List(
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 28)),
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 39))
-      ))
+      "The directive 'genericDirectiveA' can only be used once at this location." → Seq(Pos(3, 17), Pos(3, 36)),
+      "The directive 'genericDirectiveA' can only be used once at this location." → Seq(Pos(3, 17), Pos(3, 55)))
 
-    "different duplicate directives in one location" in expectFailsPosList(
+    "different duplicate directives in one location" in expectFailsSimple(
       """
         fragment Test on Type {
-          field @directiveA @directiveB @directiveA @directiveB
+          field @genericDirectiveA @genericDirectiveB @genericDirectiveA @genericDirectiveB
         }
       """,
-      List(
-        "The directive 'directiveA' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 41)),
-        "The directive 'directiveB' can only be used once at this location." -> List(Pos(3, 29), Pos(3, 53))
-      ))
+      "The directive 'genericDirectiveA' can only be used once at this location." → Seq(Pos(3, 17), Pos(3, 55)),
+      "The directive 'genericDirectiveB' can only be used once at this location." → Seq(Pos(3, 36), Pos(3, 74)))
 
-    "duplicate directives in many locations" in expectFailsPosList(
+    "duplicate directives in many locations" in expectFailsSimple(
       """
-        fragment Test on Type @directive @directive {
-          field @directive @directive
+        fragment Test on Type @genericDirectiveA @genericDirectiveA {
+          field @genericDirectiveA @genericDirectiveA
         }
       """,
-      List(
-        "The directive 'directive' can only be used once at this location." -> List(Pos(2, 31), Pos(2, 42)),
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 28))
-      ))
+      "The directive 'genericDirectiveA' can only be used once at this location." → Seq(Pos(2, 31), Pos(2, 50)),
+      "The directive 'genericDirectiveA' can only be used once at this location." → Seq(Pos(3, 17), Pos(3, 36)))
   }
 }

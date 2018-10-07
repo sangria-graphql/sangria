@@ -1374,6 +1374,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                 DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(AstLocation(76, 4, 13))),
                 DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(AstLocation(104, 5, 13)))),
               None,
+              false,
               Vector.empty,
               Some(AstLocation(9, 2, 9))
             )),
