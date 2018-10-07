@@ -102,6 +102,26 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       case r @ AnyFieldResolver(fn) if fn.isDefinedAt(origin) => r
     }
 
+  override def buildSchema(
+      definition: Option[ast.SchemaDefinition],
+      extensions: List[ast.SchemaExtensionDefinition],
+      queryType: ObjectType[Ctx, Any],
+      mutationType: Option[ObjectType[Ctx, Any]],
+      subscriptionType: Option[ObjectType[Ctx, Any]],
+      additionalTypes: List[Type with Named],
+      directives: List[Directive],
+      mat: AstSchemaMaterializer[Ctx]) =
+    Schema[Ctx, Any](
+      query = queryType,
+      mutation = mutationType,
+      subscription = subscriptionType,
+      additionalTypes = additionalTypes,
+      description = definition.flatMap(_.description.map(_.value)),
+      directives = directives,
+      astDirectives = definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(_.directives),
+      astNodes = Vector(mat.document) ++ extensions ++ definition.toVector,
+      validationRules = SchemaValidationRule.default :+ new ResolvedDirectiveValidationRule(this.directives.filterNot(_.repeatable).map(_.name).toSet))
+
   override def resolveField(
     origin: MatOrigin,
     typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],

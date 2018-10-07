@@ -867,5 +867,100 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """.parseJson)
     }
+
+    "validate unique directives on extensions" in {
+      val TestDir = Directive("dir", locations =
+          Set(DL.Object, DL.Interface, DL.Union, DL.InputObject, DL.Scalar, DL.Schema, DL.Enum))
+
+      val TestRepDir = Directive("dir", repeatable = true, locations =
+          Set(DL.Object, DL.Interface, DL.Union, DL.InputObject, DL.Scalar, DL.Schema, DL.Enum))
+
+      val builder = resolverBased[Unit](AdditionalDirectives(Seq(TestDir)))
+      val builderRep = resolverBased[Unit](AdditionalDirectives(Seq(TestRepDir)))
+
+      def testForUnique(schemaAst: ast.Document) = {
+        val error = intercept [SchemaValidationException] (
+          Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst)))
+
+        error.violations should have size 1
+
+        error.violations.head.errorMessage should include(
+          "The directive 'dir' can only be used once at this location.")
+
+        // should be successful
+        Schema.buildFromAst(schemaAst, builderRep.validateSchemaWithException(schemaAst))
+      }
+
+      testForUnique(
+        gql"""
+          type Query @dir {field: String}
+          extend type Query @dir
+        """)
+
+      testForUnique(
+        gql"""
+          type Query {field: String}
+          interface Foo @dir {field: String}
+          extend interface Foo @dir
+        """)
+
+      testForUnique(
+        gql"""
+          type Query @dir {filed: String}
+          type Cat {field: String}
+          type Dog {field: String}
+
+          union Foo @dir = Cat | Dog
+
+          extend union Foo @dir
+        """)
+
+      testForUnique(
+        gql"""
+          type Query @dir {filed: String}
+          enum Foo @dir {RED, BLUE}
+          extend enum Foo @dir
+        """)
+
+      testForUnique(
+        gql"""
+          type Query @dir {filed: String}
+          scalar Foo @dir
+          extend scalar Foo @dir
+        """)
+
+      testForUnique(
+        gql"""
+          type Query @dir {filed: String}
+          input Foo @dir {field: String}
+          extend input Foo @dir
+        """)
+      
+      testForUnique(
+        gql"""
+          type Query @dir {filed: String}
+          schema @dir {query: Query}
+          extend schema @dir
+        """)
+    }
+
+    "validate unique directives on extensions with schema extension" in {
+      val TestDir = Directive("dir", locations =
+          Set(DL.Object, DL.Interface, DL.Union, DL.InputObject, DL.Scalar, DL.Schema, DL.Enum))
+
+      val builder = resolverBased[Unit](AdditionalDirectives(Seq(TestDir)))
+
+      val mainSchemaAst = gql"type Query @dir {field: String}"
+      val extSchemaAst = gql"extend type Query @dir"
+
+      val schema = Schema.buildFromAst(mainSchemaAst, builder.validateSchemaWithException(mainSchemaAst))
+
+      val error = intercept [SchemaValidationException] (
+        schema.extend(extSchemaAst, builder.validateSchemaWithException(extSchemaAst)))
+
+      error.violations should have size 1
+      error.violations.head.errorMessage should include(
+        "The directive 'dir' can only be used once at this location.")
+    }
   }
 }

@@ -517,5 +517,37 @@ class FullSchemaTraversalValidationRule(validators: SchemaElementValidator*) ext
   def validName(name: String): Boolean = !reservedNames.contains(name)
 }
 
+/**
+  * Validates uniqueness of directives on types and the schema definition.
+  *
+  * It is not fully covered by `UniqueDirectivesPerLocation` since it onl looks at one AST node at a time,
+  * so it does not cover type + type extension scenario.
+  */
+class ResolvedDirectiveValidationRule(knownUniqueDirectives: Set[String]) extends SchemaValidationRule {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation] = {
+    val uniqueDirectives = knownUniqueDirectives ++ schema.directives.filterNot(_.repeatable).map(_.name)
+    val sourceMapper = SchemaElementValidator.sourceMapper(schema)
+
+    val schemaViolations = validateUniqueDirectives(schema, uniqueDirectives, sourceMapper)
+
+    val typeViolations =
+      schema.typeList.collect {
+        case withDirs: HasAstInfo ⇒ validateUniqueDirectives(withDirs, uniqueDirectives, sourceMapper)
+      }
+    
+    schemaViolations.toList ++ typeViolations.flatten
+  }
+
+  private def validateUniqueDirectives(withDirs: HasAstInfo, uniqueDirectives: Set[String], sourceMapper: Option[SourceMapper]) = {
+    val duplicates = withDirs.astDirectives
+        .filter(d ⇒ uniqueDirectives.contains(d.name))
+        .groupBy(_.name)
+        .filter(_._2.size > 1)
+        .toVector
+
+    duplicates.map{case (dirName, dups) ⇒ DuplicateDirectiveViolation(dirName, sourceMapper, dups.flatMap(_.location).toList)}
+  }
+}
+
 case class SchemaValidationException(violations: Vector[Violation], eh: ExceptionHandler = ExceptionHandler.empty) extends ExecutionError(
   s"Schema does not pass validation. Violations:\n\n${violations map (_.errorMessage) mkString "\n\n"}", eh) with WithViolations with QueryAnalysisError
