@@ -967,8 +967,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       val TestDir = Directive("dir", locations = Set(DL.Object))
 
       val builder = resolverBased[Any](DirectiveFieldProvider(TestDir, c ⇒ List(MaterializedField(c.origin,
-        Field("hello", c.materializer.getScalarType(c.origin, ast.NamedType("String")),
-          resolve = (_: Context[Any, Any]) ⇒ "world")))))
+        Field("hello", c.scalarType("String"), resolve = (_: Context[Any, Any]) ⇒ "world")))))
 
       val schemaAst = gql"type Query @dir"
 
