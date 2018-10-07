@@ -962,5 +962,21 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       error.violations.head.errorMessage should include(
         "The directive 'dir' can only be used once at this location.")
     }
+
+    "allow empty field list on types as long as provider contributes new fields" in {
+      val TestDir = Directive("dir", locations = Set(DL.Object))
+
+      val builder = resolverBased[Any](DirectiveFieldProvider(TestDir, c ⇒ List(MaterializedField(c.origin,
+        Field("hello", c.materializer.getScalarType(c.origin, ast.NamedType("String")),
+          resolve = (_: Context[Any, Any]) ⇒ "world")))))
+
+      val schemaAst = gql"type Query @dir"
+
+      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query = gql"{hello}"
+
+      Executor.execute(schema, query).await should be (Map("data" → Map("hello" → "world")))
+    }
   }
 }
