@@ -11,6 +11,7 @@ import sangria.{ast, introspection}
 import sangria.validation._
 import sangria.introspection._
 import sangria.renderer.{SchemaFilter, SchemaRenderer}
+import sangria.schema.transformations.TransformSchema
 import sangria.streaming.SubscriptionStreamLike
 
 import scala.annotation.implicitNotFound
@@ -904,6 +905,10 @@ case class Schema[Ctx, Val](
     case ast.NamedType(name, _) ⇒ outputTypes get name map (ot ⇒ if (topLevel) ot else OptionType(ot))
     case ast.NotNullType(ofType, _) ⇒ getOutputType(ofType) collect {case OptionType(ot) ⇒ ot}
     case ast.ListType(ofType, _) ⇒ getOutputType(ofType) map (ListType(_))
+  }
+
+  def filterFields(filter: TransformSchema.FieldFilter[Ctx]): Schema[Ctx, Val] = {
+    TransformSchema.filterFields[Ctx, Val](this, filter)
   }
 
   lazy val directImplementations: Map[String, Vector[ObjectLikeType[_, _]]] = {
