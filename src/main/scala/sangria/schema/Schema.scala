@@ -907,7 +907,7 @@ case class Schema[Ctx, Val](
     case ast.ListType(ofType, _) ⇒ getOutputType(ofType) map (ListType(_))
   }
 
-  def filterFields(filter: TransformSchema.FieldFilter[Ctx]): Schema[Ctx, Val] = {
+  def filterFields(filter: List[Field[Ctx, Any]] => List[Field[Ctx, Any]]): Schema[Ctx, Val] = {
     TransformSchema.filterFields[Ctx, Val](this, filter)
   }
 
