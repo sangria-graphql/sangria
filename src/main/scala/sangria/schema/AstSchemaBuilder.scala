@@ -1,15 +1,15 @@
 package sangria.schema
 
 import language.existentials
-
 import sangria.ast
 import sangria.execution.FieldTag
 import sangria.marshalling.{FromInput, MarshallerCapability, ScalarValueInfo, ToInput}
+import sangria.schema.extension.AstSchemaExtender
 import sangria.validation.Violation
 
 import scala.reflect.ClassTag
 
-trait AstSchemaBuilder[Ctx] {
+trait AstSchemaBuilder[Ctx] extends AstSchemaExtender[Ctx] {
   def additionalTypeExtensionDefs: List[ast.TypeExtensionDefinition]
   def additionalTypes: List[MaterializedType]
   def additionalDirectiveDefs: List[ast.DirectiveDefinition]
@@ -26,16 +26,6 @@ trait AstSchemaBuilder[Ctx] {
     directives: List[Directive],
     mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Any]
 
-  def extendSchema[Val](
-    originalSchema: Schema[Ctx, Val],
-    extensions: List[ast.SchemaExtensionDefinition],
-    queryType: ObjectType[Ctx, Val],
-    mutationType: Option[ObjectType[Ctx, Val]],
-    subscriptionType: Option[ObjectType[Ctx, Val]],
-    additionalTypes: List[Type with Named],
-    directives: List[Directive],
-    mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Val]
-
   def buildObjectType(
     origin: MatOrigin,
     definition: ast.ObjectTypeDefinition,
@@ -44,13 +34,6 @@ trait AstSchemaBuilder[Ctx] {
     interfaces: List[InterfaceType[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): Option[ObjectType[Ctx, Any]]
 
-  def extendObjectType(
-    origin: MatOrigin,
-    existing: ObjectType[Ctx, _],
-    extensions: List[ast.ObjectTypeExtensionDefinition],
-    fields: () ⇒ List[Field[Ctx, Any]],
-    interfaces: List[InterfaceType[Ctx, Any]],
-    mat: AstSchemaMaterializer[Ctx]): ObjectType[Ctx, Any]
 
   def buildInputObjectType(
     origin: MatOrigin,
@@ -73,33 +56,12 @@ trait AstSchemaBuilder[Ctx] {
     fields: () ⇒ List[Field[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): Option[InterfaceType[Ctx, Any]]
 
-  def extendInterfaceType(
-    origin: MatOrigin,
-    existing: InterfaceType[Ctx, _],
-    extensions: List[ast.InterfaceTypeExtensionDefinition],
-    fields: () ⇒ List[Field[Ctx, Any]],
-    mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any]
-
   def buildUnionType(
     origin: MatOrigin,
     extensions: Vector[ast.UnionTypeExtensionDefinition],
     definition: ast.UnionTypeDefinition,
     types: List[ObjectType[Ctx, _]],
     mat: AstSchemaMaterializer[Ctx]): Option[UnionType[Ctx]]
-
-  def extendUnionType(
-    origin: MatOrigin,
-    extensions: Vector[ast.UnionTypeExtensionDefinition],
-    existing: UnionType[Ctx],
-    types: List[ObjectType[Ctx, _]],
-    mat: AstSchemaMaterializer[Ctx]): UnionType[Ctx]
-
-  def extendScalarAlias[T, ST](
-    origin: MatOrigin,
-    extensions: Vector[ast.ScalarTypeExtensionDefinition],
-    existing: ScalarAlias[T, ST],
-    aliasFor: ScalarType[ST],
-    mat: AstSchemaMaterializer[Ctx]): ScalarAlias[T, ST]
 
   def buildScalarType(
     origin: MatOrigin,
@@ -148,48 +110,6 @@ trait AstSchemaBuilder[Ctx] {
     definition: ast.FieldDefinition,
     arguments: List[Argument[_]],
     mat: AstSchemaMaterializer[Ctx]): OutputType[Any]
-
-  def extendField(
-    origin: MatOrigin,
-    typeDefinition: Option[ObjectLikeType[Ctx, _]],
-    existing: Field[Ctx, Any],
-    fieldType: OutputType[_],
-    arguments: List[Argument[_]],
-    mat: AstSchemaMaterializer[Ctx]): Field[Ctx, Any]
-
-  def extendArgument(
-    origin: MatOrigin,
-    typeDefinition: Option[ObjectLikeType[Ctx, _]],
-    field: Field[Ctx, Any],
-    argument: Argument[Any],
-    argumentType: InputType[_],
-    mat: AstSchemaMaterializer[Ctx]): Argument[Any]
-
-  def extendInputField(
-    origin: MatOrigin,
-    typeDefinition: InputObjectType[_],
-    existing: InputField[Any],
-    fieldType: InputType[_],
-    mat: AstSchemaMaterializer[Ctx]): InputField[Any]
-
-  def extendFieldType(
-    origin: MatOrigin,
-    typeDefinition: Option[ObjectLikeType[Ctx, _]],
-    existing: Field[Ctx, Any],
-    mat: AstSchemaMaterializer[Ctx]): OutputType[Any]
-
-  def extendArgumentType(
-    origin: MatOrigin,
-    typeDefinition: Option[ObjectLikeType[Ctx, _]],
-    field: Field[Ctx, Any],
-    existing: Argument[Any],
-    mat: AstSchemaMaterializer[Ctx]): InputType[Any]
-
-  def extendInputFieldType(
-    origin: MatOrigin,
-    typeDefinition: InputObjectType[_],
-    existing: InputField[Any],
-    mat: AstSchemaMaterializer[Ctx]): InputType[Any]
 
   def buildInputField(
     origin: MatOrigin,
