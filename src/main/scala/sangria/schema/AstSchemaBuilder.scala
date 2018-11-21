@@ -4,7 +4,7 @@ import language.existentials
 import sangria.ast
 import sangria.execution.FieldTag
 import sangria.marshalling.{FromInput, MarshallerCapability, ScalarValueInfo, ToInput}
-import sangria.schema.extension.AstSchemaExtender
+import sangria.schema.extension.{AstSchemaExtender, DefaultAstSchemaExtender}
 import sangria.validation.Violation
 
 import scala.reflect.ClassTag
@@ -219,7 +219,7 @@ object AstSchemaBuilder {
       None
 }
 
-class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
+class DefaultAstSchemaBuilder[Ctx] extends DefaultAstSchemaExtender[Ctx] with AstSchemaBuilder[Ctx] {
   def additionalDirectiveDefs: List[ast.DirectiveDefinition] = Nil
   def additionalTypeExtensionDefs: List[ast.ObjectTypeExtensionDefinition] = Nil
   def additionalTypes: List[MaterializedType] = Nil
@@ -246,30 +246,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       astDirectives = definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(_.directives),
       astNodes = Vector(mat.document) ++ extensions ++ definition.toVector)
 
-  def extendSchema[Val](
-      originalSchema: Schema[Ctx, Val],
-      extensions: List[ast.SchemaExtensionDefinition],
-      queryType: ObjectType[Ctx, Val],
-      mutationType: Option[ObjectType[Ctx, Val]],
-      subscriptionType: Option[ObjectType[Ctx, Val]],
-      additionalTypes: List[Type with Named],
-      directives: List[Directive],
-      mat: AstSchemaMaterializer[Ctx]) =
-    Schema[Ctx, Val](
-      query = queryType,
-      mutation = mutationType,
-      subscription = subscriptionType,
-      additionalTypes = additionalTypes,
-      directives = directives,
-      description = originalSchema.description,
-      validationRules = originalSchema.validationRules,
-      astDirectives = originalSchema.astDirectives ++ extensions.flatMap(_.directives),
-      astNodes = {
-        val (docs, other) = originalSchema.astNodes.partition(_.isInstanceOf[ast.Document])
-        val newDoc = ast.Document.merge(docs.asInstanceOf[Vector[ast.Document]] :+ mat.document)
 
-        (newDoc +: other) ++ extensions
-      })
 
   def buildObjectType(
       origin: MatOrigin,
@@ -305,30 +282,6 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     Some(objectType)
   }
 
-  def extendObjectType(
-      origin: MatOrigin,
-      existing: ObjectType[Ctx, _],
-      extensions: List[ast.ObjectTypeExtensionDefinition],
-      fields: () ⇒ List[Field[Ctx, Any]],
-      interfaces: List[InterfaceType[Ctx, Any]],
-      mat: AstSchemaMaterializer[Ctx]) =
-    extendedObjectTypeInstanceCheck(origin, existing, extensions) match {
-      case Some(fn) ⇒
-        existing.copy(
-          fieldsFn = fields,
-          interfaces = interfaces,
-          astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
-          astNodes = existing.astNodes ++ extensions,
-          instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))(ClassTag(existing.valClass))
-      case None ⇒
-        existing.copy(
-          fieldsFn = fields,
-          interfaces = interfaces,
-          astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
-          astNodes = existing.astNodes ++ extensions,
-          instanceCheck = existing.instanceCheck.asInstanceOf[(Any, Class[_], ObjectType[Ctx, _]) ⇒ Boolean])(ClassTag(existing.valClass))
-    }
-
   def buildInputObjectType(
       origin: MatOrigin,
       extensions: Vector[ast.InputObjectTypeExtensionDefinition],
@@ -360,16 +313,6 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       astNodes = (definition +: extensions).toVector))
   }
 
-  def extendInterfaceType(
-      origin: MatOrigin,
-      existing: InterfaceType[Ctx, _],
-      extensions: List[ast.InterfaceTypeExtensionDefinition],
-      fields: () ⇒ List[Field[Ctx, Any]],
-      mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(fieldsFn = fields, manualPossibleTypes = () ⇒ Nil, interfaces = Nil,
-      astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
-      astNodes = existing.astNodes ++ extensions)
-
   def buildUnionType(
       origin: MatOrigin,
       extensions: Vector[ast.UnionTypeExtensionDefinition],
@@ -382,24 +325,6 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       types = types,
       astDirectives = definition.directives ++ extensions.flatMap(_.directives),
       astNodes = definition +: extensions))
-
-  def extendUnionType(
-      origin: MatOrigin,
-      extensions: Vector[ast.UnionTypeExtensionDefinition],
-      existing: UnionType[Ctx],
-      types: List[ObjectType[Ctx, _]],
-      mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(types = types,
-      astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
-      astNodes = existing.astNodes ++ extensions)
-
-  def extendScalarAlias[T, ST](
-      origin: MatOrigin,
-      extensions: Vector[ast.ScalarTypeExtensionDefinition],
-      existing: ScalarAlias[T, ST],
-      aliasFor: ScalarType[ST],
-      mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(aliasFor = aliasFor)
 
   def buildScalarType(
       origin: MatOrigin,
@@ -480,57 +405,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     typeDefinition: ast.TypeDefinition,
     mat: AstSchemaMaterializer[Ctx]): List[MaterializedField[Ctx, Any]] = Nil
 
-  def extendField(
-      origin: MatOrigin,
-      typeDefinition: Option[ObjectLikeType[Ctx, _]],
-      existing: Field[Ctx, Any],
-      fieldType: OutputType[_],
-      arguments: List[Argument[_]],
-      mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(
-      fieldType = fieldType,
-      arguments = arguments,
-      resolve = extendFieldResolver(origin, typeDefinition, existing, fieldType, mat),
-      manualPossibleTypes = () ⇒ Nil)
 
-  def extendArgument(
-      origin: MatOrigin,
-      typeDefinition: Option[ObjectLikeType[Ctx, _]],
-      field: Field[Ctx, Any],
-      argument: Argument[Any],
-      argumentType: InputType[_],
-      mat: AstSchemaMaterializer[Ctx]): Argument[Any] =
-    argument.copy(argumentType = argumentType)
-
-  def extendInputField(
-      origin: MatOrigin,
-      typeDefinition: InputObjectType[_],
-      existing: InputField[Any],
-      fieldType: InputType[_],
-      mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(fieldType = fieldType)
-
-  def extendFieldType(
-      origin: MatOrigin,
-      typeDefinition: Option[ObjectLikeType[Ctx, _]],
-      existing: Field[Ctx, Any],
-      mat: AstSchemaMaterializer[Ctx]): OutputType[Any] =
-    mat.getTypeFromExistingType(origin, existing.fieldType)
-
-  def extendArgumentType(
-      origin: MatOrigin,
-      typeDefinition: Option[ObjectLikeType[Ctx, _]],
-      field: Field[Ctx, Any],
-      existing: Argument[Any],
-      mat: AstSchemaMaterializer[Ctx]): InputType[Any] =
-    mat.getInputTypeFromExistingType(origin, existing.argumentType)
-
-  def extendInputFieldType(
-      origin: MatOrigin,
-      typeDefinition: InputObjectType[_],
-      existing: InputField[Any],
-      mat: AstSchemaMaterializer[Ctx]) =
-    mat.getInputTypeFromExistingType(origin, existing.fieldType)
 
   def buildInputField(
       origin: MatOrigin,
@@ -636,8 +511,6 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def objectTypeInstanceCheck(origin: MatOrigin, definition: ast.ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] =
     None
 
-  def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] =
-    None
 
   def directiveShouldInclude(definition: ast.DirectiveDefinition): DirectiveContext ⇒ Boolean =
     Function.const(true)
@@ -655,13 +528,6 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       definition: ast.FieldDefinition,
       mat: AstSchemaMaterializer[Ctx]): Context[Ctx, _] ⇒ Action[Ctx, _] =
     _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
-
-  def extendFieldResolver(
-    origin: MatOrigin,
-    typeDefinition: Option[ObjectLikeType[Ctx, _]],
-    existing: Field[Ctx, Any],
-    fieldType: OutputType[_],
-    mat: AstSchemaMaterializer[Ctx]): Context[Ctx, Any] ⇒ Action[Ctx, _]  = existing.resolve
 
   def fieldTags(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): List[FieldTag] =
     Nil
