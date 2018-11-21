@@ -699,7 +699,7 @@ object AstSchemaMaterializer {
     definitions[Any](document, AstSchemaBuilder.default)
 
   def definitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Vector[Named] =
-    new AstSchemaMaterializer[Ctx](document, AstSchemaBuilder.default).definitions
+    new AstSchemaMaterializer[Ctx](document, builder).definitions
 
   def extendSchema[Ctx, Val](schema: Schema[Ctx, Val], document: ast.Document, builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default): Schema[Ctx, Val] =
     new AstSchemaMaterializer[Ctx](document, builder).extend(schema)
