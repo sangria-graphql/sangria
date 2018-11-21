@@ -7,31 +7,31 @@ import scala.reflect.ClassTag
 
 class DefaultAstSchemaExtender[Ctx] extends AstSchemaExtender[Ctx] {
 
-  def extendArgument(
-                      origin: MatOrigin,
-                      typeDefinition: Option[ObjectLikeType[Ctx, _]],
-                      field: Field[Ctx, Any],
-                      argument: Argument[Any],
-                      argumentType: InputType[_],
-                      mat: AstSchemaMaterializer[Ctx]): Argument[Any] =
+  override def extendArgument(
+                               origin: MatOrigin,
+                               typeDefinition: Option[ObjectLikeType[Ctx, _]],
+                               field: Field[Ctx, Any],
+                               argument: Argument[Any],
+                               argumentType: InputType[_],
+                               mat: AstSchemaMaterializer[Ctx]): Argument[Any] =
     argument.copy(argumentType = argumentType)
 
 
-  def extendArgumentType(
-                          origin: MatOrigin,
-                          typeDefinition: Option[ObjectLikeType[Ctx, _]],
-                          field: Field[Ctx, Any],
-                          existing: Argument[Any],
-                          mat: AstSchemaMaterializer[Ctx]): InputType[Any] =
+  override def extendArgumentType(
+                                   origin: MatOrigin,
+                                   typeDefinition: Option[ObjectLikeType[Ctx, _]],
+                                   field: Field[Ctx, Any],
+                                   existing: Argument[Any],
+                                   mat: AstSchemaMaterializer[Ctx]): InputType[Any] =
     mat.getInputTypeFromExistingType(origin, existing.argumentType)
 
-  def extendField(
-                   origin: MatOrigin,
-                   typeDefinition: Option[ObjectLikeType[Ctx, _]],
-                   existing: Field[Ctx, Any],
-                   fieldType: OutputType[_],
-                   arguments: List[Argument[_]],
-                   mat: AstSchemaMaterializer[Ctx]) =
+  override def extendField(
+                            origin: MatOrigin,
+                            typeDefinition: Option[ObjectLikeType[Ctx, _]],
+                            existing: Field[Ctx, Any],
+                            fieldType: OutputType[_],
+                            arguments: List[Argument[_]],
+                            mat: AstSchemaMaterializer[Ctx]): Field[Ctx, Any] =
     existing.copy(
       fieldType = fieldType,
       arguments = arguments,
@@ -45,45 +45,45 @@ class DefaultAstSchemaExtender[Ctx] extends AstSchemaExtender[Ctx] {
                            fieldType: OutputType[_],
                            mat: AstSchemaMaterializer[Ctx]): Context[Ctx, Any] ⇒ Action[Ctx, _] = existing.resolve
 
-  def extendFieldType(
-                       origin: MatOrigin,
-                       typeDefinition: Option[ObjectLikeType[Ctx, _]],
-                       existing: Field[Ctx, Any],
-                       mat: AstSchemaMaterializer[Ctx]): OutputType[Any] =
+  override def extendFieldType(
+                                origin: MatOrigin,
+                                typeDefinition: Option[ObjectLikeType[Ctx, _]],
+                                existing: Field[Ctx, Any],
+                                mat: AstSchemaMaterializer[Ctx]): OutputType[Any] =
     mat.getTypeFromExistingType(origin, existing.fieldType)
 
-  def extendInputField(
-                        origin: MatOrigin,
-                        typeDefinition: InputObjectType[_],
-                        existing: InputField[Any],
-                        fieldType: InputType[_],
-                        mat: AstSchemaMaterializer[Ctx]) =
+  override def extendInputField(
+                                 origin: MatOrigin,
+                                 typeDefinition: InputObjectType[_],
+                                 existing: InputField[Any],
+                                 fieldType: InputType[_],
+                                 mat: AstSchemaMaterializer[Ctx]): InputField[Any] =
     existing.copy(fieldType = fieldType)
 
-  def extendInputFieldType(
-                            origin: MatOrigin,
-                            typeDefinition: InputObjectType[_],
-                            existing: InputField[Any],
-                            mat: AstSchemaMaterializer[Ctx]) =
+  override def extendInputFieldType(
+                                     origin: MatOrigin,
+                                     typeDefinition: InputObjectType[_],
+                                     existing: InputField[Any],
+                                     mat: AstSchemaMaterializer[Ctx]): InputType[Any] =
     mat.getInputTypeFromExistingType(origin, existing.fieldType)
 
-  def extendInterfaceType(
-                           origin: MatOrigin,
-                           existing: InterfaceType[Ctx, _],
-                           extensions: List[ast.InterfaceTypeExtensionDefinition],
-                           fields: () ⇒ List[Field[Ctx, Any]],
-                           mat: AstSchemaMaterializer[Ctx]) =
+  override def extendInterfaceType(
+                                    origin: MatOrigin,
+                                    existing: InterfaceType[Ctx, _],
+                                    extensions: List[ast.InterfaceTypeExtensionDefinition],
+                                    fields: () ⇒ List[Field[Ctx, Any]],
+                                    mat: AstSchemaMaterializer[Ctx]) =
     existing.copy(fieldsFn = fields, manualPossibleTypes = () ⇒ Nil, interfaces = Nil,
       astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = existing.astNodes ++ extensions)
 
-  def extendObjectType(
-                        origin: MatOrigin,
-                        existing: ObjectType[Ctx, _],
-                        extensions: List[ast.ObjectTypeExtensionDefinition],
-                        fields: () ⇒ List[Field[Ctx, Any]],
-                        interfaces: List[InterfaceType[Ctx, Any]],
-                        mat: AstSchemaMaterializer[Ctx]) =
+  override def extendObjectType(
+                                 origin: MatOrigin,
+                                 existing: ObjectType[Ctx, _],
+                                 extensions: List[ast.ObjectTypeExtensionDefinition],
+                                 fields: () ⇒ List[Field[Ctx, Any]],
+                                 interfaces: List[InterfaceType[Ctx, Any]],
+                                 mat: AstSchemaMaterializer[Ctx]): ObjectType[Ctx, Any] =
     extendedObjectTypeInstanceCheck(origin, existing, extensions) match {
       case Some(fn) ⇒
         existing.copy(
@@ -104,23 +104,23 @@ class DefaultAstSchemaExtender[Ctx] extends AstSchemaExtender[Ctx] {
   def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] =
     None
 
-  def extendScalarAlias[T, ST](
-                                origin: MatOrigin,
-                                extensions: Vector[ast.ScalarTypeExtensionDefinition],
-                                existing: ScalarAlias[T, ST],
-                                aliasFor: ScalarType[ST],
-                                mat: AstSchemaMaterializer[Ctx]) =
+  override def extendScalarAlias[T, ST](
+                                         origin: MatOrigin,
+                                         extensions: Vector[ast.ScalarTypeExtensionDefinition],
+                                         existing: ScalarAlias[T, ST],
+                                         aliasFor: ScalarType[ST],
+                                         mat: AstSchemaMaterializer[Ctx]): ScalarAlias[T, ST] =
     existing.copy(aliasFor = aliasFor)
 
-  def extendSchema[Val](
-                         originalSchema: Schema[Ctx, Val],
-                         extensions: List[ast.SchemaExtensionDefinition],
-                         queryType: ObjectType[Ctx, Val],
-                         mutationType: Option[ObjectType[Ctx, Val]],
-                         subscriptionType: Option[ObjectType[Ctx, Val]],
-                         additionalTypes: List[Type with Named],
-                         directives: List[Directive],
-                         mat: AstSchemaMaterializer[Ctx]) =
+  override def extendSchema[Val](
+                                  originalSchema: Schema[Ctx, Val],
+                                  extensions: List[ast.SchemaExtensionDefinition],
+                                  queryType: ObjectType[Ctx, Val],
+                                  mutationType: Option[ObjectType[Ctx, Val]],
+                                  subscriptionType: Option[ObjectType[Ctx, Val]],
+                                  additionalTypes: List[Type with Named],
+                                  directives: List[Directive],
+                                  mat: AstSchemaMaterializer[Ctx]): Schema[Ctx, Val] =
     Schema[Ctx, Val](
       query = queryType,
       mutation = mutationType,
@@ -137,12 +137,12 @@ class DefaultAstSchemaExtender[Ctx] extends AstSchemaExtender[Ctx] {
         (newDoc +: other) ++ extensions
       })
 
-  def extendUnionType(
-                       origin: MatOrigin,
-                       extensions: Vector[ast.UnionTypeExtensionDefinition],
-                       existing: UnionType[Ctx],
-                       types: List[ObjectType[Ctx, _]],
-                       mat: AstSchemaMaterializer[Ctx]) =
+  override def extendUnionType(
+                                origin: MatOrigin,
+                                extensions: Vector[ast.UnionTypeExtensionDefinition],
+                                existing: UnionType[Ctx],
+                                types: List[ObjectType[Ctx, _]],
+                                mat: AstSchemaMaterializer[Ctx]): UnionType[Ctx] =
     existing.copy(types = types,
       astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = existing.astNodes ++ extensions)
