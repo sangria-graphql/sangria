@@ -1165,7 +1165,7 @@ class Resolver[Ctx](
                       else Vector(field.name)
 
                     projectedName.map (name ⇒
-                      ProjectedName(name, loop(path.add(astField, objTpe), field.fieldType, fields, currLevel + 1)))
+                      ProjectedName(name, loop(path.add(astField, objTpe), field.fieldType, fields, currLevel + 1), Args(field, astField)))
                 }
                 .flatten
             case Failure(_) ⇒ Vector.empty
