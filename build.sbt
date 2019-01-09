@@ -6,8 +6,8 @@ description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq("Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-scalaVersion := "2.12.7"
-crossScalaVersions := Seq("2.11.11", "2.12.7")
+scalaVersion := "2.12.8"
+crossScalaVersions := Seq("2.11.11", "2.12.8")
 
 scalacOptions ++= Seq(
   "-deprecation",
