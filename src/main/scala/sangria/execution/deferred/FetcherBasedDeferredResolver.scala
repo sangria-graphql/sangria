@@ -78,15 +78,36 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
     val (nonCachedIds, cachedResults) = partitionCachedRel(ctx.cache, relIds)
 
-    val newResults =
-      if (nonCachedIds.nonEmpty)
-        f.fetchRel(ctx, RelationIds(nonCachedIds.asInstanceOf[Map[Relation[Any, _, _], Seq[Any]]]))
-          .map(groupAndCacheRelations(ctx, nonCachedIds, _))
-      else
-        Future.successful(MutableMap.empty[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]])
+    val groupedRelIds = ctx.fetcher.config.maxBatchSizeConfig match {
+      case Some(size) => nonCachedIds.map { case (rel, ids) => (rel, ids.grouped(size))}
+      case None => nonCachedIds.map { case (rel, ids) => (rel, Iterator(ids)) }
+    }
+
+    val results = groupedRelIds flatMap { case (rel, groupIds) =>
+      groupIds map { group =>
+        if (group.nonEmpty)
+          f.fetchRel(ctx, RelationIds(Map(rel -> group)))
+            .map(groupAndCacheRelations(ctx, Map(rel -> group), _))
+        else
+          Future.successful(MutableMap.empty[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]])
+      }
+    }
+
+    val futureRes = Future.sequence(results).map { allResults ⇒
+      val byRel = MutableMap[Relation[Any, _, _], MutableMap[Any, Seq[Any]]]()
+
+      allResults.foreach(relResult => relResult.foreach{ case (rel, v) =>
+        if (byRel.contains(rel))
+          byRel(rel) ++= v
+        else
+          byRel(rel) = v
+      })
+
+      byRel
+    }
 
     deferredToResolve foreach { deferred =>
-      resolved(deferred) = newResults.map { m =>
+      resolved(deferred) = futureRes.map { m =>
         val f = ctx.fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
 
         deferred match {
