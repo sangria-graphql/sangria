@@ -597,6 +597,16 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         Vector("5", "6", "7")))
     }
 
+    "clearId should remove entry from cache" in {
+      val cache = new SimpleFetcherCache() {
+        override def cacheKey(id: Any): Any = id.toString
+      }
+      cache.update(1, "one")
+      cache.get(1) should be(Some("one"))
+      cache.clearId(1)
+      cache.get(1) should be(None)
+    }
+
     "support multiple fetchers" in {
       var fetchedCatIds = Vector.empty[Seq[String]]
 

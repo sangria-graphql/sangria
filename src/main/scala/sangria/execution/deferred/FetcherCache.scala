@@ -59,7 +59,7 @@ class SimpleFetcherCache extends FetcherCache {
   }
 
   override def clearId(id: Any) =
-    cache.remove(id)
+    cache.remove(cacheKey(id))
 
   override def clearRel(rel: Any) =
     relCache.removeKeys {
