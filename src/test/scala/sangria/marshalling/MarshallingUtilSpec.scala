@@ -29,17 +29,17 @@ class MarshallingUtilSpec extends WordSpec with Matchers {
 
       out should be (
         JsObject(
-          "id" → JsNumber(1),
-          "name" → JsString("door"),
-          "items" → JsArray(Vector(
+          "id" -> JsNumber(1),
+          "name" -> JsString("door"),
+          "items" -> JsArray(Vector(
             JsObject(
-              "state" → JsString("Open"),
-              "durability" → JsNumber(BigDecimal("0.1465645654675762354763254763343243242"))),
+              "state" -> JsString("Open"),
+              "durability" -> JsNumber(BigDecimal("0.1465645654675762354763254763343243242"))),
             JsNull,
             JsObject(
-              "state" → JsString("Open"),
-              "durability" → JsNumber(BigDecimal("0.5")),
-              "foo" → JsNull)))))
+              "state" -> JsString("Open"),
+              "durability" -> JsNumber(BigDecimal("0.5")),
+              "foo" -> JsNull)))))
     }
 
     "convert query AST to scala map" in {
@@ -60,17 +60,17 @@ class MarshallingUtilSpec extends WordSpec with Matchers {
 
       out should be (
         Map(
-          "id" → 1, 
-          "name" → "door", 
-          "items" → Vector(
+          "id" -> 1, 
+          "name" -> "door", 
+          "items" -> Vector(
             Map(
-              "state" → "Open", 
-              "durability" → BigDecimal("0.1465645654675762354763254763343243242")),
+              "state" -> "Open", 
+              "durability" -> BigDecimal("0.1465645654675762354763254763343243242")),
             null,
             Map(
-              "state" → "Open", 
-              "durability" → BigDecimal("0.5"),
-              "foo" → null))))
+              "state" -> "Open", 
+              "durability" -> BigDecimal("0.5"),
+              "foo" -> null))))
     }
   }
 

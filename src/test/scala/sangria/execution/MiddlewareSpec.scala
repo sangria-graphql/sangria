@@ -49,7 +49,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
       val key = cacheKey(ctx)
 
       if (ctx.field.tags.contains(Cached))
-        cache.contains(key) → cache.get(cacheKey(ctx))
+        cache.contains(key) -> cache.get(cacheKey(ctx))
       else
         noCache
     }
@@ -72,8 +72,8 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
 
     def afterField(cache: QueryVal, fromCache: FieldVal, value: Any, mctx: MiddlewareQueryContext[Any, _, _], ctx: Context[Any, _]) =
       value match {
-        case s: String ⇒ Some(s + suffix)
-        case _ ⇒ None
+        case s: String => Some(s + suffix)
+        case _ => None
       }
   }
 
@@ -124,33 +124,33 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
       }
   }
 
-  val TestObject: ObjectType[Count, Unit] = ObjectType("Test", () ⇒ fields[Count, Unit](
-    Field("error", OptionType(StringType), resolve = _ ⇒ throw new IllegalStateException("boom")),
-    Field("futureError", OptionType(StringType), resolve = _ ⇒ Future.failed[Option[String]](new IllegalStateException("boom"))),
-    Field("defError", OptionType(StringType), resolve = _ ⇒ Fail),
-    Field("someString", StringType, resolve = _ ⇒ "nothing special"),
-    Field("someStringMapped", StringType, resolve = c ⇒ UpdateCtx("unmapped")(_ ⇒ c.ctx) map (_.substring(2))),
-    Field("errorInAfter", OptionType(StringType), resolve = _ ⇒ "everything ok here"),
-    Field("errorInBefore", OptionType(StringType), resolve = _ ⇒ "everything ok here"),
-    Field("anotherString", StringType, resolve = _ ⇒ "foo"),
+  val TestObject: ObjectType[Count, Unit] = ObjectType("Test", () => fields[Count, Unit](
+    Field("error", OptionType(StringType), resolve = _ => throw new IllegalStateException("boom")),
+    Field("futureError", OptionType(StringType), resolve = _ => Future.failed[Option[String]](new IllegalStateException("boom"))),
+    Field("defError", OptionType(StringType), resolve = _ => Fail),
+    Field("someString", StringType, resolve = _ => "nothing special"),
+    Field("someStringMapped", StringType, resolve = c => UpdateCtx("unmapped")(_ => c.ctx) map (_.substring(2))),
+    Field("errorInAfter", OptionType(StringType), resolve = _ => "everything ok here"),
+    Field("errorInBefore", OptionType(StringType), resolve = _ => "everything ok here"),
+    Field("anotherString", StringType, resolve = _ => "foo"),
     Field("cachedId", IntType, tags = Cached :: Nil, resolve = _.ctx.count.incrementAndGet()),
-    Field("delay30", StringType, resolve = _ ⇒ Future {
+    Field("delay30", StringType, resolve = _ => Future {
       Thread.sleep(30)
       "slept for 30ms"
     }),
-    Field("nested", TestObject, resolve = _ ⇒ ())
+    Field("nested", TestObject, resolve = _ => ())
   ))
 
   case object Fail extends Deferred[String]
 
   class BrokenResolver extends DeferredResolver[Any] {
     def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-      case Fail ⇒ Future.failed(new IllegalStateException("error in resolver"))
+      case Fail => Future.failed(new IllegalStateException("error in resolver"))
     }
   }
 
   val exceptionHandler = ExceptionHandler {
-    case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+    case (m, e: IllegalStateException) => HandledException(e.getMessage)
   }
 
   val schema = Schema(TestObject, Some(TestObject))
@@ -192,17 +192,17 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
       val res = Executor.execute(schema, query, userContext = ctx, middleware = new CachingMiddleware :: Nil).await
 
       res.asInstanceOf[Map[String, Any]]("data") should be (Map(
-        "cachedId" → 1,
-        "foo" → 1,
-        "someString" → "nothing special",
-        "nested" → Map(
-          "cachedId" → 1,
-          "nested" → Map(
-            "cachedId" → 1)),
-        "foo" → Map(
-          "cachedId" → 1,
-          "nested" → Map(
-            "cachedId" → 1))))
+        "cachedId" -> 1,
+        "foo" -> 1,
+        "someString" -> "nothing special",
+        "nested" -> Map(
+          "cachedId" -> 1,
+          "nested" -> Map(
+            "cachedId" -> 1)),
+        "foo" -> Map(
+          "cachedId" -> 1,
+          "nested" -> Map(
+            "cachedId" -> 1))))
 
       ctx.count.get() should be (1)
     }
@@ -215,27 +215,27 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
 
       class Resolver extends DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-          case ED ⇒ Future.failed(error("deferred error"))
-          case SD ⇒ Future.successful(Some("deferred success"))
+          case ED => Future.failed(error("deferred error"))
+          case SD => Future.successful(Some("deferred success"))
         }
       }
 
-      val TestObject = ObjectType("Test", () ⇒ fields[Unit, Unit](
-        Field("e1", OptionType(StringType), resolve = _ ⇒ Value(throw error("e1 error"))),
-        Field("e2", OptionType(StringType), resolve = _ ⇒ TryValue(Failure(error("e2 error")))),
-        Field("e3", OptionType(StringType), resolve = _ ⇒ FutureValue(Future.failed(error("e3 error")))),
-        Field("e4", OptionType(StringType), resolve = _ ⇒ DeferredValue(ED)),
-        Field("e5", OptionType(StringType), resolve = _ ⇒ DeferredFutureValue(Future.successful(ED))),
-        Field("e6", OptionType(StringType), resolve = _ ⇒ DeferredFutureValue(Future.failed(error("e6 error")))),
-        Field("e7", OptionType(StringType), resolve = _ ⇒ PartialValue(Some("e7 success"), Vector(error("e71 error"), error("e72 error")))),
-        Field("e8", OptionType(StringType), resolve = _ ⇒ PartialFutureValue(Future.successful(PartialValue[Unit, Option[String]](Some("e8 success"), Vector(error("e81 error"), error("e82 error")))))),
-        Field("e9", OptionType(StringType), resolve = _ ⇒ PartialFutureValue(Future.failed(error("e9")))),
+      val TestObject = ObjectType("Test", () => fields[Unit, Unit](
+        Field("e1", OptionType(StringType), resolve = _ => Value(throw error("e1 error"))),
+        Field("e2", OptionType(StringType), resolve = _ => TryValue(Failure(error("e2 error")))),
+        Field("e3", OptionType(StringType), resolve = _ => FutureValue(Future.failed(error("e3 error")))),
+        Field("e4", OptionType(StringType), resolve = _ => DeferredValue(ED)),
+        Field("e5", OptionType(StringType), resolve = _ => DeferredFutureValue(Future.successful(ED))),
+        Field("e6", OptionType(StringType), resolve = _ => DeferredFutureValue(Future.failed(error("e6 error")))),
+        Field("e7", OptionType(StringType), resolve = _ => PartialValue(Some("e7 success"), Vector(error("e71 error"), error("e72 error")))),
+        Field("e8", OptionType(StringType), resolve = _ => PartialFutureValue(Future.successful(PartialValue[Unit, Option[String]](Some("e8 success"), Vector(error("e81 error"), error("e82 error")))))),
+        Field("e9", OptionType(StringType), resolve = _ => PartialFutureValue(Future.failed(error("e9")))),
 
-        Field("s1", OptionType(StringType), resolve = _ ⇒ Value(Some("s1 success"))),
-        Field("s2", OptionType(StringType), resolve = _ ⇒ TryValue(Success(Some("s2 success")))),
-        Field("s3", OptionType(StringType), resolve = _ ⇒ FutureValue(Future.successful(Some("s3 success")))),
-        Field("s4", OptionType(StringType), resolve = _ ⇒ DeferredValue(SD)),
-        Field("s5", OptionType(StringType), resolve = _ ⇒ DeferredFutureValue(Future.successful(SD)))
+        Field("s1", OptionType(StringType), resolve = _ => Value(Some("s1 success"))),
+        Field("s2", OptionType(StringType), resolve = _ => TryValue(Success(Some("s2 success")))),
+        Field("s3", OptionType(StringType), resolve = _ => FutureValue(Future.successful(Some("s3 success")))),
+        Field("s4", OptionType(StringType), resolve = _ => DeferredValue(SD)),
+        Field("s5", OptionType(StringType), resolve = _ => DeferredFutureValue(Future.successful(SD)))
       ))
 
       val schema = Schema(TestObject)
@@ -280,20 +280,20 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         exceptionHandler = exceptionHandler).await
 
       res.result.asInstanceOf[Map[String, Any]]("data") should be (Map(
-        "e1" → null,
-        "e2" → null,
-        "e3" → null,
-        "e4" → null,
-        "e5" → null,
-        "e6" → null,
-        "e7" → "e7 success",
-        "e8" → "e8 success",
-        "e9" → null,
-        "s1" → "s1 success",
-        "s2" → "s2 success",
-        "s3" → "s3 success",
-        "s4" → "deferred success",
-        "s5" → "deferred success"))
+        "e1" -> null,
+        "e2" -> null,
+        "e3" -> null,
+        "e4" -> null,
+        "e5" -> null,
+        "e6" -> null,
+        "e7" -> "e7 success",
+        "e8" -> "e8 success",
+        "e9" -> null,
+        "s1" -> "s1 success",
+        "s2" -> "s2 success",
+        "s3" -> "s3 success",
+        "s4" -> "deferred success",
+        "s5" -> "deferred success"))
 
       val capture = res.middlewareVals.head._1.asInstanceOf[Capture]
 
@@ -301,24 +301,24 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "s1", "s2", "s3", "s4", "s5"))
 
       capture.after should be (Cache(
-        "e7" → Set("e7 success"),
-        "e8" → Set("e8 success"),
-        "s1" → Set("s1 success"),
-        "s2" → Set("s2 success"),
-        "s3" → Set("s3 success"),
-        "s4" → Set("deferred success"),
-        "s5" → Set("deferred success")))
+        "e7" -> Set("e7 success"),
+        "e8" -> Set("e8 success"),
+        "s1" -> Set("s1 success"),
+        "s2" -> Set("s2 success"),
+        "s3" -> Set("s3 success"),
+        "s4" -> Set("deferred success"),
+        "s5" -> Set("deferred success")))
 
       capture.error should be (Cache(
-        "e1" → Set("e1 error"),
-        "e2" → Set("e2 error"),
-        "e3" → Set("e3 error"),
-        "e4" → Set("deferred error"),
-        "e5" → Set("deferred error"),
-        "e6" → Set("e6 error"),
-        "e7" → Set("e71 error", "e72 error"),
-        "e8" → Set("e81 error", "e82 error"),
-        "e9" → Set("e9")))
+        "e1" -> Set("e1 error"),
+        "e2" -> Set("e2 error"),
+        "e3" -> Set("e3 error"),
+        "e4" -> Set("deferred error"),
+        "e5" -> Set("deferred error"),
+        "e6" -> Set("e6 error"),
+        "e7" -> Set("e71 error", "e72 error"),
+        "e8" -> Set("e81 error", "e82 error"),
+        "e9" -> Set("e9")))
     }
 
     "value, updated in middleware `afterField`, should be propagated though all middleware in the chain (effectively should be a fold)" in {
@@ -336,9 +336,9 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         middleware = Suffixer(" s1") :: Suffixer(" s2") :: Nil).await
 
       res should be (Map(
-        "data" → Map(
-          "someString" → "nothing special s2 s1",
-          "someStringMapped" → "mapped s2 s1")))
+        "data" -> Map(
+          "someString" -> "nothing special s2 s1",
+          "someStringMapped" -> "mapped s2 s1")))
     }
 
     "add extensions" in {
@@ -372,15 +372,15 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         middleware = new QueryMiddleware("a-") :: new QueryMiddleware("b-") :: Nil).await
 
       res should be (Map(
-        "data" → Map(
-          "someString" → "nothing special"),
-        "extensions" → Map(
-          "a-metrics" → Map(
-            "test-name" → "test name",
-            "test-executionTimeMs" → 123),
-          "b-metrics" → Map(
-            "test-name" → "test name",
-            "test-executionTimeMs" → 123))))
+        "data" -> Map(
+          "someString" -> "nothing special"),
+        "extensions" -> Map(
+          "a-metrics" -> Map(
+            "test-name" -> "test name",
+            "test-executionTimeMs" -> 123),
+          "b-metrics" -> Map(
+            "test-name" -> "test name",
+            "test-executionTimeMs" -> 123))))
     }
 
     "allow attachments to communicate values with resolve cuntions" in {
@@ -397,7 +397,7 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
           BeforeFieldResult(attachment = name.map(CurrentUser))
       }
 
-      val schema = Schema(ObjectType("Test", () ⇒ fields[Unit, Unit](
+      val schema = Schema(ObjectType("Test", () => fields[Unit, Unit](
         Field("user", OptionType(StringType), resolve = _.attachment[CurrentUser].map(_.userName)),
         Field("users", ListType(StringType), resolve = _.attachments[CurrentUser].map(_.userName)))))
 
@@ -405,9 +405,9 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         middleware = new QueryMiddleware(Some("foo")) :: new QueryMiddleware(None) :: new QueryMiddleware(Some("bar")) :: Nil).await
 
       res should be (Map(
-        "data" → Map(
-          "user" → "foo",
-          "users" → Vector("foo", "bar"))))
+        "data" -> Map(
+          "user" -> "foo",
+          "users" -> Vector("foo", "bar"))))
     }
 
     behave like properFieldLevelMiddleware(
@@ -466,32 +466,32 @@ class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
         exceptionHandler = exceptionHandler).await
 
       res.asInstanceOf[Map[String, Any]]("data") should be (Map(
-        "anotherString" → "foo",
-        "a" → "something very special!",
-        "someString" → "something very special!",
-        "error" → null,
-        "errorInAfter" → null,
-        "errorInBefore" → null,
-        "nested" → Map(
-          "someString" → "something very special!",
-          "delay30" → "slept for 30ms",
-          "error" → null,
-          "futureError" → null,
-          "defError" → null,
-          "nested" → Map(
-            "error" → null,
-            "defError" → null))))
+        "anotherString" -> "foo",
+        "a" -> "something very special!",
+        "someString" -> "something very special!",
+        "error" -> null,
+        "errorInAfter" -> null,
+        "errorInBefore" -> null,
+        "nested" -> Map(
+          "someString" -> "something very special!",
+          "delay30" -> "slept for 30ms",
+          "error" -> null,
+          "futureError" -> null,
+          "defError" -> null,
+          "nested" -> Map(
+            "error" -> null,
+            "defError" -> null))))
 
       ctx.metrics.mapValues(_.size) should be (Map(
-        "errors" → 7,
-        "Test.delay30" → 1,
-        "Test.nested" → 2,
-        "Test.someString" → 3,
-        "Test.anotherString" → 1,
-        "Test.error" → 3,
-        "Test.futureError" → 1,
-        "Test.defError" → 2,
-        "Test.errorInAfter" → 1
+        "errors" -> 7,
+        "Test.delay30" -> 1,
+        "Test.nested" -> 2,
+        "Test.someString" -> 3,
+        "Test.anotherString" -> 1,
+        "Test.error" -> 3,
+        "Test.futureError" -> 1,
+        "Test.defError" -> 2,
+        "Test.errorInAfter" -> 1
       ))
     }
   }

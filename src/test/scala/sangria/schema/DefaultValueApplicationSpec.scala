@@ -15,7 +15,7 @@ import sangria.marshalling.sprayJson._
 class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResultSupport {
   "Default value application" should {
     "use default value if argument is not provided" in {
-      val assertion = (args: Args) ⇒ args.withArgs(AArg, SizeArg) { (test, size) ⇒
+      val assertion = (args: Args) => args.withArgs(AArg, SizeArg) { (test, size) =>
         test should be ("default")
         size should be (42)
 
@@ -28,7 +28,7 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
     }
 
     "use default value if argument is `null`" in {
-      val assertion = (args: Args) ⇒ args.withArgs(AArg) { test ⇒
+      val assertion = (args: Args) => args.withArgs(AArg) { test =>
         test should be ("default")
 
         args.argOpt(AArg) should be (None)
@@ -41,7 +41,7 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
     }
 
     "not use default value if value is provided" in {
-      val assertion = (args: Args) ⇒ args.withArgs(AArg) { test ⇒
+      val assertion = (args: Args) => args.withArgs(AArg) { test =>
         test should be ("bar")
 
         args.argOpt(AArg) should be (Some("bar"))
@@ -53,7 +53,7 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
     }
 
     "default variable value should not be used if variable is set to `null`" in {
-      check(graphql"""query ($$x: String = "bar") { test(a: $$x) }""", """{"x": null}""", args ⇒ {
+      check(graphql"""query ($$x: String = "bar") { test(a: $$x) }""", """{"x": null}""", args => {
         args.arg(AArg) should be ("bar")
 
         args.argOpt(AArg) should be (None)
@@ -62,7 +62,7 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
     }
 
     "default variable value should not be used if variable is not set" in {
-      check(graphql"""query ($$x: String = "bar") { test(a: $$x) }""", """{}""", args ⇒ {
+      check(graphql"""query ($$x: String = "bar") { test(a: $$x) }""", """{}""", args => {
         args.arg(AArg) should be ("bar")
 
         args.argOpt(AArg) should be (Some("bar"))
@@ -71,8 +71,8 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
     }
 
     "use default value if field is not provided" in {
-      val assertion = (args: Args) ⇒ args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) ⇒
-        inp should be (Map("f" → Some("default")))
+      val assertion = (args: Args) => args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) =>
+        inp should be (Map("f" -> Some("default")))
         inpJson should be ("""{"f": "default"}""".parseJson)
       }
 
@@ -81,8 +81,8 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
     }
 
     "not use default value if field is `null`" in {
-      val assertion = (args: Args) ⇒ args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) ⇒
-        inp should be (Map("f" → None))
+      val assertion = (args: Args) => args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) =>
+        inp should be (Map("f" -> None))
         inpJson should be ("""{"f": null}""".parseJson)
       }
 
@@ -92,8 +92,8 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
     }
 
     "not use default value if field value is provided" in {
-      val assertion = (args: Args) ⇒ args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) ⇒
-        inp should be (Map("f" → Some("bar")))
+      val assertion = (args: Args) => args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) =>
+        inp should be (Map("f" -> Some("bar")))
         inpJson should be ("""{"f": "bar"}""".parseJson)
       }
 
@@ -103,24 +103,24 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
 
     "default variable value should not be used if variable is set to `null` for a field" in {
       check(graphql"""query ($$x: String = "bar") { testInp(inp: {f: $$x}, inpJson: {f: $$x}) }""", """{"x": null}""",
-        args ⇒ args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) ⇒
-          inp should be (Map("f" → None))
+        args => args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) =>
+          inp should be (Map("f" -> None))
           inpJson should be ("""{"f": null}""".parseJson)
         })
     }
 
     "default variable value should not be used if variable is not set for a field" in {
       check(graphql"""query ($$x: String = "bar") { testInp(inp: {f: $$x}, inpJson: {f: $$x}) }""", """{}""",
-        args ⇒ args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) ⇒
-          inp should be (Map("f" → Some("bar")))
+        args => args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) =>
+          inp should be (Map("f" -> Some("bar")))
           inpJson should be ("""{"f": "bar"}""".parseJson)
         })
     }
 
     "set fields to `null` if value is not set, but default is set to null" in {
       check(graphql"""query ($$x: String = "bar", $$y: String = null) { testInp(inp: {f: $$x, fo: $$y}, inpJson: {f: $$x, fo: $$y}) }""", """{}""",
-        args ⇒ args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) ⇒
-          inp should be (Map("f" → Some("bar"), "fo" → None))
+        args => args.withArgs(InpArg, InpJsonArg) { (inp, inpJson) =>
+          inp should be (Map("f" -> Some("bar"), "fo" -> None))
           inpJson should be ("""{"f": "bar", "fo": null}""".parseJson)
         })
     }
@@ -146,14 +146,14 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
   val QueryType = ObjectType("Query", fields[Ctx, Unit](
     Field("test", StringType,
       arguments = AArg :: SizeArg :: Nil,
-      resolve = c ⇒ {
+      resolve = c => {
         c.ctx.args = Some(c.args)
         "foo"
       }),
 
     Field("testInp", StringType,
       arguments = InpArg :: InpJsonArg :: Nil,
-      resolve = c ⇒ {
+      resolve = c => {
         c.ctx.args = Some(c.args)
         "foo"
       })
@@ -161,7 +161,7 @@ class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResu
 
   val schema = Schema(QueryType)
 
-  def check[T](query: Document, vars: String, assertions: Args ⇒ T): T = {
+  def check[T](query: Document, vars: String, assertions: Args => T): T = {
     val ctx = new Ctx
 
     Executor.execute(schema, query, ctx, variables = vars.parseJson).await

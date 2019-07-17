@@ -20,25 +20,25 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
   case class Foo(name: Option[String], some: Option[SomeInterface], tree: List[Option[Foo]]) extends SomeInterface
   case class Bar(name: Option[String], some: Option[SomeInterface], foo: Option[Foo]) extends SomeInterface
 
-  val SomeInterfaceType: InterfaceType[Unit, SomeInterface] = InterfaceType("SomeInterface", () ⇒ fields(
+  val SomeInterfaceType: InterfaceType[Unit, SomeInterface] = InterfaceType("SomeInterface", () => fields(
     Field("name", OptionType(StringType), resolve = _.value.name),
     Field("some", OptionType(SomeInterfaceType), resolve = _.value.some)
   ))
 
-  val FooType: ObjectType[Unit, Foo] = ObjectType("Foo", interfaces = interfaces(SomeInterfaceType), () ⇒ fields(
+  val FooType: ObjectType[Unit, Foo] = ObjectType("Foo", interfaces = interfaces(SomeInterfaceType), () => fields(
     Field("name", OptionType(StringType), resolve = _.value.name),
     Field("some", OptionType(SomeInterfaceType), resolve = _.value.some),
     Field("tree", ListType(OptionType(FooType)), resolve = _.value.tree)
   ))
 
-  val BarType: ObjectType[Unit, Bar] = ObjectType("Bar", interfaces = interfaces(SomeInterfaceType), () ⇒ fields(
+  val BarType: ObjectType[Unit, Bar] = ObjectType("Bar", interfaces = interfaces(SomeInterfaceType), () => fields(
     Field("name", OptionType(StringType), resolve = _.value.name),
     Field("some", OptionType(SomeInterfaceType), resolve = _.value.some),
     Field("foo", OptionType(FooType), resolve = _.value.foo)
   ))
 
-  val BizType = ObjectType("Biz", () ⇒ fields[Unit, Unit](
-    Field("fizz", OptionType(StringType), resolve = _ ⇒ None)
+  val BizType = ObjectType("Biz", () => fields[Unit, Unit](
+    Field("fizz", OptionType(StringType), resolve = _ => None)
   ))
 
   val SomeUnionType = UnionType("SomeUnion", types = FooType :: BizType :: Nil)
@@ -50,12 +50,12 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
   val schema = Schema(
     query = ObjectType("Query", fields[Unit, Unit](
-      Field("foo", OptionType(FooType), resolve = _ ⇒ Some(Foo(Some("foo"), None, Nil))),
-      Field("someUnion", OptionType(SomeUnionType), resolve = _ ⇒ None),
-      Field("someEnum", OptionType(SomeEnumType), resolve = _ ⇒ None),
+      Field("foo", OptionType(FooType), resolve = _ => Some(Foo(Some("foo"), None, Nil))),
+      Field("someUnion", OptionType(SomeUnionType), resolve = _ => None),
+      Field("someEnum", OptionType(SomeEnumType), resolve = _ => None),
       Field("someInterface", OptionType(SomeInterfaceType),
         arguments = Argument("id", IDType) :: Nil,
-        resolve = _ ⇒ Some(Foo(Some("a"), Some(Bar(Some("b"), None, Some(Foo(Some("c"), None, Nil)))), List(None, Some(Foo(Some("d"), None, Nil))))))
+        resolve = _ => Some(Foo(Some("a"), Some(Bar(Some("b"), None, Some(Foo(Some("c"), None, Nil)))), List(None, Some(Foo(Some("d"), None, Nil))))))
     )),
     additionalTypes = BarType :: Nil)
 
@@ -96,8 +96,8 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
         schema = schema.extend(ast),
         data = (),
         query = "{ newField }",
-        expectedData = Map("newField" → null),
-        expectedErrorStrings = List(DefaultIntrospectionSchemaBuilder.MaterializedSchemaErrorMessage → List(Pos(1, 3))))
+        expectedData = Map("newField" -> null),
+        expectedErrorStrings = List(DefaultIntrospectionSchemaBuilder.MaterializedSchemaErrorMessage -> List(Pos(1, 3))))
     }
 
     "extends objects by adding new fields" in {
@@ -270,16 +270,16 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
 
     "extends objects by adding new fields with not yet used types" in {
       val ProductType = InterfaceType("Product", fields[Unit, Unit](
-        Field("name", StringType, resolve = _ ⇒ "some name")
+        Field("name", StringType, resolve = _ => "some name")
       ))
 
       val MagicPotionType = ObjectType("MagicPotion", interfaces[Unit, Unit](ProductType), fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1)
+        Field("size", IntType, resolve = _ => 1)
       ))
 
       val schemaWithPotion = Schema(
         query = ObjectType("Query", fields[Unit, Unit](
-          Field("foo", OptionType(FooType), resolve = _ ⇒ Some(Foo(Some("foo"), None, Nil))))),
+          Field("foo", OptionType(FooType), resolve = _ => Some(Foo(Some("foo"), None, Nil))))),
         additionalTypes = BarType :: MagicPotionType :: ProductType :: Nil)
 
       val ast =
@@ -688,11 +688,11 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
     "may extend mutations and subscriptions" in {
       val mutationSchema = Schema(
         query = ObjectType("Query", fields[Unit, Unit](
-          Field("queryField", StringType, resolve = _ ⇒ ""))),
+          Field("queryField", StringType, resolve = _ => ""))),
         mutation = Some(ObjectType("Mutation", fields[Unit, Unit](
-          Field("mutationField", StringType, resolve = _ ⇒ "")))),
+          Field("mutationField", StringType, resolve = _ => "")))),
         subscription = Some(ObjectType("Subscription", fields[Unit, Unit](
-          Field("subscriptionField", StringType, resolve = _ ⇒ "")))))
+          Field("subscriptionField", StringType, resolve = _ => "")))))
 
       val ast =
         graphql"""
@@ -865,52 +865,52 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
             definition: ast.FieldDefinition,
             mat: AstSchemaMaterializer[Unit]) =
           if (definition.name == "animal1")
-            _ ⇒ Map("type" → "Cat", "name" → "foo", "age" → Some(10))
+            _ => Map("type" -> "Cat", "name" -> "foo", "age" -> Some(10))
           else if (definition.name == "animal2")
-            _ ⇒ Map("type" → "Dog", "name" → "bar", "nickname" → Some("baz"))
+            _ => Map("type" -> "Dog", "name" -> "bar", "nickname" -> Some("baz"))
           else if (definition.name == "special")
-            _ ⇒ Map("name" → "Fooo", "some" → None, "custom" → 123)
+            _ => Map("name" -> "Fooo", "some" -> None, "custom" -> 123)
           else
             _.value.asInstanceOf[Map[String, Any]](definition.name)
 
         override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]) =
-          Some((value, clazz) ⇒ value match {
-            case v: Map[_, _] if definition.name == "Hello" ⇒ true
-            case v : Map[String, _] @unchecked if v contains "type" ⇒ value.asInstanceOf[Map[String, Any]]("type") == definition.name
-            case _ ⇒ false
+          Some((value, clazz) => value match {
+            case v: Map[_, _] if definition.name == "Hello" => true
+            case v : Map[String, _] @unchecked if v contains "type" => value.asInstanceOf[Map[String, Any]]("type") == definition.name
+            case _ => false
           })
 
         override def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Unit, _], extensions: List[ObjectTypeExtensionDefinition]) =
-          Some((value, clazz) ⇒ value match {
-            case v: Map[_, _] if tpe.name == "Hello" ⇒ true
-            case v if clazz.isAssignableFrom(v.getClass) ⇒ true
-            case _ ⇒ false
+          Some((value, clazz) => value match {
+            case v: Map[_, _] if tpe.name == "Hello" => true
+            case v if clazz.isAssignableFrom(v.getClass) => true
+            case _ => false
           })
 
         override def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition) =
-          value ⇒ definition.name match {
-            case "Custom" ⇒ value match {
-              case i: Int ⇒ Right(i)
-              case i: BigInt ⇒ Right(i.intValue)
-              case _ ⇒ Left(IntCoercionViolation)
+          value => definition.name match {
+            case "Custom" => value match {
+              case i: Int => Right(i)
+              case i: BigInt => Right(i.intValue)
+              case _ => Left(IntCoercionViolation)
             }
-            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+            case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
           }
 
         override def scalarCoerceInput(definition: ast.ScalarTypeDefinition) =
-          value ⇒ definition.name match {
-            case "Custom" ⇒ value match {
-              case ast.IntValue(i, _, _) ⇒ Right(i)
-              case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
-              case _ ⇒ Left(IntCoercionViolation)
+          value => definition.name match {
+            case "Custom" => value match {
+              case ast.IntValue(i, _, _) => Right(i)
+              case ast.BigIntValue(i, _, _) => Right(i.intValue)
+              case _ => Left(IntCoercionViolation)
             }
-            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+            case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
           }
 
         override def scalarCoerceOutput(definition: ast.ScalarTypeDefinition) =
-          (coerced, _) ⇒ definition.name match {
-            case "Custom" ⇒ ast.IntValue(coerced.asInstanceOf[Int])
-            case _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+          (coerced, _) => definition.name match {
+            case "Custom" => ast.IntValue(coerced.asInstanceOf[Int])
+            case _ => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
           }
       }
 
@@ -945,20 +945,20 @@ class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSuppor
             }
           }
         """,
-        Map("data" →
+        Map("data" ->
           Map(
-            "foo" → Map("name" → "foo"),
-            "someInterface" → Map(
-              "name" → "a",
-              "some" → Map("name" → "b"),
-              "tree" → Vector(null, Map("name" → "d")),
-              "animal1" → Map("__typename" → "Cat", "name" → "foo"),
-              "animal2" → Map("__typename" → "Dog", "name" → "bar")),
-            "special" → Map(
-              "__typename" → "Hello",
-              "name" → "Fooo",
-              "some" → null,
-              "custom" → 123))))
+            "foo" -> Map("name" -> "foo"),
+            "someInterface" -> Map(
+              "name" -> "a",
+              "some" -> Map("name" -> "b"),
+              "tree" -> Vector(null, Map("name" -> "d")),
+              "animal1" -> Map("__typename" -> "Cat", "name" -> "foo"),
+              "animal2" -> Map("__typename" -> "Dog", "name" -> "bar")),
+            "special" -> Map(
+              "__typename" -> "Hello",
+              "name" -> "Fooo",
+              "some" -> null,
+              "custom" -> 123))))
     }
   }
 }

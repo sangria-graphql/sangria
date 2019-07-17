@@ -28,25 +28,25 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
   val DataArg = Argument("data", ListInputType(DataInputType))
 
-  lazy val QueryType: ObjectType[Unit, Unit] = ObjectType("Query", () ⇒ fields[Unit, Unit](
-    Field("ids", ListType(IntType), resolve = _ ⇒ List(1, 2)),
-    Field("ids1", ListType(IntType), resolve = _ ⇒ List(4, 5)),
-    Field("ids2", ListType(IntType), resolve = _ ⇒ Nil),
-    Field("name1", StringType, resolve = _ ⇒ "some name 1"),
-    Field("name2", OptionType(StringType), resolve = _ ⇒ "some name 2"),
+  lazy val QueryType: ObjectType[Unit, Unit] = ObjectType("Query", () => fields[Unit, Unit](
+    Field("ids", ListType(IntType), resolve = _ => List(1, 2)),
+    Field("ids1", ListType(IntType), resolve = _ => List(4, 5)),
+    Field("ids2", ListType(IntType), resolve = _ => Nil),
+    Field("name1", StringType, resolve = _ => "some name 1"),
+    Field("name2", OptionType(StringType), resolve = _ => "some name 2"),
     Field("greet", StringType,
       arguments = NameArg :: Nil,
-      resolve = c ⇒ s"Hello, ${c arg NameArg}!"),
+      resolve = c => s"Hello, ${c arg NameArg}!"),
     Field("greetAll", StringType,
       arguments = NamesArg :: Nil,
-      resolve = c ⇒ s"Hello, ${c arg NamesArg mkString " and "}!"),
-    Field("nested", QueryType, resolve = _ ⇒ ()),
+      resolve = c => s"Hello, ${c arg NamesArg mkString " and "}!"),
+    Field("nested", QueryType, resolve = _ => ()),
     Field("stuff", ListType(DataType),
       arguments = IdsArg :: Nil,
-      resolve = _.arg(IdsArg).map(id ⇒ id → s"data #$id")),
+      resolve = _.arg(IdsArg).map(id => id -> s"data #$id")),
     Field("single", DataType,
       arguments = IdArg :: Nil,
-      resolve = _.withArgs(IdArg)(id ⇒ id → s"data #$id")),
+      resolve = _.withArgs(IdArg)(id => id -> s"data #$id")),
     Field("stuff1", StringType,
       arguments = IdsArg :: Nil,
       resolve = _.arg(IdsArg).mkString(", "))
@@ -55,7 +55,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
   lazy val MutationType = ObjectType("Mutation", fields[Unit, Unit](
     Field("createData", ListType(DataType),
       arguments = DataArg :: Nil,
-      resolve = _.withArgs(DataArg)(_.map(d ⇒ d("id").asInstanceOf[Int] → d("name").asInstanceOf[String])))))
+      resolve = _.withArgs(DataArg)(_.map(d => d("id").asInstanceOf[Int] -> d("name").asInstanceOf[String])))))
 
   val schema = Schema(QueryType, Some(MutationType),
     directives = BuiltinDirectives :+ BatchExecutor.ExportDirective)
@@ -100,9 +100,9 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
         """
 
       val vars = ScalaInput.scalaInput(Map(
-        "ids" → Vector(111, 222, 444),
-        "bar" → Map("a" → "hello", "b" → "world"),
-        "name" → "Bob"))
+        "ids" -> Vector(111, 222, 444),
+        "bar" -> Map("a" -> "hello", "b" -> "world"),
+        "name" -> "Bob"))
 
       val res = BatchExecutor.executeBatch(schema, query,
         operationNames = List("q1", "q2", "q3"),
@@ -321,8 +321,8 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       checkContainsViolations(
         BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2")).toListL.runAsync.await,
-        "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'Int!'." → List(Pos(7, 24), Pos(8, 24)),
-        "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'String!'." → List(Pos(7, 24), Pos(10, 25)))
+        "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'Int!'." -> List(Pos(7, 24), Pos(8, 24)),
+        "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'String!'." -> List(Pos(7, 24), Pos(10, 25)))
     }
 
     "not allow circular dependencies" in {
@@ -354,9 +354,9 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       checkContainsViolations(
         BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2", "q3")).toListL.runAsync.await,
-        "Operation 'q1' has a circular dependency at path 'q1($from3) -> q3($from2) -> q2($from1) -> q1'." → List(Pos(2, 11)),
-        "Operation 'q3' has a circular dependency at path 'q3($from2) -> q2($from1) -> q1($from3) -> q3'." → List(Pos(20, 11)),
-        "Operation 'q2' has a circular dependency at path 'q2($from1) -> q1($from3) -> q3($from2) -> q2'." → List(Pos(14, 11)))
+        "Operation 'q1' has a circular dependency at path 'q1($from3) -> q3($from2) -> q2($from1) -> q1'." -> List(Pos(2, 11)),
+        "Operation 'q3' has a circular dependency at path 'q3($from2) -> q2($from1) -> q1($from3) -> q3'." -> List(Pos(20, 11)),
+        "Operation 'q2' has a circular dependency at path 'q2($from1) -> q1($from3) -> q3($from2) -> q2'." -> List(Pos(14, 11)))
     }
   }
 

@@ -15,7 +15,7 @@ trait WithViolations extends UserFacingError{
 }
 
 trait ErrorWithResolver {
-  this: Throwable ⇒
+  this: Throwable =>
 
   def exceptionHandler: ExceptionHandler
 
@@ -38,13 +38,13 @@ case class UndefinedConcreteTypeError(path: ExecutionPath, abstractType: Abstrac
 
 object UndefinedConcreteTypeError {
   private def renderAbstractType(abstractType: AbstractType) = abstractType match {
-    case _: UnionType[_] ⇒ "a union"
-    case _: InterfaceType[_, _] ⇒ "an interface"
+    case _: UnionType[_] => "a union"
+    case _: InterfaceType[_, _] => "an interface"
   }
 
   private def renderPossibleTypes(possibleTypes: Vector[ObjectType[_, _]]) =
     if (possibleTypes.isEmpty) "none"
-    else possibleTypes.map(pt ⇒ s"${pt.name} (defined for '${pt.valClass.getName}')") mkString ", "
+    else possibleTypes.map(pt => s"${pt.name} (defined for '${pt.valClass.getName}')") mkString ", "
 
   private def renderValueClass(value: Any) = value.getClass.getName
 }
@@ -54,7 +54,7 @@ case class MaxQueryDepthReachedError(maxDepth: Int) extends Exception(s"Max quer
 case object IntrospectionNotAllowedError extends Exception(s"Introspection is not allowed.") with UserFacingError
 
 trait QueryAnalysisError extends ErrorWithResolver {
-  this: Throwable ⇒
+  this: Throwable =>
 }
 
 case class VariableCoercionError(violations: Vector[Violation], eh: ExceptionHandler) extends ExecutionError(

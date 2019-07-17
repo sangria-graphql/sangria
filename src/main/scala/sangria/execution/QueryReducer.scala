@@ -37,34 +37,34 @@ trait QueryReducer[-Ctx, +Out] {
 }
 
 object QueryReducer {
-  type ArgumentValuesFn = (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) ⇒ Try[Args]
+  type ArgumentValuesFn = (ExecutionPath, List[Argument[_]], Vector[ast.Argument]) => Try[Args]
 
-  def measureComplexity[Ctx](fn: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
+  def measureComplexity[Ctx](fn: (Double, Ctx) => ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new MeasureComplexity[Ctx](fn)
 
-  def rejectComplexQueries[Ctx](complexityThreshold: Double, error: (Double, Ctx) ⇒ Throwable): QueryReducer[Ctx, Ctx] =
-    measureComplexity[Ctx]((c, ctx) ⇒
+  def rejectComplexQueries[Ctx](complexityThreshold: Double, error: (Double, Ctx) => Throwable): QueryReducer[Ctx, Ctx] =
+    measureComplexity[Ctx]((c, ctx) =>
       if (c >= complexityThreshold) throw error(c, ctx) else ctx)
 
-  def measureDepth[Ctx](fn: (Int, Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
+  def measureDepth[Ctx](fn: (Int, Ctx) => ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new MeasureQueryDepth[Ctx](fn)
 
   def rejectMaxDepth[Ctx](maxDepth: Int): QueryReducer[Ctx, Ctx] =
-    measureDepth[Ctx]((depth, ctx) ⇒
+    measureDepth[Ctx]((depth, ctx) =>
       if (depth > maxDepth) throw new MaxQueryDepthReachedError(maxDepth) else ctx)
 
-  def collectTags[Ctx, T](tagMatcher: PartialFunction[FieldTag, T])(fn: (Seq[T], Ctx) ⇒ ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
+  def collectTags[Ctx, T](tagMatcher: PartialFunction[FieldTag, T])(fn: (Seq[T], Ctx) => ReduceAction[Ctx, Ctx]): QueryReducer[Ctx, Ctx] =
     new TagCollector[Ctx, T](tagMatcher, fn)
 
   def rejectIntrospection[Ctx](includeTypeName: Boolean = true): QueryReducer[Ctx, Ctx] =
-    hasIntrospection((hasIntro, ctx) ⇒ if (hasIntro) throw IntrospectionNotAllowedError else ctx, includeTypeName)
+    hasIntrospection((hasIntro, ctx) => if (hasIntro) throw IntrospectionNotAllowedError else ctx, includeTypeName)
 
-  def hasIntrospection[Ctx](fn: (Boolean, Ctx) ⇒ ReduceAction[Ctx, Ctx], includeTypeName: Boolean = true): QueryReducer[Ctx, Ctx] =
+  def hasIntrospection[Ctx](fn: (Boolean, Ctx) => ReduceAction[Ctx, Ctx], includeTypeName: Boolean = true): QueryReducer[Ctx, Ctx] =
     new HasIntrospectionReducer[Ctx](includeTypeName, fn)
 
 }
 
-class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
+class MeasureComplexity[Ctx](action: (Double, Ctx) => ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
   type Acc = Double
 
   import MeasureComplexity.DefaultComplexity
@@ -83,12 +83,12 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) e
       field: Field[Ctx, Val],
       argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc = {
     val estimate = field.complexity match {
-      case Some(fn) ⇒
+      case Some(fn) =>
         argumentValuesFn(path, field.arguments, astFields.head.arguments) match {
-          case Success(args) ⇒ fn(ctx, args, childrenAcc)
-          case Failure(_) ⇒ DefaultComplexity + childrenAcc
+          case Success(args) => fn(ctx, args, childrenAcc)
+          case Failure(_) => DefaultComplexity + childrenAcc
         }
-      case None ⇒ DefaultComplexity + childrenAcc
+      case None => DefaultComplexity + childrenAcc
     }
 
     fieldAcc + estimate
@@ -108,7 +108,7 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) ⇒ ReduceAction[Ctx, Ctx]) e
     action(acc, ctx)
 }
 
-class MeasureQueryDepth[Ctx](action: (Int, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
+class MeasureQueryDepth[Ctx](action: (Int, Ctx) => ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
   type Acc = Int
 
   def reduceAlternatives(alternatives: Seq[Acc]) = alternatives.max
@@ -144,7 +144,7 @@ object MeasureComplexity {
   val DefaultComplexity = 1.0D
 }
 
-class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Seq[T], Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
+class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Seq[T], Ctx) => ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
   type Acc = Vector[T]
 
   val initial = Vector.empty
@@ -160,7 +160,7 @@ class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Se
       parentType: ObjectType[Ctx, Val],
       field: Field[Ctx, Val],
       argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc =
-    fieldAcc ++ childrenAcc ++ field.tags.collect {case t if tagMatcher.isDefinedAt(t) ⇒ tagMatcher(t)}
+    fieldAcc ++ childrenAcc ++ field.tags.collect {case t if tagMatcher.isDefinedAt(t) => tagMatcher(t)}
 
   def reduceScalar[ST](
     path: ExecutionPath,
@@ -176,12 +176,12 @@ class TagCollector[Ctx, T](tagMatcher: PartialFunction[FieldTag, T], action: (Se
     action(acc, ctx)
 }
 
-class HasIntrospectionReducer[Ctx](includeTypeName: Boolean, action: (Boolean, Ctx) ⇒ ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
+class HasIntrospectionReducer[Ctx](includeTypeName: Boolean, action: (Boolean, Ctx) => ReduceAction[Ctx, Ctx]) extends QueryReducer[Ctx, Ctx] {
   type Acc = Boolean
 
   val initial = false
 
-  def reduceAlternatives(alternatives: Seq[Acc]) = alternatives.exists(hasIntro ⇒ hasIntro)
+  def reduceAlternatives(alternatives: Seq[Acc]) = alternatives.exists(hasIntro => hasIntro)
 
   def reduceField[Val](
       fieldAcc: Acc,

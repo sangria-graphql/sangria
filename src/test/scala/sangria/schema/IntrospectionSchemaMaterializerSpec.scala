@@ -33,76 +33,76 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
     clientSchema
   }
 
-  lazy val RecursiveType: ObjectType[Any, Any] = ObjectType("Recur", () ⇒ fields(
-    Field("recur", OptionType(RecursiveType), resolve = _ ⇒ None)
+  lazy val RecursiveType: ObjectType[Any, Any] = ObjectType("Recur", () => fields(
+    Field("recur", OptionType(RecursiveType), resolve = _ => None)
   ))
 
-  lazy val DogType: ObjectType[Any, Any] = ObjectType("Dog", () ⇒ fields(
-    Field("bestFriend", OptionType(HumanType), resolve = _ ⇒ None)
+  lazy val DogType: ObjectType[Any, Any] = ObjectType("Dog", () => fields(
+    Field("bestFriend", OptionType(HumanType), resolve = _ => None)
   ))
 
-  lazy val HumanType: ObjectType[Any, Any] = ObjectType("Human", () ⇒ fields(
-    Field("bestFriend", OptionType(DogType), resolve = _ ⇒ None)
+  lazy val HumanType: ObjectType[Any, Any] = ObjectType("Human", () => fields(
+    Field("bestFriend", OptionType(DogType), resolve = _ => None)
   ))
 
-  lazy val FriendlyType: InterfaceType[Any, Any] = InterfaceType("Friendly", () ⇒ fields(
-    Field("bestFriend", OptionType(FriendlyType), Some("The best friend of this friendly thing"), resolve = _ ⇒ None)
+  lazy val FriendlyType: InterfaceType[Any, Any] = InterfaceType("Friendly", () => fields(
+    Field("bestFriend", OptionType(FriendlyType), Some("The best friend of this friendly thing"), resolve = _ => None)
   ))
 
-  lazy val DogUnionType: ObjectType[Any, Any] = ObjectType("Dog", () ⇒ fields(
-    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ ⇒ None)
+  lazy val DogUnionType: ObjectType[Any, Any] = ObjectType("Dog", () => fields(
+    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ => None)
   ))
 
-  lazy val HumanUnionType: ObjectType[Any, Any] = ObjectType("Human", () ⇒ fields(
-    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ ⇒ None)
+  lazy val HumanUnionType: ObjectType[Any, Any] = ObjectType("Human", () => fields(
+    Field("bestFriend", OptionType(FriendlyUnionType), resolve = _ => None)
   ))
 
   lazy val FriendlyUnionType = UnionType("Friendly", types = DogUnionType :: HumanUnionType :: Nil)
 
   val CustomScalar = ScalarType[Int]("Custom",
     description = Some("Some custom"),
-    coerceOutput = (i, _) ⇒ ast.IntValue(i),
+    coerceOutput = (i, _) => ast.IntValue(i),
     coerceUserInput = {
-      case i: Int ⇒ Right(i)
-      case _ ⇒ Left(IntCoercionViolation)
+      case i: Int => Right(i)
+      case _ => Left(IntCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _, _) ⇒ Right(i)
-      case _ ⇒ Left(IntCoercionViolation)
+      case ast.IntValue(i, _, _) => Right(i)
+      case _ => Left(IntCoercionViolation)
     })
 
   "Type System: build schema from introspection" should {
     "builds a simple schema" in testSchema(
       Schema(ObjectType("Simple", "This is a simple type", fields[Any, Any](
-        Field("string", OptionType(StringType), Some("This is a string field"), resolve = _ ⇒ "foo")))))
+        Field("string", OptionType(StringType), Some("This is a string field"), resolve = _ => "foo")))))
 
     "builds a simple schema with all operation types" in testSchema(
       Schema(
         query =
           ObjectType("QueryType", "This is a simple query type", fields[Any, Any](
-            Field("string", OptionType(StringType), Some("This is a string field"), resolve = _ ⇒ "foo"))),
+            Field("string", OptionType(StringType), Some("This is a string field"), resolve = _ => "foo"))),
         mutation = Some(
           ObjectType("MutationType", "This is a simple mutation type", fields[Any, Any](
             Field("setString", OptionType(StringType), Some("Set the string field"),
               arguments = Argument("value", OptionInputType(StringType)) :: Nil,
-              resolve = _ ⇒ "foo")))),
+              resolve = _ => "foo")))),
         subscription = Some(
           ObjectType("SubscriptionType", "This is a simple subscription type", fields[Any, Any](
-            Field("string", OptionType(StringType), Some("This is a string field for sub"), resolve = _ ⇒ "foo"))))
+            Field("string", OptionType(StringType), Some("This is a string field for sub"), resolve = _ => "foo"))))
         ))
 
     "uses built-in scalars when possible" in {
       val clientSchema = testSchema(
         Schema(ObjectType("Scalars", fields[Any, Any](
-          Field("int", IntType, resolve = _ ⇒ 1),
-          Field("long", LongType, resolve = _ ⇒ 1L),
-          Field("float", FloatType, resolve = _ ⇒ 1.1),
-          Field("bool", BooleanType, resolve = _ ⇒ true),
-          Field("bigInt", BigIntType, resolve = _ ⇒ BigInt(1)),
-          Field("bigDec", BigDecimalType, resolve = _ ⇒ BigDecimal(1.0)),
-          Field("id", IDType, resolve = _ ⇒ "foo"),
-          Field("custom", CustomScalar, resolve = _ ⇒ 123),
-          Field("string", StringType, resolve = _ ⇒ "foo")))))
+          Field("int", IntType, resolve = _ => 1),
+          Field("long", LongType, resolve = _ => 1L),
+          Field("float", FloatType, resolve = _ => 1.1),
+          Field("bool", BooleanType, resolve = _ => true),
+          Field("bigInt", BigIntType, resolve = _ => BigInt(1)),
+          Field("bigDec", BigDecimalType, resolve = _ => BigDecimal(1.0)),
+          Field("id", IDType, resolve = _ => "foo"),
+          Field("custom", CustomScalar, resolve = _ => 123),
+          Field("string", StringType, resolve = _ => "foo")))))
 
       def fieldType(fieldName: String) =
         clientSchema.outputTypes("Scalars").asInstanceOf[ObjectType[_, _]].getField(clientSchema, fieldName).head.fieldType
@@ -123,42 +123,42 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
 
     "builds a schema with an interface" in {
       val dog = ObjectType("Dog", interfaces[Any, Any](FriendlyType), fields[Any, Any](
-        Field("bestFriend", OptionType(FriendlyType), resolve = _ ⇒ None)
+        Field("bestFriend", OptionType(FriendlyType), resolve = _ => None)
       ))
 
       lazy val human = ObjectType("Human", interfaces[Any, Any](FriendlyType), fields[Any, Any](
-        Field("bestFriend", OptionType(FriendlyType), resolve = _ ⇒ None)
+        Field("bestFriend", OptionType(FriendlyType), resolve = _ => None)
       ))
 
       testSchema(Schema(
         query = ObjectType("WithInterface", fields[Any, Any](
-          Field("friendly", OptionType(FriendlyType), resolve = _ ⇒ None))),
+          Field("friendly", OptionType(FriendlyType), resolve = _ => None))),
         additionalTypes = dog :: human :: Nil))
     }
 
     "builds a schema with a union" in testSchema(
       Schema(ObjectType("WithUnion", fields[Any, Any](
-        Field("friendly", OptionType(FriendlyUnionType), resolve = _ ⇒ None)))))
+        Field("friendly", OptionType(FriendlyUnionType), resolve = _ => None)))))
 
     "builds a schema with complex field values" in testSchema(
       Schema(ObjectType("ComplexFields", fields[Any, Any](
-        Field("string", OptionType(StringType), resolve = _ ⇒ None),
-        Field("listOfString", OptionType(ListType(OptionType(StringType))), resolve = _ ⇒ None),
-        Field("nonNullString", StringType, resolve = _ ⇒ "foo"),
-        Field("nonNullListOfString", ListType(OptionType(StringType)), resolve = _ ⇒ Nil),
-        Field("nonNullListOfNonNullString", ListType(StringType), resolve = _ ⇒ Nil)))))
+        Field("string", OptionType(StringType), resolve = _ => None),
+        Field("listOfString", OptionType(ListType(OptionType(StringType))), resolve = _ => None),
+        Field("nonNullString", StringType, resolve = _ => "foo"),
+        Field("nonNullListOfString", ListType(OptionType(StringType)), resolve = _ => Nil),
+        Field("nonNullListOfNonNullString", ListType(StringType), resolve = _ => Nil)))))
 
     "builds a schema with field arguments" in testSchema(
       Schema(ObjectType("ArgFields", fields[Any, Any](
         Field("one", OptionType(StringType), Some("A field with a single arg"),
           arguments = Argument("intArg", OptionInputType(IntType), description = "This is an int arg") :: Nil,
-          resolve = _ ⇒ None),
+          resolve = _ => None),
         Field("two", OptionType(StringType), Some("A field with a two args"),
           arguments =
             Argument("listArg", OptionInputType(ListInputType(OptionInputType(IntType))), description = "This is an list of int arg") ::
             Argument("requiredArg", BooleanType, description = "This is a required arg") ::
             Nil,
-          resolve = _ ⇒ None)))))
+          resolve = _ => None)))))
 
     "builds a schema with an enum" in {
       val foodType = EnumType("Food", Some("Varieties of food stuffs"), List(
@@ -172,7 +172,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
         Schema(ObjectType("EnumFields", fields[Any, Any](
           Field("food", OptionType(foodType), Some("Repeats the arg you give it"),
             arguments = Argument("kind", OptionInputType(foodType), description = "what kind of food?") :: Nil,
-            resolve = _ ⇒ None)))))
+            resolve = _ => None)))))
 
 
       clientSchema.allTypes("Food") shouldNot be theSameInstanceAs foodType
@@ -194,7 +194,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
         Schema(ObjectType("HasInputObjectFields", fields[Any, Any](
           Field("geocode", OptionType(StringType), Some("Get a geocode from an address"),
             arguments = Argument("address", OptionInputType(addressType), description = "The address to lookup") :: Nil,
-            resolve = _ ⇒ None)))))
+            resolve = _ => None)))))
     }
 
     "builds a schema with field arguments with default values" in {
@@ -206,41 +206,41 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
         Schema(ObjectType("ArgFields", fields[Any, Any](
           Field("defaultInt", OptionType(StringType),
             arguments = Argument("intArg", OptionInputType(IntType), 10) :: Nil,
-            resolve = _ ⇒ None),
+            resolve = _ => None),
           Field("defaultList", OptionType(StringType),
             arguments = Argument("listArg", OptionInputType(ListInputType(OptionInputType(IntType))), scalaInput(Vector(1, 2, 3))) :: Nil,
-            resolve = _ ⇒ None),
+            resolve = _ => None),
           Field("defaultObject", OptionType(StringType),
-            arguments = Argument("objArg", OptionInputType(geoType), scalaInput(Map("lat" → 37.485D, "lon" → -122.148D))) :: Nil,
-            resolve = _ ⇒ None)))))
+            arguments = Argument("objArg", OptionInputType(geoType), scalaInput(Map("lat" -> 37.485D, "lon" -> -122.148D))) :: Nil,
+            resolve = _ => None)))))
     }
 
     "builds a schema with custom directives" in testSchema(
       Schema(
         query = ObjectType("Simple", "This is a simple type", fields[Any, Any](
           Field("string", OptionType(StringType), Some("This is a string field"),
-            resolve = _ ⇒ None))),
+            resolve = _ => None))),
         directives = BuiltinDirectives ++ List(Directive("customDirective", Some("This is a custom directive"),
-          shouldInclude = _ ⇒ true,
+          shouldInclude = _ => true,
           locations = Set(DirectiveLocation.Field)))))
 
     "builds a schema aware of deprecation" in testSchema(
       Schema(ObjectType("Simple", "This is a simple type", fields[Any, Any](
         Field("shinyString", OptionType(StringType), Some("This is a shiny string field"),
-          resolve = _ ⇒ None),
+          resolve = _ => None),
         Field("deprecatedString", OptionType(StringType), Some("This is a deprecated string field"),
           deprecationReason = Some("Use shinyString"),
-          resolve = _ ⇒ None),
+          resolve = _ => None),
         Field("color",
           fieldType = OptionType(EnumType("Color", values = List(
             EnumValue("RED", Some("So rosy"), "RED"),
             EnumValue("GREEN", Some("So grassy"), "GREEN"),
             EnumValue("BLUE", Some("So calming"), "BLUE"),
             EnumValue("MAUVE", Some("So sickening"), "MAUVE", deprecationReason = Some("No longer in fashion"))))),
-          resolve = _ ⇒ None)))))
+          resolve = _ => None)))))
 
     "builds a schema with description" in testSchema(
-      Schema(ObjectType("Simple", "This is a simple type", fields[Any, Any](Field("shinyString", OptionType(StringType), resolve = _ ⇒ None))),
+      Schema(ObjectType("Simple", "This is a simple type", fields[Any, Any](Field("shinyString", OptionType(StringType), resolve = _ => None))),
         description = Some("test")))
 
     "cannot use client schema for general execution" in {
@@ -251,12 +251,12 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
               Argument("custom1", OptionInputType(CustomScalar)) ::
               Argument("custom2", OptionInputType(CustomScalar)) ::
               Nil,
-            resolve = _ ⇒ None)))))
+            resolve = _ => None)))))
 
       checkContainsErrors(clientSchema, (),
         "query NoNo($v: Custom) { foo(custom1: 123, custom2: $v) }",
         null,
-        List("""Schema was materialized and cannot be used for any queries except introspection queries.""" → List(Pos(1, 39))),
+        List("""Schema was materialized and cannot be used for any queries except introspection queries.""" -> List(Pos(1, 39))),
         args = """{"v": 456}""".parseJson
       )
     }
@@ -270,45 +270,45 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
             Argument("custom1", OptionInputType(CustomScalar)) ::
             Argument("custom2", OptionInputType(CustomScalar)) ::
             Nil,
-          resolve = _ ⇒ None))))
+          resolve = _ => None))))
 
       val initialIntrospection = Executor.execute(serverSchema, introspectionQuery).await
 
       val customBuilder = new DefaultIntrospectionSchemaBuilder[Unit] {
         override def resolveField(typeDefinition: IntrospectionType, definition: IntrospectionField) =
-          ctx ⇒ (ctx.parentType.name, ctx.field.name) match {
-            case ("Query", "foo") ⇒
+          ctx => (ctx.parentType.name, ctx.field.name) match {
+            case ("Query", "foo") =>
               for {
-                a ← ctx.argOpt[Int]("custom1")
-                b ← ctx.argOpt[Int]("custom2")
+                a <- ctx.argOpt[Int]("custom1")
+                b <- ctx.argOpt[Int]("custom2")
               } yield a + b
-            case _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+            case _ => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
           }
 
         override def scalarCoerceUserInput(definition: IntrospectionScalarType) =
-          value ⇒ definition.name match {
-            case "Custom" ⇒ value match {
-              case i: Int ⇒ Right(i)
-              case i: BigInt ⇒ Right(i.intValue)
-              case _ ⇒ Left(IntCoercionViolation)
+          value => definition.name match {
+            case "Custom" => value match {
+              case i: Int => Right(i)
+              case i: BigInt => Right(i.intValue)
+              case _ => Left(IntCoercionViolation)
             }
-            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+            case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
           }
 
         override def scalarCoerceInput(definition: IntrospectionScalarType) =
-          value ⇒ definition.name match {
-            case "Custom" ⇒ value match {
-              case ast.IntValue(i, _, _) ⇒ Right(i)
-              case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
-              case _ ⇒ Left(IntCoercionViolation)
+          value => definition.name match {
+            case "Custom" => value match {
+              case ast.IntValue(i, _, _) => Right(i)
+              case ast.BigIntValue(i, _, _) => Right(i.intValue)
+              case _ => Left(IntCoercionViolation)
             }
-            case _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+            case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
           }
 
         override def scalarCoerceOutput(definition: IntrospectionScalarType) =
-          (coerced, _) ⇒ definition.name match {
-            case "Custom" ⇒ ast.IntValue(coerced.asInstanceOf[Int])
-            case _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+          (coerced, _) => definition.name match {
+            case "Custom" => ast.IntValue(coerced.asInstanceOf[Int])
+            case _ => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
           }
       }
 
@@ -316,7 +316,7 @@ class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with Fu
 
       check(clientSchema, (),
         "query Yeah($v: Custom) { foo(custom1: 123, custom2: $v) }",
-        Map("data" → Map("foo" → 579)),
+        Map("data" -> Map("foo" -> 579)),
         """{"v": 456}""".parseJson
       )
     }

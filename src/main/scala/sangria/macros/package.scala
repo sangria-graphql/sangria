@@ -1,6 +1,6 @@
 package sangria
 
-import scala.language.experimental.{macros ⇒ `scalac, please just let me do it!`}
+import scala.language.experimental.{macros => `scalac, please just let me do it!`}
 import sangria.ast.{Document, InputDocument, Value}
 
 package object macros {

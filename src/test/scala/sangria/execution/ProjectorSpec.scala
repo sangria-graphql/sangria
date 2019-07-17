@@ -21,24 +21,24 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
 
   val StringAttributeType = ObjectType("StringAttribute", interfaces[Unit, (String, Any)](ProductAttributeType), fields[Unit, (String, Any)](
     Field("name", StringType, resolve = _.value._1),
-    Field("strValue", StringType, resolve = _.value._2.asInstanceOf[String]))).withInstanceCheck((v, _, _) ⇒ v.asInstanceOf[(String, Any)]._2.isInstanceOf[String])
+    Field("strValue", StringType, resolve = _.value._2.asInstanceOf[String]))).withInstanceCheck((v, _, _) => v.asInstanceOf[(String, Any)]._2.isInstanceOf[String])
 
   val IntAttributeType = ObjectType("IntAttribute", interfaces[Unit, (String, Any)](ProductAttributeType), fields[Unit, (String, Any)](
     Field("name", StringType, resolve = _.value._1),
-    Field("intValue", IntType, resolve = _.value._2.asInstanceOf[Int]))).withInstanceCheck((v, _, _) ⇒ v.asInstanceOf[(String, Any)]._2.isInstanceOf[Int])
+    Field("intValue", IntType, resolve = _.value._2.asInstanceOf[Int]))).withInstanceCheck((v, _, _) => v.asInstanceOf[(String, Any)]._2.isInstanceOf[Int])
 
-  val VariantType = ObjectType("Variant", () ⇒ fields[Unit, Variant](
+  val VariantType = ObjectType("Variant", () => fields[Unit, Variant](
     Field("id", IDType, resolve = _.value.id),
-    Field("attributes", ListType(ProductAttributeType), resolve = _ ⇒ List("foo" → "hello", "bar" → 123)),
+    Field("attributes", ListType(ProductAttributeType), resolve = _ => List("foo" -> "hello", "bar" -> 123)),
     Field("mixed", StringType,
       tags = ProjectionName("mixed1") :: ProjectionName("mixed2") :: Nil,
       resolve = _.value.id),
-    Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ ⇒ "variant"),
+    Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ => "variant"),
     Field("relatedProducts", ListType(ProductType),
       tags = ProjectionName("rp") :: Nil,
-      resolve = Projector(1, (ctx, projected) ⇒ projected match {
-        case Vector(ProjectedName("id", _)) ⇒ Value(ctx.value.relatedProductIds map (Left(_)))
-        case _ ⇒ ProductDefer(ctx.value.relatedProductIds)
+      resolve = Projector(1, (ctx, projected) => projected match {
+        case Vector(ProjectedName("id", _)) => Value(ctx.value.relatedProductIds map (Left(_)))
+        case _ => ProductDefer(ctx.value.relatedProductIds)
       }))
   ))
 
@@ -47,8 +47,8 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
       Field("id", IDType, resolve = _.value.fold(identity, _.id)),
       Field("variantIds", ListType(IDType),
         tags = ProjectionName("masterVariant.id") :: ProjectionName("variants.id") :: Nil,
-        resolve = _ ⇒ Nil),
-      Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ ⇒ "product"),
+        resolve = _ => Nil),
+      Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ => "product"),
       Field("masterVariant", VariantType,
         tags = ProjectionName("master1") :: ProjectionName("master2") :: Nil,
         resolve = _.value.right.get.variants.head),
@@ -57,11 +57,11 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
 
   val QueryType = ObjectType("Query", fields[Ctx, Unit](
     Field("products", ListType(ProductType), resolve = _.ctx.products map (Right(_))),
-    Field("projectAll", ListType(ProductType), resolve = Projector((ctx, proj) ⇒ {
+    Field("projectAll", ListType(ProductType), resolve = Projector((ctx, proj) => {
       ctx.ctx.allProjections = proj
       ctx.ctx.products map (Right(_))
     })),
-    Field("projectOne", ListType(ProductType), resolve = Projector(1, (ctx, proj) ⇒ {
+    Field("projectOne", ListType(ProductType), resolve = Projector(1, (ctx, proj) => {
       ctx.ctx.oneLevelprojections = proj
       ctx.ctx.products map (Right(_))
     }))
@@ -90,8 +90,8 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
 
   class ProductResolver extends DeferredResolver[WithProducts] {
     override def resolve(deferred: Vector[Deferred[Any]], ctx: WithProducts, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-      case ProductDefer(ids) ⇒
-        Future.fromTry(Try(ids map (id ⇒ Right(ctx.products.find(_.id == id).get))))
+      case ProductDefer(ids) =>
+        Future.fromTry(Try(ids map (id => Right(ctx.products.find(_.id == id).get))))
     }
   }
 
@@ -135,47 +135,47 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
       val ctx = new Ctx
 
       Executor.execute(schema, query, ctx, deferredResolver = new ProductResolver).await should be (
-        Map("data" →
+        Map("data" ->
           Map(
-            "projectAll" →
+            "projectAll" ->
               List(
                 Map(
-                  "id" → "1",
-                  "typeId" → "product",
-                  "variants" → List(
+                  "id" -> "1",
+                  "typeId" -> "product",
+                  "variants" -> List(
                     Map(
-                      "id" → "2",
-                      "attributes" → Vector(
-                        Map("name" → "foo", "strValue" → "hello"),
-                        Map("name" → "bar", "intValue" → 123)),
-                      "typeId" → "variant",
-                      "relatedProducts" → List(
+                      "id" -> "2",
+                      "attributes" -> Vector(
+                        Map("name" -> "foo", "strValue" -> "hello"),
+                        Map("name" -> "bar", "intValue" -> 123)),
+                      "typeId" -> "variant",
+                      "relatedProducts" -> List(
                         Map(
-                          "id" → "1",
-                          "typeId" → "product",
-                          "variants" → List(
-                            Map("id" → "2"))),
+                          "id" -> "1",
+                          "typeId" -> "product",
+                          "variants" -> List(
+                            Map("id" -> "2"))),
                         Map(
-                          "id" → "2",
-                          "typeId" → "product",
-                          "variants" → Nil))))),
+                          "id" -> "2",
+                          "typeId" -> "product",
+                          "variants" -> Nil))))),
                 Map(
-                  "id" → "2",
-                  "typeId" → "product",
-                  "variants" → Nil)),
-          "projectOne" →
+                  "id" -> "2",
+                  "typeId" -> "product",
+                  "variants" -> Nil)),
+          "projectOne" ->
             List(
               Map(
-                "id" → "1",
-                "typeId" → "product",
-                "variants" → List(
+                "id" -> "1",
+                "typeId" -> "product",
+                "variants" -> List(
                   Map(
-                    "id" → "2",
-                    "typeId" → "variant"))),
+                    "id" -> "2",
+                    "typeId" -> "variant"))),
               Map(
-                "id" → "2",
-                "typeId" → "product",
-                "variants" → Nil)))))
+                "id" -> "2",
+                "typeId" -> "product",
+                "variants" -> Nil)))))
 
       ctx.allProjections should be (
         Vector(
@@ -230,30 +230,30 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
       val ctx = new Ctx
 
       Executor.execute(schema, query, ctx, deferredResolver = new ProductResolver).await should be (
-        Map("data" →
+        Map("data" ->
           Map(
-            "projectAll" → Vector(
+            "projectAll" -> Vector(
               Map(
-                "id" → "1",
-                "variantIds" → Nil,
-                "masterVariant" → Map("mixed" → "1"),
-                "variants" → Vector(Map("id" → "2", "mixed" → "2"))),
+                "id" -> "1",
+                "variantIds" -> Nil,
+                "masterVariant" -> Map("mixed" -> "1"),
+                "variants" -> Vector(Map("id" -> "2", "mixed" -> "2"))),
               Map(
-                "id" → "2",
-                "variantIds" → Nil,
-                "masterVariant" → Map("mixed" → "1"),
-                "variants" → Nil)),
-            "projectOne" → Vector(
+                "id" -> "2",
+                "variantIds" -> Nil,
+                "masterVariant" -> Map("mixed" -> "1"),
+                "variants" -> Nil)),
+            "projectOne" -> Vector(
               Map(
-                "id" → "1",
-                "variantIds" → Nil,
-                "masterVariant" → Map("mixed" → "1"),
-                "variants" → Vector(Map("id" → "2", "mixed" → "2"))),
+                "id" -> "1",
+                "variantIds" -> Nil,
+                "masterVariant" -> Map("mixed" -> "1"),
+                "variants" -> Vector(Map("id" -> "2", "mixed" -> "2"))),
               Map(
-                "id" → "2",
-                "variantIds" → Nil,
-                "masterVariant" → Map("mixed" → "1"),
-                "variants" → Nil)))))
+                "id" -> "2",
+                "variantIds" -> Nil,
+                "masterVariant" -> Map("mixed" -> "1"),
+                "variants" -> Nil)))))
 
       ctx.allProjections should be (
         Vector(

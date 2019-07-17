@@ -15,4 +15,4 @@ case class RenameValue(value: String, graphqlName: String) extends DeriveEnumSet
 case class IncludeValues(values: String*) extends DeriveEnumSetting
 case class ExcludeValues(fieldNames: String*) extends DeriveEnumSetting
 
-case class TransformValueNames(transformer: String ⇒ String) extends DeriveEnumSetting
+case class TransformValueNames(transformer: String => String) extends DeriveEnumSetting

@@ -25,34 +25,34 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
     fields[Unit, Unit](
       Field("fieldWithObjectInput", OptionType(StringType),
         arguments = Argument("input", OptionInputType(TestInputObject)) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(TestInputObject)))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(TestInputObject)))),
       Field("fieldWithNullableStringInput", OptionType(StringType),
         arguments = Argument("input", OptionInputType(StringType)) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(StringType)))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(StringType)))),
       Field("fieldWithNullableStringInputDefined", BooleanType,
         arguments = Argument("input", OptionInputType(StringType)) :: Nil,
-        resolve = ctx ⇒ ctx.argDefinedInQuery("input")),
+        resolve = ctx => ctx.argDefinedInQuery("input")),
       Field("fieldWithNonNullableStringInput", OptionType(StringType),
         arguments = Argument("input", StringType) :: Nil,
-        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), StringType)),
+        resolve = ctx => DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), StringType)),
       Field("fieldWithDefaultArgumentValue", OptionType(StringType),
         arguments = Argument("input", OptionInputType(StringType), defaultValue = "Hello World") :: Nil,
-        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), OptionInputType(StringType))),
+        resolve = ctx => DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), OptionInputType(StringType))),
       Field("fieldWithNonNullableStringInputAndDefaultArgumentValue", OptionType(StringType),
         arguments = Argument("input", StringType, defaultValue = "Hello World") :: Nil,
-        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), OptionInputType(StringType))),
+        resolve = ctx => DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), OptionInputType(StringType))),
       Field("list", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(OptionInputType(StringType)))) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(OptionInputType(StringType)))))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(OptionInputType(StringType)))))),
       Field("nnList", OptionType(StringType),
         arguments = Argument("input", ListInputType(OptionInputType(StringType))) :: Nil,
-        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(OptionInputType(StringType)))),
+        resolve = ctx => DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(OptionInputType(StringType)))),
       Field("listNN", OptionType(StringType),
         arguments = Argument("input", OptionInputType(ListInputType(StringType))) :: Nil,
-        resolve = ctx ⇒ ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(StringType))))),
+        resolve = ctx => ctx.argOpt[Any]("input") map (DefaultValueRenderer.renderCoercedInputValueCompact(_, OptionInputType(ListInputType(StringType))))),
       Field("nnListNN", OptionType(StringType),
         arguments = Argument("input", ListInputType(StringType)) :: Nil,
-        resolve = ctx ⇒ DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(StringType)))
+        resolve = ctx => DefaultValueRenderer.renderCoercedInputValueCompact(ctx.arg[Any]("input"), ListInputType(StringType)))
     )
   })
 
@@ -67,8 +67,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: null)
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → null
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> null
           )))
 
         "uses undefined when variable not provided" in check((),
@@ -79,9 +79,9 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           args = JsObject(/* Intentionally missing variable values. */),
-          expected = Map("data" → Map(
-            "fieldWithNullableStringInput" → null,
-            "fieldWithNullableStringInputDefined" → false
+          expected = Map("data" -> Map(
+            "fieldWithNullableStringInput" -> null,
+            "fieldWithNullableStringInputDefined" -> false
           )))
 
         "uses null when variable provided explicit null value" in check((),
@@ -91,10 +91,10 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithNullableStringInputDefined(input: $input)
             }
           """,
-          args = JsObject("input" → JsNull),
-          expected = Map("data" → Map(
-            "fieldWithNullableStringInput" → null,
-            "fieldWithNullableStringInputDefined" → true
+          args = JsObject("input" -> JsNull),
+          expected = Map("data" -> Map(
+            "fieldWithNullableStringInput" -> null,
+            "fieldWithNullableStringInputDefined" -> true
           )))
 
         "does not use default value when provided" in check((),
@@ -103,9 +103,9 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithNullableStringInput(input: $input)
             }
           """,
-          args = JsObject("input" → JsString("Variable value")),
-          expected = Map("data" → Map(
-            "fieldWithNullableStringInput" → "\"Variable value\""
+          args = JsObject("input" -> JsString("Variable value")),
+          expected = Map("data" -> Map(
+            "fieldWithNullableStringInput" -> "\"Variable value\""
           )))
         
         "uses explicit null value instead of default value" in check((),
@@ -115,10 +115,10 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithNullableStringInputDefined(input: $input)
             }
           """,
-          args = JsObject("input" → JsNull),
-          expected = Map("data" → Map(
-            "fieldWithNullableStringInput" → null,
-            "fieldWithNullableStringInputDefined" → true
+          args = JsObject("input" -> JsNull),
+          expected = Map("data" -> Map(
+            "fieldWithNullableStringInput" -> null,
+            "fieldWithNullableStringInputDefined" -> true
           )))
 
         "uses null default value when not provided" in check((),
@@ -129,9 +129,9 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           args = JsObject(/* Intentionally missing variable values. */),
-          expected = Map("data" → Map(
-            "fieldWithNullableStringInput" → null,
-            "fieldWithNullableStringInputDefined" → true
+          expected = Map("data" -> Map(
+            "fieldWithNullableStringInput" -> null,
+            "fieldWithNullableStringInputDefined" -> true
           )))
 
         "when no runtime value is provided to a non-null argument" in check((),
@@ -140,8 +140,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithNonNullableStringInputAndDefaultArgumentValue(input: $optional)
             }
           """,
-          Map("data" → Map(
-            "fieldWithNonNullableStringInputAndDefaultArgumentValue" → "\"Hello World\""
+          Map("data" -> Map(
+            "fieldWithNonNullableStringInputAndDefaultArgumentValue" -> "\"Hello World\""
           )))
 
         "executes with complex input" in check((),
@@ -150,8 +150,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {a: "foo", b: ["bar"], c: "baz"})
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
           )))
 
         "executes with complex input containing nulls in object fields" in check((),
@@ -160,8 +160,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {a: null, b: ["bar"], c: "baz"})
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{a:null,b:["bar"],c:"baz"}"""
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:null,b:["bar"],c:"baz"}"""
           )))
 
         "executes with complex input containing nulls in list values inside of complex objects" in check((),
@@ -170,8 +170,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {a: "foo", b: ["bar", null, "test"], c: "baz"})
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar",null,"test"],c:"baz"}"""
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar",null,"test"],c:"baz"}"""
           )))
 
         "executes with complex input containing nulls in list values" in check((),
@@ -180,8 +180,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               nnList(input: ["a1", null, "b1"])
             }
           """,
-          Map("data" → Map(
-            "nnList" → """["a1",null,"b1"]"""
+          Map("data" -> Map(
+            "nnList" -> """["a1",null,"b1"]"""
           )))
 
         "does not allow null literals in not-null lists" in checkContainsErrors(
@@ -192,7 +192,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("Expected type 'String!', found 'null'." → Seq(Pos(3, 38))))
+          List("Expected type 'String!', found 'null'." -> Seq(Pos(3, 38))))
 
         "does not allow null literals in not-null fields in complex objects" in checkContainsErrors(
           (),
@@ -202,7 +202,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("Expected type 'String!', found 'null'." → Seq(Pos(3, 57))))
+          List("Expected type 'String!', found 'null'." -> Seq(Pos(3, 57))))
 
         "does not allow null literals in not-null arguments" in checkContainsErrors(
           (),
@@ -212,7 +212,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("Expected type '[String!]!', found 'null'." → Seq(Pos(3, 31))))
+          List("Expected type '[String!]!', found 'null'." -> Seq(Pos(3, 31))))
 
         "does not allow null literals in not-null lists inside of complex objects" in checkContainsErrors(
           (),
@@ -222,7 +222,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """,
           null,
-          List("Expected type 'String!', found 'null'." → Seq(Pos(3, 74))))
+          List("Expected type 'String!', found 'null'." -> Seq(Pos(3, 74))))
 
         "executes with complex input containing undefined object fields" in check((),
           """
@@ -230,8 +230,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {b: ["bar"], c: "baz"})
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{b:["bar"],c:"baz"}""")))
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{b:["bar"],c:"baz"}""")))
 
         "properly coerces single value to array" in check((),
           """
@@ -239,8 +239,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz"})
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}""")))
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}""")))
 
         "properly parses null value to null" in check((),
           """
@@ -248,8 +248,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {a: null, b: null, c: "C", d: null})
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{a:null,b:null,c:"C",d:null}""")))
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:null,b:null,c:"C",d:null}""")))
 
         "properly parses null value in list" in check((),
           """
@@ -257,8 +257,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {b: ["A",null,"C"], c: "C"})
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{b:["A",null,"C"],c:"C"}""")))
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{b:["A",null,"C"],c:"C"}""")))
 
         "does not use incorrect value" in checkContainsErrors(
           (),
@@ -267,8 +267,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: ["foo", "bar", "baz"])
             }
           """,
-          Map("fieldWithObjectInput" → null),
-          List("""Value '["foo","bar","baz"]' of wrong type was provided to the field of type 'TestInputObject!' at path 'input'.""" → List(Pos(3, 15), Pos(3, 43))),
+          Map("fieldWithObjectInput" -> null),
+          List("""Value '["foo","bar","baz"]' of wrong type was provided to the field of type 'TestInputObject!' at path 'input'.""" -> List(Pos(3, 15), Pos(3, 43))),
           validateQuery = false
         )
       }
@@ -282,18 +282,18 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           """)
 
         "executes with complex input (scala input)" in {
-          val args = Map("input" → Map("a" → "foo", "b" → List("bar"), "c" → "baz"))
+          val args = Map("input" -> Map("a" -> "foo", "b" -> List("bar"), "c" -> "baz"))
 
-          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
+          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 
         "executes with complex input (json input)" in {
           val args = """{"input": {"a": "foo", "b": ["bar"], "c": "baz"}}""".parseJson
 
-          Executor.execute(schema, testQuery, variables = args).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
+          Executor.execute(schema, testQuery, variables = args).await should be (Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 
@@ -303,23 +303,23 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: $input)
             }
           """,
-          Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
+          Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
           )))
 
         "properly coerces single value to array (scala input)" in {
-          val args = Map("input" → Map("a" → "foo", "b" → "bar", "c" → "baz"))
+          val args = Map("input" -> Map("a" -> "foo", "b" -> "bar", "c" -> "baz"))
 
-          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
+          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be (Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 
         "properly coerces single value to array (json input)" in {
           val args = """{"input": {"a": "foo", "b": "bar", "c": "baz"}}""".parseJson
 
-          Executor.execute(schema, testQuery, variables = args).await should be (Map("data" → Map(
-            "fieldWithObjectInput" → """{a:"foo",b:["bar"],c:"baz"}"""
+          Executor.execute(schema, testQuery, variables = args).await should be (Map("data" -> Map(
+            "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
           )))
         }
 
@@ -362,8 +362,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNullableStringInput
           }
         """,
-        Map("data" → Map(
-          "fieldWithNullableStringInput" → null
+        Map("data" -> Map(
+          "fieldWithNullableStringInput" -> null
         )))
 
       "allows nullable inputs to be omitted in a variable" in check((),
@@ -372,8 +372,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNullableStringInput(input: $value)
           }
         """,
-        Map("data" → Map(
-          "fieldWithNullableStringInput" → null
+        Map("data" -> Map(
+          "fieldWithNullableStringInput" -> null
         )))
 
       "allows nullable inputs to be omitted in an unlisted variable" in check((),
@@ -382,14 +382,14 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNullableStringInput(input: $value)
           }
         """,
-        Map("data" → Map(
-          "fieldWithNullableStringInput" → null
+        Map("data" -> Map(
+          "fieldWithNullableStringInput" -> null
         )),
         validateQuery = false
       )
 
       "allows nullable inputs to be set to null in a variable" in {
-        val args = mapVars("value" → null)
+        val args = mapVars("value" -> null)
 
         val Success(query) = QueryParser.parse(
           """
@@ -398,13 +398,13 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """)
 
-        Executor.execute(schema, query, variables = args).await should be (Map("data" → Map(
-          "fieldWithNullableStringInput" → null
+        Executor.execute(schema, query, variables = args).await should be (Map("data" -> Map(
+          "fieldWithNullableStringInput" -> null
         )))
       }
 
       "allows nullable inputs to be set to a value in a variable" in {
-        val args = mapVars("value" → "a")
+        val args = mapVars("value" -> "a")
 
         val Success(query) = QueryParser.parse(
           """
@@ -413,8 +413,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             }
           """)
 
-        Executor.execute(schema, query, variables = args).await should be (Map("data" → Map(
-          "fieldWithNullableStringInput" → "\"a\""
+        Executor.execute(schema, query, variables = args).await should be (Map("data" -> Map(
+          "fieldWithNullableStringInput" -> "\"a\""
         )))
       }
 
@@ -424,8 +424,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNullableStringInput(input: "a")
           }
         """,
-        Map("data" → Map(
-          "fieldWithNullableStringInput" → "\"a\""
+        Map("data" -> Map(
+          "fieldWithNullableStringInput" -> "\"a\""
         )))
     }
 
@@ -436,8 +436,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
            fieldWithNonNullableStringInput(input: $value)
           }
         """,
-        Map("data" → Map(
-          "fieldWithNonNullableStringInput" → "\"default\""
+        Map("data" -> Map(
+          "fieldWithNonNullableStringInput" -> "\"default\""
         )))
 
       "does not allow non-nullable inputs to be omitted in a variable" in  checkContainsErrors((),
@@ -447,7 +447,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         null,
-        List("""Variable '$value' expected value of type 'String!' but value is undefined.""" → List(Pos(2, 33))))
+        List("""Variable '$value' expected value of type 'String!' but value is undefined.""" -> List(Pos(2, 33))))
 
       "does not allow non-nullable inputs to be set to null in a variable" in  checkContainsErrors((),
         """
@@ -456,7 +456,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         null,
-        List("""Variable '$value' expected value of type 'String!' but got: null.""" → List(Pos(2, 33))),
+        List("""Variable '$value' expected value of type 'String!' but got: null.""" -> List(Pos(2, 33))),
         """{"value": null}""".parseJson
       )
 
@@ -466,8 +466,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput(input: $value)
           }
         """,
-        Map("data" → Map(
-          "fieldWithNonNullableStringInput" → "\"a\""
+        Map("data" -> Map(
+          "fieldWithNonNullableStringInput" -> "\"a\""
         )),
         """{"value": "a"}""".parseJson
       )
@@ -478,8 +478,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput(input: "a")
           }
         """,
-        Map("data" → Map(
-          "fieldWithNonNullableStringInput" → "\"a\""
+        Map("data" -> Map(
+          "fieldWithNonNullableStringInput" -> "\"a\""
         )))
 
       "passes along null for non-nullable inputs if explicitly set in the query" in  checkContainsErrors((),
@@ -488,8 +488,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput
           }
         """,
-        Map("fieldWithNonNullableStringInput" → null),
-        List("Null value was provided for the NotNull Type 'String!' at path 'input'." → Seq(Pos(3, 13))),
+        Map("fieldWithNonNullableStringInput" -> null),
+        List("Null value was provided for the NotNull Type 'String!' at path 'input'." -> Seq(Pos(3, 13))),
         validateQuery = false)
 
       // Note: this test would typically fail validation before encountering
@@ -503,8 +503,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput(input: $foo)
           }
         """,
-        Map("fieldWithNonNullableStringInput" → null),
-        List("Null value was provided for the NotNull Type 'String!' at path 'input'." → Seq(Pos(3, 13))),
+        Map("fieldWithNonNullableStringInput" -> null),
+        List("Null value was provided for the NotNull Type 'String!' at path 'input'." -> Seq(Pos(3, 13))),
         validateQuery = false)
     }
 
@@ -515,7 +515,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             list(input: $input)
           }
         """,
-        Map("data" → Map("list" → null)),
+        Map("data" -> Map("list" -> null)),
         """{"input": null}""".parseJson
       )
 
@@ -525,7 +525,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             list(input: $input)
           }
         """,
-        Map("data" → Map("list" → "[\"A\"]")),
+        Map("data" -> Map("list" -> "[\"A\"]")),
         """{"input": ["A"]}""".parseJson
       )
 
@@ -535,7 +535,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             list(input: $input)
           }
         """,
-        Map("data" → Map("list" → "[\"A\",null,\"B\"]")),
+        Map("data" -> Map("list" -> "[\"A\",null,\"B\"]")),
         """{"input": ["A", null, "B"]}""".parseJson
       )
 
@@ -546,7 +546,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         null,
-        List("""Variable '$input' expected value of type '[String]!' but got: null.""" → List(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String]!' but got: null.""" -> List(Pos(2, 19))),
         """{"input": null}""".parseJson
       )
 
@@ -556,7 +556,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             nnList(input: $input)
           }
         """,
-        Map("data" → Map("nnList" → "[\"A\"]")),
+        Map("data" -> Map("nnList" -> "[\"A\"]")),
         """{"input": ["A"]}""".parseJson
       )
 
@@ -566,7 +566,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             nnList(input: $input)
           }
         """,
-        Map("data" → Map("nnList" → "[\"A\",null,\"B\"]")),
+        Map("data" -> Map("nnList" -> "[\"A\",null,\"B\"]")),
         """{"input": ["A",null,"B"]}""".parseJson
       )
 
@@ -576,7 +576,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             listNN(input: $input)
           }
         """,
-        Map("data" → Map("listNN" → null)),
+        Map("data" -> Map("listNN" -> null)),
         """{"input": null}""".parseJson
       )
 
@@ -586,7 +586,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             listNN(input: $input)
           }
         """,
-        Map("data" → Map("listNN" → "[\"A\"]")),
+        Map("data" -> Map("listNN" -> "[\"A\"]")),
         """{"input": ["A"]}""".parseJson
       )
 
@@ -597,7 +597,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         null,
-        List("""Variable '$input' expected value of type '[String!]' but got: ["A",null,"B"].""" → List(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String!]' but got: ["A",null,"B"].""" -> List(Pos(2, 19))),
         """{"input": ["A",null,"B"]}""".parseJson
       )
 
@@ -607,8 +607,8 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             nnListNN(input: $input)
           }
         """,
-        Map("nnListNN" → null),
-        List("Null value was provided for the NotNull Type '[String!]!' at path 'input'." → Seq(Pos(3, 13))),
+        Map("nnListNN" -> null),
+        List("Null value was provided for the NotNull Type '[String!]!' at path 'input'." -> Seq(Pos(3, 13))),
         """{"input": null}""".parseJson,
         validateQuery = false
       )
@@ -619,7 +619,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             nnListNN(input: $input)
           }
         """,
-        Map("data" → Map("nnListNN" → "[\"A\"]")),
+        Map("data" -> Map("nnListNN" -> "[\"A\"]")),
         """{"input": ["A"]}""".parseJson
       )
 
@@ -630,7 +630,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         null,
-        List("""Variable '$input' expected value of type '[String!]!' but got: ["A",null,"B"].""" → List(Pos(2, 19))),
+        List("""Variable '$input' expected value of type '[String!]!' but got: ["A",null,"B"].""" -> List(Pos(2, 19))),
         """{"input": ["A",null,"B"]}""".parseJson
       )
 
@@ -641,7 +641,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         null,
-        List("""Variable 'TestType!' expected value of type '$input' which cannot be used as an input type.""" → List(Pos(2, 19))),
+        List("""Variable 'TestType!' expected value of type '$input' which cannot be used as an input type.""" -> List(Pos(2, 19))),
         """{"input": ["A", "B"]}""".parseJson,
         validateQuery = false
       )
@@ -653,7 +653,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         null,
-        List("""Variable 'UnknownType!' expected value of type '$input' which cannot be used as an input type.""" → List(Pos(2, 19))),
+        List("""Variable 'UnknownType!' expected value of type '$input' which cannot be used as an input type.""" -> List(Pos(2, 19))),
         """{"input": "whoknows"}""".parseJson,
         validateQuery = false
       )
@@ -666,7 +666,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithDefaultArgumentValue
           }
         """,
-        Map("data" → Map("fieldWithDefaultArgumentValue" → "\"Hello World\"")))
+        Map("data" -> Map("fieldWithDefaultArgumentValue" -> "\"Hello World\"")))
 
       "when nullable variable provided" in  check((),
         """
@@ -674,7 +674,7 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
             fieldWithDefaultArgumentValue(input: $optional)
           }
         """,
-        Map("data" → Map("fieldWithDefaultArgumentValue" → "\"Hello World\"")) ,
+        Map("data" -> Map("fieldWithDefaultArgumentValue" -> "\"Hello World\"")) ,
         validateQuery = false
       )
 
@@ -685,12 +685,12 @@ class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
           }
         """,
         Map(
-          "data" → Map("fieldWithDefaultArgumentValue" → null),
-          "errors" → Vector(
+          "data" -> Map("fieldWithDefaultArgumentValue" -> null),
+          "errors" -> Vector(
             Map(
-              "message" → "Argument 'input' has wrong value: Invalid value.",
-              "path" → Vector("fieldWithDefaultArgumentValue"),
-              "locations" → Vector(Map("line" → 3, "column" → 13), Map("line" → 3, "column" → 50))))),
+              "message" -> "Argument 'input' has wrong value: Invalid value.",
+              "path" -> Vector("fieldWithDefaultArgumentValue"),
+              "locations" -> Vector(Map("line" -> 3, "column" -> 13), Map("line" -> 3, "column" -> 50))))),
         validateQuery = false
       )
     }

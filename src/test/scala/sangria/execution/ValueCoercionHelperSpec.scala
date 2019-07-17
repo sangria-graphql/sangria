@@ -111,8 +111,8 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
       check(opt(testInputObj), "null", Some(None))
       check(opt(testInputObj), "123", None)
       check(opt(testInputObj), "[]", None)
-      check(opt(testInputObj), "{ int: 123, requiredBool: false }", Some(Some(Map("int" → Some(123), "requiredBool" → false))))
-      check(opt(testInputObj), "{ bool: true, requiredBool: false }", Some(Some(Map("int" → Some(42), "bool" → Some(true), "requiredBool" → false))))
+      check(opt(testInputObj), "{ int: 123, requiredBool: false }", Some(Some(Map("int" -> Some(123), "requiredBool" -> false))))
+      check(opt(testInputObj), "{ bool: true, requiredBool: false }", Some(Some(Map("int" -> Some(42), "bool" -> Some(true), "requiredBool" -> false))))
       check(opt(testInputObj), "{ int: true, requiredBool: true }", None)
       check(opt(testInputObj), "{ requiredBool: null }", None)
       check(opt(testInputObj), "{ bool: true }", None)
@@ -120,39 +120,39 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
 
     "accepts variable values assuming already coerced" in {
       check(opt(BooleanType), "$var", None)
-      check(opt(BooleanType), "$var", Some(Some(true)), "$var: Boolean" → """{"var": true}""")
-      check(opt(BooleanType), "$var", Some(None), "$var: Boolean" → """{"var": null}""")
+      check(opt(BooleanType), "$var", Some(Some(true)), "$var: Boolean" -> """{"var": true}""")
+      check(opt(BooleanType), "$var", Some(None), "$var: Boolean" -> """{"var": null}""")
     }
 
     "asserts variables are provided as items in lists" in {
       check(listOfBool, "[ $foo ]", Some(Some(List(None))))
       check(listOfNonNullBool, "[ $foo ]", None)
-      check(listOfNonNullBool, "[ $foo ]", Some(Some(List(true))), "$foo: Boolean!" → """{"foo": true}""")
-      check(listOfNonNullBool, "$foo", Some(Some(List(true))), "$foo: [Boolean!]" → """{"foo": true}""")
-      check(listOfNonNullBool, "$foo", Some(Some(List(true))), "$foo: [Boolean!]" → """{"foo": [true]}""")
+      check(listOfNonNullBool, "[ $foo ]", Some(Some(List(true))), "$foo: Boolean!" -> """{"foo": true}""")
+      check(listOfNonNullBool, "$foo", Some(Some(List(true))), "$foo: [Boolean!]" -> """{"foo": true}""")
+      check(listOfNonNullBool, "$foo", Some(Some(List(true))), "$foo: [Boolean!]" -> """{"foo": [true]}""")
     }
 
     "omits input object fields for unprovided variables" in {
       check(opt(testInputObj), "{ int: $foo, bool: $foo, requiredBool: true }",
-        Some(Some(Map("int" → Some(42), "requiredBool" → true))))
+        Some(Some(Map("int" -> Some(42), "requiredBool" -> true))))
 
       check(opt(testInputObj), "{ int: $foo, bool: $foo, requiredBool: true }",
-        Some(Some(Map("int" → None, "bool" → None, "requiredBool" → true))),
-        "$foo: Boolean" → """{"foo": null}""")
+        Some(Some(Map("int" -> None, "bool" -> None, "requiredBool" -> true))),
+        "$foo: Boolean" -> """{"foo": null}""")
 
       check(opt(testInputObj), "{ requiredBool: $foo }", None)
 
       check(opt(testInputObj), "{ bool: $foo, requiredBool: $foo }",
-        Some(Some(Map("int" → Some(42), "bool" → Some(true), "requiredBool" → true))),
-        "$foo: Boolean" → """{"foo": true}""")
+        Some(Some(Map("int" -> Some(42), "bool" -> Some(true), "requiredBool" -> true))),
+        "$foo: Boolean" -> """{"foo": true}""")
 
       check(opt(testInputObj), "$foo",
-        Some(Some(Map("int" → Some(42), "requiredBool" → true))),
-        "$foo: TestInput" → """{"foo": {"requiredBool": true}}""")
+        Some(Some(Map("int" -> Some(42), "requiredBool" -> true))),
+        "$foo: TestInput" -> """{"foo": {"requiredBool": true}}""")
 
       check(opt(testInputObj), "$foo",
-        Some(Some(Map("int" → Some(42), "bool" → None, "requiredBool" → true))),
-        "$foo: TestInput" → """{"foo": {"bool": null, "requiredBool": true}}""")
+        Some(Some(Map("int" -> Some(42), "bool" -> None, "requiredBool" -> true))),
+        "$foo: TestInput" -> """{"foo": {"bool": null, "requiredBool": true}}""")
     }
   }
 
@@ -181,7 +181,7 @@ class ValueCoercionHelperSpec extends WordSpec with Matchers {
     args.raw.get("a")
   }
 
-  def check[T](tpe: InputType[T], value: String, result: Any, vars: (String, String) = "" → "")(implicit fromInput: FromInput[T]) =
+  def check[T](tpe: InputType[T], value: String, result: Any, vars: (String, String) = "" -> "")(implicit fromInput: FromInput[T]) =
     coerceInputValue(tpe, value, vars) should be (result)
 
   def cls[T : ClassTag] = implicitly[ClassTag[T]].runtimeClass

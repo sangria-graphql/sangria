@@ -15,10 +15,10 @@ import sangria.validation._
 class VariablesAreInputTypes extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.VariableDefinition(name, tpe, _, _, _, pos) ⇒
+      case ast.VariableDefinition(name, tpe, _, _, _, pos) =>
         ctx.schema.getInputType(tpe) match {
-          case Some(_) ⇒ AstVisitorCommand.RightContinue
-          case None ⇒ Left(Vector(
+          case Some(_) => AstVisitorCommand.RightContinue
+          case None => Left(Vector(
             NonInputTypeOnVarViolation(name, QueryRenderer.render(tpe), ctx.sourceMapper, tpe.location.toList)))
         }
     }

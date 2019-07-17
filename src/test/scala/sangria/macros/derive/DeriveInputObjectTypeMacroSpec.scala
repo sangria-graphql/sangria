@@ -80,10 +80,10 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
     "expose case class fields" in {
       val tpe = deriveInputObjectType[TestInputObj]()
 
-      tpe.fields.sortBy(_.name).map(f ⇒ f.name → f.fieldType) should be (List(
-        "excluded" → OptionInputType(ListInputType(OptionInputType(IntType))),
-        "id" → StringType,
-        "list" → ListInputType(StringType)))
+      tpe.fields.sortBy(_.name).map(f => f.name -> f.fieldType) should be (List(
+        "excluded" -> OptionInputType(ListInputType(OptionInputType(IntType))),
+        "id" -> StringType,
+        "list" -> ListInputType(StringType)))
     }
 
     "validate known field names" in {
@@ -121,9 +121,9 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
         contain("ID") and
         contain("MYLIST"))
 
-      val transformer2 = (s: String) ⇒ s.zipWithIndex.map {
-        case (c, i) if i % 2 == 0 ⇒ c.toLower
-        case (c, _) ⇒ c.toUpper
+      val transformer2 = (s: String) => s.zipWithIndex.map {
+        case (c, i) if i % 2 == 0 => c.toLower
+        case (c, _) => c.toUpper
       }.mkString("")
 
       val tpe2 = deriveInputObjectType[TestInputObjAnnotated](
@@ -211,7 +211,7 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
         graphql"""{foo(a: {id: 21, b: {name: "it's b", a: {id: 34}, b: {name: "another", a: {id: 56}}}})}"""
 
       Executor.execute(schema, query, root = new Query).await should be (
-        JsObject("data" → JsObject("foo" →
+        JsObject("data" -> JsObject("foo" ->
           JsString("A(21,Some(B(it's b,A(34,None),Some(B(another,A(56,None),None)))))"))))
     }
 
@@ -234,14 +234,14 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
       implicit lazy val TestNestedType = deriveInputObjectType[TestNested]()
       implicit lazy val TestDefaultsType = deriveInputObjectType[TestDefaults]()
 
-      TestDeeperType.fields.sortBy(_.name).map(f ⇒ f.name → f.fieldType) should be (List(
-        "foo" → OptionInputType(IntType),
-        "s" → StringType))
+      TestDeeperType.fields.sortBy(_.name).map(f => f.name -> f.fieldType) should be (List(
+        "foo" -> OptionInputType(IntType),
+        "s" -> StringType))
 
-      TestNestedType.fields.sortBy(_.name).map(f ⇒ f.name → f.fieldType) should be (List(
-        "deeper" → OptionInputType(ListInputType(TestDeeperType)),
-        "name" → OptionInputType(ListInputType(IntType)),
-        "stub" → TestDeeperType))
+      TestNestedType.fields.sortBy(_.name).map(f => f.name -> f.fieldType) should be (List(
+        "deeper" -> OptionInputType(ListInputType(TestDeeperType)),
+        "name" -> OptionInputType(ListInputType(IntType)),
+        "stub" -> TestDeeperType))
 
       val QueryType = deriveObjectType[Unit, Query]()
 
@@ -250,7 +250,7 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
       val query = graphql"""{foo(a: {nested: {stub: {s: "foo"}}})}"""
 
       Executor.execute(schema, query, root = new Query).await should be (
-        JsObject("data" → JsObject("foo" →
+        JsObject("data" -> JsObject("foo" ->
           JsString("TestDefaults(fgh,None,324,TestNested(TestDeeper(foo,123),List(3, 4, 5),Some(List(TestDeeper(aa,1)))),Some(List(TestNested(TestDeeper(ee,1),List(1),Some(List(TestDeeper(aa,1)))), TestNested(TestDeeper(ff,1),List(1),Some(List(TestDeeper(aa,1)))))))"))))
 
       val intro = IntrospectionParser.parse(Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await)

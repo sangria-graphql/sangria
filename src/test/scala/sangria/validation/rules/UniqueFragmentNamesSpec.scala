@@ -79,7 +79,7 @@ class UniqueFragmentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can only be one fragment named 'fragA'." → Some(Pos(8, 9))
+        "There can only be one fragment named 'fragA'." -> Some(Pos(8, 9))
       ))
 
     "fragments named the same without being referenced" in expectFails(
@@ -92,7 +92,7 @@ class UniqueFragmentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can only be one fragment named 'fragA'." → Some(Pos(5, 9))
+        "There can only be one fragment named 'fragA'." -> Some(Pos(5, 9))
       ))
   }
 }

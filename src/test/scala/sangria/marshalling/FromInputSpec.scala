@@ -53,7 +53,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("optListOpt", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Seq[Option[JsValue]] = ctx.arg(arg)
 
               "" + value.map(_.map(_.compactPrint))
@@ -87,7 +87,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("nn", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Article = ctx.arg(arg)
 
               "" + value
@@ -102,7 +102,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("optListOpt", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Seq[Option[Article]] = ctx.arg(arg)
 
               "" + value
@@ -123,7 +123,7 @@ class FromInputSpec extends WordSpec with Matchers {
         val ad = node.asInstanceOf[Map[String, Any]]
 
         def readComments(data: Seq[Option[Map[String, Any]]]) = {
-          data.toVector.map(_.map(cd ⇒ {
+          data.toVector.map(_.map(cd => {
             Comment(
               author = cd("author").asInstanceOf[Option[String]].getOrElse("manual default"),
               text = cd.get("text").flatMap(_.asInstanceOf[Option[String]]))
@@ -145,7 +145,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("nn", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Article = ctx.arg(arg)
 
               "" + value
@@ -156,7 +156,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("opt", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Option[Article] = ctx.arg(arg)
 
               "" + value
@@ -168,7 +168,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("optDef", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Article = ctx.arg(arg)
 
               "" + value
@@ -179,7 +179,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("optList", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Option[Seq[Article]] = ctx.arg(arg)
 
               "" + value
@@ -193,7 +193,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("optListDef", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Seq[Article] = ctx.arg(arg)
 
               "" + value
@@ -204,7 +204,7 @@ class FromInputSpec extends WordSpec with Matchers {
 
           Field("optListOpt", OptionType(StringType),
             arguments = arg :: Nil,
-            resolve = ctx ⇒ {
+            resolve = ctx => {
               val value: Option[Seq[Option[Article]]] = ctx.arg(arg)
 
               "" + value
@@ -229,8 +229,8 @@ class FromInputSpec extends WordSpec with Matchers {
           })
         }
       """,
-      Map("data" → Map(
-        "nn" → Article("First!", None, None,
+      Map("data" -> Map(
+        "nn" -> Article("First!", None, None,
           Vector(None, Some(Comment("anonymous", Some("Hello wold"))))).toString))
     )
 
@@ -244,10 +244,10 @@ class FromInputSpec extends WordSpec with Matchers {
           o3: opt(article: {title: "foo", text: "bar", tags: null, comments: []})
         }
       """,
-      Map("data" → Map(
-        "o1" → None.toString,
-        "o2" → None.toString,
-        "o3" → Some(Article("foo", Some("bar"), None, Vector.empty)).toString))
+      Map("data" -> Map(
+        "o1" -> None.toString,
+        "o2" -> None.toString,
+        "o3" -> Some(Article("foo", Some("bar"), None, Vector.empty)).toString))
     )
 
     "deserialize manually with coerced scala result marshaller (single optional value with default)" in check(
@@ -259,9 +259,9 @@ class FromInputSpec extends WordSpec with Matchers {
           od2: optDef(article: {title: "foo", text: "bar", tags: null, comments: []})
         }
       """,
-      Map("data" → Map(
-        "od1" → Article("def", None, None, Vector(Some(Comment("aaa", None)), Some(Comment("bbb", Some("ccc"))), None)).toString,
-        "od2" → Article("foo", Some("bar"), None, Vector.empty).toString))
+      Map("data" -> Map(
+        "od1" -> Article("def", None, None, Vector(Some(Comment("aaa", None)), Some(Comment("bbb", Some("ccc"))), None)).toString,
+        "od2" -> Article("foo", Some("bar"), None, Vector.empty).toString))
     )
 
     "deserialize manually with coerced scala result marshaller (optional list with not-null values)" in check(
@@ -275,15 +275,15 @@ class FromInputSpec extends WordSpec with Matchers {
           ol4: optList(articles: $var2)
         }
       """,
-      Map("data" → Map(
-        "ol1" → None.toString,
-        "ol2" → Some(Vector(
+      Map("data" -> Map(
+        "ol1" -> None.toString,
+        "ol2" -> Some(Vector(
           Article("first", None, None, Vector(None)),
           Article("second", None, None, Vector(None, None)))).toString,
-        "ol3" → Some(Vector(
+        "ol3" -> Some(Vector(
           Article("foo", Some("bar"), Some(Vector("a", "b")), Vector(
             None, Some(Comment("anonymous", None)), Some(Comment("anonymous", Some("commnet3"))))))).toString,
-        "ol4" → Some(Vector(
+        "ol4" -> Some(Vector(
           Article("bar", None, None, Vector(None)),
           Article("baz", None, None, Vector.empty))).toString)),
       """
@@ -315,11 +315,11 @@ class FromInputSpec extends WordSpec with Matchers {
           old2: optListDef(articles: [{title: "first", comments: [null]}, {title: "second", comments: [null, null]}])
         }
       """,
-      Map("data" → Map(
-        "old1" → Vector(
+      Map("data" -> Map(
+        "old1" -> Vector(
           Article("def1", None, Some(Vector("c", "d")), Vector(Some(Comment("c1", None)), None)),
           Article("def2", Some("some text"), None, Vector.empty)).toString,
-        "old2" → Vector(
+        "old2" -> Vector(
           Article("first", None, None, Vector(None)),
           Article("second", None, None, Vector(None, None))).toString))
     )
@@ -335,17 +335,17 @@ class FromInputSpec extends WordSpec with Matchers {
           olo4: optListOpt(articles: $var2)
         }
       """,
-      Map("data" → Map(
-        "olo1" → None.toString,
-        "olo2" → Some(Vector(
+      Map("data" -> Map(
+        "olo1" -> None.toString,
+        "olo2" -> Some(Vector(
           Some(Article("first", None, None, Vector(None))),
           None,
           Some(Article("second", None, None, Vector(None, None))))).toString,
-        "olo3" → Some(Vector(
+        "olo3" -> Some(Vector(
           Some(Article("foo", Some("bar"), Some(Vector("a", "b")), Vector(
             None, Some(Comment("anonymous", None)), Some(Comment("anonymous", Some("commnet3")))))),
           None)).toString,
-        "olo4" → Some(Vector(
+        "olo4" -> Some(Vector(
           Some(Article("bar", None, None, Vector(None))),
           None,
           Some(Article("baz", None, None, Vector.empty)))).toString)),
@@ -381,11 +381,11 @@ class FromInputSpec extends WordSpec with Matchers {
           olo4: optListOpt(articles: $var2)
         }
       """,
-      Map("data" → Map(
-        "olo1" → Vector(Some( """{"title":"def1","tags":["c","d"],"comments":[{"author":"c1"},null]}"""), None, Some( """{"title":"def2","text":"some text","comments":[]}""")).toString,
-        "olo2" → Vector(Some( """{"title":"first","comments":[null]}"""), None, Some( """{"title":"second","comments":[null,null]}""")).toString,
-        "olo3" → Vector(Some( """{"title":"foo","text":"bar","tags":["a","b"],"comments":[null,{"author":"anonymous"},{"author":"anonymous","text":"commnet3"}]}"""), None).toString,
-        "olo4" → Vector(Some( """{"title":"bar","text":null,"tags":null,"comments":[null]}"""), None, Some( """{"title":"baz","comments":[]}""")).toString)),
+      Map("data" -> Map(
+        "olo1" -> Vector(Some( """{"title":"def1","tags":["c","d"],"comments":[{"author":"c1"},null]}"""), None, Some( """{"title":"def2","text":"some text","comments":[]}""")).toString,
+        "olo2" -> Vector(Some( """{"title":"first","comments":[null]}"""), None, Some( """{"title":"second","comments":[null,null]}""")).toString,
+        "olo3" -> Vector(Some( """{"title":"foo","text":"bar","tags":["a","b"],"comments":[null,{"author":"anonymous"},{"author":"anonymous","text":"commnet3"}]}"""), None).toString,
+        "olo4" -> Vector(Some( """{"title":"bar","text":null,"tags":null,"comments":[null]}"""), None, Some( """{"title":"baz","comments":[]}""")).toString)),
       """
         {
           "var1": {
@@ -419,8 +419,8 @@ class FromInputSpec extends WordSpec with Matchers {
           })
         }
       """,
-      Map("data" → Map(
-        "nn" → Article("First!", None, None,
+      Map("data" -> Map(
+        "nn" -> Article("First!", None, None,
           Vector(None, Some(Comment("anonymous", Some("Hello wold"))))).toString))
     )
 
@@ -435,20 +435,20 @@ class FromInputSpec extends WordSpec with Matchers {
           olo4: optListOpt(articles: $var2)
         }
       """,
-      Map("data" → Map(
-        "olo1" → Vector(
+      Map("data" -> Map(
+        "olo1" -> Vector(
           Some(Article("def1", None, Some(Vector("c", "d")), Vector(Some(Comment("c1", None)), None))),
           None,
           Some(Article("def2", Some("some text"), None, Vector.empty))).toString,
-        "olo2" → Vector(
+        "olo2" -> Vector(
           Some(Article("first", None, None, Vector(None))),
           None,
           Some(Article("second", None, None, Vector(None, None)))).toString,
-        "olo3" → Vector(
+        "olo3" -> Vector(
           Some(Article("foo", Some("bar"), Some(Vector("a", "b")), Vector(
             None, Some(Comment("anonymous", None)), Some(Comment("anonymous", Some("commnet3")))))),
           None).toString,
-        "olo4" → Vector(
+        "olo4" -> Vector(
           Some(Article("bar", None, None, Vector(None))),
           None,
           Some(Article("baz", None, None, Vector.empty))).toString)),

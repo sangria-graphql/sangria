@@ -3,7 +3,7 @@ package sangria.validation.rules
 import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
-import scala.collection.mutable.{Set ⇒ MutableSet}
+import scala.collection.mutable.{Set => MutableSet}
 
 
 /**
@@ -17,24 +17,24 @@ class NoUndefinedVariables extends ValidationRule {
     val variableNameDefined   = MutableSet[String]()
 
     override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition ⇒
+      case _: ast.OperationDefinition =>
         variableNameDefined.clear()
         AstVisitorCommand.RightContinue
 
-      case varDef: ast.VariableDefinition ⇒
+      case varDef: ast.VariableDefinition =>
         variableNameDefined += varDef.name
         AstVisitorCommand.RightContinue
     }
 
     override def onLeave: ValidationVisit = {
-      case operation: ast.OperationDefinition ⇒
+      case operation: ast.OperationDefinition =>
         val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
 
-        val errors = usages.filterNot(vu ⇒ variableNameDefined.contains(vu.node.name)).toVector.map { vu ⇒
+        val errors = usages.filterNot(vu => variableNameDefined.contains(vu.node.name)).toVector.map { vu =>
           operation.name match {
-            case Some(opName) ⇒
+            case Some(opName) =>
               UndefinedVarByOpViolation(vu.node.name, opName, ctx.sourceMapper, vu.node.location.toList ++ operation.location.toList)
-            case None ⇒
+            case None =>
               UndefinedVarViolation(vu.node.name, ctx.sourceMapper, vu.node.location.toList ++ operation.location.toList)
           }
         }

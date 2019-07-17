@@ -17,50 +17,50 @@ import sangria.util.StringUtil
 class ValuesOfCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case v: ast.NullValue ⇒
+      case v: ast.NullValue =>
         ctx.typeInfo.inputType match {
-          case Some(tpe) if !tpe.isOptional ⇒ badValue(tpe, v)
-          case _ ⇒ RightContinue
+          case Some(tpe) if !tpe.isOptional => badValue(tpe, v)
+          case _ => RightContinue
         }
         
-      case v: ast.ListValue ⇒
+      case v: ast.ListValue =>
         // Note: TypeInfo will traverse into a list's item type, so look to the parent input type to check if it is a list.
         ctx.typeInfo.parentInputType match {
-          case Some(tpe) if !tpe.nonOptionalType.isList ⇒
+          case Some(tpe) if !tpe.nonOptionalType.isList =>
             isValidScalar(v) match {
-              case Right(_) ⇒ Right(AstVisitorCommand.Skip)
-              case l @ Left(_) ⇒ l
+              case Right(_) => Right(AstVisitorCommand.Skip)
+              case l @ Left(_) => l
             }
-          case _ ⇒ RightContinue
+          case _ => RightContinue
         }
 
-      case v: ast.ObjectValue ⇒
+      case v: ast.ObjectValue =>
         ctx.typeInfo.inputType.map(_.namedType) match {
-          case Some(tpe: InputObjectType[_]) ⇒
+          case Some(tpe: InputObjectType[_]) =>
             val errors =
-              tpe.fields.toVector.flatMap { fieldDef ⇒
+              tpe.fields.toVector.flatMap { fieldDef =>
                 v.fieldsByName.get(fieldDef.name) match {
-                  case None if !fieldDef.fieldType.isOptional && fieldDef.defaultValue.isEmpty ⇒
+                  case None if !fieldDef.fieldType.isOptional && fieldDef.defaultValue.isEmpty =>
                     Vector(RequiredFieldViolation(tpe.name, fieldDef.name, SchemaRenderer.renderTypeName(fieldDef.fieldType), ctx.sourceMapper, v.location.toList))
-                  case _ ⇒ Vector.empty
+                  case _ => Vector.empty
                 }
               }
 
             if (errors.nonEmpty) Left(errors)
             else RightContinue
 
-          case Some(_) ⇒
+          case Some(_) =>
             isValidScalar(v) match {
-              case Right(_) ⇒ Right(AstVisitorCommand.Skip)
-              case l @ Left(_) ⇒ l
+              case Right(_) => Right(AstVisitorCommand.Skip)
+              case l @ Left(_) => l
             }
 
-          case _ ⇒ RightContinue
+          case _ => RightContinue
         }
 
-      case v: ast.ObjectField ⇒
+      case v: ast.ObjectField =>
         (ctx.typeInfo.parentInputType.map(_.namedType), ctx.typeInfo.inputType) match {
-          case (Some(tpe: InputObjectType[_]), None) ⇒
+          case (Some(tpe: InputObjectType[_]), None) =>
             val suggestions = StringUtil.suggestionList(v.name, tpe.fields.map(_.name))
             val didYouMean =
               if (suggestions.nonEmpty) Some(s"Did you mean ${StringUtil.orList(suggestions)}?")
@@ -68,26 +68,26 @@ class ValuesOfCorrectType extends ValidationRule {
 
             Left(Vector(UnknownFieldViolation(tpe.name, v.name, didYouMean, ctx.sourceMapper, v.location.toList)))
 
-          case _ ⇒ RightContinue
+          case _ => RightContinue
         }
 
-      case v: ast.EnumValue ⇒
+      case v: ast.EnumValue =>
         ctx.typeInfo.inputType.map(_.namedType) match {
-          case Some(tpe: EnumType[_]) ⇒
+          case Some(tpe: EnumType[_]) =>
             tpe.coerceInput(v) match {
-              case Left(violation) ⇒ badValue(tpe, v, Some(violation))
-              case _ ⇒ RightContinue
+              case Left(violation) => badValue(tpe, v, Some(violation))
+              case _ => RightContinue
             }
 
-          case _ ⇒ isValidScalar(v)
+          case _ => isValidScalar(v)
         }
 
-      case v: ast.IntValue ⇒ isValidScalar(v)
-      case v: ast.BigIntValue ⇒ isValidScalar(v)
-      case v: ast.FloatValue ⇒ isValidScalar(v)
-      case v: ast.BigDecimalValue ⇒ isValidScalar(v)
-      case v: ast.StringValue ⇒ isValidScalar(v)
-      case v: ast.BooleanValue ⇒ isValidScalar(v)
+      case v: ast.IntValue => isValidScalar(v)
+      case v: ast.BigIntValue => isValidScalar(v)
+      case v: ast.FloatValue => isValidScalar(v)
+      case v: ast.BigDecimalValue => isValidScalar(v)
+      case v: ast.StringValue => isValidScalar(v)
+      case v: ast.BooleanValue => isValidScalar(v)
     }
 
     def badValue(tpe: Type, node: ast.AstNode, violation: Option[Violation] = None) =
@@ -103,40 +103,40 @@ class ValuesOfCorrectType extends ValidationRule {
       ))
 
     def enumTypeSuggestion(tpe: Type, node: ast.Value): Option[Violation] = tpe match {
-      case enum: EnumType[_] ⇒
+      case enum: EnumType[_] =>
         val name = QueryRenderer.render(node)
         val suggestions = StringUtil.suggestionList(name, enum.values.map(_.name))
 
         if (suggestions.nonEmpty) Some(EnumValueCoercionViolation(name, enum.name, suggestions))
         else None
 
-      case _ ⇒ None
+      case _ => None
     }
 
     def isValidScalar(value: ast.Value) =
       ctx.typeInfo.inputType match {
-        case Some(tpe) ⇒
+        case Some(tpe) =>
           tpe.namedInputType match {
-            case s: ScalarType[_] ⇒
+            case s: ScalarType[_] =>
               s.coerceInput(value) match {
-                case Left(violation) ⇒ badValue(tpe, value, Some(violation))
-                case _ ⇒ RightContinue
+                case Left(violation) => badValue(tpe, value, Some(violation))
+                case _ => RightContinue
               }
 
-            case s: ScalarAlias[_, _] ⇒
+            case s: ScalarAlias[_, _] =>
               s.aliasFor.coerceInput(value) match {
-                case Left(violation) ⇒ badValue(tpe, value, Some(violation))
-                case Right(v) ⇒ s.fromScalar(v) match {
-                  case Left(violation) ⇒ badValue(tpe, value, Some(violation))
-                  case _ ⇒ RightContinue
+                case Left(violation) => badValue(tpe, value, Some(violation))
+                case Right(v) => s.fromScalar(v) match {
+                  case Left(violation) => badValue(tpe, value, Some(violation))
+                  case _ => RightContinue
                 }
               }
 
-            case t ⇒
+            case t =>
               badValue(tpe, value, enumTypeSuggestion(t, value))
           }
 
-        case _ ⇒ RightContinue
+        case _ => RightContinue
       }
   }
 }

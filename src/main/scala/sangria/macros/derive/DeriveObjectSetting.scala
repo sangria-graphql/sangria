@@ -13,7 +13,7 @@ case class DocumentField[Ctx, Val](fieldName: String, description: String, depre
 case class DeprecateField[Ctx, Val](fieldName: String, deprecationReason: String) extends DeriveObjectSetting[Ctx, Val]
 case class RenameField[Ctx, Val](fieldName: String, graphqlName: String) extends DeriveObjectSetting[Ctx, Val]
 case class FieldTags[Ctx, Val](fieldName: String, tags: FieldTag*) extends DeriveObjectSetting[Ctx, Val]
-case class FieldComplexity[Ctx, Val](fieldName: String, complexity: (Ctx, Args, Double) ⇒ Double) extends DeriveObjectSetting[Ctx, Val]
+case class FieldComplexity[Ctx, Val](fieldName: String, complexity: (Ctx, Args, Double) => Double) extends DeriveObjectSetting[Ctx, Val]
 
 case class IncludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectSetting[Ctx, Val]
 case class IncludeMethods[Ctx, Val](methodNames: String*) extends DeriveObjectSetting[Ctx, Val]
@@ -21,7 +21,7 @@ case class ExcludeFields[Ctx, Val](fieldNames: String*) extends DeriveObjectSett
 case class ReplaceField[Ctx, Val](fieldName: String, field: Field[Ctx, Val]) extends DeriveObjectSetting[Ctx, Val]
 case class AddFields[Ctx, Val](fields: Field[Ctx, Val]*) extends DeriveObjectSetting[Ctx, Val]
 
-case class TransformFieldNames[Ctx, Val](transformer: String ⇒ String) extends DeriveObjectSetting[Ctx, Val]
+case class TransformFieldNames[Ctx, Val](transformer: String => String) extends DeriveObjectSetting[Ctx, Val]
 
 case class MethodArgumentRename[Ctx, Val](methodName: String, argName: String, newName: String) extends DeriveObjectSetting[Ctx, Val]
 case class MethodArgumentDescription[Ctx, Val](methodName: String, argName: String, description: String) extends DeriveObjectSetting[Ctx, Val]

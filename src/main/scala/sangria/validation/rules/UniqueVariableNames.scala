@@ -5,7 +5,7 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-import scala.collection.mutable.{Map ⇒ MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 /**
   * Unique variable names
@@ -17,16 +17,16 @@ class UniqueVariableNames extends ValidationRule {
     val knownVariableNames = MutableMap[String, List[AstLocation]]()
 
     override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition ⇒
+      case _: ast.OperationDefinition =>
         knownVariableNames.clear()
         AstVisitorCommand.RightContinue
 
-      case ast.VariableDefinition(name, _, _, _, _, pos) ⇒
+      case ast.VariableDefinition(name, _, _, _, _, pos) =>
         knownVariableNames get name match {
-          case Some(otherPos) ⇒
+          case Some(otherPos) =>
             Left(Vector(DuplicateVariableViolation(name, ctx.sourceMapper, otherPos ++ pos.toList)))
-          case None ⇒
-            knownVariableNames += name → pos.toList
+          case None =>
+            knownVariableNames += name -> pos.toList
             AstVisitorCommand.RightContinue
         }
     }

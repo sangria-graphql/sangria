@@ -33,9 +33,9 @@ class KnownTypeNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown type 'JumbledUpLetters'." → Some(Pos(2, 25)),
-        "Unknown type 'Badger'." → Some(Pos(5, 27)),
-        "Unknown type 'Peettt'. Did you mean 'Pet'?" → Some(Pos(8, 31))
+        "Unknown type 'JumbledUpLetters'." -> Some(Pos(2, 25)),
+        "Unknown type 'Badger'." -> Some(Pos(5, 27)),
+        "Unknown type 'Peettt'. Did you mean 'Pet'?" -> Some(Pos(8, 31))
       ))
   }
 }

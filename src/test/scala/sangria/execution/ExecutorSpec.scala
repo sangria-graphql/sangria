@@ -45,19 +45,19 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
   class LightColorResolver extends DeferredResolver[Any] {
     def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-      case LightColor(v, c) ⇒ Future.successful(v.deepColor("light" + c))
-      case FailColor(v, c) ⇒ Future.failed(new IllegalStateException("error in resolver"))
+      case LightColor(v, c) => Future.successful(v.deepColor("light" + c))
+      case FailColor(v, c) => Future.failed(new IllegalStateException("error in resolver"))
     }
   }
 
   class BrokenLightColorResolver extends DeferredResolver[Any] {
     def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = (deferred ++ deferred) map {
-      case LightColor(v, c) ⇒ Future.successful(v.deepColor("light" + c))
-      case FailColor(v, c) ⇒ Future.failed(new IllegalStateException("error in resolver"))
+      case LightColor(v, c) => Future.successful(v.deepColor("light" + c))
+      case FailColor(v, c) => Future.failed(new IllegalStateException("error in resolver"))
     }
   }
 
-  val DeepDataType = ObjectType("DeepDataType", () ⇒ fields[Ctx, DeepTestSubject](
+  val DeepDataType = ObjectType("DeepDataType", () => fields[Ctx, DeepTestSubject](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
     Field("c", OptionType(ListType(OptionType(StringType))), resolve = _.value.c),
@@ -66,7 +66,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
     Field("deeper", OptionType(ListType(OptionType(DataType))), resolve = _.value.deeper)
   ))
 
-  val DataType: ObjectType[Ctx, TestSubject] = ObjectType("DataType", () ⇒ fields[Ctx, TestSubject](
+  val DataType: ObjectType[Ctx, TestSubject] = ObjectType("DataType", () => fields[Ctx, TestSubject](
     Field("a", OptionType(StringType), resolve = _.value.a),
     Field("b", OptionType(StringType), resolve = _.value.b),
     Field("c", OptionType(StringType), resolve = _.value.c),
@@ -74,30 +74,30 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
     Field("e", OptionType(StringType), resolve = _.value.e),
     Field("f", OptionType(StringType), resolve = _.value.f),
     Field("ctxUpdating", DeepDataType, resolve =
-      ctx ⇒ UpdateCtx(ctx.value.deepColor("blue"))(v ⇒ ctx.ctx.copy(color = v.color))),
+      ctx => UpdateCtx(ctx.value.deepColor("blue"))(v => ctx.ctx.copy(color = v.color))),
     Field("ctxUpdatingFut", DeepDataType, resolve =
-      ctx ⇒ UpdateCtx(Future.successful(ctx.value.deepColor("orange")))(v ⇒ ctx.ctx.copy(color = v.color))),
+      ctx => UpdateCtx(Future.successful(ctx.value.deepColor("orange")))(v => ctx.ctx.copy(color = v.color))),
     Field("ctxUpdatingDef", DeepDataType, resolve =
-      ctx ⇒ UpdateCtx(LightColor(ctx.value, "magenta"))(v ⇒ ctx.ctx.copy(color = v.color))),
+      ctx => UpdateCtx(LightColor(ctx.value, "magenta"))(v => ctx.ctx.copy(color = v.color))),
     Field("ctxUpdatingDefFut", DeepDataType, resolve =
-      ctx ⇒ UpdateCtx(DeferredFutureValue(Future.successful(LightColor(ctx.value, "red"))))(v ⇒ ctx.ctx.copy(color = v.color))),
-    Field("def", DeepDataType, resolve = ctx ⇒ LightColor(ctx.value, "magenta")),
-    Field("defFut", DeepDataType, resolve = ctx ⇒ DeferredFutureValue(Future.successful(LightColor(ctx.value, "red")))),
-    Field("defFail", OptionType(DeepDataType), resolve = ctx ⇒ FailColor(ctx.value, "magenta")),
-    Field("defFutFail", OptionType(DeepDataType), resolve = ctx ⇒ DeferredFutureValue(Future.successful(FailColor(ctx.value, "red")))),
+      ctx => UpdateCtx(DeferredFutureValue(Future.successful(LightColor(ctx.value, "red"))))(v => ctx.ctx.copy(color = v.color))),
+    Field("def", DeepDataType, resolve = ctx => LightColor(ctx.value, "magenta")),
+    Field("defFut", DeepDataType, resolve = ctx => DeferredFutureValue(Future.successful(LightColor(ctx.value, "red")))),
+    Field("defFail", OptionType(DeepDataType), resolve = ctx => FailColor(ctx.value, "magenta")),
+    Field("defFutFail", OptionType(DeepDataType), resolve = ctx => DeferredFutureValue(Future.successful(FailColor(ctx.value, "red")))),
     Field("pic", OptionType(StringType),
       arguments = Argument("size", OptionInputType(IntType)) :: Nil,
-      resolve = ctx ⇒ ctx.value.pic(ctx.argOpt[Int]("size"))),
+      resolve = ctx => ctx.value.pic(ctx.argOpt[Int]("size"))),
     Field("deep", OptionType(DeepDataType), resolve = _.value.deep),
     Field("future", OptionType(DataType), resolve = _.value.future)
   ))
 
-  val ParallelFragmentType: ObjectType[Unit, Unit] = ObjectType("Type", () ⇒ fields[Unit, Unit](
-    Field("a", OptionType(StringType), resolve = _ ⇒ "Apple"),
-    Field("b", OptionType(StringType), resolve = _ ⇒ "Banana"),
-    Field("c", OptionType(StringType), resolve = _ ⇒ "Cherry"),
-    Field("d", StringType, resolve = _ ⇒ "Door"),
-    Field("deep", OptionType(ParallelFragmentType), resolve = _ ⇒ ())
+  val ParallelFragmentType: ObjectType[Unit, Unit] = ObjectType("Type", () => fields[Unit, Unit](
+    Field("a", OptionType(StringType), resolve = _ => "Apple"),
+    Field("b", OptionType(StringType), resolve = _ => "Banana"),
+    Field("c", OptionType(StringType), resolve = _ => "Cherry"),
+    Field("d", StringType, resolve = _ => "Door"),
+    Field("deep", OptionType(ParallelFragmentType), resolve = _ => ())
   ))
 
   "Execute: Handles basic execution tasks" should {
@@ -133,23 +133,23 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       """
 
       val expected = Map(
-        "data" → Map(
-          "a" → "Apple",
-          "b" → "Banana",
-          "x" → "Cookie",
-          "d" → "Donut",
-          "e" → "Egg",
-          "f" → "Fish",
-          "pic" → "Pic of size: 100",
-          "future" → Map("a" → "Apple"),
-          "deep" → Map(
-            "a" → "Already Been Done",
-            "b" → "Boring",
-            "c" → List("Contrived", null, "Confusing"),
-            "deeper" → List(
-              Map("a" → "Apple", "b" → "Banana"),
+        "data" -> Map(
+          "a" -> "Apple",
+          "b" -> "Banana",
+          "x" -> "Cookie",
+          "d" -> "Donut",
+          "e" -> "Egg",
+          "f" -> "Fish",
+          "pic" -> "Pic of size: 100",
+          "future" -> Map("a" -> "Apple"),
+          "deep" -> Map(
+            "a" -> "Already Been Done",
+            "b" -> "Boring",
+            "c" -> List("Contrived", null, "Confusing"),
+            "deeper" -> List(
+              Map("a" -> "Apple", "b" -> "Banana"),
               null,
-              Map("a" → "Apple", "b" → "Banana")
+              Map("a" -> "Apple", "b" -> "Banana")
             )
           )
         )
@@ -157,7 +157,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      Executor.execute(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" → 100))).await should be (expected)
+      Executor.execute(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" -> 100))).await should be (expected)
     }
 
     "prepare and execute arbitrary queries" in {
@@ -192,23 +192,23 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       """
 
       val expected = Map(
-        "data" → Map(
-          "a" → "Apple",
-          "b" → "Banana",
-          "x" → "Cookie",
-          "d" → "Donut",
-          "e" → "Egg",
-          "f" → "Fish",
-          "pic" → "Pic of size: 100",
-          "future" → Map("a" → "Apple"),
-          "deep" → Map(
-            "a" → "Already Been Done",
-            "b" → "Boring",
-            "c" → List("Contrived", null, "Confusing"),
-            "deeper" → List(
-              Map("a" → "Apple", "b" → "Banana"),
+        "data" -> Map(
+          "a" -> "Apple",
+          "b" -> "Banana",
+          "x" -> "Cookie",
+          "d" -> "Donut",
+          "e" -> "Egg",
+          "f" -> "Fish",
+          "pic" -> "Pic of size: 100",
+          "future" -> Map("a" -> "Apple"),
+          "deep" -> Map(
+            "a" -> "Already Been Done",
+            "b" -> "Boring",
+            "c" -> List("Contrived", null, "Confusing"),
+            "deeper" -> List(
+              Map("a" -> "Apple", "b" -> "Banana"),
               null,
-              Map("a" → "Apple", "b" → "Banana")
+              Map("a" -> "Apple", "b" -> "Banana")
             )
           )
         )
@@ -216,7 +216,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      val preparedQuery = Executor.prepare(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" → 100))).await
+      val preparedQuery = Executor.prepare(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" -> 100))).await
 
       preparedQuery.execute().await should be (expected)
     }
@@ -230,7 +230,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         }
       """
 
-      val expected = Map("data" → Map("pic" → "Pic of size: 100"))
+      val expected = Map("data" -> Map("pic" -> "Pic of size: 100"))
 
       val schema = Schema(DataType)
 
@@ -261,7 +261,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         def reduceCtx(acc: Acc, ctx: Ctx): ReduceAction[Ctx, Ctx] = Value(ctx)
       }
 
-      Executor.execute(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" → 100)), queryReducers = PicSizeFinderReducer :: Nil ).await should be (expected)
+      Executor.execute(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" -> 100)), queryReducers = PicSizeFinderReducer :: Nil ).await should be (expected)
       sizeValue should be (100)
     }
 
@@ -277,7 +277,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val schema = Schema(DataType)
 
       an [ValidationError] should be thrownBy
-        Executor.prepare(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" → 100))).await
+        Executor.prepare(schema, doc, Ctx(), new TestSubject, variables = mapVars(Map("size" -> 100))).await
     }
 
     "prepare should execute query reducers in the preparation stage" in {
@@ -291,8 +291,8 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val schema = Schema(DataType)
 
-      val introQR = QueryReducer.hasIntrospection[Ctx]((hasIntro, ctx) ⇒ ctx.copy(color = if (hasIntro) "red" else "blue"))
-      val failQR = QueryReducer.hasIntrospection[Ctx]((hasIntro, ctx) ⇒ if (hasIntro) throw new IllegalStateException("foo") else ctx)
+      val introQR = QueryReducer.hasIntrospection[Ctx]((hasIntro, ctx) => ctx.copy(color = if (hasIntro) "red" else "blue"))
+      val failQR = QueryReducer.hasIntrospection[Ctx]((hasIntro, ctx) => if (hasIntro) throw new IllegalStateException("foo") else ctx)
 
       an [QueryReducingError] should be thrownBy
         Executor.prepare(schema, doc, Ctx(), new TestSubject, queryReducers = failQR :: Nil).await
@@ -340,49 +340,49 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         """)
 
       val expected = Map(
-        "data" → Map(
-          "d1" → Map(
-            "deep" → Map(
-              "deep" → Map(
-                "deep" → Map(
-                  "deep" → Map(
-                    "a" → "Apple",
-                    "deep" → Map(
-                      "b" → null
+        "data" -> Map(
+          "d1" -> Map(
+            "deep" -> Map(
+              "deep" -> Map(
+                "deep" -> Map(
+                  "deep" -> Map(
+                    "a" -> "Apple",
+                    "deep" -> Map(
+                      "b" -> null
                     )
                   )
                 )
               )
             )
           ),
-          "d2" → Map(
-            "deep" → Map(
-              "deep" → Map(
-                "deep" → Map(
-                  "deep" → Map(
-                    "a" → "Apple",
-                    "deep" → null
+          "d2" -> Map(
+            "deep" -> Map(
+              "deep" -> Map(
+                "deep" -> Map(
+                  "deep" -> Map(
+                    "a" -> "Apple",
+                    "deep" -> null
                   )
                 )
               )
             )
           )
         ),
-        "errors" → List(
+        "errors" -> List(
           Map(
-            "message" → "Max query depth 6 is reached.",
-            "path" → List("d1", "deep", "deep", "deep", "deep", "deep", "b"),
-            "locations" → List(Map("line" → 10, "column" → 23))
+            "message" -> "Max query depth 6 is reached.",
+            "path" -> List("d1", "deep", "deep", "deep", "deep", "deep", "b"),
+            "locations" -> List(Map("line" -> 10, "column" -> 23))
           ),
           Map(
-            "message" → "Max query depth 6 is reached.",
-            "path" → List("d2", "deep", "deep", "deep", "deep", "deep", "b"),
-            "locations" → List(Map("line" → 24, "column" → 23))
+            "message" -> "Max query depth 6 is reached.",
+            "path" -> List("d2", "deep", "deep", "deep", "deep", "deep", "b"),
+            "locations" -> List(Map("line" -> 24, "column" -> 23))
           ),
           Map(
-            "message" → "Max query depth 6 is reached.",
-            "path" → List("d2", "deep", "deep", "deep", "deep", "deep", "d"),
-            "locations" → List(Map("line" → 25, "column" → 23))
+            "message" -> "Max query depth 6 is reached.",
+            "path" -> List("d2", "deep", "deep", "deep", "deep", "deep", "d"),
+            "locations" -> List(Map("line" -> 25, "column" -> 23))
           )
         )
       )
@@ -410,16 +410,16 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       """)
 
       val expected = Map(
-        "data" → Map(
-          "a" → "Apple",
-          "b" → "Banana",
-          "c" → "Cherry",
-            "deep" → Map(
-            "b" → "Banana",
-            "c" → "Cherry",
-              "deeper" → Map(
-              "b" → "Banana",
-              "c" → "Cherry")))
+        "data" -> Map(
+          "a" -> "Apple",
+          "b" -> "Banana",
+          "c" -> "Cherry",
+            "deep" -> Map(
+            "b" -> "Banana",
+            "c" -> "Cherry",
+              "deeper" -> Map(
+              "b" -> "Banana",
+              "c" -> "Cherry")))
       )
 
       Executor.execute(schema, doc).await should be (expected)
@@ -431,11 +431,11 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       var resolvedCtx: Option[String] = None
 
       val schema = Schema(ObjectType("Type", fields[Unit, Thing](
-        Field("a", OptionType(StringType), resolve = ctx ⇒ {resolvedCtx = ctx.value.a; ctx.value.a}))))
+        Field("a", OptionType(StringType), resolve = ctx => {resolvedCtx = ctx.value.a; ctx.value.a}))))
 
       val Success(doc) = QueryParser.parse("query Example { a }")
 
-      Executor.execute(schema, doc, root = Thing(Some("thing"))).await should be (Map("data" → Map("a" → "thing")))
+      Executor.execute(schema, doc, root = Thing(Some("thing"))).await should be (Map("data" -> Map("a" -> "thing")))
 
       resolvedCtx should be (Some("thing"))
     }
@@ -446,7 +446,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
         Field("b", OptionType(StringType),
           arguments = Argument("numArg", OptionInputType(IntType)) :: Argument("stringArg", OptionInputType(StringType)) :: Nil,
-          resolve = ctx ⇒ {resolvedArgs = ctx.args.raw; None}))))
+          resolve = ctx => {resolvedArgs = ctx.args.raw; None}))))
 
       val Success(doc) = QueryParser.parse("""
         query Example {
@@ -455,7 +455,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       """)
 
       Executor.execute(schema, doc).await
-      resolvedArgs should be (Map("numArg" → Some(123), "stringArg" → Some("foo")))
+      resolvedArgs should be (Map("numArg" -> Some(123), "stringArg" -> Some("foo")))
     }
 
     "null out error subtrees" in {
@@ -473,12 +473,12 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         Field("sync", OptionType(StringType), resolve = _.value.sync),
         Field("syncError", OptionType(StringType), resolve = _.value.syncError),
         Field("async", OptionType(StringType), resolve = _.value.async),
-        Field("asyncReject", OptionType(StringType), resolve = ctx ⇒ ctx.value.asyncReject),
+        Field("asyncReject", OptionType(StringType), resolve = ctx => ctx.value.asyncReject),
         Field("asyncError", OptionType(StringType), resolve = _.value.asyncError),
         Field("syncDeferError", OptionType(StringType),
-          resolve = ctx ⇒ DeferredValue(throw new IllegalStateException("Error getting syncDeferError"))),
+          resolve = ctx => DeferredValue(throw new IllegalStateException("Error getting syncDeferError"))),
         Field("asyncDeferError", OptionType(StringType),
-          resolve = _ ⇒ DeferredFutureValue(Future.failed(throw new IllegalStateException("Error getting asyncDeferError"))))
+          resolve = _ => DeferredFutureValue(Future.failed(throw new IllegalStateException("Error getting asyncDeferError"))))
       )))
 
       val Success(doc) = QueryParser.parse("""
@@ -493,7 +493,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         }""")
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       val result = Executor.execute(schema, doc, root = new Data, exceptionHandler = exceptionHandler).await.asInstanceOf[Map[String, Any]]
@@ -502,57 +502,57 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val errors = result("errors").asInstanceOf[Seq[_]]
 
       data should be (Map(
-        "sync" → "sync",
-        "syncError" → null,
-        "async" → "async",
-        "asyncReject" → null,
-        "asyncError" → null,
-        "asyncDeferError" → null,
-        "syncDeferError" → null
+        "sync" -> "sync",
+        "syncError" -> null,
+        "async" -> "async",
+        "asyncReject" -> null,
+        "asyncError" -> null,
+        "asyncDeferError" -> null,
+        "syncDeferError" -> null
       ))
 
       errors should (have(size(5)) and
           contain(Map(
-            "path" → List("syncError"),
-            "locations" → List(Map("line" → 4, "column" → 14)),
-            "message" → "Error getting syncError")) and
+            "path" -> List("syncError"),
+            "locations" -> List(Map("line" -> 4, "column" -> 14)),
+            "message" -> "Error getting syncError")) and
           contain(Map(
-            "path" → List("asyncReject"),
-            "locations" → List(Map("line" → 6, "column" → 11)),
-            "message" → "Error getting asyncReject")) and
+            "path" -> List("asyncReject"),
+            "locations" -> List(Map("line" -> 6, "column" -> 11)),
+            "message" -> "Error getting asyncReject")) and
           contain(Map(
-            "message" → "Error getting asyncDeferError",
-            "path" → List("asyncDeferError"),
-            "locations" → List(Map("line" → 7, "column" → 12)))) and
+            "message" -> "Error getting asyncDeferError",
+            "path" -> List("asyncDeferError"),
+            "locations" -> List(Map("line" -> 7, "column" -> 12)))) and
           contain(Map(
-            "message" → "Error getting syncDeferError",
-            "path" → List("syncDeferError"),
-            "locations" → List(Map("line" → 9, "column" → 15)))) and
+            "message" -> "Error getting syncDeferError",
+            "path" -> List("syncDeferError"),
+            "locations" -> List(Map("line" -> 9, "column" -> 15)))) and
           contain(Map(
-            "path" → List("asyncError"),
-            "locations" → List(Map("line" → 8, "column" → 15)),
-            "message" → "Error getting asyncError")))
+            "path" -> List("asyncError"),
+            "locations" -> List(Map("line" -> 8, "column" -> 15)),
+            "message" -> "Error getting asyncError")))
     }
 
     "use the inline operation if no operation is provided" in {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
-        Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("{ a }")
 
-      Executor.execute(schema, doc).await should be (Map("data" → Map("a" → "b")))
+      Executor.execute(schema, doc).await should be (Map("data" -> Map("a" -> "b")))
     }
 
     "use the only operation if no operation is provided" in {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
-        Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("query Example { a }")
 
-      Executor.execute(schema, doc).await should be (Map("data" → Map("a" → "b")))
+      Executor.execute(schema, doc).await should be (Map("data" -> Map("a" -> "b")))
     }
 
     "throw if no operation is provided with multiple operations" in {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
-        Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
 
       val error = intercept [OperationSelectionError] (Executor.execute(schema, doc).await)
@@ -562,7 +562,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
     "throw if the operation name is invalid" in {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
-        Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
       val Success(doc) = QueryParser.parse("query Example { a }")
 
       val error = intercept [OperationSelectionError] (Executor.execute(schema, doc, operationName = Some("Eggsample")).await)
@@ -572,15 +572,15 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
     "use correct schema type schema for operation" in {
       val schema = Schema(
-        ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ ⇒ "b"))),
-        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ ⇒ "d")))),
-        Some(ObjectType("S", fields[Unit, Unit](Field("e", OptionType(StringType), resolve = _ ⇒ "f")))))
+        ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))),
+        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ => "d")))),
+        Some(ObjectType("S", fields[Unit, Unit](Field("e", OptionType(StringType), resolve = _ => "f")))))
 
       val Success(doc) = QueryParser.parse("query Q { a } mutation M { c } subscription S { e }")
 
-      Executor.execute(schema, doc, operationName = Some("Q")).await should be (Map("data" → Map("a" → "b")))
-      Executor.execute(schema, doc, operationName = Some("M")).await should be (Map("data" → Map("c" → "d")))
-      Executor.execute(schema, doc, operationName = Some("S")).await should be (Map("data" → Map("e" → "f")))
+      Executor.execute(schema, doc, operationName = Some("Q")).await should be (Map("data" -> Map("a" -> "b")))
+      Executor.execute(schema, doc, operationName = Some("M")).await should be (Map("data" -> Map("c" -> "d")))
+      Executor.execute(schema, doc, operationName = Some("S")).await should be (Map("data" -> Map("e" -> "f")))
     }
 
     "correct field ordering despite execution order" in {
@@ -588,16 +588,16 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       class MyResolver extends DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-          case Sum(a, b) ⇒ Future(a + b)(ec)
+          case Sum(a, b) => Future(a + b)(ec)
         }
       }
 
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
-        Field("c", OptionType(StringType), resolve = _ ⇒ "c"),
-        Field("a", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(30); "a"}),
-        Field("d", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(5); "d"}),
-        Field("b", OptionType(IntType), resolve = _ ⇒ Sum(1, 2)),
-        Field("e", OptionType(StringType), resolve = _ ⇒ "e"))))
+        Field("c", OptionType(StringType), resolve = _ => "c"),
+        Field("a", OptionType(StringType), resolve = _ => Future {Thread.sleep(30); "a"}),
+        Field("d", OptionType(StringType), resolve = _ => Future {Thread.sleep(5); "d"}),
+        Field("b", OptionType(IntType), resolve = _ => Sum(1, 2)),
+        Field("e", OptionType(StringType), resolve = _ => "e"))))
 
       def keys(res: Any) =
         res.asInstanceOf[Map[String, Any]]("data").asInstanceOf[Map[String, Any]].keys.toList
@@ -617,15 +617,15 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       class MyResolver extends DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = deferred map {
-          case Sum(a, b) ⇒ Future(a + b)(ec)
+          case Sum(a, b) => Future(a + b)(ec)
         }
       }
 
       val schema = Schema(ObjectType("Query", fields[Unit, Unit](
-        Field("qux", OptionType(StringType), resolve = _ ⇒ "c"),
-        Field("bar", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(30); "a"}),
-        Field("foo", OptionType(StringType), resolve = _ ⇒ Future {Thread.sleep(5); "d"}),
-        Field("baz", OptionType(IntType), resolve = _ ⇒ Sum(1, 2)))))
+        Field("qux", OptionType(StringType), resolve = _ => "c"),
+        Field("bar", OptionType(StringType), resolve = _ => Future {Thread.sleep(30); "a"}),
+        Field("foo", OptionType(StringType), resolve = _ => Future {Thread.sleep(5); "d"}),
+        Field("baz", OptionType(IntType), resolve = _ => Sum(1, 2)))))
 
       import sangria.marshalling.queryAst._
       import sangria.ast
@@ -684,7 +684,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
     "avoid recursion" in {
       val schema = Schema(ObjectType("Type", fields[Unit, Unit](
-        Field("a", OptionType(StringType), resolve = _ ⇒ "b"))))
+        Field("a", OptionType(StringType), resolve = _ => "b"))))
 
       val Success(doc) = QueryParser.parse("""
         query Q {
@@ -700,16 +700,16 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       """)
 
       Executor.execute(schema, doc, operationName = Some("Q"), queryValidator = QueryValidator.empty).await should be (
-        Map("data" → Map("a" → "b")))
+        Map("data" -> Map("a" -> "b")))
     }
 
     "not include illegal fields in output" in {
       val schema = Schema(
-        ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ ⇒ "b"))),
-        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ ⇒ "d")))))
+        ObjectType("Q", fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))),
+        Some(ObjectType("M", fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ => "d")))))
       val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
 
-      Executor.execute(schema, doc, queryValidator = QueryValidator.empty).await should be (Map("data" → Map()))
+      Executor.execute(schema, doc, queryValidator = QueryValidator.empty).await should be (Map("data" -> Map()))
     }
 
     "update context in query operations" in {
@@ -737,11 +737,11 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       Executor.execute(schema, doc, Ctx(), new TestSubject, deferredResolver = new LightColorResolver).await should be (
         Map(
-          "data" → Map(
-            "ctxUpdating" → Map("ctxColor" → "blue"),
-            "ctxUpdatingFut" → Map("ctxColor" → "orange"),
-            "ctxUpdatingDef" → Map("ctxColor" → "lightmagenta"),
-            "ctxUpdatingDefFut" → Map("ctxColor" → "lightred"))))
+          "data" -> Map(
+            "ctxUpdating" -> Map("ctxColor" -> "blue"),
+            "ctxUpdatingFut" -> Map("ctxColor" -> "orange"),
+            "ctxUpdatingDef" -> Map("ctxColor" -> "lightmagenta"),
+            "ctxUpdatingDefFut" -> Map("ctxColor" -> "lightred"))))
     }
 
     "resolve deferred values correctly" in {
@@ -756,9 +756,9 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new LightColorResolver).await should be (
         Map(
-          "data" → Map(
-            "def" → Map("color" → "lightmagenta"),
-            "defFut" → Map("color" → "lightred"))))
+          "data" -> Map(
+            "def" -> Map("color" -> "lightmagenta"),
+            "defFut" -> Map("color" -> "lightred"))))
     }
 
     "ensure that deferred resolver complied to the contract" in {
@@ -771,7 +771,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val schema = Schema(DataType)
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       val res = Executor.execute(schema, query, root = new TestSubject, userContext = Ctx(), deferredResolver = new BrokenLightColorResolver, exceptionHandler = exceptionHandler).await.asInstanceOf[Map[String, Any]]
@@ -792,7 +792,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val schema = Schema(DataType)
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       Executor.execute(schema, doc,
@@ -801,18 +801,18 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         deferredResolver = new LightColorResolver,
         exceptionHandler = exceptionHandler).await should be (
           Map(
-            "data" → Map(
-              "defFail" → null,
-              "defFutFail" → null),
-            "errors" → List(
+            "data" -> Map(
+              "defFail" -> null,
+              "defFutFail" -> null),
+            "errors" -> List(
               Map(
-                "message" → "error in resolver",
-                "path" → List("defFail"),
-                "locations" → List(Map("line" → 3, "column" → 11))),
+                "message" -> "error in resolver",
+                "path" -> List("defFail"),
+                "locations" -> List(Map("line" -> 3, "column" -> 11))),
               Map(
-                "message" → "error in resolver",
-                "path" → List("defFutFail"),
-                "locations" → List(Map("line" → 4, "column" → 11))))))
+                "message" -> "error in resolver",
+                "path" -> List("defFutFail"),
+                "locations" -> List(Map("line" -> 4, "column" -> 11))))))
     }
 
     "fails to execute a query containing a type definition" in {
@@ -839,32 +839,32 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val QueryType = ObjectType("Query", fields[Unit, Unit](
         Field("eager", ListType(StringType), resolve =
-          _ ⇒ PartialValue(List("a", "c"), Vector(MyListError("error 1"), MyListError("error 2")))),
+          _ => PartialValue(List("a", "c"), Vector(MyListError("error 1"), MyListError("error 2")))),
         Field("future", ListType(StringType), resolve =
-          _ ⇒ PartialFutureValue(
+          _ => PartialFutureValue(
             Future.successful(
               PartialValue[Unit, List[String]](List("d", "f"), Vector(MyListError("error 3"), MyListError("error 4"))))))))
 
       val schema = Schema(QueryType)
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: MyListError) ⇒ HandledException(e.getMessage)
+        case (m, e: MyListError) => HandledException(e.getMessage)
       }
 
       val result = Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await.asInstanceOf[Map[String, Any]]
 
       result("data") should be (Map(
-        "eager" → Vector("a", "c"),
-        "future" → Vector("d", "f")))
+        "eager" -> Vector("a", "c"),
+        "future" -> Vector("d", "f")))
 
       val errors = result("errors").asInstanceOf[Seq[Any]]
 
       errors should (
         have(size(4)) and
-        contain(Map("message" → "error 1", "path" → List("eager"), "locations" → Vector(Map("line" → 1, "column" → 2)))) and
-        contain(Map("message" → "error 2", "path" → List("eager"), "locations" → Vector(Map("line" → 1, "column" → 2)))) and
-        contain(Map("message" → "error 3", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))) and
-        contain(Map("message" → "error 4", "path" → List("future"), "locations" → Vector(Map("line" → 1, "column" → 9)))))
+        contain(Map("message" -> "error 1", "path" -> List("eager"), "locations" -> Vector(Map("line" -> 1, "column" -> 2)))) and
+        contain(Map("message" -> "error 2", "path" -> List("eager"), "locations" -> Vector(Map("line" -> 1, "column" -> 2)))) and
+        contain(Map("message" -> "error 3", "path" -> List("future"), "locations" -> Vector(Map("line" -> 1, "column" -> 9)))) and
+        contain(Map("message" -> "error 4", "path" -> List("future"), "locations" -> Vector(Map("line" -> 1, "column" -> 9)))))
     }
 
     "support extended result in queries" in {
@@ -876,17 +876,17 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
 
       val QueryType = ObjectType("Query", fields[MyCtx, Unit](
         Field("hello", StringType,
-          complexity = Some((_, _, _) ⇒ 123),
-          resolve = _ ⇒ "world"),
+          complexity = Some((_, _, _) => 123),
+          resolve = _ => "world"),
         Field("error", OptionType(StringType),
-          resolve = _ ⇒ throw new IllegalStateException("foo"))))
+          resolve = _ => throw new IllegalStateException("foo"))))
 
       val schema = Schema(QueryType)
 
-      val reducer = QueryReducer.measureComplexity[MyCtx]((c, ctx) ⇒ ctx.copy(complexity = c))
+      val reducer = QueryReducer.measureComplexity[MyCtx]((c, ctx) => ctx.copy(complexity = c))
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       val middleware = new Middleware[MyCtx] {
@@ -903,7 +903,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         queryReducers = reducer :: Nil).await
 
       result.result.asInstanceOf[Map[String, Any]]("data") should be (
-        Map("h1" → "world", "h2" → "world", "error" → null))
+        Map("h1" -> "world", "h2" -> "world", "error" -> null))
 
       result.errors should have size 1
       result.errors(0).error.getMessage should be ("foo")
@@ -920,12 +920,12 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       case class MyListError(message: String) extends Exception(message)
 
       val QueryType = ObjectType("Query", fields[MyCtx, Unit](
-        Field("hello", StringType, resolve = _ ⇒ "world")))
+        Field("hello", StringType, resolve = _ => "world")))
 
       val MutationType = ObjectType("Mutation", fields[MyCtx, Unit](
         Field("add", StringType,
           arguments = Argument("str", StringType) :: Nil,
-          resolve = c ⇒ UpdateCtx(Future(c.ctx.acc + c.arg[String]("str")))(v ⇒ c.ctx.copy(v)))))
+          resolve = c => UpdateCtx(Future(c.ctx.acc + c.arg[String]("str")))(v => c.ctx.copy(v)))))
 
       val schema = Schema(QueryType, Some(MutationType))
 
@@ -943,7 +943,7 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
       val result = Executor.execute(schema, query, ctx).await
 
       result.result.asInstanceOf[Map[String, Any]]("data") should be (
-        Map("a1" → "One", "a2" → "OneTwo", "a3" → "OneTwoThree"))
+        Map("a1" -> "One", "a2" -> "OneTwo", "a3" -> "OneTwoThree"))
 
       result.errors should have size 0
 
@@ -973,8 +973,8 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         """,
       expectedData = null,
       expectedErrorStrings = List(
-        "Cannot spread fragment 'c' within itself." → List(Pos(15, 13)),
-        "Field 'pic' conflict because they have differing arguments." → List(Pos(11, 13), Pos(7, 13))))
+        "Cannot spread fragment 'c' within itself." -> List(Pos(15, 13)),
+        "Field 'pic' conflict because they have differing arguments." -> List(Pos(11, 13), Pos(7, 13))))
 
     "validate mutually recursive fragments" in checkContainsErrors(schema = Schema(DataType), data = (), userContext = Ctx(),
       query =
@@ -1003,17 +1003,17 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         """,
       expectedData = null,
       expectedErrorStrings = List(
-        "Cannot spread fragment 'c' within itself via 'd'." → List(Pos(15, 13), Pos(19, 13)),
-        "Field 'pic' conflict because they have differing arguments." → List(Pos(11, 13), Pos(7, 13))))
+        "Cannot spread fragment 'c' within itself via 'd'." -> List(Pos(15, 13), Pos(19, 13)),
+        "Field 'pic' conflict because they have differing arguments." -> List(Pos(11, 13), Pos(7, 13))))
 
     "support `Action.sequence` in queries and mutations" in {
       val error = new IllegalStateException("foo")
 
-      val fetcher = Fetcher[Unit, Int, Int]((_, ids) ⇒ Future.successful(ids.map(_ + 100)))(HasId(_ - 100))
+      val fetcher = Fetcher[Unit, Int, Int]((_, ids) => Future.successful(ids.map(_ + 100)))(HasId(_ - 100))
 
       lazy val QueryType = ObjectType("Query", fields[Unit, Unit](
         Field("ids", OptionType(ListType(OptionType(IntType))),
-          resolve = c ⇒ Action.sequence(Seq(
+          resolve = c => Action.sequence(Seq(
             LeafAction(Some(1)),
             LeafAction(None),
             LeafAction(Some(2)),
@@ -1025,13 +1025,13 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
             LeafAction(fetcher.deferOpt(8)),
             LeafAction(Future(fetcher.deferOpt(9))),
             LeafAction(Future(fetcher.deferOpt(10)))
-          ).map(_.map(_.map(_ + 10)))).map(vs ⇒ vs.map(_.map(_ + 1))))
+          ).map(_.map(_.map(_ + 10)))).map(vs => vs.map(_.map(_ + 1))))
       ))
 
       val schema = Schema(QueryType, Some(QueryType))
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       val queryRes = Executor.execute(schema, graphql"query {ids, foo: ids}",
@@ -1042,29 +1042,29 @@ class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
         exceptionHandler = exceptionHandler,
         deferredResolver = DeferredResolver.fetchers(fetcher))
 
-      Seq(queryRes.await → 8, mutationRes.await → 11) foreach { case (result, offset) ⇒
+      Seq(queryRes.await -> 8, mutationRes.await -> 11) foreach { case (result, offset) =>
         result should be (
           Map(
-            "data" → Map(
-              "ids" → Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121),
-              "foo" → Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121)),
-            "errors" → Vector(
+            "data" -> Map(
+              "ids" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121),
+              "foo" -> Vector(12, null, 13, 14, 15, 16, 17, 118, 119, 120, 121)),
+            "errors" -> Vector(
               Map(
-                "message" → "foo",
-                "path" → Vector("ids"),
-                "locations" → Vector(Map("line" → 1, "column" → offset))),
+                "message" -> "foo",
+                "path" -> Vector("ids"),
+                "locations" -> Vector(Map("line" -> 1, "column" -> offset))),
               Map(
-                "message" → "foo",
-                "path" → Vector("ids"),
-                "locations" → Vector(Map("line" → 1, "column" → offset))),
+                "message" -> "foo",
+                "path" -> Vector("ids"),
+                "locations" -> Vector(Map("line" -> 1, "column" -> offset))),
               Map(
-                "message" → "foo",
-                "path" → Vector("foo"),
-                "locations" → Vector(Map("line" → 1, "column" → (5 + offset)))),
+                "message" -> "foo",
+                "path" -> Vector("foo"),
+                "locations" -> Vector(Map("line" -> 1, "column" -> (5 + offset)))),
               Map(
-                "message" → "foo",
-                "path" → Vector("foo"),
-                "locations" → Vector(Map("line" → 1, "column" → (5 + offset)))))))
+                "message" -> "foo",
+                "path" -> Vector("foo"),
+                "locations" -> Vector(Map("line" -> 1, "column" -> (5 + offset)))))))
       }
     }
   }

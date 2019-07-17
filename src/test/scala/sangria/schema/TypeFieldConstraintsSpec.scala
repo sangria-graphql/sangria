@@ -10,24 +10,24 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
   "ObjectType" should {
     "allow unique fields" in {
       ObjectType("Test", fields[Unit, Unit](
-        Field("a", StringType, resolve = _ ⇒ "foo"),
-        Field("b", StringType, resolve = _ ⇒ "foo"),
-        Field("c", StringType, resolve = _ ⇒ "foo")
+        Field("a", StringType, resolve = _ => "foo"),
+        Field("b", StringType, resolve = _ => "foo"),
+        Field("c", StringType, resolve = _ => "foo")
       ))
 
-      ObjectType("Test", () ⇒ fields[Unit, Unit](
-        Field("a", StringType, resolve = _ ⇒ "foo"),
-        Field("b", StringType, resolve = _ ⇒ "foo"),
-        Field("c", StringType, resolve = _ ⇒ "foo")
+      ObjectType("Test", () => fields[Unit, Unit](
+        Field("a", StringType, resolve = _ => "foo"),
+        Field("b", StringType, resolve = _ => "foo"),
+        Field("c", StringType, resolve = _ => "foo")
       )).fields
     }
 
     "disallow non-unique fields" in {
       val e = intercept [SchemaValidationException] {
         Schema(ObjectType("Test", fields[Unit, Unit](
-          Field("a", StringType, resolve = _ ⇒ "foo"),
-          Field("b", StringType, resolve = _ ⇒ "foo"),
-          Field("a", StringType, resolve = _ ⇒ "foo")
+          Field("a", StringType, resolve = _ => "foo"),
+          Field("b", StringType, resolve = _ => "foo"),
+          Field("a", StringType, resolve = _ => "foo")
         )))
       }
 
@@ -37,7 +37,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
     "disallow invalid names" in {
       an [SchemaValidationException] should be thrownBy {
         Schema(ObjectType("Test-object", fields[Unit, Unit](
-          Field("a", StringType, resolve = _ ⇒ "foo")
+          Field("a", StringType, resolve = _ => "foo")
         )))
       }
     }
@@ -46,28 +46,28 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
   "InterfaceType" should {
     "allow unique fields" in {
       InterfaceType("Test", fields[Unit, Unit](
-        Field("a", StringType, resolve = _ ⇒ "foo"),
-        Field("b", StringType, resolve = _ ⇒ "foo"),
-        Field("c", StringType, resolve = _ ⇒ "foo")
+        Field("a", StringType, resolve = _ => "foo"),
+        Field("b", StringType, resolve = _ => "foo"),
+        Field("c", StringType, resolve = _ => "foo")
       ))
 
-      InterfaceType("Test", () ⇒ fields[Unit, Unit](
-        Field("a", StringType, resolve = _ ⇒ "foo"),
-        Field("b", StringType, resolve = _ ⇒ "foo"),
-        Field("c", StringType, resolve = _ ⇒ "foo")
+      InterfaceType("Test", () => fields[Unit, Unit](
+        Field("a", StringType, resolve = _ => "foo"),
+        Field("b", StringType, resolve = _ => "foo"),
+        Field("c", StringType, resolve = _ => "foo")
       )).fields
     }
 
     "disallow non-unique fields" in {
       an [SchemaValidationException] should be thrownBy {
         val TestType = InterfaceType("Test", fields[Unit, Unit](
-          Field("a", StringType, resolve = _ ⇒ "foo"),
-          Field("b", StringType, resolve = _ ⇒ "foo"),
-          Field("a", StringType, resolve = _ ⇒ "foo")
+          Field("a", StringType, resolve = _ => "foo"),
+          Field("b", StringType, resolve = _ => "foo"),
+          Field("a", StringType, resolve = _ => "foo")
         ))
 
         Schema(ObjectType("Foo", interfaces[Unit, Unit](TestType), fields[Unit, Unit](
-          Field("d", StringType, resolve = _ ⇒ "foo")
+          Field("d", StringType, resolve = _ => "foo")
         )))
       }
     }
@@ -75,11 +75,11 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
     "disallow invalid names" in {
       an [SchemaValidationException] should be thrownBy {
         val TestType = InterfaceType("Test-int", fields[Unit, Unit](
-          Field("a", StringType, resolve = _ ⇒ "foo")
+          Field("a", StringType, resolve = _ => "foo")
         ))
 
         Schema(ObjectType("Foo", interfaces[Unit, Unit](TestType), fields[Unit, Unit](
-          Field("d", StringType, resolve = _ ⇒ "foo")
+          Field("d", StringType, resolve = _ => "foo")
         )))
       }
     }
@@ -93,7 +93,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
         InputField("c", StringType)
       ))
 
-      InputObjectType("Test", () ⇒ List(
+      InputObjectType("Test", () => List(
         InputField("a", StringType),
         InputField("b", StringType),
         InputField("c", StringType)
@@ -111,7 +111,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
         Schema(ObjectType("Foo", fields[Unit, Unit](
           Field("d", StringType,
             arguments = Argument("test", TestType) :: Nil,
-            resolve = _ ⇒ "foo")
+            resolve = _ => "foo")
         )))
       }
     }
@@ -127,7 +127,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
         Schema(ObjectType("Foo", fields[Unit, Unit](
           Field("d", StringType,
             arguments = Argument("test", TestType) :: Nil,
-            resolve = _ ⇒ "foo")
+            resolve = _ => "foo")
         )))
       }
 
@@ -139,7 +139,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
         Schema(ObjectType("Foo", fields[Unit, Unit](
           Field("d", StringType,
             arguments = Argument("test", TestType) :: Nil,
-            resolve = _ ⇒ "foo")
+            resolve = _ => "foo")
         )))
       }
     }
@@ -159,7 +159,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
   "Schema" should {
     "provide a helpful error message if circular references are detected" in {
       val QueryType = ObjectType("Query", fields[Unit, Unit](
-        Field("a", AType, resolve = _ ⇒ A(Some(B(A(None, "bar"), 1)), "foo"))
+        Field("a", AType, resolve = _ => A(Some(B(A(None, "bar"), 1)), "foo"))
       ))
 
       val error = intercept[IllegalStateException](Schema(QueryType))
@@ -169,28 +169,28 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
     "ensure that implemented fields have correct type" in {
       val FruitType = InterfaceType("Fruit", fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1)
+        Field("size", IntType, resolve = _ => 1)
       ))
 
       val SomeOtherInterfaceType = InterfaceType("SomeOtherInterfaceType", fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1)
+        Field("size", IntType, resolve = _ => 1)
       ))
 
       val AppleType = ObjectType("Apple", interfaces[Unit, Unit](FruitType), fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1),
-        Field("color", StringType, resolve = _ ⇒ "red")
+        Field("size", IntType, resolve = _ => 1),
+        Field("color", StringType, resolve = _ => "red")
       ))
 
       val BasketType = InterfaceType("Basket", fields[Unit, Unit](
-        Field("fruit", FruitType, resolve = _ ⇒ ())
+        Field("fruit", FruitType, resolve = _ => ())
       ))
 
       val AppleBasketType = ObjectType("AppleBasket", interfaces[Unit, Unit](BasketType), fields[Unit, Unit](
-        Field("fruit", SomeOtherInterfaceType, resolve = _ ⇒ ())
+        Field("fruit", SomeOtherInterfaceType, resolve = _ => ())
       ))
 
       val QueryType = ObjectType("Query", fields[Unit, Unit](
-        Field("basket", BasketType, resolve = _ ⇒ ())
+        Field("basket", BasketType, resolve = _ => ())
       ))
 
 
@@ -203,21 +203,21 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
     "ensure that all interface field arguments are present in the implementation" in {
       val FruitType = InterfaceType("Fruit", fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1),
+        Field("size", IntType, resolve = _ => 1),
         Field("slice", IntType,
           arguments = Argument("parts", IntType) :: Nil,
           resolve = _.args.arg[Int]("parts"))
       ))
 
       val AppleType = ObjectType("Apple", interfaces[Unit, Unit](FruitType), fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1),
+        Field("size", IntType, resolve = _ => 1),
         Field("slice", IntType,
           arguments = Argument("pieces", IntType) :: Nil,
           resolve = _.args.arg[Int]("pieces"))
       ))
 
       val QueryType = ObjectType("Query", fields[Unit, Unit](
-        Field("fruit", FruitType, resolve = _ ⇒ ())
+        Field("fruit", FruitType, resolve = _ => ())
       ))
 
       val error = intercept[SchemaValidationException](
@@ -229,21 +229,21 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
     "ensure that all interface field argument types are the same in the implementation" in {
       val FruitType = InterfaceType("Fruit", fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1),
+        Field("size", IntType, resolve = _ => 1),
         Field("slice", IntType,
           arguments = Argument("parts", IntType) :: Nil,
           resolve = _.args.arg[Int]("parts"))
       ))
 
       val AppleType = ObjectType("Apple", interfaces[Unit, Unit](FruitType), fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1),
+        Field("size", IntType, resolve = _ => 1),
         Field("slice", IntType,
           arguments = Argument("parts", StringType) :: Nil,
           resolve = _.args.arg[String]("parts").toInt)
       ))
 
       val QueryType = ObjectType("Query", fields[Unit, Unit](
-        Field("fruit", FruitType, resolve = _ ⇒ ())
+        Field("fruit", FruitType, resolve = _ => ())
       ))
 
       val error = intercept[SchemaValidationException](
@@ -255,21 +255,21 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
 
     "ensure that all implementation extra field arguments are optional" in {
       val FruitType = InterfaceType("Fruit", fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1),
+        Field("size", IntType, resolve = _ => 1),
         Field("slice", IntType,
           arguments = Argument("parts", IntType) :: Nil,
           resolve = _.args.arg[Int]("parts"))
       ))
 
       val AppleType = ObjectType("Apple", interfaces[Unit, Unit](FruitType), fields[Unit, Unit](
-        Field("size", IntType, resolve = _ ⇒ 1),
+        Field("size", IntType, resolve = _ => 1),
         Field("slice", IntType,
           arguments = Argument("parts", IntType) :: Argument("careful", BooleanType) :: Nil,
           resolve = _.args.arg[Int]("parts"))
       ))
 
       val QueryType = ObjectType("Query", fields[Unit, Unit](
-        Field("fruit", FruitType, resolve = _ ⇒ ())
+        Field("fruit", FruitType, resolve = _ => ())
       ))
 
       val error = intercept[SchemaValidationException](
@@ -334,11 +334,11 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
           }
          }
        """,
-        Map("data" → Map(
-          "basket" → Map(
-            "fruit" → Map(
-              "size" → 11,
-              "slice" → 5)))))
+        Map("data" -> Map(
+          "basket" -> Map(
+            "fruit" -> Map(
+              "size" -> 11,
+              "slice" -> 5)))))
 
       checkContainsErrors(
         schema,
@@ -353,7 +353,7 @@ class TypeFieldConstraintsSpec extends WordSpec with Matchers {
          }
         """,
         null,
-        List("Cannot query field 'color' on type 'Fruit'. Did you mean to use an inline fragment on 'Apple'?" → List(Pos(5, 15))))
+        List("Cannot query field 'color' on type 'Fruit'. Did you mean to use an inline fragment on 'Apple'?" -> List(Pos(5, 15))))
     }
   }
 

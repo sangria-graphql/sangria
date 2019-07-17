@@ -43,7 +43,7 @@ class UniqueInputFieldNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can be only one input field named 'f1'." → List(Pos(3, 24), Pos(3, 37))
+        "There can be only one input field named 'f1'." -> List(Pos(3, 24), Pos(3, 37))
       ))
 
     "many duplicate input object fields" in expectFailsPosList(
@@ -53,8 +53,8 @@ class UniqueInputFieldNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can be only one input field named 'f1'." → List(Pos(3, 24), Pos(3, 37)),
-        "There can be only one input field named 'f1'." → List(Pos(3, 24), Pos(3, 50))
+        "There can be only one input field named 'f1'." -> List(Pos(3, 24), Pos(3, 37)),
+        "There can be only one input field named 'f1'." -> List(Pos(3, 24), Pos(3, 50))
       ))
   }
 }

@@ -15,11 +15,11 @@ import sangria.validation._
 class KnownArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.Argument(name, _, _, pos) ⇒
+      case ast.Argument(name, _, _, pos) =>
         ctx.typeInfo.ancestors.drop(1).head match {
-          case _: ast.Field ⇒
+          case _: ast.Field =>
             ctx.typeInfo.fieldDef match {
-              case Some(field) if !field.arguments.exists(_.name == name) ⇒
+              case Some(field) if !field.arguments.exists(_.name == name) =>
                 Left(Vector(UnknownArgViolation(
                   name,
                   field.name,
@@ -27,24 +27,24 @@ class KnownArgumentNames extends ValidationRule {
                   StringUtil.suggestionList(name, field.arguments map (_.name)),
                   ctx.sourceMapper,
                   pos.toList)))
-              case _ ⇒
+              case _ =>
                 AstVisitorCommand.RightContinue
             }
 
-          case _: ast.Directive ⇒
+          case _: ast.Directive =>
             ctx.typeInfo.directive match {
-              case Some(dir) if !dir.arguments.exists(_.name == name) ⇒
+              case Some(dir) if !dir.arguments.exists(_.name == name) =>
                 Left(Vector(UnknownDirectiveArgViolation(
                   name,
                   dir.name,
                   StringUtil.suggestionList(name, dir.arguments map (_.name)),
                   ctx.sourceMapper,
                   pos.toList)))
-              case _ ⇒
+              case _ =>
                 AstVisitorCommand.RightContinue
             }
 
-          case _ ⇒
+          case _ =>
             AstVisitorCommand.RightContinue
         }
     }

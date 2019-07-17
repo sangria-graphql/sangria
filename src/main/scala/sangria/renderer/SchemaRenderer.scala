@@ -13,11 +13,11 @@ import sangria.visitor.VisitorCommand
 object SchemaRenderer {
   def renderTypeName(tpe: Type, topLevel: Boolean = false) = {
     def loop(t: Type, suffix: String): String = t match {
-      case OptionType(ofType) ⇒ loop(ofType, "")
-      case OptionInputType(ofType) ⇒ loop(ofType, "")
-      case ListType(ofType) ⇒ s"[${loop(ofType, "!")}]" + suffix
-      case ListInputType(ofType) ⇒ s"[${loop(ofType, "!")}]" + suffix
-      case named: Named ⇒ named.name + suffix
+      case OptionType(ofType) => loop(ofType, "")
+      case OptionInputType(ofType) => loop(ofType, "")
+      case ListType(ofType) => s"[${loop(ofType, "!")}]" + suffix
+      case ListInputType(ofType) => s"[${loop(ofType, "!")}]" + suffix
+      case named: Named => named.name + suffix
     }
 
     loop(tpe, if (topLevel) "" else "!")
@@ -29,37 +29,37 @@ object SchemaRenderer {
       else tpe
 
     def loop(t: Type, notNull: Boolean): ast.Type = t match {
-      case OptionType(ofType) ⇒ loop(ofType, false)
-      case OptionInputType(ofType) ⇒ loop(ofType, false)
-      case ListType(ofType) ⇒ nn(ast.ListType(loop(ofType, true)), notNull)
-      case ListInputType(ofType) ⇒ nn(ast.ListType(loop(ofType, true)), notNull)
-      case named: Named ⇒ nn(ast.NamedType(named.name), notNull)
+      case OptionType(ofType) => loop(ofType, false)
+      case OptionInputType(ofType) => loop(ofType, false)
+      case ListType(ofType) => nn(ast.ListType(loop(ofType, true)), notNull)
+      case ListInputType(ofType) => nn(ast.ListType(loop(ofType, true)), notNull)
+      case named: Named => nn(ast.NamedType(named.name), notNull)
     }
 
     loop(tpe, !topLevel)
   }
 
   def renderDescription(description: Option[String]): Option[ast.StringValue] =
-    description.flatMap { d ⇒
+    description.flatMap { d =>
       if (d.trim.nonEmpty) Some(ast.StringValue(d, block = d.indexOf('\n') > 0))
       else None
     }
 
   def renderImplementedInterfaces(tpe: IntrospectionObjectType) =
-    tpe.interfaces.map(t ⇒ ast.NamedType(t.name)).toVector
+    tpe.interfaces.map(t => ast.NamedType(t.name)).toVector
 
   def renderImplementedInterfaces(tpe: ObjectLikeType[_, _]) =
-    tpe.allInterfaces.map(t ⇒ ast.NamedType(t.name))
+    tpe.allInterfaces.map(t => ast.NamedType(t.name))
 
   def renderTypeName(tpe: IntrospectionTypeRef): ast.Type =
     tpe match {
-      case IntrospectionListTypeRef(ofType) ⇒ ast.ListType(renderTypeName(ofType))
-      case IntrospectionNonNullTypeRef(ofType) ⇒ ast.NotNullType(renderTypeName(ofType))
-      case IntrospectionNamedTypeRef(_, name) ⇒ ast.NamedType(name)
+      case IntrospectionListTypeRef(ofType) => ast.ListType(renderTypeName(ofType))
+      case IntrospectionNonNullTypeRef(ofType) => ast.NotNullType(renderTypeName(ofType))
+      case IntrospectionNamedTypeRef(_, name) => ast.NamedType(name)
     }
 
   def renderDefault(defaultValue: Option[String]) =
-    defaultValue.flatMap(d ⇒ QueryParser.parseInput(d).toOption)
+    defaultValue.flatMap(d => QueryParser.parseInput(d).toOption)
 
   def renderDefault(value: (Any, ToInput[_, _]), tpe: InputType[_]) = {
     val coercionHelper = new ValueCoercionHelper[Any]
@@ -81,10 +81,10 @@ object SchemaRenderer {
   def withoutDeprecated(dirs: Vector[ast.Directive]) = dirs.filterNot(_.name == "deprecated")
 
   def renderDeprecation(isDeprecated: Boolean, reason: Option[String]) = (isDeprecated, reason) match {
-    case (true, Some(r)) if r.trim == DefaultDeprecationReason ⇒ Vector(ast.Directive("deprecated", Vector.empty))
-    case (true, Some(r)) if r.trim.nonEmpty ⇒ Vector(ast.Directive("deprecated", Vector(ast.Argument("reason", ast.StringValue(r.trim)))))
-    case (true, _) ⇒ Vector(ast.Directive("deprecated", Vector.empty))
-    case _ ⇒ Vector.empty
+    case (true, Some(r)) if r.trim == DefaultDeprecationReason => Vector(ast.Directive("deprecated", Vector.empty))
+    case (true, Some(r)) if r.trim.nonEmpty => Vector(ast.Directive("deprecated", Vector(ast.Argument("reason", ast.StringValue(r.trim)))))
+    case (true, _) => Vector(ast.Directive("deprecated", Vector.empty))
+    case _ => Vector.empty
   }
 
   def renderArgsI(args: Seq[IntrospectionInputValue]) =
@@ -130,7 +130,7 @@ object SchemaRenderer {
     ast.EnumTypeDefinition(tpe.name, renderEnumValues(tpe.values), tpe.astDirectives, renderDescription(tpe.description))
 
   def renderEnumValuesI(values: Seq[IntrospectionEnumValue]) =
-    values.map(v ⇒ ast.EnumValueDefinition(v.name, renderDeprecation(v.isDeprecated, v.deprecationReason), renderDescription(v.description))).toVector
+    values.map(v => ast.EnumValueDefinition(v.name, renderDeprecation(v.isDeprecated, v.deprecationReason), renderDescription(v.description))).toVector
 
   def renderEnumValues(values: Seq[EnumValue[_]]) =
     values.map(renderEnumValue).toVector
@@ -157,18 +157,18 @@ object SchemaRenderer {
     ast.InterfaceTypeDefinition(tpe.name, renderFields(tpe.uniqueFields), tpe.astDirectives, renderDescription(tpe.description))
 
   def renderUnion(tpe: IntrospectionUnionType) =
-    ast.UnionTypeDefinition(tpe.name, tpe.possibleTypes.map(t ⇒ ast.NamedType(t.name)).toVector, description = renderDescription(tpe.description))
+    ast.UnionTypeDefinition(tpe.name, tpe.possibleTypes.map(t => ast.NamedType(t.name)).toVector, description = renderDescription(tpe.description))
 
   def renderUnion(tpe: UnionType[_]) =
-    ast.UnionTypeDefinition(tpe.name, tpe.types.map(t ⇒ ast.NamedType(t.name)).toVector, tpe.astDirectives, renderDescription(tpe.description))
+    ast.UnionTypeDefinition(tpe.name, tpe.types.map(t => ast.NamedType(t.name)).toVector, tpe.astDirectives, renderDescription(tpe.description))
 
   private def renderSchemaDefinition(schema: IntrospectionSchema): Option[ast.SchemaDefinition] =
     if (isSchemaOfCommonNames(schema.queryType.name, schema.mutationType.map(_.name), schema.subscriptionType.map(_.name)))
       None
     else {
       val withQuery = Vector(ast.OperationTypeDefinition(ast.OperationType.Query, ast.NamedType(schema.queryType.name)))
-      val withMutation = schema.mutationType.fold(withQuery)(t ⇒ withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
-      val withSubs = schema.subscriptionType.fold(withMutation)(t ⇒ withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
+      val withMutation = schema.mutationType.fold(withQuery)(t => withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
+      val withSubs = schema.subscriptionType.fold(withMutation)(t => withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
 
       Some(ast.SchemaDefinition(withSubs, description = renderDescription(schema.description)))
     }
@@ -178,8 +178,8 @@ object SchemaRenderer {
       None
     else {
       val withQuery = Vector(ast.OperationTypeDefinition(ast.OperationType.Query, ast.NamedType(schema.query.name)))
-      val withMutation = schema.mutation.fold(withQuery)(t ⇒ withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
-      val withSubs = schema.subscription.fold(withMutation)(t ⇒ withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
+      val withMutation = schema.mutation.fold(withQuery)(t => withQuery :+ ast.OperationTypeDefinition(ast.OperationType.Mutation, ast.NamedType(t.name)))
+      val withSubs = schema.subscription.fold(withMutation)(t => withMutation :+ ast.OperationTypeDefinition(ast.OperationType.Subscription, ast.NamedType(t.name)))
 
       Some(ast.SchemaDefinition(withSubs, schema.astDirectives, renderDescription(schema.description)))
     }
@@ -189,25 +189,25 @@ object SchemaRenderer {
 
   def renderType(tpe: IntrospectionType): ast.TypeDefinition =
     tpe match {
-      case o: IntrospectionObjectType ⇒ renderObject(o)
-      case u: IntrospectionUnionType ⇒ renderUnion(u)
-      case i: IntrospectionInterfaceType ⇒ renderInterface(i)
-      case io: IntrospectionInputObjectType ⇒ renderInputObject(io)
-      case s: IntrospectionScalarType ⇒ renderScalar(s)
-      case e: IntrospectionEnumType ⇒ renderEnum(e)
-      case kind ⇒ throw new IllegalArgumentException(s"Unsupported kind: $kind")
+      case o: IntrospectionObjectType => renderObject(o)
+      case u: IntrospectionUnionType => renderUnion(u)
+      case i: IntrospectionInterfaceType => renderInterface(i)
+      case io: IntrospectionInputObjectType => renderInputObject(io)
+      case s: IntrospectionScalarType => renderScalar(s)
+      case e: IntrospectionEnumType => renderEnum(e)
+      case kind => throw new IllegalArgumentException(s"Unsupported kind: $kind")
     }
 
   def renderType(tpe: Type with Named): ast.TypeDefinition =
     tpe match {
-      case o: ObjectType[_, _] ⇒ renderObject(o)
-      case u: UnionType[_] ⇒ renderUnion(u)
-      case i: InterfaceType[_, _] ⇒ renderInterface(i)
-      case io: InputObjectType[_] ⇒ renderInputObject(io)
-      case s: ScalarType[_] ⇒ renderScalar(s)
-      case s: ScalarAlias[_, _] ⇒ renderScalar(s.aliasFor)
-      case e: EnumType[_] ⇒ renderEnum(e)
-      case _ ⇒ throw new IllegalArgumentException(s"Unsupported type: $tpe")
+      case o: ObjectType[_, _] => renderObject(o)
+      case u: UnionType[_] => renderUnion(u)
+      case i: InterfaceType[_, _] => renderInterface(i)
+      case io: InputObjectType[_] => renderInputObject(io)
+      case s: ScalarType[_] => renderScalar(s)
+      case s: ScalarAlias[_, _] => renderScalar(s.aliasFor)
+      case e: EnumType[_] => renderEnum(e)
+      case _ => throw new IllegalArgumentException(s"Unsupported type: $tpe")
     }
 
   def renderDirectiveLocation(loc: DirectiveLocation.Value) =
@@ -221,8 +221,8 @@ object SchemaRenderer {
 
   def schemaAstFromIntrospection(introspectionSchema: IntrospectionSchema, filter: SchemaFilter = SchemaFilter.default): ast.Document = {
     val schemaDef = if (filter.renderSchema) renderSchemaDefinition(introspectionSchema) else None
-    val types = introspectionSchema.types filter (t ⇒ filter.filterTypes(t.name)) sortBy (_.name) map renderType
-    val directives = introspectionSchema.directives filter (d ⇒ filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
+    val types = introspectionSchema.types filter (t => filter.filterTypes(t.name)) sortBy (_.name) map renderType
+    val directives = introspectionSchema.directives filter (d => filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
 
     ast.Document(schemaDef.toVector ++ types ++ directives)
   }
@@ -247,8 +247,8 @@ object SchemaRenderer {
 
   def schemaAst(schema: Schema[_, _], filter: SchemaFilter = SchemaFilter.default): ast.Document = {
     val schemaDef = if (filter.renderSchema) renderSchemaDefinition(schema) else None
-    val types = schema.typeList filter (t ⇒ filter.filterTypes(t.name)) sortBy (_.name) map renderType
-    val directives = schema.directives filter (d ⇒ filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
+    val types = schema.typeList filter (t => filter.filterTypes(t.name)) sortBy (_.name) map renderType
+    val directives = schema.directives filter (d => filter.filterDirectives(d.name)) sortBy (_.name) map renderDirective
 
     val document = ast.Document(schemaDef.toVector ++ types ++ directives)
 
@@ -258,30 +258,30 @@ object SchemaRenderer {
 
   def transformLegacyCommentDescriptions[T <: AstNode](node: T): T =
     AstVisitor.visit(node, AstVisitor {
-      case n: ast.DirectiveDefinition if n.description.isDefined ⇒
+      case n: ast.DirectiveDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.InterfaceTypeDefinition if n.description.isDefined ⇒
+      case n: ast.InterfaceTypeDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.EnumTypeDefinition if n.description.isDefined ⇒
+      case n: ast.EnumTypeDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.EnumValueDefinition if n.description.isDefined ⇒
+      case n: ast.EnumValueDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.FieldDefinition if n.description.isDefined ⇒
+      case n: ast.FieldDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.InputObjectTypeDefinition if n.description.isDefined ⇒
+      case n: ast.InputObjectTypeDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.InputValueDefinition if n.description.isDefined ⇒
+      case n: ast.InputValueDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.ObjectTypeDefinition if n.description.isDefined ⇒
+      case n: ast.ObjectTypeDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.ScalarTypeDefinition if n.description.isDefined ⇒
+      case n: ast.ScalarTypeDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      case n: ast.UnionTypeDefinition if n.description.isDefined ⇒
+      case n: ast.UnionTypeDefinition if n.description.isDefined =>
         VisitorCommand.Transform(n.copy(description = None, comments = n.comments ++ commentDescription(n)))
     })
 
   private def commentDescription(node: ast.WithDescription) =
-    node.description.toVector.flatMap(sv ⇒ sv.value.split("\\r?\\n").toVector.map(ast.Comment(_)))
+    node.description.toVector.flatMap(sv => sv.value.split("\\r?\\n").toVector.map(ast.Comment(_)))
 
   def renderSchema(schema: Schema[_, _]): String =
     schemaAst(schema, SchemaFilter.default).renderPretty
@@ -290,32 +290,32 @@ object SchemaRenderer {
     schemaAst(schema, filter).renderPretty
 }
 
-case class SchemaFilter(filterTypes: String ⇒ Boolean, filterDirectives: String ⇒ Boolean, renderSchema: Boolean = true, legacyCommentDescriptions: Boolean = false) {
+case class SchemaFilter(filterTypes: String => Boolean, filterDirectives: String => Boolean, renderSchema: Boolean = true, legacyCommentDescriptions: Boolean = false) {
   @deprecated("Please migrate to new string-based description format", "1.4.0")
   def withLegacyCommentDescriptions = copy(legacyCommentDescriptions = true)
 }
 
 object SchemaFilter {
   val withoutSangriaBuiltIn: SchemaFilter = SchemaFilter(
-    typeName ⇒ !Schema.isBuiltInType(typeName),
-    dirName ⇒ !Schema.isBuiltInDirective(dirName))
+    typeName => !Schema.isBuiltInType(typeName),
+    dirName => !Schema.isBuiltInDirective(dirName))
 
   val default: SchemaFilter = withoutSangriaBuiltIn
 
   val withoutGraphQLBuiltIn = SchemaFilter(
-    typeName ⇒ !Schema.isBuiltInGraphQLType(typeName),
-    dirName ⇒ !Schema.isBuiltInDirective(dirName))
+    typeName => !Schema.isBuiltInGraphQLType(typeName),
+    dirName => !Schema.isBuiltInDirective(dirName))
 
   val withoutIntrospection: SchemaFilter = SchemaFilter(
-    typeName ⇒ !Schema.isIntrospectionType(typeName),
+    typeName => !Schema.isIntrospectionType(typeName),
     Function.const(true))
 
   val builtIn: SchemaFilter = SchemaFilter(
-    typeName ⇒ Schema.isBuiltInType(typeName),
-    dirName ⇒ Schema.isBuiltInDirective(dirName))
+    typeName => Schema.isBuiltInType(typeName),
+    dirName => Schema.isBuiltInDirective(dirName))
 
   val introspection: SchemaFilter = SchemaFilter(
-    typeName ⇒ Schema.isIntrospectionType(typeName),
+    typeName => Schema.isIntrospectionType(typeName),
     Function.const(false),
     renderSchema = false)
 

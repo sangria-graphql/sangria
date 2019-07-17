@@ -26,37 +26,37 @@ case class InputDocumentMaterializer[Vars](schema: Schema[_, _], variables: Vars
       val variableDefinitions = inferVariableDefinitions(document, inputType)
 
       collector.getVariableValues(variableDefinitions, None) match {
-        case Failure(e) ⇒ scheme.failure(e)
-        case Success(vars) ⇒
+        case Failure(e) => scheme.failure(e)
+        case Success(vars) =>
           try {
-            scheme.success(document.values flatMap { value ⇒
+            scheme.success(document.values flatMap { value =>
               collector.coercionHelper.coerceInputValue(inputType, Nil, value, None, Some(vars), fromInput.marshaller, fromInput.marshaller, isArgument = false) match {
-                case Left(vs) ⇒ throw InputDocumentMaterializationError(vs, ExceptionHandler.empty)
-                case Right(coerced) ⇒ coerced.toOption.map(res ⇒ fromInput.fromResult(res))
+                case Left(vs) => throw InputDocumentMaterializationError(vs, ExceptionHandler.empty)
+                case Right(coerced) => coerced.toOption.map(res => fromInput.fromResult(res))
               }
             })
           } catch {
-            case NonFatal(e) ⇒ scheme.failure(e)
+            case NonFatal(e) => scheme.failure(e)
           }
       }
     }
   }
 
   def inferVariableDefinitions[T](document: InputDocument, inputType: InputType[T]) = {
-    document.values.flatMap { v ⇒
-      AstVisitor.visitAstWithState(schema, v, new mutable.HashMap[String, VariableDefinition]) { (typeInfo, state) ⇒
+    document.values.flatMap { v =>
+      AstVisitor.visitAstWithState(schema, v, new mutable.HashMap[String, VariableDefinition]) { (typeInfo, state) =>
         typeInfo.withInputType(inputType)
 
         AstVisitor {
-          case v: ast.VariableValue if typeInfo.inputType.isDefined ⇒
+          case v: ast.VariableValue if typeInfo.inputType.isDefined =>
             val parentType = typeInfo.inputType.get
             val parentTypeAst = SchemaRenderer.renderTypeNameAst(parentType)
 
             state.get(v.name) match {
-              case None ⇒
+              case None =>
                 state(v.name) = ast.VariableDefinition(v.name, parentTypeAst, None)
                 VisitorCommand.Continue
-              case _ ⇒ VisitorCommand.Continue
+              case _ => VisitorCommand.Continue
             }
         }
       }.values.toVector
@@ -97,6 +97,6 @@ object InputDocumentMaterializer {
     Schema(ObjectType("Query", fields[Unit, Unit](
       Field("stub", StringType,
         arguments = Argument("stub", inputType) :: Nil,
-        resolve = _ ⇒ "stub"))))
+        resolve = _ => "stub"))))
 
 }

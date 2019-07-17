@@ -73,7 +73,7 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument 'unless' on directive 'skip'." → Some(Pos(3, 21))
+        "Unknown argument 'unless' on directive 'skip'." -> Some(Pos(3, 21))
       ))
 
     "misspelled directive args are reported" in expectFails(
@@ -83,7 +83,7 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument 'iff' on directive 'skip'. Did you mean 'if'?" → Some(Pos(3, 21))
+        "Unknown argument 'iff' on directive 'skip'. Did you mean 'if'?" -> Some(Pos(3, 21))
       ))
 
     "invalid arg name" in expectFails(
@@ -93,7 +93,7 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." → Some(Pos(3, 27))
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(3, 27))
       ))
     
     "misspelled arg name is reported" in expectFails(
@@ -103,7 +103,7 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument 'dogcommand' on field 'doesKnowCommand' of type 'Dog'. Did you mean 'dogCommand'?" → Some(Pos(3, 27))
+        "Unknown argument 'dogcommand' on field 'doesKnowCommand' of type 'Dog'. Did you mean 'dogCommand'?" -> Some(Pos(3, 27))
       ))
 
     "unknown args amongst known args" in expectFails(
@@ -113,8 +113,8 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument 'whoknows' on field 'doesKnowCommand' of type 'Dog'." → Some(Pos(3, 27)),
-        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." → Some(Pos(3, 57))
+        "Unknown argument 'whoknows' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(3, 27)),
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(3, 57))
       ))
 
     "unknown args deeply" in expectFails(
@@ -133,8 +133,8 @@ class KnownArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." → Some(Pos(4, 29)),
-        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." → Some(Pos(9, 33))
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(4, 29)),
+        "Unknown argument 'unknown' on field 'doesKnowCommand' of type 'Dog'." -> Some(Pos(9, 33))
       ))
   }
 }

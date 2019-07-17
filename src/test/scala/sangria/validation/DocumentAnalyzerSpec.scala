@@ -13,11 +13,11 @@ class DocumentAnalyzerSpec extends WordSpec with Matchers with StringMatchers {
   val QueryType = ObjectType("Query", fields[Unit, Unit](
     Field("normalField", OptionType(NumberType),
       arguments = Argument("enumArg", OptionInputType(NumberType)) :: Nil,
-      resolve = ctx ⇒ ctx.argOpt[Int]("enumArg")),
+      resolve = ctx => ctx.argOpt[Int]("enumArg")),
 
     Field("deprecatedField", OptionType(StringType),
       deprecationReason = Some("Some field reason."),
-      resolve = _ ⇒ "foo")))
+      resolve = _ => "foo")))
 
   val schema = Schema(QueryType)
 
