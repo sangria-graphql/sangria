@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.ast._
+import sangria.ast.{AstLocation, Document, ObjectTypeDefinition, ObjectTypeExtensionDefinition, UnionTypeDefinition, UnionTypeExtensionDefinition}
 
 import language.higherKinds
 import sangria.execution._
