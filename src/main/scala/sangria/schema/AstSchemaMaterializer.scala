@@ -86,7 +86,7 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
       schema
     else {
       existingSchema = Some(schema)
-      existingDefsMat = schema.allTypes.mapValues(MaterializedType(existingOrigin, _))
+      existingDefsMat = schema.allTypes.mapValues(MaterializedType(existingOrigin, _)).toMap
 
       val queryType = getTypeFromDef(existingOrigin, schema.query)
 

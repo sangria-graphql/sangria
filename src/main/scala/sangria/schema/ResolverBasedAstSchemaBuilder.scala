@@ -2,7 +2,6 @@ package sangria.schema
 
 import language.{existentials, postfixOps}
 import sangria.ast
-import sangria.ast._
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ToInput}
 import sangria.renderer.SchemaRenderer
@@ -401,7 +400,7 @@ object ResolverBasedAstSchemaBuilder {
           case i: BigInt if !i.isValidLong ⇒ invalidType("Long", value)
           case i: BigInt ⇒ i.longValue
           case d: Double if d.isWhole ⇒ d.toLong
-          case d: BigDecimal if d.isValidLong ⇒ d.longValue()
+          case d: BigDecimal if d.isValidLong ⇒ d.longValue
           case v: String ⇒ safe(v.toLong, "Long", value)
           case _ ⇒ invalidType("Long", value)
         }
@@ -430,10 +429,10 @@ object ResolverBasedAstSchemaBuilder {
           case i: Int ⇒ i.toDouble
           case i: Long ⇒ i.toDouble
           case i: BigInt if !i.isValidDouble ⇒ invalidType("Float", value)
-          case i: BigInt ⇒ i.doubleValue()
+          case i: BigInt ⇒ i.doubleValue
           case d: Double ⇒ d
           case d: BigDecimal if !d.isDecimalDouble ⇒ invalidType("Float", value)
-          case d: BigDecimal ⇒ d.doubleValue()
+          case d: BigDecimal ⇒ d.doubleValue
           case v: String ⇒ safe(v.toDouble, "Float", value)
           case _ ⇒ invalidType("Float", value)
         }
@@ -497,7 +496,7 @@ object ResolverBasedAstSchemaBuilder {
     val resolversByName = resolvers.groupBy(_.directiveName)
     val stack = ValidatorStack.empty[ast.AstNode]
 
-    AstVisitor.visit(schema, AstVisitor(
+    ast.AstVisitor.visit(schema, ast.AstVisitor(
       onEnter = {
         case node: ast.WithDirectives ⇒
           stack.push(node)

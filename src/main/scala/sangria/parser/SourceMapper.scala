@@ -3,8 +3,6 @@ package sangria.parser
 import org.parboiled2.ParserInput
 import sangria.ast.AstLocation
 
-import scala.collection.breakOut
-
 trait SourceMapper {
   def id: String
   def source: String
@@ -23,7 +21,7 @@ class DefaultSourceMapper(val id: String, val parserInput: ParserInput) extends 
 }
 
 class AggregateSourceMapper(val id: String, val delegates: Vector[SourceMapper]) extends SourceMapper {
-  lazy val delegateById: Map[String, SourceMapper] = delegates.map(d ⇒ d.id → d)(breakOut)
+  lazy val delegateById: Map[String, SourceMapper] = delegates.iterator.map(d ⇒ d.id → d).toMap
 
   lazy val source = delegates.map(_.source.trim) mkString "\n\n"
 

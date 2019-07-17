@@ -12,7 +12,7 @@ class ValidatorStack[T] {
   def head(toDrop: Int) = stack.drop(toDrop).head
   def headOption(toDrop: Int) = stack.drop(toDrop).headOption
   def nonEmpty = stack.nonEmpty
-  def toSeq: Seq[T] = stack
+  def toSeq: Seq[T] = stack.toSeq
 }
 
 object ValidatorStack {

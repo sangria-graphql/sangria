@@ -884,7 +884,7 @@ case class Schema[Ctx, Val](
   lazy val outputTypes = types collect {case (name, (_, tpe: OutputType[_])) ⇒ name → tpe}
   lazy val scalarTypes = types collect {case (name, (_, tpe: ScalarType[_])) ⇒ name → tpe}
   lazy val unionTypes: Map[String, UnionType[_]] =
-    types.filter(_._2._2.isInstanceOf[UnionType[_]]).mapValues(_._2.asInstanceOf[UnionType[_]])
+    types.filter(_._2._2.isInstanceOf[UnionType[_]]).mapValues(_._2.asInstanceOf[UnionType[_]]).toMap
 
   lazy val directivesByName = directives groupBy (_.name) mapValues (_.head)
 
@@ -912,6 +912,7 @@ case class Schema[Ctx, Val](
       .flatMap(objectLike ⇒ objectLike.interfaces map (_.name → objectLike))
       .groupBy(_._1)
       .mapValues(_ map (_._2))
+      .toMap
   }
 
   lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = {

@@ -38,7 +38,7 @@ package object schema {
       case i: BigInt if !i.isValidLong ⇒ Left(BigLongCoercionViolation)
       case i: BigInt ⇒ Right(i.longValue)
       case d: Double if d.isWhole ⇒ Right(d.toLong)
-      case d: BigDecimal if d.isValidLong ⇒ Right(d.longValue())
+      case d: BigDecimal if d.isValidLong ⇒ Right(d.longValue)
       case _ ⇒ Left(LongCoercionViolation)
     },
     coerceInput = {
@@ -82,10 +82,10 @@ package object schema {
       case i: Int ⇒ Right(i.toDouble)
       case i: Long ⇒ Right(i.toDouble)
       case i: BigInt if !i.isValidDouble ⇒ Left(BigDecimalCoercionViolation)
-      case i: BigInt ⇒ Right(i.doubleValue())
+      case i: BigInt ⇒ Right(i.doubleValue)
       case d: Double ⇒ Right(d)
       case d: BigDecimal if !d.isDecimalDouble ⇒ Left(BigDecimalCoercionViolation)
-      case d: BigDecimal ⇒ Right(d.doubleValue())
+      case d: BigDecimal ⇒ Right(d.doubleValue)
       case _ ⇒ Left(FloatCoercionViolation)
     },
     coerceInput = {
@@ -176,13 +176,13 @@ package object schema {
     BuiltinGraphQLScalars ++ BuiltinSangriaScalars
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinScalars.groupBy(_.name).mapValues(_.head)
+    BuiltinScalars.groupBy(_.name).mapValues(_.head).toMap
 
   val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinGraphQLScalars.groupBy(_.name).mapValues(_.head)
+    BuiltinGraphQLScalars.groupBy(_.name).mapValues(_.head).toMap
 
   val BuiltinSangriaScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinSangriaScalars.groupBy(_.name).mapValues(_.head)
+    BuiltinSangriaScalars.groupBy(_.name).mapValues(_.head).toMap
 
   val IfArg = Argument("if", BooleanType, "Included when true.")
 
@@ -222,7 +222,7 @@ package object schema {
   val BuiltinDirectives = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
 
   val BuiltinDirectivesByName: Map[String, Directive] =
-    BuiltinDirectives.groupBy(_.name).mapValues(_.head)
+    BuiltinDirectives.groupBy(_.name).mapValues(_.head).toMap
 
   def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
 

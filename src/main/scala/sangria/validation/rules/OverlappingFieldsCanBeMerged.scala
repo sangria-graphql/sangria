@@ -292,7 +292,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
               visitedFragments1,
               visitedFragments2)
 
-            subfieldConflicts(conflicts, outputName, ast1, ast2)
+            subfieldConflicts(conflicts.toSeq, outputName, ast1, ast2)
         }
       }
     }
