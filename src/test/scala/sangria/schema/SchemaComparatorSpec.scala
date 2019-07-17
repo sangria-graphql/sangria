@@ -12,13 +12,13 @@ import scala.reflect.ClassTag
 class SchemaComparatorSpec extends WordSpec with Matchers {
   "SchemaComparator" should {
     val QueryType = ObjectType("Query", fields[Unit, Unit](
-      Field("field1", OptionType(StringType), resolve = _ ⇒ "foo")))
+      Field("field1", OptionType(StringType), resolve = _ => "foo")))
 
     "should detect if a type was removed or added" in {
       val type1 = ObjectType("Type1", fields[Unit, Unit](
-        Field("field1", OptionType(StringType), resolve = _ ⇒ "foo")))
+        Field("field1", OptionType(StringType), resolve = _ => "foo")))
       val type2 = ObjectType("Type2", fields[Unit, Unit](
-        Field("field1", OptionType(StringType), resolve = _ ⇒ "foo")))
+        Field("field1", OptionType(StringType), resolve = _ => "foo")))
 
       val oldSchema = Schema(QueryType, additionalTypes = type1 :: type2 :: Nil)
       val newSchema = Schema(QueryType, additionalTypes = type2 :: Nil)
@@ -634,16 +634,16 @@ class SchemaComparatorSpec extends WordSpec with Matchers {
   }
 
   def assertChanges(actualChanges: Vector[SchemaChange], expectedChanges: (Class[_], String, Boolean)*) = {
-    val actualRendered = actualChanges.map(c ⇒ s"  * ${c.getClass.getSimpleName}: ${c.description}${if (c.breakingChange) " (breaking)" else ""}").mkString("\n")
+    val actualRendered = actualChanges.map(c => s"  * ${c.getClass.getSimpleName}: ${c.description}${if (c.breakingChange) " (breaking)" else ""}").mkString("\n")
 
     withClue(s"Actual changes:\n$actualRendered\n") {
       actualChanges should have size expectedChanges.size
 
-      val notFound = expectedChanges.filter(expectedChange ⇒
-        !actualChanges.exists(ac ⇒ expectedChange._1.isAssignableFrom(ac.getClass) && ac.description == expectedChange._2 && ac.breakingChange == expectedChange._3))
+      val notFound = expectedChanges.filter(expectedChange =>
+        !actualChanges.exists(ac => expectedChange._1.isAssignableFrom(ac.getClass) && ac.description == expectedChange._2 && ac.breakingChange == expectedChange._3))
 
       if (notFound.nonEmpty) {
-        val str = notFound.map(nf ⇒ s"  * ${nf._1.getSimpleName}: ${nf._2}${if (nf._3) " (breaking)" else ""}").mkString("\n")
+        val str = notFound.map(nf => s"  * ${nf._1.getSimpleName}: ${nf._2}${if (nf._3) " (breaking)" else ""}").mkString("\n")
 
         fail(s"Changes not found:\n $str")
       }

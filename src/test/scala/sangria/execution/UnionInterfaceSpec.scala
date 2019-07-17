@@ -37,7 +37,7 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
     Field("pets", OptionType(ListType(OptionType(PetType))), resolve = _.value.pets),
     Field("pets2", OptionType(ListType(OptionType(Pet2Type))), resolve = _.value.eitherPets),
     Field("favouritePet", PetType, resolve = _.value.pets.flatMap(_.headOption.flatMap(identity)).get),
-    Field("favouritePetList", ListType(PetType), resolve = _.value.pets.getOrElse(Nil).flatMap(x ⇒ x).toSeq),
+    Field("favouritePetList", ListType(PetType), resolve = _.value.pets.getOrElse(Nil).flatMap(x => x).toSeq),
     Field("favouritePetOpt", OptionType(PetType), resolve = _.value.pets.flatMap(_.headOption.flatMap(identity))),
     Field("friends", OptionType(ListType(OptionType(NamedType))), resolve = _.value.friends)))
   
@@ -76,33 +76,33 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
         }
       """,
       Map(
-        "data" → Map(
-          "Named" → Map(
-            "kind" → "INTERFACE",
-            "name" → "Named",
-            "fields" → List(
-              Map("name" → "name")
+        "data" -> Map(
+          "Named" -> Map(
+            "kind" -> "INTERFACE",
+            "name" -> "Named",
+            "fields" -> List(
+              Map("name" -> "name")
             ),
-            "interfaces" → null,
-            "possibleTypes" → List(
-              Map("name" → "Cat"),
-              Map("name" → "Dog"),
-              Map("name" → "Person")
+            "interfaces" -> null,
+            "possibleTypes" -> List(
+              Map("name" -> "Cat"),
+              Map("name" -> "Dog"),
+              Map("name" -> "Person")
             ),
-            "enumValues" → null,
-            "inputFields" → null
+            "enumValues" -> null,
+            "inputFields" -> null
           ),
-          "Pet" → Map(
-            "kind" → "UNION",
-            "name" → "Pet",
-            "fields" → null,
-            "interfaces" → null,
-            "possibleTypes" → List(
-              Map("name" → "Dog"),
-              Map("name" → "Cat")
+          "Pet" -> Map(
+            "kind" -> "UNION",
+            "name" -> "Pet",
+            "fields" -> null,
+            "interfaces" -> null,
+            "possibleTypes" -> List(
+              Map("name" -> "Dog"),
+              Map("name" -> "Cat")
             ),
-            "enumValues" → null,
-            "inputFields" → null
+            "enumValues" -> null,
+            "inputFields" -> null
           )
         )
       )
@@ -125,14 +125,14 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
        }
       """,
       Map(
-        "data" → Map(
-          "__typename" → "Person",
-          "name" → "Bob",
-          "favouritePet" → Map("name" → "Garfield"),
-          "favouritePetOpt" → Map("name" → "Garfield"),
-          "pets" → List(
-            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+        "data" -> Map(
+          "__typename" -> "Person",
+          "name" -> "Bob",
+          "favouritePet" -> Map("name" -> "Garfield"),
+          "favouritePetOpt" -> Map("name" -> "Garfield"),
+          "pets" -> List(
+            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           )
         )
       ) ,
@@ -162,18 +162,18 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
        }
       """,
       Map(
-        "data" → Map(
-          "__typename" → "Person",
-          "name" → "Bob",
-          "favouritePet" → Map("name" → "Garfield"),
-          "favouritePetOpt" → Map("name" → "Garfield"),
-          "pets" → List(
-            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+        "data" -> Map(
+          "__typename" -> "Person",
+          "name" -> "Bob",
+          "favouritePet" -> Map("name" -> "Garfield"),
+          "favouritePetOpt" -> Map("name" -> "Garfield"),
+          "pets" -> List(
+            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           ),
-          "pets2" → List(
-            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+          "pets2" -> List(
+            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           )
         )
       ) ,
@@ -200,12 +200,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
         }
       """,
       Map(
-        "data" → Map(
-          "__typename" → "Person",
-          "name" → "Bob",
-          "pets" → List(
-            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+        "data" -> Map(
+          "__typename" -> "Person",
+          "name" -> "Bob",
+          "pets" -> List(
+            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           )
         )
       )
@@ -226,12 +226,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
         }
       """,
       Map(
-        "data" → Map(
-          "__typename" → "Person",
-          "name" → "Bob",
-          "friends" → List(
-            Map("__typename" → "Person", "name" → "Liz"),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+        "data" -> Map(
+          "__typename" -> "Person",
+          "name" -> "Bob",
+          "friends" -> List(
+            Map("__typename" -> "Person", "name" -> "Liz"),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           )
         )
       ),
@@ -257,12 +257,12 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
         }
       """,
       Map(
-        "data" → Map(
-          "__typename" → "Person",
-          "name" → "Bob",
-          "friends" → List(
-            Map("__typename" → "Person", "name" → "Liz"),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+        "data" -> Map(
+          "__typename" -> "Person",
+          "name" -> "Bob",
+          "friends" -> List(
+            Map("__typename" -> "Person", "name" -> "Liz"),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           )
         )
       )
@@ -302,16 +302,16 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
         }
       """,
       Map(
-        "data" → Map(
-          "__typename" → "Person",
-          "name" → "Bob",
-          "pets" → List(
-            Map("__typename" → "Cat", "name" → "Garfield", "meows" → false),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+        "data" -> Map(
+          "__typename" -> "Person",
+          "name" -> "Bob",
+          "pets" -> List(
+            Map("__typename" -> "Cat", "name" -> "Garfield", "meows" -> false),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           ),
-          "friends" → List(
-            Map("__typename" → "Person", "name" → "Liz"),
-            Map("__typename" → "Dog", "name" → "Odie", "barks" → true)
+          "friends" -> List(
+            Map("__typename" -> "Person", "name" -> "Liz"),
+            Map("__typename" -> "Dog", "name" -> "Odie", "barks" -> true)
           )
         )
       )
@@ -334,9 +334,9 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
       val BazType = ObjectType("Baz", fields[Unit, Baz](
         Field("quz", OptionType(ListType(OptionType(QuzType))),
           arguments = Argument("id", OptionInputType(ListInputType(StringType))) :: Nil,
-          resolve = c ⇒ {
+          resolve = c => {
             c.argOpt[Seq[String]]("id")
-              .map(queried ⇒ c.value.quz.filter(quz ⇒ queried.contains(quz.id)))
+              .map(queried => c.value.quz.filter(quz => queried.contains(quz.id)))
               .getOrElse(c.value.quz)
               .map(Some(_))
           })))
@@ -379,21 +379,21 @@ class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport
 
       Executor.execute(schema, query, root = data).await should be (
         Map(
-          "data" → Map(
-            "foo" → Vector(
+          "data" -> Map(
+            "foo" -> Vector(
               Map(
-                "__typename" → "Foo",
-                "baz" → Map(
-                  "quz" → Vector(
-                    Map("id" → "one")))),
-              Map("__typename" → "Baz"),
+                "__typename" -> "Foo",
+                "baz" -> Map(
+                  "quz" -> Vector(
+                    Map("id" -> "one")))),
+              Map("__typename" -> "Baz"),
               Map(
-                "__typename" → "Bar",
-                "baz" → Map(
-                  "quz" → Vector(
+                "__typename" -> "Bar",
+                "baz" -> Map(
+                  "quz" -> Vector(
                     Map(
-                      "id" → "two",
-                      "i" → 2))))))))
+                      "id" -> "two",
+                      "i" -> 2))))))))
     }
   }
 }

@@ -66,8 +66,8 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 
   def validateInputDocument(schema: Schema[_, _], doc: ast.InputDocument, inputTypeName: String): Vector[Violation] =
     schema.getInputType(ast.NamedType(inputTypeName)) match {
-      case Some(it) ⇒ validateInputDocument(schema, doc, it)
-      case None ⇒ throw new IllegalStateException(s"Can't find input type '$inputTypeName' in the schema. Known input types are: ${schema.inputTypes.keys.toVector.sorted mkString ", "}.")
+      case Some(it) => validateInputDocument(schema, doc, it)
+      case None => throw new IllegalStateException(s"Can't find input type '$inputTypeName' in the schema. Known input types are: ${schema.inputTypes.keys.toVector.sorted mkString ", "}.")
     }
 
   def validateInputDocument(schema: Schema[_, _], doc: ast.InputDocument, inputType: InputType[_]): Vector[Violation] = {
@@ -82,10 +82,10 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 
   def validateUsingRules(queryAst: ast.AstNode, ctx: ValidationContext, visitors: List[ValidationRule#AstValidatingVisitor], topLevel: Boolean): Unit = AstVisitor.visitAstRecursive(
     doc = queryAst,
-    onEnter = node ⇒ {
+    onEnter = node => {
       ctx.typeInfo.enter(node)
 
-      visitors foreach { visitor ⇒
+      visitors foreach { visitor =>
         if (ctx.validVisitor(visitor) && visitor.onEnter.isDefinedAt(node)) {
           handleResult(ctx, node, visitor, visitor.onEnter(node))
         }
@@ -93,8 +93,8 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 
       Continue
     },
-    onLeave = node ⇒ {
-      visitors foreach { visitor ⇒
+    onLeave = node => {
+      visitors foreach { visitor =>
         if (visitor.onLeave.isDefinedAt(node) && ctx.validVisitor(visitor)) {
           handleResult(ctx, node, visitor, visitor.onLeave(node))
         }
@@ -110,18 +110,18 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
 
   def handleResult(ctx: ValidationContext, node: ast.AstNode, visitor: ValidationRule#AstValidatingVisitor, visitRes: Either[Vector[Violation], AstVisitorCommand.Value]) =
     visitRes match {
-      case Left(violation) ⇒
+      case Left(violation) =>
         ctx.addViolations(violation)
-      case AstVisitorCommand.RightSkip ⇒
+      case AstVisitorCommand.RightSkip =>
         ctx.skips(visitor) = node
-      case Right(Break) ⇒
+      case Right(Break) =>
         ctx.ignoredVisitors += visitor
-      case _ ⇒ // do nothing
+      case _ => // do nothing
     }
 
   def withoutValidation[T : ClassTag] = {
     val cls = classTag[T].runtimeClass
-    val newRules = rules.filterNot(r ⇒ cls.isAssignableFrom(r.getClass))
+    val newRules = rules.filterNot(r => cls.isAssignableFrom(r.getClass))
 
     new RuleBasedQueryValidator(newRules)
   }
@@ -149,56 +149,56 @@ class ValidationContext(val schema: Schema[_, _], val doc: ast.Document, val sou
 object ValidationContext {
   @deprecated("The validations are now implemented as a part of `ValuesOfCorrectType` validation.", "1.4.0")
   def isValidLiteralValue(tpe: InputType[_], value: ast.Value, sourceMapper: Option[SourceMapper]): Vector[Violation] = (tpe, value) match {
-    case (_, _: ast.VariableValue) ⇒ Vector.empty
-    case (OptionInputType(ofType), _: ast.NullValue) ⇒ Vector.empty
-    case (OptionInputType(ofType), v) ⇒
+    case (_, _: ast.VariableValue) => Vector.empty
+    case (OptionInputType(ofType), _: ast.NullValue) => Vector.empty
+    case (OptionInputType(ofType), v) =>
       isValidLiteralValue(ofType, v, sourceMapper)
-    case (ListInputType(ofType), ast.ListValue(values, _, pos)) ⇒
+    case (ListInputType(ofType), ast.ListValue(values, _, pos)) =>
       values.zipWithIndex.flatMap {
-        case (elem, idx) ⇒ isValidLiteralValue(ofType, elem, sourceMapper) map (ListValueViolation(idx, _, sourceMapper, pos.toList))
+        case (elem, idx) => isValidLiteralValue(ofType, elem, sourceMapper) map (ListValueViolation(idx, _, sourceMapper, pos.toList))
       }
-    case (ListInputType(ofType), v) ⇒
+    case (ListInputType(ofType), v) =>
       isValidLiteralValue(ofType, v, sourceMapper) map (ListValueViolation(0, _, sourceMapper, v.location.toList))
-    case (io: InputObjectType[_], ast.ObjectValue(fields, _, pos)) ⇒
+    case (io: InputObjectType[_], ast.ObjectValue(fields, _, pos)) =>
       val unknownFields = fields.collect {
-        case f if !io.fieldsByName.contains(f.name) ⇒
+        case f if !io.fieldsByName.contains(f.name) =>
           UnknownInputObjectFieldViolation(SchemaRenderer.renderTypeName(io, true), f.name, sourceMapper, f.location.toList)
       }
 
       val fieldViolations =
-        io.fields.toVector.flatMap { field ⇒
+        io.fields.toVector.flatMap { field =>
           val astField = fields.find(_.name == field.name)
 
           (astField, field.fieldType) match {
-            case (None, _: OptionInputType[_]) ⇒
+            case (None, _: OptionInputType[_]) =>
               Vector.empty
-            case (None, t) ⇒
+            case (None, t) =>
               Vector(NotNullInputObjectFieldMissingViolation(io.name, field.name, SchemaRenderer.renderTypeName(t), sourceMapper, pos.toList))
-            case (Some(af), _) ⇒
+            case (Some(af), _) =>
               isValidLiteralValue(field.fieldType, af.value, sourceMapper) map (MapValueViolation(field.name, _, sourceMapper, af.location.toList))
           }
         }
 
       unknownFields ++ fieldViolations
-    case (io: InputObjectType[_], v) ⇒
+    case (io: InputObjectType[_], v) =>
       Vector(InputObjectIsOfWrongTypeMissingViolation(SchemaRenderer.renderTypeName(io, true), sourceMapper, v.location.toList))
-    case (s: ScalarType[_], v) ⇒
+    case (s: ScalarType[_], v) =>
       s.coerceInput(v) match {
-        case Left(violation) ⇒ Vector(violation)
-        case _ ⇒ Vector.empty
+        case Left(violation) => Vector(violation)
+        case _ => Vector.empty
       }
-    case (s: ScalarAlias[_, _], v) ⇒
+    case (s: ScalarAlias[_, _], v) =>
       s.aliasFor.coerceInput(v) match {
-        case Left(violation) ⇒ Vector(violation)
-        case Right(v) ⇒ s.fromScalar(v) match {
-          case Left(violation) ⇒ Vector(violation)
-          case _ ⇒ Vector.empty
+        case Left(violation) => Vector(violation)
+        case Right(v) => s.fromScalar(v) match {
+          case Left(violation) => Vector(violation)
+          case _ => Vector.empty
         }
       }
-    case (enum: EnumType[_], v) ⇒
+    case (enum: EnumType[_], v) =>
       enum.coerceInput(v) match {
-        case Left(violation) ⇒ Vector(violation)
-        case _ ⇒ Vector.empty
+        case Left(violation) => Vector(violation)
+        case _ => Vector.empty
       }
   }
 }

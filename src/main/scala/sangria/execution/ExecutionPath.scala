@@ -16,7 +16,7 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
   /**
     * @return last index in the path, if available
     */
-  def lastIndex: Option[Int] = path.lastOption.collect {case i: Int ⇒ i}
+  def lastIndex: Option[Int] = path.lastOption.collect {case i: Int => i}
 
   /**
     * @return the size of the path excluding the indexes
@@ -24,19 +24,19 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
   def size = cacheKeyPath.size / 2
 
   def marshal(m: ResultMarshaller): m.Node = m.arrayNode(path.map {
-    case s: String ⇒ m.scalarNode(s, "String", Set.empty)
-    case i: Int ⇒ m.scalarNode(i, "Int", Set.empty)
+    case s: String => m.scalarNode(s, "String", Set.empty)
+    case i: Int => m.scalarNode(i, "Int", Set.empty)
   })
 
   def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath
 
   override def toString = path.foldLeft("") {
-    case ("", str: String) ⇒ str
-    case (acc, str: String) ⇒ acc + "." + str
-    case (acc, idx: Int) ⇒ acc + "[" + idx + "]"
+    case ("", str: String) => str
+    case (acc, str: String) => acc + "." + str
+    case (acc, idx: Int) => acc + "[" + idx + "]"
 
-    case ("", other) ⇒ other.toString
-    case (acc, other) ⇒ acc + "." + other.toString
+    case ("", other) => other.toString
+    case (acc, other) => acc + "." + other.toString
   }
 }
 

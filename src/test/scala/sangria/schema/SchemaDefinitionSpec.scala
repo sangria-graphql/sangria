@@ -17,26 +17,26 @@ class SchemaDefinitionSpec extends WordSpec with Matchers with FutureResultSuppo
       val CustomScalarType = ScalarType[String]("CustomScalar",
         coerceOutput = valueOutput,
         coerceUserInput = {
-          case s: String ⇒ Right(s)
-          case _ ⇒ Left(StringCoercionViolation)
+          case s: String => Right(s)
+          case _ => Left(StringCoercionViolation)
         },
         coerceInput = {
-          case ast.StringValue(s, _, _, _, _) ⇒ Right(s)
-          case _ ⇒ Left(StringCoercionViolation)
+          case ast.StringValue(s, _, _, _, _) => Right(s)
+          case _ => Left(StringCoercionViolation)
         })
 
       val NamedType = InterfaceType("Named", fields[Unit, Unit](
-        Field("name", OptionType(StringType), resolve = _ ⇒ None),
-        Field("custom", OptionType(CustomScalarType), resolve = _ ⇒ None)))
+        Field("name", OptionType(StringType), resolve = _ => None),
+        Field("custom", OptionType(CustomScalarType), resolve = _ => None)))
 
       val DogType = ObjectType("Dog", interfaces[Unit, Unit](NamedType), fields[Unit, Unit](
-        Field("barks", OptionType(BooleanType), resolve = _ ⇒ None)))
+        Field("barks", OptionType(BooleanType), resolve = _ => None)))
 
       val CatType = ObjectType("Cat", interfaces[Unit, Unit](NamedType), fields[Unit, Unit](
-        Field("meows", OptionType(BooleanType), resolve = _ ⇒ None)))
+        Field("meows", OptionType(BooleanType), resolve = _ => None)))
 
       val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("foo", OptionType(StringType), resolve = _ ⇒ None)))
+        Field("foo", OptionType(StringType), resolve = _ => None)))
 
       val schema = Schema(queryType, additionalTypes = DogType :: CatType :: Nil)
 
@@ -46,7 +46,7 @@ class SchemaDefinitionSpec extends WordSpec with Matchers with FutureResultSuppo
 
       schema.types.keySet should be (fromIntro)
 
-      List(schema.types.keySet, fromIntro) foreach { typeNames ⇒
+      List(schema.types.keySet, fromIntro) foreach { typeNames =>
         typeNames should (
           contain("Named") and
           contain("Dog") and

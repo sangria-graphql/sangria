@@ -15,13 +15,13 @@ import scala.util.{Failure, Try}
 import scala.util.control.NonFatal
 
 sealed trait Action[+Ctx, +Val] {
-  def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): Action[Ctx, NewVal]
+  def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): Action[Ctx, NewVal]
 }
 sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val] {
-  def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
+  def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
 }
 sealed trait ReduceAction[+Ctx, +Val] extends Action[Ctx, Val] {
-  def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
+  def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
 }
 
 object ReduceAction {
@@ -58,99 +58,99 @@ object LeafAction {
 }
 
 case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
     try Value(fn(value)) catch {
-      case NonFatal(e) ⇒ TryValue(Failure(e))
+      case NonFatal(e) => TryValue(Failure(e))
     }
 }
 
 case class TryValue[Ctx, Val](value: Try[Val]) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): TryValue[Ctx, NewVal] =
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): TryValue[Ctx, NewVal] =
     TryValue(value map fn)
 }
 
 case class PartialValue[Ctx, Val](value: Val, errors: Vector[Throwable]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal] =
     try PartialValue(fn(value), errors) catch {
-      case NonFatal(e) ⇒ TryValue(Failure(e))
+      case NonFatal(e) => TryValue(Failure(e))
     }
 }
 
 case class FutureValue[Ctx, Val](value: Future[Val]) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): FutureValue[Ctx, NewVal] =
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): FutureValue[Ctx, NewVal] =
     FutureValue(value map fn)
 }
 
 case class PartialFutureValue[Ctx, Val](value: Future[PartialValue[Ctx, Val]]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): PartialFutureValue[Ctx, NewVal] =
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): PartialFutureValue[Ctx, NewVal] =
     PartialFutureValue(value map (_.map(fn) match {
-      case v: PartialValue[Ctx, NewVal] ⇒ v
-      case TryValue(Failure(e)) ⇒ throw e
-      case v ⇒ throw new IllegalStateException("Unexpected result from `PartialValue.map`: " + v)
+      case v: PartialValue[Ctx, NewVal] => v
+      case TryValue(Failure(e)) => throw e
+      case v => throw new IllegalStateException("Unexpected result from `PartialValue.map`: " + v)
     }))
 }
 
 case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
-    DeferredValue(MappingDeferred(value, (v: Val) ⇒ (fn(v), Vector.empty)))
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
+    DeferredValue(MappingDeferred(value, (v: Val) => (fn(v), Vector.empty)))
 
-  def mapWithErrors[NewVal](fn: Val ⇒ (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
+  def mapWithErrors[NewVal](fn: Val => (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, fn))
 }
 
 case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
-    DeferredFutureValue(value map (MappingDeferred(_, (v: Val) ⇒ (fn(v), Vector.empty))))
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
+    DeferredFutureValue(value map (MappingDeferred(_, (v: Val) => (fn(v), Vector.empty))))
 
-  def mapWithErrors[NewVal](fn: Val ⇒ (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
+  def mapWithErrors[NewVal](fn: Val => (NewVal, Vector[Throwable]))(implicit ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
     DeferredFutureValue(value map (MappingDeferred(_, fn)))
 }
 
 case class SequenceLeafAction[Ctx, Val](value: Seq[LeafAction[Ctx, Val]]) extends LeafAction[Ctx, Seq[Val]] {
-  override def map[NewVal](fn: Seq[Val] ⇒ NewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewVal] =
+  override def map[NewVal](fn: Seq[Val] => NewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewVal] =
     new MappedSequenceLeafAction[Ctx, Val, NewVal](this, fn)
 }
 
-class MappedSequenceLeafAction[Ctx, Val, NewVal](val action: SequenceLeafAction[Ctx, Val], val mapFn: Seq[Val] ⇒ NewVal) extends LeafAction[Ctx, NewVal] {
-  override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewNewVal] =
-    new MappedSequenceLeafAction[Ctx, Val, NewNewVal](action, v ⇒ fn(mapFn(v)))
+class MappedSequenceLeafAction[Ctx, Val, NewVal](val action: SequenceLeafAction[Ctx, Val], val mapFn: Seq[Val] => NewVal) extends LeafAction[Ctx, NewVal] {
+  override def map[NewNewVal](fn: NewVal => NewNewVal)(implicit ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewNewVal] =
+    new MappedSequenceLeafAction[Ctx, Val, NewNewVal](action, v => fn(mapFn(v)))
 }
 
-class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx) extends Action[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewVal] =
+class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx) extends Action[Ctx, Val] {
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewVal] =
     new MappedUpdateCtx[Ctx, Val, NewVal](action, nextCtx, fn)
 }
 
-class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val ⇒ Ctx, val mapFn: Val ⇒ NewVal) extends Action[Ctx, NewVal] {
-  override def map[NewNewVal](fn: NewVal ⇒ NewNewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
-    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v ⇒ fn(mapFn(v)))
+class MappedUpdateCtx[Ctx, Val, NewVal](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx, val mapFn: Val => NewVal) extends Action[Ctx, NewVal] {
+  override def map[NewNewVal](fn: NewVal => NewNewVal)(implicit ec: ExecutionContext): MappedUpdateCtx[Ctx, Val, NewNewVal] =
+    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v => fn(mapFn(v)))
 }
 
 object UpdateCtx {
-  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val ⇒ Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
+  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] = new UpdateCtx(action, newCtx)
 }
 
 private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](source: Val, stream: SubscriptionStream[S]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val ⇒ NewVal)(implicit ec: ExecutionContext): SubscriptionValue[Ctx, NewVal, S] =
+  override def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): SubscriptionValue[Ctx, NewVal, S] =
     throw new IllegalStateException("`map` is not supported subscription actions. Action is only intended for internal use.")
 }
 
 case class ProjectionName(name: String) extends FieldTag
 case object ProjectionExclude extends FieldTag
 
-trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] ⇒ Action[Ctx, Res]) {
+trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
   val maxLevel: Int = Integer.MAX_VALUE
   def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res]
 }
 
 object Projector {
-  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) ⇒ Action[Ctx, Res]) =
+  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
       def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
       override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException("Default apply should not be called on projector!")
     }
 
-  def apply[Ctx, Val, Res](levels: Int, fn: (Context[Ctx, Val], Vector[ProjectedName]) ⇒ Action[Ctx, Res]) =
+  def apply[Ctx, Val, Res](levels: Int, fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
       override val maxLevel = levels
       def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
@@ -167,7 +167,7 @@ case class ProjectedName(name: String, children: Vector[ProjectedName] = Vector.
   }
 }
 
-case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A ⇒ (B, Vector[Throwable])) extends Deferred[B]
+case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A => (B, Vector[Throwable])) extends Deferred[B]
 
 trait WithArguments {
   def args: Args
@@ -181,14 +181,14 @@ trait WithArguments {
   def argDefinedInQuery(name: String): Boolean = args.argDefinedInQuery(name)
   def argDefinedInQuery(arg: Argument[_]): Boolean = args.argDefinedInQuery(arg)
 
-  def withArgs[A1, R](arg1: Argument[A1])(fn: A1 ⇒ R): R = args.withArgs(arg1)(fn)
-  def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) ⇒ R): R = args.withArgs(arg1, arg2)(fn)
-  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R = args.withArgs(arg1, arg2, arg3)(fn)
-  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4)(fn)
-  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5)(fn)
-  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6)(fn)
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7)(fn)
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)(fn)
+  def withArgs[A1, R](arg1: Argument[A1])(fn: A1 => R): R = args.withArgs(arg1)(fn)
+  def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) => R): R = args.withArgs(arg1, arg2)(fn)
+  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) => R): R = args.withArgs(arg1, arg2, arg3)(fn)
+  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) => R): R = args.withArgs(arg1, arg2, arg3, arg4)(fn)
+  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) => R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) => R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) => R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7)(fn)
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) => R): R = args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)(fn)
 }
 
 trait WithInputTypeRendering[Ctx] {
@@ -227,8 +227,8 @@ object DefaultValueRenderer {
       None
     else
       coercionHelper.coerceInputValue(tpe, Nil, inputValue, None, None, CoercedScalaResultMarshaller.default, CoercedScalaResultMarshaller.default, isArgument = false)(iu) match {
-        case Right(Trinary.Defined(coerced)) ⇒ Some(renderCoercedInputValue(tpe, coerced))
-        case _ ⇒ None
+        case Right(Trinary.Defined(coerced)) => Some(renderCoercedInputValue(tpe, coerced))
+        case _ => None
       }
   }
 
@@ -239,28 +239,28 @@ object DefaultValueRenderer {
     marshaller.renderPretty(renderCoercedInputValue(tpe, value))
 
   def renderCoercedInputValue(t: InputType[_], v: Any): marshaller.Node = t match {
-    case _ if v == null ⇒ marshaller.nullNode
-    case s: ScalarType[Any @unchecked] ⇒ Resolver.marshalScalarValue(s.coerceOutput(v, marshaller.capabilities), marshaller, s.name, s.scalarInfo)
-    case s: ScalarAlias[Any @unchecked, Any @unchecked] ⇒ renderCoercedInputValue(s.aliasFor, s.toScalar(v))
-    case e: EnumType[Any @unchecked] ⇒ Resolver.marshalEnumValue(e.coerceOutput(v), marshaller, e.name)
-    case io: InputObjectType[_] ⇒
+    case _ if v == null => marshaller.nullNode
+    case s: ScalarType[Any @unchecked] => Resolver.marshalScalarValue(s.coerceOutput(v, marshaller.capabilities), marshaller, s.name, s.scalarInfo)
+    case s: ScalarAlias[Any @unchecked, Any @unchecked] => renderCoercedInputValue(s.aliasFor, s.toScalar(v))
+    case e: EnumType[Any @unchecked] => Resolver.marshalEnumValue(e.coerceOutput(v), marshaller, e.name)
+    case io: InputObjectType[_] =>
       val mapValue = v.asInstanceOf[Map[String, Any]]
 
       val builder = io.fields.foldLeft(marshaller.emptyMapNode(io.fields.map(_.name))) {
-        case (acc, field) if mapValue contains field.name ⇒
+        case (acc, field) if mapValue contains field.name =>
           marshaller.addMapNodeElem(acc, field.name, renderCoercedInputValue(field.fieldType, mapValue(field.name)), optional = false)
-        case (acc, _) ⇒ acc
+        case (acc, _) => acc
       }
 
       marshaller.mapNode(builder)
-    case l: ListInputType[_] ⇒
+    case l: ListInputType[_] =>
       val listValue = v.asInstanceOf[Seq[Any]]
 
       marshaller.mapAndMarshal[Any](listValue, renderCoercedInputValue(l.ofType, _))
-    case o: OptionInputType[_] ⇒ v match {
-      case Some(optVal) ⇒ renderCoercedInputValue(o.ofType, optVal)
-      case None ⇒ marshaller.nullNode
-      case other ⇒ renderCoercedInputValue(o.ofType, other)
+    case o: OptionInputType[_] => v match {
+      case Some(optVal) => renderCoercedInputValue(o.ofType, optVal)
+      case None => marshaller.nullNode
+      case other => renderCoercedInputValue(o.ofType, other)
     }
   }
 }
@@ -286,13 +286,13 @@ case class Context[Ctx, Val](
   def attachment[T <: MiddlewareAttachment : ClassTag]: Option[T] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
 
-    middlewareAttachments.collectFirst {case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T]}
+    middlewareAttachments.collectFirst {case a if clazz isAssignableFrom a.getClass => a.asInstanceOf[T]}
   }
 
   def attachments[T <: MiddlewareAttachment : ClassTag]: Vector[T] = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
 
-    middlewareAttachments.collect {case a if clazz isAssignableFrom a.getClass ⇒ a.asInstanceOf[T]}
+    middlewareAttachments.collect {case a if clazz isAssignableFrom a.getClass => a.asInstanceOf[T]}
   }
 }
 
@@ -337,14 +337,14 @@ case class Args(raw: Map[String, Any], argsWithDefault: Set[String], optionalArg
   def argDefinedInQuery(name: String): Boolean = !undefinedArgs.contains(name)
   def argDefinedInQuery(arg: Argument[_]): Boolean = argDefinedInQuery(arg.name)
 
-  def withArgs[A1, R](arg1: Argument[A1])(fn: A1 ⇒ R): R = fn(arg(arg1))
-  def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) ⇒ R): R = fn(arg(arg1), arg(arg2))
-  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3))
-  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4))
-  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5))
-  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6))
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7))
-  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) ⇒ R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7), arg(arg8))
+  def withArgs[A1, R](arg1: Argument[A1])(fn: A1 => R): R = fn(arg(arg1))
+  def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) => R): R = fn(arg(arg1), arg(arg2))
+  def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(fn: (A1, A2, A3) => R): R = fn(arg(arg1), arg(arg2), arg(arg3))
+  def withArgs[A1, A2, A3, A4, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4])(fn: (A1, A2, A3, A4) => R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4))
+  def withArgs[A1, A2, A3, A4, A5, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) => R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5))
+  def withArgs[A1, A2, A3, A4, A5, A6, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) => R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6))
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) => R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7))
+  def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3], arg4: Argument[A4], arg5: Argument[A5], arg6: Argument[A6], arg7: Argument[A7], arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) => R): R = fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7), arg(arg8))
 }
 
 object Args {
@@ -365,9 +365,9 @@ object Args {
       throw new IllegalArgumentException("The input expected to be a map-like data structure")
     } else {
       val argsValues =
-        iu.getMapKeys(input).flatMap(key ⇒ definitions.find(_.name == key)).map { arg ⇒
+        iu.getMapKeys(input).flatMap(key => definitions.find(_.name == key)).map { arg =>
           val astValue = iu.getRootMapValue(input, arg.name)
-            .flatMap(x ⇒ this.convert[In, ast.Value](x, arg.argumentType))
+            .flatMap(x => this.convert[In, ast.Value](x, arg.argumentType))
 
           ast.Argument(name = arg.name, value = astValue getOrElse ast.NullValue())
         }
@@ -381,15 +381,15 @@ object Args {
 
     apply(
       schemaElem.arguments,
-      ast.ObjectValue(astElem.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value))): ast.Value)
+      ast.ObjectValue(astElem.arguments.map(arg => ast.ObjectField(arg.name, arg.value))): ast.Value)
   }
 
   private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](value: In, tpe: InputType[_]): Option[Out] = {
     val rm = implicitly[ResultMarshallerForType[Out]]
 
     ValueCoercionHelper.default.coerceInputValue(tpe, List("stub"), value, None, None, rm.marshaller, rm.marshaller, isArgument = false) match {
-      case Right(v) ⇒ v.toOption.asInstanceOf[Option[Out]]
-      case Left(violations) ⇒ throw AttributeCoercionError(violations, ExceptionHandler.empty)
+      case Right(v) => v.toOption.asInstanceOf[Option[Out]]
+      case Left(violations) => throw AttributeCoercionError(violations, ExceptionHandler.empty)
     }
   }
 }

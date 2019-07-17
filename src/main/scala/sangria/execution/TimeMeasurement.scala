@@ -3,10 +3,10 @@ package sangria.execution
 case class TimeMeasurement(startMs: Long, endMs: Long, durationNanos: Long)
 
 object TimeMeasurement {
-  def measure[T](fn: ⇒ T): (T, TimeMeasurement) = {
+  def measure[T](fn: => T): (T, TimeMeasurement) = {
     val sw = StopWatch.start()
     val res = fn
-    res → sw.stop
+    res -> sw.stop
   }
 
   def empty = {

@@ -23,7 +23,7 @@ class SingleFieldSubscriptionsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Subscription 'ImportantEmails' must select only one top level field." → Some(Pos(4, 11))
+        "Subscription 'ImportantEmails' must select only one top level field." -> Some(Pos(4, 11))
       ))
 
     "fails with more than one root field including introspection" in expectFails(
@@ -34,7 +34,7 @@ class SingleFieldSubscriptionsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Subscription 'ImportantEmails' must select only one top level field." → Some(Pos(4, 11))
+        "Subscription 'ImportantEmails' must select only one top level field." -> Some(Pos(4, 11))
       ))
 
     "fails with many more than one root field" in expectFailsPosList(
@@ -46,7 +46,7 @@ class SingleFieldSubscriptionsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Subscription 'ImportantEmails' must select only one top level field." → List(Pos(4, 11), Pos(5, 11))
+        "Subscription 'ImportantEmails' must select only one top level field." -> List(Pos(4, 11), Pos(5, 11))
       ))
 
     "fails with more than one root field in anonymous subscriptions" in expectFailsPosList(
@@ -57,7 +57,7 @@ class SingleFieldSubscriptionsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "Anonymous Subscription must select only one top level field." → List(Pos(4, 11))
+        "Anonymous Subscription must select only one top level field." -> List(Pos(4, 11))
       ))
   }
 }

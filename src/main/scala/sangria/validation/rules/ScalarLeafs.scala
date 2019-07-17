@@ -16,17 +16,17 @@ import sangria.validation._
 class ScalarLeafs extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case ast.Field(_, name, _, _, sels, _, _, pos) ⇒
+      case ast.Field(_, name, _, _, sels, _, _, pos) =>
         ctx.typeInfo.tpe match {
-          case Some(fieldType) ⇒
+          case Some(fieldType) =>
             fieldType.namedType match {
-              case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty ⇒
+              case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty =>
                 Left(Vector(NoSubselectionAllowedViolation(name, SchemaRenderer.renderTypeName(tpe, true), ctx.sourceMapper, pos.toList)))
-              case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty ⇒
+              case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty =>
                 Left(Vector(RequiredSubselectionViolation(name, SchemaRenderer.renderTypeName(fieldType, false), ctx.sourceMapper, pos.toList)))
-              case _ ⇒ AstVisitorCommand.RightContinue
+              case _ => AstVisitorCommand.RightContinue
             }
-          case None ⇒ AstVisitorCommand.RightContinue
+          case None => AstVisitorCommand.RightContinue
         }
     }
   }

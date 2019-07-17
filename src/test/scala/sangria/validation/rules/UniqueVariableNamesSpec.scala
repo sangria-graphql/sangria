@@ -21,10 +21,10 @@ class UniqueVariableNamesSpec extends WordSpec with ValidationSupport {
         query C($x: Int, $x: Int) { __typename }
       """,
       List(
-        "There can be only one variable named 'x'." → List(Pos(2, 17), Pos(2, 26)),
-        "There can be only one variable named 'x'." → List(Pos(2, 17), Pos(2, 35)),
-        "There can be only one variable named 'x'." → List(Pos(3, 17), Pos(3, 29)),
-        "There can be only one variable named 'x'." → List(Pos(4, 17), Pos(4, 26))
+        "There can be only one variable named 'x'." -> List(Pos(2, 17), Pos(2, 26)),
+        "There can be only one variable named 'x'." -> List(Pos(2, 17), Pos(2, 35)),
+        "There can be only one variable named 'x'." -> List(Pos(3, 17), Pos(3, 29)),
+        "There can be only one variable named 'x'." -> List(Pos(4, 17), Pos(4, 26))
       ))
   }
 }

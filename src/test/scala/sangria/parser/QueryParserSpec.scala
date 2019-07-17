@@ -1383,23 +1383,23 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
     def findAst[T <: AstNode : ClassTag](ast: AstNode): Option[T] =
       ast match {
-        case node if implicitly[ClassTag[T]].runtimeClass.isAssignableFrom(node.getClass) ⇒ Some(node.asInstanceOf[T])
-        case Document(defs, _, _, _) ⇒ defs map findAst[T] find (_.isDefined) flatten
-        case OperationDefinition(_, _, vars, _, _, _, _, _) ⇒ vars map findAst[T] find (_.isDefined) flatten
-        case VariableDefinition(_, _, default, _, _, _) ⇒ default flatMap findAst[T]
-        case _ ⇒ None
+        case node if implicitly[ClassTag[T]].runtimeClass.isAssignableFrom(node.getClass) => Some(node.asInstanceOf[T])
+        case Document(defs, _, _, _) => defs map findAst[T] find (_.isDefined) flatten
+        case OperationDefinition(_, _, vars, _, _, _, _, _) => vars map findAst[T] find (_.isDefined) flatten
+        case VariableDefinition(_, _, default, _, _, _) => default flatMap findAst[T]
+        case _ => None
       }
 
     "parse int values" in {
       val expectedTable = Vector(
-        "4" → BigInt("4"),
-        "-4" → BigInt("-4"),
-        "9" → BigInt("9"),
-        "0" → BigInt("0"),
-        "784236564875237645762347623147574756321" → BigInt("784236564875237645762347623147574756321")
+        "4" -> BigInt("4"),
+        "-4" -> BigInt("-4"),
+        "9" -> BigInt("9"),
+        "0" -> BigInt("0"),
+        "784236564875237645762347623147574756321" -> BigInt("784236564875237645762347623147574756321")
       )
 
-      expectedTable foreach { expected ⇒
+      expectedTable foreach { expected =>
         findAst[BigIntValue](parseQuery(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be (
           Some(BigIntValue(expected._2, Vector.empty, Some(AstLocation(24, 1, 25)))))
       }
@@ -1407,18 +1407,18 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
     "parse float values" in {
       val expectedTable = Vector(
-        "4.123" → BigDecimal("4.123"),
-        "-4.123" → BigDecimal("-4.123"),
-        "0.123" → BigDecimal("0.123"),
-        "123E4" → BigDecimal("123E4"),
-        "123e-4" → BigDecimal("123e-4"),
-        "-1.123e4" → BigDecimal("-1.123e4"),
-        "-1.123E4" → BigDecimal("-1.123E4"),
-        "-1.123e+4" → BigDecimal("-1.123e+4"),
-        "-1.123e4567" → BigDecimal("-1.123e4567")
+        "4.123" -> BigDecimal("4.123"),
+        "-4.123" -> BigDecimal("-4.123"),
+        "0.123" -> BigDecimal("0.123"),
+        "123E4" -> BigDecimal("123E4"),
+        "123e-4" -> BigDecimal("123e-4"),
+        "-1.123e4" -> BigDecimal("-1.123e4"),
+        "-1.123E4" -> BigDecimal("-1.123E4"),
+        "-1.123e+4" -> BigDecimal("-1.123e+4"),
+        "-1.123e4567" -> BigDecimal("-1.123e4567")
       )
 
-      expectedTable foreach { expected ⇒
+      expectedTable foreach { expected =>
         withClue(s"Parsing ${expected._1}.") {
           findAst[BigDecimalValue](parseQuery(s"query Foo($$x: Complex = ${expected._1}) { field }").get) should be(
             Some(BigDecimalValue(expected._2, Vector.empty, Some(AstLocation(24, 1, 25)))))
@@ -1443,17 +1443,17 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
     "parse input values independently" in {
       val expectedTable = Vector(
-        "null" → NullValue(Vector.empty, Some(AstLocation(0, 1, 1))),
-        "1.234" → BigDecimalValue(BigDecimal("1.234"), Vector.empty, Some(AstLocation(0, 1, 1))),
-        "HELLO_WORLD" → EnumValue("HELLO_WORLD", Vector.empty, Some(AstLocation(0, 1, 1))),
-        "[1, 2 \"test\"]" → ListValue(
+        "null" -> NullValue(Vector.empty, Some(AstLocation(0, 1, 1))),
+        "1.234" -> BigDecimalValue(BigDecimal("1.234"), Vector.empty, Some(AstLocation(0, 1, 1))),
+        "HELLO_WORLD" -> EnumValue("HELLO_WORLD", Vector.empty, Some(AstLocation(0, 1, 1))),
+        "[1, 2 \"test\"]" -> ListValue(
           Vector(
             BigIntValue(1, Vector.empty, Some(AstLocation(1, 1, 2))),
             BigIntValue(2, Vector.empty, Some(AstLocation(4, 1, 5))),
             StringValue("test", false, None, Vector.empty, Some(AstLocation(6, 1, 7)))),
           Vector.empty,
           Some(AstLocation(0, 1, 1))),
-        "{a: 1, b: \"foo\" c: {nest: true, oops: null, e: FOO_BAR}}" →
+        "{a: 1, b: \"foo\" c: {nest: true, oops: null, e: FOO_BAR}}" ->
           ObjectValue(
             Vector(
               ObjectField("a", BigIntValue(1, Vector.empty, Some(AstLocation(4, 1, 5))), Vector.empty, Some(AstLocation(1, 1, 2))),
@@ -1477,7 +1477,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
            # This is a test comment!
            b: "foo"
          }
-        """ →
+        """ ->
           ObjectValue(
             Vector(
               ObjectField("a", BigIntValue(1, Vector.empty, Some(AstLocation(26, 3, 15))), Vector.empty, Some(AstLocation(23, 3, 12))),
@@ -1489,7 +1489,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
 
       )
 
-      expectedTable foreach { expected ⇒
+      expectedTable foreach { expected =>
         withClue(s"Parsing ${expected._1}.") {
           QueryParser.parseInput(stripCarriageReturns(expected._1)) should equal (Success(expected._2))
         }

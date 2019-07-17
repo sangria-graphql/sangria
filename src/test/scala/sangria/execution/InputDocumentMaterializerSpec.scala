@@ -49,9 +49,9 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
         Some(ScalarType[Any](
           name = typeName(definition),
           description = typeDescription(definition),
-          coerceUserInput = v ⇒ Right(v),
-          coerceOutput = (v, _) ⇒ v,
-          coerceInput = v ⇒ Right(v),
+          coerceUserInput = v => Right(v),
+          coerceOutput = (v, _) => v,
+          coerceInput = v => Right(v),
           complexity = scalarComplexity(definition),
           scalarInfo = scalarValueInfo(definition),
           astDirectives = definition.directives))
@@ -101,12 +101,12 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
       val errors = QueryValidator.default.validateInputDocument(schema, inp, "Config")
 
       assertViolations(errors,
-        "Expected type 'Int', found '\"foo\"'. Int value expected" → Seq(Pos(4, 18)),
-        "Expected type 'Color!', found 'FOO_BAR'. Enum value 'FOO_BAR' is undefined in enum type 'Color'. Known values are: RED, GREEN, BLUE." → Seq(Pos(7, 21)),
-        "Field 'Foo.baz' of required type 'Color!' was not provided." → Seq(Pos(8, 15)),
-        "Field 'test' is not defined by type 'Foo'." → Seq(Pos(8, 16)),
-        "Field 'Foo.baz' of required type 'Color!' was not provided." → Seq(Pos(9, 15)),
-        "Field 'doo' is not defined by type 'Config'; Did you mean foo?" → Seq(Pos(14, 13)))
+        "Expected type 'Int', found '\"foo\"'. Int value expected" -> Seq(Pos(4, 18)),
+        "Expected type 'Color!', found 'FOO_BAR'. Enum value 'FOO_BAR' is undefined in enum type 'Color'. Known values are: RED, GREEN, BLUE." -> Seq(Pos(7, 21)),
+        "Field 'Foo.baz' of required type 'Color!' was not provided." -> Seq(Pos(8, 15)),
+        "Field 'test' is not defined by type 'Foo'." -> Seq(Pos(8, 16)),
+        "Field 'Foo.baz' of required type 'Color!' was not provided." -> Seq(Pos(9, 15)),
+        "Field 'doo' is not defined by type 'Config'; Did you mean foo?" -> Seq(Pos(14, 13)))
     }
 
     "support `Any` value" in {
@@ -149,8 +149,8 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
       val errors = QueryValidator.default.validateInputDocument(schema, inp, "Config")
 
       assertViolations(errors,
-        "Field 'Config.test' of required type 'Any!' was not provided." → Seq(Pos(2, 11)),
-        "Expected type 'Int', found '\"foo\"'. Int value expected" → Seq(Pos(4, 18)))
+        "Field 'Config.test' of required type 'Any!' was not provided." -> Seq(Pos(2, 11)),
+        "Expected type 'Int', found '\"foo\"'. Int value expected" -> Seq(Pos(4, 18)))
     }
 
     "support `to` with `FromInput` type class" in {
@@ -174,7 +174,7 @@ class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMa
         """)
 
       val vars = scalaInput(Map(
-        "comm" → "from variable"
+        "comm" -> "from variable"
       ))
 
       document.to(ArticleType, vars) should be (

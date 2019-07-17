@@ -79,7 +79,7 @@ class UniqueArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can be only one argument named 'arg1'." → Some(Pos(3, 32))
+        "There can be only one argument named 'arg1'." -> Some(Pos(3, 32))
       ))
 
     "many duplicate field arguments" in expectFails(
@@ -89,8 +89,8 @@ class UniqueArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can be only one argument named 'arg1'." → Some(Pos(3, 32)),
-        "There can be only one argument named 'arg1'." → Some(Pos(3, 47))
+        "There can be only one argument named 'arg1'." -> Some(Pos(3, 32)),
+        "There can be only one argument named 'arg1'." -> Some(Pos(3, 47))
       ))
 
     "duplicate directive arguments" in expectFails(
@@ -100,7 +100,7 @@ class UniqueArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can be only one argument named 'arg1'." → Some(Pos(3, 43))
+        "There can be only one argument named 'arg1'." -> Some(Pos(3, 43))
       ))
 
     "many duplicate directive arguments" in expectFails(
@@ -110,8 +110,8 @@ class UniqueArgumentNamesSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "There can be only one argument named 'arg1'." → Some(Pos(3, 43)),
-        "There can be only one argument named 'arg1'." → Some(Pos(3, 58))
+        "There can be only one argument named 'arg1'." -> Some(Pos(3, 43)),
+        "There can be only one argument named 'arg1'." -> Some(Pos(3, 58))
       ))
   }
 }

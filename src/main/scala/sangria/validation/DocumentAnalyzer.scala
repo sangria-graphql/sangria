@@ -25,9 +25,9 @@ case class DocumentAnalyzer(document: ast.Document) {
         val set = setsToVisit.pop()
 
         set.foreach {
-          case fs: ast.FragmentSpread ⇒
+          case fs: ast.FragmentSpread =>
             spreads += fs
-          case cont: ast.SelectionContainer ⇒
+          case cont: ast.SelectionContainer =>
             setsToVisit push cont.selections
         }
       }
@@ -47,17 +47,17 @@ case class DocumentAnalyzer(document: ast.Document) {
         val node = nodesToVisit.pop()
         val spreads = getFragmentSpreads(node)
 
-        spreads.foreach { spread ⇒
+        spreads.foreach { spread =>
           val fragName = spread.name
 
           if (!collectedNames.contains(fragName)) {
             collectedNames += fragName
 
             document.fragments.get(fragName) match {
-              case Some(frag) ⇒
+              case Some(frag) =>
                 frags += frag
                 nodesToVisit.push(frag)
-              case None ⇒ // do nothing
+              case None => // do nothing
             }
           }
         }
@@ -68,13 +68,13 @@ case class DocumentAnalyzer(document: ast.Document) {
 
   lazy val separateOperations: Map[Option[String], ast.Document] =
     document.operations.map {
-      case (name, definition) ⇒ name → separateOperation(definition)
+      case (name, definition) => name -> separateOperation(definition)
     }
 
   def separateOperation(definition: OperationDefinition): ast.Document = {
     val definitions = (definition +: getRecursivelyReferencedFragments(definition)).sortBy(_.location match {
-      case Some(pos) ⇒ pos.line
-      case _ ⇒ 0
+      case Some(pos) => pos.line
+      case _ => 0
     })
 
     document.copy(definitions = definitions)

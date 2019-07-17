@@ -5,7 +5,7 @@ import sangria.ast.AstLocation
 
 import scala.annotation.tailrec
 
-trait PositionTracking { this: Parser ⇒
+trait PositionTracking { this: Parser =>
   private var lineIdx = Array(0)
 
   def parseLocations: Boolean

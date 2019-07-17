@@ -25,24 +25,24 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__schema" → Map(
-              "types" → List(
-                Map("name" → "Character"),
-                Map("name" → "Droid"),
-                Map("name" → "Episode"),
-                Map("name" → "Human"),
-                Map("name" → "Query"),
-                Map("name" → "__Directive"),
-                Map("name" → "__DirectiveLocation"),
-                Map("name" → "__EnumValue"),
-                Map("name" → "__Field"),
-                Map("name" → "__InputValue"),
-                Map("name" → "__Schema"),
-                Map("name" → "__Type"),
-                Map("name" → "__TypeKind"),
-                Map("name" → "Boolean"),
-                Map("name" → "String")
+          "data" -> Map(
+            "__schema" -> Map(
+              "types" -> List(
+                Map("name" -> "Character"),
+                Map("name" -> "Droid"),
+                Map("name" -> "Episode"),
+                Map("name" -> "Human"),
+                Map("name" -> "Query"),
+                Map("name" -> "__Directive"),
+                Map("name" -> "__DirectiveLocation"),
+                Map("name" -> "__EnumValue"),
+                Map("name" -> "__Field"),
+                Map("name" -> "__InputValue"),
+                Map("name" -> "__Schema"),
+                Map("name" -> "__Type"),
+                Map("name" -> "__TypeKind"),
+                Map("name" -> "Boolean"),
+                Map("name" -> "String")
               )
             )
           )
@@ -62,10 +62,10 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__schema" → Map(
-              "queryType" → Map(
-                "name" → "Query"
+          "data" -> Map(
+            "__schema" -> Map(
+              "queryType" -> Map(
+                "name" -> "Query"
               )
             )
           )
@@ -83,9 +83,9 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__type" → Map(
-              "name" → "Droid"
+          "data" -> Map(
+            "__type" -> Map(
+              "name" -> "Droid"
             )
           )
         ))
@@ -103,10 +103,10 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__type" → Map(
-              "name" → "Droid",
-              "kind" → "OBJECT"
+          "data" -> Map(
+            "__type" -> Map(
+              "name" -> "Droid",
+              "kind" -> "OBJECT"
             )
           )
         ))
@@ -124,10 +124,10 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__type" → Map(
-              "name" → "Character",
-              "kind" → "INTERFACE"
+          "data" -> Map(
+            "__type" -> Map(
+              "name" -> "Character",
+              "kind" -> "INTERFACE"
             )
           )
         ))
@@ -151,50 +151,50 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__type" → Map(
-              "name" → "Droid",
-              "fields" → List(
+          "data" -> Map(
+            "__type" -> Map(
+              "name" -> "Droid",
+              "fields" -> List(
                 Map(
-                  "name" → "id",
-                  "type" → Map(
-                    "name" → null,
-                    "kind" → "NON_NULL"
+                  "name" -> "id",
+                  "type" -> Map(
+                    "name" -> null,
+                    "kind" -> "NON_NULL"
                   )
                 ),
                 Map(
-                  "name" → "name",
-                  "type" → Map(
-                    "name" → "String",
-                    "kind" → "SCALAR"
+                  "name" -> "name",
+                  "type" -> Map(
+                    "name" -> "String",
+                    "kind" -> "SCALAR"
                   )
                 ),
                 Map(
-                  "name" → "friends",
-                  "type" → Map(
-                    "name" → null,
-                    "kind" → "LIST"
+                  "name" -> "friends",
+                  "type" -> Map(
+                    "name" -> null,
+                    "kind" -> "LIST"
                   )
                 ),
                 Map(
-                  "name" → "appearsIn",
-                  "type" → Map(
-                    "name" → null,
-                    "kind" → "LIST"
+                  "name" -> "appearsIn",
+                  "type" -> Map(
+                    "name" -> null,
+                    "kind" -> "LIST"
                   )
                 ),
                 Map(
-                  "name" → "primaryFunction",
-                  "type" → Map(
-                    "name" → "String",
-                    "kind" → "SCALAR"
+                  "name" -> "primaryFunction",
+                  "type" -> Map(
+                    "name" -> "String",
+                    "kind" -> "SCALAR"
                   )
                 ),
                 Map(
-                  "name" → "secretBackstory",
-                  "type" → Map(
-                    "name" → "String",
-                    "kind" → "SCALAR"
+                  "name" -> "secretBackstory",
+                  "type" -> Map(
+                    "name" -> "String",
+                    "kind" -> "SCALAR"
                   )
                 )
               )
@@ -225,65 +225,65 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__type" → Map(
-              "name" → "Droid",
-              "fields" → List(
+          "data" -> Map(
+            "__type" -> Map(
+              "name" -> "Droid",
+              "fields" -> List(
                 Map(
-                  "name" → "id",
-                  "type" → Map(
-                    "name" → null,
-                    "kind" → "NON_NULL",
-                    "ofType" → Map(
-                      "name" → "String",
-                      "kind" → "SCALAR"
+                  "name" -> "id",
+                  "type" -> Map(
+                    "name" -> null,
+                    "kind" -> "NON_NULL",
+                    "ofType" -> Map(
+                      "name" -> "String",
+                      "kind" -> "SCALAR"
                     )
                   )
                 ),
                 Map(
-                  "name" → "name",
-                  "type" → Map(
-                    "name" → "String",
-                    "kind" → "SCALAR",
-                    "ofType" → null
+                  "name" -> "name",
+                  "type" -> Map(
+                    "name" -> "String",
+                    "kind" -> "SCALAR",
+                    "ofType" -> null
                   )
                 ),
                 Map(
-                  "name" → "friends",
-                  "type" → Map(
-                    "name" → null,
-                    "kind" → "LIST",
-                    "ofType" → Map(
-                      "name" → "Character",
-                      "kind" → "INTERFACE"
+                  "name" -> "friends",
+                  "type" -> Map(
+                    "name" -> null,
+                    "kind" -> "LIST",
+                    "ofType" -> Map(
+                      "name" -> "Character",
+                      "kind" -> "INTERFACE"
                     )
                   )
                 ),
                 Map(
-                  "name" → "appearsIn",
-                  "type" → Map(
-                    "name" → null,
-                    "kind" → "LIST",
-                    "ofType" → Map(
-                      "name" → "Episode",
-                      "kind" → "ENUM"
+                  "name" -> "appearsIn",
+                  "type" -> Map(
+                    "name" -> null,
+                    "kind" -> "LIST",
+                    "ofType" -> Map(
+                      "name" -> "Episode",
+                      "kind" -> "ENUM"
                     )
                   )
                 ),
                 Map(
-                  "name" → "primaryFunction",
-                  "type" → Map(
-                    "name" → "String",
-                    "kind" → "SCALAR",
-                    "ofType" → null
+                  "name" -> "primaryFunction",
+                  "type" -> Map(
+                    "name" -> "String",
+                    "kind" -> "SCALAR",
+                    "ofType" -> null
                   )
                 ),
                 Map(
-                  "name" → "secretBackstory",
-                  "type" → Map(
-                    "name" → "String",
-                    "kind" → "SCALAR",
-                    "ofType" → null
+                  "name" -> "secretBackstory",
+                  "type" -> Map(
+                    "name" -> "String",
+                    "kind" -> "SCALAR",
+                    "ofType" -> null
                   )
                 )
               )
@@ -321,61 +321,61 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__schema" → Map(
-              "queryType" → Map(
-                "fields" → List(
+          "data" -> Map(
+            "__schema" -> Map(
+              "queryType" -> Map(
+                "fields" -> List(
                   Map(
-                    "name" → "hero",
-                    "args" → List(
+                    "name" -> "hero",
+                    "args" -> List(
                       Map(
-                        "defaultValue" → null,
-                        "description" → (
+                        "defaultValue" -> null,
+                        "description" -> (
                           "If omitted, returns the hero of the whole " +
                           "saga. If provided, returns the hero of " +
                           "that particular episode."),
-                        "name" → "episode",
-                        "type" → Map(
-                          "kind" → "ENUM",
-                          "name" → "Episode",
-                          "ofType" → null
+                        "name" -> "episode",
+                        "type" -> Map(
+                          "kind" -> "ENUM",
+                          "name" -> "Episode",
+                          "ofType" -> null
                         )
                       )
                     )
                   ),
                   Map(
-                    "name" → "human",
-                    "args" → List(
+                    "name" -> "human",
+                    "args" -> List(
                       Map(
-                        "name" → "id",
-                        "description" → "id of the character",
-                        "type" → Map(
-                          "kind" → "NON_NULL",
-                          "name" → null,
-                          "ofType" → Map(
-                            "kind" → "SCALAR",
-                            "name" → "String"
+                        "name" -> "id",
+                        "description" -> "id of the character",
+                        "type" -> Map(
+                          "kind" -> "NON_NULL",
+                          "name" -> null,
+                          "ofType" -> Map(
+                            "kind" -> "SCALAR",
+                            "name" -> "String"
                           )
                         ),
-                        "defaultValue" → null
+                        "defaultValue" -> null
                       )
                     )
                   ),
                   Map(
-                    "name" → "droid",
-                    "args" → List(
+                    "name" -> "droid",
+                    "args" -> List(
                       Map(
-                        "name" → "id",
-                        "description" → "id of the character",
-                        "type" → Map(
-                          "kind" → "NON_NULL",
-                          "name" → null,
-                          "ofType" → Map(
-                            "kind" → "SCALAR",
-                            "name" → "String"
+                        "name" -> "id",
+                        "description" -> "id of the character",
+                        "type" -> Map(
+                          "kind" -> "NON_NULL",
+                          "name" -> null,
+                          "ofType" -> Map(
+                            "kind" -> "SCALAR",
+                            "name" -> "String"
                           )
                         ),
-                        "defaultValue" → null
+                        "defaultValue" -> null
                       )
                     )
                   )
@@ -398,10 +398,10 @@ class StarWarsIntrospectionSpec extends WordSpec with Matchers with FutureResult
 
       Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
         Map(
-          "data" → Map(
-            "__type" → Map(
-              "name" → "Droid",
-              "description" → "A mechanical creature in the Star Wars universe."
+          "data" -> Map(
+            "__type" -> Map(
+              "name" -> "Droid",
+              "description" -> "A mechanical creature in the Star Wars universe."
             )
           )
         ))

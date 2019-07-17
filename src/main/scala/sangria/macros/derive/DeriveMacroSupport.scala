@@ -14,7 +14,7 @@ trait DeriveMacroSupport {
 
     val (lastPos, lastError) = errors.last
 
-    errors.dropRight(1).foreach{case (pos, error) ⇒ c.error(pos, error)}
+    errors.dropRight(1).foreach{case (pos, error) => c.error(pos, error)}
 
     c.abort(lastPos, lastError)
   }
@@ -22,41 +22,41 @@ trait DeriveMacroSupport {
   protected def symbolName(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] ⇒ arg}
+      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] => arg}
       .headOption
 
   protected def symbolDescription(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] ⇒ arg}
+      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] => arg}
       .headOption
 
   protected def symbolDefault(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDefault] ⇒ arg}
+      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDefault] => arg}
       .headOption
 
   protected def symbolDeprecation(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDeprecated] ⇒ arg}
+      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDeprecated] => arg}
       .headOption
 
   protected def symbolFieldTags(annotations: List[Annotation]): Tree =
     annotations
       .map (_.tree)
       .foldLeft(q"List[sangria.execution.FieldTag]()") {
-        case (acc, q"new $name(..$fieldTags)") if name.tpe =:= typeOf[GraphQLFieldTags] ⇒
+        case (acc, q"new $name(..$fieldTags)") if name.tpe =:= typeOf[GraphQLFieldTags] =>
           q"$acc ++ $fieldTags"
-        case (acc, _) ⇒ acc
+        case (acc, _) => acc
       }
 
   protected def memberExcluded(annotations: List[Annotation]): Boolean =
-    annotations.find(_.tree.tpe =:= typeOf[GraphQLExclude]).fold(false)(_ ⇒ true)
+    annotations.find(_.tree.tpe =:= typeOf[GraphQLExclude]).fold(false)(_ => true)
 
   protected def memberField(annotations: List[Annotation]): Boolean =
-    annotations.find(_.tree.tpe =:= typeOf[GraphQLField]).fold(false)(_ ⇒ true)
+    annotations.find(_.tree.tpe =:= typeOf[GraphQLField]).fold(false)(_ => true)
 
   // TODO: most probably not needed, so should be removed in future
   protected def defaultMethodArgValue(method: String, pos: Int) = {

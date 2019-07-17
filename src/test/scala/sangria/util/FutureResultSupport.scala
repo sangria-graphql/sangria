@@ -16,13 +16,13 @@ trait FutureResultSupport {
     def awaitAndRecoverQueryAnalysis(implicit m: ResultMarshallerForType[T]): T = Await.result(recoverQueryAnalysis, 10 seconds)
 
     def recoverQueryAnalysis(implicit m: ResultMarshallerForType[T]): Future[T] = f.recover {
-      case analysisError: QueryAnalysisError ⇒ analysisError.resolveError(m.marshaller).asInstanceOf[T]
+      case analysisError: QueryAnalysisError => analysisError.resolveError(m.marshaller).asInstanceOf[T]
     }
 
     def awaitAndRecoverQueryAnalysisScala(implicit ev: T =:= Any) = Await.result(recoverQueryAnalysisScala, 10 seconds)
 
     def recoverQueryAnalysisScala(implicit ev: T =:= Any) = f.recover {
-      case analysisError: ErrorWithResolver ⇒ analysisError.resolveError
+      case analysisError: ErrorWithResolver => analysisError.resolveError
     }
   }
 

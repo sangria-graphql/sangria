@@ -106,7 +106,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       """deriveObjectType[Unit, TestSubject](RenameField("id1", "foo"))""" shouldNot compile
       """deriveObjectType[Unit, TestSubject](FieldTags("id1", CachedTag))""" shouldNot compile
       """deriveObjectType[Unit, TestSubject](DeprecateField("id1", "test"))""" shouldNot compile
-      """deriveObjectType[Unit, TestSubject](FieldComplexity("id1", (_, _, _) ⇒ 1.0))""" shouldNot compile
+      """deriveObjectType[Unit, TestSubject](FieldComplexity("id1", (_, _, _) => 1.0))""" shouldNot compile
       """deriveObjectType[Unit, TestSubjectAnnotated](ExcludeFields("id", "list", "excluded"))""" shouldNot compile
     }
 
@@ -134,7 +134,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         IncludeFields("id"),
         AddFields(
           Field("foo", ListType(StringType), resolve = _.value.list),
-          Field("bar", BooleanType, resolve = _ ⇒ true)))
+          Field("bar", BooleanType, resolve = _ => true)))
 
       tpe.fields should have size 3
 
@@ -151,7 +151,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
     "allow to override fields" in {
       val tpe = deriveObjectType[Unit, TestSubject](
         ReplaceField("id", Field("id", ListType(StringType), resolve = _.value.list)),
-        ReplaceField("list", Field("bar", BooleanType, resolve = _ ⇒ true)))
+        ReplaceField("list", Field("bar", BooleanType, resolve = _ => true)))
 
       tpe.fields should have size 3
 
@@ -167,7 +167,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
     "allow to set field complexity with config" in {
       val tpe = deriveObjectType[Unit, TestSubject](
-        FieldComplexity("id", (_, _, child) ⇒ child * 123.0))
+        FieldComplexity("id", (_, _, child) => child * 123.0))
 
       tpe.fields(0).complexity.get((), Args.empty, 2D) should be (246.0)
     }
@@ -210,9 +210,9 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         contain("ID") and 
         contain("MYLIST"))
 
-      val transformer2 = (s: String) ⇒ s.zipWithIndex.map {
-        case (c, i) if i % 2 == 0 ⇒ c.toLower
-        case (c, _) ⇒ c.toUpper
+      val transformer2 = (s: String) => s.zipWithIndex.map {
+        case (c, i) if i % 2 == 0 => c.toLower
+        case (c, _) => c.toUpper
       }.mkString("")
 
       val tpe2 = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(transformer2))
@@ -324,15 +324,15 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       val schema = Schema(ArticleType)
 
       Executor.execute(schema, query, root = testArticle).await should be (Map(
-        "data" → Map(
-          "title" → "My First Article",
-          "text" → "foo bar",
-          "myTags" → null,
-          "fruit" → "JustApple",
-          "comments" → List(
-            Map("author" → "bob", "text" → null, "color" → "NormalRed"),
+        "data" -> Map(
+          "title" -> "My First Article",
+          "text" -> "foo bar",
+          "myTags" -> null,
+          "fruit" -> "JustApple",
+          "comments" -> List(
+            Map("author" -> "bob", "text" -> null, "color" -> "NormalRed"),
             null,
-            Map("author" → "jane", "text" → "yay!", "color" → "NormalRed")))))
+            Map("author" -> "jane", "text" -> "yay!", "color" -> "NormalRed")))))
 
       import sangria.marshalling.queryAst._
       import sangria.parser.DeliveryScheme.Throw
@@ -379,7 +379,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         graphql"{id, b {name, a {id}, b {name}} }"
 
       Executor.execute(schema, query, root = A(1, B("foo", A(2, null), B("bar", null, null)))).await should be (Map(
-        "data" → Map("id" → 1, "b" → Map("name" → "foo", "a" → Map("id" → 2), "b" → Map("name" → "bar")))))
+        "data" -> Map("id" -> 1, "b" -> Map("name" -> "foo", "a" -> Map("id" -> 2), "b" -> Map("name" -> "bar")))))
     }
 
     "use companion object to resolve derived types" in {
@@ -390,7 +390,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       val query = graphql"{b {myC {e, e1}}}"
 
       Executor.execute(schema, query, root = CompanionA(CompanionB(CompanionC(CompanionEnum1, AnotherEnum.FOO)))).await should be (Map(
-        "data" → Map("b" → Map("myC" → Map("e" → "first", "e1" → "FOO")))))
+        "data" -> Map("b" -> Map("myC" -> Map("e" -> "first", "e1" -> "FOO")))))
     }
 
     "support `Future`, `Try`, `Defer` and `Action` return types" in {
@@ -407,11 +407,11 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
       val tpe = deriveObjectType[Unit, MyTest]()
 
-      tpe.fields.sortBy(_.name).map(f ⇒ f.name → f.fieldType) should be (List(
-        "actionVal" → OptionType(ListType(IntType)),
-        "deferVal" → OptionType(ListType(IntType)),
-        "futureVal" → ListType(IntType),
-        "tryVal" → OptionType(ListType(IntType))
+      tpe.fields.sortBy(_.name).map(f => f.name -> f.fieldType) should be (List(
+        "actionVal" -> OptionType(ListType(IntType)),
+        "deferVal" -> OptionType(ListType(IntType)),
+        "futureVal" -> ListType(IntType),
+        "tryVal" -> OptionType(ListType(IntType))
       ))
     }
 
@@ -468,11 +468,11 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         """
 
       Executor.execute(schema, query, Ctx(987, new FooBar)).await should be (
-        JsObject("data" → JsObject(
-          "foo" → JsString("id = 123, songs = a,b, cc = Red, pet = Pet(xxx,Some(322)), ctx = 987"),
-          "foo1" → JsString("id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"),
-          "opt" → JsString("str = None, color = None, pet = None"),
-          "opt1" → JsString("str = Some(test), color = Some(Red), pet = Some(Pet(anotherPet,Some(321)))"))))
+        JsObject("data" -> JsObject(
+          "foo" -> JsString("id = 123, songs = a,b, cc = Red, pet = Pet(xxx,Some(322)), ctx = 987"),
+          "foo1" -> JsString("id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"),
+          "opt" -> JsString("str = None, color = None, pet = None"),
+          "opt1" -> JsString("str = Some(test), color = Some(Red), pet = Some(Pet(anotherPet,Some(321)))"))))
 
       import sangria.parser.DeliveryScheme.Throw
 
@@ -528,7 +528,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
         MethodArgumentDescription("hello", "id", "`id`"),
         MethodArgumentDescription("hello", "songs", "`songs`"),
         MethodArgumentRename("opt", "str", "description"),
-        MethodArgumentsDescription("opt", "str" → "Optional description", "color" -> "a color"),
+        MethodArgumentsDescription("opt", "str" -> "Optional description", "color" -> "a color"),
         MethodArgumentDefault("hello", "songs",  "My favorite song" :: Nil),
         MethodArgumentDefault("opt", "pet",  """{"name": "Bell", "size": 3}""".parseJson),
         MethodArgument("hello", "pet", "`pet`", Pet("Octocat", None)))

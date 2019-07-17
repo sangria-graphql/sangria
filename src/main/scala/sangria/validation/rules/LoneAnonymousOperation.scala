@@ -16,10 +16,10 @@ class LoneAnonymousOperation extends ValidationRule {
     var operationCount = 0
 
     override val onEnter: ValidationVisit = {
-      case ast.Document(definitions, _, _, _) ⇒
+      case ast.Document(definitions, _, _, _) =>
         operationCount = definitions.count(_.isInstanceOf[ast.OperationDefinition])
         AstVisitorCommand.RightContinue
-      case op: ast.OperationDefinition ⇒
+      case op: ast.OperationDefinition =>
         if (op.name.isEmpty && operationCount > 1)
           Left(Vector(AnonOperationNotAloneViolation(ctx.sourceMapper, op.location.toList)))
         else

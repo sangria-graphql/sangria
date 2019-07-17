@@ -32,8 +32,8 @@ trait AstNodeLocation {
   def simpleErrorMessage: String
 
   lazy val astLocation = (for {
-    sm ← sourceMapper
-  } yield locations map (p ⇒ s" ${sm.renderLocation(p)}:\n${sm.renderLinePosition(p)}") mkString "\n") getOrElse ""
+    sm <- sourceMapper
+  } yield locations map (p => s" ${sm.renderLocation(p)}:\n${sm.renderLinePosition(p)}") mkString "\n") getOrElse ""
 
   final def errorMessage = simpleErrorMessage + astLocation
 }
@@ -61,18 +61,18 @@ case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value ex
 
 case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Violation, ownSourceMapper: Option[SourceMapper], ownLocations: List[AstLocation], errorPrefix: String, isArgument: Boolean) extends AstNodeViolation {
   lazy val sourceMapper = valueViolation match {
-    case astv: AstNodeViolation ⇒ astv.sourceMapper
-    case _ ⇒ ownSourceMapper
+    case astv: AstNodeViolation => astv.sourceMapper
+    case _ => ownSourceMapper
   }
 
   lazy val locations = valueViolation match {
-    case astv: AstNodeViolation ⇒ (ownLocations ++ astv.locations).distinct
-    case _ ⇒ ownLocations
+    case astv: AstNodeViolation => (ownLocations ++ astv.locations).distinct
+    case _ => ownLocations
   }
 
   lazy val violationMessage = valueViolation match {
-    case astv: AstNodeViolation ⇒ astv.simpleErrorMessage
-    case v ⇒ v.errorMessage
+    case astv: AstNodeViolation => astv.simpleErrorMessage
+    case v => v.errorMessage
   }
 
   lazy val simpleErrorMessage = s"${errorPrefix}${if (isArgument) "Argument" else "Field"} '${fieldPath mkString "."}' has wrong value: $violationMessage."
@@ -80,18 +80,18 @@ case class FieldCoercionViolation(fieldPath: List[String], valueViolation: Viola
 
 case class VarTypeMismatchViolation(definitionName: String, expectedType: String, input: Option[String], violation: Violation, ownSourceMapper: Option[SourceMapper], ownLocations: List[AstLocation]) extends AstNodeViolation {
   lazy val sourceMapper = violation match {
-    case astv: AstNodeViolation ⇒ astv.sourceMapper
-    case _ ⇒ ownSourceMapper
+    case astv: AstNodeViolation => astv.sourceMapper
+    case _ => ownSourceMapper
   }
 
   lazy val locations = violation match {
-    case astv: AstNodeViolation ⇒ (ownLocations ++ astv.locations).distinct
-    case _ ⇒ ownLocations
+    case astv: AstNodeViolation => (ownLocations ++ astv.locations).distinct
+    case _ => ownLocations
   }
 
   lazy val violationMessage = violation match {
-    case astv: AstNodeViolation ⇒ astv.simpleErrorMessage
-    case v ⇒ v.errorMessage
+    case astv: AstNodeViolation => astv.simpleErrorMessage
+    case v => v.errorMessage
   }
 
   lazy val simpleErrorMessage = s"Variable '$$$definitionName' expected value of type '$expectedType' but ${input map ("got: " + _) getOrElse "value is undefined"}. Reason: $violationMessage"
@@ -113,18 +113,18 @@ case class InputObjectTypeMismatchViolation(fieldPath: List[String], typeName: S
 
 case class BadValueViolation(typeName: String, value: String, violation: Option[Violation], ownSourceMapper: Option[SourceMapper], ownLocations: List[AstLocation]) extends AstNodeViolation {
   lazy val sourceMapper = violation match {
-    case Some(astv: AstNodeViolation) ⇒ astv.sourceMapper
-    case _ ⇒ ownSourceMapper
+    case Some(astv: AstNodeViolation) => astv.sourceMapper
+    case _ => ownSourceMapper
   }
 
   lazy val locations = violation match {
-    case Some(astv: AstNodeViolation) ⇒ (ownLocations ++ astv.locations).distinct
-    case _ ⇒ ownLocations
+    case Some(astv: AstNodeViolation) => (ownLocations ++ astv.locations).distinct
+    case _ => ownLocations
   }
 
   lazy val violationMessage = violation map {
-    case astv: AstNodeViolation ⇒ astv.simpleErrorMessage
-    case v ⇒ v.errorMessage
+    case astv: AstNodeViolation => astv.simpleErrorMessage
+    case v => v.errorMessage
   }
 
   lazy val simpleErrorMessage = s"Expected type '$typeName', found '$value'.${violationMessage.fold("")(" " + _)}"
@@ -132,18 +132,18 @@ case class BadValueViolation(typeName: String, value: String, violation: Option[
 
 case class InvalidInputDocumentViolation(typeName: String, value: String, violation: Violation, ownSourceMapper: Option[SourceMapper], ownLocations: List[AstLocation]) extends AstNodeViolation {
   lazy val sourceMapper = violation match {
-    case astv: AstNodeViolation ⇒ astv.sourceMapper
-    case _ ⇒ ownSourceMapper
+    case astv: AstNodeViolation => astv.sourceMapper
+    case _ => ownSourceMapper
   }
 
   lazy val locations = violation match {
-    case astv: AstNodeViolation ⇒ (ownLocations ++ astv.locations).distinct
-    case _ ⇒ ownLocations
+    case astv: AstNodeViolation => (ownLocations ++ astv.locations).distinct
+    case _ => ownLocations
   }
 
   lazy val violationMessage = violation match {
-    case astv: AstNodeViolation ⇒ astv.simpleErrorMessage
-    case v ⇒ v.errorMessage
+    case astv: AstNodeViolation => astv.simpleErrorMessage
+    case v => v.errorMessage
   }
 
   lazy val simpleErrorMessage = s"At path $violationMessage"
@@ -151,18 +151,18 @@ case class InvalidInputDocumentViolation(typeName: String, value: String, violat
 
 case class BadValueForDefaultArgViolation(varName: String, typeName: String, value: String, violation: Violation, ownSourceMapper: Option[SourceMapper], ownLocations: List[AstLocation]) extends AstNodeViolation {
   lazy val sourceMapper = violation match {
-    case astv: AstNodeViolation ⇒ astv.sourceMapper
-    case _ ⇒ ownSourceMapper
+    case astv: AstNodeViolation => astv.sourceMapper
+    case _ => ownSourceMapper
   }
 
   lazy val locations = violation match {
-    case astv: AstNodeViolation ⇒ (ownLocations ++ astv.locations).distinct
-    case _ ⇒ ownLocations
+    case astv: AstNodeViolation => (ownLocations ++ astv.locations).distinct
+    case _ => ownLocations
   }
 
   lazy val violationMessage = violation match {
-    case astv: AstNodeViolation ⇒ astv.simpleErrorMessage
-    case v ⇒ v.errorMessage
+    case astv: AstNodeViolation => astv.simpleErrorMessage
+    case v => v.errorMessage
   }
   
   lazy val simpleErrorMessage = s"Variable '$$$varName' of type '$typeName' has invalid default value: $value. Reason: $violationMessage"
@@ -181,7 +181,7 @@ case class UndefinedFieldViolation(
   locations: List[AstLocation]
 ) extends AstNodeViolation  with SpecViolation {
   val code = "undefinedField"
-  val args = Map("fieldName" → fieldName, "type" → typeName)
+  val args = Map("fieldName" -> fieldName, "type" -> typeName)
 
   lazy val simpleErrorMessage = {
     val message = s"Cannot query field '$fieldName' on type '$typeName'."
@@ -195,42 +195,42 @@ case class UndefinedFieldViolation(
 
 case class InlineFragmentOnNonCompositeErrorViolation(typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with  SpecViolation {
   val code = "inlineFragmentOnNonCompositeType"
-  val args = Map("type" → typeName)
+  val args = Map("type" -> typeName)
 
   lazy val simpleErrorMessage = s"Fragment cannot condition on non composite type '$typeName'."
 }
 
 case class FragmentOnNonCompositeErrorViolation(fragName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "fragmentOnNonCompositeType"
-  val args = Map("fragmentName" → fragName, "type" → typeName)
+  val args = Map("fragmentName" -> fragName, "type" -> typeName)
 
   lazy val simpleErrorMessage = s"Fragment '$fragName' cannot condition on non composite type '$typeName'."
 }
 
 case class UnknownArgViolation(argName: String, fieldName: String, typeName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "unknownArgument"
-  val args = Map("argumentName" → argName, "fieldName" → fieldName, "typeName" → typeName)
+  val args = Map("argumentName" -> argName, "fieldName" -> fieldName, "typeName" -> typeName)
 
   lazy val simpleErrorMessage = s"Unknown argument '$argName' on field '$fieldName' of type '$typeName'.${Violation.didYouMean(suggestedArgs)}"
 }
 
 case class UnknownDirectiveArgViolation(argName: String, dirName: String, suggestedArgs: Seq[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "unknownDirectiveArgument"
-  val args = Map("argumentName" → argName, "directiveName" → dirName)
+  val args = Map("argumentName" -> argName, "directiveName" -> dirName)
 
   lazy val simpleErrorMessage = s"Unknown argument '$argName' on directive '$dirName'.${Violation.didYouMean(suggestedArgs)}"
 }
 
 case class UnknownDirectiveViolation(name: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "unknownDirective"
-  val args = Map("directiveName" → name)
+  val args = Map("directiveName" -> name)
 
   lazy val simpleErrorMessage = s"Unknown directive '$name'."
 }
 
 case class MisplacedDirectiveViolation(name: String, correctPlacement: Option[(DirectiveLocation.Value, String)], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "misplacedDirective"
-  val args = Map("directiveName" → name, "location" → correctPlacement.map(loc ⇒ DirectiveLocation.toSpecString(loc._1)).getOrElse("here"))
+  val args = Map("directiveName" -> name, "location" -> correctPlacement.map(loc => DirectiveLocation.toSpecString(loc._1)).getOrElse("here"))
 
   lazy val simpleErrorMessage = s"Directive '$name' may not be used ${correctPlacement.fold("here")("on " + _._2)}."
 }
@@ -265,25 +265,25 @@ case class UnusedVariableViolation(name: String, operationName: Option[String], 
 
 case class NoSubselectionAllowedViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "noSubselectionAllowed"
-  val args = Map("fieldName" → fieldName, "type" → typeName)
+  val args = Map("fieldName" -> fieldName, "type" -> typeName)
 
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must not have a sub selection."
 }
 
 case class SubscriptionSingleFieldOnlyViolation(opName: Option[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"${opName.fold("Anonymous Subscription")(n ⇒ s"Subscription '$n'")} must select only one top level field."
+  lazy val simpleErrorMessage = s"${opName.fold("Anonymous Subscription")(n => s"Subscription '$n'")} must select only one top level field."
 }
 
 case class RequiredSubselectionViolation(fieldName: String, typeName: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "requiredSubselection"
-  val args = Map("fieldName" → fieldName, "type" → typeName)
+  val args = Map("fieldName" -> fieldName, "type" -> typeName)
 
   lazy val simpleErrorMessage = s"Field '$fieldName' of type '$typeName' must have a sub selection."
 }
 
 case class NonExecutableDefinitionViolation(definitionName: String, definition: Definition, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation with SpecViolation {
   val code = "nonExecutableDefinition"
-  val args = Map("defName" → definitionName)
+  val args = Map("defName" -> definitionName)
 
   lazy val simpleErrorMessage = s"The '$definitionName' definition is not executable."
 }
@@ -316,8 +316,8 @@ case class FieldsConflictViolation(outputName: String, reason: Either[String, Ve
   lazy val simpleErrorMessage = s"Field '$outputName' conflict because ${reasonMessage(reason)}. Use different aliases on the fields to fetch both if this was intentional."
 
   private def reasonMessage(reason: Either[String, Vector[ConflictReason]]): String = reason match {
-    case Left(message) ⇒ message
-    case Right(subReasons) ⇒ subReasons map (sr ⇒ s"subfields '${sr.fieldName}' conflict because ${reasonMessage(sr.reason)}") mkString " and "
+    case Left(message) => message
+    case Right(subReasons) => subReasons map (sr => s"subfields '${sr.fieldName}' conflict because ${reasonMessage(sr.reason)}") mkString " and "
   }
 }
 
@@ -380,24 +380,24 @@ trait PathBasedViolation {
 
 case class ListValueViolation(index: Int, violation: Violation, listSourceMapper: Option[SourceMapper], listPosition: List[AstLocation]) extends AstNodeViolation with PathBasedViolation {
   lazy val sourceMapper = violation match {
-    case astv: AstNodeViolation ⇒ astv.sourceMapper
-    case _ ⇒ listSourceMapper
+    case astv: AstNodeViolation => astv.sourceMapper
+    case _ => listSourceMapper
   }
 
   lazy val locations = violation match {
-    case astv: AstNodeViolation ⇒ listPosition ++ astv.locations
-    case _ ⇒ listPosition
+    case astv: AstNodeViolation => listPosition ++ astv.locations
+    case _ => listPosition
   }
 
   lazy val pathString = violation match {
-    case pbv: PathBasedViolation ⇒ s"[$index]" + pbv.pathString
-    case _ ⇒ s"[$index]"
+    case pbv: PathBasedViolation => s"[$index]" + pbv.pathString
+    case _ => s"[$index]"
   }
 
   lazy val errorMessageWithoutPath = violation match {
-    case pbv: PathBasedViolation ⇒ pbv.errorMessageWithoutPath
-    case v: AstNodeLocation ⇒ v.simpleErrorMessage
-    case v ⇒ v.errorMessage
+    case pbv: PathBasedViolation => pbv.errorMessageWithoutPath
+    case v: AstNodeLocation => v.simpleErrorMessage
+    case v => v.errorMessage
   }
 
   lazy val simpleErrorMessage = s"'$pathString' $errorMessageWithoutPath"
@@ -405,24 +405,24 @@ case class ListValueViolation(index: Int, violation: Violation, listSourceMapper
 
 case class MapValueViolation(fieldName: String, violation: Violation, mapSourceMapper: Option[SourceMapper], mapPosition: List[AstLocation]) extends AstNodeViolation with PathBasedViolation {
   lazy val sourceMapper = violation match {
-    case astv: AstNodeViolation ⇒ astv.sourceMapper
-    case _ ⇒ mapSourceMapper
+    case astv: AstNodeViolation => astv.sourceMapper
+    case _ => mapSourceMapper
   }
 
   lazy val locations = violation match {
-    case astv: AstNodeViolation ⇒ mapPosition ++ astv.locations
-    case _ ⇒ mapPosition
+    case astv: AstNodeViolation => mapPosition ++ astv.locations
+    case _ => mapPosition
   }
 
   lazy val pathString = violation match {
-    case pbv: PathBasedViolation ⇒ "." + fieldName + pbv.pathString
-    case _ ⇒ "." + fieldName
+    case pbv: PathBasedViolation => "." + fieldName + pbv.pathString
+    case _ => "." + fieldName
   }
 
   lazy val errorMessageWithoutPath = violation match {
-    case pbv: PathBasedViolation ⇒ pbv.errorMessageWithoutPath
-    case v: AstNodeLocation ⇒ v.simpleErrorMessage
-    case v ⇒ v.errorMessage
+    case pbv: PathBasedViolation => pbv.errorMessageWithoutPath
+    case v: AstNodeLocation => v.simpleErrorMessage
+    case v => v.errorMessage
   }
 
   lazy val simpleErrorMessage = s"'${pathString substring 1}' $errorMessageWithoutPath"

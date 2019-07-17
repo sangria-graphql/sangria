@@ -53,8 +53,8 @@ class LoneAnonymousOperationSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "This anonymous operation must be the only defined operation." → Some(Pos(2, 9)),
-        "This anonymous operation must be the only defined operation." → Some(Pos(5, 9))
+        "This anonymous operation must be the only defined operation." -> Some(Pos(2, 9)),
+        "This anonymous operation must be the only defined operation." -> Some(Pos(5, 9))
       ))
 
     "anon operation with another operation" in expectFails(
@@ -67,7 +67,7 @@ class LoneAnonymousOperationSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "This anonymous operation must be the only defined operation." → Some(Pos(2, 9))
+        "This anonymous operation must be the only defined operation." -> Some(Pos(2, 9))
       ))
 
     "anon operation with another operation with subscription" in expectFails(
@@ -80,7 +80,7 @@ class LoneAnonymousOperationSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "This anonymous operation must be the only defined operation." → Some(Pos(2, 9))
+        "This anonymous operation must be the only defined operation." -> Some(Pos(2, 9))
       ))
   }
 }

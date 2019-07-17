@@ -10,30 +10,30 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
   def contains(key: Key) = cache.containsKey(key)
   def apply(key: Key) =
     cache.get(key) match {
-      case null ⇒ throw new NoSuchElementException
-      case v ⇒ v
+      case null => throw new NoSuchElementException
+      case v => v
     }
 
   def get(key: Key) = Option(cache.get(key))
-  def getOrElse(key: Key, default: ⇒ Value) = cache.get(key) match {
-    case null ⇒ default
-    case v ⇒ v
+  def getOrElse(key: Key, default: => Value) = cache.get(key) match {
+    case null => default
+    case v => v
   }
 
   def update(key: Key, value: Value) = cache.put(key, value)
   def remove(key: Key) = cache.remove(key)
   def clear() = cache.clear()
 
-  def getOrElseUpdate(key: Key, fn: ⇒ Value) = cache.get(key) match {
-    case null ⇒
+  def getOrElseUpdate(key: Key, fn: => Value) = cache.get(key) match {
+    case null =>
       val res = fn
       cache.put(key, res)
       res
 
-    case v ⇒ v
+    case v => v
   }
 
-  def find(fn: (Key, Value) ⇒ Boolean) = {
+  def find(fn: (Key, Value) => Boolean) = {
     val it = cache.entrySet().iterator()
     var res: Option[(Key, Value)] = None
 
@@ -41,13 +41,13 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
       val elem = it.next()
 
       if (fn(elem.getKey, elem.getValue))
-        res = Some(elem.getKey → elem.getValue)
+        res = Some(elem.getKey -> elem.getValue)
     }
 
     res
   }
 
-  def mapToSet[R](fn: (Key, Value) ⇒ R) = {
+  def mapToSet[R](fn: (Key, Value) => R) = {
     val it = cache.entrySet().iterator()
     val res = scala.collection.mutable.Set[R]()
 
@@ -60,7 +60,7 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
     res
   }
 
-  def mapValues[R](fn: Value ⇒ R) = {
+  def mapValues[R](fn: Value => R) = {
     val it = cache.entrySet().iterator()
     val res = scala.collection.mutable.Map[Key, R]()
 
@@ -73,7 +73,7 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
     res
   }
 
-  def keyExists(fn: Key ⇒ Boolean): Boolean = {
+  def keyExists(fn: Key => Boolean): Boolean = {
     val it = cache.entrySet().iterator()
 
     while (it.hasNext) {
@@ -85,7 +85,7 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
     false
   }
 
-  def forEachValue(fn: Value ⇒ Unit) = {
+  def forEachValue(fn: Value => Unit) = {
     val it = cache.values().iterator()
 
     while (it.hasNext) {
@@ -95,7 +95,7 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
     }
   }
 
-  def removeKeys(fn: Key ⇒ Boolean) = {
+  def removeKeys(fn: Key => Boolean) = {
     val it = cache.keySet().iterator()
 
     while (it.hasNext) {
@@ -108,8 +108,8 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
   def canEqual(other: Any): Boolean = other.isInstanceOf[ConcurrentHashMapCache[_, _]]
 
   override def equals(other: Any): Boolean = other match {
-    case that: ConcurrentHashMapCache[_, _] ⇒ (that canEqual this) && cache == that.cache
-    case _ ⇒ false
+    case that: ConcurrentHashMapCache[_, _] => (that canEqual this) && cache == that.cache
+    case _ => false
   }
 
   override def hashCode(): Int =

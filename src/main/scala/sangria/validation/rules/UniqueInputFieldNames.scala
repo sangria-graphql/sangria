@@ -2,7 +2,7 @@ package sangria.validation.rules
 
 import sangria.ast.AstLocation
 
-import scala.collection.mutable.{Map ⇒ MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 import sangria.ast
 import sangria.ast.AstVisitorCommand
@@ -20,23 +20,23 @@ class UniqueInputFieldNames extends ValidationRule {
     var knownNames = MutableMap[String, Option[AstLocation]]()
 
     override val onEnter: ValidationVisit = {
-      case ast.ObjectValue(_, _, _) ⇒
+      case ast.ObjectValue(_, _, _) =>
         knownNameStack.push(knownNames)
         knownNames = MutableMap[String, Option[AstLocation]]()
 
         AstVisitorCommand.RightContinue
 
-      case ast.ObjectField(name, _, _, pos) ⇒
+      case ast.ObjectField(name, _, _, pos) =>
         if (knownNames contains name)
           Left(Vector(DuplicateInputFieldViolation(name, ctx.sourceMapper, knownNames(name).toList ++ pos.toList)))
         else {
-          knownNames += name → pos
+          knownNames += name -> pos
           AstVisitorCommand.RightContinue
         }
     }
 
     override def onLeave: ValidationVisit = {
-      case ast.ObjectValue(_, _, _) ⇒
+      case ast.ObjectValue(_, _, _) =>
         knownNames = knownNameStack.pop()
 
         AstVisitorCommand.RightContinue

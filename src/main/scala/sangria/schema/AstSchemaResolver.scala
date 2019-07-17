@@ -33,24 +33,24 @@ object LegacyCommentDescriptionsResolver {
 
 case class DirectiveResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveContext[Ctx] ⇒ Action[Ctx, Any],
-  complexity: Option[ComplexityDirectiveContext[Ctx] ⇒ (Ctx, Args, Double) ⇒ Double] = None) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveContext[Ctx] => Action[Ctx, Any],
+  complexity: Option[ComplexityDirectiveContext[Ctx] => (Ctx, Args, Double) => Double] = None) extends AstSchemaResolver[Ctx]
 
 case class DirectiveFieldProvider[Ctx](
   directive: Directive,
-  resolve: DirectiveFieldProviderContext[Ctx] ⇒ List[MaterializedField[Ctx, _]]) extends AstSchemaResolver[Ctx]
+  resolve: DirectiveFieldProviderContext[Ctx] => List[MaterializedField[Ctx, _]]) extends AstSchemaResolver[Ctx]
 
 case class DynamicDirectiveFieldProvider[Ctx, A](
   directiveName: String,
-  resolve: DynamicDirectiveFieldProviderContext[Ctx, A] ⇒ List[MaterializedField[Ctx, _]])(implicit val marshaller: ResultMarshallerForType[A]) extends AstSchemaResolver[Ctx]
+  resolve: DynamicDirectiveFieldProviderContext[Ctx, A] => List[MaterializedField[Ctx, _]])(implicit val marshaller: ResultMarshallerForType[A]) extends AstSchemaResolver[Ctx]
 
 case class DirectiveInputTypeResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveInputTypeContext[Ctx] ⇒ InputType[Any]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveInputTypeContext[Ctx] => InputType[Any]) extends AstSchemaResolver[Ctx]
 
 case class DirectiveOutputTypeResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveOutputTypeContext[Ctx] ⇒ OutputType[Any]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveOutputTypeContext[Ctx] => OutputType[Any]) extends AstSchemaResolver[Ctx]
 
 case class InputTypeResolver[Ctx](
   resolve: PartialFunction[AstInputTypeContext[Ctx], InputType[Any]]) extends AstSchemaResolver[Ctx]
@@ -60,7 +60,7 @@ case class OutputTypeResolver[Ctx](
 
 case class DirectiveScalarResolver[Ctx](
   directive: Directive,
-  resolve: AstDirectiveScalarContext ⇒ ScalarType[_]) extends AstSchemaResolver[Ctx]
+  resolve: AstDirectiveScalarContext => ScalarType[_]) extends AstSchemaResolver[Ctx]
 
 case class SimpleEnumValueResolver[Ctx](
   resolve: PartialFunction[(Either[ast.EnumTypeDefinition, EnumType[_]], ast.EnumValueDefinition), String]) extends AstSchemaResolver[Ctx]
@@ -75,19 +75,19 @@ case class ScalarResolver[Ctx](resolve: PartialFunction[ast.ScalarTypeDefinition
 
 case class DynamicDirectiveResolver[Ctx, T](
   directiveName: String,
-  resolve: DynamicDirectiveContext[Ctx, T] ⇒ Action[Ctx, Any],
-  complexity: Option[ComplexityDynamicDirectiveContext[Ctx, T] ⇒ (Ctx, Args, Double) ⇒ Double] = None)(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaResolver[Ctx]
+  resolve: DynamicDirectiveContext[Ctx, T] => Action[Ctx, Any],
+  complexity: Option[ComplexityDynamicDirectiveContext[Ctx, T] => (Ctx, Args, Double) => Double] = None)(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaResolver[Ctx]
 
 case class FieldResolver[Ctx](
-  resolve: PartialFunction[(Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], ast.FieldDefinition), Context[Ctx, _] ⇒ Action[Ctx, Any]],
-  complexity: PartialFunction[(Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], ast.FieldDefinition), (Ctx, Args, Double) ⇒ Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[(Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], ast.FieldDefinition), Context[Ctx, _] => Action[Ctx, Any]],
+  complexity: PartialFunction[(Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], ast.FieldDefinition), (Ctx, Args, Double) => Double] = PartialFunction.empty) extends AstSchemaResolver[Ctx]
 
 object FieldResolver {
-  def map[Ctx](config: (String, Map[String, Context[Ctx, _] ⇒ Action[Ctx, Any]])*): FieldResolver[Ctx] = {
+  def map[Ctx](config: (String, Map[String, Context[Ctx, _] => Action[Ctx, Any]])*): FieldResolver[Ctx] = {
     val configMap = config.toMap
 
     FieldResolver {
-      case (TypeName(name), field) if configMap.contains(name) && configMap(name).contains(field.name) ⇒
+      case (TypeName(name), field) if configMap.contains(name) && configMap(name).contains(field.name) =>
         configMap(name)(field.name)
     }
   }
@@ -97,14 +97,14 @@ object FieldResolver {
 }
 
 case class ExistingFieldResolver[Ctx](
-  resolve: PartialFunction[(MatOrigin, Option[ObjectLikeType[Ctx, _]], Field[Ctx, _]), Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[(MatOrigin, Option[ObjectLikeType[Ctx, _]], Field[Ctx, _]), Context[Ctx, _] => Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
 
 object ExistingFieldResolver {
-  def map[Ctx](config: (String, Map[String, Context[Ctx, _] ⇒ Action[Ctx, Any]])*): ExistingFieldResolver[Ctx] = {
+  def map[Ctx](config: (String, Map[String, Context[Ctx, _] => Action[Ctx, Any]])*): ExistingFieldResolver[Ctx] = {
     val configMap = config.toMap
 
     ExistingFieldResolver {
-      case (_, tpe, field) if tpe.isDefined && configMap.contains(tpe.get.name) && configMap(tpe.get.name).contains(field.name) ⇒
+      case (_, tpe, field) if tpe.isDefined && configMap.contains(tpe.get.name) && configMap(tpe.get.name).contains(field.name) =>
         configMap(tpe.get.name)(field.name)
     }
   }
@@ -114,7 +114,7 @@ object ExistingFieldResolver {
 }
 
 case class AnyFieldResolver[Ctx](
-  resolve: PartialFunction[MatOrigin, Context[Ctx, _] ⇒ Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
+  resolve: PartialFunction[MatOrigin, Context[Ctx, _] => Action[Ctx, Any]]) extends AstSchemaResolver[Ctx]
 
 object AnyFieldResolver {
   def defaultInput[Ctx, In : InputUnmarshaller] =
@@ -122,11 +122,11 @@ object AnyFieldResolver {
 }
 
 case class InstanceCheck[Ctx](
-  fn: InstanceCheckContext[Ctx] ⇒ (Any, Class[_]) ⇒ Boolean) extends AstSchemaResolver[Ctx]
+  fn: InstanceCheckContext[Ctx] => (Any, Class[_]) => Boolean) extends AstSchemaResolver[Ctx]
 
 object InstanceCheck {
-  def simple[Ctx](fn: Any ⇒ String): InstanceCheck[Ctx] =
-    InstanceCheck(c ⇒ (value, _) ⇒ fn(value) == c.definition.name)
+  def simple[Ctx](fn: Any => String): InstanceCheck[Ctx] =
+    InstanceCheck(c => (value, _) => fn(value) == c.definition.name)
 
   def field[Ctx, T : InputUnmarshaller]: InstanceCheck[Ctx] =
     field[Ctx, T]("type")
@@ -134,22 +134,22 @@ object InstanceCheck {
   def field[Ctx, T : InputUnmarshaller](fieldName: String): InstanceCheck[Ctx] = {
     val iu = implicitly[InputUnmarshaller[T]]
 
-    InstanceCheck(c ⇒ (value, _) ⇒ {
+    InstanceCheck(c => (value, _) => {
       val node = value.asInstanceOf[T]
 
       if (!iu.isMapNode(node)) false
       else iu.getMapValue(node, fieldName) match {
-        case Some(v) ⇒ iu.isScalarNode(v) && iu.getScalaScalarValue(v) == c.definition.name
-        case None ⇒  false
+        case Some(v) => iu.isScalarNode(v) && iu.getScalaScalarValue(v) == c.definition.name
+        case None =>  false
       }
     })
   }
 }
 
 case class ExistingInstanceCheck[Ctx](
-  fn: ExistingInstanceCheckContext[Ctx] ⇒ (Any, Class[_]) ⇒ Boolean) extends AstSchemaResolver[Ctx]
+  fn: ExistingInstanceCheckContext[Ctx] => (Any, Class[_]) => Boolean) extends AstSchemaResolver[Ctx]
 
-case class ConflictResolver[Ctx](resolve: (MatOrigin, Vector[MaterializedType]) ⇒ MaterializedType) extends AstSchemaResolver[Ctx]
+case class ConflictResolver[Ctx](resolve: (MatOrigin, Vector[MaterializedType]) => MaterializedType) extends AstSchemaResolver[Ctx]
 
 sealed trait AstSchemaGenericResolver[T] {
   def locations: Set[DirectiveLocation.Value]
@@ -159,7 +159,7 @@ sealed trait AstSchemaGenericResolver[T] {
 case class GenericDirectiveResolver[T](
     directive: Directive,
     locations: Set[DirectiveLocation.Value] = Set.empty,
-    resolve: GenericDirectiveContext ⇒ Option[T]) extends AstSchemaGenericResolver[T] {
+    resolve: GenericDirectiveContext => Option[T]) extends AstSchemaGenericResolver[T] {
   def directiveName = directive.name
 }
 
@@ -192,7 +192,7 @@ trait WithTypeLookup[Ctx] {
 case class GenericDynamicDirectiveResolver[T, A](
   directiveName: String,
   locations: Set[DirectiveLocation.Value] = Set.empty,
-  resolve: GenericDynamicDirectiveContext[A] ⇒ Option[T])(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaGenericResolver[T]
+  resolve: GenericDynamicDirectiveContext[A] => Option[T])(implicit val marshaller: ResultMarshallerForType[T]) extends AstSchemaGenericResolver[T]
 
 case class AstDirectiveInputTypeContext[Ctx](
   origin: MatOrigin,
