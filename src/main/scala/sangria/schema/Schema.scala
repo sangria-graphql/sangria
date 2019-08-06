@@ -264,7 +264,9 @@ object InterfaceType {
 case class PossibleInterface[Ctx, Concrete](interfaceType: InterfaceType[Ctx, _])
 
 object PossibleInterface extends PossibleInterfaceLowPrioImplicits {
-  implicit def apply[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
+  def apply[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
+    PossibleInterface[Ctx, Concrete](interface)
+  implicit def convert[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
     PossibleInterface[Ctx, Concrete](interface)
 }
 
