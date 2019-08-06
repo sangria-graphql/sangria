@@ -205,14 +205,14 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
       val resCached = Executor.execute(schema(fetcherCached), query, new Repo,
         deferredResolver = DeferredResolver.fetchers(fetcherCached)).await
 
-      fetchedIds should be (Vector(
-        Vector("1", "non-existing", "8"),
-        Vector("3", "4", "5", "2", "foo!"),
+      fetchedIds.map(_.sorted) should be (Vector(
+        Vector("1", "8", "non-existing"),
+        Vector("2", "3", "4", "5", "foo!"),
         Vector("5", "6", "7")))
 
-      fetchedIdsCached should be (Vector(
-        Vector("1", "non-existing", "8"),
-        Vector("3", "4", "5", "2", "foo!"),
+      fetchedIdsCached.map(_.sorted) should be (Vector(
+        Vector("1", "8", "non-existing"),
+        Vector("2", "3", "4", "5", "foo!"),
         Vector("6", "7")))
 
       List(res, resCached) foreach (_ should be (
@@ -591,9 +591,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
           userContext = new Repo)
       }
 
-      fetchedIds should be (Vector(
+      fetchedIds.map(_.sorted) should be (Vector(
         Vector("1"),
-        Vector("3", "4", "2"),
+        Vector("2", "3", "4"),
         Vector("5", "6", "7")))
     }
 
@@ -749,9 +749,9 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
         resolver = DeferredResolver.fetchers(fetcherCat, fetcherProd),
         userContext = new Repo)
 
-      fetchedCatIds should be (Vector(
+      fetchedCatIds.map(_.sorted) should be (Vector(
         Vector("1"),
-        Vector("3", "4", "2"),
+        Vector("2", "3", "4"),
         Vector("5", "6", "7"),
         Vector("4", "5", "6", "7"),
         Vector("4", "5", "6", "7")))
