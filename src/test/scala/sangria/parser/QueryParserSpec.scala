@@ -1232,7 +1232,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }")
 
       error.getMessage should equal (
-        """Syntax error while parsing GraphQL query. Invalid input '$', expected StringValue, BooleanValue, ObjectValueConst, NullValue, ListValueConst, EnumValue or NumberValue (line 1, column 37):
+        """Syntax error while parsing GraphQL query. Invalid input '$', expected NumberValue, StringValue, BooleanValue, NullValue, EnumValue, ListValueConst or ObjectValueConst (line 1, column 37):
           |query Foo($x: Complex = { a: { b: [ $var ] } }) { field }
           |                                    ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1252,7 +1252,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "query Foo($x: Complex = .123) { field }")
 
       error.formattedError should equal (
-        """Invalid input '.', expected StringValue, BooleanValue, ObjectValueConst, NullValue, ListValueConst, EnumValue or NumberValue (line 1, column 25):
+        """Invalid input '.', expected NumberValue, StringValue, BooleanValue, NullValue, EnumValue, ListValueConst or ObjectValueConst (line 1, column 25):
           |query Foo($x: Complex = .123) { field }
           |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
@@ -1282,7 +1282,7 @@ class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
         "query Foo($x: Complex = +1) { field }")
 
       error.formattedError should equal (
-        """Invalid input '+', expected StringValue, BooleanValue, ObjectValueConst, NullValue, ListValueConst, EnumValue or NumberValue (line 1, column 25):
+        """Invalid input '+', expected NumberValue, StringValue, BooleanValue, NullValue, EnumValue, ListValueConst or ObjectValueConst (line 1, column 25):
           |query Foo($x: Complex = +1) { field }
           |                        ^""".stripMargin) (after being strippedOfCarriageReturns)
     }
