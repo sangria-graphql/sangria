@@ -25,7 +25,7 @@ testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
 libraryDependencies ++= Seq(
   // AST Parser
-  "org.parboiled" %% "parboiled" % "2.1.7",
+  "org.parboiled" %% "parboiled" % "2.1.8",
 
   // AST Visitor
   "org.sangria-graphql" %% "macro-visit" % "0.1.2-SNAPSHOT",
