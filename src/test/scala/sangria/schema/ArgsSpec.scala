@@ -224,10 +224,10 @@ class ArgsSpec extends WordSpec with Matchers {
 
     "buildArgs with nested map objects" should {
       "build with nested arguments" in {
-        val inputMap = NestedParentArgumentName -> Map(
+        val inputMap = Map(NestedParentArgumentName -> Map(
           NonDefaultArgumentName -> 1,
           DefaultArgumentName -> 2,
-          OptionalArgumentName -> 3)
+          OptionalArgumentName -> 3))
         val args = Args(List(nestedParentArgument), inputMap)
 
         val fields = args.arg(nestedParentArgument).asJsObject.fields
@@ -238,17 +238,17 @@ class ArgsSpec extends WordSpec with Matchers {
       }
 
       "not build without required arguments" in {
-        val inputMap = NestedParentArgumentName -> Map(
+        val inputMap = Map(NestedParentArgumentName -> Map(
           DefaultArgumentName -> 2,
-          OptionalArgumentName -> 3)
+          OptionalArgumentName -> 3))
 
         an [AttributeCoercionError] should be thrownBy Args(List(nestedParentArgument), inputMap)
       }
 
       "build without default arguments" in {
-        val inputMap = NestedParentArgumentName -> Map(
+        val inputMap = Map(NestedParentArgumentName -> Map(
           NonDefaultArgumentName -> 1,
-          OptionalArgumentName -> 3)
+          OptionalArgumentName -> 3))
         val args = Args(List(nestedParentArgument), inputMap)
 
         val fields = args.arg(nestedParentArgument).asJsObject.fields
@@ -259,9 +259,9 @@ class ArgsSpec extends WordSpec with Matchers {
       }
 
       "build without optional arguments" in {
-        val inputMap = NestedParentArgumentName -> Map(
+        val inputMap = Map(NestedParentArgumentName -> Map(
           NonDefaultArgumentName -> 1,
-          DefaultArgumentName -> 2)
+          DefaultArgumentName -> 2))
         val args = Args(List(nestedParentArgument), inputMap)
 
         val fields = args.arg(nestedParentArgument).asJsObject.fields
