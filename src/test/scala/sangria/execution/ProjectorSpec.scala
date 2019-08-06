@@ -95,6 +95,13 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
     }
   }
 
+  def compareUnorderedProjectedNames(x: ProjectedName, y: ProjectedName): Boolean =
+    (x.name == y.name) &&
+    (x.children.size == y.children.size) &&
+    (x.children.sortBy(_.name).zip(y.children.sortBy(_.name)).forall {
+      case (xc, yc) => compareUnorderedProjectedNames(xc, yc)
+    })
+
   "Projector" should {
     "project all fields except explicitly marked with `NoProjection`" in {
       val Success(query) = QueryParser.parse(
@@ -177,19 +184,22 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
                 "typeId" -> "product",
                 "variants" -> Nil)))))
 
-      ctx.allProjections should be (
-        Vector(
+      val expected = Vector(
+        ProjectedName("id", Vector.empty),
+        ProjectedName("variants", Vector(
           ProjectedName("id", Vector.empty),
-          ProjectedName("variants", Vector(
+          ProjectedName("attributes", Vector(
+            ProjectedName("strValue", Vector.empty),
+            ProjectedName("name", Vector.empty),
+            ProjectedName("intValue", Vector.empty))),
+          ProjectedName("rp", Vector(
             ProjectedName("id", Vector.empty),
-            ProjectedName("attributes", Vector(
-              ProjectedName("strValue", Vector.empty),
-              ProjectedName("name", Vector.empty),
-              ProjectedName("intValue", Vector.empty))),
-            ProjectedName("rp", Vector(
-              ProjectedName("id", Vector.empty),
-              ProjectedName("variants", Vector(
-                ProjectedName("id", Vector.empty)))))))))
+            ProjectedName("variants", Vector(
+              ProjectedName("id", Vector.empty))))))))
+
+      ctx.allProjections.zip(expected).map {
+        case (x, y) => compareUnorderedProjectedNames(x, y)
+      }
 
       ctx.oneLevelprojections should be (
         Vector(
