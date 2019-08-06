@@ -1,18 +1,21 @@
 package sangria.execution.batch
 
-import scala.language.higherKinds
+import scala.concurrent.ExecutionContext
+import cats.effect.{ContextShift, IO}
 import org.scalatest.{Matchers, WordSpec}
 import sangria.macros._
 import sangria.marshalling._
 import sangria.schema._
 import sangria.util.{FutureResultSupport, Pos}
 import spray.json._
-import monix.execution.Scheduler.Implicits.global
 import sangria.marshalling.sprayJson._
-import sangria.streaming.monix._
+import sangria.util.Fs2Support._
 import sangria.util.SimpleGraphQlSupport._
 
 class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
+  implicit val ec: ExecutionContext = ExecutionContext.global
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+
   val IdsArg = Argument("ids", ListInputType(IntType))
   val IdArg = Argument("id", IntType)
   val NameArg = Argument("name", StringType)
@@ -108,7 +111,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
         operationNames = List("q1", "q2", "q3"),
         variables = vars)
 
-      res.toListL.runAsync.await.toSet should be (
+      res.compile.toVector.unsafeRunSync.toSet should be (
         Set(
           """
           {
@@ -189,7 +192,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
         operationNames = List("q3", "q1", "q2"),
         middleware = BatchExecutor.OperationNameExtension :: Nil)
 
-      res.toListL.runAsync.await.toSet should be (
+      res.compile.toVector.unsafeRunSync.toSet should be (
         Set(
           """
           {
@@ -259,7 +262,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
 
       val res = BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2"))
 
-      res.toListL.runAsync.await.toSet should be (
+      res.compile.toVector.unsafeRunSync.toSet should be (
         Set(
           """
           {
@@ -320,7 +323,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
         """
 
       checkContainsViolations(
-        BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2")).toListL.runAsync.await,
+        BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2")).compile.toVector.unsafeRunSync,
         "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'Int!'." -> List(Pos(7, 24), Pos(8, 24)),
         "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'String!'." -> List(Pos(7, 24), Pos(10, 25)))
     }
@@ -353,7 +356,7 @@ class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport 
         """
 
       checkContainsViolations(
-        BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2", "q3")).toListL.runAsync.await,
+        BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2", "q3")).compile.toVector.unsafeRunSync,
         "Operation 'q1' has a circular dependency at path 'q1($from3) -> q3($from2) -> q2($from1) -> q1'." -> List(Pos(2, 11)),
         "Operation 'q3' has a circular dependency at path 'q3($from2) -> q2($from1) -> q1($from3) -> q3'." -> List(Pos(20, 11)),
         "Operation 'q2' has a circular dependency at path 'q2($from1) -> q1($from3) -> q3($from2) -> q2'." -> List(Pos(14, 11)))
