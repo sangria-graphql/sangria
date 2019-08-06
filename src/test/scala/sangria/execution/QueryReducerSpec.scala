@@ -1,6 +1,6 @@
 package sangria.execution
 
-import monix.execution.atomic.AtomicInt
+import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.QueryReducer.ArgumentValuesFn
@@ -643,7 +643,7 @@ class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
     def calcDepth(queryStr: String): Int = {
       val Success(query) = QueryParser.parse(queryStr)
 
-      val depth = AtomicInt(0)
+      val depth = new AtomicInteger(0)
       val reducer = QueryReducer.measureDepth[Any]((d, ctx) => {
         depth.set(d)
         ctx
