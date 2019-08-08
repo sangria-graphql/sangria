@@ -134,11 +134,12 @@ object Fetcher {
     new Fetcher[Ctx, Res, RelRes, Id](i ⇒ id.id(i), relationOnlySupported, fetchRel, config)
 }
 
-case class FetcherConfig(cacheConfig: Option[() ⇒ FetcherCache] = None, maxBatchSizeConfig: Option[Int] = None) {
+case class FetcherConfig(cacheConfig: Option[() ⇒ FetcherCache] = None, maxBatchSizeConfig: Option[Int] = None, maxConcurrentBatchesConfig: Option[Int] = None) {
   def caching = copy(cacheConfig = Some(() ⇒ FetcherCache.simple))
   def caching(cache: FetcherCache) = copy(cacheConfig = Some(() ⇒ cache))
 
   def maxBatchSize(size: Int) = copy(maxBatchSizeConfig = Some(size))
+  def maxConcurrentBatches(size: Int) = copy(maxConcurrentBatchesConfig = Some(size))
 }
 
 object FetcherConfig {
@@ -148,6 +149,7 @@ object FetcherConfig {
   def caching(cache: FetcherCache) = empty.caching(cache)
 
   def maxBatchSize(size: Int) = empty.maxBatchSize(size)
+  def maxConcurrentBatches(size: Int) = empty.maxConcurrentBatches(size)
 }
 
 trait DeferredOne[+T, Id] extends Deferred[T] {
