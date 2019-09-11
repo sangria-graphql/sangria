@@ -15,6 +15,8 @@ import org.scalatest.wordspec.AnyWordSpec
 class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class TestInputObj(id: String, list: List[String], excluded: Option[List[Option[Int]]])
 
+  case class TestInputContainer[T](data: Seq[T])
+
   @GraphQLName("MyInput")
   @GraphQLDescription("My type!")
   case class TestInputObjAnnotated(
@@ -301,6 +303,12 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val intro = IntrospectionParser.parse(Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await)
 
       intro.typesByName("TestDefaults").asInstanceOf[IntrospectionInputObjectType].inputFieldsByName("optNone").defaultValue should be (None)
+    }
+
+    "derive input object types for type-parameterized classes" in {
+      implicit val testInput = deriveInputObjectType[TestInputObj]()
+
+      "deriveInputObjectType[TestInputContainer[TestInputObj]]()" should compile
     }
   }
 }
