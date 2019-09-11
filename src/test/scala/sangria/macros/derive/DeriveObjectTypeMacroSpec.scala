@@ -596,5 +596,11 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
 
       intro.typesByName("Query").asInstanceOf[IntrospectionObjectType].fieldsByName("foo").argsByName("a").defaultValue should be (None)
     }
+
+    "derive object types for type-parameterized classes" in {
+      implicit val testSubject = deriveObjectType[Unit, TestSubject]()
+
+      "deriveObjectType[Unit, TestContainer[TestSubject]]()" should compile
+    }
   }
 }

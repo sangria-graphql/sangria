@@ -63,7 +63,8 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
             val fields = extractFields(knownMembers, config)
 
             val classFields = fields map { field ⇒
-              val fieldType = field.method.returnType
+              // Contextualize the method type with respect to the enclosing type
+              val fieldType = field.method.returnType.asSeenFrom(targetType, targetType.typeSymbol)
 
               val name = field.name
               val annotationName = symbolName(field.annotations)
