@@ -31,7 +31,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "macro-visit" % "0.1.2-SNAPSHOT",
 
   // Marshalling
-  "org.sangria-graphql" %% "sangria-marshalling-api" % "2.0.0-SNAPSHOT",
+  "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.4-SNAPSHOT",
 
   // Streaming
   "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.1-SNAPSHOT",
@@ -42,10 +42,10 @@ libraryDependencies ++= Seq(
   // Testing
   "co.fs2" %% "fs2-core" % "2.0.0" % Test,
   "org.scalatest" %% "scalatest" % "3.0.8" % "test",
-  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3-SNAPSHOT" % Test,
-  "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3-SNAPSHOT" % Test,
-  "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2-SNAPSHOT" % Test,
-  "org.sangria-graphql" %% "sangria-ion" % "1.0.1-SNAPSHOT" % Test,
+  "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.2-SNAPSHOT" % Test,
+  "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2-SNAPSHOT" % Test,
+  "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1-SNAPSHOT" % Test,
+  "org.sangria-graphql" %% "sangria-ion" % "2.0.0-SNAPSHOT" % Test,
   "org.sangria-graphql" %% "sangria-monix" % "2.0.0-SNAPSHOT" % Test,
   "eu.timepit" %% "refined" % "0.9.9" % Test,
 
