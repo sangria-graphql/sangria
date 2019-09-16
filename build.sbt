@@ -1,6 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "1.4.3-SNAPSHOT"
+version := "2.0.0-SNAPSHOT"
 mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "1.4.2")
 
 description := "Scala GraphQL implementation"
