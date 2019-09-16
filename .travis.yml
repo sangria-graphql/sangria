@@ -1,14 +1,15 @@
 language: scala
 scala:
-  - 2.12.7
-  - 2.11.11
+  - 2.11.12
+  - 2.12.10
+  - 2.13.0
 jdk:
-  - oraclejdk8
+  - openjdk8
   - openjdk11
 
 matrix:
   exclude:
-    - scala: 2.11.11
+    - scala: 2.11.12
       jdk: openjdk11
 
 script: |
