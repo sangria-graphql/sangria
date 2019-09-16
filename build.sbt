@@ -1,6 +1,7 @@
 name := "sangria"
 organization := "org.sangria-graphql"
 version := "1.4.3-SNAPSHOT"
+mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "1.4.2")
 
 description := "Scala GraphQL implementation"
 homepage := Some(url("http://sangria-graphql.org"))
