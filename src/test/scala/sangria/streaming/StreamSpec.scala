@@ -18,47 +18,6 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
   val timeout = 10 seconds
 
   "Stream based subscriptions" when  {
-    "using RxScala" should {
-      "Stream results" in {
-        import sangria.marshalling.sprayJson._
-        import spray.json._
-        import rx.lang.scala.Observable
-
-        import sangria.streaming.rxscala._
-
-        import scala.concurrent.ExecutionContext.Implicits.global
-
-        val QueryType = ObjectType("QueryType", fields[Unit, Unit](
-          Field("hello", StringType, resolve = _ => "world")
-        ))
-
-        val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](
-          Field.subs("letters", StringType, resolve = _ =>
-            Observable.from(List("a", "b").map(Action(_)))),
-
-          Field.subs("numbers", OptionType(IntType), resolve = _ =>
-            Observable.from(List(1, 2).map(Action(_))))
-        ))
-
-        val schema = Schema(QueryType, subscription = Some(SubscriptionType))
-
-        import sangria.execution.ExecutionScheme.Stream
-
-        val stream: Observable[JsValue] =
-          Executor.execute(schema, graphql"subscription { letters numbers }",
-            queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions])
-
-        val result = stream.toBlocking.toList
-
-        result should (
-          have(size(4)) and
-          contain("""{"data": {"letters": "a"}}""".parseJson) and
-          contain("""{"data": {"letters": "b"}}""".parseJson) and
-          contain("""{"data": {"numbers": 1}}""".parseJson) and
-          contain("""{"data": {"numbers": 2}}""".parseJson))
-      }
-    }
-
     "using monix" should {
       import _root_.monix.execution.Scheduler.Implicits.global
       import _root_.monix.reactive.Observable
@@ -89,7 +48,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
           Executor.execute(schema, graphql"subscription { letters numbers }",
             queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions])
 
-        val result = stream.toListL.runAsync.await(timeout)
+        val result = stream.toListL.runToFuture.await(timeout)
 
         result should (
           have(size(4)) and
@@ -124,7 +83,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
             queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions],
             exceptionHandler = exceptionHandler)
 
-        val result = stream.toListL.runAsync.await(timeout)
+        val result = stream.toListL.runToFuture.await(timeout)
 
         result should (
           contain("""{"data": {"letters": null}, "errors": [{"message": "foo", "path":["letters"]}]}""".parseJson) and
@@ -248,7 +207,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
             exceptionHandler = exceptionHandler).await(timeout)
         }
 
-        val result = stream.toListL.runAsync.await(timeout)
+        val result = stream.toListL.runToFuture.await(timeout)
 
         result should (
           have(size(3)) and
@@ -281,7 +240,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
 
         val stream = Executor.execute(schema, graphql"subscription { letters }")
 
-        val result = stream.toListL.runAsync.await(timeout)
+        val result = stream.toListL.runToFuture.await(timeout)
 
         result.map(_.result) should (
           have(size(3)) and
@@ -304,52 +263,6 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         error.violations.map(_.errorMessage) should (
           have(size(1)) and
           contain("Subscription type 'Subscription' may either contain only non-subscription fields or only subscription fields (defined with `Field.subs`). Following fields are non-subscription fields among other subscription fields: 'hello'."))
-      }
-
-      "validate that all fields have same stream implementation at schema creation time" in {
-        val f1 = {
-          import sangria.streaming.rxscala._
-          import rx.lang.scala.Observable
-
-          Field.subs("letters", OptionType(StringType),
-            resolve = (_: Context[Unit, Unit]) => Observable.from(List("a")).map(Action(_)))
-        }
-
-        val f2 = {
-          import sangria.streaming.monix._
-          import _root_.monix.reactive.Observable
-
-          Field.subs("otherLetters", OptionType(StringType),
-            resolve = (_: Context[Unit, Unit]) => Observable("a").map(Action(_)))
-        }
-
-        val SubscriptionType = ObjectType("Subscription", fields[Unit, Unit](f1, f2))
-
-        val error = intercept [SchemaValidationException] (Schema(QueryType, subscription = Some(SubscriptionType)))
-
-        error.violations.map(_.errorMessage) should (
-          have(size(1)) and
-          contain("Some fields of subscription type 'Subscription' have incompatible stream implementations: 'otherLetters'."))
-      }
-
-      "validate that all fields have same stream implementation at stream merge" in {
-        val SubscriptionType = {
-          import _root_.monix.reactive.Observable
-          import sangria.streaming.monix._
-
-          ObjectType("Subscription", fields[Unit, Unit](
-            Field.subs("letters", OptionType(StringType), resolve = _ =>
-              Observable("a", "b", "c").map(Action(_)))))
-        }
-
-        val schema = Schema(QueryType, subscription = Some(SubscriptionType))
-
-        import sangria.streaming.rxscala._
-        import sangria.execution.ExecutionScheme.StreamExtended
-
-        val stream = Executor.execute(schema, graphql"subscription { letters }")
-
-        an [IllegalStateException] should be thrownBy stream.toBlocking.toList
       }
 
       "return first result for default execution scheme" in {
@@ -390,7 +303,7 @@ class StreamSpec extends WordSpec with Matchers with FutureResultSupport {
         val stream = Executor.execute(schema, graphql"subscription { letters numbers }",
           queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions])
 
-        val result = stream.toListL.runAsync.await(timeout)
+        val result = stream.toListL.runToFuture.await(timeout)
 
         result should (
           have(size(1)) and

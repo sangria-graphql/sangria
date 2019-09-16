@@ -46,6 +46,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3-SNAPSHOT" % Test,
   "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2-SNAPSHOT" % Test,
   "org.sangria-graphql" %% "sangria-ion" % "1.0.1-SNAPSHOT" % Test,
+  "org.sangria-graphql" %% "sangria-monix" % "2.0.0-SNAPSHOT" % Test,
   "eu.timepit" %% "refined" % "0.9.9" % Test,
 
   // CATs
