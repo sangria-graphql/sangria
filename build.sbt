@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
   // Testing
-  "co.fs2" %% "fs2-core" % "1.1.0-M1" % Test,
+  "co.fs2" %% "fs2-core" % "2.0.0" % Test,
   "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3-SNAPSHOT" % Test,
   "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3-SNAPSHOT" % Test,
