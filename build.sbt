@@ -54,6 +54,15 @@ libraryDependencies ++= Seq(
   "io.github.classgraph" % "classgraph" % "4.0.6" % Test
 )
 
+// Benchmarking
+
+enablePlugins(JmhPlugin)
+sourceDirectory in Jmh := (sourceDirectory in Test).value
+classDirectory in Jmh := (classDirectory in Test).value
+dependencyClasspath in Jmh := (dependencyClasspath in Test).value
+compile in Jmh := (compile in Jmh).dependsOn(compile in Test).value
+run in Jmh := (run in Jmh).dependsOn(compile in Jmh).evaluated
+
 // Publishing
 
 publishMavenStyle := true
