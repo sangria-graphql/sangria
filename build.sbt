@@ -1,5 +1,6 @@
 name := "sangria"
 organization := "org.sangria-graphql"
+
 version := "1.4.4-SNAPSHOT"
 
 description := "Scala GraphQL implementation"
@@ -59,11 +60,14 @@ libraryDependencies ++= Seq(
 publishMavenStyle := true
 publishArtifact in Test := false
 pomIncludeRepository := (_ ⇒ false)
+
 publishTo := Some(
   if (isSnapshot.value)
-    "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    "Artifactory Realm" at "https://dv01.jfrog.io/dv01/dv01-sbt-packages;build.timestamp=" + new java.util.Date().getTime
   else
-    "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+    "Artifactory Realm" at "https://dv01.jfrog.io/dv01/dv01-sbt-packages"
+)
+credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
 
 startYear := Some(2015)
 organizationHomepage := Some(url("https://github.com/sangria-graphql"))
