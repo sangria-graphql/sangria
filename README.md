@@ -1,3 +1,15 @@
+## dv01 fork of Sangria library
+
+for context read: https://github.com/sangria-graphql/sangria/issues/446
+
+merged PR to support projection names to include arguments: https://github.com/sangria-graphql/sangria/pull/430
+
+### publishing sangria to dv01 artifactory
+
+make sure you have credentials from artifactory in `~/.sbt/.credentials`
+
+`sbt publish`
+
 ![Sangria Logo](http://sangria-graphql.org/assets/img/sangria-logo.svg)
 
 [Sangria](http://sangria-graphql.org/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
