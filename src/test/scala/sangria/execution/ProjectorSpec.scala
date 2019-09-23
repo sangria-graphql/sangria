@@ -16,6 +16,9 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
 
   case class ProductDefer(productIds: List[String]) extends Deferred[List[Right[String, Product]]]
 
+  val IntArgument = Argument("intArg", IntType)
+  val StringArgument = Argument("stringArg", StringType)
+
   val ProductAttributeType = InterfaceType("ProductAttribute", fields[Unit, (String, Any)](
     Field("name", StringType, resolve = _.value._1)))
 
@@ -37,7 +40,7 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
     Field("relatedProducts", ListType(ProductType),
       tags = ProjectionName("rp") :: Nil,
       resolve = Projector(1, (ctx, projected) ⇒ projected match {
-        case Vector(ProjectedName("id", _)) ⇒ Value(ctx.value.relatedProductIds map (Left(_)))
+        case Vector(ProjectedName("id", _, _)) ⇒ Value(ctx.value.relatedProductIds map (Left(_)))
         case _ ⇒ ProductDefer(ctx.value.relatedProductIds)
       }))
   ))
@@ -51,8 +54,11 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
       Field("typeId", StringType, tags = ProjectionExclude :: Nil, resolve = _ ⇒ "product"),
       Field("masterVariant", VariantType,
         tags = ProjectionName("master1") :: ProjectionName("master2") :: Nil,
+        arguments = IntArgument :: Nil,
         resolve = _.value.right.get.variants.head),
-      Field("variants", ListType(VariantType), resolve = _.value.right.get.variants.tail)
+      Field("variants", ListType(VariantType),
+        arguments = StringArgument :: Nil,
+        resolve = _.value.right.get.variants.tail)
     ))
 
   val QueryType = ObjectType("Query", fields[Ctx, Unit](
@@ -103,7 +109,7 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
             projectAll {
               id
               typeId
-              variants {
+              variants(stringArg: "a") {
                 id
                 attributes {
                   name
@@ -115,7 +121,7 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
                 relatedProducts {
                   id
                   typeId
-                  variants {
+                  variants(stringArg: "b") {
                     id
                   }
                 }
@@ -124,7 +130,7 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
             projectOne {
               id
               typeId
-              variants {
+              variants(stringArg: "c") {
                 id
                 typeId
               }
@@ -189,12 +195,15 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
             ProjectedName("rp", Vector(
               ProjectedName("id", Vector.empty),
               ProjectedName("variants", Vector(
-                ProjectedName("id", Vector.empty)))))))))
+                ProjectedName("id", Vector.empty)),
+                Args(StringArgument :: Nil, "stringArg" -> "b"))))),
+            Args(StringArgument :: Nil, "stringArg" -> "a"))))
 
       ctx.oneLevelprojections should be (
         Vector(
           ProjectedName("id", Vector.empty),
-          ProjectedName("variants", Vector.empty)))
+          ProjectedName("variants", Vector.empty,
+            Args(StringArgument :: Nil, "stringArg" -> "c"))))
     }
 
     "handle multiple projected names" in {
@@ -204,10 +213,10 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
             projectAll {
               id
               variantIds
-              masterVariant {
+              masterVariant(intArg: 1) {
                 mixed
               }
-              variants {
+              variants(stringArg: "a") {
                 id
                 mixed
               }
@@ -216,10 +225,10 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
             projectOne {
               id
               variantIds
-              masterVariant {
+              masterVariant(intArg: 2) {
                 mixed
               }
-              variants {
+              variants(stringArg: "b") {
                 id
                 mixed
               }
@@ -260,26 +269,34 @@ class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
           ProjectedName("id", Vector.empty),
           ProjectedName("masterVariant.id", Vector.empty),
           ProjectedName("variants.id", Vector.empty),
-          ProjectedName("master1", Vector(
+          ProjectedName("master1",
+            Vector(
               ProjectedName("mixed1", Vector.empty),
-              ProjectedName("mixed2", Vector.empty))),
-          ProjectedName("master2", Vector(
+              ProjectedName("mixed2", Vector.empty)),
+            Args(IntArgument :: Nil, "intArg" -> 1)),
+          ProjectedName("master2",
+            Vector(
               ProjectedName("mixed1", Vector.empty),
-              ProjectedName("mixed2", Vector.empty))),
+              ProjectedName("mixed2", Vector.empty)),
+            Args(IntArgument :: Nil, "intArg" -> 1)),
           ProjectedName("variants",
             Vector(
               ProjectedName("id", Vector.empty),
               ProjectedName("mixed1", Vector.empty),
-              ProjectedName("mixed2", Vector.empty)))))
+              ProjectedName("mixed2", Vector.empty)),
+            Args(StringArgument :: Nil, "stringArg" -> "a"))))
 
       ctx.oneLevelprojections should be (
         Vector(
           ProjectedName("id", Vector.empty),
           ProjectedName("masterVariant.id", Vector.empty),
           ProjectedName("variants.id", Vector.empty),
-          ProjectedName("master1", Vector.empty),
-          ProjectedName("master2", Vector.empty),
-          ProjectedName("variants", Vector.empty)))
+          ProjectedName("master1", Vector.empty,
+            Args(IntArgument :: Nil, "intArg" -> 2)),
+          ProjectedName("master2", Vector.empty,
+            Args(IntArgument :: Nil, "intArg" -> 2)),
+          ProjectedName("variants", Vector.empty,
+            Args(StringArgument :: Nil, "stringArg" -> "b"))))
     }
   }
 }
