@@ -1,6 +1,5 @@
 name := "sangria"
 organization := "org.sangria-graphql"
-version := "2.0.0-SNAPSHOT"
 mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "1.4.2")
 
 description := "Scala GraphQL implementation"
@@ -56,7 +55,8 @@ libraryDependencies ++= Seq(
 )
 
 // Publishing
-
+releaseCrossBuild := true
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
 publishMavenStyle := true
 publishArtifact in Test := false
 pomIncludeRepository := (_ ⇒ false)
