@@ -51,7 +51,7 @@ libraryDependencies ++= Seq(
 
   // CATs
   "net.jcazevedo" %% "moultingyaml" % "0.4.1" % Test,
-  "io.github.classgraph" % "classgraph" % "4.0.6" % Test
+  "io.github.classgraph" % "classgraph" % "4.0.7" % Test
 )
 
 // Publishing
