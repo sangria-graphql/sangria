@@ -247,12 +247,12 @@ If you are facing unexpected issues with migration to the new Sangria version, p
   ```scala
   // Before
   val exceptionHandler: Executor.ExceptionHandler = {
-    case (m, ...) ⇒ ...
+    case (m, ...) => ...
   })
 
   // After
   val exceptionHandler = ExceptionHandler {
-    case (m, ...) ⇒ ...
+    case (m, ...) => ...
   }
   ```
 
@@ -513,7 +513,7 @@ A minor maintenance release to keep up with the spec changes.
   
   ```scala
   Executor.execute(schema, query).recover {
-    case error: ErrorWithResolver ⇒ error.resolveError
+    case error: ErrorWithResolver => error.resolveError
   }
   ```
   
@@ -525,8 +525,8 @@ A minor maintenance release to keep up with the spec changes.
   executor.execute(query, ...)
     .map(Ok(_))
     .recover {
-      case error: QueryAnalysisError ⇒ BadRequest(error.resolveError)
-      case error: ErrorWithResolver ⇒ InternalServerError(error.resolveError)
+      case error: QueryAnalysisError => BadRequest(error.resolveError)
+      case error: ErrorWithResolver => InternalServerError(error.resolveError)
     }
   ```
   
@@ -536,8 +536,8 @@ A minor maintenance release to keep up with the spec changes.
   
   ```scala
   val authReducer = QueryReducer.collectTags[MyContext, String] {
-    case Permission(name) ⇒ name
-  } { (permissionNames, ctx) ⇒
+    case Permission(name) => name
+  } { (permissionNames, ctx) =>
     if (ctx.isUserAuthorized(permissionNames)) ctx
     else throw AuthorizationException("User is not authorized!")
   }
@@ -545,9 +545,9 @@ A minor maintenance release to keep up with the spec changes.
   Executor.execute(schema, queryAst, userContext = new MyContext, queryReducers = authReducer :: Nil)
     .map(Ok(_))
     .recover {
-      case QueryReducingError(error: AuthorizationException) ⇒ Unauthorized(error.getMessage)
-      case error: QueryAnalysisError ⇒ BadRequest(error.resolveError)
-      case error: ErrorWithResolver ⇒ InternalServerError(error.resolveError)
+      case QueryReducingError(error: AuthorizationException) => Unauthorized(error.getMessage)
+      case error: QueryAnalysisError => BadRequest(error.resolveError)
+      case error: ErrorWithResolver => InternalServerError(error.resolveError)
     }
   ```
   
@@ -752,18 +752,18 @@ A minor maintenance release to keep up with the spec changes.
   objects like:
   ```scala 
   // for JSON input: {"op1": "foo", "opt2": null} 
-  Map("opt1" → Some("foo"), "opt2" → None)
+  Map("opt1" -> Some("foo"), "opt2" -> None)
   
   // for JSON input: {"op1": "foo"} 
-  Map("opt1" → Some("foo"))
+  Map("opt1" -> Some("foo"))
   ```
   instead of (old format):
   ```scala 
   // for JSON input: {"op1": "foo", "opt2": null} 
-  Map("opt1" → "foo")
+  Map("opt1" -> "foo")
   
   // for JSON input: {"op1": "foo"} 
-  Map("opt1" → "foo")
+  Map("opt1" -> "foo")
   ```   
   As you can see, this allows you to distinguish between "undefined" json object fields and json object fields that are set to `null`.
 * `null` value support (as defined in the spec change: https://github.com/facebook/graphql/pull/83) (#55) (spec change)
@@ -822,7 +822,7 @@ A minor maintenance release to keep up with the spec changes.
   complexity analysis (introduced in previous release), but in much more generic form. That's because complexity analysis is now rewritten as
   a `QueryReducer`. In order to migrate, you need to replace `measureComplexity` function with `QueryReducer.measureComplexity`. Here is an example:
   ```scala
-  val complReducer = QueryReducer.measureComplexity[MyCtx] { (c, ctx) ⇒
+  val complReducer = QueryReducer.measureComplexity[MyCtx] { (c, ctx) =>
     complexity = c
     ctx
   }
@@ -833,7 +833,7 @@ A minor maintenance release to keep up with the spec changes.
   ```
   Since rejection of complex queries is such a common use-case, there is now a helper function to create a reducer for it:
   ```scala
-  val rejectComplexQuery = QueryReducer.rejectComplexQueries[MyCtx](14, (c, ctx) ⇒
+  val rejectComplexQuery = QueryReducer.rejectComplexQueries[MyCtx](14, (c, ctx) =>
     new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
   ```
 * `Middleware` got a type parameter for `Ctx`. This is a minor breaking change. If you don't use the `userContext` inside of the `Middleware`,
@@ -848,18 +848,18 @@ A minor maintenance release to keep up with the spec changes.
   ```scala
   Field("pets", OptionType(ListType(PetType)),
     arguments = Argument("limit", IntType) :: Nil,
-    complexity = Some((args, childrenScore) ⇒ 25.0D + args.arg[Int]("limit") * childrenScore),
-    resolve = ctx ⇒ ...)
+    complexity = Some((args, childrenScore) => 25.0D + args.arg[Int]("limit") * childrenScore),
+    resolve = ctx => ...)
   ```
   If you would like to use this feature, you need to provide `measureComplexity` argument to the `Executor`. For example:
   ```scala
-  val rejectComplexQueries = (c: Double) ⇒
+  val rejectComplexQueries = (c: Double) =>
     if (c > 1000)
       throw new IllegalArgumentException(s"Too complex query: max allowed complexity is 1000.0, but got $c")
     else ()
 
   val exceptionHandler: Executor.ExceptionHandler = {
-    case (m, e: IllegalArgumentException) ⇒ HandledException(e.getMessage)
+    case (m, e: IllegalArgumentException) => HandledException(e.getMessage)
   }
 
   Executor.execute(schema, query,
@@ -927,20 +927,20 @@ I collected all of them in the change list below. They were necessary in order t
 * #76 - You can now provide `maxQueryDepth` to `Executor`. It will then enforce this constraint for all queries (very useful if query has recursive types) [Docs](http://sangria-graphql.org/learn/#limiting-query-depth)
 * #69 - `DeferredResolver` now got `userContext` as an argument. (breaking change: you need to provide a type parameter and one extra argument in `resolve` for your `DeferredResolver`s. you you are not interested in `userContext`, you can just use `Any` type)
 * Renamed Json support objects in order to make more concise import syntax (breaking change: you need to rename imports as well):
-  * `sangria.integration.CirceSupport` → `sangria.integration.circe`
-  * `sangria.integration.Json4sSupport` → `sangria.integration.json4s`
-  * `sangria.integration.PlayJsonSupport` → `sangria.integration.playJson`
-  * `sangria.integration.SprayJsonSupport` → `sangria.integration.sprayJson`
+  * `sangria.integration.CirceSupport` -> `sangria.integration.circe`
+  * `sangria.integration.Json4sSupport` -> `sangria.integration.json4s`
+  * `sangria.integration.PlayJsonSupport` -> `sangria.integration.playJson`
+  * `sangria.integration.SprayJsonSupport` -> `sangria.integration.sprayJson`
 * `ResultMarshaller` and `InputUnmarshaller` are moved in the `integration` package
 * Renamed execution `arguments` to `variables` in order to be consistent with the spec (breaking change: you need to rename this argument as well, if you are using named arguments)
 * Refactored variables and `InputUnmarshaller`. In order to avoid extra complexity it now does not have a dependent type. Instead it uses "type tagging" for scala map variables.
   It's a minor breaking change. If you are providing execution variables as a scala map, then you need to use `mapVars` or `emptyMapVars` which are defined in `InputUnmarshaller` companion object (these functions do not wrap `Map` - they only needed to ensure type constraints):
   ```scala
-  Executor.execute(mySchema, query, variables = mapVars(Map("someId" → "1000")))
+  Executor.execute(mySchema, query, variables = mapVars(Map("someId" -> "1000")))
 
   // or
 
-  Executor.execute(mySchema, query, variables = mapVars("someId" → "1000"))
+  Executor.execute(mySchema, query, variables = mapVars("someId" -> "1000"))
   ```
 * #72 - `scala.util.Try` now can be returned from `resolve` in order to indicate a successful or failed result
 * #65 - `DeprecationTracker` should be called even if deprecation is in the interface type
