@@ -80,7 +80,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
     val groupedRelIds = ctx.fetcher.config.maxBatchSizeConfig match {
       case Some(size) => nonCachedIds.map { case (rel, ids) => (rel, ids.grouped(size))}
-      case None => nonCachedIds.map { case (rel, ids) => (rel, Iterator(ids)) }
+      case None => nonCachedIds.map { case (rel, ids) => (rel, Iterator.single(ids)) }
     }
 
     val results = groupedRelIds flatMap { case (rel, groupIds) =>
@@ -93,7 +93,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
       }
     }
 
-    val futureRes = Future.sequence(results).map { allResults ⇒
+    val futureRes = Future.sequence(results).map { allResults =>
       val byRel = MutableMap[Relation[Any, _, _], MutableMap[Any, Seq[Any]]]()
 
       allResults.foreach(relResult => relResult.foreach{ case (rel, v) =>
