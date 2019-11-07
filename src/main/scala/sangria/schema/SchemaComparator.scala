@@ -659,17 +659,17 @@ object SchemaChange {
   case class DirectiveArgumentAdded(directive: Directive, argument: Argument[_], breaking: Boolean)
     extends AbstractChange(s"Argument `${argument.name}` was added to `${directive.name}` directive", breaking)
 
-  case class InputFieldTypeChanged(tpe: InputObjectType[_], field: InputField[_], breaking: Boolean, oldFiledType: InputType[_], newFieldType: InputType[_])
-    extends AbstractChange(s"`${tpe.name}.${field.name}` input field type changed from `${SchemaRenderer.renderTypeName(oldFiledType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
+  case class InputFieldTypeChanged(tpe: InputObjectType[_], field: InputField[_], breaking: Boolean, oldFieldType: InputType[_], newFieldType: InputType[_])
+    extends AbstractChange(s"`${tpe.name}.${field.name}` input field type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
 
-  case class ObjectTypeArgumentTypeChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], breaking: Boolean, oldFiledType: InputType[_], newFieldType: InputType[_])
-    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(oldFiledType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
+  case class ObjectTypeArgumentTypeChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], breaking: Boolean, oldFieldType: InputType[_], newFieldType: InputType[_])
+    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
 
-  case class DirectiveArgumentTypeChanged(directive: Directive, argument: Argument[_], breaking: Boolean, oldFiledType: InputType[_], newFieldType: InputType[_])
-    extends AbstractChange(s"`${directive.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(oldFiledType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking)
+  case class DirectiveArgumentTypeChanged(directive: Directive, argument: Argument[_], breaking: Boolean, oldFieldType: InputType[_], newFieldType: InputType[_])
+    extends AbstractChange(s"`${directive.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking)
 
-  case class FieldTypeChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], breaking: Boolean, oldFiledType: OutputType[_], newFieldType: OutputType[_])
-    extends AbstractChange(s"`${tpe.name}.${field.name}` field type changed from `${SchemaRenderer.renderTypeName(oldFiledType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
+  case class FieldTypeChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], breaking: Boolean, oldFieldType: OutputType[_], newFieldType: OutputType[_])
+    extends AbstractChange(s"`${tpe.name}.${field.name}` field type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
 
   case class SchemaMutationTypeChanged(oldType: Option[ObjectType[_, _]], newType: Option[ObjectType[_, _]])
     extends AbstractChange(s"Schema mutation type changed from ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} to ${newType.fold("none")(t ⇒ "`" + t.name + "`")} type", oldType.nonEmpty)
