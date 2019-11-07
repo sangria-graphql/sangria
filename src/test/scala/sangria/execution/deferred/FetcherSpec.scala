@@ -75,7 +75,8 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
 
     val defaultProdFetcher = Fetcher.relCaching[Repo, Product, Product, Int](
       (repo, ids) => repo.loadProducts(ids),
-      (repo, ids) => repo.loadProductsByCategory(ids(prodCat)))
+      (repo, ids) => repo.loadProductsByCategory(ids(prodCat)),
+      FetcherConfig.caching.maxBatchSize(2))
 
     val complexProdFetcher = Fetcher.relCaching[Repo, Product, (Seq[String], Product), Int](
       (repo, ids) => repo.loadProducts(ids),
@@ -910,11 +911,11 @@ class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
             c.cacheFor(fetcherProd).foreach { productCache =>
               productCache.update(4, Product(4, "Manually Cached", categories.map(_.id).toVector))
             }
-            
+
             categories
           }
         }
-      
+
       check(schema(fetcherCat, fetcherProd), (),
         """
           {
