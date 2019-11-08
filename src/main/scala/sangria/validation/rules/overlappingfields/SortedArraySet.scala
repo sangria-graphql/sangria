@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
 /**
   * A set representation that is well suited to hash and equality comparisons and fast iteration over members
   */
-class SortedArraySet[T](private val sortedMembers: mutable.WrappedArray[T]) extends Traversable[T] {
+class SortedArraySet[T](private val sortedMembers: mutable.WrappedArray[T]) extends Iterable[T] {
 
   //cache the hashCode for faster handling
   override val hashCode: Int = sortedMembers.hashCode()
@@ -29,6 +29,10 @@ class SortedArraySet[T](private val sortedMembers: mutable.WrappedArray[T]) exte
 
   override def foreach[U](f: T => U): Unit = {
     sortedMembers.foreach(f)
+  }
+
+  override def iterator: Iterator[T] = {
+    sortedMembers.iterator
   }
 }
 
