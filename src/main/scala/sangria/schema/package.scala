@@ -12,19 +12,19 @@ package object schema {
       "Int can represent values between -(2^31) and 2^31 - 1."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case i: Int ⇒ Right(i)
-      case i: Long if i.isValidInt ⇒ Right(i.toInt)
-      case i: BigInt if !i.isValidInt ⇒ Left(BigIntCoercionViolation)
-      case i: BigInt ⇒ Right(i.intValue)
-      case d: Double if d.isValidInt ⇒ Right(d.intValue)
-      case d: BigDecimal if d.isValidInt ⇒ Right(d.intValue)
-      case _ ⇒ Left(IntCoercionViolation)
+      case i: Int => Right(i)
+      case i: Long if i.isValidInt => Right(i.toInt)
+      case i: BigInt if !i.isValidInt => Left(BigIntCoercionViolation)
+      case i: BigInt => Right(i.intValue)
+      case d: Double if d.isValidInt => Right(d.intValue)
+      case d: BigDecimal if d.isValidInt => Right(d.intValue)
+      case _ => Left(IntCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _, _) ⇒ Right(i)
-      case ast.BigIntValue(i, _, _) if !i.isValidInt ⇒ Left(BigIntCoercionViolation)
-      case ast.BigIntValue(i, _, _) ⇒ Right(i.intValue)
-      case _ ⇒ Left(IntCoercionViolation)
+      case ast.IntValue(i, _, _) => Right(i)
+      case ast.BigIntValue(i, _, _) if !i.isValidInt => Left(BigIntCoercionViolation)
+      case ast.BigIntValue(i, _, _) => Right(i.intValue)
+      case _ => Left(IntCoercionViolation)
     })
 
   implicit val LongType = ScalarType[Long]("Long",
@@ -33,19 +33,19 @@ package object schema {
       "Long can represent values between -(2^63) and 2^63 - 1."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case i: Int ⇒ Right(i: Long)
-      case i: Long ⇒ Right(i)
-      case i: BigInt if !i.isValidLong ⇒ Left(BigLongCoercionViolation)
-      case i: BigInt ⇒ Right(i.longValue)
-      case d: Double if d.isWhole ⇒ Right(d.toLong)
-      case d: BigDecimal if d.isValidLong ⇒ Right(d.longValue())
-      case _ ⇒ Left(LongCoercionViolation)
+      case i: Int => Right(i: Long)
+      case i: Long => Right(i)
+      case i: BigInt if !i.isValidLong => Left(BigLongCoercionViolation)
+      case i: BigInt => Right(i.longValue)
+      case d: Double if d.isWhole => Right(d.toLong)
+      case d: BigDecimal if d.isValidLong => Right(d.longValue)
+      case _ => Left(LongCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _, _) ⇒ Right(i: Long)
-      case ast.BigIntValue(i, _, _) if !i.isValidLong ⇒ Left(BigLongCoercionViolation)
-      case ast.BigIntValue(i, _, _) ⇒ Right(i.longValue)
-      case _ ⇒ Left(LongCoercionViolation)
+      case ast.IntValue(i, _, _) => Right(i: Long)
+      case ast.BigIntValue(i, _, _) if !i.isValidLong => Left(BigLongCoercionViolation)
+      case ast.BigIntValue(i, _, _) => Right(i.longValue)
+      case _ => Left(LongCoercionViolation)
     })
 
   implicit val BigIntType = ScalarType[BigInt]("BigInt",
@@ -54,24 +54,24 @@ package object schema {
       "BigInt can represent arbitrary big values."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case i: Int ⇒ Right(BigInt(i))
-      case i: Long ⇒ Right(BigInt(i))
-      case i: BigInt ⇒ Right(i)
-      case d: Double if d.isWhole ⇒ Right(BigInt(d.toLong))
-      case d: BigDecimal if d.isWhole ⇒ Right(d.toBigInt)
-      case _ ⇒ Left(IntCoercionViolation)
+      case i: Int => Right(BigInt(i))
+      case i: Long => Right(BigInt(i))
+      case i: BigInt => Right(i)
+      case d: Double if d.isWhole => Right(BigInt(d.toLong))
+      case d: BigDecimal if d.isWhole => Right(d.toBigInt)
+      case _ => Left(IntCoercionViolation)
     },
     coerceInput = {
-      case ast.IntValue(i, _, _) ⇒ Right(i)
-      case ast.BigIntValue(i, _, _) ⇒ Right(i)
-      case _ ⇒ Left(IntCoercionViolation)
+      case ast.IntValue(i, _, _) => Right(i)
+      case ast.BigIntValue(i, _, _) => Right(i)
+      case _ => Left(IntCoercionViolation)
     })
 
   implicit val FloatType = ScalarType[Double]("Float",
     description = Some(
       "The `Float` scalar type represents signed double-precision fractional " +
       "values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."),
-    coerceOutput = (v, _) ⇒  {
+    coerceOutput = (v, _) =>  {
       // .isNaN and .isInfinity box, we explicitly avoid that here
       if (java.lang.Double.isNaN(v) || java.lang.Double.isInfinite(v))
         null
@@ -79,54 +79,54 @@ package object schema {
         v
     },
     coerceUserInput = {
-      case i: Int ⇒ Right(i.toDouble)
-      case i: Long ⇒ Right(i.toDouble)
-      case i: BigInt if !i.isValidDouble ⇒ Left(BigDecimalCoercionViolation)
-      case i: BigInt ⇒ Right(i.doubleValue())
-      case d: Double ⇒ Right(d)
-      case d: BigDecimal if !d.isDecimalDouble ⇒ Left(BigDecimalCoercionViolation)
-      case d: BigDecimal ⇒ Right(d.doubleValue())
-      case _ ⇒ Left(FloatCoercionViolation)
+      case i: Int => Right(i.toDouble)
+      case i: Long => Right(i.toDouble)
+      case i: BigInt if !i.isValidDouble => Left(BigDecimalCoercionViolation)
+      case i: BigInt => Right(i.doubleValue)
+      case d: Double => Right(d)
+      case d: BigDecimal if !d.isDecimalDouble => Left(BigDecimalCoercionViolation)
+      case d: BigDecimal => Right(d.doubleValue)
+      case _ => Left(FloatCoercionViolation)
     },
     coerceInput = {
-      case ast.FloatValue(d, _, _) ⇒ Right(d)
-      case ast.BigDecimalValue(d, _, _) if !d.isDecimalDouble ⇒ Left(BigDecimalCoercionViolation)
-      case ast.BigDecimalValue(d, _, _) ⇒ Right(d.doubleValue)
-      case ast.IntValue(i, _, _) ⇒ Right(i)
-      case ast.BigIntValue(i, _, _) if !i.isValidDouble ⇒ Left(BigDecimalCoercionViolation)
-      case ast.BigIntValue(i, _, _) ⇒ Right(i.doubleValue)
-      case _ ⇒ Left(FloatCoercionViolation)
+      case ast.FloatValue(d, _, _) => Right(d)
+      case ast.BigDecimalValue(d, _, _) if !d.isDecimalDouble => Left(BigDecimalCoercionViolation)
+      case ast.BigDecimalValue(d, _, _) => Right(d.doubleValue)
+      case ast.IntValue(i, _, _) => Right(i)
+      case ast.BigIntValue(i, _, _) if !i.isValidDouble => Left(BigDecimalCoercionViolation)
+      case ast.BigIntValue(i, _, _) => Right(i.doubleValue)
+      case _ => Left(FloatCoercionViolation)
     })
 
   implicit val BigDecimalType = ScalarType[BigDecimal]("BigDecimal",
     description = Some("The `BigDecimal` scalar type represents signed fractional values with arbitrary precision."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case i: Int ⇒ Right(BigDecimal(i))
-      case i: Long ⇒ Right(BigDecimal(i))
-      case i: BigInt ⇒ Right(BigDecimal(i))
-      case d: Double ⇒ Right(BigDecimal(d))
-      case d: BigDecimal ⇒ Right(d)
-      case _ ⇒ Left(FloatCoercionViolation)
+      case i: Int => Right(BigDecimal(i))
+      case i: Long => Right(BigDecimal(i))
+      case i: BigInt => Right(BigDecimal(i))
+      case d: Double => Right(BigDecimal(d))
+      case d: BigDecimal => Right(d)
+      case _ => Left(FloatCoercionViolation)
     },
     coerceInput = {
-      case ast.BigDecimalValue(d, _, _) ⇒ Right(d)
-      case ast.FloatValue(d, _, _) ⇒ Right(BigDecimal(d))
-      case ast.IntValue(i, _, _) ⇒ Right(BigDecimal(i))
-      case ast.BigIntValue(i, _, _) ⇒ Right(BigDecimal(i))
-      case _ ⇒ Left(FloatCoercionViolation)
+      case ast.BigDecimalValue(d, _, _) => Right(d)
+      case ast.FloatValue(d, _, _) => Right(BigDecimal(d))
+      case ast.IntValue(i, _, _) => Right(BigDecimal(i))
+      case ast.BigIntValue(i, _, _) => Right(BigDecimal(i))
+      case _ => Left(FloatCoercionViolation)
     })
 
   implicit val BooleanType = ScalarType[Boolean]("Boolean",
     description = Some("The `Boolean` scalar type represents `true` or `false`."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case b: Boolean ⇒ Right(b)
-      case _ ⇒ Left(BooleanCoercionViolation)
+      case b: Boolean => Right(b)
+      case _ => Left(BooleanCoercionViolation)
     },
     coerceInput = {
-      case ast.BooleanValue(b, _, _) ⇒ Right(b)
-      case _ ⇒ Left(BooleanCoercionViolation)
+      case ast.BooleanValue(b, _, _) => Right(b)
+      case _ => Left(BooleanCoercionViolation)
     })
 
   implicit val StringType = ScalarType[String]("String",
@@ -136,12 +136,12 @@ package object schema {
       "represent free-form human-readable text."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case s: String ⇒ Right(s)
-      case _ ⇒ Left(StringCoercionViolation)
+      case s: String => Right(s)
+      case _ => Left(StringCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(s, _, _, _, _) ⇒ Right(s)
-      case _ ⇒ Left(StringCoercionViolation)
+      case ast.StringValue(s, _, _, _, _) => Right(s)
+      case _ => Left(StringCoercionViolation)
     })
 
   val IDType = ScalarType[String]("ID",
@@ -153,17 +153,17 @@ package object schema {
       "(such as `4`) input value will be accepted as an ID."),
     coerceOutput = valueOutput,
     coerceUserInput = {
-      case s: String ⇒ Right(s)
-      case i: Int ⇒ Right(i.toString)
-      case i: Long ⇒ Right(i.toString)
-      case i: BigInt ⇒ Right(i.toString)
-      case _ ⇒ Left(IDCoercionViolation)
+      case s: String => Right(s)
+      case i: Int => Right(i.toString)
+      case i: Long => Right(i.toString)
+      case i: BigInt => Right(i.toString)
+      case _ => Left(IDCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(id, _, _, _, _) ⇒ Right(id)
-      case ast.IntValue(id, _, _) ⇒ Right(id.toString)
-      case ast.BigIntValue(id, _, _) ⇒ Right(id.toString)
-      case _ ⇒ Left(IDCoercionViolation)
+      case ast.StringValue(id, _, _, _, _) => Right(id)
+      case ast.IntValue(id, _, _) => Right(id.toString)
+      case ast.BigIntValue(id, _, _) => Right(id.toString)
+      case _ => Left(IDCoercionViolation)
     })
 
   val BuiltinGraphQLScalars: List[ScalarType[_]] =
@@ -176,13 +176,13 @@ package object schema {
     BuiltinGraphQLScalars ++ BuiltinSangriaScalars
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinScalars.groupBy(_.name).mapValues(_.head)
+    BuiltinScalars.groupBy(_.name).mapValues(_.head).toMap
 
   val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinGraphQLScalars.groupBy(_.name).mapValues(_.head)
+    BuiltinGraphQLScalars.groupBy(_.name).mapValues(_.head).toMap
 
   val BuiltinSangriaScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinSangriaScalars.groupBy(_.name).mapValues(_.head)
+    BuiltinSangriaScalars.groupBy(_.name).mapValues(_.head).toMap
 
   val IfArg = Argument("if", BooleanType, "Included when true.")
 
@@ -193,7 +193,7 @@ package object schema {
     // if we don't know if we should include it, then we should include it:
     // ValueCollector will fail before we get here if values must be known, such as when preparing or executing a query,
     // but for e.g. running a QueryReducer without known variables, we must be conservative
-    shouldInclude = ctx ⇒ ctx.args.argOpt(IfArg).getOrElse(true))
+    shouldInclude = ctx => ctx.args.argOpt(IfArg).getOrElse(true))
 
   val SkipDirective = Directive("skip",
     description = Some("Directs the executor to skip this field or fragment when the `if` argument is true."),
@@ -202,7 +202,7 @@ package object schema {
     // if we don't know if we should include it, then we should include it:
     // ValueCollector will fail before we get here if values must be known, such as when preparing or executing a query,
     // but for e.g. running a QueryReducer without known variables, we must be conservative
-    shouldInclude = ctx ⇒ !ctx.args.argOpt(IfArg).getOrElse(false))
+    shouldInclude = ctx => !ctx.args.argOpt(IfArg).getOrElse(false))
 
   val DefaultDeprecationReason = "No longer supported"
 
@@ -217,12 +217,12 @@ package object schema {
     description = Some("Marks an element of a GraphQL schema as no longer supported."),
     arguments = ReasonArg :: Nil,
     locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.EnumValue),
-    shouldInclude = ctx ⇒ !ctx.arg(IfArg))
+    shouldInclude = ctx => !ctx.arg(IfArg))
 
   val BuiltinDirectives = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
 
   val BuiltinDirectivesByName: Map[String, Directive] =
-    BuiltinDirectives.groupBy(_.name).mapValues(_.head)
+    BuiltinDirectives.groupBy(_.name).mapValues(_.head).toMap
 
   def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
 

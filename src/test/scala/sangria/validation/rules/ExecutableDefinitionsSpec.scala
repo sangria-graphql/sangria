@@ -48,8 +48,8 @@ class ExecutableDefinitionsSpec extends WordSpec with ValidationSupport {
         }
       """,
       List(
-        "The 'Cow' definition is not executable." → Some(Pos(8, 9)),
-        "The 'Dog' definition is not executable" → Some(Pos(12, 9))
+        "The 'Cow' definition is not executable." -> Some(Pos(8, 9)),
+        "The 'Dog' definition is not executable" -> Some(Pos(12, 9))
       ))
   }
 }

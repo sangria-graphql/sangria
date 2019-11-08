@@ -19,7 +19,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler = ExceptionHandler {
-      case (m, e) ⇒ HandledException(e.getMessage)
+      case (m, e) => HandledException(e.getMessage)
     }
 
     Executor.execute(
@@ -52,7 +52,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
 
     errors should have size expectedErrors.size
 
-    expectedErrors foreach (expected ⇒ errors should contain (expected))
+    expectedErrors foreach (expected => errors should contain (expected))
   }
 
   def checkContainsErrors[T](
@@ -76,13 +76,13 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
     val errors = result.getOrElse("errors", Vector.empty).asInstanceOf[Seq[Map[String, Any]]]
 
     val violations =
-      errors.map { error ⇒
+      errors.map { error =>
         val message = error("message").asInstanceOf[String]
         val locs =
           error.get("locations") match {
-            case Some(locs: Seq[Map[String, Any]] @unchecked) ⇒
-              locs.map(loc ⇒ AstLocation(0, loc("line").asInstanceOf[Int], loc("column").asInstanceOf[Int])).toList
-            case _ ⇒ Nil
+            case Some(locs: Seq[Map[String, Any]] @unchecked) =>
+              locs.map(loc => AstLocation(0, loc("line").asInstanceOf[Int], loc("column").asInstanceOf[Int])).toList
+            case _ => Nil
           }
 
         StubViolation(message, None, locs)
@@ -94,16 +94,16 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
   def renderViolations(violations: Vector[Violation]) = {
     val renderedHelpers =
       violations.zipWithIndex.map {
-        case (v, idx) ⇒
+        case (v, idx) =>
           v match {
-            case n: AstNodeLocation ⇒ "\"" + n.simpleErrorMessage + "\" → Seq(" + n.locations.map(l ⇒ s"Pos(${l.line}, ${l.column})").mkString(", ") + ")"
-            case n ⇒ n.errorMessage
+            case n: AstNodeLocation => "\"" + n.simpleErrorMessage + "\" -> Seq(" + n.locations.map(l => s"Pos(${l.line}, ${l.column})").mkString(", ") + ")"
+            case n => n.errorMessage
           }
       }.mkString(",\n")
 
     val rendered =
       violations.zipWithIndex.map {
-        case (v, idx) ⇒ s"(${idx + 1}) " + v.errorMessage
+        case (v, idx) => s"(${idx + 1}) " + v.errorMessage
       }.mkString("\n\n")
 
     "Actual violations:\n\n" + renderedHelpers + "\n\n" + rendered + "\n\n"
@@ -114,15 +114,15 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       errors should have size expectedErrors.size
     }
 
-    expectedErrors foreach { case(expected, pos) ⇒
-      withClue(s"Expected error not found: $expected${pos map (p ⇒ s" (line ${p.line}, column ${p.col})") mkString "; "}. ${renderViolations(errors)}") {
-        errors exists { error ⇒
+    expectedErrors foreach { case(expected, pos) =>
+      withClue(s"Expected error not found: $expected${pos map (p => s" (line ${p.line}, column ${p.col})") mkString "; "}. ${renderViolations(errors)}") {
+        errors exists { error =>
           error.errorMessage.contains(expected) && {
             val errorPositions = error.asInstanceOf[AstNodeViolation].locations
 
             errorPositions should have size pos.size
 
-            errorPositions zip pos forall { case (actualPos, expectedPos) ⇒
+            errorPositions zip pos forall { case (actualPos, expectedPos) =>
               expectedPos.line == actualPos.line && expectedPos.col == actualPos.column
             }
           }
@@ -131,7 +131,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
     }
   }
 
-  def checkContainsViolations(execute: ⇒ Unit, expected: (String, Seq[Pos])*) =
+  def checkContainsViolations(execute: => Unit, expected: (String, Seq[Pos])*) =
     assertViolations(intercept [WithViolations] (execute).violations, expected: _*)
 
 

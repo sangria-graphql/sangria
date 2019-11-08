@@ -23,18 +23,18 @@ trait IntrospectionSchemaBuilder[Ctx] {
 
   def buildObjectType(
     definition: IntrospectionObjectType,
-    fields: () ⇒ List[Field[Ctx, Any]],
+    fields: () => List[Field[Ctx, Any]],
     interfaces: List[InterfaceType[Ctx, Any]],
     mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[ObjectType[Ctx, Any]]
 
   def buildInputObjectType(
     definition: IntrospectionInputObjectType,
-    fields: () ⇒ List[InputField[_]],
+    fields: () => List[InputField[_]],
     mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[InputObjectType[InputObjectType.DefaultInput]]
 
   def buildInterfaceType(
     definition: IntrospectionInterfaceType,
-    fields: () ⇒ List[Field[Ctx, Any]],
+    fields: () => List[Field[Ctx, Any]],
     mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[InterfaceType[Ctx, Any]]
 
   def buildUnionType(
@@ -109,21 +109,21 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
 
   def buildObjectType(
       definition: IntrospectionObjectType,
-      fields: () ⇒ List[Field[Ctx, Any]],
+      fields: () => List[Field[Ctx, Any]],
       interfaces: List[InterfaceType[Ctx, Any]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]) = {
     val objectType =
       objectTypeInstanceCheck(definition) match {
-        case Some(fn) ⇒
+        case Some(fn) =>
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
             fieldsFn = fields,
             interfaces = interfaces,
-            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz),
+            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) => fn(value, clazz),
             astDirectives = Vector.empty,
             astNodes = Vector.empty)
-        case None ⇒
+        case None =>
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
@@ -139,7 +139,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
 
   def buildInputObjectType(
       definition: IntrospectionInputObjectType,
-      fields: () ⇒ List[InputField[_]],
+      fields: () => List[InputField[_]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]) =
     Some(InputObjectType(
       name = typeName(definition),
@@ -150,14 +150,14 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
 
   def buildInterfaceType(
       definition: IntrospectionInterfaceType,
-      fields: () ⇒ List[Field[Ctx, Any]],
+      fields: () => List[Field[Ctx, Any]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]) =
     Some(InterfaceType[Ctx, Any](
       name = typeName(definition),
       description = typeDescription(definition),
       fieldsFn = fields,
       interfaces = Nil,
-      manualPossibleTypes = () ⇒ Nil,
+      manualPossibleTypes = () => Nil,
       astDirectives = Vector.empty,
       astNodes = Vector.empty))
 
@@ -216,7 +216,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       tags = fieldTags(typeDefinition, definition),
       deprecationReason = fieldDeprecationReason(definition),
       complexity = fieldComplexity(typeDefinition, definition),
-      manualPossibleTypes = () ⇒ Nil,
+      manualPossibleTypes = () => Nil,
       astDirectives = Vector.empty,
       astNodes = Vector.empty))
 
@@ -260,29 +260,29 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       arguments = arguments,
       shouldInclude = directiveShouldInclude(definition)))
 
-  def objectTypeInstanceCheck(definition: IntrospectionObjectType): Option[(Any, Class[_]) ⇒ Boolean] =
+  def objectTypeInstanceCheck(definition: IntrospectionObjectType): Option[(Any, Class[_]) => Boolean] =
     None
 
-  def directiveShouldInclude(definition: IntrospectionDirective): DirectiveContext ⇒ Boolean =
+  def directiveShouldInclude(definition: IntrospectionDirective): DirectiveContext => Boolean =
     Function.const(true)
 
   def argumentFromInput(fieldDefinition: Option[IntrospectionField], definition: IntrospectionInputValue) =
     FromInput.defaultInput[Any]
 
-  def resolveField(typeDefinition: IntrospectionType, definition: IntrospectionField): Context[Ctx, _] ⇒ Action[Ctx, _] =
-    (ctx) ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+  def resolveField(typeDefinition: IntrospectionType, definition: IntrospectionField): Context[Ctx, _] => Action[Ctx, _] =
+    (ctx) => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
   def fieldTags(typeDefinition: IntrospectionType, definition: IntrospectionField): List[FieldTag] =
     Nil
 
-  def scalarCoerceUserInput(definition: IntrospectionScalarType): Any ⇒ Either[Violation, Any] =
-    _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+  def scalarCoerceUserInput(definition: IntrospectionScalarType): Any => Either[Violation, Any] =
+    _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
 
-  def scalarCoerceInput(definition: IntrospectionScalarType): ast.Value ⇒ Either[Violation, Any] =
-    _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+  def scalarCoerceInput(definition: IntrospectionScalarType): ast.Value => Either[Violation, Any] =
+    _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
 
-  def scalarCoerceOutput(definition: IntrospectionScalarType): (Any, Set[MarshallerCapability]) ⇒ Any =
-    (_, _) ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+  def scalarCoerceOutput(definition: IntrospectionScalarType): (Any, Set[MarshallerCapability]) => Any =
+    (_, _) => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
   def scalarValueInfo(definition: IntrospectionScalarType): Set[ScalarValueInfo] =
     Set.empty
@@ -290,7 +290,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
   def scalarComplexity(definition: IntrospectionScalarType): Double =
     0.0D
 
-  def fieldComplexity(typeDefinition: IntrospectionType, definition: IntrospectionField): Option[(Ctx, Args, Double) ⇒ Double] =
+  def fieldComplexity(typeDefinition: IntrospectionType, definition: IntrospectionField): Option[(Ctx, Args, Double) => Double] =
     None
 
   def directiveName(definition: IntrospectionDirective): String =
@@ -338,7 +338,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
   def enumValueDeprecationReason(definition: IntrospectionEnumValue): Option[String] =
     definition.deprecationReason orElse (if (definition.isDeprecated) Some(DefaultDeprecationReason) else None)
 
-  def defaultValueParser: Option[String ⇒ Try[(Any, InputUnmarshaller[Any])]] =
+  def defaultValueParser: Option[String => Try[(Any, InputUnmarshaller[Any])]] =
     None
 }
 

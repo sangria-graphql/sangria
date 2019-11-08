@@ -566,7 +566,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(origAst) = QueryParser.parse(FileUtil loadQuery "block-string.graphql")
 
         val ast = origAst.visit(AstVisitor {
-          case s: StringValue ⇒ VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
+          case s: StringValue => VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
         })
 
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
@@ -600,7 +600,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(ast) = QueryParser.parse(FileUtil loadQuery "block-string.graphql")
 
         def withoutRaw(withRaw: Document, block: Boolean = true) = AstVisitor.visit(withRaw, AstVisitor {
-          case s: StringValue ⇒ VisitorCommand.Transform(s.copy(block = if (block) s.block else false, blockRawValue = None))
+          case s: StringValue => VisitorCommand.Transform(s.copy(block = if (block) s.block else false, blockRawValue = None))
         })
 
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
@@ -678,7 +678,7 @@ class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
         val Success(ast) = QueryParser.parse(FileUtil loadQuery "schema-kitchen-sink.graphql")
 
         def noBlock(a: AstNode) = AstVisitor.visit(a, AstVisitor {
-          case v: StringValue ⇒ VisitorCommand.Transform(v.copy(block = false, blockRawValue = None))
+          case v: StringValue => VisitorCommand.Transform(v.copy(block = false, blockRawValue = None))
         })
 
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)

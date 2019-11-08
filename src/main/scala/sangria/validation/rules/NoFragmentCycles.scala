@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-import scala.collection.mutable.{Set ⇒ MutableSet, Map ⇒ MutableMap, Stack ⇒ MutableStack}
+import scala.collection.mutable.{Set => MutableSet, Map => MutableMap, Stack => MutableStack}
 
 class NoFragmentCycles extends ValidationRule {
    override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
@@ -22,21 +22,21 @@ class NoFragmentCycles extends ValidationRule {
 
          spreadPathIndexByName(fragmentDef.name) = spreadPath.size
 
-         spreadNodes.foreach { spreadNode ⇒
+         spreadNodes.foreach { spreadNode =>
            spreadPathIndexByName.get(spreadNode.name) match {
-             case None ⇒
+             case None =>
                spreadPath.push(spreadNode)
 
                if (!visitedFrags.contains(spreadNode.name)) {
                  ctx.doc.fragments.get(spreadNode.name) match {
-                   case Some(frag) ⇒ errors = errors ++ detectCycleRecursive(frag)
-                   case _ ⇒ // do nothing
+                   case Some(frag) => errors = errors ++ detectCycleRecursive(frag)
+                   case _ => // do nothing
                  }
                }
 
                spreadPath.pop()
 
-             case Some(cycleIndex) ⇒
+             case Some(cycleIndex) =>
                val cyclePath = spreadPath.toList.reverse.slice(cycleIndex, spreadPath.size)
 
                errors = errors :+ CycleErrorViolation(
@@ -54,7 +54,7 @@ class NoFragmentCycles extends ValidationRule {
      }
 
      override val onEnter: ValidationVisit = {
-       case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _, _, _, _) ⇒
+       case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _, _, _, _) =>
          if (visitedFrags.contains(fragmentName)) AstVisitorCommand.RightSkip
          else {
            val errors = detectCycleRecursive(fragmentDef)
@@ -63,7 +63,7 @@ class NoFragmentCycles extends ValidationRule {
            else AstVisitorCommand.RightContinue
          }
 
-       case _: ast.OperationDefinition ⇒ AstVisitorCommand.RightSkip
+       case _: ast.OperationDefinition => AstVisitorCommand.RightSkip
      }
    }
  }

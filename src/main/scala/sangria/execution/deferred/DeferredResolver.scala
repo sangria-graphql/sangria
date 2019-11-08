@@ -7,7 +7,7 @@ import sangria.schema.{Args, Field}
 import scala.concurrent.{ExecutionContext, Future}
 
 trait DeferredResolver[-Ctx] {
-  def includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) ⇒ Boolean] = None
+  def includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) => Boolean] = None
 
   def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]): Vector[Vector[T]] =
     Vector(deferred)
@@ -20,7 +20,7 @@ trait DeferredResolver[-Ctx] {
 object DeferredResolver {
   val empty = new DeferredResolver[Any] {
     override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) =
-      deferred map (d ⇒ Future.failed(UnsupportedDeferError(d)))
+      deferred map (d => Future.failed(UnsupportedDeferError(d)))
   }
 
   def fetchers[Ctx](fetchers: Fetcher[Ctx, _, _, _]*): DeferredResolver[Ctx] =

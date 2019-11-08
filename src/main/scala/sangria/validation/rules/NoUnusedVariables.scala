@@ -17,21 +17,21 @@ class NoUnusedVariables extends ValidationRule {
     val variableDefs = ListBuffer[ast.VariableDefinition]()
 
     override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition ⇒
+      case _: ast.OperationDefinition =>
         variableDefs.clear()
         AstVisitorCommand.RightContinue
 
-      case varDef: ast.VariableDefinition ⇒
+      case varDef: ast.VariableDefinition =>
         variableDefs += varDef
         AstVisitorCommand.RightContinue
     }
 
     override def onLeave: ValidationVisit = {
-      case operation: ast.OperationDefinition ⇒
+      case operation: ast.OperationDefinition =>
         val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
         val variableNameUsed = usages.map(_.node.name).toSet
 
-        val errors = variableDefs.filterNot(vd ⇒ variableNameUsed.contains(vd.name)).toVector.map(vd ⇒
+        val errors = variableDefs.filterNot(vd => variableNameUsed.contains(vd.name)).toVector.map(vd =>
           UnusedVariableViolation(vd.name, operation.name, ctx.sourceMapper, vd.location.toList))
 
         if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue

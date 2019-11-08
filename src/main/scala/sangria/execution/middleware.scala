@@ -16,28 +16,28 @@ trait Middleware[-Ctx] {
 }
 
 object Middleware {
-  def composeFromScalarMiddleware[Ctx](middleware: List[Middleware[Ctx]], userContext: Ctx): Option[(Any, InputType[_]) ⇒ Option[Either[Violation, Any]]] = {
+  def composeFromScalarMiddleware[Ctx](middleware: List[Middleware[Ctx]], userContext: Ctx): Option[(Any, InputType[_]) => Option[Either[Violation, Any]]] = {
     val relevant =
       middleware.collect {
-        case m: MiddlewareFromScalar[Ctx] ⇒ m
+        case m: MiddlewareFromScalar[Ctx] => m
       }
 
     if (relevant.nonEmpty)
-      Some((v, tpe) ⇒ {
+      Some((v, tpe) => {
         var changed = false
         var violation: Violation = null
 
         val newValue =
           relevant.foldLeft(v) {
-            case (acc, _) if violation != null ⇒ acc
-            case (acc, m) ⇒ m.fromScalar(acc, tpe, userContext) match {
-              case Some(Left(viol)) ⇒
+            case (acc, _) if violation != null => acc
+            case (acc, m) => m.fromScalar(acc, tpe, userContext) match {
+              case Some(Left(viol)) =>
                 violation = viol
                 acc
-              case Some(Right(newAcc)) ⇒
+              case Some(Right(newAcc)) =>
                 changed = true
                 newAcc
-              case None ⇒
+              case None =>
                 acc
             }
           }
@@ -49,23 +49,23 @@ object Middleware {
     else None
   }
 
-  def composeToScalarMiddleware[Ctx](middleware: List[Middleware[Ctx]], userContext: Ctx): Option[(Any, InputType[_]) ⇒ Option[Any]] = {
+  def composeToScalarMiddleware[Ctx](middleware: List[Middleware[Ctx]], userContext: Ctx): Option[(Any, InputType[_]) => Option[Any]] = {
     val relevant =
       middleware.collect {
-        case m: MiddlewareToScalar[Ctx] ⇒ m
+        case m: MiddlewareToScalar[Ctx] => m
       }
     
     if (relevant.nonEmpty)
-      Some((v, tpe) ⇒ {
+      Some((v, tpe) => {
         var changed = false
 
         val newValue =
           relevant.foldRight(v) {
-            case (m, acc) ⇒ m.toScalar(acc, tpe, userContext) match {
-              case Some(newAcc) ⇒
+            case (m, acc) => m.toScalar(acc, tpe, userContext) match {
+              case Some(newAcc) =>
                 changed = true
                 newAcc
-              case None ⇒ acc
+              case None => acc
             }
           }
 
@@ -75,7 +75,7 @@ object Middleware {
     else None
   }
 
-  def simpleExtension[Ctx](extensionFn: MiddlewareQueryContext[Ctx, _, _] ⇒ ast.Value): Middleware[Ctx] =
+  def simpleExtension[Ctx](extensionFn: MiddlewareQueryContext[Ctx, _, _] => ast.Value): Middleware[Ctx] =
     new SimpleAstBasedExtensionMiddleware[Ctx](extensionFn)
 }
 

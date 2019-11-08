@@ -50,14 +50,14 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
   def isScalarNode(node: ast.Value) = node.isInstanceOf[ast.ScalarValue]
   def getScalarValue(node: ast.Value) = node
   def getScalaScalarValue(node: ast.Value) = node match {
-    case ast.BooleanValue(b, _, _) ⇒ b
-    case ast.BigIntValue(i, _, _) ⇒ i
-    case ast.BigDecimalValue(d, _, _) ⇒ d
-    case ast.FloatValue(f, _, _) ⇒ f
-    case ast.IntValue(i, _, _) ⇒ i
-    case ast.StringValue(s, _, _, _, _) ⇒ s
-    case ast.EnumValue(s, _, _) ⇒ s
-    case node ⇒ throw new IllegalStateException("Unsupported scalar node: " + node)
+    case ast.BooleanValue(b, _, _) => b
+    case ast.BigIntValue(i, _, _) => i
+    case ast.BigDecimalValue(d, _, _) => d
+    case ast.FloatValue(f, _, _) => f
+    case ast.IntValue(i, _, _) => i
+    case ast.StringValue(s, _, _, _, _) => s
+    case ast.EnumValue(s, _, _) => s
+    case node => throw new IllegalStateException("Unsupported scalar node: " + node)
   }
 
   def isVariableNode(node: ast.Value) = node.isInstanceOf[ast.VariableValue]
@@ -74,28 +74,28 @@ class QueryAstResultMarshaller extends ResultMarshaller {
   def addMapNodeElem(builder: MapBuilder, key: String, value: Node, optional: Boolean) = builder.add(key, value)
 
   def scalarNode(value: Any, typeName: String, info: Set[ScalarValueInfo]) = value match {
-    case v: String ⇒ ast.StringValue(v)
-    case v: Boolean ⇒ ast.BooleanValue(v)
-    case v: Int ⇒ ast.IntValue(v)
-    case v: Long ⇒ ast.BigIntValue(v)
-    case v: Float ⇒ ast.FloatValue(v)
-    case v: Double ⇒ ast.FloatValue(v)
-    case v: BigInt ⇒ ast.BigIntValue(v)
-    case v: BigDecimal ⇒ ast.BigDecimalValue(v)
-    case v ⇒ throw new IllegalArgumentException("Unsupported scalar value: " + v)
+    case v: String => ast.StringValue(v)
+    case v: Boolean => ast.BooleanValue(v)
+    case v: Int => ast.IntValue(v)
+    case v: Long => ast.BigIntValue(v)
+    case v: Float => ast.FloatValue(v)
+    case v: Double => ast.FloatValue(v)
+    case v: BigInt => ast.BigIntValue(v)
+    case v: BigDecimal => ast.BigDecimalValue(v)
+    case v => throw new IllegalArgumentException("Unsupported scalar value: " + v)
   }
 
   def enumNode(value: String, typeName: String) = ast.EnumValue(value)
 
   def arrayNode(values: Vector[Node]) = ast.ListValue(values.toVector)
   def optionalArrayNodeValue(value: Option[Node]) = value match {
-    case Some(v) ⇒ v
-    case None ⇒ nullNode
+    case Some(v) => v
+    case None => nullNode
   }
 
   def mapNode(builder: MapBuilder) = mapNode(builder.toList)
   def mapNode(keyValues: Seq[(String, Node)]) =
-    ast.ObjectValue(keyValues.toVector.map{case (k, v) ⇒ ast.ObjectField(k, v)})
+    ast.ObjectValue(keyValues.toVector.map{case (k, v) => ast.ObjectField(k, v)})
 
   def nullNode = ast.NullValue()
 

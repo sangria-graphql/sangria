@@ -1,12 +1,12 @@
 package sangria.macros
 
-import scala.language.experimental.{macros ⇒ `scalac, please just let me do it!`}
+import scala.language.experimental.{macros => `scalac, please just let me do it!`}
 
 import sangria.schema.{InputObjectType, EnumType, ObjectType}
 
 
 package object derive {
-  def deriveContextObjectType[Ctx, CtxVal, Val](fn: Ctx ⇒ CtxVal, config: DeriveObjectSetting[Ctx, Val]*): ObjectType[Ctx, Val] =
+  def deriveContextObjectType[Ctx, CtxVal, Val](fn: Ctx => CtxVal, config: DeriveObjectSetting[Ctx, Val]*): ObjectType[Ctx, Val] =
     macro DeriveObjectTypeMacro.deriveContextObjectType[Ctx, CtxVal, Val]
 
   def deriveObjectType[Ctx, Val](config: DeriveObjectSetting[Ctx, Val]*): ObjectType[Ctx, Val] =

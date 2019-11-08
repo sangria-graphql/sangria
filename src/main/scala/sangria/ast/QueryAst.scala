@@ -13,8 +13,8 @@ import scala.util.control.Breaks._
 import scala.collection.immutable.ListMap
 
 case class Document(definitions: Vector[Definition], trailingComments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None, sourceMapper: Option[SourceMapper] = None) extends AstNode with WithTrailingComments {
-  lazy val operations = Map(definitions collect {case op: OperationDefinition ⇒ op.name → op}: _*)
-  lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition ⇒ fragment.name → fragment}: _*)
+  lazy val operations = Map(definitions collect {case op: OperationDefinition => op.name -> op}: _*)
+  lazy val fragments = Map(definitions collect {case fragment: FragmentDefinition => fragment.name -> fragment}: _*)
   lazy val source: Option[String] = sourceMapper map (_.source)
 
   def operationType(operationName: Option[String] = None): Option[OperationType] =
@@ -26,7 +26,7 @@ case class Document(definitions: Vector[Definition], trailingComments: Vector[Co
     else if(operationName.isEmpty && operations.size == 1)
       Some(operations.head._2)
     else
-      operationName flatMap (opName ⇒ operations get Some(opName)) orElse operations.values.headOption
+      operationName flatMap (opName => operations get Some(opName)) orElse operations.values.headOption
 
   def withoutSourceMapper = copy(sourceMapper = None)
 
@@ -50,14 +50,14 @@ case class Document(definitions: Vector[Definition], trailingComments: Vector[Co
   def separateOperation(operationName: Option[String]) = analyzer.separateOperation(operationName)
 
   override def equals(other: Any): Boolean = other match {
-    case that: Document ⇒
+    case that: Document =>
       (that canEqual this) &&
           definitions == that.definitions &&
           location == that.location
-    case _ ⇒ false
+    case _ => false
   }
 
-  private lazy val hash = Seq(definitions, location).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+  private lazy val hash = Seq(definitions, location).map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
 
   override def hashCode(): Int = hash
 }
@@ -125,15 +125,15 @@ case class InputDocument(values: Vector[Value], trailingComments: Vector[Comment
     InputDocumentMaterializer.to(this, inputType, variables)
 
   override def equals(other: Any): Boolean = other match {
-    case that: InputDocument ⇒
+    case that: InputDocument =>
       (that canEqual this) &&
           values == that.values &&
           location == that.location
-    case _ ⇒ false
+    case _ => false
   }
 
   override def hashCode(): Int =
-    Seq(values, location).map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+    Seq(values, location).map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
 }
 
 object InputDocument {
@@ -206,9 +206,9 @@ sealed trait Type extends AstNode {
   def namedType: NamedType = {
     @annotation.tailrec
     def loop(tpe: Type): NamedType = tpe match {
-      case NotNullType(ofType, _) ⇒ loop(ofType)
-      case ListType(ofType, _) ⇒ loop(ofType)
-      case named: NamedType ⇒ named
+      case NotNullType(ofType, _) => loop(ofType)
+      case ListType(ofType, _) => loop(ofType)
+      case named: NamedType => named
     }
 
     loop(this)
@@ -284,12 +284,12 @@ case class NullValue(comments: Vector[Comment] = Vector.empty, location: Option[
 case class ObjectValue(fields: Vector[ObjectField], comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends Value {
   lazy val fieldsByName =
     fields.foldLeft(ListMap.empty[String, Value]) {
-      case (acc, field) ⇒ acc + (field.name → field.value)
+      case (acc, field) => acc + (field.name -> field.value)
     }
 }
 
 object ObjectValue {
-  def apply(fields: (String, Value)*): ObjectValue = ObjectValue(fields.toVector map (f ⇒ ObjectField(f._1, f._2)))
+  def apply(fields: (String, Value)*): ObjectValue = ObjectValue(fields.toVector map (f => ObjectField(f._1, f._2)))
 }
 
 case class ObjectField(name: String, value: Value, comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None) extends NameValue
@@ -496,13 +496,13 @@ sealed trait AstNode {
   def visit(visitor: AstVisitor): this.type =
     AstVisitor.visit(this, visitor)
 
-  def visit(onEnter: AstNode ⇒ VisitorCommand, onLeave: AstNode ⇒ VisitorCommand): this.type =
+  def visit(onEnter: AstNode => VisitorCommand, onLeave: AstNode => VisitorCommand): this.type =
     AstVisitor.visit(this, onEnter, onLeave)
 
-  def visitAstWithTypeInfo(schema: Schema[_, _])(visitorFn: TypeInfo ⇒ AstVisitor): this.type =
+  def visitAstWithTypeInfo(schema: Schema[_, _])(visitorFn: TypeInfo => AstVisitor): this.type =
     AstVisitor.visitAstWithTypeInfo[this.type](schema, this)(visitorFn)
 
-  def visitAstWithState[S](schema: Schema[_, _], state: S)(visitorFn: (TypeInfo, S) ⇒ AstVisitor): S =
+  def visitAstWithState[S](schema: Schema[_, _], state: S)(visitorFn: (TypeInfo, S) => AstVisitor): S =
     AstVisitor.visitAstWithState(schema, this, state)(visitorFn)
 }
 
@@ -526,76 +526,76 @@ sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
 
 object AstNode {
   def withoutAstLocations[T <: AstNode](node: T, stripComments: Boolean = false): T = {
-    val enterComment = (_: Comment) ⇒ if (stripComments) VisitorCommand.Delete else VisitorCommand.Continue
+    val enterComment = (_: Comment) => if (stripComments) VisitorCommand.Delete else VisitorCommand.Continue
 
     visit[AstNode](node,
       Visit[Comment](enterComment),
-      VisitAnyField[AstNode, Option[AstLocation]]((_, _) ⇒ VisitorCommand.Transform(None))).asInstanceOf[T]
+      VisitAnyField[AstNode, Option[AstLocation]]((_, _) => VisitorCommand.Transform(None))).asInstanceOf[T]
   }
 }
 
 trait AstVisitor {
-  def onEnter: PartialFunction[AstNode, VisitorCommand] = {case _ ⇒ VisitorCommand.Continue}
-  def onLeave: PartialFunction[AstNode, VisitorCommand] = {case _ ⇒ VisitorCommand.Continue}
+  def onEnter: PartialFunction[AstNode, VisitorCommand] = {case _ => VisitorCommand.Continue}
+  def onLeave: PartialFunction[AstNode, VisitorCommand] = {case _ => VisitorCommand.Continue}
 }
 
 case class DefaultAstVisitor(
-  override val onEnter: PartialFunction[AstNode, VisitorCommand] = {case _ ⇒ VisitorCommand.Continue},
-  override val onLeave: PartialFunction[AstNode, VisitorCommand] = {case _ ⇒ VisitorCommand.Continue}
+  override val onEnter: PartialFunction[AstNode, VisitorCommand] = {case _ => VisitorCommand.Continue},
+  override val onLeave: PartialFunction[AstNode, VisitorCommand] = {case _ => VisitorCommand.Continue}
 ) extends AstVisitor
 
 object AstVisitor {
   import AstVisitorCommand._
 
   def apply(
-    onEnter: PartialFunction[AstNode, VisitorCommand] = {case _ ⇒ VisitorCommand.Continue},
-    onLeave: PartialFunction[AstNode, VisitorCommand] = {case _ ⇒ VisitorCommand.Continue}
+    onEnter: PartialFunction[AstNode, VisitorCommand] = {case _ => VisitorCommand.Continue},
+    onLeave: PartialFunction[AstNode, VisitorCommand] = {case _ => VisitorCommand.Continue}
   ) = DefaultAstVisitor(onEnter, onLeave)
 
   def simple(
-    onEnter: PartialFunction[AstNode, Unit] = {case _ ⇒ ()},
-    onLeave: PartialFunction[AstNode, Unit] = {case _ ⇒ ()}
+    onEnter: PartialFunction[AstNode, Unit] = {case _ => ()},
+    onLeave: PartialFunction[AstNode, Unit] = {case _ => ()}
   ) = DefaultAstVisitor(
     {
-      case node if onEnter.isDefinedAt(node) ⇒
+      case node if onEnter.isDefinedAt(node) =>
         onEnter(node)
         VisitorCommand.Continue
     }, {
-      case node if onLeave.isDefinedAt(node) ⇒
+      case node if onLeave.isDefinedAt(node) =>
         onLeave(node)
         VisitorCommand.Continue
     })
 
   def visit[T <: AstNode](root: T, visitor: AstVisitor): T =
     visit(root,
-      node ⇒ if (visitor.onEnter.isDefinedAt(node)) visitor.onEnter(node) else VisitorCommand.Continue,
-      node ⇒ if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else VisitorCommand.Continue)
+      node => if (visitor.onEnter.isDefinedAt(node)) visitor.onEnter(node) else VisitorCommand.Continue,
+      node => if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else VisitorCommand.Continue)
 
-  def visitAstWithTypeInfo[T <: AstNode](schema: Schema[_, _], root: T)(visitorFn: TypeInfo ⇒ AstVisitor): T = {
+  def visitAstWithTypeInfo[T <: AstNode](schema: Schema[_, _], root: T)(visitorFn: TypeInfo => AstVisitor): T = {
     val typeInfo = new TypeInfo(schema)
     val visitor = visitorFn(typeInfo)
 
     visit(root,
-      node ⇒ {
+      node => {
         typeInfo.enter(node)
         if (visitor.onEnter.isDefinedAt(node)) visitor.onEnter(node) else VisitorCommand.Continue
       },
-      node ⇒ {
+      node => {
         typeInfo.leave(node)
         if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else VisitorCommand.Continue
       })
   }
 
-  def visitAstWithState[S](schema: Schema[_, _], root: AstNode, state: S)(visitorFn: (TypeInfo, S) ⇒ AstVisitor): S = {
+  def visitAstWithState[S](schema: Schema[_, _], root: AstNode, state: S)(visitorFn: (TypeInfo, S) => AstVisitor): S = {
     val typeInfo = new TypeInfo(schema)
     val visitor = visitorFn(typeInfo, state)
 
     visit(root,
-      node ⇒ {
+      node => {
         typeInfo.enter(node)
         if (visitor.onEnter.isDefinedAt(node)) visitor.onEnter(node) else VisitorCommand.Continue
       },
-      node ⇒ {
+      node => {
         typeInfo.leave(node)
         if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else VisitorCommand.Continue
       })
@@ -605,338 +605,338 @@ object AstVisitor {
 
   def visit[T <: AstNode](
       root: T,
-      onEnter: AstNode ⇒ VisitorCommand,
-      onLeave: AstNode ⇒ VisitorCommand): T =
+      onEnter: AstNode => VisitorCommand,
+      onLeave: AstNode => VisitorCommand): T =
     sangria.visitor.visit[AstNode](root, Visit[AstNode](onEnter, onLeave)).asInstanceOf[T]
 
   private[sangria] def visitAstRecursive(
       doc: AstNode,
-      onEnter: AstNode ⇒ AstVisitorCommand.Value = _ ⇒ Continue,
-      onLeave: AstNode ⇒ AstVisitorCommand.Value = _ ⇒ Continue): Unit = {
+      onEnter: AstNode => AstVisitorCommand.Value = _ => Continue,
+      onLeave: AstNode => AstVisitorCommand.Value = _ => Continue): Unit = {
 
     def breakOrSkip(cmd: AstVisitorCommand.Value) = cmd match {
-      case Break ⇒ break()
-      case Skip ⇒ false
-      case Continue ⇒ true
+      case Break => break()
+      case Skip => false
+      case Continue => true
     }
 
     def loop(node: AstNode): Unit =
       node match {
-        case n @ Document(defs, trailingComments, _, _) ⇒
+        case n @ Document(defs, trailingComments, _, _) =>
           if (breakOrSkip(onEnter(n))) {
-            defs.foreach(d ⇒ loop(d))
-            trailingComments.foreach(s ⇒ loop(s))
+            defs.foreach(d => loop(d))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputDocument(defs, trailingComments, _, _) ⇒
+        case n @ InputDocument(defs, trailingComments, _, _) =>
           if (breakOrSkip(onEnter(n))) {
-            defs.foreach(d ⇒ loop(d))
-            trailingComments.foreach(s ⇒ loop(s))
+            defs.foreach(d => loop(d))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FragmentDefinition(_, cond, dirs, sels, vars, comment, trailingComments, _) ⇒
+        case n @ FragmentDefinition(_, cond, dirs, sels, vars, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(cond)
-            dirs.foreach(d ⇒ loop(d))
-            sels.foreach(s ⇒ loop(s))
-            vars.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            dirs.foreach(d => loop(d))
+            sels.foreach(s => loop(s))
+            vars.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ OperationDefinition(_, _, vars, dirs, sels, comment, trailingComments, _) ⇒
+        case n @ OperationDefinition(_, _, vars, dirs, sels, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
-            vars.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            sels.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            vars.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            sels.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ VariableDefinition(_, tpe, default, dirs, comment, _) ⇒
+        case n @ VariableDefinition(_, tpe, default, dirs, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(tpe)
-            default.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
+            default.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InlineFragment(cond, dirs, sels, comment, trailingComments, _) ⇒
+        case n @ InlineFragment(cond, dirs, sels, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
-            cond.foreach(c ⇒ loop(c))
-            dirs.foreach(d ⇒ loop(d))
-            sels.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            cond.foreach(c => loop(c))
+            dirs.foreach(d => loop(d))
+            sels.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FragmentSpread(_, dirs, comment, _) ⇒
+        case n @ FragmentSpread(_, dirs, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ NotNullType(ofType, _) ⇒
-          if (breakOrSkip(onEnter(n))) {
-            loop(ofType)
-            breakOrSkip(onLeave(n))
-          }
-        case n @ ListType(ofType, _) ⇒
+        case n @ NotNullType(ofType, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(ofType)
             breakOrSkip(onLeave(n))
           }
-        case n @ Field(_, _, args, dirs, sels, comment, trailingComments, _) ⇒
+        case n @ ListType(ofType, _) =>
           if (breakOrSkip(onEnter(n))) {
-            args.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            sels.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            loop(ofType)
             breakOrSkip(onLeave(n))
           }
-        case n @ Argument(_, v, comment, _) ⇒
+        case n @ Field(_, _, args, dirs, sels, comment, trailingComments, _) =>
+          if (breakOrSkip(onEnter(n))) {
+            args.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            sels.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ Argument(_, v, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(v)
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ObjectField(_, v, comment, _) ⇒
+        case n @ ObjectField(_, v, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(v)
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ Directive(_, args, comment, _) ⇒
+        case n @ Directive(_, args, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            args.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
+            args.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ListValue(vals, comment, _) ⇒
+        case n @ ListValue(vals, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            vals.foreach(v ⇒ loop(v))
-            comment.foreach(s ⇒ loop(s))
+            vals.foreach(v => loop(v))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ObjectValue(fields, comment, _) ⇒
+        case n @ ObjectValue(fields, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            fields.foreach(f ⇒ loop(f))
-            comment.foreach(s ⇒ loop(s))
+            fields.foreach(f => loop(f))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ BigDecimalValue(_, comment, _) ⇒
+        case n @ BigDecimalValue(_, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ BooleanValue(_, comment, _) ⇒
+        case n @ BooleanValue(_, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ Comment(_, _) ⇒
-          if (breakOrSkip(onEnter(n))) {
-            breakOrSkip(onLeave(n))
-          }
-        case n @ VariableValue(_, comment, _) ⇒
-          if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
-            breakOrSkip(onLeave(n))
-          }
-        case n @ EnumValue(_, comment, _) ⇒
-          if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
-            breakOrSkip(onLeave(n))
-          }
-        case n @ NullValue(comment, _) ⇒
-          if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
-            breakOrSkip(onLeave(n))
-          }
-        case n @ NamedType(_, _) ⇒
+        case n @ Comment(_, _) =>
           if (breakOrSkip(onEnter(n))) {
             breakOrSkip(onLeave(n))
           }
-        case n @ StringValue(_, _, _, comment, _) ⇒
+        case n @ VariableValue(_, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ BigIntValue(_, comment, _) ⇒
+        case n @ EnumValue(_, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ IntValue(_, comment, _) ⇒
+        case n @ NullValue(comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FloatValue(_, comment, _) ⇒
+        case n @ NamedType(_, _) =>
           if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ StringValue(_, _, _, comment, _) =>
+          if (breakOrSkip(onEnter(n))) {
+            comment.foreach(s => loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ BigIntValue(_, comment, _) =>
+          if (breakOrSkip(onEnter(n))) {
+            comment.foreach(s => loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ IntValue(_, comment, _) =>
+          if (breakOrSkip(onEnter(n))) {
+            comment.foreach(s => loop(s))
+            breakOrSkip(onLeave(n))
+          }
+        case n @ FloatValue(_, comment, _) =>
+          if (breakOrSkip(onEnter(n))) {
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
 
         // SDL schema definition
 
-        case n @ ScalarTypeDefinition(_, dirs, description, comment, _) ⇒
+        case n @ ScalarTypeDefinition(_, dirs, description, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ FieldDefinition(_, fieldType, args, dirs, description, comment, _) ⇒
+        case n @ FieldDefinition(_, fieldType, args, dirs, description, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(fieldType)
-            args.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
+            args.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputValueDefinition(_, valueType, default, dirs, description, comment, _) ⇒
+        case n @ InputValueDefinition(_, valueType, default, dirs, description, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(valueType)
-            default.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
+            default.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ObjectTypeDefinition(_, interfaces, fields, dirs, description, comment, trailingComments, _) ⇒
+        case n @ ObjectTypeDefinition(_, interfaces, fields, dirs, description, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
-            interfaces.foreach(d ⇒ loop(d))
-            fields.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            interfaces.foreach(d => loop(d))
+            fields.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InterfaceTypeDefinition(_, fields, dirs, description, comment, trailingComments, _) ⇒
+        case n @ InterfaceTypeDefinition(_, fields, dirs, description, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
-            fields.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            fields.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ UnionTypeDefinition(_, types, dirs, description, comment, _) ⇒
+        case n @ UnionTypeDefinition(_, types, dirs, description, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            types.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
+            types.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ EnumTypeDefinition(_, values, dirs, description, comment, trailingComments, _) ⇒
+        case n @ EnumTypeDefinition(_, values, dirs, description, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
-            values.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            values.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ EnumValueDefinition(_, dirs, description, comment, _) ⇒
+        case n @ EnumValueDefinition(_, dirs, description, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            dirs.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
+            dirs.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputObjectTypeDefinition(_, fields, dirs, description, comment, trailingComments, _) ⇒
+        case n @ InputObjectTypeDefinition(_, fields, dirs, description, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
-            fields.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            fields.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ObjectTypeExtensionDefinition(_, ints, fields, dirs, comment, tc, _) ⇒
+        case n @ ObjectTypeExtensionDefinition(_, ints, fields, dirs, comment, tc, _) =>
           if (breakOrSkip(onEnter(n))) {
-            ints.foreach(d ⇒ loop(d))
-            fields.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
-            tc.foreach(s ⇒ loop(s))
+            ints.foreach(d => loop(d))
+            fields.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
+            tc.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InterfaceTypeExtensionDefinition(_, fields, dirs, comment, tc, _) ⇒
+        case n @ InterfaceTypeExtensionDefinition(_, fields, dirs, comment, tc, _) =>
           if (breakOrSkip(onEnter(n))) {
-            fields.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
-            tc.foreach(s ⇒ loop(s))
+            fields.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
+            tc.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputObjectTypeExtensionDefinition(_, fields, dirs, comment, tc, _) ⇒
+        case n @ InputObjectTypeExtensionDefinition(_, fields, dirs, comment, tc, _) =>
           if (breakOrSkip(onEnter(n))) {
-            fields.foreach(d ⇒ loop(d))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
-            tc.foreach(s ⇒ loop(s))
+            fields.foreach(d => loop(d))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
+            tc.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ UnionTypeExtensionDefinition(_, types, dirs, comment, _) ⇒
+        case n @ UnionTypeExtensionDefinition(_, types, dirs, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            types.foreach(t ⇒ loop(t))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
+            types.foreach(t => loop(t))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ EnumTypeExtensionDefinition(_, values, dirs, comment, tc, _) ⇒
+        case n @ EnumTypeExtensionDefinition(_, values, dirs, comment, tc, _) =>
           if (breakOrSkip(onEnter(n))) {
-            values.foreach(t ⇒ loop(t))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
-            tc.foreach(s ⇒ loop(s))
+            values.foreach(t => loop(t))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
+            tc.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ ScalarTypeExtensionDefinition(_, dirs, comment, _) ⇒
+        case n @ ScalarTypeExtensionDefinition(_, dirs, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ SchemaExtensionDefinition(ops, dirs, comment, tc, _) ⇒
+        case n @ SchemaExtensionDefinition(ops, dirs, comment, tc, _) =>
           if (breakOrSkip(onEnter(n))) {
-            ops.foreach(op ⇒ loop(op))
-            dirs.foreach(d ⇒ loop(d))
-            comment.foreach(s ⇒ loop(s))
-            tc.foreach(c ⇒ loop(c))
+            ops.foreach(op => loop(op))
+            dirs.foreach(d => loop(d))
+            comment.foreach(s => loop(s))
+            tc.foreach(c => loop(c))
             breakOrSkip(onLeave(n))
           }
-        case n @ DirectiveDefinition(_, args, locations, description, comment, _) ⇒
+        case n @ DirectiveDefinition(_, args, locations, description, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            args.foreach(d ⇒ loop(d))
-            locations.foreach(d ⇒ loop(d))
-            description.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
+            args.foreach(d => loop(d))
+            locations.foreach(d => loop(d))
+            description.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ DirectiveLocation(_, comment, _) ⇒
+        case n @ DirectiveLocation(_, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ SchemaDefinition(ops, dirs, descr, comment, trailingComments, _) ⇒
+        case n @ SchemaDefinition(ops, dirs, descr, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
-            ops.foreach(s ⇒ loop(s))
-            dirs.foreach(s ⇒ loop(s))
-            descr.foreach(s ⇒ loop(s))
-            comment.foreach(s ⇒ loop(s))
-            trailingComments.foreach(s ⇒ loop(s))
+            ops.foreach(s => loop(s))
+            dirs.foreach(s => loop(s))
+            descr.foreach(s => loop(s))
+            comment.foreach(s => loop(s))
+            trailingComments.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ OperationTypeDefinition(_, tpe, comment, _) ⇒
+        case n @ OperationTypeDefinition(_, tpe, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             loop(tpe)
-            comment.foreach(s ⇒ loop(s))
+            comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
       }

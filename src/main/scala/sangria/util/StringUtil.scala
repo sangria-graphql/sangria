@@ -36,8 +36,8 @@ object StringUtil {
     val inputThreshold = input.length / 2
 
     options
-      .map (opt ⇒ opt → lexicalDistance(input, opt))
-      .filter (opt ⇒ opt._2 <= math.max(math.max(inputThreshold, opt._1.length / 2), 1))
+      .map (opt => opt -> lexicalDistance(input, opt))
+      .filter (opt => opt._2 <= math.max(math.max(inputThreshold, opt._1.length / 2), 1))
       .sortBy (_._2)
       .map (_._1)
   }
@@ -55,13 +55,13 @@ object StringUtil {
     * @return distance in number of edits
     */
   def lexicalDistance(a: String, b: String): Int = {
-    val d = for (i ← 0 to a.length) yield ListBuffer.fill(b.length + 1)(i)
+    val d = for (i <- 0 to a.length) yield ListBuffer.fill(b.length + 1)(i)
 
-    for (j ← 1 to b.length) {
+    for (j <- 1 to b.length) {
       d(0)(j) = j
     }
 
-    for (i ← 1 to a.length; j ← 1 to b.length) {
+    for (i <- 1 to a.length; j <- 1 to b.length) {
       val cost = if (a(i - 1) == b(j - 1)) 0 else 1
 
       d(i)(j) = math.min(math.min(d(i - 1)(j) + 1, d(i)(j - 1) + 1), d(i - 1)(j - 1) + cost)
@@ -78,22 +78,22 @@ object StringUtil {
 
   def escapeString(str: String) =
     str flatMap {
-      case ch if ch > 0xfff ⇒ "\\u" + charHex(ch)
-      case ch if ch > 0xff ⇒ "\\u0" + charHex(ch)
-      case ch if ch > 0x7f ⇒ "\\u00" + charHex(ch)
-      case ch if ch < 32 ⇒
+      case ch if ch > 0xfff => "\\u" + charHex(ch)
+      case ch if ch > 0xff => "\\u0" + charHex(ch)
+      case ch if ch > 0x7f => "\\u00" + charHex(ch)
+      case ch if ch < 32 =>
         ch match {
-          case '\b' ⇒ "\\b"
-          case '\n' ⇒ "\\n"
-          case '\t' ⇒ "\\t"
-          case '\f' ⇒ "\\f"
-          case '\r' ⇒ "\\r"
-          case ch if ch > 0xf ⇒ "\\u00" + charHex(ch)
-          case ch ⇒ "\\u000" + charHex(ch)
+          case '\b' => "\\b"
+          case '\n' => "\\n"
+          case '\t' => "\\t"
+          case '\f' => "\\f"
+          case '\r' => "\\r"
+          case ch if ch > 0xf => "\\u00" + charHex(ch)
+          case ch => "\\u000" + charHex(ch)
         }
-      case '"' ⇒ "\\\""
-      case '\\' ⇒ "\\\\"
-      case ch ⇒ ch.toString
+      case '"' => "\\\""
+      case '\\' => "\\\\"
+      case ch => ch.toString
     }
 
   def charHex(ch: Char): String =
@@ -107,8 +107,8 @@ object StringUtil {
     */
   def blockStringValue(rawString: String): String = {
     val lines = rawString.split("""\r\n|[\n\r]""")
-    val lineSizes = lines.map(l ⇒ l → leadingWhitespace(l))
-    val commonIndentLines = lineSizes.drop(1).collect {case (line, size) if size != line.length ⇒ size}
+    val lineSizes = lines.map(l => l -> leadingWhitespace(l))
+    val commonIndentLines = lineSizes.drop(1).collect {case (line, size) if size != line.length => size}
     val strippedLines =
       if (commonIndentLines.nonEmpty) {
         val commonIndent = commonIndentLines.min

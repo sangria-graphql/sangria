@@ -26,7 +26,7 @@ class InputDocumentNonConflictingVariableInferenceSpec extends WordSpec with Val
         }
       """,
       List(
-        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'String'." → List(Pos(5, 29), Pos(3, 26))
+        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'String'." -> List(Pos(5, 29), Pos(3, 26))
       ))
 
     "variable used multiple times with incompatible types" in expectInputFails("ComplexInput",
@@ -39,9 +39,9 @@ class InputDocumentNonConflictingVariableInferenceSpec extends WordSpec with Val
         }
       """,
       List(
-        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'Int'." → List(Pos(4, 21), Pos(3, 26)),
-        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'String'." → List(Pos(5, 24), Pos(3, 26)),
-        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'String'." → List(Pos(6, 29), Pos(3, 26))
+        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'Int'." -> List(Pos(4, 21), Pos(3, 26)),
+        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'String'." -> List(Pos(5, 24), Pos(3, 26)),
+        "Inferred variable '$foo' is used with two conflicting types: 'Boolean!' and 'String'." -> List(Pos(6, 29), Pos(3, 26))
       ))
   }
 }

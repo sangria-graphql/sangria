@@ -21,10 +21,10 @@ case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Docum
 
   def getVariableUsages(astNode: ast.SelectionContainer): List[VariableUsage] =
     variableUsages.getOrElseUpdate(astNode.cacheKeyHash, {
-      AstVisitor.visitAstWithState(schema, astNode, ListBuffer[VariableUsage]()) { (typeInfo, usages) ⇒
+      AstVisitor.visitAstWithState(schema, astNode, ListBuffer[VariableUsage]()) { (typeInfo, usages) =>
         AstVisitor {
-          case _: ast.VariableDefinition ⇒ Skip
-          case vv: ast.VariableValue ⇒
+          case _: ast.VariableDefinition => Skip
+          case vv: ast.VariableValue =>
             usages += VariableUsage(vv, typeInfo.inputType, typeInfo.defaultValue)
             Continue
         }
@@ -34,13 +34,13 @@ case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Docum
   def getRecursiveVariableUsages(operation: ast.OperationDefinition): List[VariableUsage] =
     recursiveVariableUsages.getOrElseUpdate(operation.cacheKeyHash,
       getRecursivelyReferencedFragments(operation).foldLeft(getVariableUsages(operation)) {
-        case (acc, fragment) ⇒ acc ++ getVariableUsages(fragment)
+        case (acc, fragment) => acc ++ getVariableUsages(fragment)
       })
 
   lazy val deprecatedUsages: Vector[DeprecatedUsage] =
-    AstVisitor.visitAstWithState(schema, document, MutableMap[String, DeprecatedUsage]()) { (typeInfo, deprecated) ⇒
+    AstVisitor.visitAstWithState(schema, document, MutableMap[String, DeprecatedUsage]()) { (typeInfo, deprecated) =>
       AstVisitor.simple {
-        case astField: ast.Field if typeInfo.fieldDef.isDefined && typeInfo.fieldDef.get.deprecationReason.isDefined && typeInfo.previousParentType.isDefined ⇒
+        case astField: ast.Field if typeInfo.fieldDef.isDefined && typeInfo.fieldDef.get.deprecationReason.isDefined && typeInfo.previousParentType.isDefined =>
           val parent = typeInfo.previousParentType.get
           val field = typeInfo.fieldDef.get
 
@@ -49,25 +49,25 @@ case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Docum
           if (!deprecated.contains(key))
             deprecated(key) = DeprecatedField(parent, field, astField, typeInfo.fieldDef.get.deprecationReason.get)
 
-        case enumValue: ast.EnumValue ⇒
+        case enumValue: ast.EnumValue =>
           typeInfo.inputType.map(_.namedType) match {
-            case Some(parent: EnumType[_]) if typeInfo.enumValue.isDefined ⇒
+            case Some(parent: EnumType[_]) if typeInfo.enumValue.isDefined =>
               val value = typeInfo.enumValue.get
               val key = parent.name + "." + value.name
 
               if (value.deprecationReason.isDefined && !deprecated.contains(key))
                 deprecated(key) = DeprecatedEnumValue(parent, value, enumValue, value.deprecationReason.get)
 
-            case _ ⇒ // do nothing
+            case _ => // do nothing
           }
 
       }
     }.values.toVector
 
   lazy val introspectionUsages: Vector[IntrospectionUsage] =
-    AstVisitor.visitAstWithState(schema, document, MutableMap[String, IntrospectionUsage]()) { (typeInfo, usages) ⇒
+    AstVisitor.visitAstWithState(schema, document, MutableMap[String, IntrospectionUsage]()) { (typeInfo, usages) =>
       AstVisitor.simple {
-        case astField: ast.Field if typeInfo.fieldDef.isDefined && typeInfo.previousParentType.isDefined ⇒
+        case astField: ast.Field if typeInfo.fieldDef.isDefined && typeInfo.previousParentType.isDefined =>
           val parent = typeInfo.previousParentType.get
           val field = typeInfo.fieldDef.get
 

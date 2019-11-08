@@ -27,49 +27,49 @@ class IonSupportSpec extends WordSpec with Matchers with FutureResultSupport {
   case object BinaryCoercionViolation extends ValueCoercionViolation("Binary data is not supported as input")
 
   def parseDate(s: String) = Try(dateFormat.parse(s)) match {
-    case Success(d) ⇒ Right(d)
-    case Failure(error) ⇒ Left(DateCoercionViolation)
+    case Success(d) => Right(d)
+    case Failure(error) => Left(DateCoercionViolation)
   }
 
   val DateType = ScalarType[Date]("Date",
-    coerceOutput = (d, caps) ⇒
+    coerceOutput = (d, caps) =>
       if (caps.contains(DateSupport)) d
       else dateFormat.format(d),
     coerceUserInput = {
-      case s: String ⇒ parseDate(s)
-      case _ ⇒ Left(DateCoercionViolation)
+      case s: String => parseDate(s)
+      case _ => Left(DateCoercionViolation)
     },
     coerceInput = {
-      case ast.StringValue(s, _, _, _, _) ⇒ parseDate(s)
-      case _ ⇒ Left(DateCoercionViolation)
+      case ast.StringValue(s, _, _, _, _) => parseDate(s)
+      case _ => Left(DateCoercionViolation)
     })
 
   val BlobType = ScalarType[Array[Byte]]("Blob",
-    coerceOutput = (d, _) ⇒ d,
-    coerceUserInput = _ ⇒ Left(BinaryCoercionViolation),
-    coerceInput = _ ⇒ Left(BinaryCoercionViolation))
+    coerceOutput = (d, _) => d,
+    coerceUserInput = _ => Left(BinaryCoercionViolation),
+    coerceInput = _ => Left(BinaryCoercionViolation))
 
   val ClobType = ScalarType[Array[Byte]]("Clob",
-    coerceOutput = (d, _) ⇒ d,
-    coerceUserInput = _ ⇒ Left(BinaryCoercionViolation),
-    coerceInput = _ ⇒ Left(BinaryCoercionViolation),
+    coerceOutput = (d, _) => d,
+    coerceUserInput = _ => Left(BinaryCoercionViolation),
+    coerceInput = _ => Left(BinaryCoercionViolation),
     scalarInfo = Set(IonClobScalar))
 
-  lazy val TestType: ObjectType[Unit, Unit] = ObjectType("Test", () ⇒ fields[Unit, Unit](
-    Field("nested", OptionType(TestType), resolve = _ ⇒ ()),
+  lazy val TestType: ObjectType[Unit, Unit] = ObjectType("Test", () => fields[Unit, Unit](
+    Field("nested", OptionType(TestType), resolve = _ => ()),
     Field("text", OptionType(StringType),
       arguments = Argument("toShow", StringType) :: Nil,
-      resolve = c ⇒ "foo " + c.arg[String]("toShow")),
-    Field("date", OptionType(DateType), resolve = _ ⇒ {
+      resolve = c => "foo " + c.arg[String]("toShow")),
+    Field("date", OptionType(DateType), resolve = _ => {
       val cal = Calendar.getInstance(TimeZone.getTimeZone("CET"))
       cal.set(2015, 5, 11, 18, 23, 14)
       cal.set(Calendar.MILLISECOND, 123)
       cal.getTime
     }),
     Field("blob", OptionType(BlobType),
-      resolve = _ ⇒ "foo bar".getBytes("UTF-8")),
+      resolve = _ => "foo bar".getBytes("UTF-8")),
     Field("clob", OptionType(ClobType),
-      resolve = _ ⇒ "foo bar baz".getBytes("UTF-8"))))
+      resolve = _ => "foo bar baz".getBytes("UTF-8"))))
 
   val schema = Schema(TestType)
 

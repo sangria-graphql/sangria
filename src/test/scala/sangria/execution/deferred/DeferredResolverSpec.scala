@@ -17,46 +17,46 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
   def deferredResolver(implicit ec: ExecutionContext) = {
     case class LoadCategories(ids: Seq[String]) extends Deferred[Seq[String]]
 
-    lazy val CategoryType: ObjectType[Unit, String] = ObjectType("Category", () ⇒ fields[Unit, String](
-      Field("name", StringType, resolve = c ⇒ s"Cat ${c.value}"),
-      Field("descr", StringType, resolve = c ⇒ s"Cat ${c.value} descr"),
-      Field("self", CategoryType, resolve = c ⇒ c.value),
-      Field("selfFut", CategoryType, resolve = c ⇒ Future(c.value)),
+    lazy val CategoryType: ObjectType[Unit, String] = ObjectType("Category", () => fields[Unit, String](
+      Field("name", StringType, resolve = c => s"Cat ${c.value}"),
+      Field("descr", StringType, resolve = c => s"Cat ${c.value} descr"),
+      Field("self", CategoryType, resolve = c => c.value),
+      Field("selfFut", CategoryType, resolve = c => Future(c.value)),
       Field("selfFutComplex", CategoryType,
-        complexity = Some((_, _, _) ⇒ 1000),
-        resolve = c ⇒ Future(c.value)),
+        complexity = Some((_, _, _) => 1000),
+        resolve = c => Future(c.value)),
       Field("children", ListType(CategoryType),
         arguments = Argument("count", IntType) :: Nil,
-        resolve = c ⇒ LoadCategories((1 to c.arg[Int]("count")).map(i ⇒ s"${c.value}.$i"))),
+        resolve = c => LoadCategories((1 to c.arg[Int]("count")).map(i => s"${c.value}.$i"))),
       Field("childrenComplex", ListType(CategoryType),
-        complexity = Some((_, _, _) ⇒ 1000),
+        complexity = Some((_, _, _) => 1000),
         arguments = Argument("count", IntType) :: Nil,
-        resolve = c ⇒ LoadCategories((1 to c.arg[Int]("count")).map(i ⇒ s"${c.value}.$i"))),
+        resolve = c => LoadCategories((1 to c.arg[Int]("count")).map(i => s"${c.value}.$i"))),
       Field("childrenFut", ListType(CategoryType),
         arguments = Argument("count", IntType) :: Nil,
-        resolve = c ⇒ DeferredFutureValue(Future.successful(
-          LoadCategories((1 to c.arg[Int]("count")).map(i ⇒ s"${c.value}.$i")))))
+        resolve = c => DeferredFutureValue(Future.successful(
+          LoadCategories((1 to c.arg[Int]("count")).map(i => s"${c.value}.$i")))))
     ))
 
     val QueryType = ObjectType("Query", fields[Unit, Unit](
-      Field("root", CategoryType, resolve = _ ⇒ DeferredValue(LoadCategories(Seq("root"))).map(_.head)),
-      Field("rootFut", CategoryType, resolve = _ ⇒ DeferredFutureValue(Future.successful(LoadCategories(Seq("root")))).map(_.head)),
-      Field("fail1", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head)),
-      Field("fail2", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head))
+      Field("root", CategoryType, resolve = _ => DeferredValue(LoadCategories(Seq("root"))).map(_.head)),
+      Field("rootFut", CategoryType, resolve = _ => DeferredFutureValue(Future.successful(LoadCategories(Seq("root")))).map(_.head)),
+      Field("fail1", OptionType(CategoryType), resolve = _ => DeferredValue(LoadCategories(Seq("fail"))).map(_.head)),
+      Field("fail2", OptionType(CategoryType), resolve = _ => DeferredValue(LoadCategories(Seq("fail"))).map(_.head))
     ))
 
     val MutationType = ObjectType("Mutation", fields[Unit, Unit](
-      Field("root", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("root"))).map(_.head)),
-      Field("fail1", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head)),
-      Field("fail2", OptionType(CategoryType), resolve = _ ⇒ DeferredValue(LoadCategories(Seq("fail"))).map(_.head))
+      Field("root", OptionType(CategoryType), resolve = _ => DeferredValue(LoadCategories(Seq("root"))).map(_.head)),
+      Field("fail1", OptionType(CategoryType), resolve = _ => DeferredValue(LoadCategories(Seq("fail"))).map(_.head)),
+      Field("fail2", OptionType(CategoryType), resolve = _ => DeferredValue(LoadCategories(Seq("fail"))).map(_.head))
     ))
 
     class MyDeferredResolver extends DeferredResolver[Any] {
       val callsCount = new AtomicInteger(0)
       val valueCount = new AtomicInteger(0)
 
-      override val includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) ⇒ Boolean] =
-        Some((_, _, _, complexity) ⇒ complexity < 100)
+      override val includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) => Boolean] =
+        Some((_, _, _, complexity) => complexity < 100)
 
       override def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]) = {
         val (expensive, cheap) = deferred.partition(_.complexity > 100)
@@ -68,8 +68,8 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
         valueCount.addAndGet(deferred.size)
 
         deferred.map {
-          case LoadCategories(ids) if ids contains "fail" ⇒ Future.failed(new IllegalStateException("foo"))
-          case LoadCategories(ids) ⇒ Future.successful(ids)
+          case LoadCategories(ids) if ids contains "fail" => Future.failed(new IllegalStateException("foo"))
+          case LoadCategories(ids) => Future.successful(ids)
         }
       }
     }
@@ -81,7 +81,7 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
       val result = Executor.execute(schema, query, deferredResolver = resolver).await
 
 
-      resolver → result
+      resolver -> result
     }
 
     "result in a single resolution of once level" in {
@@ -232,12 +232,12 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
         }
       """,
       Map(
-        "fail1" → null,
-        "root" → Map("name" → "Cat root"),
-        "fail2" → null),
+        "fail1" -> null,
+        "root" -> Map("name" -> "Cat root"),
+        "fail2" -> null),
       List(
-        "foo" → List(Pos(3, 11)),
-        "foo" → List(Pos(5, 11))),
+        "foo" -> List(Pos(3, 11)),
+        "foo" -> List(Pos(5, 11))),
       resolver = new MyDeferredResolver)
 
     "failed mutations should be handled appropriately" in checkContainsErrors(schema, (),
@@ -249,12 +249,12 @@ class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSuppo
         }
       """,
       Map(
-        "fail1" → null,
-        "root" → Map("name" → "Cat root"),
-        "fail2" → null),
+        "fail1" -> null,
+        "root" -> Map("name" -> "Cat root"),
+        "fail2" -> null),
       List(
-        "foo" → List(Pos(3, 11)),
-        "foo" → List(Pos(5, 11))),
+        "foo" -> List(Pos(3, 11)),
+        "foo" -> List(Pos(5, 11))),
       resolver = new MyDeferredResolver)
   }
 

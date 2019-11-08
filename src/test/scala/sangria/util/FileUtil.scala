@@ -30,7 +30,7 @@ object FileUtil extends StringMatchers {
       .values
       .toVector
 
-    yamlResources.map { resource ⇒
+    yamlResources.map { resource =>
       val name = resource.getPath.substring(resource.getPath.lastIndexOf("/") + 1)
       val relativePath = resource.getPathRelativeToClasspathElement
       val stream = this.getClass.getResourceAsStream("/" + relativePath)
@@ -53,8 +53,8 @@ object FileUtil extends StringMatchers {
 
   def loadResource(path: String) =
     Option(this.getClass.getResourceAsStream("/" + path)) match {
-      case Some(res) ⇒ stripCarriageReturns(Source.fromInputStream(res, "UTF-8").mkString)
-      case None ⇒ throw new IllegalArgumentException("Resource not found: /" + path)
+      case Some(res) => stripCarriageReturns(Source.fromInputStream(res, "UTF-8").mkString)
+      case None => throw new IllegalArgumentException("Resource not found: /" + path)
     }
 
   case class ScenarioFile(fileName: String, path: String, scenario: YamlValue) {

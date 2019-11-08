@@ -17,15 +17,15 @@ class ParseMacro(context: blackbox.Context) extends {
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any
         // expressions, thus containing only a single tree
-        case Apply(_, List(Apply(_, t :: Nil))) ⇒
+        case Apply(_, List(Apply(_, t :: Nil))) =>
           val q"${gql: String}" = t
 
           try {
             q"${QueryParser.parse(gql).get}"
           } catch {
-            case error: SyntaxError ⇒ syntaxError(error)
+            case error: SyntaxError => syntaxError(error)
           }
-        case _ ⇒
+        case _ =>
           c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
       }
 
@@ -36,15 +36,15 @@ class ParseMacro(context: blackbox.Context) extends {
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any
         // expressions, thus containing only a single tree
-        case Apply(_, List(Apply(_, t :: Nil))) ⇒
+        case Apply(_, List(Apply(_, t :: Nil))) =>
           val q"${gql: String}" = t
 
           try {
             q"${QueryParser.parseInput(gql).get}"
           } catch {
-            case error: SyntaxError ⇒ syntaxError(error)
+            case error: SyntaxError => syntaxError(error)
           }
-        case _ ⇒
+        case _ =>
           c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
       }
 
@@ -55,15 +55,15 @@ class ParseMacro(context: blackbox.Context) extends {
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any
         // expressions, thus containing only a single tree
-        case Apply(_, List(Apply(_, t :: Nil))) ⇒
+        case Apply(_, List(Apply(_, t :: Nil))) =>
           val q"${gql: String}" = t
 
           try {
             q"${QueryParser.parseInputDocument(gql).get}"
           } catch {
-            case error: SyntaxError ⇒ syntaxError(error)
+            case error: SyntaxError => syntaxError(error)
           }
-        case _ ⇒
+        case _ =>
           c.abort(c.enclosingPosition, "Invalid `graphql` invocation syntax.")
       }
 

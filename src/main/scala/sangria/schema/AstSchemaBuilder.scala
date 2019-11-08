@@ -40,7 +40,7 @@ trait AstSchemaBuilder[Ctx] {
     origin: MatOrigin,
     definition: ast.ObjectTypeDefinition,
     extensions: List[ast.ObjectTypeExtensionDefinition],
-    fields: () ⇒ List[Field[Ctx, Any]],
+    fields: () => List[Field[Ctx, Any]],
     interfaces: List[InterfaceType[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): Option[ObjectType[Ctx, Any]]
 
@@ -48,7 +48,7 @@ trait AstSchemaBuilder[Ctx] {
     origin: MatOrigin,
     existing: ObjectType[Ctx, _],
     extensions: List[ast.ObjectTypeExtensionDefinition],
-    fields: () ⇒ List[Field[Ctx, Any]],
+    fields: () => List[Field[Ctx, Any]],
     interfaces: List[InterfaceType[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): ObjectType[Ctx, Any]
 
@@ -56,28 +56,28 @@ trait AstSchemaBuilder[Ctx] {
     origin: MatOrigin,
     extensions: Vector[ast.InputObjectTypeExtensionDefinition],
     definition: ast.InputObjectTypeDefinition,
-    fields: () ⇒ List[InputField[_]],
+    fields: () => List[InputField[_]],
     mat: AstSchemaMaterializer[Ctx]): Option[InputObjectType[InputObjectType.DefaultInput]]
 
   def transformInputObjectType[T](
     origin: MatOrigin,
     extensions: Vector[ast.InputObjectTypeExtensionDefinition],
     existing: InputObjectType[T],
-    fields: () ⇒ List[InputField[_]],
+    fields: () => List[InputField[_]],
     mat: AstSchemaMaterializer[Ctx]): InputObjectType[T]
 
   def buildInterfaceType(
     origin: MatOrigin,
     definition: ast.InterfaceTypeDefinition,
     extensions: List[ast.InterfaceTypeExtensionDefinition],
-    fields: () ⇒ List[Field[Ctx, Any]],
+    fields: () => List[Field[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): Option[InterfaceType[Ctx, Any]]
 
   def extendInterfaceType(
     origin: MatOrigin,
     existing: InterfaceType[Ctx, _],
     extensions: List[ast.InterfaceTypeExtensionDefinition],
-    fields: () ⇒ List[Field[Ctx, Any]],
+    fields: () => List[Field[Ctx, Any]],
     mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any]
 
   def buildUnionType(
@@ -263,8 +263,8 @@ object AstSchemaBuilder {
 
     def unapply(definition: Either[ast.TypeDefinition, Named]): Option[String] =
       definition match {
-        case Left(t) ⇒ Some(t.name)
-        case Right(t) ⇒ Some(t.name)
+        case Left(t) => Some(t.name)
+        case Right(t) => Some(t.name)
       }
   }
 
@@ -279,15 +279,15 @@ object AstSchemaBuilder {
   def extractDescription(node: ast.WithComments): Option[String] =
     if (node.comments.nonEmpty) {
       node.location.map(_.line).orElse(node.comments.last.location.map(_.line + 1)) match {
-        case Some(nodeLine) ⇒
+        case Some(nodeLine) =>
           val (_, relevantComments) = node.comments.foldRight((nodeLine - 1, Vector.empty[String])) {
-            case (c, (expectedLine, acc)) if c.location.isDefined && c.location.get.line == expectedLine ⇒
-              (expectedLine - 1) → (c.text +: acc)
-            case (c, acc ) ⇒ acc
+            case (c, (expectedLine, acc)) if c.location.isDefined && c.location.get.line == expectedLine =>
+              (expectedLine - 1) -> (c.text +: acc)
+            case (c, acc ) => acc
           }
 
           extractDescription(relevantComments)
-        case None ⇒
+        case None =>
           extractDescription(node.comments map (_.text))
       }
     } else None
@@ -355,23 +355,23 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       origin: MatOrigin,
       definition: ast.ObjectTypeDefinition,
       extensions: List[ast.ObjectTypeExtensionDefinition],
-      fields: () ⇒ List[Field[Ctx, Any]],
+      fields: () => List[Field[Ctx, Any]],
       interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) = {
     val directives = definition.directives ++ extensions.flatMap(_.directives)
 
     val objectType =
       objectTypeInstanceCheck(origin, definition, extensions) match {
-        case Some(fn) ⇒
+        case Some(fn) =>
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
             fieldsFn = fields,
             interfaces = interfaces,
-            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz),
+            instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) => fn(value, clazz),
             astDirectives = directives,
             astNodes = (definition +: extensions).toVector)
-        case None ⇒
+        case None =>
           ObjectType[Ctx, Any](
             name = typeName(definition),
             description = typeDescription(definition),
@@ -389,31 +389,31 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       origin: MatOrigin,
       existing: ObjectType[Ctx, _],
       extensions: List[ast.ObjectTypeExtensionDefinition],
-      fields: () ⇒ List[Field[Ctx, Any]],
+      fields: () => List[Field[Ctx, Any]],
       interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) =
     extendedObjectTypeInstanceCheck(origin, existing, extensions) match {
-      case Some(fn) ⇒
+      case Some(fn) =>
         existing.copy(
           fieldsFn = fields,
           interfaces = interfaces,
           astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
           astNodes = existing.astNodes ++ extensions,
-          instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) ⇒ fn(value, clazz))(ClassTag(existing.valClass))
-      case None ⇒
+          instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) => fn(value, clazz))(ClassTag(existing.valClass))
+      case None =>
         existing.copy(
           fieldsFn = fields,
           interfaces = interfaces,
           astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
           astNodes = existing.astNodes ++ extensions,
-          instanceCheck = existing.instanceCheck.asInstanceOf[(Any, Class[_], ObjectType[Ctx, _]) ⇒ Boolean])(ClassTag(existing.valClass))
+          instanceCheck = existing.instanceCheck.asInstanceOf[(Any, Class[_], ObjectType[Ctx, _]) => Boolean])(ClassTag(existing.valClass))
     }
 
   def buildInputObjectType(
       origin: MatOrigin,
       extensions: Vector[ast.InputObjectTypeExtensionDefinition],
       definition: ast.InputObjectTypeDefinition,
-      fields: () ⇒ List[InputField[_]],
+      fields: () => List[InputField[_]],
       mat: AstSchemaMaterializer[Ctx]) =
     Some(InputObjectType(
       name = typeName(definition),
@@ -426,7 +426,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       origin: MatOrigin,
       definition: ast.InterfaceTypeDefinition,
       extensions: List[ast.InterfaceTypeExtensionDefinition],
-      fields: () ⇒ List[Field[Ctx, Any]],
+      fields: () => List[Field[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) = {
     val directives = definition.directives ++ extensions.flatMap(_.directives)
 
@@ -435,7 +435,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       description = typeDescription(definition),
       fieldsFn = fields,
       interfaces = Nil,
-      manualPossibleTypes = () ⇒ Nil,
+      manualPossibleTypes = () => Nil,
       astDirectives = directives,
       astNodes = (definition +: extensions).toVector))
   }
@@ -444,9 +444,9 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       origin: MatOrigin,
       existing: InterfaceType[Ctx, _],
       extensions: List[ast.InterfaceTypeExtensionDefinition],
-      fields: () ⇒ List[Field[Ctx, Any]],
+      fields: () => List[Field[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(fieldsFn = fields, manualPossibleTypes = () ⇒ Nil, interfaces = Nil,
+    existing.copy(fieldsFn = fields, manualPossibleTypes = () => Nil, interfaces = Nil,
       astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = existing.astNodes ++ extensions)
 
@@ -541,7 +541,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       tags = fieldTags(typeDefinition, definition),
       deprecationReason = fieldDeprecationReason(definition),
       complexity = fieldComplexity(typeDefinition, definition),
-      manualPossibleTypes = () ⇒ Nil,
+      manualPossibleTypes = () => Nil,
       astDirectives = definition.directives,
       astNodes = Vector(definition)))
 
@@ -571,7 +571,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       fieldType = fieldType,
       arguments = arguments,
       resolve = extendFieldResolver(origin, typeDefinition, existing, fieldType, mat),
-      manualPossibleTypes = () ⇒ Nil)
+      manualPossibleTypes = () => Nil)
 
   def extendArgument(
       origin: MatOrigin,
@@ -680,7 +680,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       origin: MatOrigin,
       extensions: Vector[ast.InputObjectTypeExtensionDefinition],
       existing: InputObjectType[T],
-      fields: () ⇒ List[InputField[_]],
+      fields: () => List[InputField[_]],
       mat: AstSchemaMaterializer[Ctx]) =
     existing.copy(fieldsFn = fields,
       astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
@@ -713,13 +713,13 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     existing: Directive,
     mat: AstSchemaMaterializer[Ctx]) = existing
 
-  def objectTypeInstanceCheck(origin: MatOrigin, definition: ast.ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] =
+  def objectTypeInstanceCheck(origin: MatOrigin, definition: ast.ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) => Boolean] =
     None
 
-  def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) ⇒ Boolean] =
+  def extendedObjectTypeInstanceCheck(origin: MatOrigin, tpe: ObjectType[Ctx, _], extensions: List[ast.ObjectTypeExtensionDefinition]): Option[(Any, Class[_]) => Boolean] =
     None
 
-  def directiveShouldInclude(definition: ast.DirectiveDefinition): DirectiveContext ⇒ Boolean =
+  def directiveShouldInclude(definition: ast.DirectiveDefinition): DirectiveContext => Boolean =
     Function.const(true)
 
   def argumentFromInput(
@@ -733,27 +733,27 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
       extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
       definition: ast.FieldDefinition,
-      mat: AstSchemaMaterializer[Ctx]): Context[Ctx, _] ⇒ Action[Ctx, _] =
-    _ ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+      mat: AstSchemaMaterializer[Ctx]): Context[Ctx, _] => Action[Ctx, _] =
+    _ => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
   def extendFieldResolver(
     origin: MatOrigin,
     typeDefinition: Option[ObjectLikeType[Ctx, _]],
     existing: Field[Ctx, Any],
     fieldType: OutputType[_],
-    mat: AstSchemaMaterializer[Ctx]): Context[Ctx, Any] ⇒ Action[Ctx, _]  = existing.resolve
+    mat: AstSchemaMaterializer[Ctx]): Context[Ctx, Any] => Action[Ctx, _]  = existing.resolve
 
   def fieldTags(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): List[FieldTag] =
     Nil
 
-  def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition): Any ⇒ Either[Violation, Any] =
-    _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+  def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition): Any => Either[Violation, Any] =
+    _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
 
-  def scalarCoerceInput(definition: ast.ScalarTypeDefinition): ast.Value ⇒ Either[Violation, Any] =
-    _ ⇒ Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
+  def scalarCoerceInput(definition: ast.ScalarTypeDefinition): ast.Value => Either[Violation, Any] =
+    _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
 
-  def scalarCoerceOutput(definition: ast.ScalarTypeDefinition): (Any, Set[MarshallerCapability]) ⇒ Any =
-    (_, _) ⇒ throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+  def scalarCoerceOutput(definition: ast.ScalarTypeDefinition): (Any, Set[MarshallerCapability]) => Any =
+    (_, _) => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
 
   def scalarValueInfo(definition: ast.ScalarTypeDefinition): Set[ScalarValueInfo] =
     Set.empty
@@ -761,7 +761,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
   def scalarComplexity(definition: ast.ScalarTypeDefinition): Double =
     0.0D
 
-  def fieldComplexity(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): Option[(Ctx, Args, Double) ⇒ Double] =
+  def fieldComplexity(typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]], definition: ast.FieldDefinition): Option[(Ctx, Args, Double) => Double] =
     None
 
   def enumValueDeprecationReason(definition: ast.EnumValueDefinition): Option[String] =
@@ -771,14 +771,14 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     deprecationReason(definition.directives.toList)
 
   def deprecationReason(dirs: List[ast.Directive]): Option[String] =
-    dirs.find(_.name == DeprecatedDirective.name).flatMap { d ⇒
+    dirs.find(_.name == DeprecatedDirective.name).flatMap { d =>
       d.arguments.find(_.name == ReasonArg.name) match {
-        case Some(reason) ⇒
+        case Some(reason) =>
           reason.value match {
-            case ast.StringValue(value, _, _, _, _) ⇒ Some(value)
-            case _ ⇒ None
+            case ast.StringValue(value, _, _, _, _) => Some(value)
+            case _ => None
           }
-        case None ⇒ Some(DefaultDeprecationReason)
+        case None => Some(DefaultDeprecationReason)
       }
     }
 

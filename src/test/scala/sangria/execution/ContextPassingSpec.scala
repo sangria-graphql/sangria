@@ -19,7 +19,7 @@ class ContextPassingSpec extends WordSpec with Matchers with FutureResultSupport
   }
 
   trait PersonComponent {
-    this: NameComponent ⇒
+    this: NameComponent =>
 
     def fullName = name + " bar"
   }
@@ -35,14 +35,14 @@ class ContextPassingSpec extends WordSpec with Matchers with FutureResultSupport
 
   val PersonType = ObjectType("Person", fields[PersonComponent, Unit](
     Field("fullName", StringType, resolve = _.ctx.fullName),
-    Field("name", NameType, resolve = _ ⇒ ())))
+    Field("name", NameType, resolve = _ => ())))
 
   def colorField[Ctx <: ColorComponent with NameComponent] =
-    Field("color", ColorType, None, resolve = (ctx: Context[Ctx, Unit]) ⇒ ())
+    Field("color", ColorType, None, resolve = (ctx: Context[Ctx, Unit]) => ())
 
   val QueryType = ObjectType("Query", fields[Cake, Unit](
     colorField,
-    Field("person", PersonType, resolve = _ ⇒ ())
+    Field("person", PersonType, resolve = _ => ())
   ))
 
   val schema = Schema(QueryType)
@@ -60,13 +60,13 @@ class ContextPassingSpec extends WordSpec with Matchers with FutureResultSupport
         """)
 
       Executor.execute(schema, doc, userContext = new Cake).await should be (Map(
-        "data" → Map(
-          "color" → Map(
-            "name" → "foo",
-            "colorName" → "green"),
-          "person" → Map(
-            "name" → Map("name" → "foo"),
-            "fullName" → "foo bar"))))
+        "data" -> Map(
+          "color" -> Map(
+            "name" -> "foo",
+            "colorName" -> "green"),
+          "person" -> Map(
+            "name" -> Map("name" -> "foo"),
+            "fullName" -> "foo bar"))))
     }
   }
 

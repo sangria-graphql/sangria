@@ -34,18 +34,18 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
 
   def forcePushType(tpe: Type): Unit = {
     tpe match {
-      case t: InputType[_] ⇒ inputTypeStack.push(Some(t))
-      case _ ⇒ // do nothing
+      case t: InputType[_] => inputTypeStack.push(Some(t))
+      case _ => // do nothing
     }
 
     tpe match {
-      case t: CompositeType[_] ⇒ parentTypeStack.push(Some(t))
-      case _ ⇒ // do nothing
+      case t: CompositeType[_] => parentTypeStack.push(Some(t))
+      case _ => // do nothing
     }
 
     tpe match {
-      case t: OutputType[_] ⇒ typeStack.push(Some(t))
-      case _ ⇒ // do nothing
+      case t: OutputType[_] => typeStack.push(Some(t))
+      case _ => // do nothing
     }
   }
 
@@ -59,9 +59,9 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
     ancestorStack push node
 
     node match {
-      case document: ast.Document ⇒
+      case document: ast.Document =>
         documentStack push document
-      case f: ast.Field ⇒
+      case f: ast.Field =>
         val parent = parentType
         val fieldDef = parent flatMap (getFieldDef(_, f))
         val fieldType = fieldDef map (_.fieldType)
@@ -70,128 +70,128 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         typeStack push fieldType
 
         pushParent()
-      case ast.Directive(name, _, _, _) ⇒
+      case ast.Directive(name, _, _, _) =>
         directive = schema.directivesByName get name
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _, _) =>
         typeStack push Some(schema.query)
         pushParent()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _, _) =>
         typeStack push schema.mutation
         pushParent()
-      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) =>
         typeStack push schema.subscription
         pushParent()
-      case fs: ast.FragmentSpread ⇒
+      case fs: ast.FragmentSpread =>
         val fragment = document.flatMap(_.fragments.get(fs.name))
-        typeStack.push(fragment.flatMap(fd ⇒ schema.allTypes get fd.typeCondition.name))
+        typeStack.push(fragment.flatMap(fd => schema.allTypes get fd.typeCondition.name))
         pushParent()
-      case fd: ast.FragmentDefinition ⇒
+      case fd: ast.FragmentDefinition =>
         typeStack.push(schema.allTypes get fd.typeCondition.name)
         pushParent()
-      case ifd: ast.InlineFragment ⇒
+      case ifd: ast.InlineFragment =>
         typeStack.push(ifd.typeCondition.fold(tpe)(schema.allTypes get _.name))
         pushParent()
-      case vd: ast.VariableDefinition ⇒
+      case vd: ast.VariableDefinition =>
         inputTypeStack push schema.getInputType(vd.tpe)
-      case a: ast.Argument ⇒
-        argument = directive orElse fieldDef flatMap { withArgs ⇒
+      case a: ast.Argument =>
+        argument = directive orElse fieldDef flatMap { withArgs =>
           withArgs.arguments find (_.name == a.name)
         }
 
         defaultValueStack push argument.flatMap(_.defaultValue)
         inputTypeStack push argument.map(_.inputValueType)
-      case ast.ListValue(values, _, _) ⇒
+      case ast.ListValue(values, _, _) =>
         // List positions never have a default value.
         defaultValueStack push None
 
         inputType match {
-          case Some(it) ⇒ it.nonOptionalType match {
-            case it: ListInputType[_] ⇒ inputTypeStack push Some(it.ofType)
-            case _ ⇒ inputTypeStack push None
+          case Some(it) => it.nonOptionalType match {
+            case it: ListInputType[_] => inputTypeStack push Some(it.ofType)
+            case _ => inputTypeStack push None
           }
-          case None ⇒ inputTypeStack push None
+          case None => inputTypeStack push None
         }
-      case ast.ObjectField(name, value, _, _) ⇒
+      case ast.ObjectField(name, value, _, _) =>
         val (fieldType, defaultValue) = inputType match {
-          case Some(it) if it.namedType.isInstanceOf[InputObjectType[_]] ⇒
+          case Some(it) if it.namedType.isInstanceOf[InputObjectType[_]] =>
             it.namedType match {
-              case obj: InputObjectType[_] ⇒
+              case obj: InputObjectType[_] =>
                 val field = obj.fieldsByName.get(name)
 
-                field.map(_.inputValueType) → field.flatMap(_.defaultValue)
-              case _ ⇒ None → None
+                field.map(_.inputValueType) -> field.flatMap(_.defaultValue)
+              case _ => None -> None
             }
 
-          case _ ⇒ None → None
+          case _ => None -> None
         }
 
         defaultValueStack push defaultValue
         inputTypeStack push fieldType
-      case ast.EnumValue(name, _, _) ⇒
+      case ast.EnumValue(name, _, _) =>
         enumValue = inputType match {
-          case Some(it) ⇒ it.namedType match {
-            case enum: EnumType[_] ⇒ enum.byName.get(name)
-            case _ ⇒ None
+          case Some(it) => it.namedType match {
+            case enum: EnumType[_] => enum.byName.get(name)
+            case _ => None
           }
-          case None ⇒ None
+          case None => None
         }
-      case _ ⇒ // ignore
+      case _ => // ignore
     }
   }
 
   def pushParent(): Unit = {
     tpe match {
-      case Some(some) ⇒ some.namedType match {
-        case comp: CompositeType[_] ⇒ parentTypeStack push Some(comp)
-        case _ ⇒ parentTypeStack push None
+      case Some(some) => some.namedType match {
+        case comp: CompositeType[_] => parentTypeStack push Some(comp)
+        case _ => parentTypeStack push None
       }
-      case _ ⇒ parentTypeStack push None
+      case _ => parentTypeStack push None
     }
   }
 
   def leave(node: ast.AstNode) = {
     node match {
-      case document: ast.Document ⇒
+      case document: ast.Document =>
         documentStack.pop()
-      case f: ast.Field ⇒
+      case f: ast.Field =>
         fieldDefStack.pop()
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.Directive(name, _, _, _) ⇒
+      case ast.Directive(name, _, _, _) =>
         directive = None
-      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Query, _, _, _, _, _, _, _) =>
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Mutation, _, _, _, _, _, _, _) =>
         typeStack.pop()
         parentTypeStack.pop()
-      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) ⇒
+      case ast.OperationDefinition(ast.OperationType.Subscription, _, _, _, _, _, _, _) =>
         typeStack.pop()
         parentTypeStack.pop()
-      case fs: ast.FragmentSpread ⇒
+      case fs: ast.FragmentSpread =>
         typeStack.pop()
         parentTypeStack.pop()
-      case fd: ast.FragmentDefinition ⇒
+      case fd: ast.FragmentDefinition =>
         typeStack.pop()
         parentTypeStack.pop()
-      case fd: ast.InlineFragment ⇒
+      case fd: ast.InlineFragment =>
         typeStack.pop()
         parentTypeStack.pop()
-      case vd: ast.VariableDefinition ⇒
+      case vd: ast.VariableDefinition =>
         inputTypeStack.pop()
-      case a: ast.Argument ⇒
+      case a: ast.Argument =>
         argument = None
         defaultValueStack.pop()
         inputTypeStack.pop()
-      case ast.ListValue(_, _, _) ⇒
+      case ast.ListValue(_, _, _) =>
         defaultValueStack.pop()
         inputTypeStack.pop()
-      case ast.ObjectField(_, _, _, _) ⇒
+      case ast.ObjectField(_, _, _, _) =>
         defaultValueStack.pop()
         inputTypeStack.pop()
-      case ast.EnumValue(_, _, _) ⇒
+      case ast.EnumValue(_, _, _) =>
         enumValue = None
-      case _ ⇒ // ignore
+      case _ => // ignore
     }
 
     ancestorStack.pop()
@@ -205,8 +205,8 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
     else if (astField.name == TypeNameMetaField.name)
       Some(TypeNameMetaField)
     else parent match {
-      case o: ObjectLikeType[_, _] ⇒ o.getField(schema, astField.name).headOption
-      case _ ⇒ None
+      case o: ObjectLikeType[_, _] => o.getField(schema, astField.name).headOption
+      case _ => None
     }
   }
 }

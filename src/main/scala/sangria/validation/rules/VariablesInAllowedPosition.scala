@@ -18,17 +18,17 @@ class VariablesInAllowedPosition extends ValidationRule {
     val varDefs = MutableMap[String, ast.VariableDefinition]()
 
     override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition ⇒
+      case _: ast.OperationDefinition =>
         varDefs.clear()
         AstVisitorCommand.RightContinue
 
-      case varDef: ast.VariableDefinition ⇒
+      case varDef: ast.VariableDefinition =>
         varDefs(varDef.name) = varDef
         AstVisitorCommand.RightContinue
     }
 
     override def onLeave: ValidationVisit = {
-      case operation: ast.OperationDefinition ⇒
+      case operation: ast.OperationDefinition =>
         val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
 
         // A var type is allowed if it is the same or more strict (e.g. is
@@ -36,11 +36,11 @@ class VariablesInAllowedPosition extends ValidationRule {
         // the variable type is non-null when the expected type is nullable.
         // If both are list types, the variable item type can be more strict
         // than the expected item type (contravariant).
-        val errors = usages.toVector.flatMap { usage ⇒
+        val errors = usages.toVector.flatMap { usage =>
           for {
-            varDef ← varDefs.get(usage.node.name)
-            tpe ← usage.tpe
-            inputTpe ← ctx.schema.getInputType(varDef.tpe)
+            varDef <- varDefs.get(usage.node.name)
+            tpe <- usage.tpe
+            inputTpe <- ctx.schema.getInputType(varDef.tpe)
             if !allowedVariableUsage(ctx.schema, inputTpe, varDef.defaultValue, tpe, usage.defaultValue)
           } yield BadVarPositionViolation(
             usage.node.name,
@@ -66,7 +66,7 @@ class VariablesInAllowedPosition extends ValidationRule {
       locationDefaultValue: Option[(_, ToInput[_, _])]
     ) =
       if (!locationType.isOptional && varType.isOptional) {
-        val hasNonNullVariableDefaultValue = varDefaultValue.exists(default ⇒ !default.isInstanceOf[ast.NullValue])
+        val hasNonNullVariableDefaultValue = varDefaultValue.exists(default => !default.isInstanceOf[ast.NullValue])
         val hasLocationDefaultValue = locationDefaultValue.isDefined
 
         if (!hasNonNullVariableDefaultValue && !hasLocationDefaultValue) false

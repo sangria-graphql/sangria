@@ -27,13 +27,13 @@ import JsonAndYamlHelpers._
   * 3. Execute a test query against the generated schema ("when" part of the scenario)
   * 4. Assert results of the execution ("then" part of the scenario)
   */
-trait CatsSupport { this: WordSpec with Matchers ⇒
+trait CatsSupport { this: WordSpec with Matchers =>
   import CatsScenarioData._
   import CatsAssertions._
   import CatsScenarioExecutor._
 
   def generateTests(path: String) = {
-    FileUtil.loadScenarios(path) foreach { file ⇒
+    FileUtil.loadScenarios(path) foreach { file =>
       val scenario: YamlValue = file.scenario
 
       scenario("scenario").stringValue should {
@@ -41,7 +41,7 @@ trait CatsSupport { this: WordSpec with Matchers ⇒
         val bgBuilder = schemaBuilder(bgTestData getOrElse JsObject.empty)
         val bgSchema = getSchema(scenario.get("background"), file.folder) map (Schema.buildFromAst(_, bgBuilder))
 
-        scenario("tests").arrayValue foreach { test ⇒
+        scenario("tests").arrayValue foreach { test =>
           val testName = test("name").stringValue
 
           testName in {
@@ -50,8 +50,8 @@ trait CatsSupport { this: WordSpec with Matchers ⇒
             val testSchema =
               getSchema(test.get("given"), file.folder) map (Schema.buildFromAst(_, testBuilder)) orElse {
                 testTestData match {
-                  case Some(newTestData) ⇒ getSchema(scenario.get("given"), file.folder) map (Schema.buildFromAst(_, testBuilder))
-                  case None ⇒ bgSchema
+                  case Some(newTestData) => getSchema(scenario.get("given"), file.folder) map (Schema.buildFromAst(_, testBuilder))
+                  case None => bgSchema
                 }
               }
 
@@ -63,7 +63,7 @@ trait CatsSupport { this: WordSpec with Matchers ⇒
 
             val result = executeAction(given, action)
 
-            assertions foreach { a ⇒
+            assertions foreach { a =>
               assertActionResult(result, a)
             }
           }
@@ -102,77 +102,77 @@ object CatsScenarioExecutor extends FutureResultSupport {
   val resolvePromiseRejectList = Directive("resolvePromiseRejectList", arguments = ValuesArg :: MessagesArg :: Nil, locations = Set(DirectiveLocation.FieldDefinition))
 
   def schemaBuilder(testData: JsValue): AstSchemaBuilder[Any] = AstSchemaBuilder.resolverBased[Any](
-    DirectiveResolver(ResolveString, c ⇒
+    DirectiveResolver(ResolveString, c =>
       correctValue(c.ctx.field.fieldType, replacePlaceholders(c arg ValueArg, c.ctx.args))),
 
-    DirectiveResolver(ArgumentsJson, c ⇒ {
+    DirectiveResolver(ArgumentsJson, c => {
       def handleValue(v: Any) = v match {
-        case v: String ⇒ JsString(v)
-        case v: Boolean ⇒ JsBoolean(v)
-        case v: Int ⇒ JsNumber(v)
+        case v: String => JsString(v)
+        case v: Boolean => JsBoolean(v)
+        case v: Int => JsNumber(v)
       }
 
       val argsJson = c.ctx.args.raw flatMap {
-        case (k, Some(v)) ⇒ Some(k → handleValue(v))
-        case (k, None) ⇒ None
-        case (k, v) ⇒ Some(k → handleValue(v))
+        case (k, Some(v)) => Some(k -> handleValue(v))
+        case (k, None) => None
+        case (k, v) => Some(k -> handleValue(v))
       }
 
       correctValue(c.ctx.field.fieldType, JsObject(argsJson).compactPrint)
     }),
 
-    DirectiveResolver(ResolvePromiseString, c ⇒ {
+    DirectiveResolver(ResolvePromiseString, c => {
       Future {
         Thread.sleep((math.random * 50).toLong)
         correctValue(c.ctx.field.fieldType, replacePlaceholders(c arg ValueArg, c.ctx.args))
       }
     }),
 
-    DirectiveResolver(ResolveEmptyObject, c ⇒ correctValue(c.ctx.field.fieldType, JsObject.empty)),
+    DirectiveResolver(ResolveEmptyObject, c => correctValue(c.ctx.field.fieldType, JsObject.empty)),
 
-    DirectiveResolver(ResolveTestData, c ⇒ correctValue(c.ctx.field.fieldType, testData(c arg NameArg))),
+    DirectiveResolver(ResolveTestData, c => correctValue(c.ctx.field.fieldType, testData(c arg NameArg))),
 
-    DirectiveResolver(ResolvePromiseTestData, c ⇒ Future {
+    DirectiveResolver(ResolvePromiseTestData, c => Future {
       Thread.sleep((math.random * 50).toLong)
       correctValue(c.ctx.field.fieldType, testData(c arg NameArg))
     }),
 
-    DirectiveResolver(ResolvePromise, c ⇒ Future {
+    DirectiveResolver(ResolvePromise, c => Future {
       Thread.sleep((math.random * 50).toLong)
       extractCorrectValue(c.ctx.field.fieldType, c.ctx.value.asInstanceOf[JsValue].get(c.fieldDefinition.name), testData)
     }),
 
-    DirectiveResolver(ResolveError, c ⇒ throw ResolveException(c arg MessageArg)),
+    DirectiveResolver(ResolveError, c => throw ResolveException(c arg MessageArg)),
 
-    DirectiveResolver(ResolvePromiseReject, c ⇒ Future.failed[Any](ResolveException(c arg MessageArg))),
+    DirectiveResolver(ResolvePromiseReject, c => Future.failed[Any](ResolveException(c arg MessageArg))),
 
-    DirectiveResolver(ResolveErrorList, c ⇒
+    DirectiveResolver(ResolveErrorList, c =>
       PartialValue(
         correctValue(c.ctx.field.fieldType, c arg ValuesArg),
         c.arg(MessagesArg).map(ResolveException(_)).toVector)),
 
-    DirectiveResolver(resolvePromiseRejectList, c ⇒
+    DirectiveResolver(resolvePromiseRejectList, c =>
       PartialFutureValue(Future.successful(PartialValue[Any, Any](
         correctValue(c.ctx.field.fieldType, c arg ValuesArg),
         c.arg(MessagesArg).map(ResolveException(_)).toVector)))),
 
     AnyFieldResolver {
-      case _ ⇒ c ⇒ extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(c.field.name), testData)
+      case _ => c => extractCorrectValue(c.field.fieldType, c.value.asInstanceOf[JsValue].get(c.field.name), testData)
     },
 
-    InstanceCheck(c ⇒
-      (value, _) ⇒ value.asInstanceOf[JsValue].get("type").exists(_.stringValue == c.definition.name)))
+    InstanceCheck(c =>
+      (value, _) => value.asInstanceOf[JsValue].get("type").exists(_.stringValue == c.definition.name)))
 
   def executeAction(given: Given[Any, Any], action: Action) = action match {
-    case Parse ⇒
+    case Parse =>
       import sangria.parser.DeliveryScheme.Either
 
       ParsingResult(QueryParser.parse(given.query).left.map(_.asInstanceOf[SangriaSyntaxError]))
-    case Validate(rules) ⇒
+    case Validate(rules) =>
       import sangria.parser.DeliveryScheme.Throw
 
       ValidationResult(new RuleBasedQueryValidator(rules.toList).validateQuery(given.schema, QueryParser.parse(given.query)))
-    case Execute(validate, value, vars, op) ⇒
+    case Execute(validate, value, vars, op) =>
       import sangria.parser.DeliveryScheme.Throw
 
       val validator = if (validate) QueryValidator.default else QueryValidator.empty
@@ -183,44 +183,44 @@ object CatsScenarioExecutor extends FutureResultSupport {
         variables = vars,
         operationName = op,
         exceptionHandler = exceptionHandler).await))
-    case a ⇒
+    case a =>
       throw new IllegalStateException(s"Not yet supported action: $a")
   }
 
   val exceptionHandler = ExceptionHandler {
-    case (_, e: ResolveException) ⇒ HandledException(e.getMessage)
+    case (_, e: ResolveException) => HandledException(e.getMessage)
   }
 
   def resolveRef(value: JsValue, testData: JsValue) = value match {
-    case JsObject(fields) if fields.keySet == Set("$ref") ⇒
+    case JsObject(fields) if fields.keySet == Set("$ref") =>
       val name = fields("$ref").stringValue
 
       testData(name)
-    case v ⇒ v
+    case v => v
   }
 
   def extractCorrectValue(tpe: OutputType[_], value: Option[JsValue], testData: JsValue): Any = tpe match {
-    case OptionType(ofType) ⇒ Option(extractCorrectValue(ofType, value, testData))
-    case _ if value.isEmpty || value.get == JsNull ⇒ null
-    case ListType(ofType) ⇒ value.get.arrayValue map (v ⇒ extractCorrectValue(ofType, Option(v), testData))
-    case t: ScalarType[_] if t eq BooleanType ⇒ resolveRef(value.get, testData).booleanValue
-    case t: ScalarType[_] if t eq StringType ⇒ resolveRef(value.get, testData).stringValue
-    case t: ScalarType[_] if t eq IntType ⇒ resolveRef(value.get, testData).intValue
-    case t: CompositeType[_] ⇒ resolveRef(value.get, testData).asJsObject
-    case t ⇒ throw new IllegalStateException(s"Builder for type '$t' is not supported yet.")
+    case OptionType(ofType) => Option(extractCorrectValue(ofType, value, testData))
+    case _ if value.isEmpty || value.get == JsNull => null
+    case ListType(ofType) => value.get.arrayValue map (v => extractCorrectValue(ofType, Option(v), testData))
+    case t: ScalarType[_] if t eq BooleanType => resolveRef(value.get, testData).booleanValue
+    case t: ScalarType[_] if t eq StringType => resolveRef(value.get, testData).stringValue
+    case t: ScalarType[_] if t eq IntType => resolveRef(value.get, testData).intValue
+    case t: CompositeType[_] => resolveRef(value.get, testData).asJsObject
+    case t => throw new IllegalStateException(s"Builder for type '$t' is not supported yet.")
   }
 
   def correctValue(tpe: OutputType[_], value: Any): Any = tpe match {
-    case OptionType(_) ⇒ Option(value)
-    case _ ⇒ value
+    case OptionType(_) => Option(value)
+    case _ => value
   }
 
   def replacePlaceholders(template: String, args: Args) =
     args.raw.keys.foldLeft(template) {
-      case (acc, key) ⇒ acc.replaceAll("\\$" + key, args.arg[Any](key) match {
-        case Some(v) ⇒ "" + v
-        case None ⇒ ""
-        case v ⇒ "" + v
+      case (acc, key) => acc.replaceAll("\\$" + key, args.arg[Any](key) match {
+        case Some(v) => "" + v
+        case None => ""
+        case v => "" + v
       })
     }
 
@@ -243,7 +243,7 @@ object CatsAssertions extends Matchers {
       withLoc.locations should have size locations.size
     }
 
-    withLoc.locations.zipWithIndex foreach { case (pos, idx) ⇒
+    withLoc.locations.zipWithIndex foreach { case (pos, idx) =>
       withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(idx).column}): ${violation.errorMessage}") {
         ErrorLocation(pos.line, pos.column) should be(locations(idx))
       }
@@ -255,7 +255,7 @@ object CatsAssertions extends Matchers {
     else {
       val withLoc = violation.asInstanceOf[AstNodeLocation]
 
-      withLoc.locations.size == locations.size && withLoc.locations.zipWithIndex.forall { case (pos, idx) ⇒
+      withLoc.locations.size == locations.size && withLoc.locations.zipWithIndex.forall { case (pos, idx) =>
         ErrorLocation(pos.line, pos.column) == locations(idx)
       }
     }
@@ -268,7 +268,7 @@ object CatsAssertions extends Matchers {
       actualLocs should have size locations.size
     }
 
-    actualLocs.zipWithIndex foreach { case (pos, idx) ⇒
+    actualLocs.zipWithIndex foreach { case (pos, idx) =>
       withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(idx).column}): ${error("message").stringValue}") {
         ErrorLocation(pos("line").intValue, pos("column").intValue) should be(locations(idx))
       }
@@ -276,27 +276,27 @@ object CatsAssertions extends Matchers {
   }
 
   def assertActionResult(result: Result, assertion: Assertion) = (result, assertion) match {
-    case (ValidationResult(violations), Passes) ⇒
+    case (ValidationResult(violations), Passes) =>
       violations should have size 0
-    case (ParsingResult(res), Passes) ⇒
+    case (ParsingResult(res), Passes) =>
       withClue("Parsing result was not successful - query contains some syntax errors.") {
         res.isRight should be (true)
       }
-    case (ParsingResult(res), SyntaxError) ⇒
+    case (ParsingResult(res), SyntaxError) =>
       withClue("Parsing result was successful and does not contain syntax errors.") {
         res.isLeft should be (true)
       }
-    case (ValidationResult(violations), ErrorsCount(count)) ⇒
+    case (ValidationResult(violations), ErrorsCount(count)) =>
       violations should have size count
-    case (ExecutionResult(value), ErrorsCount(count)) ⇒
+    case (ExecutionResult(value), ErrorsCount(count)) =>
       value.get.get("errors").map(_.arrayValue).getOrElse(Vector.empty) should have size count
-    case (ValidationResult(violations), ErrorsContain(message, locations)) ⇒
+    case (ValidationResult(violations), ErrorsContain(message, locations)) =>
       message match {
-        case Left(text) ⇒
+        case Left(text) =>
           val v = withClue(s"Can't find error message: $text") {
             val v = violations.find(_.errorMessage.contains(text))
 
-            withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
+            withClue(s"Actual violations:${violations map (v => "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
               v should not be 'empty
             }
 
@@ -304,11 +304,11 @@ object CatsAssertions extends Matchers {
           }
 
           assertLocations(v.get, locations)
-        case Right(pattern) ⇒
+        case Right(pattern) =>
           val v = withClue(s"Can't find error pattern: $pattern") {
-            val v = violations.find(v ⇒ pattern.matcher(v.errorMessage).matches)
+            val v = violations.find(v => pattern.matcher(v.errorMessage).matches)
 
-            withClue(s"Actual violations:${violations map (v ⇒ "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
+            withClue(s"Actual violations:${violations map (v => "  * " + v.errorMessage) mkString  ("\n", "\n", "\n")}") {
               v should not be 'empty
             }
             v
@@ -317,34 +317,34 @@ object CatsAssertions extends Matchers {
           assertLocations(v.get, locations)
       }
 
-    case (ValidationResult(violations), ErrorCode(code, args, locations)) ⇒
-      withClue(s"Can't find error code '$code'${if (args.nonEmpty) s" with args: ${args.map{case (k, v) ⇒ k + " = " + v}.mkString(", ")}" else ""}${if (locations.nonEmpty) s" ${locations.map{case l ⇒ l.line + ":" + l.column}.mkString("(",", ", ")")}" else ""}.") {
-        val v = violations.collect {case v: SpecViolation ⇒ v}.find(v ⇒ v.code == code && v.args == args && sameLocations(v, locations))
+    case (ValidationResult(violations), ErrorCode(code, args, locations)) =>
+      withClue(s"Can't find error code '$code'${if (args.nonEmpty) s" with args: ${args.map{case (k, v) => k + " = " + v}.mkString(", ")}" else ""}${if (locations.nonEmpty) s" ${locations.map{case l => l.line + ":" + l.column}.mkString("(",", ", ")")}" else ""}.") {
+        val v = violations.collect {case v: SpecViolation => v}.find(v => v.code == code && v.args == args && sameLocations(v, locations))
 
-        withClue(s"Actual violations:\n${violations map (v ⇒ "* " + s"[${v.getClass.getSimpleName}] " + v.errorMessage) mkString("\n", "\n", "\n")}") {
+        withClue(s"Actual violations:\n${violations map (v => "* " + s"[${v.getClass.getSimpleName}] " + v.errorMessage) mkString("\n", "\n", "\n")}") {
           v should not be 'empty
         }
       }
 
-    case (ExecutionResult(res), ExceptionContain(message)) ⇒
+    case (ExecutionResult(res), ExceptionContain(message)) =>
       res match {
-        case Failure(error) ⇒
+        case Failure(error) =>
           message match {
-            case Left(text) ⇒ error.getMessage should include (text)
-            case Right(pattern) ⇒
+            case Left(text) => error.getMessage should include (text)
+            case Right(pattern) =>
               withClue(s"Message '${error.getMessage}' does not match the pattern: $pattern") {
                 pattern.matcher(error.getMessage).matches should be ("true")
               }
           }
-        case Success(res) ⇒
+        case Success(res) =>
           fail("Execution was successful: " + res)
       }
 
-    case (ExecutionResult(value), ErrorsContain(message, locations)) ⇒
+    case (ExecutionResult(value), ErrorsContain(message, locations)) =>
       val errors = value.get.get("errors") map (_.arrayValue) getOrElse Vector.empty
 
       message match {
-        case Left(text) ⇒
+        case Left(text) =>
           val v = withClue(s"Can't find error message: $text") {
             val v = errors.find(_("message").stringValue.contains(text))
 
@@ -353,9 +353,9 @@ object CatsAssertions extends Matchers {
           }
 
           assertLocations(v.get, locations)
-        case Right(pattern) ⇒
+        case Right(pattern) =>
           val v = withClue(s"Can't find error pattern: $pattern") {
-            val v = errors.find(v ⇒ pattern.matcher(v("message").stringValue).matches)
+            val v = errors.find(v => pattern.matcher(v("message").stringValue).matches)
 
             v should not be ('empty)
             v
@@ -364,12 +364,12 @@ object CatsAssertions extends Matchers {
           assertLocations(v.get, locations)
       }
 
-    case (ExecutionResult(actual), Data(expected)) ⇒
+    case (ExecutionResult(actual), Data(expected)) =>
       withClue("Result: " + actual) {
         actual.get("data") should be (expected)
       }
 
-    case a ⇒ throw new IllegalStateException(s"Not yet supported assertion: $a")
+    case a => throw new IllegalStateException(s"Not yet supported assertion: $a")
   }
 }
 
@@ -414,31 +414,31 @@ object CatsScenarioData {
 
   def getSchema(value: YamlValue, path: String): Option[ast.Document] =
     value.get("schema")
-      .map { v ⇒
+      .map { v =>
         import sangria.parser.DeliveryScheme.Throw
 
         QueryParser.parse(v.stringValue)
       }
-      .orElse(value.get("schema-file").map(f ⇒ FileUtil.loadSchema(path + "/" + f.stringValue)))
+      .orElse(value.get("schema-file").map(f => FileUtil.loadSchema(path + "/" + f.stringValue)))
 
   def getTestData(value: Option[YamlValue], path: String) =
     value
       .flatMap(_.get("test-data") map convertToJson)
       .orElse(
-        value.flatMap(_.get("test-data-file")).map(f ⇒ FileUtil.loadTestData(path + "/" + f.stringValue) match {
-          case Right(json) ⇒ json
-          case Left(yaml) ⇒ convertToJson(yaml)
+        value.flatMap(_.get("test-data-file")).map(f => FileUtil.loadTestData(path + "/" + f.stringValue) match {
+          case Right(json) => json
+          case Left(yaml) => convertToJson(yaml)
         }))
 
   def getAction(value: YamlValue, testName: String, testData: JsValue): Action = {
     val when = value("when")
 
     when.get("validate")
-      .map(v ⇒ Validate(v.arrayValue.toList.map(name ⇒ QueryValidator.allRules.find(_.getClass.getSimpleName == name.stringValue) getOrElse (throw new IllegalStateException(s"Can't find the validation rule: $name")))))
+      .map(v => Validate(v.arrayValue.toList.map(name => QueryValidator.allRules.find(_.getClass.getSimpleName == name.stringValue) getOrElse (throw new IllegalStateException(s"Can't find the validation rule: $name")))))
       .orElse {
-        when.get("execute").map { e ⇒
+        when.get("execute").map { e =>
           val validate = e.get("validate-query").map(_.booleanValue) getOrElse true
-          val value = e.get("test-value").map(name ⇒ testData(name.stringValue)) getOrElse JsNull
+          val value = e.get("test-value").map(name => testData(name.stringValue)) getOrElse JsNull
           val variables = e.get("variables") map convertToJson getOrElse JsObject.empty
           val operationName = e.get("operation-name") map (_.stringValue)
 
@@ -446,38 +446,38 @@ object CatsScenarioData {
         }
       }
       .orElse {
-        when.get("parse").map(_ ⇒ Parse)
+        when.get("parse").map(_ => Parse)
       }
       .getOrElse(throw new IllegalStateException(s"Can't find action: $testName"))
   }
 
   def getErrorLocation(value: YamlValue) = value match {
-    case YamlArray(elems) ⇒ ErrorLocation(elems(0).intValue, elems(1).intValue)
-    case obj ⇒ ErrorLocation(obj("line").intValue, obj("column").intValue)
+    case YamlArray(elems) => ErrorLocation(elems(0).intValue, elems(1).intValue)
+    case obj => ErrorLocation(obj("line").intValue, obj("column").intValue)
   }
 
   def getErrorArgs(value: YamlValue) = value.get("args") match {
-    case Some(YamlObject(elems)) ⇒ elems.map {case (key, value) ⇒ key.stringValue → value.stringValue}
-    case _ ⇒ Map.empty[String, String]
+    case Some(YamlObject(elems)) => elems.map {case (key, value) => key.stringValue -> value.stringValue}
+    case _ => Map.empty[String, String]
   }
 
   def getErrorLocations(value: YamlValue) =
     value.get("loc") match {
-      case Some(YamlArray(values)) ⇒ values map getErrorLocation
-      case Some(value) ⇒ Vector(getErrorLocation(value))
-      case None ⇒ Vector.empty
+      case Some(YamlArray(values)) => values map getErrorLocation
+      case Some(value) => Vector(getErrorLocation(value))
+      case None => Vector.empty
     }
 
   def getAssertion(value: YamlValue, testName: String): Assertion = {
-    value.get("passes").map(_ ⇒ Passes)
-      .orElse(value.get("error-count").map(v ⇒ ErrorsCount(v.intValue)))
-      .orElse(value.get("error").map(v ⇒ ErrorsContain(Left(v.stringValue), getErrorLocations(value).toList)))
-      .orElse(value.get("error-regex").map(v ⇒ ErrorsContain(Right(v.stringValue.r.pattern), getErrorLocations(value).toList)))
-      .orElse(value.get("error-code").map(v ⇒ ErrorCode(v.stringValue, getErrorArgs(value), getErrorLocations(value).toList)))
-      .orElse(value.get("exception").map(v ⇒ ExceptionContain(Left(v.stringValue))))
-      .orElse(value.get("exception-regex").map(v ⇒ ExceptionContain(Right(v.stringValue.r.pattern))))
-      .orElse(value.get("data").map(v ⇒ Data(convertToJson(v))))
-      .orElse(value.get("syntax-error").map(_ ⇒ SyntaxError))
+    value.get("passes").map(_ => Passes)
+      .orElse(value.get("error-count").map(v => ErrorsCount(v.intValue)))
+      .orElse(value.get("error").map(v => ErrorsContain(Left(v.stringValue), getErrorLocations(value).toList)))
+      .orElse(value.get("error-regex").map(v => ErrorsContain(Right(v.stringValue.r.pattern), getErrorLocations(value).toList)))
+      .orElse(value.get("error-code").map(v => ErrorCode(v.stringValue, getErrorArgs(value), getErrorLocations(value).toList)))
+      .orElse(value.get("exception").map(v => ExceptionContain(Left(v.stringValue))))
+      .orElse(value.get("exception-regex").map(v => ExceptionContain(Right(v.stringValue.r.pattern))))
+      .orElse(value.get("data").map(v => Data(convertToJson(v))))
+      .orElse(value.get("syntax-error").map(_ => SyntaxError))
       .getOrElse(throw new IllegalStateException(s"Can't find the assertion: $testName"))
   }
 
@@ -485,9 +485,9 @@ object CatsScenarioData {
     val thenWord = value("then")
 
     thenWord match {
-      case YamlArray(elems) ⇒
+      case YamlArray(elems) =>
         elems map (getAssertion(_, testName))
-      case other ⇒
+      case other =>
         Vector(getAssertion(other, testName))
     }
   }
@@ -506,23 +506,23 @@ object CatsScenarioData {
 object JsonAndYamlHelpers {
   implicit class YamlOps(value: YamlValue) {
     def get(key: String) = value match {
-      case YamlObject(fields) ⇒ fields.get(YamlString(key))
-      case _ ⇒ None
+      case YamlObject(fields) => fields.get(YamlString(key))
+      case _ => None
     }
     def apply(key: String) = get(key).get
     def stringValue = value.asInstanceOf[YamlString].value
     def arrayValue = value.asInstanceOf[YamlArray].elements
     def booleanValue = value.asInstanceOf[YamlBoolean].boolean
     def intValue = value.asInstanceOf[YamlNumber].value match {
-      case i if i.isValidInt ⇒ i.intValue
-      case v ⇒ throw new IllegalArgumentException(s"Unsupported Int '$v' of class '${v.getClass}'.")
+      case i if i.isValidInt => i.intValue
+      case v => throw new IllegalArgumentException(s"Unsupported Int '$v' of class '${v.getClass}'.")
     }
   }
 
   implicit class JsonOps(value: JsValue) {
     def get(key: String) = value match {
-      case JsObject(fields) ⇒ fields.get(key)
-      case _ ⇒ None
+      case JsObject(fields) => fields.get(key)
+      case _ => None
     }
     def apply(key: String) = get(key).get
     def stringValue = value.asInstanceOf[JsString].value
@@ -532,12 +532,12 @@ object JsonAndYamlHelpers {
   }
 
   def convertToJson(value: YamlValue): JsValue = value match {
-    case YamlArray(elems) ⇒ JsArray(elems map convertToJson)
-    case YamlObject(fields) ⇒ JsObject(fields.map {case (k, v) ⇒ k.stringValue → convertToJson(v)})
-    case YamlBoolean(v) ⇒ JsBoolean(v)
-    case YamlString(v) ⇒ JsString(v)
-    case YamlNumber(v: BigDecimal) ⇒ JsNumber(v)
-    case YamlNull ⇒ JsNull
-    case v ⇒ throw new IllegalStateException(s"Yaml value is not supported in conversion: $v")
+    case YamlArray(elems) => JsArray(elems map convertToJson)
+    case YamlObject(fields) => JsObject(fields.map {case (k, v) => k.stringValue -> convertToJson(v)})
+    case YamlBoolean(v) => JsBoolean(v)
+    case YamlString(v) => JsString(v)
+    case YamlNumber(v: BigDecimal) => JsNumber(v)
+    case YamlNull => JsNull
+    case v => throw new IllegalStateException(s"Yaml value is not supported in conversion: $v")
   }
 }

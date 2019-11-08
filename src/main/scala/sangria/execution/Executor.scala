@@ -37,34 +37,34 @@ case class Executor[Ctx, Root](
       val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware, false)(um)
 
       val executionResult = for {
-        operation ← Executor.getOperation(exceptionHandler,queryAst, operationName)
-        unmarshalledVariables ← valueCollector.getVariableValues(operation.variables, scalarMiddleware)
+        operation <- Executor.getOperation(exceptionHandler,queryAst, operationName)
+        unmarshalledVariables <- valueCollector.getVariableValues(operation.variables, scalarMiddleware)
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
-        tpe ← Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
-        fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
+        tpe <- Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
+        fields <- fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
       } yield {
         val preparedFields = fields.fields.flatMap {
-          case CollectedField(_, astField, Success(_)) ⇒
+          case CollectedField(_, astField, Success(_)) =>
             val allFields = tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
             val field = allFields.head
             val args = valueCollector.getFieldArgumentValues(ExecutionPath.empty.add(astField, tpe), Some(astField), field.arguments, astField.arguments, unmarshalledVariables)
 
             args.toOption.map(PreparedField(field, _))
-          case _ ⇒ None
+          case _ => None
         }
 
         QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, unmarshalledVariables, tpe, fields, userContext).map {
-          case (newCtx, timing) ⇒
+          case (newCtx, timing) =>
             new PreparedQuery[Ctx, Root, Input](queryAst, operation, tpe, newCtx, root, preparedFields,
-              (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) ⇒
+              (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) =>
                 executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
                   fieldCollector, m, unmarshalledVariables, tpe, fields, c, r, scheme, validationTiming, timing))
         }
       }
 
       executionResult match {
-        case Success(future) ⇒ future
-        case Failure(error) ⇒ Future.failed(error)
+        case Success(future) => future
+        case Failure(error) => Future.failed(error)
       }
     }
   }
@@ -85,22 +85,22 @@ case class Executor[Ctx, Root](
       val valueCollector = new ValueCollector[Ctx, Input](schema, variables, queryAst.sourceMapper, deprecationTracker, userContext, exceptionHandler, scalarMiddleware, false)(um)
 
       val executionResult = for {
-        operation ← Executor.getOperation(exceptionHandler, queryAst, operationName)
-        unmarshalledVariables ← valueCollector.getVariableValues(operation.variables, scalarMiddleware)
+        operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
+        unmarshalledVariables <- valueCollector.getVariableValues(operation.variables, scalarMiddleware)
         fieldCollector = new FieldCollector[Ctx, Root](schema, queryAst, unmarshalledVariables, queryAst.sourceMapper, valueCollector, exceptionHandler)
-        tpe ← Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
-        fields ← fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
+        tpe <- Executor.getOperationRootType(schema, exceptionHandler, operation, queryAst.sourceMapper)
+        fields <- fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
       } yield {
         val reduced = QueryReducerExecutor.reduceQuery(schema, queryReducers, exceptionHandler, fieldCollector, valueCollector, unmarshalledVariables, tpe, fields, userContext)
-        scheme.flatMapFuture(reduced){ case (newCtx, timing) ⇒
+        scheme.flatMapFuture(reduced){ case (newCtx, timing) =>
           executeOperation(queryAst, operationName, variables, um, operation, queryAst.sourceMapper, valueCollector,
             fieldCollector, marshaller, unmarshalledVariables, tpe, fields, newCtx, root, scheme, validationTiming, timing)
         }
       }
 
       executionResult match {
-        case Success(result) ⇒ result
-        case Failure(error) ⇒ scheme.failed(error)
+        case Success(result) => result
+        case Failure(error) => scheme.failed(error)
       }
     }
   }
@@ -127,7 +127,7 @@ case class Executor[Ctx, Root](
     val middlewareCtx = MiddlewareQueryContext(ctx, this, queryAst, operationName, inputVariables, inputUnmarshaller, validationTiming, queryReducerTiming)
 
     try {
-      val middlewareVal = middleware map (m ⇒ m.beforeQuery(middlewareCtx) → m)
+      val middlewareVal = middleware map (m => m.beforeQuery(middlewareCtx) -> m)
       val deferredResolverState = deferredResolver.initialQueryState
 
       val resolver = new Resolver[Ctx](
@@ -152,14 +152,14 @@ case class Executor[Ctx, Root](
 
       val result =
         operation.operationType match {
-          case ast.OperationType.Query ⇒ resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-          case ast.OperationType.Mutation ⇒ resolver.resolveFieldsSeq(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-          case ast.OperationType.Subscription ⇒
-            tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) ⇒ s} match {
-              case Some(stream) ⇒
+          case ast.OperationType.Query => resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+          case ast.OperationType.Mutation => resolver.resolveFieldsSeq(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+          case ast.OperationType.Subscription =>
+            tpe.uniqueFields.head.tags.collectFirst{case SubscriptionField(s) => s} match {
+              case Some(stream) =>
                 // Streaming is supported - resolve as a real subscription
                 resolver.resolveFieldsSubs(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-              case None ⇒
+              case None =>
                 // No streaming is supported - resolve as a normal "query" operation
                 resolver.resolveFieldsPar(tpe, root, fields)(scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
             }
@@ -168,10 +168,10 @@ case class Executor[Ctx, Root](
 
       if (middlewareVal.nonEmpty)
         scheme.onComplete(result)(
-          middlewareVal foreach { case (v, m) ⇒ m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)})
+          middlewareVal foreach { case (v, m) => m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)})
       else result
     } catch {
-      case NonFatal(error) ⇒
+      case NonFatal(error) =>
         scheme.failed(error)
     }
   }
@@ -217,12 +217,12 @@ object Executor {
       .prepare(queryAst, userContext, root, operationName, variables)
 
   def getOperationRootType[Ctx, Root](schema: Schema[Ctx, Root], exceptionHandler: ExceptionHandler, operation: ast.OperationDefinition, sourceMapper: Option[SourceMapper]) = operation.operationType match {
-    case ast.OperationType.Query ⇒
+    case ast.OperationType.Query =>
       Success(schema.query)
-    case ast.OperationType.Mutation ⇒
+    case ast.OperationType.Mutation =>
       schema.mutation map (Success(_)) getOrElse
         Failure(OperationSelectionError("Schema is not configured for mutations", exceptionHandler, sourceMapper, operation.location.toList))
-    case ast.OperationType.Subscription ⇒
+    case ast.OperationType.Subscription =>
       schema.subscription map (Success(_)) getOrElse
         Failure(OperationSelectionError("Schema is not configured for subscriptions", exceptionHandler, sourceMapper, operation.location.toList))
   }
@@ -231,17 +231,17 @@ object Executor {
     if (document.operations.size != 1 && operationName.isEmpty)
       Failure(OperationSelectionError("Must provide operation name if query contains multiple operations", exceptionHandler))
     else {
-      val unexpectedDefinition = document.definitions.find(d ⇒ !(d.isInstanceOf[ast.OperationDefinition] || d.isInstanceOf[ast.FragmentDefinition]))
+      val unexpectedDefinition = document.definitions.find(d => !(d.isInstanceOf[ast.OperationDefinition] || d.isInstanceOf[ast.FragmentDefinition]))
 
       unexpectedDefinition match {
-        case Some(unexpected) ⇒
+        case Some(unexpected) =>
           Failure(new ExecutionError(s"GraphQL cannot execute a request containing a ${unexpected.getClass.getSimpleName}.", exceptionHandler))
-        case None ⇒
+        case None =>
           operationName match {
-            case Some(opName) ⇒
+            case Some(opName) =>
               document.operations get Some(opName) map (Success(_)) getOrElse
                 Failure(OperationSelectionError(s"Unknown operation name '$opName'", exceptionHandler))
-            case None ⇒
+            case None =>
               Success(document.operations.values.head)
           }
       }
@@ -255,7 +255,7 @@ class PreparedQuery[Ctx, Root, Input] private[execution] (
     val userContext: Ctx,
     val root: Root,
     val fields: Seq[PreparedField[Ctx, Root]],
-    execFn: (Ctx, Root, ResultMarshaller, ExecutionScheme) ⇒ Any) {
+    execFn: (Ctx, Root, ResultMarshaller, ExecutionScheme) => Any) {
   def execute(userContext: Ctx = userContext, root: Root = root)(implicit marshaller: ResultMarshaller, scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] =
     execFn(userContext, root, marshaller, scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 }

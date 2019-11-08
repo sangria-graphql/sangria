@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-import scala.collection.mutable.{Map ⇒ MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 /**
   * Unique directive names per location
@@ -18,13 +18,13 @@ class UniqueDirectivesPerLocation extends ValidationRule {
       // Many different AST nodes may contain directives. Rather than listing
       // them all, just listen for entering any node, and check to see if it
       // defines any directives.
-      case node: ast.WithDirectives ⇒
+      case node: ast.WithDirectives =>
         val knownDirectives = MutableMap[String, ast.Directive]()
 
         val errors = node.directives.foldLeft(Vector.empty[Violation]) {
-          case (errors, d) if knownDirectives contains d.name ⇒
+          case (errors, d) if knownDirectives contains d.name =>
             errors :+ DuplicateDirectiveViolation(d.name, ctx.sourceMapper, knownDirectives(d.name).location.toList ++ d.location.toList )
-          case (errors, d) ⇒
+          case (errors, d) =>
             knownDirectives(d.name) = d
             errors
         }

@@ -17,10 +17,10 @@ import sangria.validation._
 class PossibleFragmentSpreads extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
-      case f: ast.InlineFragment ⇒
+      case f: ast.InlineFragment =>
         val errors = for {
-          tpe ← ctx.typeInfo.tpe
-          parent ← ctx.typeInfo.previousParentType
+          tpe <- ctx.typeInfo.tpe
+          parent <- ctx.typeInfo.previousParentType
         } yield
           if (!doTypesOverlap(ctx, tpe, parent))
             Vector(TypeIncompatibleAnonSpreadViolation(
@@ -32,13 +32,13 @@ class PossibleFragmentSpreads extends ValidationRule {
         else Vector.empty
 
         errors match {
-          case Some(errors) if errors.nonEmpty ⇒ Left(errors)
-          case _ ⇒ AstVisitorCommand.RightContinue
+          case Some(errors) if errors.nonEmpty => Left(errors)
+          case _ => AstVisitorCommand.RightContinue
         }
-      case fs: ast.FragmentSpread ⇒
+      case fs: ast.FragmentSpread =>
         val errors = for {
-          tpe ← ctx.typeInfo.tpe
-          parent ← ctx.typeInfo.previousParentType
+          tpe <- ctx.typeInfo.tpe
+          parent <- ctx.typeInfo.previousParentType
         } yield
           if (!doTypesOverlap(ctx, tpe, parent))
             Vector(TypeIncompatibleSpreadViolation(
@@ -51,22 +51,22 @@ class PossibleFragmentSpreads extends ValidationRule {
           else Vector.empty
 
         errors match {
-          case Some(errors) if errors.nonEmpty ⇒ Left(errors)
-          case _ ⇒ AstVisitorCommand.RightContinue
+          case Some(errors) if errors.nonEmpty => Left(errors)
+          case _ => AstVisitorCommand.RightContinue
         }
     }
 
     def doTypesOverlap(ctx: ValidationContext, type1: Type, type2: Type) = (type1, type2) match {
-      case (t1: Named, t2: Named) if t1.name == t2.name ⇒ true
-      case (t1: ObjectType[_, _], t2: ObjectType[_, _]) ⇒ false
-      case (t1: ObjectType[_, _], t2: AbstractType) ⇒
+      case (t1: Named, t2: Named) if t1.name == t2.name => true
+      case (t1: ObjectType[_, _], t2: ObjectType[_, _]) => false
+      case (t1: ObjectType[_, _], t2: AbstractType) =>
         ctx.schema.isPossibleType(t2.name, t1)
-      case (t1: AbstractType, t2: ObjectType[_, _]) ⇒
+      case (t1: AbstractType, t2: ObjectType[_, _]) =>
         ctx.schema.isPossibleType(t1.name, t2)
-      case (t1: AbstractType, t2: Named) ⇒
+      case (t1: AbstractType, t2: Named) =>
         val t1TypeNames = ctx.schema.possibleTypes(t1.name).map(_.name).toSet
-        ctx.schema possibleTypes t2.name exists (t ⇒ t1TypeNames.contains(t.name))
-      case _ ⇒ false
+        ctx.schema possibleTypes t2.name exists (t => t1TypeNames.contains(t.name))
+      case _ => false
     }
   }
 }

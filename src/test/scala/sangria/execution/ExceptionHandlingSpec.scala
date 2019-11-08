@@ -18,19 +18,19 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
 
   val errorScalar = ScalarAlias[String, String](StringType,
     toScalar = identity,
-    fromScalar = _ ⇒ Left(EmailTypeViolation))
+    fromScalar = _ => Left(EmailTypeViolation))
 
   val TestType = ObjectType("Test", fields[Unit, Unit](
     Field("success", OptionType(StringType),
       arguments = Argument("num", OptionInputType(IntType)) :: Nil,
-      resolve = _ ⇒ "Yay"),
+      resolve = _ => "Yay"),
     Field("errorInScalar", OptionType(StringType),
       arguments = Argument("email", errorScalar) :: Nil,
-      resolve = _ ⇒ "Yay"),
-    Field("trySuccess", OptionType(StringType), resolve = _ ⇒ Success("try!")),
-    Field("tryError", OptionType(StringType), resolve = _ ⇒ Failure(new IllegalStateException("try boom!"))),
-    Field("error", OptionType(StringType), resolve = _ ⇒ throw new IllegalStateException("Boom!")),
-    Field("futureError", OptionType(StringType), resolve = _ ⇒ Future.failed[String](new IllegalStateException("Boom!")))
+      resolve = _ => "Yay"),
+    Field("trySuccess", OptionType(StringType), resolve = _ => Success("try!")),
+    Field("tryError", OptionType(StringType), resolve = _ => Failure(new IllegalStateException("try boom!"))),
+    Field("error", OptionType(StringType), resolve = _ => throw new IllegalStateException("Boom!")),
+    Field("futureError", OptionType(StringType), resolve = _ => Future.failed[String](new IllegalStateException("Boom!")))
   ))
 
   val schema = Schema(TestType)
@@ -50,25 +50,25 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
 
         Executor.execute(schema, doc).await should be  (
           Map(
-            "data" → Map(
-              "success" → "Yay",
-              "trySuccess" → "try!",
-              "tryError" → null,
-              "error" → null,
-              "futureError" → null),
-            "errors" → List(
+            "data" -> Map(
+              "success" -> "Yay",
+              "trySuccess" -> "try!",
+              "tryError" -> null,
+              "error" -> null,
+              "futureError" -> null),
+            "errors" -> List(
               Map(
-                "message" → "Internal server error",
-                "path" → List("error"),
-                "locations" → List(Map("line" → 6, "column" → 11))),
+                "message" -> "Internal server error",
+                "path" -> List("error"),
+                "locations" -> List(Map("line" -> 6, "column" -> 11))),
               Map(
-                "message" → "Internal server error",
-                "path" → List("tryError"),
-                "locations" → List(Map("line" → 4, "column" → 11))),
+                "message" -> "Internal server error",
+                "path" -> List("tryError"),
+                "locations" -> List(Map("line" -> 4, "column" -> 11))),
               Map(
-                "message" → "Internal server error",
-                "path" → List("futureError"),
-                "locations" → List(Map("line" → 7, "column" → 11))))))
+                "message" -> "Internal server error",
+                "path" -> List("futureError"),
+                "locations" -> List(Map("line" -> 7, "column" -> 11))))))
       }
 
       out should include ("java.lang.IllegalStateException: Boom!")
@@ -83,23 +83,23 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         """)
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒ HandledException(e.getMessage)
+        case (m, e: IllegalStateException) => HandledException(e.getMessage)
       }
 
       Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (
         Map(
-          "data" → Map(
-            "error" → null,
-            "futureError" → null),
-          "errors" → List(
+          "data" -> Map(
+            "error" -> null,
+            "futureError" -> null),
+          "errors" -> List(
             Map(
-              "message" → "Boom!",
-              "path" → List("error"),
-              "locations" → List(Map("line" → 3, "column" → 11))),
+              "message" -> "Boom!",
+              "path" -> List("error"),
+              "locations" -> List(Map("line" -> 3, "column" -> 11))),
             Map(
-              "message" → "Boom!",
-              "path" → List("futureError"),
-              "locations" → List(Map("line" → 4, "column" → 11))))))
+              "message" -> "Boom!",
+              "path" -> List("futureError"),
+              "locations" -> List(Map("line" -> 4, "column" -> 11))))))
     }
 
     "provide user-defined exception handling mechanism which allows to provide additional fields" in {
@@ -111,30 +111,30 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         """)
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒
-          HandledException(e.getMessage, Map("foo" → m.list(m.fromString("bar"), m.fromInt(1234)), "baz" → m.fromString("Test")))
+        case (m, e: IllegalStateException) =>
+          HandledException(e.getMessage, Map("foo" -> m.list(m.fromString("bar"), m.fromInt(1234)), "baz" -> m.fromString("Test")))
       }
 
       Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (
         Map(
-          "data" → Map(
-            "error" → null,
-            "futureError" → null),
-          "errors" → List(
+          "data" -> Map(
+            "error" -> null,
+            "futureError" -> null),
+          "errors" -> List(
             Map(
-              "message" → "Boom!",
-              "path" → List("error"),
-              "locations" → List(Map("line" → 3, "column" → 11)),
-              "extensions" → Map(
-                "foo" → List("bar", 1234),
-                "baz" → "Test")),
+              "message" -> "Boom!",
+              "path" -> List("error"),
+              "locations" -> List(Map("line" -> 3, "column" -> 11)),
+              "extensions" -> Map(
+                "foo" -> List("bar", 1234),
+                "baz" -> "Test")),
             Map(
-              "message" → "Boom!",
-              "path" → List("futureError"),
-              "locations" → List(Map("line" → 4, "column" → 11)),
-              "extensions" → Map(
-                "foo" → List("bar", 1234),
-                "baz" → "Test")))))
+              "message" -> "Boom!",
+              "path" -> List("futureError"),
+              "locations" -> List(Map("line" -> 4, "column" -> 11)),
+              "extensions" -> Map(
+                "foo" -> List("bar", 1234),
+                "baz" -> "Test")))))
     }
 
     "handle violation-based errors" in {
@@ -147,36 +147,36 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         """)
 
       val exceptionHandler = ExceptionHandler (onViolation = {
-        case (m, BadValueViolation(_, _, Some(v: EmailTypeViolation.type), _, _)) ⇒
-          HandledException("Scalar", Map("original" → m.scalarNode(v.errorMessage, "String", Set.empty)))
-        case (m, v: UndefinedFieldViolation) ⇒
-          HandledException("Field is missing!!! D:", Map("fieldName" → m.scalarNode(v.fieldName, "String", Set.empty)))
-        case (_, v: AstNodeLocation) ⇒
+        case (m, BadValueViolation(_, _, Some(v: EmailTypeViolation.type), _, _)) =>
+          HandledException("Scalar", Map("original" -> m.scalarNode(v.errorMessage, "String", Set.empty)))
+        case (m, v: UndefinedFieldViolation) =>
+          HandledException("Field is missing!!! D:", Map("fieldName" -> m.scalarNode(v.fieldName, "String", Set.empty)))
+        case (_, v: AstNodeLocation) =>
           HandledException(v.simpleErrorMessage + " [with extras]")
       })
 
       val res =
         Executor.execute(schema, doc, exceptionHandler = exceptionHandler).recover {
-          case analysis: QueryAnalysisError ⇒ analysis.resolveError
+          case analysis: QueryAnalysisError => analysis.resolveError
         }
       
       res.await should be  (
         Map(
-          "data" → null,
-          "errors" → Vector(
+          "data" -> null,
+          "errors" -> Vector(
             Map(
-              "message" → "Field is missing!!! D:",
-              "locations" → Vector(Map("line" → 3, "column" → 11)),
-              "extensions" → Map(
-                "fieldName" → "nonExistingField")),
+              "message" -> "Field is missing!!! D:",
+              "locations" -> Vector(Map("line" -> 3, "column" -> 11)),
+              "extensions" -> Map(
+                "fieldName" -> "nonExistingField")),
             Map(
-              "message" → "Expected type 'Int', found '\"One\"'. Int value expected [with extras]",
-              "locations" → Vector(Map("line" → 4, "column" → 24))),
+              "message" -> "Expected type 'Int', found '\"One\"'. Int value expected [with extras]",
+              "locations" -> Vector(Map("line" -> 4, "column" -> 24))),
             Map(
-              "message" → "Scalar",
-              "locations" → Vector(Map("line" → 5, "column" → 32)),
-              "extensions" → Map(
-                "original" → "Invalid email")))))
+              "message" -> "Scalar",
+              "locations" -> Vector(Map("line" -> 5, "column" -> 32)),
+              "extensions" -> Map(
+                "original" -> "Invalid email")))))
     }
 
     "handle user-facing errors errors" in {
@@ -187,23 +187,23 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         """)
 
       val exceptionHandler = ExceptionHandler (onUserFacingError = {
-        case (m, e: OperationSelectionError) ⇒
-          HandledException("Wrong operation?!", Map("errorCode" → m.scalarNode("AAAAAaaAA!", "String", Set.empty)))
+        case (m, e: OperationSelectionError) =>
+          HandledException("Wrong operation?!", Map("errorCode" -> m.scalarNode("AAAAAaaAA!", "String", Set.empty)))
       })
 
       val res =
         Executor.execute(schema, doc, operationName = Some("Bar"), exceptionHandler = exceptionHandler).recover {
-          case analysis: QueryAnalysisError ⇒ analysis.resolveError
+          case analysis: QueryAnalysisError => analysis.resolveError
         }
 
       res.await should be  (
         Map(
-          "data" → null,
-          "errors" → Vector(
+          "data" -> null,
+          "errors" -> Vector(
             Map(
-              "message" → "Wrong operation?!",
-              "extensions" → Map(
-                "errorCode" → "AAAAAaaAA!")))))
+              "message" -> "Wrong operation?!",
+              "extensions" -> Map(
+                "errorCode" -> "AAAAAaaAA!")))))
     }
 
     "allow multiple handled errors with ast positions" in {
@@ -214,68 +214,68 @@ class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupp
         """.stripCR)
 
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒
+        case (m, e: IllegalStateException) =>
           HandledException.multiple(
             Vector(
-              ("Error 1", Map("errorCode" → m.scalarNode("OOPS", "String", Set.empty)), Nil),
+              ("Error 1", Map("errorCode" -> m.scalarNode("OOPS", "String", Set.empty)), Nil),
               ("Error 2", Map.empty[String, m.Node], doc.operations.head._2.location.toList)))
       }
 
       Executor.execute(schema, doc, exceptionHandler = exceptionHandler).await should be  (
         Map(
-          "data" → Map("error" → null),
-          "errors" → Vector(
+          "data" -> Map("error" -> null),
+          "errors" -> Vector(
             Map(
-              "message" → "Error 1",
-              "path" → Vector("error"),
-              "locations" → Vector(
-                Map("line" → 3, "column" → 11)),
-              "extensions" → Map(
-                "errorCode" → "OOPS")),
+              "message" -> "Error 1",
+              "path" -> Vector("error"),
+              "locations" -> Vector(
+                Map("line" -> 3, "column" -> 11)),
+              "extensions" -> Map(
+                "errorCode" -> "OOPS")),
             Map(
-              "message" → "Error 2",
-              "path" → Vector("error"),
-              "locations" → Vector(
-                Map("line" → 3, "column" → 11),
-                Map("line" → 2, "column" → 9))))))
+              "message" -> "Error 2",
+              "path" -> Vector("error"),
+              "locations" -> Vector(
+                Map("line" -> 3, "column" -> 11),
+                Map("line" -> 2, "column" -> 9))))))
     }
 
     "provide a way to add extension fields in the error itself (backwards compat)" in {
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒
-          HandledException("Wrong operation?!", Map("errorCode" → m.fromString("Ooops!")), addFieldsInError = true)
+        case (m, e: IllegalStateException) =>
+          HandledException("Wrong operation?!", Map("errorCode" -> m.fromString("Ooops!")), addFieldsInError = true)
       }
 
       Executor.execute(schema, gql"{error}", exceptionHandler = exceptionHandler).await should be  (
         Map(
-          "data" → Map(
-            "error" → null),
-          "errors" → Vector(
+          "data" -> Map(
+            "error" -> null),
+          "errors" -> Vector(
             Map(
-              "message" → "Wrong operation?!",
-              "path" → Vector("error"),
-              "locations" → Vector(Map("line" → 1, "column" → 2)),
-              "errorCode" → "Ooops!",
-              "extensions" → Map(
-                "errorCode" → "Ooops!")))))
+              "message" -> "Wrong operation?!",
+              "path" -> Vector("error"),
+              "locations" -> Vector(Map("line" -> 1, "column" -> 2)),
+              "errorCode" -> "Ooops!",
+              "extensions" -> Map(
+                "errorCode" -> "Ooops!")))))
     }
 
     "provide a way to remove extension fields (backwards compat)" in {
       val exceptionHandler = ExceptionHandler {
-        case (m, e: IllegalStateException) ⇒
-          HandledException("Wrong operation?!", Map("errorCode" → m.fromString("Ooops!")), addFieldsInError = true, addFieldsInExtensions = false)
+        case (m, e: IllegalStateException) =>
+          HandledException("Wrong operation?!", Map("errorCode" -> m.fromString("Ooops!")), addFieldsInError = true, addFieldsInExtensions = false)
       }
 
       Executor.execute(schema, gql"{error}", exceptionHandler = exceptionHandler).await should be  (
         Map(
-          "data" → Map(
-            "error" → null),
-          "errors" → Vector(
+          "data" -> Map(
+            "error" -> null),
+          "errors" -> Vector(
             Map(
-              "message" → "Wrong operation?!",
-              "path" → Vector("error"),
-              "locations" → Vector(Map("line" → 1, "column" → 2)),
-              "errorCode" → "Ooops!"))))
+              "message" -> "Wrong operation?!",
+              "path" -> Vector("error"),
+              "locations" -> Vector(Map("line" -> 1, "column" -> 2)),
+              "errorCode" -> "Ooops!"))))
     }
   }
 }

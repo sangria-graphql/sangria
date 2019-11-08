@@ -11,14 +11,14 @@ package object introspection {
     val Scalar, Object, Interface, Union, Enum, InputObject, List, NonNull = Value
 
     def fromString(kind: String): TypeKind.Value = kind match {
-      case "SCALAR" ⇒ Scalar
-      case "OBJECT" ⇒ Object
-      case "INTERFACE" ⇒ Interface
-      case "UNION" ⇒ Union
-      case "ENUM" ⇒ Enum
-      case "INPUT_OBJECT" ⇒ InputObject
-      case "LIST" ⇒ List
-      case "NON_NULL" ⇒ NonNull
+      case "SCALAR" => Scalar
+      case "OBJECT" => Object
+      case "INTERFACE" => Interface
+      case "UNION" => Union
+      case "ENUM" => Enum
+      case "INPUT_OBJECT" => InputObject
+      case "LIST" => List
+      case "NON_NULL" => NonNull
     }
   }
 
@@ -96,11 +96,11 @@ package object introspection {
     description =
       "Object and Interface types are described by a list of Fields, each of " +
       "which has a name, potentially a list of arguments, and a return type.",
-    fieldsFn = () ⇒ List[Field[Unit, Field[_, _]]](
+    fieldsFn = () => List[Field[Unit, Field[_, _]]](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field("args", ListType(__InputValue), resolve = _.value.arguments),
-      Field("type", __Type, resolve = false → _.value.fieldType),
+      Field("type", __Type, resolve = false -> _.value.fieldType),
       Field("isDeprecated", BooleanType, resolve = _.value.deprecationReason.isDefined),
       Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason))
   )
@@ -110,17 +110,17 @@ package object introspection {
 
   private def getKind(value: (Boolean, Type)) = {
     def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {
-      case OptionType(ofType) ⇒ identifyKind(ofType, true)
-      case OptionInputType(ofType) ⇒ identifyKind(ofType, true)
-      case _ if !optional ⇒ TypeKind.NonNull
-      case _: ScalarType[_] ⇒ TypeKind.Scalar
-      case _: ScalarAlias[_, _] ⇒ TypeKind.Scalar
-      case _: ObjectType[_, _] ⇒ TypeKind.Object
-      case _: InterfaceType[_, _] ⇒ TypeKind.Interface
-      case _: UnionType[_] ⇒ TypeKind.Union
-      case _: EnumType[_] ⇒ TypeKind.Enum
-      case _: InputObjectType[_] ⇒ TypeKind.InputObject
-      case _: ListType[_] | _: ListInputType[_] ⇒ TypeKind.List
+      case OptionType(ofType) => identifyKind(ofType, true)
+      case OptionInputType(ofType) => identifyKind(ofType, true)
+      case _ if !optional => TypeKind.NonNull
+      case _: ScalarType[_] => TypeKind.Scalar
+      case _: ScalarAlias[_, _] => TypeKind.Scalar
+      case _: ObjectType[_, _] => TypeKind.Object
+      case _: InterfaceType[_, _] => TypeKind.Interface
+      case _: UnionType[_] => TypeKind.Union
+      case _: EnumType[_] => TypeKind.Enum
+      case _: InputObjectType[_] => TypeKind.InputObject
+      case _: ListType[_] | _: ListInputType[_] => TypeKind.List
     }
 
     val (fromTypeList, tpe) = value
@@ -129,20 +129,20 @@ package object introspection {
   }
 
   private def findNamed(tpe: Type): Option[Type with Named] = tpe match {
-    case o: OptionType[_] ⇒ findNamed(o.ofType)
-    case o: OptionInputType[_] ⇒ findNamed(o.ofType)
-    case l: ListType[_] ⇒ findNamed(l.ofType)
-    case l: ListInputType[_] ⇒ findNamed(l.ofType)
-    case n: Type with Named ⇒ Some(n)
-    case _ ⇒ None
+    case o: OptionType[_] => findNamed(o.ofType)
+    case o: OptionInputType[_] => findNamed(o.ofType)
+    case l: ListType[_] => findNamed(l.ofType)
+    case l: ListInputType[_] => findNamed(l.ofType)
+    case n: Type with Named => Some(n)
+    case _ => None
   }
 
   private def findListType(tpe: Type): Option[Type] = tpe match {
-    case o: OptionType[_] ⇒ findListType(o.ofType)
-    case o: OptionInputType[_] ⇒ findListType(o.ofType)
-    case l: ListType[_] ⇒ Some(l.ofType)
-    case l: ListInputType[_] ⇒ Some(l.ofType)
-    case _ ⇒ None
+    case o: OptionType[_] => findListType(o.ofType)
+    case o: OptionInputType[_] => findListType(o.ofType)
+    case l: ListType[_] => Some(l.ofType)
+    case l: ListInputType[_] => Some(l.ofType)
+    case _ => None
   }
 
   val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType(
@@ -156,60 +156,60 @@ package object introspection {
       "Object and Interface types provide the fields they describe. Abstract " +
       "types, Union and Interface, provide the Object types possible " +
       "at runtime. List and NonNull types compose other types.",
-    fieldsFn = () ⇒ List[Field[Unit, (Boolean, Type)]](
-      Field("kind", __TypeKind, resolve = ctx ⇒ getKind(ctx.value)),
-      Field("name", OptionType(StringType), resolve = ctx ⇒ getKind(ctx.value) match {
-        case TypeKind.NonNull | TypeKind.List ⇒ None
-        case _ ⇒ findNamed(ctx.value._2) map (_.name)
+    fieldsFn = () => List[Field[Unit, (Boolean, Type)]](
+      Field("kind", __TypeKind, resolve = ctx => getKind(ctx.value)),
+      Field("name", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
+        case TypeKind.NonNull | TypeKind.List => None
+        case _ => findNamed(ctx.value._2) map (_.name)
       }),
-      Field("description", OptionType(StringType), resolve = ctx ⇒ getKind(ctx.value) match {
-        case TypeKind.NonNull | TypeKind.List ⇒ None
-        case _ ⇒ findNamed(ctx.value._2) flatMap (_.description)
+      Field("description", OptionType(StringType), resolve = ctx => getKind(ctx.value) match {
+        case TypeKind.NonNull | TypeKind.List => None
+        case _ => findNamed(ctx.value._2) flatMap (_.description)
       }),
       Field("fields", OptionType(ListType(__Field)),
         arguments = includeDeprecated :: Nil,
-        resolve = ctx ⇒ {
+        resolve = ctx => {
           val incDep = ctx.arg(includeDeprecated)
           val (_, tpe) = ctx.value
 
           tpe match {
-            case t: ObjectLikeType[_, _] if incDep ⇒ Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]])
-            case t: ObjectLikeType[_, _] ⇒ Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]].filter(_.deprecationReason.isEmpty))
-            case _ ⇒ None
+            case t: ObjectLikeType[_, _] if incDep => Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]])
+            case t: ObjectLikeType[_, _] => Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]].filter(_.deprecationReason.isEmpty))
+            case _ => None
           }
         }),
       Field("interfaces", OptionType(ListType(__Type)), resolve = _.value._2 match {
-        case t: ObjectType[_, _] ⇒ Some(t.allInterfaces.asInstanceOf[Vector[Type]] map (true → _))
-        case _ ⇒ None
+        case t: ObjectType[_, _] => Some(t.allInterfaces.asInstanceOf[Vector[Type]] map (true -> _))
+        case _ => None
       }),
-      Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx ⇒ ctx.value._2 match {
-        case t: AbstractType ⇒ ctx.schema.possibleTypes.get(t.name) map { tpe ⇒
+      Field("possibleTypes", OptionType(ListType(__Type)), resolve = ctx => ctx.value._2 match {
+        case t: AbstractType => ctx.schema.possibleTypes.get(t.name) map { tpe =>
           t match {
-            case _: UnionType[_] ⇒ tpe map (true → _)
-            case _ ⇒ tpe sortBy (_.name) map (true → _)
+            case _: UnionType[_] => tpe map (true -> _)
+            case _ => tpe sortBy (_.name) map (true -> _)
           }
         }
-        case _ ⇒ None
+        case _ => None
       }),
       Field("enumValues", OptionType(ListType(__EnumValue)),
         arguments = includeDeprecated :: Nil,
-        resolve = ctx ⇒ {
+        resolve = ctx => {
           val incDep = ctx.arg(includeDeprecated)
 
           ctx.value._2 match {
-            case enum: EnumType[_] if incDep ⇒ Some(enum.values)
-            case enum: EnumType[_] ⇒ Some(enum.values.filter(_.deprecationReason.isEmpty))
-            case _ ⇒ None
+            case enum: EnumType[_] if incDep => Some(enum.values)
+            case enum: EnumType[_] => Some(enum.values.filter(_.deprecationReason.isEmpty))
+            case _ => None
           }
         }),
       Field("inputFields", OptionType(ListType(__InputValue)), resolve = _.value._2 match {
-        case io: InputObjectType[_] ⇒ Some(io.fields)
-        case _ ⇒ None
+        case io: InputObjectType[_] => Some(io.fields)
+        case _ => None
       }),
-      Field("ofType", OptionType(__Type), resolve = ctx ⇒ getKind(ctx.value) match {
-        case TypeKind.NonNull ⇒ Some(true → ctx.value._2)
-        case TypeKind.List ⇒ findListType(ctx.value._2) map (false → _)
-        case _ ⇒ None
+      Field("ofType", OptionType(__Type), resolve = ctx => getKind(ctx.value) match {
+        case TypeKind.NonNull => Some(true -> ctx.value._2)
+        case TypeKind.List => findListType(ctx.value._2) map (false -> _)
+        case _ => None
       }))
   )
 
@@ -222,10 +222,10 @@ package object introspection {
     fields = List[Field[Unit, InputValue[_]]](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
-      Field("type", __Type, resolve = false → _.value.inputValueType),
+      Field("type", __Type, resolve = false -> _.value.inputValueType),
       Field("defaultValue", OptionType(StringType),
         description = Some("A GraphQL-formatted string representing the default value for this input value."),
-        resolve = ctx ⇒ ctx.value.defaultValue.flatMap(ctx.renderInputValueCompact(_, ctx.value.inputValueType)))
+        resolve = ctx => ctx.value.defaultValue.flatMap(ctx.renderInputValueCompact(_, ctx.value.inputValueType)))
     ))
 
   val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(
@@ -265,15 +265,15 @@ package object introspection {
     fields = List[Field[Unit, Schema[Any, Any]]](
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field("types", ListType(__Type), Some("A list of all types supported by this server."),
-        resolve = _.value.typeList map (true → _)),
+        resolve = _.value.typeList map (true -> _)),
       Field("queryType", __Type, Some("The type that query operations will be rooted at."),
-        resolve = true → _.value.query),
+        resolve = true -> _.value.query),
       Field("mutationType", OptionType(__Type),
         Some("If this server supports mutation, the type that mutation operations will be rooted at."),
-        resolve = _.value.mutation map (true → _)),
+        resolve = _.value.mutation map (true -> _)),
       Field("subscriptionType", OptionType(__Type),
         Some("If this server support subscription, the type that subscription operations will be rooted at."),
-        resolve = _.value.subscription map (true → _)),
+        resolve = _.value.subscription map (true -> _)),
       Field("directives", ListType(__Directive),
         Some("A list of all directives supported by this server."), resolve = _.value.directives)))
 
@@ -288,13 +288,13 @@ package object introspection {
     fieldType = OptionType(__Type),
     description = Some("Request the type information of a single type."),
     arguments = Argument("name", StringType) :: Nil,
-    resolve = ctx ⇒ ctx.schema.types get ctx.arg[String]("name") map (true → _._2))
+    resolve = ctx => ctx.schema.types get ctx.arg[String]("name") map (true -> _._2))
 
   val TypeNameMetaField: Field[Unit, Unit] = Field(
     name = "__typename",
     fieldType = StringType,
     description = Some("The name of the current Object type at runtime."),
-    resolve = ctx ⇒ ctx.parentType.name)
+    resolve = ctx => ctx.parentType.name)
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 
@@ -305,7 +305,7 @@ package object introspection {
     __Schema :: __TypeKind :: __DirectiveLocation :: __Type :: __Field :: __InputValue :: __EnumValue :: __Directive :: Nil
 
   val IntrospectionTypesByName: Map[String, Type with Named] =
-    IntrospectionTypes.groupBy(_.name).mapValues(_.head)
+    IntrospectionTypes.groupBy(_.name).mapValues(_.head).toMap
 
   def introspectionQuery: ast.Document = introspectionQuery()
 

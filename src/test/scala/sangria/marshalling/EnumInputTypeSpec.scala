@@ -37,7 +37,7 @@ class EnumInputTypeSpec extends WordSpec with Matchers {
       "valueFromComplex",
       sangria.schema.StringType,
       arguments = List(complexArgument),
-      resolve = { ctx ⇒
+      resolve = { ctx =>
         ctx.arg(complexArgument).getFields("enumValue").toString()
       }
     )
@@ -48,7 +48,7 @@ class EnumInputTypeSpec extends WordSpec with Matchers {
       "valueFromEnum",
       sangria.schema.StringType,
       arguments = List(enumArgument),
-      resolve = { ctx ⇒
+      resolve = { ctx =>
         JsString(ctx.arg(enumArgument)).value
       }
     )
@@ -90,7 +90,7 @@ class EnumInputTypeSpec extends WordSpec with Matchers {
         | }
       """.stripMargin
 
-    runQuery(query) should be (Map("data" → Map("valueFromComplex" → "TOP_VALUE")))
+    runQuery(query) should be (Map("data" -> Map("valueFromComplex" -> "TOP_VALUE")))
   }
 
   "correctly unmarshals an enum passed as an argument" in {
@@ -101,6 +101,6 @@ class EnumInputTypeSpec extends WordSpec with Matchers {
         | }
       """.stripMargin
 
-    runQuery(query) should be (Map("data" → Map("valueFromEnum" → "TOP_VALUE")))
+    runQuery(query) should be (Map("data" -> Map("valueFromEnum" -> "TOP_VALUE")))
   }
 }

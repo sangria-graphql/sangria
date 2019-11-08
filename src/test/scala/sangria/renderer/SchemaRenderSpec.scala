@@ -19,9 +19,9 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
   def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
   def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 
-  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit render: Schema[Unit, Unit] ⇒ String) = {
+  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit render: Schema[Unit, Unit] => String) = {
     val root = ObjectType("Root", fields[Unit, Unit](
-      Field("singleField", tpe.asInstanceOf[OutputType[Unit]], arguments = args, resolve = _ ⇒ ())
+      Field("singleField", tpe.asInstanceOf[OutputType[Unit]], arguments = args, resolve = _ => ())
     ))
     val schema = Schema(root)
 
@@ -30,7 +30,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
   val quotes = "\"\"\""
 
-  def `default schema renderer`(implicit render: Schema[Unit, Unit] ⇒ String): Unit = {
+  def `default schema renderer`(implicit render: Schema[Unit, Unit] => String): Unit = {
     "Prints String Field" in {
       renderSingleFieldSchema(OptionType(StringType)) should equal ("""
         |schema {
@@ -93,11 +93,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Print Object Field" in {
       val foo = ObjectType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
+        Field("str", OptionType(StringType), resolve = _ => "foo")
       ))
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("foo", OptionType(foo), resolve = _ ⇒ ())
+        Field("foo", OptionType(foo), resolve = _ => ())
       ))
 
       val schema = Schema(root)
@@ -236,14 +236,14 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Print Interface" in {
       val foo = InterfaceType("Foo", "My\ndescription", fields[Unit, Unit](
-        Field("str", OptionType(StringType), description = Some("field\ndescription"), resolve = _ ⇒ "foo")
+        Field("str", OptionType(StringType), description = Some("field\ndescription"), resolve = _ => "foo")
       ))
 
       val bar = ObjectType("Bar", interfaces[Unit, Unit](foo), fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")))
+        Field("str", OptionType(StringType), resolve = _ => "foo")))
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ ⇒ ())
+        Field("bar", OptionType(bar), resolve = _ => ())
       ))
 
       val schema = Schema(root)
@@ -277,17 +277,17 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Print Multiple Interface" in {
       val foo = InterfaceType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
+        Field("str", OptionType(StringType), resolve = _ => "foo")
       ))
 
       val baz = InterfaceType("Baaz", fields[Unit, Unit](
-        Field("int", OptionType(IntType), resolve = _ ⇒ 1)
+        Field("int", OptionType(IntType), resolve = _ => 1)
       ))
 
       val bar = ObjectType("Bar", interfaces[Unit, Unit](foo, baz), Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ ⇒ ())
+        Field("bar", OptionType(bar), resolve = _ => ())
       ))
 
       val schema = Schema(root)
@@ -318,17 +318,17 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Print Multiple Interface (with interface hierarchy)" in {
       val foo = InterfaceType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ ⇒ "foo")
+        Field("str", OptionType(StringType), resolve = _ => "foo")
       ))
 
       val baz = InterfaceType("Baaz", fields[Unit, Unit](
-        Field("int", OptionType(IntType), resolve = _ ⇒ 1)
+        Field("int", OptionType(IntType), resolve = _ => 1)
       ), interfaces[Unit, Unit](foo))
 
       val bar = ObjectType("Bar", interfaces[Unit, Unit](baz), Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ ⇒ ())
+        Field("bar", OptionType(bar), resolve = _ => ())
       ))
 
       val schema = Schema(root)
@@ -360,19 +360,19 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
 
     "Print Unions" in {
       val foo = ObjectType("Foo", fields[Unit, Unit](
-        Field("bool", OptionType(BooleanType), resolve = _ ⇒ true)
+        Field("bool", OptionType(BooleanType), resolve = _ => true)
       ))
 
       val bar = ObjectType("Bar", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ ⇒ "f")
+        Field("str", OptionType(StringType), resolve = _ => "f")
       ))
 
       val singleUnion = UnionType("SingleUnion", types = foo :: Nil)
       val multipleUnion = UnionType("MultipleUnion", types = foo :: bar :: Nil)
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("single", OptionType(singleUnion), resolve = _ ⇒ ()),
-        Field("multiple", OptionType(multipleUnion), resolve = _ ⇒ ())
+        Field("single", OptionType(singleUnion), resolve = _ => ()),
+        Field("multiple", OptionType(multipleUnion), resolve = _ => ())
       ))
 
       val schema = Schema(root)
@@ -410,12 +410,12 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
       val inputType = InputObjectType("InputType", "My\ndescription", List(
         InputField("int", OptionInputType(IntType), description = "My\nfield\ndescription"),
         InputField("article", OptionInputType(articleType), description = "has a default!",
-          defaultValue = scalaInput(Map("title" → "Hello", "auhor" → "Bob", "comments" → List("first!", "looks good!"))))))
+          defaultValue = scalaInput(Map("title" -> "Hello", "auhor" -> "Bob", "comments" -> List("first!", "looks good!"))))))
 
       val root = ObjectType("Root", fields[Unit, Unit](
         Field("str", OptionType(StringType),
           arguments = Argument("argOne", OptionInputType(inputType)) :: Nil,
-          resolve = _ ⇒ None)
+          resolve = _ => None)
       ))
 
       val schema = Schema(root)
@@ -464,18 +464,18 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
         description = Some("My\ndescription"),
         coerceOutput = valueOutput,
         coerceUserInput = {
-          case i: Int if i % 2 != 0 ⇒ Right(i)
-          case i: BigInt if i.isValidInt && i % 2 != BigInt(0) ⇒ Right(i.intValue)
-          case _ ⇒ Left(IntCoercionViolation)
+          case i: Int if i % 2 != 0 => Right(i)
+          case i: BigInt if i.isValidInt && i % 2 != BigInt(0) => Right(i.intValue)
+          case _ => Left(IntCoercionViolation)
         },
         coerceInput = {
-          case ast.IntValue(i, _, _) if i % 2 != 0 ⇒ Right(i)
-          case ast.BigIntValue(i, _, _) if i.isValidInt && i % 2 != BigInt(0) ⇒ Right(i.intValue)
-          case _ ⇒ Left(IntCoercionViolation)
+          case ast.IntValue(i, _, _) if i % 2 != 0 => Right(i)
+          case ast.BigIntValue(i, _, _) if i.isValidInt && i % 2 != BigInt(0) => Right(i.intValue)
+          case _ => Left(IntCoercionViolation)
         })
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("odd", OptionType(odd), resolve = _ ⇒ None)
+        Field("odd", OptionType(odd), resolve = _ => None)
       ))
 
       val schema = Schema(root)
@@ -506,7 +506,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           EnumValue("BLUE", value = 3, deprecationReason = Some(DefaultDeprecationReason))))
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("rgb", OptionType(rgb), resolve = _ ⇒ None)
+        Field("rgb", OptionType(rgb), resolve = _ => None)
       ))
 
       val schema = Schema(root)
@@ -545,10 +545,10 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
           Argument("last", OptionInputType(IntType), "Another descr") ::
           Nil,
         locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.InputFieldDefinition),
-        shouldInclude = _ ⇒ true)
+        shouldInclude = _ => true)
 
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("foo", OptionType(StringType), resolve = _ ⇒ None)))
+        Field("foo", OptionType(StringType), resolve = _ => None)))
 
       val schema = Schema(root, directives = BuiltinDirectives :+ myDirective)
       
@@ -583,11 +583,11 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
   }
 
   "Introspection-based Schema Renderer" should {
-    behave like `default schema renderer` (schema ⇒ renderForTest(Executor.execute(schema, introspectionQuery).await, schema))
+    behave like `default schema renderer` (schema => renderForTest(Executor.execute(schema, introspectionQuery).await, schema))
 
     "throw an exception if introspection results contain some errors" in {
       val root = ObjectType("Root", fields[Unit, Unit](
-        Field("singleField", StringType, resolve = _ ⇒ "")
+        Field("singleField", StringType, resolve = _ => "")
       ))
 
       val schema = Schema(root)
@@ -598,12 +598,12 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
   }
 
   "Schema-based Schema Renderer" should {
-    behave like `default schema renderer` (schema ⇒ renderForTest(schema))
+    behave like `default schema renderer` (schema => renderForTest(schema))
   }
 
   "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
-      val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
+      val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
       val rendered = SchemaRenderer.renderSchema(Executor.execute(schema, introspectionQuery).await, SchemaFilter.introspection)
 
       ("\n" + rendered + "\n") should equal (s"""
@@ -775,7 +775,7 @@ class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport w
   }
 
   "Print schema with legacy comment descriptions" in {
-    val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ ⇒ 1))))
+    val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
     val rendered = schema.renderPretty(SchemaFilter.introspection.withLegacyCommentDescriptions)
 
     ("\n" + rendered + "\n") should equal ("""

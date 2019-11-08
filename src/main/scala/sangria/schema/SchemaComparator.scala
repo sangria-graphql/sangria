@@ -16,13 +16,13 @@ object SchemaComparator {
     val oldTypes = oldSchema.availableTypeNames.toSet
     val newTypes = newSchema.availableTypeNames.toSet
 
-    val removed = oldTypes.diff(newTypes).toVector.map(name ⇒
+    val removed = oldTypes.diff(newTypes).toVector.map(name =>
       SchemaChange.TypeRemoved(oldSchema.types(name)._2))
 
-    val added = newTypes.diff(oldTypes).toVector.map(name ⇒
+    val added = newTypes.diff(oldTypes).toVector.map(name =>
       SchemaChange.TypeAdded(newSchema.types(name)._2))
 
-    val changed = oldTypes.intersect(newTypes).flatMap { name ⇒
+    val changed = oldTypes.intersect(newTypes).flatMap { name =>
       val oldType = oldSchema.types(name)._2
       val newType = newSchema.types(name)._2
 
@@ -41,13 +41,13 @@ object SchemaComparator {
     val oldDirs = oldSchema.directives.map(_.name).toSet
     val newDirs = newSchema.directives.map(_.name).toSet
 
-    val removed = oldDirs.diff(newDirs).toVector.map(name ⇒
+    val removed = oldDirs.diff(newDirs).toVector.map(name =>
       SchemaChange.DirectiveRemoved(oldSchema.directivesByName(name)))
 
-    val added = newDirs.diff(oldDirs).toVector.map(name ⇒
+    val added = newDirs.diff(oldDirs).toVector.map(name =>
       SchemaChange.DirectiveAdded(newSchema.directivesByName(name)))
 
-    val changed = oldDirs.intersect(newDirs).flatMap { name ⇒
+    val changed = oldDirs.intersect(newDirs).flatMap { name =>
       val oldDir = oldSchema.directivesByName(name)
       val newDir = newSchema.directivesByName(name)
 
@@ -76,10 +76,10 @@ object SchemaComparator {
     val oldLocs = oldDir.locations
     val newLocs = newDir.locations
 
-    val removed = oldLocs.diff(newLocs).toVector.map(loc ⇒
+    val removed = oldLocs.diff(newLocs).toVector.map(loc =>
       SchemaChange.DirectiveLocationRemoved(oldDir, loc))
 
-    val added = newLocs.diff(oldLocs).toVector.map(loc ⇒
+    val added = newLocs.diff(oldLocs).toVector.map(loc =>
       SchemaChange.DirectiveLocationAdded(newDir, loc))
 
     removed ++ added
@@ -116,13 +116,13 @@ object SchemaComparator {
 
   def findChangesInTypes(oldType: Type with Named, newType: Type with Named): Vector[SchemaChange] = {
     val typeChanges = (oldType, newType) match {
-      case (o: EnumType[_], n: EnumType[_]) ⇒ findInEnumTypes(o, n)
-      case (o: UnionType[_], n: UnionType[_]) ⇒ findInUnionTypes(o, n)
-      case (o: ScalarType[_], n: ScalarType[_]) ⇒ findInScalarTypes(o, n)
-      case (o: InputObjectType[_], n: InputObjectType[_]) ⇒ findInInputObjectTypes(o, n)
-      case (o: ObjectType[_, _], n: ObjectType[_, _]) ⇒ findInObjectTypes(o, n)
-      case (o: InterfaceType[_, _], n: InterfaceType[_, _]) ⇒ findInInterfaceTypes(o, n)
-      case _ ⇒ Vector.empty
+      case (o: EnumType[_], n: EnumType[_]) => findInEnumTypes(o, n)
+      case (o: UnionType[_], n: UnionType[_]) => findInUnionTypes(o, n)
+      case (o: ScalarType[_], n: ScalarType[_]) => findInScalarTypes(o, n)
+      case (o: InputObjectType[_], n: InputObjectType[_]) => findInInputObjectTypes(o, n)
+      case (o: ObjectType[_, _], n: ObjectType[_, _]) => findInObjectTypes(o, n)
+      case (o: InterfaceType[_, _], n: InterfaceType[_, _]) => findInInterfaceTypes(o, n)
+      case _ => Vector.empty
     }
 
     typeChanges ++ findDescriptionChanged(oldType, newType, SchemaChange.TypeDescriptionChanged(newType, _, _))
@@ -132,10 +132,10 @@ object SchemaComparator {
     val oldTypes = oldType.types.map(_.name).toSet
     val newTypes = newType.types.map(_.name).toSet
 
-    val removed = oldTypes.diff(newTypes).toVector.map(name ⇒
+    val removed = oldTypes.diff(newTypes).toVector.map(name =>
       SchemaChange.UnionMemberRemoved(oldType, oldType.types.find(_.name == name).get))
 
-    val added = newTypes.diff(oldTypes).toVector.map(name ⇒
+    val added = newTypes.diff(oldTypes).toVector.map(name =>
       SchemaChange.UnionMemberAdded(newType, newType.types.find(_.name == name).get))
 
     val directiveChanges = findInAstDirs(oldType.astDirectives, newType.astDirectives,
@@ -154,13 +154,13 @@ object SchemaComparator {
     val oldValues = oldType.values.map(_.name).toSet
     val newValues = newType.values.map(_.name).toSet
 
-    val removed = oldValues.diff(newValues).toVector.map(name ⇒
+    val removed = oldValues.diff(newValues).toVector.map(name =>
       SchemaChange.EnumValueRemoved(oldType, oldType.byName(name)))
 
-    val added = newValues.diff(oldValues).toVector.map(name ⇒
+    val added = newValues.diff(oldValues).toVector.map(name =>
       SchemaChange.EnumValueAdded(newType, newType.byName(name)))
 
-    val changed = oldValues.intersect(newValues).flatMap { name ⇒
+    val changed = oldValues.intersect(newValues).flatMap { name =>
       val oldValue = oldType.byName(name)
       val newValue = newType.byName(name)
 
@@ -184,16 +184,16 @@ object SchemaComparator {
     val oldFields = oldType.fields.map(_.name).toSet
     val newFields = newType.fields.map(_.name).toSet
 
-    val removed = oldFields.diff(newFields).toVector.map(name ⇒
+    val removed = oldFields.diff(newFields).toVector.map(name =>
       SchemaChange.InputFieldRemoved(oldType, oldType.fieldsByName(name)))
 
-    val added = newFields.diff(oldFields).toVector.map { name ⇒
+    val added = newFields.diff(oldFields).toVector.map { name =>
       val field = newType.fieldsByName(name)
 
       SchemaChange.InputFieldAdded(newType, field, !isOptional(field))
     }
 
-    val changed = oldFields.intersect(newFields).flatMap { name ⇒
+    val changed = oldFields.intersect(newFields).flatMap { name =>
       val oldField = oldType.fieldsByName(name)
       val newField = newType.fieldsByName(name)
 
@@ -228,10 +228,10 @@ object SchemaComparator {
     val oldInts = oldType.allInterfaces.map(_.name).toSet
     val newInts = newType.allInterfaces.map(_.name).toSet
 
-    val removed = oldInts.diff(newInts).toVector.map(name ⇒
+    val removed = oldInts.diff(newInts).toVector.map(name =>
       SchemaChange.ObjectTypeInterfaceRemoved(oldType, oldType.interfaces.find(_.name == name).get))
 
-    val added = newInts.diff(oldInts).toVector.map(name ⇒
+    val added = newInts.diff(oldInts).toVector.map(name =>
       SchemaChange.ObjectTypeInterfaceAdded(newType, newType.interfaces.find(_.name == name).get))
 
     removed ++ added
@@ -241,13 +241,13 @@ object SchemaComparator {
     val oldFields = oldType.fields.map(_.name).toSet
     val newFields = newType.fields.map(_.name).toSet
 
-    val removed = oldFields.diff(newFields).toVector.map(name ⇒
+    val removed = oldFields.diff(newFields).toVector.map(name =>
       SchemaChange.FieldRemoved(oldType, oldType.fieldsByName(name).head))
 
-    val added = newFields.diff(oldFields).toVector.map(name ⇒
+    val added = newFields.diff(oldFields).toVector.map(name =>
       SchemaChange.FieldAdded(newType, newType.fieldsByName(name).head))
 
-    val changed = oldFields.intersect(newFields).flatMap { name ⇒
+    val changed = oldFields.intersect(newFields).flatMap { name =>
       val oldField = oldType.fieldsByName(name).head
       val newField = newType.fieldsByName(name).head
 
@@ -289,27 +289,27 @@ object SchemaComparator {
   private def findInArgs(
     oldArgs: List[Argument[_]],
     newArgs: List[Argument[_]],
-    added: (Argument[_], Boolean) ⇒ SchemaChange,
-    removed: Argument[_] ⇒ SchemaChange,
-    description: (Argument[_], Option[String], Option[String]) ⇒ SchemaChange,
-    default: (Argument[_], Option[ast.Value], Option[ast.Value]) ⇒ SchemaChange,
-    typeChange: (Argument[_], Boolean, InputType[_], InputType[_]) ⇒ SchemaChange,
-    dirAdded: (Argument[_], ast.Directive) ⇒ SchemaChange,
-    dirRemoved: (Argument[_], ast.Directive) ⇒ SchemaChange
+    added: (Argument[_], Boolean) => SchemaChange,
+    removed: Argument[_] => SchemaChange,
+    description: (Argument[_], Option[String], Option[String]) => SchemaChange,
+    default: (Argument[_], Option[ast.Value], Option[ast.Value]) => SchemaChange,
+    typeChange: (Argument[_], Boolean, InputType[_], InputType[_]) => SchemaChange,
+    dirAdded: (Argument[_], ast.Directive) => SchemaChange,
+    dirRemoved: (Argument[_], ast.Directive) => SchemaChange
   ): Vector[SchemaChange] = {
     val oldA = oldArgs.map(_.name).toSet
     val newA = newArgs.map(_.name).toSet
 
-    val remove = oldA.diff(newA).toVector.map(name ⇒
+    val remove = oldA.diff(newA).toVector.map(name =>
       removed(oldArgs.find(_.name == name).get))
 
-    val add = newA.diff(oldA).toVector.map { name ⇒
+    val add = newA.diff(oldA).toVector.map { name =>
       val arg = newArgs.find(_.name == name).get
 
       added(arg, !isOptional(arg))
     }
 
-    val changed = oldA.intersect(newA).flatMap { name ⇒
+    val changed = oldA.intersect(newA).flatMap { name =>
       val oldArg = oldArgs.find(_.name == name).get
       val newArg = newArgs.find(_.name == name).get
 
@@ -323,8 +323,8 @@ object SchemaComparator {
   private def findInAstDirs(
     oldDirectives: Vector[ast.Directive],
     newDirectives: Vector[ast.Directive],
-    added: (ast.Directive) ⇒ SchemaChange,
-    removed: (ast.Directive) ⇒ SchemaChange
+    added: (ast.Directive) => SchemaChange,
+    removed: (ast.Directive) => SchemaChange
   ): Vector[SchemaChange] = {
     val oldD = oldDirectives.map(AstNode.withoutAstLocations(_)).toSet
     val newD = newDirectives.map(AstNode.withoutAstLocations(_)).toSet
@@ -338,13 +338,13 @@ object SchemaComparator {
   private def findInArg(
     oldArg: Argument[_],
     newArg: Argument[_],
-    default: (Option[ast.Value], Option[ast.Value]) ⇒ SchemaChange,
-    typeChange: (Boolean, InputType[_], InputType[_]) ⇒ SchemaChange,
-    dirAdded: ast.Directive ⇒ SchemaChange,
-    dirRemoved: ast.Directive ⇒ SchemaChange
+    default: (Option[ast.Value], Option[ast.Value]) => SchemaChange,
+    typeChange: (Boolean, InputType[_], InputType[_]) => SchemaChange,
+    dirAdded: ast.Directive => SchemaChange,
+    dirRemoved: ast.Directive => SchemaChange
   ): Vector[SchemaChange] = {
-    val oldDefault = oldArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
-    val newDefault = newArg.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newArg.argumentType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
+    val oldDefault = oldArg.defaultValue.flatMap(dv => DefaultValueRenderer.renderInputValue(dv, oldArg.argumentType, coercionHelper).map(v => AstNode.withoutAstLocations(v)))
+    val newDefault = newArg.defaultValue.flatMap(dv => DefaultValueRenderer.renderInputValue(dv, newArg.argumentType, coercionHelper).map(v => AstNode.withoutAstLocations(v)))
 
     val withDefault =
       if (oldDefault != newDefault)
@@ -369,8 +369,8 @@ object SchemaComparator {
   }
 
   private def findInInputFields(oldType: InputObjectType[_], newType: InputObjectType[_], oldField: InputField[_], newField: InputField[_]): Vector[SchemaChange] = {
-    val oldDefault = oldField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, oldField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
-    val newDefault = newField.defaultValue.flatMap(dv ⇒ DefaultValueRenderer.renderInputValue(dv, newField.fieldType, coercionHelper).map(v ⇒ AstNode.withoutAstLocations(v)))
+    val oldDefault = oldField.defaultValue.flatMap(dv => DefaultValueRenderer.renderInputValue(dv, oldField.fieldType, coercionHelper).map(v => AstNode.withoutAstLocations(v)))
+    val newDefault = newField.defaultValue.flatMap(dv => DefaultValueRenderer.renderInputValue(dv, newField.fieldType, coercionHelper).map(v => AstNode.withoutAstLocations(v)))
 
     val withDefault =
       if (oldDefault != newDefault)
@@ -396,35 +396,35 @@ object SchemaComparator {
   }
 
   private def isOptional(field: InputField[_]) = field.fieldType match {
-    case _: OptionInputType[_] ⇒ true
-    case _ ⇒ false
+    case _: OptionInputType[_] => true
+    case _ => false
   }
 
   private def isOptional(argument: Argument[_]) = argument.argumentType match {
-    case _: OptionInputType[_] ⇒ true
-    case _ ⇒ false
+    case _: OptionInputType[_] => true
+    case _ => false
   }
 
   private def nonContainer(field: InputField[_]) = field.fieldType match {
-    case OptionInputType(ofType) ⇒ ofType
-    case tpe ⇒ tpe
+    case OptionInputType(ofType) => ofType
+    case tpe => tpe
   }
 
   private def nonContainer(field: Field[_, _]) = field.fieldType match {
-    case OptionType(ofType) ⇒ ofType
-    case tpe ⇒ tpe
+    case OptionType(ofType) => ofType
+    case tpe => tpe
   }
 
   private def nonContainer(argument: Argument[_]) = argument.argumentType match {
-    case OptionInputType(ofType) ⇒ ofType
-    case tpe ⇒ tpe
+    case OptionInputType(ofType) => ofType
+    case tpe => tpe
   }
 
-  private def findDescriptionChanged(o: HasDescription, n: HasDescription, fn: (Option[String], Option[String]) ⇒ SchemaChange): Vector[SchemaChange] =
+  private def findDescriptionChanged(o: HasDescription, n: HasDescription, fn: (Option[String], Option[String]) => SchemaChange): Vector[SchemaChange] =
     if (o.description != n.description) Vector(fn(o.description, n.description))
     else Vector.empty
 
-  private def findDeprecationChanged(o: HasDeprecation, n: HasDeprecation, fn: (Option[String], Option[String]) ⇒ SchemaChange): Vector[SchemaChange] =
+  private def findDeprecationChanged(o: HasDeprecation, n: HasDeprecation, fn: (Option[String], Option[String]) => SchemaChange): Vector[SchemaChange] =
     if (o.deprecationReason != n.deprecationReason) Vector(fn(o.deprecationReason, n.deprecationReason))
     else Vector.empty
 
@@ -539,13 +539,13 @@ object SchemaChange {
     extends AbstractChange(s"Field `${field.name}` was deprecated in `${tpe.name}` type", false) with DeprecationChange
 
   case class InputFieldDefaultChanged(tpe: InputObjectType[_], field: InputField[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
-    extends AbstractChange(s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false) with TypeChange
+    extends AbstractChange(s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d => "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d => "`" + d.renderCompact + "`")}", false) with TypeChange
 
   case class ObjectTypeArgumentDefaultChanged(tpe: ObjectLikeType[_, _], field: Field[_, _], argument: Argument[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
-    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false, true) with TypeChange
+    extends AbstractChange(s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d => "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d => "`" + d.renderCompact + "`")}", false, true) with TypeChange
 
   case class DirectiveArgumentDefaultChanged(directive: Directive, argument: Argument[_], oldDefault: Option[ast.Value], newDefault: Option[ast.Value])
-    extends AbstractChange(s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d ⇒ "`" + d.renderCompact + "`")}", false, true)
+    extends AbstractChange(s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d => "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d => "`" + d.renderCompact + "`")}", false, true)
 
   case class ObjectTypeInterfaceAdded(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
     extends AbstractChange(s"`${tpe.name}` object type now implements `${interface.name}` interface", false, true) with TypeChange
@@ -672,22 +672,22 @@ object SchemaChange {
     extends AbstractChange(s"`${tpe.name}.${field.name}` field type changed from `${SchemaRenderer.renderTypeName(oldFiledType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`", breaking) with TypeChange
 
   case class SchemaMutationTypeChanged(oldType: Option[ObjectType[_, _]], newType: Option[ObjectType[_, _]])
-    extends AbstractChange(s"Schema mutation type changed from ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} to ${newType.fold("none")(t ⇒ "`" + t.name + "`")} type", oldType.nonEmpty)
+    extends AbstractChange(s"Schema mutation type changed from ${oldType.fold("none")(t => "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type", oldType.nonEmpty)
 
   case class SchemaSubscriptionTypeChanged(oldType: Option[ObjectType[_, _]], newType: Option[ObjectType[_, _]])
-    extends AbstractChange(s"Schema subscription type changed from ${oldType.fold("none")(t ⇒ "`" + t.name + "`")} to ${newType.fold("none")(t ⇒ "`" + t.name + "`")} type", oldType.nonEmpty)
+    extends AbstractChange(s"Schema subscription type changed from ${oldType.fold("none")(t => "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type", oldType.nonEmpty)
 
   private val AnArticleLetters = Set('a', 'e', 'i', 'o')
 
   private def kind(tpe: Type) = tpe match {
-    case _: ObjectType[_, _] ⇒ "Object"
-    case _: InterfaceType[_, _] ⇒ "Interface"
-    case _: ScalarType[_] ⇒ "Scalar"
-    case _: ScalarAlias[_, _] ⇒ "Scalar"
-    case _: UnionType[_] ⇒ "Union"
-    case _: EnumType[_] ⇒ "Enum"
-    case _: InputObjectType[_] ⇒ "InputObject"
-    case t ⇒ throw new IllegalStateException(s"Unsupported type kind: $t")
+    case _: ObjectType[_, _] => "Object"
+    case _: InterfaceType[_, _] => "Interface"
+    case _: ScalarType[_] => "Scalar"
+    case _: ScalarAlias[_, _] => "Scalar"
+    case _: UnionType[_] => "Union"
+    case _: EnumType[_] => "Enum"
+    case _: InputObjectType[_] => "InputObject"
+    case t => throw new IllegalStateException(s"Unsupported type kind: $t")
   }
 
   private def article(word: String) =
