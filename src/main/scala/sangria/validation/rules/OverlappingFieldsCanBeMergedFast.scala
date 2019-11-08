@@ -50,7 +50,7 @@ class OverlappingFieldsCanBeMergedFast extends ValidationRule {
           val roots = selectionBuilder.build()
           val violationsBuilder = new SelectionConflictViolationsBuilder(ctx.sourceMapper)
           val check = new CachedCheck
-          roots.forEach { root =>
+          roots.foreach { root =>
             check.checkFieldsInSetCanMerge(root, violationsBuilder)
           }
           val violations = violationsBuilder.result()

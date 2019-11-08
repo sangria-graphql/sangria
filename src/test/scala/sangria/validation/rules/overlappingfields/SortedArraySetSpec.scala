@@ -7,7 +7,7 @@ class SortedArraySetSpec extends FunSuite {
   test("zero elements can be build") {
     val set = SortedArraySet.newBuilder[Int]().build()
     assert(set.isEmpty)
-    assert(set.size() === 0)
+    assert(set.size === 0)
   }
 
   test("zero elements equality") {
@@ -20,7 +20,7 @@ class SortedArraySetSpec extends FunSuite {
   test("one element can be build") {
     val set = SortedArraySet.newBuilder[Int]().add(42).build()
     assert(!set.isEmpty)
-    assert(set.size() === 1)
+    assert(set.size === 1)
   }
 
   test("one element equality") {
@@ -46,7 +46,7 @@ class SortedArraySetSpec extends FunSuite {
   test("many elements are sorted") {
     val set = SortedArraySet.newBuilder[Int]().add(3).add(42).add(3).add(42).add(7).add(3).add(3).build()
     val list = List.newBuilder[Int]
-    set.forEach(member => list += member)
+    set.foreach(member => list += member)
     assert(list.result() == List(3, 7, 42))
   }
 }

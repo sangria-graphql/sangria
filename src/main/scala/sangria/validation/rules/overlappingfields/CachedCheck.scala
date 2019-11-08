@@ -1,6 +1,6 @@
 package sangria.validation.rules.overlappingfields
 
-import java.util
+import scala.collection.mutable
 
 /**
   * Implements the algorithm for validating "Field Selection Merging" as described in:
@@ -17,28 +17,28 @@ class CachedCheck {
   private type FieldSet = SortedArraySet[SelectionField]
   private type FieldSetBuilder = SortedArraySet.Builder[SelectionField]
 
-  private val cache: util.HashMap[FieldSet, FieldSetCache] = new util.HashMap()
+  private val cache: mutable.Map[FieldSet, FieldSetCache] = new mutable.HashMap()
 
   def checkFieldsInSetCanMerge(selectionContainer: SelectionContainer, builder: SelectionConflictViolationsBuilder): Unit = {
     getCacheLine(computeFieldSet(selectionContainer.effectiveSelections)).checkFieldsInSetCanMerge(builder)
   }
 
   private def getCacheLine(fields: FieldSet): FieldSetCache = {
-    cache.computeIfAbsent(fields, fields => new FieldSetCache(fields))
+    cache.getOrElseUpdate(fields, new FieldSetCache(fields))
   }
 
-  private def computeFieldSet(effectiveSelections: util.LinkedHashSet[SelectionContainer]): FieldSet = {
+  private def computeFieldSet(effectiveSelections: mutable.LinkedHashSet[SelectionContainer]): FieldSet = {
     var expectedSize = 0
-    effectiveSelections.forEach(selection => expectedSize += selection.directFields.size())
+    effectiveSelections.foreach(selection => expectedSize += selection.directFields.size)
     val builder = newFieldSetBuilder(expectedSize)
-    effectiveSelections.forEach(selection => builder.addAll(selection.directFields))
+    effectiveSelections.foreach(selection => builder.addAll(selection.directFields))
     builder.build()
   }
 
   private class FieldSetCache(val fields: FieldSet) {
-    private var cacheGroupByOutputNames: util.ArrayList[FieldSetCache] = _
+    private var cacheGroupByOutputNames: mutable.ArrayBuffer[FieldSetCache] = _
     private var cacheMergeChildSelections: FieldSetCache = _
-    private var cacheGroupByCommonParentTypes: util.ArrayList[FieldSetCache] = _
+    private var cacheGroupByCommonParentTypes: mutable.ArrayBuffer[FieldSetCache] = _
 
     private var didRequireSameResponseShape: Boolean = false
     private var didRequireSameFieldNameAndArguments: Boolean = false
@@ -53,7 +53,7 @@ class CachedCheck {
     private def checkSameResponseShape(builder: SelectionConflictViolationsBuilder): Unit = {
       if (didCheckSameResponseShape) return
       didCheckSameResponseShape = true
-      groupByOutputNames().forEach { fieldSet =>
+      groupByOutputNames().foreach { fieldSet =>
         fieldSet
           .requireSameResponseShape(builder)
           .mergeChildSelections()
@@ -64,8 +64,8 @@ class CachedCheck {
     private def checkSameFieldsForCoincidentParentTypes(builder: SelectionConflictViolationsBuilder): Unit = {
       if (didCheckSameFieldsForCoincidentParentTypes) return
       didCheckSameFieldsForCoincidentParentTypes = true
-      groupByOutputNames().forEach { fieldSet =>
-        fieldSet.groupByCommonParentTypes().forEach { fieldSet =>
+      groupByOutputNames().foreach { fieldSet =>
+        fieldSet.groupByCommonParentTypes().foreach { fieldSet =>
           fieldSet
             .requireSameFieldNameAndArguments(builder)
             .mergeChildSelections()
@@ -78,32 +78,31 @@ class CachedCheck {
       if (didRequireSameResponseShape) return this
       didRequireSameResponseShape = true
       val fieldsWithKnownResponseShapes = groupByKnownResponseShape()
-      val responseShapesNumber = fieldsWithKnownResponseShapes.size()
+      val responseShapesNumber = fieldsWithKnownResponseShapes.size
       if (responseShapesNumber > 1) {
-        val buckets = fieldsWithKnownResponseShapes.entrySet().toArray(
-          new Array[util.Map.Entry[TypeShape.Known, util.ArrayList[SelectionField]]](responseShapesNumber))
-        val outputName = buckets(0).getValue.get(0).outputName
+        val buckets = fieldsWithKnownResponseShapes.toArray
+        val outputName = buckets(0)._2.head.outputName
         for {
           i <- 0 until buckets.length - 1
           j <- i + 1 until buckets.length
         } {
-          val a = buckets(i)
-          val b = buckets(j)
-          val reason = a.getKey.conflictReason(b.getKey)
-          builder.addConflict(outputName, reason, a.getValue, b.getValue)
+          val (a_key, a_value) = buckets(i)
+          val (b_key, b_value) = buckets(j)
+          val reason = a_key.conflictReason(b_key)
+          builder.addConflict(outputName, reason, a_value, b_value)
         }
       }
       this
     }
 
-    private def groupByKnownResponseShape(): util.LinkedHashMap[TypeShape.Known, util.ArrayList[SelectionField]] = {
-      val fieldsWithKnownResponseShapes = new util.LinkedHashMap[TypeShape.Known, util.ArrayList[SelectionField]]()
-      fields.forEach { field =>
+    private def groupByKnownResponseShape(): mutable.LinkedHashMap[TypeShape.Known, mutable.ArrayBuffer[SelectionField]] = {
+      val fieldsWithKnownResponseShapes = new mutable.LinkedHashMap[TypeShape.Known, mutable.ArrayBuffer[SelectionField]]()
+      fields.foreach { field =>
         field.outputTypeShape match {
           case TypeShape.Unknown           => // ignore unknown response shapes
           case knownShape: TypeShape.Known =>
-            val bucket = fieldsWithKnownResponseShapes.computeIfAbsent(knownShape, _ => new util.ArrayList[SelectionField]())
-            bucket.add(field)
+            val bucket = fieldsWithKnownResponseShapes.getOrElseUpdate(knownShape, new mutable.ArrayBuffer())
+            bucket += field
         }
       }
       fieldsWithKnownResponseShapes
@@ -113,43 +112,42 @@ class CachedCheck {
       if (didRequireSameFieldNameAndArguments) return this
       didRequireSameFieldNameAndArguments = true
       val fieldsWithSameNameAndArguments = groupByFieldNameAndArguments()
-      val fieldNameAndArgumentsNumber = fieldsWithSameNameAndArguments.size()
+      val fieldNameAndArgumentsNumber = fieldsWithSameNameAndArguments.size
       if (fieldNameAndArgumentsNumber > 1) {
-        val buckets = fieldsWithSameNameAndArguments.entrySet().toArray(
-          new Array[util.Map.Entry[FieldNameAndArguments, util.ArrayList[SelectionField]]](fieldNameAndArgumentsNumber))
-        val outputName = buckets(0).getValue.get(0).outputName
+        val buckets = fieldsWithSameNameAndArguments.toArray
+        val outputName = buckets(0)._2.head.outputName
         for {
           i <- 0 until buckets.length - 1
           j <- i + 1 until buckets.length
         } {
-          val a = buckets(i)
-          val b = buckets(j)
-          val reason = a.getKey.conflictReason(b.getKey)
-          builder.addConflict(outputName, reason, a.getValue, b.getValue)
+          val (a_key, a_value) = buckets(i)
+          val (b_key, b_value) = buckets(j)
+          val reason = a_key.conflictReason(b_key)
+          builder.addConflict(outputName, reason, a_value, b_value)
         }
       }
       this
     }
 
-    private def groupByFieldNameAndArguments(): util.LinkedHashMap[FieldNameAndArguments, util.ArrayList[SelectionField]] = {
-      val fieldsWithSameNameAndArguments = new util.LinkedHashMap[FieldNameAndArguments, util.ArrayList[SelectionField]]()
-      fields.forEach { field =>
-        val bucket = fieldsWithSameNameAndArguments.computeIfAbsent(field.fieldNameAndArguments, _ => new util.ArrayList[SelectionField]())
-        bucket.add(field)
+    private def groupByFieldNameAndArguments(): mutable.LinkedHashMap[FieldNameAndArguments, mutable.ArrayBuffer[SelectionField]] = {
+      val fieldsWithSameNameAndArguments = new mutable.LinkedHashMap[FieldNameAndArguments, mutable.ArrayBuffer[SelectionField]]()
+      fields.foreach { field =>
+        val bucket = fieldsWithSameNameAndArguments.getOrElseUpdate(field.fieldNameAndArguments, new mutable.ArrayBuffer())
+        bucket += field
       }
       fieldsWithSameNameAndArguments
     }
 
-    private def groupByOutputNames(): util.ArrayList[FieldSetCache] = {
+    private def groupByOutputNames(): mutable.ArrayBuffer[FieldSetCache] = {
       if (cacheGroupByOutputNames == null) {
-        val outputNames = new util.LinkedHashMap[OutputName, FieldSetBuilder]()
-        fields.forEach { field =>
+        val outputNames = new mutable.LinkedHashMap[OutputName, FieldSetBuilder]()
+        fields.foreach { field =>
           outputNames
-            .computeIfAbsent(field.outputName, _ => newFieldSetBuilder())
+            .getOrElseUpdate(field.outputName, newFieldSetBuilder())
             .add(field)
         }
-        val result = new util.ArrayList[FieldSetCache](outputNames.size())
-        outputNames.values().forEach(builder => result.add(getCacheLine(builder.build())))
+        val result = new mutable.ArrayBuffer[FieldSetCache](outputNames.size)
+        outputNames.values.foreach(builder => result.append(getCacheLine(builder.build())))
         cacheGroupByOutputNames = result
         cacheGroupByOutputNames
       } else {
@@ -159,8 +157,8 @@ class CachedCheck {
 
     private def mergeChildSelections(): FieldSetCache = {
       if (cacheMergeChildSelections == null) {
-        val children = new util.LinkedHashSet[SelectionContainer]()
-        fields.forEach { field => children.addAll(field.childSelection.effectiveSelections) }
+        val children = new mutable.LinkedHashSet[SelectionContainer]()
+        fields.foreach { field => children ++= field.childSelection.effectiveSelections }
         val result = getCacheLine(computeFieldSet(children))
         cacheMergeChildSelections = result
         cacheMergeChildSelections
@@ -169,17 +167,17 @@ class CachedCheck {
       }
     }
 
-    private def groupByCommonParentTypes(): util.ArrayList[FieldSetCache] = {
+    private def groupByCommonParentTypes(): mutable.ArrayBuffer[FieldSetCache] = {
       if (cacheGroupByCommonParentTypes == null) {
-        val fieldsWithAbstractParentTypes = new util.ArrayList[SelectionField]()
-        val fieldsWithConreteParents = new util.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder]()
-        fields.forEach { field =>
+        val fieldsWithAbstractParentTypes = new mutable.ArrayBuffer[SelectionField]()
+        val fieldsWithConreteParents = new mutable.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder]()
+        fields.foreach { field =>
           field.parentTypeAbstractness match {
             case TypeAbstractness.Abstract           =>
-              fieldsWithAbstractParentTypes.add(field)
+              fieldsWithAbstractParentTypes.append(field)
             case concrete: TypeAbstractness.Concrete =>
               fieldsWithConreteParents
-                .computeIfAbsent(concrete, _ => newFieldSetBuilder())
+                .getOrElseUpdate(concrete, newFieldSetBuilder())
                 .add(field)
           }
         }
@@ -191,29 +189,25 @@ class CachedCheck {
       }
     }
 
-    private def combineAbstractAndConcreteParentTypes(fieldsWithAbstractParentTypes: util.ArrayList[SelectionField],
-                                                      fieldsWithConreteParents: util.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder]): util.ArrayList[FieldSetCache] = {
+    private def combineAbstractAndConcreteParentTypes(fieldsWithAbstractParentTypes: mutable.ArrayBuffer[SelectionField],
+                                                      fieldsWithConreteParents: mutable.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder]): mutable.ArrayBuffer[FieldSetCache] = {
       if (fieldsWithConreteParents.isEmpty) {
-        if (fieldsWithAbstractParentTypes.isEmpty) {
-          new util.ArrayList[FieldSetCache](0)
-        } else {
-          val list = new util.ArrayList[FieldSetCache](1)
-          val set = newFieldSetBuilder(fieldsWithAbstractParentTypes.size())
-            .addAll(fieldsWithAbstractParentTypes)
-            .build()
-          list.add(getCacheLine(set))
-          list
-        }
+        val list = new mutable.ArrayBuffer[FieldSetCache](1)
+        val set = newFieldSetBuilder(fieldsWithAbstractParentTypes.size)
+          .addAll(fieldsWithAbstractParentTypes)
+          .build()
+        list += getCacheLine(set)
+        list
       } else {
-        val list = new util.ArrayList[FieldSetCache](fieldsWithConreteParents.size())
+        val list = new mutable.ArrayBuffer[FieldSetCache](fieldsWithConreteParents.size)
         if (fieldsWithAbstractParentTypes.isEmpty) {
-          fieldsWithConreteParents.values().forEach { builder =>
-            list.add(getCacheLine(builder.build()))
+          fieldsWithConreteParents.values.foreach { builder =>
+            list += getCacheLine(builder.build())
           }
         } else {
-          fieldsWithConreteParents.values().forEach { builder =>
+          fieldsWithConreteParents.values.foreach { builder =>
             val set = builder.addAll(fieldsWithAbstractParentTypes).build()
-            list.add(getCacheLine(set))
+            list += getCacheLine(set)
           }
         }
         list

@@ -1,38 +1,24 @@
 package sangria.validation.rules.overlappingfields
 
-import java.util
-
 import sangria.ast
 import sangria.parser.SourceMapper
 
 class SelectionConflictViolationsBuilder(sourceMapper: Option[SourceMapper]) {
 
-  private val reasons = new util.ArrayList[ConflictData]
+  private val violations = Vector.newBuilder[SelectionConflictViolation]
 
-  def addConflict(outputName: OutputName, reason: String, fields1: java.lang.Iterable[SelectionField], fields2: java.lang.Iterable[SelectionField]): Unit = {
-    reasons.add(new ConflictData(outputName, reason, fields1, fields2))
+  def addConflict(outputName: OutputName, reason: String, fields1: Traversable[SelectionField], fields2: Traversable[SelectionField]): Unit = {
+    val locations = List.newBuilder[ast.AstLocation]
+    fields1.foreach { field =>
+      field.astField.location.foreach(locations += _)
+    }
+    fields2.foreach { field =>
+      field.astField.location.foreach(locations += _)
+    }
+    violations += SelectionConflictViolation(outputName, reason, sourceMapper, locations.result())
   }
 
   def result(): Vector[SelectionConflictViolation] = {
-    val builder = Vector.newBuilder[SelectionConflictViolation]
-    reasons.forEach { reason =>
-      builder += reason.result()
-    }
-    builder.result()
+    violations.result()
   }
-
-  private class ConflictData(outputName: OutputName, reason: String, fields1: java.lang.Iterable[SelectionField], fields2: java.lang.Iterable[SelectionField]) {
-
-    def result(): SelectionConflictViolation = {
-      val locations = List.newBuilder[ast.AstLocation]
-      fields1.forEach { field =>
-        field.astField.location.foreach(locations += _)
-      }
-      fields2.forEach { field =>
-        field.astField.location.foreach(locations += _)
-      }
-      SelectionConflictViolation(outputName, reason, sourceMapper, locations.result())
-    }
-  }
-
 }

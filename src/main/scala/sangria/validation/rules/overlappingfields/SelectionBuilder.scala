@@ -1,9 +1,9 @@
 package sangria.validation.rules.overlappingfields
 
-import java.util
-
 import sangria.ast
 import sangria.schema.{CompositeType, OutputType}
+
+import scala.collection.mutable
 
 /**
   * For the validation we need another representation of the query that
@@ -15,57 +15,55 @@ class SelectionBuilder {
 
   private val fieldBuilder = new SelectionField.Builder()
 
-  private val fragments: util.HashMap[String, SelectionContainer] = new util.HashMap()
+  private val fragments: mutable.Map[String, SelectionContainer] = new mutable.HashMap()
 
-  private val roots: util.ArrayList[SelectionContainer] = new util.ArrayList()
+  private val roots: mutable.ArrayBuffer[SelectionContainer] = new mutable.ArrayBuffer()
 
-  private val stack: util.Stack[SelectionContainer] = {
-    new util.Stack[SelectionContainer]()
-  }
+  private val stack: mutable.ArrayBuffer[SelectionContainer] = new mutable.ArrayBuffer()
 
   def enterField(parentType: Option[CompositeType[_]], astField: ast.Field, outputType: Option[OutputType[_]]): Unit = {
     val field = fieldBuilder.build(astField, parentType, outputType)
-    if (!stack.isEmpty) {
-      stack.peek().addField(field)
+    if (stack.nonEmpty) {
+      stack.last.addField(field)
     }
-    stack.push(field.childSelection)
+    stack += field.childSelection
   }
 
   def spreadFragment(name: String): Unit = {
-    if (!stack.isEmpty) {
-      stack.peek().addSpread(getOrInitFragment(name))
+    if (stack.nonEmpty) {
+      stack.last.addSpread(getOrInitFragment(name))
     }
   }
 
   def enterFragmentDefinition(name: String): Unit = {
-    stack.push(getOrInitFragment(name))
+    stack += getOrInitFragment(name)
   }
 
   def enterGenericSelectionContainer(): Unit = {
     val selectionContainer = new SelectionContainer
     if (stack.isEmpty) {
-      roots.add(selectionContainer)
+      roots += selectionContainer
     } else {
-      stack.peek().addSpread(selectionContainer)
+      stack.last.addSpread(selectionContainer)
     }
-    stack.push(selectionContainer)
+    stack += selectionContainer
   }
 
   def leaveSelectionContainer(): Unit = {
-    stack.pop()
+    stack.reduceToSize(stack.size - 1)
   }
 
   /**
     * @return A list of roots of the document
     */
-  def build(): util.ArrayList[SelectionContainer] = {
-    roots.forEach { root =>
+  def build(): mutable.ArrayBuffer[SelectionContainer] = {
+    roots.foreach { root =>
       root.computeEffectiveSelections()
     }
     roots
   }
 
   private def getOrInitFragment(name: String): SelectionContainer = {
-    fragments.computeIfAbsent(name, _ => new SelectionContainer)
+    fragments.getOrElseUpdate(name, new SelectionContainer)
   }
 }

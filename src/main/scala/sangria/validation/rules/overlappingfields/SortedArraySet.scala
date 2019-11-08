@@ -1,92 +1,83 @@
 package sangria.validation.rules.overlappingfields
 
-import java.util
-import java.util.Comparator
+import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /**
   * A set representation that is well suited to hash and equality comparisons and fast iteration over members
   */
-class SortedArraySet[T](private val sortedMembers: util.ArrayList[T]) extends java.lang.Iterable[T] {
+class SortedArraySet[T](private val sortedMembers: mutable.WrappedArray[T]) extends Traversable[T] {
 
   //cache the hashCode for faster handling
-  override val hashCode: Int = {
-    sortedMembers.hashCode()
-  }
+  override val hashCode: Int = sortedMembers.hashCode()
 
   //equals and hash code delegate to the members
   override def equals(obj: Any): Boolean = {
     obj match {
-      case other: SortedArraySet[_] => eq(other) || (hashCode == other.hashCode && size() == other.size() && sortedMembers == other.sortedMembers)
+      case other: SortedArraySet[_] => eq(other) || sortedMembers == other.sortedMembers
       case _                        => false
     }
   }
 
-  def isEmpty: Boolean = {
+  override def isEmpty: Boolean = {
     sortedMembers.isEmpty
   }
 
-  def size(): Int = {
-    sortedMembers.size()
+  override def size: Int = {
+    sortedMembers.length
   }
 
-  override def iterator(): util.Iterator[T] = {
-    sortedMembers.iterator()
+  override def foreach[U](f: T => U): Unit = {
+    sortedMembers.foreach(f)
   }
 }
 
 object SortedArraySet {
 
-  def newBuilder[T: Ordering](sizeHint: Int): Builder[T] = {
-    new Builder[T](sizeHint, implicitly[Ordering[T]])
+  def newBuilder[T: Ordering](sizeHint: Int)(implicit t: ClassTag[T]): Builder[T] = {
+    val builder = Array.newBuilder[T]
+    builder.sizeHint(sizeHint)
+    new Builder[T](builder, implicitly[Ordering[T]])
   }
 
-  def newBuilder[T: Ordering](): Builder[T] = {
-    new Builder[T](implicitly[Ordering[T]])
+  def newBuilder[T: Ordering]()(implicit t: ClassTag[T]): Builder[T] = {
+    new Builder[T](Array.newBuilder[T], implicitly[Ordering[T]])
   }
 
   //Beware:
-  //The comparator wont be used in the final set for equality or removing duplicates, it's only here for sorting.
+  //The ordering wont be used in the final set for equality or removing duplicates, it's only here for sorting.
   //As such it has to be compatible with the standard equality and hashCode implementations.
-  class Builder[T] private(private val members: util.ArrayList[T], private val comparator: Comparator[T]) {
-
-    def this(sizeHint: Int, ordering: Ordering[T]) {
-      this(new util.ArrayList[T](sizeHint), ordering)
-    }
-
-    def this(ordering: Ordering[T]) {
-      this(new util.ArrayList[T](), ordering)
-    }
+  class Builder[T](private val memberBuilder: mutable.ArrayBuilder[T], private val ordering: Ordering[T]) {
 
 
     def add(value: T): this.type = {
-      members.add(value)
+      memberBuilder += value
       this
     }
 
-    def addAll(values: util.Collection[T]): this.type = {
-      members.addAll(values)
+    def addAll(values: Traversable[T]): this.type = {
+      memberBuilder ++= values
       this
     }
 
     def build(): SortedArraySet[T] = {
-      sortAndRemoveDuplicates()
-      new SortedArraySet(members)
+      new SortedArraySet(sortAndRemoveDuplicates())
     }
 
-    private def sortAndRemoveDuplicates(): Unit = {
-      members.sort(comparator)
+    private def sortAndRemoveDuplicates(): mutable.WrappedArray[T] = {
+      val members = memberBuilder.result()
+      scala.util.Sorting.quickSort(members)(ordering)
       var into = 0
       var from = 0
-      while (from < members.size()) {
-        val first_from = members.get(from)
-        members.set(into, first_from)
+      while (from < members.length) {
+        val first_from = members(from)
+        members(into) = first_from
         into += 1
         do {
           from += 1
-        } while (from < members.size() && members.get(from) == first_from)
+        } while (from < members.length && members(from) == first_from)
       }
-      members.subList(into, members.size()).clear()
+      members.slice(0, into)
     }
   }
-
 }
