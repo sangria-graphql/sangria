@@ -5,7 +5,7 @@ import java.util.Objects
 import sangria.ast
 import sangria.renderer.QueryRenderer
 
-import scala.collection.{breakOut, mutable}
+import scala.collection.mutable
 
 /**
   * A hashable representation of field name and arguments,
@@ -41,9 +41,9 @@ final class FieldNameAndArguments(private val field: ast.Field) {
   }
 
   private def argumentsKey(arguments: Vector[ast.Argument]): mutable.WrappedArray[(String, String)] = {
-    val key: Array[(String, String)] = arguments.map{ argument =>
+    val key: Array[(String, String)] = arguments.view.map{ argument =>
       argument.name -> QueryRenderer.render(argument.value, QueryRenderer.Compact)
-    }(breakOut)
+    }.toArray
     util.Sorting.quickSort(key)(Ordering.by(_._1))
     key
   }

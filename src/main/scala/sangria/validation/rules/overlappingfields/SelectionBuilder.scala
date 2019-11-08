@@ -50,7 +50,7 @@ class SelectionBuilder {
   }
 
   def leaveSelectionContainer(): Unit = {
-    stack.reduceToSize(stack.size - 1)
+    stack.remove(stack.size - 1)
   }
 
   /**
