@@ -20,19 +20,11 @@ class CachedCheck {
   private val cache: mutable.Map[FieldSet, FieldSetCache] = new mutable.HashMap()
 
   def checkFieldsInSetCanMerge(selectionContainer: SelectionContainer, builder: SelectionConflictViolationsBuilder): Unit = {
-    getCacheLine(computeFieldSet(selectionContainer.effectiveSelections)).checkFieldsInSetCanMerge(builder)
+    getCacheLine(selectionContainer.fieldSet).checkFieldsInSetCanMerge(builder)
   }
 
   private def getCacheLine(fields: FieldSet): FieldSetCache = {
     cache.getOrElseUpdate(fields, new FieldSetCache(fields))
-  }
-
-  private def computeFieldSet(effectiveSelections: mutable.LinkedHashSet[SelectionContainer]): FieldSet = {
-    var expectedSize = 0
-    effectiveSelections.foreach(selection => expectedSize += selection.directFields.size)
-    val builder = newFieldSetBuilder(expectedSize)
-    effectiveSelections.foreach(selection => builder.addAll(selection.directFields))
-    builder.build()
   }
 
   private class FieldSetCache(val fields: FieldSet) {
@@ -159,7 +151,7 @@ class CachedCheck {
       if (cacheMergeChildSelections == null) {
         val children = new mutable.LinkedHashSet[SelectionContainer]()
         fields.foreach { field => children ++= field.childSelection.effectiveSelections }
-        val result = getCacheLine(computeFieldSet(children))
+        val result = getCacheLine(SelectionContainer.fieldSet(children))
         cacheMergeChildSelections = result
         cacheMergeChildSelections
       } else {

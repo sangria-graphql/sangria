@@ -59,7 +59,7 @@ object SortedArraySet {
       this
     }
 
-    def addAll(values: Traversable[T]): this.type = {
+    def addAll(values: Iterable[T]): this.type = {
       memberBuilder ++= values
       this
     }
