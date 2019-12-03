@@ -7,7 +7,7 @@ import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOpt
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(core)
+  .aggregate(core, benchmarks)
   .settings(
     commonSettings,
     noPublishSettings
@@ -64,6 +64,18 @@ lazy val core = project
         "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
       else
         "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+  )
+
+lazy val benchmarks = project
+  .in(file("modules/benchmarks"))
+  .withId("sangria-benchmarks")
+  .dependsOn(core)
+  .enablePlugins(JmhPlugin)
+  .settings(
+    commonSettings,
+    noPublishSettings,
+    name := "sangria-benchmarks",
+    description := "Benchmarks of Sangria functionality",
   )
 
 /* Commonly used functionality across the projects
