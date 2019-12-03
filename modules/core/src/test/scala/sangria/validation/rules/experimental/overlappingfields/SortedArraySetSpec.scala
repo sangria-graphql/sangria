@@ -1,4 +1,4 @@
-package sangria.validation.rules.overlappingfields
+package sangria.validation.rules.experimental.overlappingfields
 
 import java.util.function.Consumer
 

@@ -5,7 +5,7 @@ import org.openjdk.jmh.infra.Blackhole
 import sangria.ast.Document
 import sangria.parser.QueryParser
 import sangria.schema.Schema
-import sangria.validation.rules.{OverlappingFieldsCanBeMerged, OverlappingFieldsCanBeMergedFast}
+import sangria.validation.rules
 import sangria.validation.{QueryValidator, RuleBasedQueryValidator, Violation}
 
 @State(Scope.Thread)
@@ -70,8 +70,8 @@ class OverlappingFieldsCanBeMergedBenchmark {
   @Setup
   def setup(): Unit = {
     validator = validatorType match {
-      case "Old" => new RuleBasedQueryValidator(List(new OverlappingFieldsCanBeMerged))
-      case "New" => new RuleBasedQueryValidator(List(new OverlappingFieldsCanBeMergedFast))
+      case "Old" => new RuleBasedQueryValidator(List(new rules.OverlappingFieldsCanBeMerged))
+      case "New" => new RuleBasedQueryValidator(List(new rules.experimental.OverlappingFieldsCanBeMerged))
     }
     overlapFrag = makeQuery(size, overlapping = true, fragments = true)
     overlapNoFrag = makeQuery(size, overlapping = true, fragments = false)

@@ -1,12 +1,12 @@
-package sangria.validation.rules
+package sangria.validation.rules.experimental
 
 import org.scalatest.WordSpec
 import sangria.schema._
 import sangria.util.{Pos, ValidationSupport}
 
-class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSupport {
+class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
 
-  override val defaultRule = Some(new OverlappingFieldsCanBeMergedFast)
+  override val defaultRule = Some(new OverlappingFieldsCanBeMerged)
 
   "Validate: Overlapping fields can be merged" should {
     "unique fields" in expectPasses(
@@ -495,7 +495,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
       // type IntBox and the interface type NonNullStringBox1. While that
       // condition does not exist in the current schema, the schema could
       // expand in the future to allow this. Thus it is invalid.
-      "conflicting return types which potentially overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "conflicting return types which potentially overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -512,7 +512,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
           "Conflict at 'scalar' because they return conflicting types 'Int' and 'String!'." -> List(Pos(5, 17), Pos(8, 17))
         ))
 
-      "same wrapped scalar return types" in expectValid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "same wrapped scalar return types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -526,7 +526,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
           }
         """)
 
-      "allows non-conflicting overlaping types" in expectValid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "allows non-conflicting overlaping types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -540,7 +540,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
           }
         """)
 
-      "compares deep types including list" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "compares deep types including list" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             connection {
@@ -566,7 +566,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
           "Conflict at 'id' because 'name' and 'id' are different fields." -> List(Pos(7, 19), Pos(16, 17))
         ))
 
-      "ignores unknown types" in expectValid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "ignores unknown types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -583,7 +583,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
       // In this case `deepBox` returns `SomeBox` in the first usage, and
       // `StringBox` in the second usage. These return types are not the same!
       // however this is valid because the return *shapes* are compatible.
-      "compatible return shapes on different return types" in expectValid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "compatible return shapes on different return types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -601,7 +601,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
           }
         """)
 
-      "disallows differing return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "disallows differing return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -616,7 +616,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
         """,
         List("Conflict at 'scalar' because they return conflicting types 'Int' and 'String'." → List(Pos(5, 17), Pos(8, 17))))
 
-      "reports correctly when a non-exclusive follows an exclusive" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "reports correctly when a non-exclusive follows an exclusive" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -663,7 +663,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
         """,
         List("Conflict at 'scalar' because 'scalar' and 'unrelatedField' are different fields." → List(Pos(39, 13), Pos(42, 13))))
 
-      "disallows differing return type nullability despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "disallows differing return type nullability despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -678,7 +678,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
         """,
         List("Conflict at 'scalar' because they return conflicting types 'String!' and 'String'." → List(Pos(5, 17), Pos(8, 17))))
 
-      "disallows differing return type list despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "disallows differing return type list despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -697,7 +697,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
         """,
         List("Conflict at 'box' because they return conflicting types '[StringBox]' and 'StringBox'." → List(Pos(5, 17), Pos(10, 17))))
 
-      "disallows differing return type list despite no overlap (reverse)" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "disallows differing return type list despite no overlap (reverse)" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -716,7 +716,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
         """,
         List("Conflict at 'box' because they return conflicting types 'StringBox' and '[StringBox]'." → List(Pos(5, 17), Pos(10, 17))))
 
-      "disallows differing subfields" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "disallows differing subfields" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -737,7 +737,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
         List(
           "Conflict at 'val' because 'scalar' and 'unrelatedField' are different fields." → List(Pos(6, 19), Pos(7, 19))))
 
-      "disallows differing deep return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+      "disallows differing deep return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -783,7 +783,7 @@ class OverlappingFieldsCanBeMergedFastSpec extends WordSpec with ValidationSuppo
         }
       """)
 
-    "finds invalid case even with immediately spread fragment" in expectInvalid(schema, new OverlappingFieldsCanBeMergedFast :: Nil,
+    "finds invalid case even with immediately spread fragment" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
       """
         fragment sameAliasesWithDifferentFieldTargets on Dog {
          ...sameAliasesWithDifferentFieldTargets

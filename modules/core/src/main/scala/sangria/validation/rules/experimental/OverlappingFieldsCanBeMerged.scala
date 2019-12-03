@@ -1,11 +1,12 @@
-package sangria.validation.rules
+package sangria.validation.rules.experimental
 
 import java.util.function.Consumer
 
+import sangria.annotations.ApiMayChange
 import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
-import sangria.validation.rules.overlappingfields.{CachedCheck, SelectionBuilder, SelectionConflictViolationsBuilder, SelectionContainer}
+import sangria.validation.rules.experimental.overlappingfields._
 
 /**
   * Overlapping fields can be merged
@@ -15,8 +16,12 @@ import sangria.validation.rules.overlappingfields.{CachedCheck, SelectionBuilder
   * without ambiguity.
   *
   * The algorithm is described in [[CachedCheck]].
+  *
+  * The validation rule implements the same validation as OverlappingFieldsCanBeMerged
+  * and could eventually replace it. It is an alternative, more performant implementation.
   */
-class OverlappingFieldsCanBeMergedFast extends ValidationRule {
+@ApiMayChange
+class OverlappingFieldsCanBeMerged extends ValidationRule {
 
   override def visitor(ctx: ValidationContext): AstValidatingVisitor =
     new AstValidatingVisitor {
