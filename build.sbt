@@ -1,6 +1,16 @@
 import sbt.Developer
 import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOptions, scmInfo, startYear}
 
+// has to be set for all modules to allow 'sbt release'
+// [error] Repository for publishing is not specified.
+publishTo in ThisBuild := Some(
+  if (isSnapshot.value)
+    "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+  else
+    "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+
+releaseCrossBuild in ThisBuild := true
+
 /* Define the different sbt projects of sangria
  */
 
@@ -9,7 +19,9 @@ lazy val root = project
   .withId("sangria-root")
   .aggregate(core, benchmarks)
   .settings(
-    commonSettings,
+    inThisBuild(projectInfo ++ scalaSettings ++ shellSettings)
+  )
+  .settings(
     noPublishSettings
   )
 
@@ -17,7 +29,6 @@ lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
   .settings(
-    commonSettings,
     name := "sangria",
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "1.4.2"),
@@ -54,16 +65,10 @@ lazy val core = project
     ),
 
     // Publishing
-    releaseCrossBuild := true,
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     publishMavenStyle := true,
     publishArtifact in Test := false,
-    pomIncludeRepository := (_ => false),
-    publishTo := Some(
-      if (isSnapshot.value)
-        "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-      else
-        "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+    pomIncludeRepository := (_ => false)
   )
 
 lazy val benchmarks = project
@@ -72,7 +77,6 @@ lazy val benchmarks = project
   .dependsOn(core)
   .enablePlugins(JmhPlugin)
   .settings(
-    commonSettings,
     noPublishSettings,
     name := "sangria-benchmarks",
     description := "Benchmarks of Sangria functionality",
@@ -80,8 +84,6 @@ lazy val benchmarks = project
 
 /* Commonly used functionality across the projects
  */
-
-lazy val commonSettings = projectInfo ++ scalaSettings ++ shellSettings
 
 lazy val projectInfo = Seq(
   organization := "org.sangria-graphql",
