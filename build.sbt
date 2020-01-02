@@ -3,13 +3,6 @@ import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOpt
 
 // has to be set for all modules to allow 'sbt release'
 // [error] Repository for publishing is not specified.
-publishTo in ThisBuild := Some(
-  if (isSnapshot.value)
-    "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-  else
-    "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-
-releaseCrossBuild in ThisBuild := true
 
 /* Define the different sbt projects of sangria
  */
@@ -18,16 +11,15 @@ lazy val root = project
   .in(file("."))
   .withId("sangria-root")
   .aggregate(core, benchmarks)
+  .settings(inThisBuild(projectInfo))
   .settings(
-    inThisBuild(projectInfo ++ scalaSettings ++ shellSettings)
-  )
-  .settings(
-    noPublishSettings
+    scalaSettings ++ shellSettings ++ publishSettings ++ noPublishSettings
   )
 
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
+  .settings(scalaSettings ++ shellSettings ++ publishSettings)
   .settings(
     name := "sangria",
     description := "Scala GraphQL implementation",
@@ -62,13 +54,7 @@ lazy val core = project
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.1" % Test,
       "io.github.classgraph" % "classgraph" % "4.8.59" % Test
-    ),
-
-    // Publishing
-    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-    publishMavenStyle := true,
-    publishArtifact in Test := false,
-    pomIncludeRepository := (_ => false)
+    )
   )
 
 lazy val benchmarks = project
@@ -76,8 +62,8 @@ lazy val benchmarks = project
   .withId("sangria-benchmarks")
   .dependsOn(core)
   .enablePlugins(JmhPlugin)
+  .settings(scalaSettings ++ shellSettings ++ noPublishSettings)
   .settings(
-    noPublishSettings,
     name := "sangria-benchmarks",
     description := "Benchmarks of Sangria functionality",
   )
@@ -118,6 +104,20 @@ lazy val shellSettings = Seq(
   ThisBuild / shellPrompt := { state =>
     scala.Console.MAGENTA + Project.extract(state).currentRef.project + "> " + scala.Console.RESET
   }
+)
+
+lazy val publishSettings = Seq(
+  releaseCrossBuild := true,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  releaseVcsSign := true,
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := (_ => false),
+  publishTo := Some(
+    if (isSnapshot.value)
+      "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    else
+      "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
 )
 
 lazy val noPublishSettings = Seq(
