@@ -44,6 +44,23 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
     nested: TestNested,
     nestedDef: Option[List[TestNested]] = Some(List(TestNested(TestDeeper("ee", 1), List(1), None), TestNested(TestDeeper("ff", 1), List(1), None))))
 
+  case class TestObjectWithIdType(
+    @GraphQLInputType(IDType)
+    id: String
+  )
+
+  case class TestObjectWithOptionalIdType(
+    @GraphQLInputType(OptionInputType(IDType))
+    id: Option[String])
+
+  case class InnerClass(someValue: String)
+
+  private val innerClassType = deriveInputObjectType[InnerClass]()
+
+  case class TestNestedObjectGivenFieldWithoutImplicit(
+    @GraphQLInputType(innerClassType)
+    inner: Option[InnerClass])
+
   "InputObjectType derivation" should {
     "use class name and have no description by default" in {
       val tpe = deriveInputObjectType[TestInputObj]()
@@ -181,6 +198,33 @@ class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureR
 
       tpe.fields(1).name should be ("fooBar")
       tpe.fields(1).description should be (None)
+    }
+
+    "support overriding field types" in {
+      val tpe = deriveInputObjectType[TestObjectWithIdType]()
+
+      tpe.fields should have size 1
+
+      tpe.fields(0).name should be ("id")
+      tpe.fields(0).fieldType should be (IDType)
+    }
+
+    "support overriding field types with optionals" in {
+      val tpe = deriveInputObjectType[TestObjectWithOptionalIdType]()
+
+      tpe.fields should have size 1
+
+      tpe.fields(0).name should be ("id")
+      tpe.fields(0).fieldType should be (OptionInputType(IDType))
+    }
+
+    "overwriting type should work even if implicit type is not found" in {
+      val tpe = deriveInputObjectType[TestNestedObjectGivenFieldWithoutImplicit]()
+
+      tpe.fields should have size 1
+
+      tpe.fields(0).name should be ("inner")
+      tpe.fields(0).fieldType should be (innerClassType)
     }
 
     "be able handle recursive input types with replaced fields" in {

@@ -64,6 +64,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
 
             val classFields = fields map { field =>
               val fieldType = field.method.returnType
+              val annotationType = symbolInputType(field.annotations)
 
               val name = field.name
               val annotationName = symbolName(field.annotations)
@@ -87,11 +88,12 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
 
               default match {
                 case Some(d) =>
-                  val ft =
+                  val ft = annotationType.getOrElse({
                     if (fieldType.erasure <:< typeOf[Option[_]].erasure)
                       q"sangria.macros.derive.GraphQLInputTypeLookup.finder[$fieldType]().graphqlType"
                     else
                       q"sangria.macros.derive.GraphQLInputTypeLookup.finder[Option[$fieldType]]().graphqlType"
+                  })
 
                   q"""
                     sangria.schema.InputField.createFromMacroWithDefault(
@@ -101,10 +103,11 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
                       $d)
                   """
                 case None =>
+                  val implicitGraphqlType = q"sangria.macros.derive.GraphQLInputTypeLookup.finder[$fieldType]().graphqlType"
                   q"""
                     sangria.schema.InputField.createFromMacroWithoutDefault(
                       $fieldName,
-                      sangria.macros.derive.GraphQLInputTypeLookup.finder[$fieldType]().graphqlType,
+                      ${annotationType getOrElse implicitGraphqlType},
                       ${configDescr orElse annotationDescr})
                   """
 
