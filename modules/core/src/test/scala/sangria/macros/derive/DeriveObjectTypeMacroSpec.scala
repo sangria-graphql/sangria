@@ -232,7 +232,7 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       tpe.fields(0).description should be (Some("my id"))
       tpe.fields(0).deprecationReason should be (Some("No IDs anymore!"))
       tpe.fields(0).tags should be (Nil)
-      tpe.fields(0).fieldType should be (StringType)
+      tpe.fields(0).fieldType should be (IDType)
 
       tpe.fields(1).name should be ("myList")
       tpe.fields(1).description should be (None)
@@ -254,13 +254,65 @@ class DeriveObjectTypeMacroSpec extends WordSpec with Matchers with FutureResult
       tpe.fields(0).description should be (Some("new descr"))
       tpe.fields(0).deprecationReason should be (Some("new depr"))
       tpe.fields(0).tags should be (List(FooTag))
-      tpe.fields(0).fieldType should be (StringType)
+      tpe.fields(0).fieldType should be (IDType)
 
       tpe.fields(1).name should be ("fooBar")
       tpe.fields(1).description should be (None)
       tpe.fields(1).deprecationReason should be (None)
       tpe.fields(1).tags should be (List(FooTag, CachedTag, AuthorizedTag))
       tpe.fields(1).fieldType should be (ListType(StringType))
+    }
+
+    "support overriding field types" in {
+      class TestObject {
+        @GraphQLField
+        @GraphQLOutputType(IDType)
+        val id: String = ""
+      }
+
+      val tpe = deriveObjectType[Unit, TestObject]()
+
+      tpe.fields should have size 1
+
+      tpe.fields(0).name should be ("id")
+      tpe.fields(0).fieldType should be (IDType)
+    }
+
+    "support overriding field types with optionals" in {
+      class TestObject {
+        @GraphQLField
+        @GraphQLOutputType(OptionType(IDType))
+        val id: Option[String] = None
+      }
+
+      val tpe = deriveObjectType[Unit, TestObject]()
+
+      tpe.fields should have size 1
+
+      tpe.fields(0).name should be ("id")
+      tpe.fields(0).fieldType should be (OptionType(IDType))
+    }
+
+    "overwriting type should work even if implicit type is not found" in {
+      class InnerClass {
+        @GraphQLField
+        val someValue: String = "foo"
+      }
+
+      val innerClassType = deriveObjectType[Unit, InnerClass]()
+
+      class TestObject {
+        @GraphQLField
+        @GraphQLOutputType(OptionType(innerClassType))
+        val inner: Option[InnerClass] = None
+      }
+
+      val tpe = deriveObjectType[Unit, TestObject]()
+
+      tpe.fields should have size 1
+
+      tpe.fields(0).name should be ("inner")
+      tpe.fields(0).fieldType should be (OptionType(innerClassType))
     }
 
     "support vals" in {

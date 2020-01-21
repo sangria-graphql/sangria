@@ -24,6 +24,7 @@ object DeriveMacroTestModel {
   case class TestSubjectAnnotated(
     @GraphQLDescription("my id")
     @GraphQLDeprecated("No IDs anymore!")
+    @GraphQLOutputType(IDType)
     id: String,
 
     @GraphQLName("myList")
