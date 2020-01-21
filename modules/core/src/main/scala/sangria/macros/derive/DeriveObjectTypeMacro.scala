@@ -85,6 +85,9 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           val fieldType = field.method.returnType
           val actualFieldType = findActualFieldType(fieldType)
 
+          val annotationType = symbolOutputType(field.annotations)
+          val implicitGraphqlType = q"implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$actualFieldType]].graphqlType"
+
           val name = field.name
           val annotationName = symbolName(field.annotations)
           val configName = config.collect{case MacroRenameField(`name`, tree, _) => tree}.lastOption
@@ -116,7 +119,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           q"""
             sangria.schema.Field[$ctxType, $valType, $actualFieldType, $actualFieldType](
               $fieldName,
-              implicitly[sangria.macros.derive.GraphQLOutputTypeLookup[$actualFieldType]].graphqlType,
+              ${annotationType getOrElse implicitGraphqlType},
               ${configDescr orElse annotationDescr},
               $args,
               $resolve,
