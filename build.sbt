@@ -49,7 +49,7 @@ lazy val core = project
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.0" % Test,
       "org.sangria-graphql" %% "sangria-monix" % "2.0.0" % Test,
-      "eu.timepit" %% "refined" % "0.9.10" % Test,
+      "eu.timepit" %% "refined" % "0.9.12" % Test,
 
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.1" % Test,
