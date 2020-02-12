@@ -25,6 +25,18 @@ trait DeriveMacroSupport {
       .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] => arg}
       .headOption
 
+  protected def symbolOutputType(annotations: List[Annotation]): Option[Tree] =
+    annotations
+      .map (_.tree)
+      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLOutputType] => arg}
+      .headOption
+
+  protected def symbolInputType(annotations: List[Annotation]): Option[Tree] =
+    annotations
+      .map (_.tree)
+      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLInputType] => arg}
+      .headOption
+
   protected def symbolDescription(annotations: List[Annotation]): Option[Tree] =
     annotations
       .map (_.tree)
