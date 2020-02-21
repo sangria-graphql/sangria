@@ -2,7 +2,6 @@ package sangria.execution.deferred
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.Executor
 import sangria.macros._
@@ -11,8 +10,10 @@ import sangria.util.{FutureResultSupport, Pos}
 import sangria.util.SimpleGraphQlSupport._
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class FetcherSpec extends WordSpec with Matchers with FutureResultSupport {
+class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class Product(id: Int, name: String, inCategories: Vector[String])
   case class Category(id: String, name: String, children: Seq[String], products: Vector[Int] = Vector.empty)
   case class ColorDeferred(id: String) extends Deferred[String]

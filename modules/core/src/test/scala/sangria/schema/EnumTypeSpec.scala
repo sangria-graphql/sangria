@@ -1,10 +1,11 @@
 package sangria.schema
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.util.{Pos, GraphQlSupport}
 import spray.json.{JsObject, JsString, JsNumber}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class EnumTypeSpec extends WordSpec with Matchers with GraphQlSupport {
+class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
   val ColorType = EnumType("Color", values = List(
     EnumValue("RED", value = 0),
     EnumValue("GREEN", value = 1),

@@ -6,14 +6,15 @@ import sangria.validation.IntCoercionViolation
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.util.{Pos, FutureResultSupport}
 import sangria.introspection.{IntrospectionScalarType, IntrospectionField, IntrospectionType, introspectionQuery}
 import sangria.util.SimpleGraphQlSupport.{checkContainsErrors, check}
 import spray.json._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class IntrospectionSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport {
+class IntrospectionSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   // Test property:
   // Given a server's schema, a client may query that server with introspection,

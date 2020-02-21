@@ -2,7 +2,6 @@ package sangria.marshalling
 
 import java.util.concurrent.Executor
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema.{Argument, EnumType, EnumValue, Field, InputField, InputObjectType, ObjectType}
@@ -11,8 +10,10 @@ import spray.json.{JsObject, JsString, JsValue, JsonReader}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class EnumInputTypeSpec extends WordSpec with Matchers {
+class EnumInputTypeSpec extends AnyWordSpec with Matchers {
   implicit val inputUnmarshaller: SprayJsonInputUnmarshaller.type = SprayJsonInputUnmarshaller
 
   implicit def sprayJsonFromInput[T <: JsValue]: FromInput[T] = sprayJson.sprayJsonFromInput[T]

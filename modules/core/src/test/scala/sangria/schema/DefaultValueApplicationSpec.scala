@@ -1,6 +1,5 @@
 package sangria.schema
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
 import sangria.execution.Executor
 import sangria.macros._
@@ -11,8 +10,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import spray.json._
 import sangria.marshalling.sprayJson._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DefaultValueApplicationSpec extends WordSpec with Matchers with FutureResultSupport {
+class DefaultValueApplicationSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Default value application" should {
     "use default value if argument is not provided" in {
       val assertion = (args: Args) => args.withArgs(AArg, SizeArg) { (test, size) =>

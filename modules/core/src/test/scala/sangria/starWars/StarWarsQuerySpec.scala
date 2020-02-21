@@ -1,6 +1,5 @@
 package sangria.starWars
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
@@ -12,8 +11,10 @@ import InputUnmarshaller.mapVars
 import sangria.validation.QueryValidator
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class StarWarsQuerySpec extends WordSpec with Matchers with FutureResultSupport {
+class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Basic Queries" should {
     "Correctly identifies R2-D2 as the hero of the Star Wars Saga" in {
       val query = graphql"""

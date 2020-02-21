@@ -1,6 +1,5 @@
 package sangria.schema
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.{MaterializedSchemaValidationError, WithViolations}
 import sangria.validation._
@@ -10,8 +9,10 @@ import sangria.parser.QueryParser
 import sangria.util.Pos
 
 import scala.util.{Failure, Success, Try}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaConstraintsSpec extends WordSpec with Matchers {
+class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
   "Schema" should {
     "not allow use same type name for different GraphQL type kinds (input & output type)" in {
       val inputType = InputObjectType("Point", List(

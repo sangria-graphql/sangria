@@ -1,9 +1,10 @@
 package sangria.macros.derive
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DeriveEnumTypeMacroSpec extends WordSpec with Matchers {
+class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
   import DeriveMacroTestModel._
 
   sealed trait Difficulty

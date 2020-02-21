@@ -1,6 +1,5 @@
 package sangria.schema
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast.{FieldDefinition, ObjectTypeDefinition, ObjectTypeExtensionDefinition, TypeDefinition}
 import sangria.execution.{Executor, MaterializedSchemaValidationError}
@@ -15,8 +14,10 @@ import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
+class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureResultSupport with StringMatchers {
 
   // This function does a full cycle of going from a
   // string with the contents of the DSL, parsed

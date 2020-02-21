@@ -1,9 +1,9 @@
 package sangria.validation.rules
 
-import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
+import org.scalatest.wordspec.AnyWordSpec
 
-class SingleFieldSubscriptionsSpec extends WordSpec with ValidationSupport {
+class SingleFieldSubscriptionsSpec extends AnyWordSpec with ValidationSupport {
 
   override val defaultRule = Some(new SingleFieldSubscriptions)
 

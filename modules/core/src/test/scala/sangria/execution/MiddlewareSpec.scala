@@ -2,7 +2,6 @@ package sangria.execution
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast.Document
 import sangria.execution.deferred.{Deferred, DeferredResolver}
@@ -14,8 +13,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
+class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   class QueryMiddleware extends Middleware[Count] {
     type QueryVal = String
 

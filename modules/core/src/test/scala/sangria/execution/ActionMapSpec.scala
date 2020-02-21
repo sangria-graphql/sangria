@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.parser.QueryParser
 import sangria.schema._
@@ -9,8 +8,10 @@ import sangria.util.{DebugUtil, FutureResultSupport}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ActionMapSpec extends WordSpec with Matchers with FutureResultSupport {
+class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class Color(name: String)
 
   case class ColorDefer(num: Int) extends Deferred[String]

@@ -5,7 +5,6 @@ import java.util.UUID
 import eu.timepit.refined._
 import eu.timepit.refined.numeric._
 import eu.timepit.refined.api.Refined
-import org.scalatest.{Matchers, WordSpec}
 import sangria.util.{FutureResultSupport, Pos}
 import sangria.schema._
 import sangria.macros._
@@ -15,10 +14,12 @@ import sangria.validation.{AstNodeViolation, ValueCoercionViolation}
 import sangria.util.SimpleGraphQlSupport._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class UserId(id: String) extends AnyVal
 
-class ScalarAliasSpec extends WordSpec with Matchers with FutureResultSupport  {
+class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport  {
   case class User(id: UserId, id2: Option[UserId], name: String, num: Int Refined Positive)
 
   case class RefineViolation(error: String) extends ValueCoercionViolation(error)

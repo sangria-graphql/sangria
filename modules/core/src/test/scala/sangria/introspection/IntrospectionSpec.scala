@@ -1,6 +1,5 @@
 package sangria.introspection
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.schema._
@@ -9,8 +8,10 @@ import sangria.validation.QueryValidator
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class IntrospectionSpec extends WordSpec with Matchers with FutureResultSupport {
+class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Introspection" should {
     "executes an introspection query" in {
       val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))

@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
@@ -16,8 +15,10 @@ import scala.collection.immutable.Map
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
+class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   class TestSubject {
     def a: Option[String] = Some("Apple")
     def b: Option[String] = Some("Banana")

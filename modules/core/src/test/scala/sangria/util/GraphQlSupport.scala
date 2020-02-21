@@ -1,6 +1,5 @@
 package sangria.util
 
-import org.scalatest.Matchers
 import sangria.ast.AstLocation
 import sangria.execution.deferred.DeferredResolver
 import sangria.execution.{ExceptionHandler, Executor, HandledException, WithViolations}
@@ -13,6 +12,7 @@ import spray.json.{JsObject, JsValue}
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
+import org.scalatest.matchers.should.Matchers
 
 object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
   def executeTestQuery[T, A: InputUnmarshaller](schema: Schema[_, _], data: T, query: String, args: A, userContext: Any = (), resolver: DeferredResolver[Any] = DeferredResolver.empty, validateQuery: Boolean = true) = {

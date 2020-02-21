@@ -1,13 +1,14 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
 import sangria.util.{FutureResultSupport, GraphQlSupport, SimpleGraphQlSupport}
 import spray.json.{JsNull, JsObject, JsString}
 
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class NotNullSpec extends WordSpec with Matchers with FutureResultSupport with GraphQlSupport {
+class NotNullSpec extends AnyWordSpec with Matchers with FutureResultSupport with GraphQlSupport {
   trait TestSubject {
     def sync: Option[String]
     def nonNullSync: String

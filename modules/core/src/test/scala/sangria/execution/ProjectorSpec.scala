@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.parser.QueryParser
 import sangria.schema._
@@ -9,8 +8,10 @@ import sangria.util.FutureResultSupport
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ProjectorSpec extends WordSpec with Matchers with FutureResultSupport {
+class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class Product(id: String, variants: List[Variant])
   case class Variant(id: String, relatedProductIds: List[String])
 

@@ -1,10 +1,10 @@
 package sangria.validation.rules
 
-import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
 import sangria.validation.UndefinedFieldViolation
+import org.scalatest.wordspec.AnyWordSpec
 
-class FieldsOnCorrectTypeSpec extends WordSpec with ValidationSupport {
+class FieldsOnCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
 
   override val defaultRule = Some(new FieldsOnCorrectType)
 

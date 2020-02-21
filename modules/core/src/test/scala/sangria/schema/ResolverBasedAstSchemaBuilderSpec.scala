@@ -3,7 +3,6 @@ package sangria.schema
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.{Executor, QueryReducer, UserFacingError}
 import sangria.macros._
@@ -17,8 +16,10 @@ import spray.json._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 import sangria.util.SimpleGraphQlSupport._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ResolverBasedAstSchemaBuilderSpec extends WordSpec with Matchers with FutureResultSupport {
+class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case object UUIDViolation extends BaseViolation("Invalid UUID")
 
   def parseUuid(s: String) = Try(UUID.fromString(s)) match {

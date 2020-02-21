@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
@@ -8,8 +7,10 @@ import sangria.schema._
 import sangria.ast
 
 import scala.reflect.ClassTag
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ValueCoercionHelperSpec extends WordSpec with Matchers {
+class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
   val helper = ValueCoercionHelper.default
   val marshaller = CoercedScalaResultMarshaller.default
 

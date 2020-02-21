@@ -1,6 +1,5 @@
 package sangria.schema
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast.{FieldDefinition, ObjectTypeDefinition, ObjectTypeExtensionDefinition}
 import sangria.execution.MaterializedSchemaValidationError
@@ -9,8 +8,10 @@ import sangria.util.SimpleGraphQlSupport.check
 import sangria.util.{FutureResultSupport, Pos, SimpleGraphQlSupport, StringMatchers}
 import sangria.validation.IntCoercionViolation
 import sangria.macros._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaExtensionSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
+class SchemaExtensionSpec extends AnyWordSpec with Matchers with FutureResultSupport with StringMatchers {
 
   trait SomeInterface {
     def name: Option[String]

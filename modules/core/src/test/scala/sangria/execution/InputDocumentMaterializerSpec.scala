@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.macros._
 import sangria.ast
 import sangria.marshalling.ScalaInput.scalaInput
@@ -12,8 +11,10 @@ import sangria.util.{Pos, StringMatchers}
 import sangria.validation.QueryValidator
 import spray.json._
 import sangria.util.SimpleGraphQlSupport._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class InputDocumentMaterializerSpec extends WordSpec with Matchers with StringMatchers {
+class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with StringMatchers {
   case class Comment(author: String, text: Option[String])
   case class Article(title: String, text: Option[String], tags: Option[Vector[String]], comments: Vector[Option[Comment]])
 

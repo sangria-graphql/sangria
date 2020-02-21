@@ -1,9 +1,9 @@
 package sangria.validation.rules
 
-import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
+import org.scalatest.wordspec.AnyWordSpec
 
-class ExecutableDefinitionsSpec extends WordSpec with ValidationSupport {
+class ExecutableDefinitionsSpec extends AnyWordSpec with ValidationSupport {
 
   override val defaultRule = Some(new ExecutableDefinitions)
 

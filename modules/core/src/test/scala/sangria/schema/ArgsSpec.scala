@@ -1,13 +1,13 @@
 package sangria.schema
 
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 import sangria.execution.AttributeCoercionError
 import sangria.marshalling.sprayJson._
 import sangria.util.Cache
 import spray.json._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ArgsSpec extends WordSpec with Matchers {
+class ArgsSpec extends AnyWordSpec with Matchers {
   val NonDefaultArgumentName = "nonDefaultArgument"
   val DefaultArgumentName = "defaultArgument"
   val OptionalArgumentName = "optionalArg"

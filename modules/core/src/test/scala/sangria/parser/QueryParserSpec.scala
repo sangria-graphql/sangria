@@ -2,15 +2,16 @@ package sangria.parser
 
 import language.postfixOps
 import sangria.ast.AstLocation
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast._
 import sangria.util.{DebugUtil, FileUtil, StringMatchers}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class QueryParserSpec extends WordSpec with Matchers with StringMatchers {
+class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
   def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
     QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
 

@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
 import sangria.schema._
@@ -13,8 +12,10 @@ import spray.json._
 
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class VariablesSpec extends WordSpec with Matchers with GraphQlSupport {
+class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
   val TestInputObject = InputObjectType("TestInputObject", List(
     InputField("a", OptionInputType(StringType)),
     InputField("b", OptionInputType(ListInputType(OptionInputType(StringType)))),

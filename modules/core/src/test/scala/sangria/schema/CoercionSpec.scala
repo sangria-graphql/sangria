@@ -2,10 +2,11 @@ package sangria.schema
 
 import java.util.Date
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CoercionSpec extends WordSpec with Matchers {
+class CoercionSpec extends AnyWordSpec with Matchers {
   "Type System: Scalar coercion" when {
     "coerces output" should {
       "Int" in {

@@ -2,15 +2,16 @@ package sangria.execution
 
 import sangria.util.FutureResultSupport
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.validation.QueryValidator
 
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DirectivesSpec extends WordSpec with Matchers with FutureResultSupport {
+class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   case class TestSubject(a: Option[String], b: Option[String])
 

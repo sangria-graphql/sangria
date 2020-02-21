@@ -1,9 +1,9 @@
 package sangria.validation.rules
 
-import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
+import org.scalatest.wordspec.AnyWordSpec
 
-class FragmentsOnCompositeTypesSpec extends WordSpec with ValidationSupport {
+class FragmentsOnCompositeTypesSpec extends AnyWordSpec with ValidationSupport {
 
   override val defaultRule = Some(new FragmentsOnCompositeTypes)
 

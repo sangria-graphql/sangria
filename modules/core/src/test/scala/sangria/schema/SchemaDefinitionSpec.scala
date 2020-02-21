@@ -1,6 +1,5 @@
 package sangria.schema
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.Executor
 import sangria.validation.StringCoercionViolation
@@ -10,8 +9,10 @@ import sangria.marshalling.queryAst._
 import sangria.parser.DeliveryScheme.Throw
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaDefinitionSpec extends WordSpec with Matchers with FutureResultSupport {
+class SchemaDefinitionSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Schema" should {
     "collect all reachable types in `additionalTypes`" in {
       val CustomScalarType = ScalarType[String]("CustomScalar",

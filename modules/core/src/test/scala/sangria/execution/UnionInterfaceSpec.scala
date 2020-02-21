@@ -1,12 +1,13 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
 import sangria.macros._
 import sangria.util.{FutureResultSupport, GraphQlSupport}
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class UnionInterfaceSpec extends WordSpec with Matchers with FutureResultSupport with GraphQlSupport {
+class UnionInterfaceSpec extends AnyWordSpec with Matchers with FutureResultSupport with GraphQlSupport {
   trait Named {
     def name: Option[String]
   }

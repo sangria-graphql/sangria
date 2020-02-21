@@ -1,7 +1,6 @@
 package sangria.execution
 
 import java.util.concurrent.atomic.AtomicInteger
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.QueryReducer.ArgumentValuesFn
 import sangria.macros._
@@ -14,8 +13,10 @@ import sangria.validation.StringCoercionViolation
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class QueryReducerSpec extends WordSpec with Matchers with FutureResultSupport {
+class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class ATag(num: Int) extends FieldTag
   case object BTag extends FieldTag
 
