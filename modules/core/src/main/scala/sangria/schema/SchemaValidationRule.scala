@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.ast.{AstLocation, Document, ObjectTypeDefinition, ObjectTypeExtensionDefinition, UnionTypeDefinition, UnionTypeExtensionDefinition}
+import sangria.ast.{AstLocation, Document, NamedType, NotNullType, ObjectTypeDefinition, ObjectTypeExtensionDefinition, UnionTypeDefinition, UnionTypeExtensionDefinition}
 
 import language.higherKinds
 import sangria.execution._
@@ -24,7 +24,8 @@ object SchemaValidationRule {
     EnumValueReservedNameValidator,
     ContainerMembersValidator,
     ValidNamesValidator,
-    IntrospectionNamesValidator)
+    IntrospectionNamesValidator,
+    InputObjectTypeRecursionValidator)
 
   val default: List[SchemaValidationRule] = List(
     DefaultValuesValidationRule,
@@ -408,6 +409,31 @@ object EnumValueReservedNameValidator extends SchemaElementValidator {
     if (reservedNames.contains(value.name))
       Vector(ReservedEnumValueNameViolation(tpe.name, value.name, sourceMapper(schema), location(value)))
     else Vector.empty
+}
+
+object InputObjectTypeRecursionValidator extends SchemaElementValidator {
+  override def validateInputObjectType(schema: Schema[_, _], tpe: InputObjectType[_]): Vector[Violation] = {
+    containsRecursiveInputObject(tpe.namedType.name, List(), schema, tpe)
+  }
+
+  private def containsRecursiveInputObject(rootTypeName: String, path: List[String], schema: Schema[_, _], tpe: InputObjectType[_]): Vector[Violation] = {
+    val recursiveFields = tpe.fields.filter(childField => childField.fieldType.namedType.name == rootTypeName && !childField.fieldType.isOptional && !childField.fieldType.isList)
+    if (recursiveFields.nonEmpty) {
+      recursiveFields.flatMap(field => Vector(InputObjectTypeRecursion(tpe.name, field.name, path, None, Nil))).toVector
+    } else {
+      var violations = Vector[Violation]()
+      val childTypesToCheck = tpe.fields.filter(field => !field.fieldType.isOptional && !field.fieldType.isList && field.fieldType.isInstanceOf[InputObjectType[_]])
+      childTypesToCheck.foreach { field =>
+        schema.getInputType(NotNullType(NamedType(field.fieldType.namedType.name))).asInstanceOf[Option[InputObjectType[_]]] match {
+          case Some(objectType) if objectType != tpe =>
+            val updatedPath = path :+ field.name
+            violations = violations ++ containsRecursiveInputObject(rootTypeName, updatedPath, schema, objectType)
+          case _ =>
+        }
+      }
+      violations
+    }
+  }
 }
 
 trait SchemaElementValidator {

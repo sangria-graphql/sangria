@@ -608,3 +608,7 @@ case class ExistingTypeViolation(typeName: String, sourceMapper: Option[SourceMa
 case class InvalidTypeUsageViolation(expectedTypeKind: String, tpe: String, sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Type '$tpe' is not an $expectedTypeKind type."
 }
+
+case class InputObjectTypeRecursion(name: String, fieldName: String, path: List[String], sourceMapper: Option[SourceMapper], locations: List[AstLocation]) extends AstNodeViolation  {
+  lazy val simpleErrorMessage: String = s"Cannot reference InputObjectType '$name' within itself through a series of non-null fields: '$fieldName${if (path.isEmpty) "" else "."}${path.mkString(".")}'."
+}
