@@ -421,17 +421,15 @@ object InputObjectTypeRecursionValidator extends SchemaElementValidator {
     if (recursiveFields.nonEmpty) {
       recursiveFields.flatMap(field => Vector(InputObjectTypeRecursion(tpe.name, field.name, path, None, Nil))).toVector
     } else {
-      var violations = Vector[Violation]()
       val childTypesToCheck = tpe.fields.filter(field => !field.fieldType.isOptional && !field.fieldType.isList && field.fieldType.isInstanceOf[InputObjectType[_]])
-      childTypesToCheck.foreach { field =>
-        schema.getInputType(NotNullType(NamedType(field.fieldType.namedType.name))).asInstanceOf[Option[InputObjectType[_]]] match {
-          case Some(objectType) if objectType != tpe =>
+      childTypesToCheck.foldLeft(Vector.empty[Violation]) { case (acc, field) =>
+        schema.getInputType(NotNullType(NamedType(field.fieldType.namedType.name))) match {
+          case Some(objectType: InputObjectType[_]) if objectType != tpe =>
             val updatedPath = path :+ field.name
-            violations = violations ++ containsRecursiveInputObject(rootTypeName, updatedPath, schema, objectType)
-          case _ =>
+            acc ++ containsRecursiveInputObject(rootTypeName, updatedPath, schema, objectType)
+          case _ => acc
         }
       }
-      violations
     }
   }
 }
