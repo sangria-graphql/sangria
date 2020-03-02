@@ -882,6 +882,116 @@ class AstSchemaMaterializerSpec extends WordSpec with Matchers with FutureResult
         error.getMessage should include ("Object type 'Query' can include field 'field1' only once.")
       }
 
+      "accepts an Input Object with breakable circular reference" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              self: SomeInputObject
+              arrayOfSelf: [SomeInputObject]
+              nonNullArrayOfSelf: [SomeInputObject]!
+              nonNullArrayOfNonNullSelf: [SomeInputObject!]!
+              intermediateSelf: AnotherInputObject
+            }
+
+            input AnotherInputObject {
+              parent: SomeInputObject
+            }
+          """
+
+        noException should be thrownBy (Schema.buildFromAst(ast))
+      }
+
+      "rejects an Input Object with non-breakable circular reference" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              nonNullSelf: SomeInputObject!
+            }
+          """
+
+        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should include ("Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'nonNullSelf'.")
+      }
+
+      "rejects Input Objects with non-breakable circular reference spread across them" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              startLoop: AnotherInputObject!
+            }
+
+            input AnotherInputObject {
+              nextInLoop: YetAnotherInputObject!
+            }
+
+            input YetAnotherInputObject {
+              closeLoop: SomeInputObject!
+            }
+          """
+
+        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should include ("Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.nextInLoop.closeLoop'.")
+      }
+
+      "rejects Input Objects with multiple non-breakable circular reference" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              startLoop: AnotherInputObject!
+            }
+
+            input AnotherInputObject {
+              closeLoop: SomeInputObject!
+              startSecondLoop: YetAnotherInputObject!
+            }
+
+            input YetAnotherInputObject {
+              closeSecondLoop: AnotherInputObject!
+              nonNullSelf: YetAnotherInputObject!
+            }
+          """
+
+        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+
+        error.getMessage should include ("Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.closeLoop'.")
+        error.getMessage should include ("Cannot reference InputObjectType 'AnotherInputObject' within itself through a series of non-null fields: 'closeLoop.startLoop'.")
+        error.getMessage should include ("Cannot reference InputObjectType 'YetAnotherInputObject' within itself through a series of non-null fields: 'nonNullSelf'.")
+      }
+
       "don't allow to have extensions on non-existing types" in {
         val ast =
           graphql"""
