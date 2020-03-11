@@ -93,7 +93,7 @@ class ValuesOfCorrectType extends ValidationRule {
     def badValue(tpe: Type, node: ast.AstNode, violation: Option[Violation] = None) =
       Left(badValueV(SchemaRenderer.renderTypeName(tpe), node, violation))
 
-    def badValueV(tpe: String, node: ast.AstNode, violation: Option[Violation] = None) =
+    def badValueV(tpe: String, node: ast.AstNode, violation: Option[Violation]) =
       Vector(BadValueViolation(
         tpe,
         QueryRenderer.render(node),

@@ -3,7 +3,6 @@ package sangria.validation
 import sangria.ast.{AstLocation, Definition}
 import sangria.parser.SourceMapper
 import sangria.schema.DirectiveLocation
-import sangria.schema.Named.NameRegexp
 import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
 

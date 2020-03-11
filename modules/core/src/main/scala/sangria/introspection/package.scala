@@ -4,8 +4,6 @@ import sangria.parser.QueryParser
 import sangria.parser.DeliveryScheme.Throw
 import sangria.schema._
 
-import scala.util.Success
-
 package object introspection {
   object TypeKind extends Enumeration {
     val Scalar, Object, Interface, Union, Enum, InputObject, List, NonNull = Value

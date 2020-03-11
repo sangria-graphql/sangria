@@ -93,8 +93,6 @@ object BatchExecutor {
           case es =>
             val futures =
               doExecuteBatchPlan(executionPlan, marshaller, variables, convertedVariables, es.extended, single = true) { (opName, vars, iu) =>
-                implicit val iiu = iu
-
                 executeIndividual(executor, updatedDocument, opName, userContext, root, variables, es).asInstanceOf[Future[AnyRef]]
               }
 
@@ -255,11 +253,11 @@ object BatchExecutor {
     executor: Executor[Ctx, Root],
     queryAst: ast.Document,
     operationName: String,
-    userContext: Ctx = (),
-    root: Root = (),
+    userContext: Ctx,
+    root: Root,
     variables: Input,
     scheme: ExecutionScheme
-  )(implicit executionContext: ExecutionContext, marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): scheme.Result[Ctx, marshaller.Node] = {
+  )(implicit marshaller: ResultMarshaller, um: InputUnmarshaller[Input]): scheme.Result[Ctx, marshaller.Node] = {
     implicit val s = scheme
 
     executor.execute(queryAst, userContext, root, Some(operationName), variables).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]

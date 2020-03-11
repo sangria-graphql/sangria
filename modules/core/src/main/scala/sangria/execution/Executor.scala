@@ -107,7 +107,7 @@ case class Executor[Ctx, Root](
 
   private def executeOperation[Input](
     queryAst: ast.Document,
-    operationName: Option[String] = None,
+    operationName: Option[String],
     inputVariables: Input,
     inputUnmarshaller: InputUnmarshaller[Input],
     operation: ast.OperationDefinition,

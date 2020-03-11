@@ -2,7 +2,7 @@ package sangria.execution
 
 import sangria.ast
 import sangria.execution._
-import sangria.marshalling.{InputUnmarshaller, ResultMarshaller, ScalaInput, queryAst}
+import sangria.marshalling.{InputUnmarshaller, ScalaInput}
 import sangria.schema._
 import sangria.util.tag.@@
 import sangria.validation.QueryValidator

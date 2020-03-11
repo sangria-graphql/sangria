@@ -1,7 +1,6 @@
 package sangria.schema
 
-import sangria.ast
-import sangria.ast.{AstNode, Document}
+import sangria.ast.Document
 
 import language.implicitConversions
 import sangria.execution.{FieldTag, SubscriptionField}
@@ -878,7 +877,7 @@ case class Schema[Ctx, Val](
     queryAndSubAndMutTypes
   }
 
-  lazy val typeList: Vector[Type with Named] = types.values.toVector.sortBy(t => t._1 + t._2.name).map(_._2)
+  lazy val typeList: Vector[Type with Named] = types.values.toVector.sortBy(t => t._1.toString + t._2.name).map(_._2)
   lazy val availableTypeNames: Vector[String] = typeList map (_.name)
 
   lazy val allTypes: Map[String, Type with Named] = types collect {case (name, (_, tpe)) => name -> tpe}

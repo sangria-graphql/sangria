@@ -311,7 +311,7 @@ object QueryRenderer {
     else renderNonBlockString(node, indent, config)
 
   def renderNonBlockString(node: StringValue, indent: Indent, config: QueryRendererConfig) =
-    '"' + escapeString(node.value) + '"'
+    s""""${escapeString(node.value)}""""
 
   def renderBlockString(node: StringValue, indent: Indent, config: QueryRendererConfig, extraIndent: Boolean = true) =
     if (node.value.trim.nonEmpty) {
