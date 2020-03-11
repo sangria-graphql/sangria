@@ -66,7 +66,6 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
   private lazy val typeDefsMap = typeDefs.groupBy(_.name)
 
   // maybe it would worth an effort to find more elegant way
-  private var existingSchema: Option[Schema[_, _]] = None
   private var existingDefsMat: Map[String, MaterializedType] = Map.empty
 
   def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
@@ -85,7 +84,6 @@ class AstSchemaMaterializer[Ctx] private (val document: ast.Document, builder: A
         unionTypeExtensionDefs.isEmpty)
       schema
     else {
-      existingSchema = Some(schema)
       existingDefsMat = schema.allTypes.mapValues(MaterializedType(existingOrigin, _)).toMap
 
       val queryType = getTypeFromDef(existingOrigin, schema.query)

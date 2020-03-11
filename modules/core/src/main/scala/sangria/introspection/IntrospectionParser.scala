@@ -142,10 +142,10 @@ object IntrospectionParser {
   private def mapField[In : InputUnmarshaller](map: In, name: String, path: Vector[String] = Vector.empty): In =
     required(um.getMapValue(map, name), path :+ name)
 
-  private def mapStringField[In : InputUnmarshaller](map: In, name: String, path: Vector[String] = Vector.empty): String =
+  private def mapStringField[In : InputUnmarshaller](map: In, name: String, path: Vector[String]): String =
     stringValue(mapField(map, name, path), path :+ name)
 
-  private def mapBooleanField[In : InputUnmarshaller](map: In, name: String, path: Vector[String] = Vector.empty): Boolean =
+  private def mapBooleanField[In : InputUnmarshaller](map: In, name: String, path: Vector[String]): Boolean =
     booleanValue(mapField(map, name, path), path :+ name)
 
   private def mapFieldOpt[In : InputUnmarshaller](map: In, name: String): Option[In] =

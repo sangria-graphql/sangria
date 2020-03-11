@@ -18,7 +18,7 @@ class ValueCoercionHelper[Ctx](sourceMapper: Option[SourceMapper] = None, deprec
       ofType: InputType[_],
       fieldPath: List[String],
       marshaller: ResultMarshaller,
-      pos: List[AstLocation] = Nil)(value: Either[Vector[Violation], Trinary[Any]]): Either[Vector[Violation], marshaller.Node] = value match {
+      pos: List[AstLocation])(value: Either[Vector[Violation], Trinary[Any]]): Either[Vector[Violation], marshaller.Node] = value match {
     case Right(v) if ofType.isOptional => Right(marshaller.optionalArrayNodeValue(v.asInstanceOf[Trinary[marshaller.Node]].toOption))
     case Right(Trinary.Defined(v)) => Right(v.asInstanceOf[marshaller.Node])
     case Right(Trinary.Undefined) | Right(Trinary.Null) => Left(Vector(NullValueForNotNullTypeViolation(fieldPath, SchemaRenderer.renderTypeName(ofType), sourceMapper, pos)))
