@@ -53,7 +53,7 @@ lazy val core = project
 
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.1" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.65" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.66" % Test
     )
   )
 
