@@ -1,3 +1,5 @@
+see [releases](https://github.com/sangria-graphql-org/sangria/releases)
+
 ## v1.4.2 (2018-08-13)
 
 * Removed `InterfaceMustHaveImplementationValidationRule` validation rule **(spec change)** (#379). Since its introduction in previous release, it caused some issues (to sangria users as well users of other implementations). So it was removed from the GraphQL spec and sangria for now.  
