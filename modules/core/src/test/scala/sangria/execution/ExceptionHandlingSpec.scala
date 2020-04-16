@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.macros._
@@ -11,8 +10,10 @@ import sangria.marshalling.MarshallingUtil._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ExceptionHandlingSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers with StringMatchers {
+class ExceptionHandlingSpec extends AnyWordSpec with Matchers with FutureResultSupport with OutputMatchers with StringMatchers {
 
   case object EmailTypeViolation extends BaseViolation("Invalid email")
 

@@ -1,6 +1,5 @@
 package sangria.marshalling
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.marshalling.testkit.{InputHandlingBehaviour, MarshallingBehaviour, ParsingBehaviour}
 import sangria.parser.QueryParser
@@ -14,8 +13,10 @@ import sangria.util.FutureResultSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class QueryAstMarshallingSupportSpec extends WordSpec with Matchers with FutureResultSupport with MarshallingBehaviour with InputHandlingBehaviour with ParsingBehaviour {
+class QueryAstMarshallingSupportSpec extends AnyWordSpec with Matchers with FutureResultSupport with MarshallingBehaviour with InputHandlingBehaviour with ParsingBehaviour {
   "QueryAstMarshalling" should {
     behave like `value (un)marshaller` (queryAstResultMarshaller)
 

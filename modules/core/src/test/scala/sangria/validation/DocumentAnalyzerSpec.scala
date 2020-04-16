@@ -1,11 +1,12 @@
 package sangria.validation
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
 import sangria.macros._
 import sangria.util.StringMatchers
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DocumentAnalyzerSpec extends WordSpec with Matchers with StringMatchers {
+class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers {
   val NumberType = EnumType("Number", values = List(
     EnumValue("ONE", value = 1),
     EnumValue("TWO", value = 2, deprecationReason = Some("Some enum reason."))))

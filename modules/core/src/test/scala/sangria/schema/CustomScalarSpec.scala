@@ -3,15 +3,16 @@ package sangria.schema
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.util.Pos
 import sangria.util.SimpleGraphQlSupport._
 import sangria.validation.ValueCoercionViolation
 
 import scala.util.{Failure, Success, Try}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CustomScalarSpec extends WordSpec with Matchers {
+class CustomScalarSpec extends AnyWordSpec with Matchers {
   "Schema" should {
     "allow to define custom scalar types" in {
       val dateFormat = new SimpleDateFormat("yyyy-MM-dd")

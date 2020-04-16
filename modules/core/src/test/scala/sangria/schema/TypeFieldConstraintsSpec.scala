@@ -1,11 +1,12 @@
 package sangria.schema
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.util.Pos
 import sangria.util.SimpleGraphQlSupport._
 import sangria.validation.{ImplementationExtraFieldArgumentNotOptionalViolation, InvalidImplementationFieldArgumentTypeViolation, MissingImplementationFieldArgumentViolation, InvalidImplementationFieldTypeViolation}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class TypeFieldConstraintsSpec extends WordSpec with Matchers {
+class TypeFieldConstraintsSpec extends AnyWordSpec with Matchers {
 
   "ObjectType" should {
     "allow unique fields" in {

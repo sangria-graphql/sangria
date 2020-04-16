@@ -2,7 +2,6 @@ package sangria.execution.batch
 
 import scala.concurrent.ExecutionContext
 import cats.effect.{ContextShift, IO}
-import org.scalatest.{Matchers, WordSpec}
 import sangria.macros._
 import sangria.marshalling._
 import sangria.schema._
@@ -11,8 +10,10 @@ import spray.json._
 import sangria.marshalling.sprayJson._
 import sangria.util.Fs2Support._
 import sangria.util.SimpleGraphQlSupport._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class BatchExecutorSpec extends WordSpec with Matchers with FutureResultSupport {
+class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   implicit val ec: ExecutionContext = ExecutionContext.global
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 

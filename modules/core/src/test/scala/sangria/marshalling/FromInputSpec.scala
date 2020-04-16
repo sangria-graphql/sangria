@@ -1,11 +1,12 @@
 package sangria.marshalling
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.schema._
 import sangria.util.SimpleGraphQlSupport._
 import spray.json._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class FromInputSpec extends WordSpec with Matchers {
+class FromInputSpec extends AnyWordSpec with Matchers {
   case class Comment(author: String, text: Option[String])
   case class Article(title: String, text: Option[String], tags: Option[Vector[String]], comments: Vector[Option[Comment]])
 

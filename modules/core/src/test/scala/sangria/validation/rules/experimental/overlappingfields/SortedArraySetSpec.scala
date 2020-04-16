@@ -2,9 +2,9 @@ package sangria.validation.rules.experimental.overlappingfields
 
 import java.util.function.Consumer
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class SortedArraySetSpec extends FunSuite {
+class SortedArraySetSpec extends AnyFunSuite {
 
   test("zero elements can be build") {
     val set = SortedArraySet.newBuilder[Int]().build()

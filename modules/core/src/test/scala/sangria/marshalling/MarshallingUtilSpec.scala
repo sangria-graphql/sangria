@@ -1,6 +1,5 @@
 package sangria.marshalling
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.marshalling.queryAst._
 import sangria.marshalling.sprayJson._
 import sangria.marshalling.scalaMarshalling._
@@ -8,8 +7,10 @@ import sangria.marshalling.MarshallingUtil._
 import sangria.macros._
 import sangria.util.tag._
 import spray.json._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MarshallingUtilSpec extends WordSpec with Matchers {
+class MarshallingUtilSpec extends AnyWordSpec with Matchers {
   "MarshallingUtil" should {
     "convert query AST to JValue" in {
       val in = graphqlInput"""

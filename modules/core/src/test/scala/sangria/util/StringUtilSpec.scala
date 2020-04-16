@@ -1,9 +1,10 @@
 package sangria.util
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.util.StringUtil._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class StringUtilSpec extends WordSpec with Matchers with StringMatchers {
+class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
   "camelCaseToUnderscore" should {
     "convert camel-case identifiers to underscore-based one" in {
       camelCaseToUnderscore("FooBar") should be ("foo_bar")

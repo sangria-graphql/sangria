@@ -1,9 +1,9 @@
 package sangria.validation.rules
 
-import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
+import org.scalatest.wordspec.AnyWordSpec
 
-class UniqueFragmentNamesSpec extends WordSpec with ValidationSupport {
+class UniqueFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
 
   override val defaultRule = Some(new UniqueFragmentNames)
 

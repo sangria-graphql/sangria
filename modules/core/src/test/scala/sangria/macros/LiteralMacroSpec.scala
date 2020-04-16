@@ -1,11 +1,12 @@
 package sangria.macros
 
 import sangria.ast.AstLocation
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
 import sangria.util.DebugUtil
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class LiteralMacroSpec extends WordSpec with Matchers {
+class LiteralMacroSpec extends AnyWordSpec with Matchers {
   "literal graphql macro" should {
     "fail compilation on syntax error" in {
       """

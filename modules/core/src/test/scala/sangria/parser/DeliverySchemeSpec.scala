@@ -1,8 +1,9 @@
 package sangria.parser
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DeliverySchemeSpec extends WordSpec with Matchers {
+class DeliverySchemeSpec extends AnyWordSpec with Matchers {
   "DeliveryScheme" should {
     "by default support `Try`" in {
       import scala.util.{Success, Failure}

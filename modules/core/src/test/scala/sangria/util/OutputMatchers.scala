@@ -2,7 +2,7 @@ package sangria.util
 
 import java.io.{PrintStream, ByteArrayOutputStream}
 
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 trait OutputMatchers extends Matchers {
   def captureStdErr(fn: => Unit) = {

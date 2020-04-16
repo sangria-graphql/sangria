@@ -1,6 +1,5 @@
 package sangria.renderer
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast._
 import sangria.parser.{ParserConfig, QueryParser}
 import sangria.util.{DebugUtil, FileUtil, StringMatchers}
@@ -9,8 +8,10 @@ import sangria.macros._
 import sangria.visitor.VisitorCommand
 
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class QueryRendererSpec extends WordSpec with Matchers with StringMatchers {
+class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
   val quotes = "\"\"\""
 
   "QueryRenderer" when {

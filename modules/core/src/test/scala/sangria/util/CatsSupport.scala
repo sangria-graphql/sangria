@@ -3,7 +3,6 @@ package sangria.util
 import java.util.regex.Pattern
 
 import net.jcazevedo.moultingyaml._
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.{ExceptionHandler, Executor, HandledException}
 import sangria.parser.{QueryParser, SyntaxError => SangriaSyntaxError}
@@ -16,6 +15,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 import JsonAndYamlHelpers._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
   * Provides CATs (https://github.com/graphql-cats/graphql-cats) support.
@@ -27,7 +28,7 @@ import JsonAndYamlHelpers._
   * 3. Execute a test query against the generated schema ("when" part of the scenario)
   * 4. Assert results of the execution ("then" part of the scenario)
   */
-trait CatsSupport { this: WordSpec with Matchers =>
+trait CatsSupport { this: AnyWordSpec with Matchers =>
   import CatsScenarioData._
   import CatsAssertions._
   import CatsScenarioExecutor._

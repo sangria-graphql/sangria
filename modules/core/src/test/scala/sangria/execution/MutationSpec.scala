@@ -3,7 +3,6 @@ package sangria.execution
 import java.util.Random
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.schema._
 import sangria.util.{GraphQlSupport, SimpleGraphQlSupport}
@@ -11,8 +10,10 @@ import sangria.util.{GraphQlSupport, SimpleGraphQlSupport}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MutationSpec extends WordSpec with Matchers with GraphQlSupport {
+class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
   case class SuccessfulDefer(num: NumberHolder) extends Deferred[NumberHolder]
   case class FailedDefer(num: NumberHolder) extends Deferred[NumberHolder]
 

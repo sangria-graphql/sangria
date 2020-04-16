@@ -1,9 +1,9 @@
 package sangria.validation.rules
 
-import org.scalatest.WordSpec
 import sangria.util.{Pos, ValidationSupport}
+import org.scalatest.wordspec.AnyWordSpec
 
-class VariablesAreInputTypesSpec extends WordSpec with ValidationSupport {
+class VariablesAreInputTypesSpec extends AnyWordSpec with ValidationSupport {
 
   override val defaultRule = Some(new VariablesAreInputTypes)
 

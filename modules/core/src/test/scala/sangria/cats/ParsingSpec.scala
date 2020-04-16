@@ -1,9 +1,10 @@
 package sangria.cats
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.util.CatsSupport
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ParsingSpec extends WordSpec with Matchers with CatsSupport {
+class ParsingSpec extends AnyWordSpec with Matchers with CatsSupport {
 
   generateTests("parsing")
 

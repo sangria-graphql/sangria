@@ -1,6 +1,5 @@
 package sangria.renderer
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
@@ -14,8 +13,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.parser.QueryParser
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaRenderSpec extends WordSpec with Matchers with FutureResultSupport with StringMatchers {
+class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSupport with StringMatchers {
   def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
   def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 

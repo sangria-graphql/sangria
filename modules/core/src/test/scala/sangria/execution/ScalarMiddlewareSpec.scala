@@ -1,6 +1,5 @@
 package sangria.execution
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.macros._
 import sangria.marshalling.ScalaInput
 import sangria.schema._
@@ -8,8 +7,10 @@ import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.validation.{ValueCoercionViolation, Violation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ScalarMiddlewareSpec extends WordSpec with Matchers with FutureResultSupport {
+class ScalarMiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class IDEncodingViolation(error: String) extends ValueCoercionViolation(error)
 
   class Ctx(prefix: String) {

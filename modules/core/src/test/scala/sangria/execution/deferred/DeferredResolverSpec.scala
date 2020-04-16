@@ -2,7 +2,6 @@ package sangria.execution.deferred
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.ast.Document
 import sangria.execution.{DeferredWithInfo, Executor}
@@ -12,8 +11,10 @@ import sangria.util.{FutureResultSupport, Pos}
 import sangria.util.SimpleGraphQlSupport._
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DeferredResolverSpec extends WordSpec with Matchers with FutureResultSupport {
+class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   def deferredResolver(implicit ec: ExecutionContext) = {
     case class LoadCategories(ids: Seq[String]) extends Deferred[Seq[String]]
 

@@ -1,6 +1,5 @@
 package sangria.macros.derive
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.execution.Executor
 import sangria.introspection.{IntrospectionInputObjectType, IntrospectionParser}
 import sangria.marshalling.ScalaInput._
@@ -10,8 +9,10 @@ import sangria.util.FutureResultSupport
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DeriveInputObjectTypeMacroSpec extends WordSpec with Matchers with FutureResultSupport {
+class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class TestInputObj(id: String, list: List[String], excluded: Option[List[Option[Int]]])
 
   @GraphQLName("MyInput")

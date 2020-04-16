@@ -2,14 +2,15 @@ package sangria.schema
 
 import language.existentials
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast.Document
 import sangria.schema.SchemaChange._
 import sangria.macros._
 
 import scala.reflect.ClassTag
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaComparatorSpec extends WordSpec with Matchers {
+class SchemaComparatorSpec extends AnyWordSpec with Matchers {
   "SchemaComparator" should {
     val QueryType = ObjectType("Query", fields[Unit, Unit](
       Field("field1", OptionType(StringType), resolve = _ => "foo")))

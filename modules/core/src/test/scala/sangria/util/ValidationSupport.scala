@@ -1,12 +1,12 @@
 package sangria.util
 
-import org.scalatest.Matchers
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.validation._
 import sangria.util.SimpleGraphQlSupport._
 
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
 
 trait ValidationSupport extends Matchers  {
   type TestField = Field[Unit, Unit]

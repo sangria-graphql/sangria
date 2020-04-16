@@ -3,7 +3,6 @@ package sangria.marshalling
 import java.text.SimpleDateFormat
 import java.util.{TimeZone, Calendar, Date}
 
-import org.scalatest.{Matchers, WordSpec}
 import sangria.ast
 import sangria.execution.Executor
 import sangria.schema._
@@ -14,8 +13,10 @@ import software.amazon.ion.system.IonSystemBuilder
 
 import scala.util.{Try, Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class IonSupportSpec extends WordSpec with Matchers with FutureResultSupport {
+class IonSupportSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   import sangria.marshalling.ion._
 

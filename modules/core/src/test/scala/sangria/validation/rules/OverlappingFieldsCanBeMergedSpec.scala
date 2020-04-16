@@ -1,10 +1,10 @@
 package sangria.validation.rules
 
-import org.scalatest.WordSpec
 import sangria.schema._
 import sangria.util.{Pos, ValidationSupport}
+import org.scalatest.wordspec.AnyWordSpec
 
-class OverlappingFieldsCanBeMergedSpec extends WordSpec with ValidationSupport {
+class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSupport {
 
   override val defaultRule = Some(new OverlappingFieldsCanBeMerged)
 

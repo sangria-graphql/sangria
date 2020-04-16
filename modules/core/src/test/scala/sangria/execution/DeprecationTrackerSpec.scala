@@ -1,14 +1,15 @@
 package sangria.execution
 
 import java.util.concurrent.atomic.AtomicInteger
-import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{FutureResultSupport, OutputMatchers}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DeprecationTrackerSpec extends WordSpec with Matchers with FutureResultSupport with OutputMatchers {
+class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResultSupport with OutputMatchers {
   class RecordingDeprecationTracker extends DeprecationTracker {
     val times = new AtomicInteger(0)
     var ctx: Option[Context[_, _]] = None

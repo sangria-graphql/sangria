@@ -1,15 +1,16 @@
 package sangria.execution
 
 import sangria.util.FutureResultSupport
-import org.scalatest.{Matchers, WordSpec}
 import sangria.parser.QueryParser
 import sangria.schema._
 
 import scala.concurrent.Future
 import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ListsSpec extends WordSpec with Matchers with FutureResultSupport {
+class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class Data(test: Action[Unit, Any])
 
   def check(testType: OutputType[Any], testData: Action[Unit, Any], expected: Any) = {
