@@ -504,6 +504,14 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         @GraphQLField
         def opt(str: Option[String], color: Option[Color.Value])(pet: Option[Pet]) =
           s"str = $str, color = $color, pet = $pet"
+
+        @GraphQLField
+        def paramType(
+            @GraphQLInputType(IDType) id: String,
+            @GraphQLInputType(IDType)
+            @GraphQLDefault(47589)
+            defaultId: String) =
+          s"id = $id, defaultId = $defaultId"
       }
 
       val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar)
@@ -517,6 +525,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             foo1: foo(songs: ["a", "b"], pet: {name: "mypet", size: 156})
             opt
             opt1: opt(str: "test", color: Red, pet: {name: "anotherPet", size: 321})
+            paramType(id: 345)
           }
         """
 
@@ -525,14 +534,15 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
           "foo" -> JsString("id = 123, songs = a,b, cc = Red, pet = Pet(xxx,Some(322)), ctx = 987"),
           "foo1" -> JsString("id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"),
           "opt" -> JsString("str = None, color = None, pet = None"),
-          "opt1" -> JsString("str = Some(test), color = Some(Red), pet = Some(Pet(anotherPet,Some(321)))"))))
+          "opt1" -> JsString("str = Some(test), color = Some(Red), pet = Some(Pet(anotherPet,Some(321)))"),
+          "paramType" -> JsString("id = 345, defaultId = 47589"))))
 
       import sangria.parser.DeliveryScheme.Throw
 
       val intro = IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
       val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
 
-      introType.fields should have size 2
+      introType.fields should have size 3
 
       val Some(helloField) = introType.fields.find(_.name == "foo")
 
@@ -553,6 +563,13 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         IntrospectionInputValue("str", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
         IntrospectionInputValue("color", None, IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
         IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
+
+      val Some(paramTypeField) = introType.fields.find(_.name == "paramType")
+
+      paramTypeField.args should have size 2
+      paramTypeField.args should be (Vector(
+        IntrospectionInputValue("id", None, IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "ID")), None),
+        IntrospectionInputValue("defaultId", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "ID"), Some(""""47589""""))))
     }
 
     "allow to rename arguments, set arguments descriptions and default values with config" in {

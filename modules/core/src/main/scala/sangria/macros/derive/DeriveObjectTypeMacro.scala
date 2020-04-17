@@ -179,12 +179,14 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       val description = collectArgDescription(config, methodName, argName) orElse symbolDescription(term.annotations)
       val default = collectArgDefault(config, methodName, argName) orElse symbolDefault(term.annotations)
 
+      val fieldType = symbolInputType(term.annotations) getOrElse q"sangria.macros.derive.GraphQLInputTypeLookup.finder[$tpe]().graphqlType"
+
       val ast = default match {
         case Some(defaultValue) =>
           q"""
             sangria.schema.Argument.createWithDefault(
               $name,
-              sangria.schema.OptionInputType(sangria.macros.derive.GraphQLInputTypeLookup.finder[$tpe]().graphqlType),
+              sangria.schema.OptionInputType($fieldType),
               $description,
               $defaultValue)
           """
@@ -192,7 +194,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
           q"""
             sangria.schema.Argument.createWithoutDefault(
               $name,
-              sangria.macros.derive.GraphQLInputTypeLookup.finder[$tpe]().graphqlType,
+              $fieldType,
               $description)
           """
       }
