@@ -1,4 +1,4 @@
-see [releases](https://github.com/sangria-graphql-org/sangria/releases)
+see [releases](https://github.com/sangria-graphql/sangria/releases)
 
 ## v1.4.2 (2018-08-13)
 
