@@ -95,7 +95,7 @@ lazy val scalaSettings = Seq(
     if (scalaVersion.value startsWith "2.11")
       Seq("-target:jvm-1.7")
     else
-      Seq.empty
+      Seq("-target:jvm-1.8")
   }
 )
 
