@@ -43,7 +43,7 @@ lazy val core = project
 
       // Testing
       "co.fs2" %% "fs2-core" % "2.1.0" % Test,
-      "org.scalatest" %% "scalatest" % "3.1.2" % Test,
+      "org.scalatest" %% "scalatest" % "3.1.4" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1" % Test,
