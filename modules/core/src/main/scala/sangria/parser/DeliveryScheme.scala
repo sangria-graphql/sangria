@@ -11,7 +11,7 @@ trait DeliveryScheme[T] {
 }
 
 object DeliveryScheme extends AlternativeDeliverySchemes {
-  implicit def Try[T] =
+  implicit def Try[T]: DeliveryScheme[T] { type Result = Try[T] } =
     new DeliveryScheme[T] {
       type Result = Try[T]
 
@@ -21,7 +21,7 @@ object DeliveryScheme extends AlternativeDeliverySchemes {
 }
 
 trait AlternativeDeliverySchemes {
-  implicit def Either[T] =
+  implicit def Either[T]: DeliveryScheme[T] { type Result = Either[Throwable, T] } =
     new DeliveryScheme[T] {
       type Result = Either[Throwable, T]
 
@@ -29,7 +29,7 @@ trait AlternativeDeliverySchemes {
       def failure(error: Throwable) = Left(error)
     }
 
-  implicit def Throw[T] =
+  implicit def Throw[T]: DeliveryScheme[T] { type Result = T } =
     new DeliveryScheme[T] {
       type Result = T
 

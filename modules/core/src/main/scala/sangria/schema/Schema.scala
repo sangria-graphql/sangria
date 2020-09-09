@@ -10,6 +10,7 @@ import sangria.{ast, introspection}
 import sangria.validation._
 import sangria.introspection._
 import sangria.renderer.{SchemaFilter, SchemaRenderer}
+import sangria.schema.InputObjectType.DefaultInput
 import sangria.streaming.SubscriptionStreamLike
 
 import scala.annotation.implicitNotFound
@@ -446,49 +447,49 @@ trait WithoutInputTypeTags[T] {
 }
 
 object WithoutInputTypeTags extends WithoutInputTypeTagsLowPrio {
-  implicit def coercedArgTpe[T] = new WithoutInputTypeTags[T @@ CoercedScalaResult] {
+  implicit def coercedArgTpe[T]: WithoutInputTypeTags[T @@ CoercedScalaResult] { type Res = T } = new WithoutInputTypeTags[T @@ CoercedScalaResult] {
     type Res = T
   }
 
-  implicit def coercedOptArgTpe[T] = new WithoutInputTypeTags[Option[T @@ CoercedScalaResult]] {
+  implicit def coercedOptArgTpe[T]: WithoutInputTypeTags[Option[T @@ CoercedScalaResult]] { type Res = Option[T] } = new WithoutInputTypeTags[Option[T @@ CoercedScalaResult]] {
     type Res = Option[T]
   }
 
-  implicit def coercedSeqOptArgTpe[T] = new WithoutInputTypeTags[Seq[Option[T @@ CoercedScalaResult]]] {
+  implicit def coercedSeqOptArgTpe[T]: WithoutInputTypeTags[Seq[Option[T @@ CoercedScalaResult]]] { type Res = Seq[Option[T]] } = new WithoutInputTypeTags[Seq[Option[T @@ CoercedScalaResult]]] {
     type Res = Seq[Option[T]]
   }
 
-  implicit def coercedOptSeqArgTpe[T] = new WithoutInputTypeTags[Option[Seq[T @@ CoercedScalaResult]]] {
+  implicit def coercedOptSeqArgTpe[T]: WithoutInputTypeTags[Option[Seq[T @@ CoercedScalaResult]]] { type Res = Option[Seq[T]] } = new WithoutInputTypeTags[Option[Seq[T @@ CoercedScalaResult]]] {
     type Res = Option[Seq[T]]
   }
 
-  implicit def coercedOptSeqOptArgTpe[T] = new WithoutInputTypeTags[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
+  implicit def coercedOptSeqOptArgTpe[T]: WithoutInputTypeTags[Option[Seq[Option[T @@ CoercedScalaResult]]]] { type Res = Option[Seq[Option[T]]] } = new WithoutInputTypeTags[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
     type Res = Option[Seq[Option[T]]]
   }
 
-  implicit def ioArgTpe[T] = new WithoutInputTypeTags[T @@ InputObjectResult] {
+  implicit def ioArgTpe[T]: WithoutInputTypeTags[T @@ InputObjectResult] { type Res = T } = new WithoutInputTypeTags[T @@ InputObjectResult] {
     type Res = T
   }
 
-  implicit def ioOptArgTpe[T] = new WithoutInputTypeTags[Option[T @@ InputObjectResult]] {
+  implicit def ioOptArgTpe[T]: WithoutInputTypeTags[Option[T @@ InputObjectResult]] { type Res = Option[T] } = new WithoutInputTypeTags[Option[T @@ InputObjectResult]] {
     type Res = Option[T]
   }
 
-  implicit def ioSeqOptArgTpe[T] = new WithoutInputTypeTags[Seq[Option[T @@ InputObjectResult]]] {
+  implicit def ioSeqOptArgTpe[T]: WithoutInputTypeTags[Seq[Option[T @@ InputObjectResult]]] { type Res = Seq[Option[T]] } = new WithoutInputTypeTags[Seq[Option[T @@ InputObjectResult]]] {
     type Res = Seq[Option[T]]
   }
 
-  implicit def ioOptSeqArgTpe[T] = new WithoutInputTypeTags[Option[Seq[T @@ InputObjectResult]]] {
+  implicit def ioOptSeqArgTpe[T]: WithoutInputTypeTags[Option[Seq[T @@ InputObjectResult]]] { type Res = Option[Seq[T]] } = new WithoutInputTypeTags[Option[Seq[T @@ InputObjectResult]]] {
     type Res = Option[Seq[T]]
   }
 
-  implicit def ioOptSeqOptArgTpe[T] = new WithoutInputTypeTags[Option[Seq[Option[T @@ InputObjectResult]]]] {
+  implicit def ioOptSeqOptArgTpe[T]: WithoutInputTypeTags[Option[Seq[Option[T @@ InputObjectResult]]]] { type Res = Option[Seq[Option[T]]] } = new WithoutInputTypeTags[Option[Seq[Option[T @@ InputObjectResult]]]] {
     type Res = Option[Seq[Option[T]]]
   }
 }
 
 trait WithoutInputTypeTagsLowPrio {
-  implicit def defaultArgTpe[T] = new WithoutInputTypeTags[T] {
+  implicit def defaultArgTpe[T]: WithoutInputTypeTags[T] { type Res = T } = new WithoutInputTypeTags[T] {
     type Res = T
   }
 }
@@ -498,55 +499,55 @@ trait ArgumentType[T] {
 }
 
 object ArgumentType extends ArgumentTypeLowPrio {
-  implicit def coercedArgTpe[T] = new ArgumentType[T @@ CoercedScalaResult] {
+  implicit def coercedArgTpe[T]: ArgumentType[T @@ CoercedScalaResult] { type Res = T } = new ArgumentType[T @@ CoercedScalaResult] {
     type Res = T
   }
 
-  implicit def coercedOptArgTpe[T] = new ArgumentType[Option[T @@ CoercedScalaResult]] {
+  implicit def coercedOptArgTpe[T]: ArgumentType[Option[T @@ CoercedScalaResult]] { type Res = T } = new ArgumentType[Option[T @@ CoercedScalaResult]] {
     type Res = T
   }
 
-  implicit def coercedSeqOptArgTpe[T] = new ArgumentType[Seq[Option[T @@ CoercedScalaResult]]] {
+  implicit def coercedSeqOptArgTpe[T]: ArgumentType[Seq[Option[T @@ CoercedScalaResult]]] { type Res = Seq[Option[T]] } = new ArgumentType[Seq[Option[T @@ CoercedScalaResult]]] {
     type Res = Seq[Option[T]]
   }
 
-  implicit def coercedOptSeqArgTpe[T] = new ArgumentType[Option[Seq[T @@ CoercedScalaResult]]] {
+  implicit def coercedOptSeqArgTpe[T]: ArgumentType[Option[Seq[T @@ CoercedScalaResult]]] { type Res = Seq[T] } = new ArgumentType[Option[Seq[T @@ CoercedScalaResult]]] {
     type Res = Seq[T]
   }
 
-  implicit def coercedOptSeqOptArgTpe[T] = new ArgumentType[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
+  implicit def coercedOptSeqOptArgTpe[T]: ArgumentType[Option[Seq[Option[T @@ CoercedScalaResult]]]] { type Res = Seq[Option[T]] } = new ArgumentType[Option[Seq[Option[T @@ CoercedScalaResult]]]] {
     type Res = Seq[Option[T]]
   }
 
-  implicit def ioArgTpe[T] = new ArgumentType[T @@ InputObjectResult] {
+  implicit def ioArgTpe[T]: ArgumentType[T @@ InputObjectResult] { type Res = T } = new ArgumentType[T @@ InputObjectResult] {
     type Res = T
   }
 
-  implicit def ioOptArgTpe[T] = new ArgumentType[Option[T @@ InputObjectResult]] {
+  implicit def ioOptArgTpe[T]: ArgumentType[Option[T @@ InputObjectResult]] { type Res = T } = new ArgumentType[Option[T @@ InputObjectResult]] {
     type Res = T
   }
 
-  implicit def ioSeqOptArgTpe[T] = new ArgumentType[Seq[Option[T @@ InputObjectResult]]] {
+  implicit def ioSeqOptArgTpe[T]: ArgumentType[Seq[Option[T @@ InputObjectResult]]] { type Res = Seq[Option[T]] } = new ArgumentType[Seq[Option[T @@ InputObjectResult]]] {
     type Res = Seq[Option[T]]
   }
 
-  implicit def ioOptSeqArgTpe[T] = new ArgumentType[Option[Seq[T @@ InputObjectResult]]] {
+  implicit def ioOptSeqArgTpe[T]: ArgumentType[Option[Seq[T @@ InputObjectResult]]] { type Res = Seq[T] } = new ArgumentType[Option[Seq[T @@ InputObjectResult]]] {
     type Res = Seq[T]
   }
 
-  implicit def ioOptSeqOptArgTpe[T] = new ArgumentType[Option[Seq[Option[T @@ InputObjectResult]]]] {
+  implicit def ioOptSeqOptArgTpe[T]: ArgumentType[Option[Seq[Option[T @@ InputObjectResult]]]] { type Res = Seq[Option[T]] } = new ArgumentType[Option[Seq[Option[T @@ InputObjectResult]]]] {
     type Res = Seq[Option[T]]
   }
 }
 
 trait ArgumentTypeLowPrio extends ArgumentTypeLowestPrio {
-  implicit def optionArgTpe[T] = new ArgumentType[Option[T]] {
+  implicit def optionArgTpe[T]: ArgumentType[Option[T]] { type Res = T } = new ArgumentType[Option[T]] {
     type Res = T
   }
 }
 
 trait ArgumentTypeLowestPrio {
-  implicit def defaultArgTpe[T] = new ArgumentType[T] {
+  implicit def defaultArgTpe[T]: ArgumentType[T] { type Res = T } = new ArgumentType[T] {
     type Res = T
   }
 }
@@ -624,13 +625,13 @@ trait InputObjectDefaultResult[T] {
 }
 
 object InputObjectDefaultResult extends InputObjectDefaultResultLowPrio {
-  implicit def nothingResult = new InputObjectDefaultResult[Nothing] {
+  implicit def nothingResult: InputObjectDefaultResult[Nothing] { type Res = DefaultInput } = new InputObjectDefaultResult[Nothing] {
     override type Res = InputObjectType.DefaultInput
   }
 }
 
 trait InputObjectDefaultResultLowPrio {
-  implicit def defaultResult[T] = new InputObjectDefaultResult[T] {
+  implicit def defaultResult[T]: InputObjectDefaultResult[T] { type Res = T } = new InputObjectDefaultResult[T] {
     override type Res = T
   }
 }
@@ -643,8 +644,8 @@ case class InputField[T](
   astDirectives: Vector[ast.Directive],
   astNodes: Vector[ast.AstNode]
 ) extends InputValue[T] with Named with HasAstInfo {
-  def inputValueType = fieldType
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def inputValueType: InputType[T] = fieldType
+  def rename(newName: String): InputField.this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderInputField(this)
 }
 

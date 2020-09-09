@@ -2,8 +2,8 @@
 
 [Sangria](http://sangria-graphql.org/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
-[![Build Status](https://travis-ci.org/sangria-graphql-org/sangria.svg?branch=master)](https://travis-ci.org/sangria-graphql-org/sangria)
-[![Coverage Status](http://coveralls.io/repos/sangria-graphql-org/sangria/badge.svg?branch=master&service=github)](http://coveralls.io/github/sangria-graphql-org/sangria?branch=master)
+[![Build Status](https://travis-ci.org/sangria-graphql/sangria.svg?branch=master)](https://travis-ci.org/sangria-graphql/sangria)
+[![Coverage Status](http://coveralls.io/repos/sangria-graphql/sangria/badge.svg?branch=master&service=github)](http://coveralls.io/github/sangria-graphql/sangria?branch=master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.sangria-graphql/sangria_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.sangria-graphql/sangria_2.12)
 [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![Scaladocs](https://www.javadoc.io/badge/org.sangria-graphql/sangria_2.12.svg?label=docs)](https://www.javadoc.io/doc/org.sangria-graphql/sangria_2.12)
@@ -12,13 +12,7 @@
 SBT Configuration:
 
 ```scala
-libraryDependencies += "org.sangria-graphql" %% "sangria" % "1.4.2"
-``` 
-
-or:
-
-```scala
-libraryDependencies += "org.sangria-graphql" %% "sangria" % "2.0.0-RC1"
+libraryDependencies += "org.sangria-graphql" %% "sangria" % "2.0.0"
 ```
 
 You can find an example application that uses akka-http with sangria here:

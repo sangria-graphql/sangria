@@ -15,32 +15,32 @@ trait GraphQLInputTypeLookup[T, G] {
 }
 
 object GraphQLInputTypeLookup extends GraphQLInputTypeLookupLowPrio {
-  implicit def inCoercedLookup[T](implicit in: InputType[T @@ CoercedScalaResult]) = new GraphQLInputTypeLookup[T, T @@ CoercedScalaResult] {
-    def graphqlType = in
+  implicit def inCoercedLookup[T](implicit in: InputType[T @@ CoercedScalaResult]): GraphQLInputTypeLookup[T, T @@ CoercedScalaResult] = new GraphQLInputTypeLookup[T, T @@ CoercedScalaResult] {
+    override val graphqlType: InputType[T @@ CoercedScalaResult] = in
   }
 
-  implicit def inObjectLookup[T](implicit in: InputType[T @@ InputObjectResult]) = new GraphQLInputTypeLookup[T, T @@ InputObjectResult] {
-    def graphqlType = in
+  implicit def inObjectLookup[T](implicit in: InputType[T @@ InputObjectResult]): GraphQLInputTypeLookup[T, T @@ InputObjectResult] = new GraphQLInputTypeLookup[T, T @@ InputObjectResult] {
+    override val graphqlType: InputType[T @@ InputObjectResult] = in
   }
 
-  implicit def optionLookup[T, G](implicit ev: GraphQLInputTypeLookup[T, G]) = new GraphQLInputTypeLookup[Option[T], Option[G]] {
-    def graphqlType = OptionInputType(ev.graphqlType)
+  implicit def optionLookup[T, G](implicit ev: GraphQLInputTypeLookup[T, G]): GraphQLInputTypeLookup[Option[T], Option[G]] = new GraphQLInputTypeLookup[Option[T], Option[G]] {
+    override val graphqlType: OptionInputType[G] = OptionInputType(ev.graphqlType)
   }
 
   def finder[T] = new Finder[T]
 
   class Finder[T] {
-    def apply[G]()(implicit ev: GraphQLInputTypeLookup[T, G]) = ev
+    def apply[G]()(implicit ev: GraphQLInputTypeLookup[T, G]): GraphQLInputTypeLookup[T, G] = ev
   }
 }
 
 trait GraphQLInputTypeLookupLowPrio {
-  implicit def inLookup[T](implicit in: InputType[T]) = new GraphQLInputTypeLookup[T, T] {
-    def graphqlType = in
+  implicit def inLookup[T](implicit in: InputType[T]): GraphQLInputTypeLookup[T, T] = new GraphQLInputTypeLookup[T, T] {
+    override val graphqlType: InputType[T] = in
   }
 
-  implicit def seqLookup[T, Coll[_] <: Seq[_], G](implicit ev: GraphQLInputTypeLookup[T, G]) = new GraphQLInputTypeLookup[Coll[T], Coll[G]] {
-    def graphqlType = ListInputType(ev.graphqlType).asInstanceOf[InputType[Coll[G]]]
+  implicit def seqLookup[T, Coll[_] <: Seq[_], G](implicit ev: GraphQLInputTypeLookup[T, G]): GraphQLInputTypeLookup[Coll[T], Coll[G]] = new GraphQLInputTypeLookup[Coll[T], Coll[G]] {
+    override val graphqlType: InputType[Coll[G]] = ListInputType(ev.graphqlType).asInstanceOf[InputType[Coll[G]]]
   }
 }
 
