@@ -21,7 +21,7 @@ https://github.com/sangria-graphql/sangria-akka-http-example
 
 More info and the documentation can be found in the project home page:
 
-[http://sangria-graphql.org](http://sangria-graphql.org)
+[https://sangria-graphql.github.io/](https://sangria-graphql.github.io/)
 
 I would also recommend you to check out [http://try.sangria-graphql.org](http://try.sangria-graphql.org).
 It is an example of GraphQL server written with Play framework and Sangria. It also serves as a playground,
