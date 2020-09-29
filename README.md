@@ -1,6 +1,6 @@
-![Sangria Logo](http://sangria-graphql.org/assets/img/sangria-logo.svg)
+![Sangria Logo](https://sangria-graphql.github.io/assets/img/sangria-logo.svg)
 
-[Sangria](http://sangria-graphql.org/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
+[Sangria](https://sangria-graphql.github.io/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
 [![Build Status](https://travis-ci.org/sangria-graphql/sangria.svg?branch=master)](https://travis-ci.org/sangria-graphql/sangria)
 [![Coverage Status](http://coveralls.io/repos/sangria-graphql/sangria/badge.svg?branch=master&service=github)](http://coveralls.io/github/sangria-graphql/sangria?branch=master)
@@ -23,7 +23,7 @@ More info and the documentation can be found in the project home page:
 
 [https://sangria-graphql.github.io/](https://sangria-graphql.github.io/)
 
-I would also recommend you to check out [http://try.sangria-graphql.org](http://try.sangria-graphql.org).
+I would also recommend you to check out [Sangria Playground](https://github.com/sangria-graphql/sangria-playground).
 It is an example of GraphQL server written with Play framework and Sangria. It also serves as a playground,
 where you can interactively execute GraphQL queries and play with some examples.
 
@@ -72,7 +72,7 @@ this example will print following result JSON:
 }
 ```
 
-For more complex example, I would recommend you to check out the [Getting Started Tutorial](https://sangria-graphql.org/getting-started/).
+For more complex example, I would recommend you to check out the [Getting Started Tutorial](https://sangria-graphql.github.io/getting-started/).
 
 ## Issues, Bugs, Ideas
 
