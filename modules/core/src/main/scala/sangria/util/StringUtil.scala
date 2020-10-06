@@ -42,6 +42,24 @@ object StringUtil {
       .map (_._1)
   }
 
+  def suggestionList2(input: String, options: Seq[String]): Seq[String] = {
+    val inputLength = input.length
+    val inputThreshold = math.max(inputLength / 2, 1)
+
+    options
+      .iterator
+      // filter out options where the lenght is too different to avoid computing the lexical distance
+      .filter { opt =>
+        val length = opt.length
+        length >= inputLength - inputThreshold && length <= inputLength + inputThreshold
+      }
+      .map (opt => opt -> lexicalDistance(input, opt))
+      .filter (opt => opt._2 <= math.max(inputThreshold, opt._1.length / 2))
+      .toList
+      .sortBy (_._2)
+      .map (_._1)
+  }
+
   /**
     * Computes the lexical distance between strings A and B.
     *
