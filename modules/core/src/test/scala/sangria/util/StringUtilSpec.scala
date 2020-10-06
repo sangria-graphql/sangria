@@ -37,8 +37,9 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
   }
 
   "suggestionList" should {
-    "Returns results when input is empty" in {
+    "Returns results with only one character when input is empty" in {
       suggestionList("", Seq("a")) should be (Seq("a"))
+      suggestionList("", Seq("ab", "b")) should be (Seq("b"))
     }
 
     "Returns empty array when there are no options" in {
@@ -47,6 +48,10 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
     
     "Returns options sorted based on similarity" in {
       suggestionList("abc", Seq("a", "ab", "abc")) should be (Seq("abc", "ab"))
+      suggestionList("descritpion", Seq("description", "descriptionn", "descriptionnn")) should be (Seq("description", "descriptionn", "descriptionnn"))
+
+      val options = "description" :: (1 to 50).map(i => s"name_$i").toList
+      suggestionList("descritpion", options) should be (Seq("description"))
     }
   }
 
