@@ -43,10 +43,4 @@ class StringUtilBenchmark {
     val results = StringUtil.suggestionList(input, options)
     assert(results == expected, s"results = $results, expected = $expected")
   }
-
-  @Benchmark
-  def benchNew(): Unit = {
-    val results = StringUtil.suggestionList2(input, options)
-    assert(results == expected, s"results = $results, expected = $expected")
-  }
 }

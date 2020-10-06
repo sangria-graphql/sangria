@@ -33,16 +33,6 @@ object StringUtil {
     * list of valid options sorted based on their similarity with the input.
     */
   def suggestionList(input: String, options: Seq[String]): Seq[String] = {
-    val inputThreshold = input.length / 2
-
-    options
-      .map (opt => opt -> lexicalDistance(input, opt))
-      .filter (opt => opt._2 <= math.max(math.max(inputThreshold, opt._1.length / 2), 1))
-      .sortBy (_._2)
-      .map (_._1)
-  }
-
-  def suggestionList2(input: String, options: Seq[String]): Seq[String] = {
     val inputLength = input.length
     val inputThreshold = math.max(inputLength / 2, 1)
 
