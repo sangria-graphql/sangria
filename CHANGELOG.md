@@ -1,8 +1,17 @@
 see [releases](https://github.com/sangria-graphql/sangria/releases)
 
+## v2.0.1 (2020-10-06)
+
+https://github.com/sangria-graphql/sangria/releases/tag/v2.0.1
+
+* can disable expensive suggestions (#517)
+* Faster suggestion list (#521)
+
 ## v2.0.0 (2020-06-07)
 
 https://github.com/sangria-graphql/sangria/releases/tag/v2.0.0
+
+* scala 2.13 support [#1 on temporary fork](https://github.com/sangria-graphql-org/sangria/pull/1)
 
 ## v1.4.2 (2018-08-13)
 
