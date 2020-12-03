@@ -2,7 +2,7 @@
 
 [Sangria](https://sangria-graphql.github.io/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
-[![Build Status](https://travis-ci.org/sangria-graphql/sangria.svg?branch=master)](https://travis-ci.org/sangria-graphql/sangria)
+[![Build Status](https://travis-ci.com/sangria-graphql/sangria.svg?branch=master)](https://travis-ci.com/sangria-graphql/sangria)
 [![Coverage Status](http://coveralls.io/repos/sangria-graphql/sangria/badge.svg?branch=master&service=github)](http://coveralls.io/github/sangria-graphql/sangria?branch=master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.sangria-graphql/sangria_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.sangria-graphql/sangria_2.12)
 [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
