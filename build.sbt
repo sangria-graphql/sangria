@@ -43,7 +43,7 @@ lazy val core = project
 
       // Testing
       "co.fs2" %% "fs2-core" % "2.1.0" % Test,
-      "org.scalatest" %% "scalatest" % "3.1.1" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.2" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1" % Test,
@@ -79,13 +79,13 @@ lazy val projectInfo = Seq(
   organizationHomepage := Some(url("https://github.com/sangria-graphql")),
   developers := Developer("OlegIlyenko", "Oleg Ilyenko", "", url("https://github.com/OlegIlyenko")) :: Nil,
   scmInfo := Some(ScmInfo(
-    browseUrl = url("https://github.com/sangria-graphql-org/sangria.git"),
-    connection = "scm:git:git@github.com:sangria-graphql-org/sangria.git"
+    browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
+    connection = "scm:git:git@github.com:sangria-graphql/sangria.git"
   ))
 )
 
 lazy val scalaSettings = Seq(
-  scalaVersion := "2.13.2",
+  scalaVersion := "2.13.3",
   crossScalaVersions := Seq("2.11.12", "2.12.11", scalaVersion.value),
   scalacOptions ++= Seq(
     "-deprecation",
@@ -95,7 +95,13 @@ lazy val scalaSettings = Seq(
     if (scalaVersion.value startsWith "2.11")
       Seq("-target:jvm-1.7")
     else
-      Seq.empty
+      Seq("-target:jvm-1.8")
+  },
+  javacOptions ++= {
+    if (scalaVersion.value startsWith "2.11")
+      Seq("-source", "7", "-target", "7")
+    else
+      Seq("-source", "8", "-target", "8")
   }
 )
 
