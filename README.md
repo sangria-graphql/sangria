@@ -109,5 +109,3 @@ So please feel free to materialize your ideas in form of code and send pull requ
 ## License
 
 **Sangria** is licensed under [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-
-Happy GraphQLing!
