@@ -8,3 +8,9 @@ classes
 *.iml
 *.sc
 *.swp
+
+# Metals!
+.metals/
+.bloop/
+.vscode/
+metals.sbt
