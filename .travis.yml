@@ -1,16 +1,10 @@
 language: scala
 scala:
-  - 2.11.12
   - 2.12.10
-  - 2.13.3
+  - 2.13.4
 jdk:
   - openjdk8
   - openjdk11
-
-matrix:
-  exclude:
-    - scala: 2.11.12
-      jdk: openjdk11
 
 script: |
   sbt ++$TRAVIS_SCALA_VERSION clean coverage test

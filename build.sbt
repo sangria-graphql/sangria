@@ -85,24 +85,14 @@ lazy val projectInfo = Seq(
 )
 
 lazy val scalaSettings = Seq(
-  scalaVersion := "2.13.3",
-  crossScalaVersions := Seq("2.11.12", "2.12.11", scalaVersion.value),
+  scalaVersion := "2.13.4",
+  crossScalaVersions := Seq("2.12.11", scalaVersion.value),
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
     "-Xlint:-missing-interpolator,_"),
-  scalacOptions ++= {
-    if (scalaVersion.value startsWith "2.11")
-      Seq("-target:jvm-1.7")
-    else
-      Seq("-target:jvm-1.8")
-  },
-  javacOptions ++= {
-    if (scalaVersion.value startsWith "2.11")
-      Seq("-source", "7", "-target", "7")
-    else
-      Seq("-source", "8", "-target", "8")
-  }
+  scalacOptions += "-target:jvm-1.8",
+  javacOptions ++= Seq("-source", "8", "-target", "8")
 )
 
 lazy val shellSettings = Seq(
