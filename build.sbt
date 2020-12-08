@@ -4,8 +4,7 @@ import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOpt
 // has to be set for all modules to allow 'sbt release'
 // [error] Repository for publishing is not specified.
 
-/* Define the different sbt projects of sangria
- */
+/* Define the different sbt projects of sangria */
 
 lazy val root = project
   .in(file("."))
