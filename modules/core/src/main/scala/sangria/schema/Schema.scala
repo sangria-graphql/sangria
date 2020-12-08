@@ -299,19 +299,50 @@ object PossibleType {
 case class UnionType[Ctx](
     name: String,
     description: Option[String] = None,
-    types: List[ObjectType[Ctx, _]],
+    typesFn: () => List[ObjectType[Ctx, _]],
     astDirectives: Vector[ast.Directive] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty) extends OutputType[Any] with CompositeType[Any] with AbstractType with NullableType with UnmodifiedType with HasAstInfo {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
-
   /**
     * Creates a type-safe version of union type which might be useful in cases where the value is wrapped in a type like `Either`.
     */
-  def mapValue[T](func: T => Any): OutputType[T] = new UnionType[Ctx](name, description, types, astDirectives, astNodes) with MappedAbstractType[T] {
+  def mapValue[T](func: T => Any): OutputType[T] = new UnionType[Ctx](name, description, typesFn, astDirectives, astNodes) with MappedAbstractType[T] {
     override def contraMap(value: T): Any = func(value)
   }.asInstanceOf[OutputType[T]]
+
+  lazy val types = typesFn()
 }
+
+object UnionType {
+  def apply[Ctx](
+      name: String,
+      types: List[ObjectType[Ctx, _]]): UnionType[Ctx] =
+    UnionType[Ctx](name, None, () => types)
+
+  def apply[Ctx](
+      name: String,
+      description: Option[String],
+      types: List[ObjectType[Ctx, _]]): UnionType[Ctx] =
+    UnionType[Ctx](name, description, () => types)
+
+  def apply[Ctx](
+      name: String,
+      description: Option[String],
+      types: List[ObjectType[Ctx, _]],
+      astDirectives: Vector[ast.Directive]): UnionType[Ctx] =
+    UnionType[Ctx](name, description, () => types, astDirectives)
+
+  def apply[Ctx](
+      name: String,
+      description: Option[String],
+      types: List[ObjectType[Ctx, _]],
+      astDirectives: Vector[ast.Directive],
+      astNodes: Vector[ast.AstNode]): UnionType[Ctx] =
+    UnionType[Ctx](name, description, () => types, astDirectives, astNodes)
+}
+
+
 
 case class Field[Ctx, Val](
     name: String,
@@ -864,8 +895,8 @@ case class Schema[Ctx, Val](
           t.interfaces.foldLeft(withPossible) {
             case (acc, interface) => collectTypes(s"an interface defined in '${t.name}' type", priority, interface, acc)
           }
-        case t @ UnionType(name, _, types, _, _) =>
-          types.foldLeft(updated(priority, name, t, result, parentInfo)) {case (acc, tpe) => collectTypes(s"a '$name' type", priority, tpe, acc)}
+        case t @ UnionType(name, _, _, _, _) =>
+          t.types.foldLeft(updated(priority, name, t, result, parentInfo)) {case (acc, tpe) => collectTypes(s"a '$name' type", priority, tpe, acc)}
       }
     }
 
