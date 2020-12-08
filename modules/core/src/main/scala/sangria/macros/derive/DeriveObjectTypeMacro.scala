@@ -82,7 +82,8 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
             else
               fieldWithArguments(config, field, ctxType, valType, useFn)
 
-          val fieldType = field.method.returnType
+          // Contextualize the method type with respect to the enclosing type
+          val fieldType = field.method.returnType.asSeenFrom(targetType, targetType.typeSymbol)
           val actualFieldType = findActualFieldType(fieldType)
 
           val annotationType = symbolOutputType(field.annotations)

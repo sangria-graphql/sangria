@@ -15,6 +15,8 @@ object DeriveMacroTestModel {
 
   case class TestSubject(id: String, list: List[String] = Nil, excluded: Int) extends Parent1 with Parent2
 
+  case class TestContainer[T](data: Seq[T])
+
   case object CachedTag extends FieldTag
   case object AuthorizedTag extends FieldTag
   case object FooTag extends FieldTag
