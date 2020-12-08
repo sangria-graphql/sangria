@@ -1,11 +1,13 @@
-temp fork not used anymore - see https://github.com/sangria-graphql/sangria/issues/446#issuecomment-546281588
+### ℹ️ Temporary Fork Not Used Anymore 🎉
+#### 👀 See: https://github.com/sangria-graphql/sangria/issues/446#issuecomment-546281588
 
-![Sangria Logo](http://sangria-graphql.org/assets/img/sangria-logo.svg)
+![Sangria Logo](https://sangria-graphql.github.io/assets/img/sangria-logo.svg)
 
-[Sangria](http://sangria-graphql.org/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
-[![Build Status](https://travis-ci.org/sangria-graphql-org/sangria.svg?branch=master)](https://travis-ci.org/sangria-graphql-org/sangria)
-[![Coverage Status](http://coveralls.io/repos/sangria-graphql-org/sangria/badge.svg?branch=master&service=github)](http://coveralls.io/github/sangria-graphql-org/sangria?branch=master)
+[Sangria](https://sangria-graphql.github.io/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
+
+[![Build Status](https://travis-ci.com/sangria-graphql/sangria.svg?branch=master)](https://travis-ci.com/sangria-graphql/sangria)
+[![Coverage Status](http://coveralls.io/repos/sangria-graphql/sangria/badge.svg?branch=master&service=github)](http://coveralls.io/github/sangria-graphql/sangria?branch=master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.sangria-graphql/sangria_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.sangria-graphql/sangria_2.12)
 [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![Scaladocs](https://www.javadoc.io/badge/org.sangria-graphql/sangria_2.12.svg?label=docs)](https://www.javadoc.io/doc/org.sangria-graphql/sangria_2.12)
@@ -14,13 +16,7 @@ temp fork not used anymore - see https://github.com/sangria-graphql/sangria/issu
 SBT Configuration:
 
 ```scala
-libraryDependencies += "org.sangria-graphql" %% "sangria" % "1.4.2"
-``` 
-
-or:
-
-```scala
-libraryDependencies += "org.sangria-graphql" %% "sangria" % "2.0.0-RC1"
+libraryDependencies += "org.sangria-graphql" %% "sangria" % "2.0.0"
 ```
 
 You can find an example application that uses akka-http with sangria here:
@@ -29,9 +25,9 @@ https://github.com/sangria-graphql/sangria-akka-http-example
 
 More info and the documentation can be found in the project home page:
 
-[http://sangria-graphql.org](http://sangria-graphql.org)
+[https://sangria-graphql.github.io/](https://sangria-graphql.github.io/)
 
-I would also recommend you to check out [http://try.sangria-graphql.org](http://try.sangria-graphql.org).
+I would also recommend you to check out [Sangria Playground](https://github.com/sangria-graphql/sangria-playground).
 It is an example of GraphQL server written with Play framework and Sangria. It also serves as a playground,
 where you can interactively execute GraphQL queries and play with some examples.
 
@@ -80,7 +76,7 @@ this example will print following result JSON:
 }
 ```
 
-For more complex example, I would recommend you to check out the [Getting Started Tutorial](https://sangria-graphql.org/getting-started/).
+For more complex example, I would recommend you to check out the [Getting Started Tutorial](https://sangria-graphql.github.io/getting-started/).
 
 ## Issues, Bugs, Ideas
 
