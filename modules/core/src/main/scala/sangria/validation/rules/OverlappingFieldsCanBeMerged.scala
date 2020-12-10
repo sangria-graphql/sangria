@@ -261,14 +261,7 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
             case _ => None
           }
 
-          val astAndDef = astAndDefs.get(field.outputName) match {
-            case Some(list) => list
-            case None =>
-              val list = ListBuffer.empty[AstAndDef]
-              astAndDefs(field.outputName) = list
-              list
-          }
-
+          val astAndDef = astAndDefs.getOrElseUpdate(field.outputName, ListBuffer.empty[AstAndDef])
           astAndDef += AstAndDef(field, parentType, fieldDef)
 
         case fragment: ast.FragmentSpread if visitedFragments contains fragment.name =>
