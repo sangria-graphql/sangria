@@ -35,10 +35,7 @@ class Fetcher[Ctx, Res, RelRes, Id](
 
   private def findCache(deferredResolverState: Any)(op: FetcherCache => Unit): Unit =
     deferredResolverState match {
-      case map: Map[AnyRef, FetcherCache] @unchecked => map.get(this) match {
-        case Some(cache) => op(cache)
-        case None => // just ignore
-      }
+      case map: Map[AnyRef, FetcherCache] @unchecked => map.get(this).foreach(op)
       case _ => // just ignore
     }
 

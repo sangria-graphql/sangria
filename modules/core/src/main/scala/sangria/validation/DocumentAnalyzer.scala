@@ -53,11 +53,9 @@ case class DocumentAnalyzer(document: ast.Document) {
           if (!collectedNames.contains(fragName)) {
             collectedNames += fragName
 
-            document.fragments.get(fragName) match {
-              case Some(frag) =>
-                frags += frag
-                nodesToVisit.push(frag)
-              case None => // do nothing
+            document.fragments.get(fragName).foreach { frag =>
+              frags += frag
+              nodesToVisit.push(frag)
             }
           }
         }
