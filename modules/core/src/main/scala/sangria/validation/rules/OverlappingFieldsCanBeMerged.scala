@@ -161,22 +161,19 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
       // maps, each field from the first field map must be compared to every field
       // in the second field map to find potential conflicts.
       fieldMap1.keys.foreach { outputName =>
-        fieldMap2.get(outputName) match {
-          case Some(fields2) =>
-            val fields1 = fieldMap1(outputName)
+        fieldMap2.get(outputName).foreach { fields2 =>
+          val fields1 = fieldMap1(outputName)
 
-            for {
-              f1 <- fields1
-              f2 <- fields2
-            } findConflict(
-              outputName,
-              f1,
-              f2,
-              visitedFragments1,
-              visitedFragments2,
-              parentFieldsAreMutuallyExclusive).foreach(conflicts += _)
-
-          case None => // It's ok, do nothing
+          for {
+            f1 <- fields1
+            f2 <- fields2
+          } findConflict(
+            outputName,
+            f1,
+            f2,
+            visitedFragments1,
+            visitedFragments2,
+            parentFieldsAreMutuallyExclusive).foreach(conflicts += _)
         }
       }
 
@@ -489,32 +486,29 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
         fragmentName: String,
         areMutuallyExclusive: Boolean,
         visitedFragments: Set[String]): Unit =
-      ctx.doc.fragments.get(fragmentName) match {
-        case Some(fragment) =>
-          val (fieldMap2, fragmentNames2) =
-            getReferencedFieldsAndFragmentNames(fragment, visitedFragments)
+      ctx.doc.fragments.get(fragmentName).foreach { fragment =>
+        val (fieldMap2, fragmentNames2) =
+          getReferencedFieldsAndFragmentNames(fragment, visitedFragments)
 
-          // (D) First collect any conflicts between the provided collection of fields
-          // and the collection of fields represented by the given fragment.
-          collectConflictsBetween(
+        // (D) First collect any conflicts between the provided collection of fields
+        // and the collection of fields represented by the given fragment.
+        collectConflictsBetween(
+          conflicts,
+          fieldMap,
+          fieldMap2,
+          visitedFragments,
+          visitedFragments,
+          areMutuallyExclusive)
+
+        // (E) Then collect any conflicts between the provided collection of fields
+        // and any fragment names found in the given fragment.
+        fragmentNames2.foreach(fragmentName =>
+          collectConflictsBetweenFieldsAndFragment(
             conflicts,
             fieldMap,
-            fieldMap2,
-            visitedFragments,
-            visitedFragments,
-            areMutuallyExclusive)
-
-          // (E) Then collect any conflicts between the provided collection of fields
-          // and any fragment names found in the given fragment.
-          fragmentNames2.foreach(fragmentName =>
-            collectConflictsBetweenFieldsAndFragment(
-              conflicts,
-              fieldMap,
-              fragmentName,
-              areMutuallyExclusive,
-              visitedFragments + fragmentName))
-
-        case None => // do nothing
+            fragmentName,
+            areMutuallyExclusive,
+            visitedFragments + fragmentName))
       }
 
     // Given a series of Conflicts which occurred between two sub-fields, generate a single Conflict.
