@@ -60,6 +60,8 @@ class IntrospectionSchemaMaterializerSpec extends AnyWordSpec with Matchers with
 
   lazy val FriendlyUnionType = UnionType("Friendly", types = DogUnionType :: HumanUnionType :: Nil)
 
+  lazy val LazilyInitializedUnionType = UnionType("FriendlyButLazy", typesFn = () => DogUnionType :: HumanUnionType :: Nil)
+
   val CustomScalar = ScalarType[Int]("Custom",
     description = Some("Some custom"),
     coerceOutput = (i, _) => ast.IntValue(i),

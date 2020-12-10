@@ -55,7 +55,9 @@ trait AlternativeExecutionScheme {
     def extended = true
   }
 
-  implicit def Stream[S[_]](implicit stream: SubscriptionStream[S]) =
+  implicit def Stream[S[_]](implicit stream: SubscriptionStream[S]): ExecutionScheme with StreamBasedExecutionScheme[S] {
+    type Result[Ctx, T] = S[T]
+  } =
     new ExecutionScheme with StreamBasedExecutionScheme[S] {
       type Result[Ctx, T] = S[T]
 
@@ -72,7 +74,9 @@ trait AlternativeExecutionScheme {
         stream.flatMapFuture(future)(resultFn)
     }
 
-  implicit def StreamExtended[S[_]](implicit stream: SubscriptionStream[S]) =
+  implicit def StreamExtended[S[_]](implicit stream: SubscriptionStream[S]): ExecutionScheme with StreamBasedExecutionScheme[S] {
+    type Result[Ctx, T] = S[ExecutionResult[Ctx, T]]
+  } =
     new ExecutionScheme with StreamBasedExecutionScheme[S] {
       type Result[Ctx, T] = S[ExecutionResult[Ctx, T]]
 

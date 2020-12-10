@@ -469,7 +469,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       existing: UnionType[Ctx],
       types: List[ObjectType[Ctx, _]],
       mat: AstSchemaMaterializer[Ctx]) =
-    existing.copy(types = types,
+    existing.copy(typesFn = () => types,
       astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = existing.astNodes ++ extensions)
 
