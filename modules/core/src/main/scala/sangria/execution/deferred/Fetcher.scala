@@ -62,13 +62,7 @@ class Fetcher[Ctx, Res, RelRes, Id](
     val allIds =  MutableMap[Relation[Any, Any, Any], MutableSet[Any]]()
 
     def addToSet(rel: Relation[Any, Any, Any], id: Any) =
-      allIds.get(rel) match {
-        case Some(set) => set += id
-        case None =>
-          val set = MutableSet[Any]()
-          set += id
-          allIds(rel) = set
-      }
+      allIds.getOrElseUpdate(rel, MutableSet[Any]()) += id
 
     deferred foreach {
       case FetcherDeferredRel(s, rel, relId) if s eq this => addToSet(rel, relId)
