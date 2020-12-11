@@ -328,22 +328,10 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
         val hits = MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]]()
 
         def addHit(rel: Relation[Any, Any, Any], relId: Any, res: Seq[Any]) =
-          hits.get(rel) match {
-            case Some(map) => map(relId) = res
-            case None =>
-              val map = MutableMap[Any, Seq[Any]]()
-              map(relId) = res
-              hits(rel) = map
-          }
+          hits.getOrElseUpdate(rel, MutableMap[Any, Seq[Any]]())(relId) = res
 
         def addMiss(rel: Relation[Any, Any, Any], relId: Any) =
-          misses.get(rel) match {
-            case Some(set) => set += relId
-            case None =>
-              val set = MutableSet[Any]()
-              set += relId
-              misses(rel) = set
-          }
+          misses.getOrElseUpdate(rel, MutableSet[Any]()) += relId
 
         ids.foreach { case (rel, ids) =>
           ids foreach { relId =>
@@ -379,13 +367,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
         val mappedRes = rel.map(res)
 
         relIds foreach { relId =>
-          identified.get(relId) match {
-            case Some(builder) => builder += mappedRes
-            case None =>
-              val builder = new VectorBuilder[Any]
-              builder += mappedRes
-              identified(relId) = builder
-          }
+          identified.getOrElseUpdate(relId, new VectorBuilder[Any]) += mappedRes
         }
       }
 
@@ -394,13 +376,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
         updateCache(rel, relId, res)
 
-        grouped.get(rel) match {
-          case Some(map) => map(relId) = res
-          case None =>
-            val map = MutableMap[Any, Seq[Any]]()
-            map(relId) = res
-            grouped(rel) = map
-        }
+        grouped.getOrElseUpdate(rel, MutableMap[Any, Seq[Any]]())(relId) = res
       }
     }
 

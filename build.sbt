@@ -27,7 +27,7 @@ lazy val core = project
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Parser
-      "org.parboiled" %% "parboiled" % "2.1.8",
+      "org.parboiled" %% "parboiled" % "2.2.1",
 
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.2",
@@ -43,17 +43,17 @@ lazy val core = project
 
       // Testing
       "co.fs2" %% "fs2-core" % "2.4.6" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.2" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.3" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.0" % Test,
       "org.sangria-graphql" %% "sangria-monix" % "2.0.0" % Test,
-      "eu.timepit" %% "refined" % "0.9.12" % Test,
+      "eu.timepit" %% "refined" % "0.9.19" % Test,
 
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.78" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.94" % Test
     )
   )
 
