@@ -1,8 +1,4 @@
-### ℹ️ Temporary Fork Not Used Anymore 🎉
-#### 👀 See: https://github.com/sangria-graphql/sangria/issues/446#issuecomment-546281588
-
 ![Sangria Logo](https://sangria-graphql.github.io/assets/img/sangria-logo.svg)
-
 
 [Sangria](https://sangria-graphql.github.io/) is a scala [GraphQL](http://facebook.github.io/graphql/) library.
 
