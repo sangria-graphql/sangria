@@ -27,7 +27,7 @@ lazy val core = project
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Parser
-      "org.parboiled" %% "parboiled" % "2.1.8",
+      "org.parboiled" %% "parboiled" % "2.2.1",
 
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.2",
