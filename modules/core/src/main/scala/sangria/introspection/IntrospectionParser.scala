@@ -120,11 +120,9 @@ object IntrospectionParser {
   }
 
   private def checkErrors[In : InputUnmarshaller](introspectionResult: In): Unit =
-    um.getRootMapValue(introspectionResult, "errors") match {
-      case Some(errors) =>
-        throw new IllegalArgumentException(
-          s"Can't parse introspection results because it contains errors: ${um.render(errors)}")
-      case None => // everything is fine
+    um.getRootMapValue(introspectionResult, "errors").foreach { errors =>
+      throw new IllegalArgumentException(
+        s"Can't parse introspection results because it contains errors: ${um.render(errors)}")
     }
 
   private def stringValue[In : InputUnmarshaller](value: In, path: Vector[String]) =
