@@ -457,6 +457,7 @@ case class DirectiveDefinition(
   arguments: Vector[InputValueDefinition],
   locations: Vector[DirectiveLocation],
   description: Option[StringValue] = None,
+  repeatable: Boolean = false,
   comments: Vector[Comment] = Vector.empty,
   location: Option[AstLocation] = None) extends TypeSystemDefinition with WithDescription
 
@@ -911,7 +912,7 @@ object AstVisitor {
             tc.foreach(c => loop(c))
             breakOrSkip(onLeave(n))
           }
-        case n @ DirectiveDefinition(_, args, locations, description, comment, _) =>
+        case n @ DirectiveDefinition(_, args, locations, description, _, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             args.foreach(d => loop(d))
             locations.foreach(d => loop(d))

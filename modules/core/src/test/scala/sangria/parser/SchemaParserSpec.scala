@@ -22,157 +22,157 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           Vector(
             SchemaDefinition(
               Vector(
-                OperationTypeDefinition(OperationType.Query, NamedType("QueryType", Some(AstLocation(306, 9, 10))), Vector.empty, Some(AstLocation(299, 9, 3))),
-                OperationTypeDefinition(OperationType.Mutation, NamedType("MutationType", Some(AstLocation(328, 10, 13))), Vector.empty, Some(AstLocation(318, 10, 3)))),
+                OperationTypeDefinition(OperationType.Query, NamedType("QueryType", Some(AstLocation("", 306, 9, 10))), Vector.empty, Some(AstLocation("", 299, 9, 3))),
+                OperationTypeDefinition(OperationType.Mutation, NamedType("MutationType", Some(AstLocation("", 328, 10, 13))), Vector.empty, Some(AstLocation("", 318, 10, 3)))),
               Vector.empty,
               None,
               Vector(
-                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(AstLocation(0, 1, 1))),
-                Comment(" All rights reserved.", Some(AstLocation(37, 2, 1))),
-                Comment("", Some(AstLocation(60, 3, 1))),
-                Comment(" This source code is licensed under the BSD-style license found in the", Some(AstLocation(62, 4, 1))),
-                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(AstLocation(134, 5, 1))),
-                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(AstLocation(212, 6, 1)))),
+                Comment(" Copyright (c) 2015, Facebook, Inc.", Some(AstLocation("", 0, 1, 1))),
+                Comment(" All rights reserved.", Some(AstLocation("", 37, 2, 1))),
+                Comment("", Some(AstLocation("", 60, 3, 1))),
+                Comment(" This source code is licensed under the BSD-style license found in the", Some(AstLocation("", 62, 4, 1))),
+                Comment(" LICENSE file in the root directory of this source tree. An additional grant", Some(AstLocation("", 134, 5, 1))),
+                Comment(" of patent rights can be found in the PATENTS file in the same directory.", Some(AstLocation("", 212, 6, 1)))),
               Vector.empty,
-              Some(AstLocation(288, 8, 1))
+              Some(AstLocation("", 288, 8, 1))
             ),
             ObjectTypeDefinition(
               "Foo",
               Vector(
-                NamedType("Bar", Some(AstLocation(390, 16, 21)))),
+                NamedType("Bar", Some(AstLocation("", 390, 16, 21)))),
               Vector(
-                FieldDefinition("one", NamedType("Type", Some(AstLocation(403, 17, 8))), Vector.empty, Vector.empty, None, Vector.empty, Some(AstLocation(398, 17, 3))),
-                FieldDefinition("two", NamedType("Type", Some(AstLocation(437, 18, 30))), Vector(InputValueDefinition("argument", NotNullType(NamedType("InputType", Some(AstLocation(424, 18, 17))), Some(AstLocation(424, 18, 17))), None, Vector.empty, None, Vector.empty, Some(AstLocation(414, 18, 7)))), Vector.empty, None, Vector.empty, Some(AstLocation(410, 18, 3))),
-                FieldDefinition("three", NamedType("Int", Some(AstLocation(487, 19, 46))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(AstLocation(460, 19, 19))), None, Vector.empty, None, Vector.empty, Some(AstLocation(450, 19, 9))), InputValueDefinition("other", NamedType("String", Some(AstLocation(478, 19, 37))), None, Vector.empty, None, Vector.empty, Some(AstLocation(471, 19, 30)))), Vector.empty, None, Vector.empty, Some(AstLocation(444, 19, 3))),
-                FieldDefinition("four", NamedType("String", Some(AstLocation(528, 20, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(AstLocation(508, 20, 18))), Some(StringValue("string", false, None, Vector.empty, Some(AstLocation(517, 20, 27)))), Vector.empty, None, Vector.empty, Some(AstLocation(498, 20, 8)))), Vector.empty, None, Vector.empty, Some(AstLocation(493, 20, 3))),
-                FieldDefinition("five", NamedType("String", Some(AstLocation(586, 21, 52))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(AstLocation(553, 21, 19))), Some(AstLocation(552, 21, 18))), Some(ListValue(
+                FieldDefinition("one", NamedType("Type", Some(AstLocation("", 403, 17, 8))), Vector.empty, Vector.empty, None, Vector.empty, Some(AstLocation("", 398, 17, 3))),
+                FieldDefinition("two", NamedType("Type", Some(AstLocation("", 437, 18, 30))), Vector(InputValueDefinition("argument", NotNullType(NamedType("InputType", Some(AstLocation("", 424, 18, 17))), Some(AstLocation("", 424, 18, 17))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 414, 18, 7)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 410, 18, 3))),
+                FieldDefinition("three", NamedType("Int", Some(AstLocation("", 487, 19, 46))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(AstLocation("", 460, 19, 19))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 450, 19, 9))), InputValueDefinition("other", NamedType("String", Some(AstLocation("", 478, 19, 37))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 471, 19, 30)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 444, 19, 3))),
+                FieldDefinition("four", NamedType("String", Some(AstLocation("", 528, 20, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(AstLocation("", 508, 20, 18))), Some(StringValue("string", false, None, Vector.empty, Some(AstLocation("", 517, 20, 27)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 498, 20, 8)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 493, 20, 3))),
+                FieldDefinition("five", NamedType("String", Some(AstLocation("", 586, 21, 52))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(AstLocation("", 553, 21, 19))), Some(AstLocation("", 552, 21, 18))), Some(ListValue(
                   Vector(
-                    StringValue("string", false, None, Vector.empty, Some(AstLocation(564, 21, 30))),
-                    StringValue("string", false, None, Vector.empty, Some(AstLocation(574, 21, 40)))),
+                    StringValue("string", false, None, Vector.empty, Some(AstLocation("", 564, 21, 30))),
+                    StringValue("string", false, None, Vector.empty, Some(AstLocation("", 574, 21, 40)))),
                   Vector.empty,
-                  Some(AstLocation(563, 21, 29))
-                )), Vector.empty, None, Vector.empty, Some(AstLocation(542, 21, 8)))), Vector.empty, None, Vector.empty, Some(AstLocation(537, 21, 3))),
-                FieldDefinition("six", NamedType("Type", Some(AstLocation(678, 26, 46))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(AstLocation(649, 26, 17))), Some(ObjectValue(
+                  Some(AstLocation("", 563, 21, 29))
+                )), Vector.empty, None, Vector.empty, Some(AstLocation("", 542, 21, 8)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 537, 21, 3))),
+                FieldDefinition("six", NamedType("Type", Some(AstLocation("", 678, 26, 46))), Vector(InputValueDefinition("argument", NamedType("InputType", Some(AstLocation("", 649, 26, 17))), Some(ObjectValue(
                   Vector(
                     ObjectField(
                       "key",
-                      StringValue("value", false, None, Vector.empty, Some(AstLocation(667, 26, 35))),
+                      StringValue("value", false, None, Vector.empty, Some(AstLocation("", 667, 26, 35))),
                       Vector.empty,
-                      Some(AstLocation(662, 26, 30))
+                      Some(AstLocation("", 662, 26, 30))
                     )),
                   Vector.empty,
-                  Some(AstLocation(661, 26, 29))
-                )), Vector.empty, None, Vector.empty, Some(AstLocation(639, 26, 7)))), Vector.empty, Some(StringValue("More \"\"\" descriptions \\", true, Some("\n  More \"\"\" descriptions \\\n  "), Vector.empty, Some(AstLocation(596, 23, 3)))), Vector.empty, Some(AstLocation(635, 26, 3)))),
+                  Some(AstLocation("", 661, 26, 29))
+                )), Vector.empty, None, Vector.empty, Some(AstLocation("", 639, 26, 7)))), Vector.empty, Some(StringValue("More \"\"\" descriptions \\", true, Some("\n  More \"\"\" descriptions \\\n  "), Vector.empty, Some(AstLocation("", 596, 23, 3)))), Vector.empty, Some(AstLocation("", 635, 26, 3)))),
               Vector.empty,
-              Some(StringValue("type description!", true, Some("\ntype description!\n"), Vector.empty, Some(AstLocation(344, 13, 1)))),
+              Some(StringValue("type description!", true, Some("\ntype description!\n"), Vector.empty, Some(AstLocation("", 344, 13, 1)))),
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(370, 16, 1))
+              Some(AstLocation("", 370, 16, 1))
             ),
             ObjectTypeDefinition(
               "AnnotatedObject",
               Vector.empty,
               Vector(
-                FieldDefinition("annotatedField", NamedType("Type", Some(AstLocation(781, 30, 49))), Vector(InputValueDefinition("arg", NamedType("Type", Some(AstLocation(755, 30, 23))), Some(StringValue("default", false, None, Vector.empty, Some(AstLocation(762, 30, 30)))), Vector(Directive(
+                FieldDefinition("annotatedField", NamedType("Type", Some(AstLocation("", 781, 30, 49))), Vector(InputValueDefinition("arg", NamedType("Type", Some(AstLocation("", 755, 30, 23))), Some(StringValue("default", false, None, Vector.empty, Some(AstLocation("", 762, 30, 30)))), Vector(Directive(
                   "onArg",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(772, 30, 40))
-                )), None, Vector.empty, Some(AstLocation(750, 30, 18)))), Vector(Directive(
+                  Some(AstLocation("", 772, 30, 40))
+                )), None, Vector.empty, Some(AstLocation("", 750, 30, 18)))), Vector(Directive(
                   "onField",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(786, 30, 54))
-                )), None, Vector.empty, Some(AstLocation(735, 30, 3)))),
+                  Some(AstLocation("", 786, 30, 54))
+                )), None, Vector.empty, Some(AstLocation("", 735, 30, 3)))),
               Vector(
                 Directive(
                   "onObject",
                   Vector(
                     Argument(
                       "arg",
-                      StringValue("value", false, None, Vector.empty, Some(AstLocation(722, 29, 37))),
+                      StringValue("value", false, None, Vector.empty, Some(AstLocation("", 722, 29, 37))),
                       Vector.empty,
-                      Some(AstLocation(717, 29, 32))
+                      Some(AstLocation("", 717, 29, 32))
                     )),
                   Vector.empty,
-                  Some(AstLocation(707, 29, 22))
+                  Some(AstLocation("", 707, 29, 22))
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(686, 29, 1))
+              Some(AstLocation("", 686, 29, 1))
             ),
             InterfaceTypeDefinition(
               "Bar",
               Vector(
-                FieldDefinition("one", NamedType("Type", Some(AstLocation(875, 37, 8))), Vector.empty, Vector.empty, None, Vector.empty, Some(AstLocation(870, 37, 3))),
-                FieldDefinition("four", NamedType("String", Some(AstLocation(917, 38, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(AstLocation(897, 38, 18))), Some(StringValue("string", false, None, Vector.empty, Some(AstLocation(906, 38, 27)))), Vector.empty, None, Vector.empty, Some(AstLocation(887, 38, 8)))), Vector.empty, None, Vector.empty, Some(AstLocation(882, 38, 3)))),
+                FieldDefinition("one", NamedType("Type", Some(AstLocation("", 875, 37, 8))), Vector.empty, Vector.empty, None, Vector.empty, Some(AstLocation("", 870, 37, 3))),
+                FieldDefinition("four", NamedType("String", Some(AstLocation("", 917, 38, 38))), Vector(InputValueDefinition("argument", NamedType("String", Some(AstLocation("", 897, 38, 18))), Some(StringValue("string", false, None, Vector.empty, Some(AstLocation("", 906, 38, 27)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 887, 38, 8)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 882, 38, 3)))),
               Vector.empty,
-              Some(StringValue(" It's an interface!", false, None, Vector(Comment(" comment above", Some(AstLocation(798, 33, 1)))), Some(AstLocation(814, 34, 1)))),
+              Some(StringValue(" It's an interface!", false, None, Vector(Comment(" comment above", Some(AstLocation("", 798, 33, 1)))), Some(AstLocation("", 814, 34, 1)))),
               Vector(
-                Comment(" comment below", Some(AstLocation(836, 35, 1)))),
+                Comment(" comment below", Some(AstLocation("", 836, 35, 1)))),
               Vector.empty,
-              Some(AstLocation(852, 36, 1))
+              Some(AstLocation("", 852, 36, 1))
             ),
             InterfaceTypeDefinition(
               "AnnotatedInterface",
               Vector(
-                FieldDefinition("annotatedField", NamedType("Type", Some(AstLocation(1007, 42, 37))), Vector(InputValueDefinition("arg", NamedType("Type", Some(AstLocation(993, 42, 23))), None, Vector(Directive(
+                FieldDefinition("annotatedField", NamedType("Type", Some(AstLocation("", 1007, 42, 37))), Vector(InputValueDefinition("arg", NamedType("Type", Some(AstLocation("", 993, 42, 23))), None, Vector(Directive(
                   "onArg",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(998, 42, 28))
-                )), None, Vector.empty, Some(AstLocation(988, 42, 18)))), Vector(Directive(
+                  Some(AstLocation("", 998, 42, 28))
+                )), None, Vector.empty, Some(AstLocation("", 988, 42, 18)))), Vector(Directive(
                   "onField",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1012, 42, 42))
-                )), None, Vector.empty, Some(AstLocation(973, 42, 3)))),
+                  Some(AstLocation("", 1012, 42, 42))
+                )), None, Vector.empty, Some(AstLocation("", 973, 42, 3)))),
               Vector(
                 Directive(
                   "onInterface",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(956, 41, 30))
+                  Some(AstLocation("", 956, 41, 30))
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(927, 41, 1))
+              Some(AstLocation("", 927, 41, 1))
             ),
             UnionTypeDefinition(
               "Feed",
               Vector(
-                NamedType("Story", Some(AstLocation(1037, 45, 14))),
-                NamedType("Article", Some(AstLocation(1045, 45, 22))),
-                NamedType("Advert", Some(AstLocation(1055, 45, 32)))),
+                NamedType("Story", Some(AstLocation("", 1037, 45, 14))),
+                NamedType("Article", Some(AstLocation("", 1045, 45, 22))),
+                NamedType("Advert", Some(AstLocation("", 1055, 45, 32)))),
               Vector.empty,
               None,
               Vector.empty,
-              Some(AstLocation(1024, 45, 1))
+              Some(AstLocation("", 1024, 45, 1))
             ),
             UnionTypeDefinition(
               "AnnotatedUnion",
               Vector(
-                NamedType("A", Some(AstLocation(1095, 47, 33))),
-                NamedType("B", Some(AstLocation(1099, 47, 37)))),
+                NamedType("A", Some(AstLocation("", 1095, 47, 33))),
+                NamedType("B", Some(AstLocation("", 1099, 47, 37)))),
               Vector(
                 Directive(
                   "onUnion",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1084, 47, 22))
+                  Some(AstLocation("", 1084, 47, 22))
                 )),
               None,
               Vector.empty,
-              Some(AstLocation(1063, 47, 1))
+              Some(AstLocation("", 1063, 47, 1))
             ),
             ScalarTypeDefinition(
               "CustomScalar",
               Vector.empty,
               None,
               Vector.empty,
-              Some(AstLocation(1102, 49, 1))
+              Some(AstLocation("", 1102, 49, 1))
             ),
             ScalarTypeDefinition(
               "AnnotatedScalar",
@@ -181,22 +181,22 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                   "onScalar",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1146, 51, 24))
+                  Some(AstLocation("", 1146, 51, 24))
                 )),
               None,
               Vector.empty,
-              Some(AstLocation(1123, 51, 1))
+              Some(AstLocation("", 1123, 51, 1))
             ),
             EnumTypeDefinition(
               "Site",
               Vector(
-                EnumValueDefinition("DESKTOP", Vector.empty, Some(StringValue("description 1", false, None, Vector.empty, Some(AstLocation(1171, 54, 3)))), Vector.empty, Some(AstLocation(1189, 55, 3))),
-                EnumValueDefinition("MOBILE", Vector.empty, Some(StringValue("description 2", true, Some("\n  description 2\n  "), Vector.empty, Some(AstLocation(1199, 56, 3)))), Vector.empty, Some(AstLocation(1227, 59, 3)))),
+                EnumValueDefinition("DESKTOP", Vector.empty, Some(StringValue("description 1", false, None, Vector.empty, Some(AstLocation("", 1171, 54, 3)))), Vector.empty, Some(AstLocation("", 1189, 55, 3))),
+                EnumValueDefinition("MOBILE", Vector.empty, Some(StringValue("description 2", true, Some("\n  description 2\n  "), Vector.empty, Some(AstLocation("", 1199, 56, 3)))), Vector.empty, Some(AstLocation("", 1227, 59, 3)))),
               Vector.empty,
               None,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(1157, 53, 1))
+              Some(AstLocation("", 1157, 53, 1))
             ),
             EnumTypeDefinition(
               "AnnotatedEnum",
@@ -205,62 +205,62 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                   "onEnumValue",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1284, 63, 19))
-                )), None, Vector.empty, Some(AstLocation(1268, 63, 3))),
-                EnumValueDefinition("OTHER_VALUE", Vector.empty, None, Vector.empty, Some(AstLocation(1299, 64, 3)))),
+                  Some(AstLocation("", 1284, 63, 19))
+                )), None, Vector.empty, Some(AstLocation("", 1268, 63, 3))),
+                EnumValueDefinition("OTHER_VALUE", Vector.empty, None, Vector.empty, Some(AstLocation("", 1299, 64, 3)))),
               Vector(
                 Directive(
                   "onEnum",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1256, 62, 20))
+                  Some(AstLocation("", 1256, 62, 20))
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(1237, 62, 1))
+              Some(AstLocation("", 1237, 62, 1))
             ),
             InputObjectTypeDefinition(
               "InputType",
               Vector(
-                InputValueDefinition("key", NotNullType(NamedType("String", Some(AstLocation(1339, 68, 8))), Some(AstLocation(1339, 68, 8))), None, Vector.empty, None, Vector.empty, Some(AstLocation(1334, 68, 3))),
-                InputValueDefinition("answer", NamedType("Int", Some(AstLocation(1357, 69, 11))), Some(BigIntValue(42, Vector.empty, Some(AstLocation(1363, 69, 17)))), Vector.empty, None, Vector.empty, Some(AstLocation(1349, 69, 3)))),
+                InputValueDefinition("key", NotNullType(NamedType("String", Some(AstLocation("", 1339, 68, 8))), Some(AstLocation("", 1339, 68, 8))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 1334, 68, 3))),
+                InputValueDefinition("answer", NamedType("Int", Some(AstLocation("", 1357, 69, 11))), Some(BigIntValue(42, Vector.empty, Some(AstLocation("", 1363, 69, 17)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 1349, 69, 3)))),
               Vector.empty,
               None,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(1314, 67, 1))
+              Some(AstLocation("", 1314, 67, 1))
             ),
             InputObjectTypeDefinition(
               "AnnotatedInput",
               Vector(
-                InputValueDefinition("annotatedField", NamedType("Type", Some(AstLocation(1447, 74, 19))), None, Vector(Directive(
+                InputValueDefinition("annotatedField", NamedType("Type", Some(AstLocation("", 1447, 74, 19))), None, Vector(Directive(
                   "onField",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1452, 74, 24))
-                )), None, Vector(Comment(" field comment", Some(AstLocation(1413, 73, 3)))), Some(AstLocation(1431, 74, 3)))),
+                  Some(AstLocation("", 1452, 74, 24))
+                )), None, Vector(Comment(" field comment", Some(AstLocation("", 1413, 73, 3)))), Some(AstLocation("", 1431, 74, 3)))),
               Vector(
                 Directive(
                   "onInputObjectType",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1390, 72, 22))
+                  Some(AstLocation("", 1390, 72, 22))
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(1369, 72, 1))
+              Some(AstLocation("", 1369, 72, 1))
             ),
             ObjectTypeExtensionDefinition(
               "Foo",
               Vector.empty,
               Vector(
-                FieldDefinition("seven", NamedType("Type", Some(AstLocation(1511, 78, 30))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(AstLocation(1501, 78, 20))), Some(AstLocation(1500, 78, 19))), None, Vector.empty, None, Vector.empty, Some(AstLocation(1490, 78, 9)))), Vector.empty, None, Vector.empty, Some(AstLocation(1484, 78, 3)))),
+                FieldDefinition("seven", NamedType("Type", Some(AstLocation("", 1511, 78, 30))), Vector(InputValueDefinition("argument", ListType(NamedType("String", Some(AstLocation("", 1501, 78, 20))), Some(AstLocation("", 1500, 78, 19))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 1490, 78, 9)))), Vector.empty, None, Vector.empty, Some(AstLocation("", 1484, 78, 3)))),
               Vector.empty,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(1464, 77, 1))
+              Some(AstLocation("", 1464, 77, 1))
             ),
             ObjectTypeExtensionDefinition(
               "Foo",
@@ -271,41 +271,55 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                   "onType",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation(1535, 81, 17))
+                  Some(AstLocation("", 1535, 81, 17))
                 )),
               Vector.empty,
               Vector.empty,
-              Some(AstLocation(1519, 81, 1))
+              Some(AstLocation("", 1519, 81, 1))
             ),
             DirectiveDefinition(
               "skip",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(AstLocation(1577, 84, 21))), Some(AstLocation(1577, 84, 21))), None, Vector.empty, None, Vector.empty, Some(AstLocation(1573, 84, 17)))),
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(AstLocation("", 1577, 84, 21))), Some(AstLocation("", 1577, 84, 21))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 1573, 84, 17)))),
               Vector(
-                DirectiveLocation("FIELD", Vector.empty, Some(AstLocation(1590, 84, 34))),
-                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(AstLocation(1598, 84, 42))),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(AstLocation(1616, 84, 60)))),
-              Some(StringValue("cool skip", false, None, Vector.empty, Some(AstLocation(1545, 83, 1)))),
+                DirectiveLocation("FIELD", Vector.empty, Some(AstLocation("", 1590, 84, 34))),
+                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(AstLocation("", 1598, 84, 42))),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(AstLocation("", 1616, 84, 60)))),
+              Some(StringValue("cool skip", false, None, Vector.empty, Some(AstLocation("", 1545, 83, 1)))),
+              false,
               Vector.empty,
-              Some(AstLocation(1557, 84, 1))
+              Some(AstLocation("", 1557, 84, 1))
+            ),
+            DirectiveDefinition(
+              "myRepeatableDir",
+              Vector(
+                InputValueDefinition("name", NotNullType(NamedType("String", Some(AstLocation("", 1666, 86, 34))), Some(AstLocation("", 1666, 86, 34))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 1660, 86, 28)))),
+              Vector(
+                DirectiveLocation("OBJECT", Vector.empty, Some(AstLocation("", 1693, 87, 5))),
+                DirectiveLocation("INTERFACE", Vector.empty, Some(AstLocation("", 1704, 88, 5)))),
+              None,
+              true,
+              Vector.empty,
+              Some(AstLocation("", 1633, 86, 1))
             ),
             DirectiveDefinition(
               "include",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(AstLocation(1656, 86, 24))), Some(AstLocation(1656, 86, 24))), None, Vector.empty, None, Vector.empty, Some(AstLocation(1652, 86, 20)))),
+                InputValueDefinition("if", NotNullType(NamedType("Boolean", Some(AstLocation("", 1738, 90, 24))), Some(AstLocation("", 1738, 90, 24))), None, Vector.empty, None, Vector.empty, Some(AstLocation("", 1734, 90, 20)))),
               Vector(
-                DirectiveLocation("FIELD", Vector.empty, Some(AstLocation(1671, 87, 6))),
-                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(AstLocation(1682, 88, 6))),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(AstLocation(1703, 89, 6)))),
+                DirectiveLocation("FIELD", Vector.empty, Some(AstLocation("", 1753, 91, 6))),
+                DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, Some(AstLocation("", 1764, 92, 6))),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(AstLocation("", 1785, 93, 6)))),
               None,
+              false,
               Vector.empty,
-              Some(AstLocation(1633, 86, 1))
+              Some(AstLocation("", 1715, 90, 1))
             )),
           Vector.empty,
-          Some(AstLocation(0, 1, 1)),
+          Some(AstLocation("", 0, 1, 1)),
           None
         )
-      
+
       parseQuery(query) should be(Success(expectedAst))
     }
 
@@ -785,6 +799,52 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             world(foo: Int): String
           }
         """)
+    }
+
+    "Directive definition" in {
+      val Success(ast) = parseQuery("directive @foo on OBJECT | INTERFACE")
+
+      ast.withoutSourceMapper should be (
+        Document(
+          Vector(
+            DirectiveDefinition(
+              "foo",
+              Vector.empty,
+              Vector(
+                DirectiveLocation("OBJECT", Vector.empty, Some(AstLocation("", 18, 1, 19))),
+                DirectiveLocation("INTERFACE", Vector.empty, Some(AstLocation("", 27, 1, 28)))),
+              None,
+              false,
+              Vector.empty,
+              Some(AstLocation("", 0, 1, 1))
+            )),
+          Vector.empty,
+          Some(AstLocation("", 0, 1, 1)),
+          None
+        ))
+    }
+    
+    "Repeatable directive definition" in {
+      val Success(ast) = parseQuery("directive @foo repeatable on OBJECT | INTERFACE")
+
+      ast.withoutSourceMapper should be (
+        Document(
+          Vector(
+            DirectiveDefinition(
+              "foo",
+              Vector.empty,
+              Vector(
+                DirectiveLocation("OBJECT", Vector.empty, Some(AstLocation("", 29, 1, 30))),
+                DirectiveLocation("INTERFACE", Vector.empty, Some(AstLocation("", 38, 1, 39)))),
+              None,
+              true,
+              Vector.empty,
+              Some(AstLocation("", 0, 1, 1))
+            )),
+          Vector.empty,
+          Some(AstLocation("", 0, 1, 1)),
+          None
+        ))
     }
 
     "Allow legacy empty fields syntax" in {

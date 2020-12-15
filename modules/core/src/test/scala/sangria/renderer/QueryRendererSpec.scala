@@ -711,6 +711,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
             |extend type Foo {seven(argument:[String]):Type}
             |extend type Foo @onType
             |"cool skip" directive@skip(if:Boolean!)on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
+            |directive@myRepeatableDir(name:String!)repeatable on OBJECT|INTERFACE
             |directive@include(if:Boolean!)on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT""".stripMargin) (after being strippedOfCarriageReturns)
 
         prettyRendered should equal (FileUtil loadQuery "schema-kitchen-sink-pretty.graphql")

@@ -214,10 +214,10 @@ object SchemaRenderer {
     ast.DirectiveLocation(__DirectiveLocation.byValue(loc).name)
 
   def renderDirective(dir: Directive) =
-    ast.DirectiveDefinition(dir.name, renderArgs(dir.arguments), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
+    ast.DirectiveDefinition(dir.name, renderArgs(dir.arguments), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description), dir.repeatable)
 
   def renderDirective(dir: IntrospectionDirective) =
-    ast.DirectiveDefinition(dir.name, renderArgsI(dir.args), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description))
+    ast.DirectiveDefinition(dir.name, renderArgsI(dir.args), dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name), renderDescription(dir.description), dir.repeatable)
 
   def schemaAstFromIntrospection(introspectionSchema: IntrospectionSchema, filter: SchemaFilter = SchemaFilter.default): ast.Document = {
     val schemaDef = if (filter.renderSchema) renderSchemaDefinition(introspectionSchema) else None

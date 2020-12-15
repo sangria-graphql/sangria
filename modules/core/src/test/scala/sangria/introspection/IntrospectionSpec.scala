@@ -3,6 +3,7 @@ package sangria.introspection
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.schema._
+import sangria.macros._
 import sangria.util.{DebugUtil, FutureResultSupport}
 import sangria.validation.QueryValidator
 
@@ -110,6 +111,19 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                             "kind" -> "OBJECT",
                             "name" -> "__InputValue",
                             "ofType" -> null)))),
+                    "isDeprecated" -> false,
+                    "deprecationReason" -> null),
+                  Map(
+                    "name" -> "isRepeatable",
+                    "description" -> "Permits using the directive multiple times at the same location.",
+                    "args" -> Vector.empty,
+                    "type" -> Map(
+                      "kind" -> "NON_NULL",
+                      "name" -> null,
+                      "ofType" -> Map(
+                        "kind" -> "SCALAR",
+                        "name" -> "Boolean",
+                        "ofType" -> null)),
                     "isDeprecated" -> false,
                     "deprecationReason" -> null)),
                 "inputFields" -> null,
@@ -750,7 +764,8 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                         "kind" -> "SCALAR",
                         "name" -> "Boolean",
                         "ofType" -> null)),
-                    "defaultValue" -> null))),
+                    "defaultValue" -> null)),
+                "isRepeatable" -> false),
               Map(
                 "name" -> "skip",
                 "description" -> "Directs the executor to skip this field or fragment when the `if` argument is true.",
@@ -769,7 +784,8 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                         "kind" -> "SCALAR",
                         "name" -> "Boolean",
                         "ofType" -> null)),
-                    "defaultValue" -> null))),
+                    "defaultValue" -> null)),
+                "isRepeatable" -> false),
               Map(
                 "name" -> "deprecated",
                 "description" -> "Marks an element of a GraphQL schema as no longer supported.",
@@ -784,8 +800,44 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                       "kind" -> "SCALAR",
                       "name" -> "String",
                       "ofType" -> null),
-                    "defaultValue" -> "\"No longer supported\"")))),
+                    "defaultValue" -> "\"No longer supported\"")),
+                "isRepeatable" -> false)),
             "description" -> null))))
+    }
+
+    "includes repeatable flag on directives" in {
+      val testType = ObjectType("TestType", fields[Unit, Unit](Field("foo", OptionType(StringType), resolve = _ => None)))
+      val repeatableDirective = Directive("test", repeatable = true, locations = Set(DirectiveLocation.Object, DirectiveLocation.Interface))
+      val schema = Schema(testType, directives = repeatableDirective :: BuiltinDirectives)
+
+      val query =
+        gql"""
+          {
+            __schema {
+              directives {
+                name
+                isRepeatable
+              }
+            }
+          }
+        """
+
+      Executor.execute(schema, query).await should be (Map(
+        "data" -> Map(
+          "__schema" -> Map(
+            "directives" -> Vector(
+              Map(
+                "name" -> "test",
+                "isRepeatable" -> true),
+              Map(
+                "name" -> "include",
+                "isRepeatable" -> false),
+              Map(
+                "name" -> "skip",
+                "isRepeatable" -> false),
+              Map(
+                "name" -> "deprecated",
+                "isRepeatable" -> false))))))
     }
 
     "introspects on input object" in {

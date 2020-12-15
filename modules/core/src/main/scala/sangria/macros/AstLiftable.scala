@@ -76,8 +76,8 @@ trait AstLiftable {
     case FragmentDefinition(n, t, d, s, v, c, tc, p) =>
       q"_root_.sangria.ast.FragmentDefinition($n, $t, $d, $s, $v, $c, $tc, $p)"
 
-    case DirectiveDefinition(n, a, l, desc, c, p) =>
-      q"_root_.sangria.ast.DirectiveDefinition($n, $a, $l, $desc, $c, $p)"
+    case DirectiveDefinition(n, a, l, desc, r, c, p) =>
+      q"_root_.sangria.ast.DirectiveDefinition($n, $a, $l, $desc, $r, $c, $p)"
     case SchemaDefinition(o, d, desc, c, tc, p) =>
       q"_root_.sangria.ast.SchemaDefinition($o, $d, $desc, $c, $tc, $p)"
 

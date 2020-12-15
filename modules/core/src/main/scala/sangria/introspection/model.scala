@@ -116,4 +116,5 @@ case class IntrospectionDirective(
   name: String,
   description: Option[String],
   locations: Set[DirectiveLocation.Value],
-  args: Seq[IntrospectionInputValue])
+  args: Seq[IntrospectionInputValue],
+  repeatable: Boolean)
