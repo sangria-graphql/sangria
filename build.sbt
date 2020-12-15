@@ -2,8 +2,9 @@ import sbt.Developer
 import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOptions, scmInfo, startYear}
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / scalaVersion := "2.13.4"
-ThisBuild / crossScalaVersions := Seq("2.12.11", scalaVersion.value)
+ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.4")
+ThisBuild / scalaVersion := crossScalaVersions.value.last
+ThisBuild / githubWorkflowPublishTargetBranches := List()
 
 lazy val root = project
   .in(file("."))
