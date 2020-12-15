@@ -1,11 +1,10 @@
 import sbt.Developer
 import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOptions, scmInfo, startYear}
 
-// has to be set for all modules to allow 'sbt release'
-// [error] Repository for publishing is not specified.
-
-/* Define the different sbt projects of sangria
- */
+// sbt-github-actions needs configuration in `ThisBuild`
+ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.4")
+ThisBuild / scalaVersion := crossScalaVersions.value.last
+ThisBuild / githubWorkflowPublishTargetBranches := List()
 
 lazy val root = project
   .in(file("."))
@@ -13,13 +12,13 @@ lazy val root = project
   .aggregate(core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
-    scalaSettings ++ shellSettings ++ publishSettings ++ noPublishSettings
+    scalacSettings ++ shellSettings ++ publishSettings ++ noPublishSettings
   )
 
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
-  .settings(scalaSettings ++ shellSettings ++ publishSettings)
+  .settings(scalacSettings ++ shellSettings ++ publishSettings)
   .settings(
     name := "sangria",
     description := "Scala GraphQL implementation",
@@ -62,7 +61,7 @@ lazy val benchmarks = project
   .withId("sangria-benchmarks")
   .dependsOn(core)
   .enablePlugins(JmhPlugin)
-  .settings(scalaSettings ++ shellSettings ++ noPublishSettings)
+  .settings(scalacSettings ++ shellSettings ++ noPublishSettings)
   .settings(
     name := "sangria-benchmarks",
     description := "Benchmarks of Sangria functionality",
@@ -84,9 +83,7 @@ lazy val projectInfo = Seq(
   ))
 )
 
-lazy val scalaSettings = Seq(
-  scalaVersion := "2.13.4",
-  crossScalaVersions := Seq("2.12.11", scalaVersion.value),
+lazy val scalacSettings = Seq(
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
