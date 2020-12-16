@@ -9,8 +9,7 @@ class KnownDirectivesSpec extends AnyWordSpec with ValidationSupport {
 
   "Validate: Known directives" when {
     "within query language" should {
-      "with no directives" in expectPasses(
-        """
+      "with no directives" in expectPasses("""
           query Foo {
             name
             ...Frag
@@ -21,8 +20,7 @@ class KnownDirectivesSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "with known directives" in expectPasses(
-        """
+      "with known directives" in expectPasses("""
           {
             dog @include(if: true) {
               name
@@ -43,7 +41,8 @@ class KnownDirectivesSpec extends AnyWordSpec with ValidationSupport {
         """,
         List(
           "Unknown directive 'unknown'." -> Some(Pos(3, 17))
-        ))
+        )
+      )
 
       "with many unknown directives" in expectFails(
         """
@@ -63,10 +62,10 @@ class KnownDirectivesSpec extends AnyWordSpec with ValidationSupport {
           "Unknown directive 'unknown'." -> Some(Pos(3, 17)),
           "Unknown directive 'unknown'." -> Some(Pos(6, 19)),
           "Unknown directive 'unknown'." -> Some(Pos(8, 20))
-        ))
+        )
+      )
 
-      "with well placed directives" in expectPasses(
-        """
+      "with well placed directives" in expectPasses("""
           query Foo($var: Boolean @onVariableDefinition) @onQuery {
             name @include(if: $var)
             ...Frag @include(if: true)
@@ -94,12 +93,12 @@ class KnownDirectivesSpec extends AnyWordSpec with ValidationSupport {
         "Directive 'include' may not be used on query operation." -> Seq(Pos(2, 45)),
         "Directive 'onQuery' may not be used on field." -> Seq(Pos(3, 18)),
         "Directive 'onQuery' may not be used on fragment spread." -> Seq(Pos(4, 21)),
-        "Directive 'onQuery' may not be used on mutation operation." -> Seq(Pos(7, 24)))
+        "Directive 'onQuery' may not be used on mutation operation." -> Seq(Pos(7, 24))
+      )
     }
 
     "within schema language" should {
-      "with well placed directives" in expectPasses(
-        """
+      "with well placed directives" in expectPasses("""
           type MyObj implements MyInterface @onObject {
             myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
           }
@@ -152,20 +151,27 @@ class KnownDirectivesSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         List(
-          "Directive 'onInputFieldDefinition' may not be used on argument definition." -> Some(Pos(3, 32)),
-          "Directive 'onInputFieldDefinition' may not be used on field definition." -> Some(Pos(3, 65)),
+          "Directive 'onInputFieldDefinition' may not be used on argument definition." -> Some(
+            Pos(3, 32)),
+          "Directive 'onInputFieldDefinition' may not be used on field definition." -> Some(
+            Pos(3, 65)),
           "Directive 'onInterface' may not be used on object type definition." -> Some(Pos(2, 45)),
           "Directive 'onEnum' may not be used on scalar type definition." -> Some(Pos(6, 27)),
-          "Directive 'onInputFieldDefinition' may not be used on argument definition." -> Some(Pos(9, 32)),
-          "Directive 'onInputFieldDefinition' may not be used on field definition." -> Some(Pos(9, 65)),
+          "Directive 'onInputFieldDefinition' may not be used on argument definition." -> Some(
+            Pos(9, 32)),
+          "Directive 'onInputFieldDefinition' may not be used on field definition." -> Some(
+            Pos(9, 65)),
           "Directive 'onObject' may not be used on interface definition." -> Some(Pos(8, 33)),
           "Directive 'onEnumValue' may not be used on union definition." -> Some(Pos(12, 25)),
           "Directive 'onUnion' may not be used on enum value definition." -> Some(Pos(15, 22)),
           "Directive 'onScalar' may not be used on enum definition." -> Some(Pos(14, 23)),
-          "Directive 'onArgumentDefinition' may not be used on input field definition." -> Some(Pos(19, 26)),
-          "Directive 'onEnum' may not be used on input object type definition." -> Some(Pos(18, 25)),
+          "Directive 'onArgumentDefinition' may not be used on input field definition." -> Some(
+            Pos(19, 26)),
+          "Directive 'onEnum' may not be used on input object type definition." -> Some(
+            Pos(18, 25)),
           "Directive 'onObject' may not be used on schema definition." -> Some(Pos(22, 18))
-        ))
+        )
+      )
     }
   }
 }

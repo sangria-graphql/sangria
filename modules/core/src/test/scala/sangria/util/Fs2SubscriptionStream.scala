@@ -43,6 +43,7 @@ object Fs2Support {
       stream.handleErrorWith { case e => Stream.emit(fn(e)) }
   }
 
-  implicit def observableSubscriptionStream(implicit CS: ContextShift[IO]): SubscriptionStream[IOS] =
+  implicit def observableSubscriptionStream(implicit
+      CS: ContextShift[IO]): SubscriptionStream[IOS] =
     new Fs2SubscriptionStream
 }

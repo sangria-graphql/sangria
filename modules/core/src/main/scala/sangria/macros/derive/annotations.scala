@@ -12,6 +12,6 @@ class GraphQLDeprecated(deprecationReason: String) extends StaticAnnotation
 class GraphQLFieldTags(fieldTags: FieldTag*) extends StaticAnnotation
 class GraphQLExclude extends StaticAnnotation
 class GraphQLField extends StaticAnnotation
-class GraphQLDefault(defaultValue: T forSome {type T}) extends StaticAnnotation
-class GraphQLOutputType(graphQLType: OutputType[T] forSome {type T}) extends StaticAnnotation
-class GraphQLInputType(graphQLType: InputType[T] forSome {type T}) extends StaticAnnotation
+class GraphQLDefault(defaultValue: T forSome { type T }) extends StaticAnnotation
+class GraphQLOutputType(graphQLType: OutputType[T] forSome { type T }) extends StaticAnnotation
+class GraphQLInputType(graphQLType: InputType[T] forSome { type T }) extends StaticAnnotation

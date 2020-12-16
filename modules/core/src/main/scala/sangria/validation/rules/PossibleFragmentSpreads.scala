@@ -6,14 +6,12 @@ import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.validation._
 
-
-/**
- * Possible fragment spread
- *
- * A fragment spread is only valid if the type condition could ever possibly
- * be true: if there is a non-empty intersection of the possible parent types,
- * and possible types which pass the type condition.
- */
+/** Possible fragment spread
+  *
+  * A fragment spread is only valid if the type condition could ever possibly
+  * be true: if there is a non-empty intersection of the possible parent types,
+  * and possible types which pass the type condition.
+  */
 class PossibleFragmentSpreads extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = {
@@ -29,7 +27,7 @@ class PossibleFragmentSpreads extends ValidationRule {
               ctx.sourceMapper,
               f.location.toList
             ))
-        else Vector.empty
+          else Vector.empty
 
         errors match {
           case Some(errors) if errors.nonEmpty => Left(errors)
@@ -41,13 +39,14 @@ class PossibleFragmentSpreads extends ValidationRule {
           parent <- ctx.typeInfo.previousParentType
         } yield
           if (!doTypesOverlap(ctx, tpe, parent))
-            Vector(TypeIncompatibleSpreadViolation(
-              fs.name,
-              SchemaRenderer.renderTypeName(parent, topLevel = true),
-              SchemaRenderer.renderTypeName(tpe, topLevel = true),
-              ctx.sourceMapper,
-              fs.location.toList
-            ))
+            Vector(
+              TypeIncompatibleSpreadViolation(
+                fs.name,
+                SchemaRenderer.renderTypeName(parent, topLevel = true),
+                SchemaRenderer.renderTypeName(tpe, topLevel = true),
+                ctx.sourceMapper,
+                fs.location.toList
+              ))
           else Vector.empty
 
         errors match {
@@ -65,7 +64,7 @@ class PossibleFragmentSpreads extends ValidationRule {
         ctx.schema.isPossibleType(t1.name, t2)
       case (t1: AbstractType, t2: Named) =>
         val t1TypeNames = ctx.schema.possibleTypes(t1.name).map(_.name).toSet
-        ctx.schema possibleTypes t2.name exists (t => t1TypeNames.contains(t.name))
+        ctx.schema.possibleTypes(t2.name).exists(t => t1TypeNames.contains(t.name))
       case _ => false
     }
   }

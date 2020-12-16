@@ -8,7 +8,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
 
-class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]], fallback: Option[DeferredResolver[Ctx]]) extends DeferredResolver[Ctx] {
+class FetcherBasedDeferredResolver[-Ctx](
+    fetchers: Vector[Fetcher[Ctx, _, _, _]],
+    fallback: Option[DeferredResolver[Ctx]])
+    extends DeferredResolver[Ctx] {
   private val fetchersMap: Map[AnyRef, Fetcher[Ctx, _, _, _]] @uncheckedVariance =
     fetchers.map(f => f -> f).toMap
 
@@ -19,14 +22,16 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
     }
 
   override val includeDeferredFromField =
-    fallback.flatMap(_.includeDeferredFromField) orElse super.includeDeferredFromField
+    fallback.flatMap(_.includeDeferredFromField).orElse(super.includeDeferredFromField)
 
-  override def initialQueryState = fetchers.flatMap(f => f.config.cacheConfig.map(cacheFn => (f: AnyRef) -> cacheFn())).toMap
+  override def initialQueryState =
+    fetchers.flatMap(f => f.config.cacheConfig.map(cacheFn => (f: AnyRef) -> cacheFn())).toMap
 
-  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any)(implicit ec: ExecutionContext) =  {
+  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any)(implicit
+      ec: ExecutionContext) = {
     val fetcherCaches = queryState.asInstanceOf[Map[AnyRef, FetcherCache]]
 
-    val grouped = deferred groupBy {
+    val grouped = deferred.groupBy {
       case FetcherDeferredOne(s, _) => fetchersMap.get(s)
       case FetcherDeferredOpt(s, _) => fetchersMap.get(s)
       case FetcherDeferredOptOpt(s, _) => fetchersMap.get(s)
@@ -42,11 +47,12 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
 
     val resolved = MutableMap[Deferred[Any], Future[Any]]()
 
-    grouped foreach {
+    grouped.foreach {
       case (Some(fetcher), d) =>
         val fetcherCache = fetcherCaches.get(fetcher)
-        val (relDeferred, normalDeferred) = d partition fetcher.isRel
-        val fetcherContext = FetcherContext[Ctx](ctx, fetcher, fetcherCache, fetcherCaches, fetchers)
+        val (relDeferred, normalDeferred) = d.partition(fetcher.isRel)
+        val fetcherContext =
+          FetcherContext[Ctx](ctx, fetcher, fetcherCache, fetcherCaches, fetchers)
 
         resolveRelations(fetcherContext, relDeferred, resolved)
         resolveEntities(fetcherContext, normalDeferred, resolved)
@@ -56,22 +62,21 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
           case Some(f) =>
             val res = f.resolve(deferred, ctx, queryState)
 
-            for (i <- deferred.indices) {
+            for (i <- deferred.indices)
               resolved(deferred(i)) = res(i)
-            }
           case None =>
             deferred.foreach(d => resolved(d) = Future.failed(UnsupportedDeferError(d)))
 
         }
     }
 
-    deferred map (d => resolved(d))
+    deferred.map(d => resolved(d))
   }
 
   private def resolveRelations(
-    ctx: FetcherContext[Ctx] @uncheckedVariance,
-    deferredToResolve: Vector[Deferred[Any]],
-    resolved: MutableMap[Deferred[Any], Future[Any]]
+      ctx: FetcherContext[Ctx] @uncheckedVariance,
+      deferredToResolve: Vector[Deferred[Any]],
+      resolved: MutableMap[Deferred[Any], Future[Any]]
   )(implicit ec: ExecutionContext) = {
     val f = ctx.fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
     val relIds = ctx.fetcher.relIds(deferredToResolve)
@@ -79,12 +84,12 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
     val (nonCachedIds, cachedResults) = partitionCachedRel(ctx.cache, relIds)
 
     val groupedRelIds = ctx.fetcher.config.maxBatchSizeConfig match {
-      case Some(size) => nonCachedIds.map { case (rel, ids) => (rel, ids.grouped(size))}
+      case Some(size) => nonCachedIds.map { case (rel, ids) => (rel, ids.grouped(size)) }
       case None => nonCachedIds.map { case (rel, ids) => (rel, Iterator.single(ids)) }
     }
 
-    val results = groupedRelIds flatMap { case (rel, groupIds) =>
-      groupIds map { group =>
+    val results = groupedRelIds.flatMap { case (rel, groupIds) =>
+      groupIds.map { group =>
         if (group.nonEmpty)
           f.fetchRel(ctx, RelationIds(Map(rel -> group)))
             .map(groupAndCacheRelations(ctx, Map(rel -> group), _))
@@ -96,22 +101,24 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
     val futureRes = Future.sequence(results).map { allResults =>
       val byRel = MutableMap[Relation[Any, _, _], MutableMap[Any, Seq[Any]]]()
 
-      allResults.foreach(relResult => relResult.foreach{ case (rel, v) =>
-        if (byRel.contains(rel))
-          byRel(rel) ++= v
-        else
-          byRel(rel) = v
-      })
+      allResults.foreach(relResult =>
+        relResult.foreach { case (rel, v) =>
+          if (byRel.contains(rel))
+            byRel(rel) ++= v
+          else
+            byRel(rel) = v
+        })
 
       byRel
     }
 
-    deferredToResolve foreach { deferred =>
+    deferredToResolve.foreach { deferred =>
       resolved(deferred) = futureRes.map { m =>
         val f = ctx.fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
 
         deferred match {
-          case FetcherDeferredRel(_, rel, relId) if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
+          case FetcherDeferredRel(_, rel, relId)
+              if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
             cachedResults(rel)(relId).headOption match {
               case Some(head) => head
               case None => throw AbsentDeferredRelValueError(f, deferred, rel, relId)
@@ -126,7 +133,8 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
           case FetcherDeferredRel(_, rel, relId) =>
             throw AbsentDeferredRelValueError(f, deferred, rel, relId)
 
-          case FetcherDeferredRelOpt(_, rel, relId) if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
+          case FetcherDeferredRelOpt(_, rel, relId)
+              if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
             cachedResults(rel)(relId).headOption
 
           case FetcherDeferredRelOpt(_, rel, relId) if m.contains(rel) && m(rel).contains(relId) =>
@@ -135,7 +143,8 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
           case FetcherDeferredRelOpt(_, _, _) =>
             None
 
-          case FetcherDeferredRelSeq(_, rel, relId) if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
+          case FetcherDeferredRelSeq(_, rel, relId)
+              if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
             cachedResults(rel)(relId)
 
           case FetcherDeferredRelSeq(_, rel, relId) if m.contains(rel) && m(rel).contains(relId) =>
@@ -145,7 +154,9 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
             Vector.empty
 
           case FetcherDeferredRelSeqMany(_, rel, relIds) if cachedResults.contains(rel) =>
-            removeDuplicates(f, relIds.flatMap(relId => cachedResults(rel).getOrElse(relId, Vector.empty)))
+            removeDuplicates(
+              f,
+              relIds.flatMap(relId => cachedResults(rel).getOrElse(relId, Vector.empty)))
 
           case FetcherDeferredRelSeqMany(_, rel, relIds) if m.contains(rel) =>
             removeDuplicates(f, relIds.flatMap(relId => m(rel).getOrElse(relId, Vector.empty)))
@@ -172,9 +183,9 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
   }
 
   private def resolveEntities(
-    ctx: FetcherContext[Ctx] @uncheckedVariance,
-    deferredToResolve: Vector[Deferred[Any]],
-    resolved: MutableMap[Deferred[Any], Future[Any]]
+      ctx: FetcherContext[Ctx] @uncheckedVariance,
+      deferredToResolve: Vector[Deferred[Any]],
+      resolved: MutableMap[Deferred[Any], Future[Any]]
   )(implicit ec: ExecutionContext) = {
     val f = ctx.fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
     val ids = ctx.fetcher.ids(deferredToResolve)
@@ -185,15 +196,18 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
       case None => Iterator(nonCachedIds)
     }
 
-    val results = groupedIds map { group =>
+    val results = groupedIds.map { group =>
       if (group.nonEmpty)
-        f.fetch(ctx, group).map(r => group -> Success(r): (Vector[Any], Try[Seq[Any]])).recover {case e => group -> Failure(e)}
+        f.fetch(ctx, group).map(r => group -> Success(r): (Vector[Any], Try[Seq[Any]])).recover {
+          case e => group -> Failure(e)
+        }
       else
         Future.successful(group -> Success(Seq.empty))
     }
 
     val futureRes = Future.sequence(results).map { allResults =>
-      val byId = MutableMap[Any, Any]() // can contain either exception or actual value! (using `Any` to avoid unnecessary boxing)
+      val byId =
+        MutableMap[Any, Any]() // can contain either exception or actual value! (using `Any` to avoid unnecessary boxing)
 
       allResults.toVector.foreach { case (group, groupResult) =>
         groupResult match {
@@ -208,7 +222,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
       byId
     }
 
-    deferredToResolve foreach { deferred =>
+    deferredToResolve.foreach { deferred =>
       resolved(deferred) = futureRes.map { m =>
         val f = ctx.fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
 
@@ -238,7 +252,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
             m.get(id) match {
               case Some(t: Throwable) => throw t
               case v =>
-                v foreach (updateCache(id, _))
+                v.foreach(updateCache(id, _))
 
                 v
             }
@@ -253,13 +267,13 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
             m.get(id) match {
               case Some(t: Throwable) => throw t
               case v =>
-                v foreach (updateCache(id, _))
+                v.foreach(updateCache(id, _))
 
                 v
             }
 
           case FetcherDeferredSeq(_, ids) =>
-            ids map { id =>
+            ids.map { id =>
               if (cachedResults contains id)
                 cachedResults(id)
               else
@@ -271,28 +285,28 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
             }
 
           case FetcherDeferredSeqOpt(_, ids) =>
-            ids flatMap { id =>
+            ids.flatMap { id =>
               if (cachedResults contains id)
                 cachedResults.get(id)
               else
                 m.get(id) match {
                   case Some(t: Throwable) => throw t
                   case v =>
-                    v foreach (updateCache(id, _))
+                    v.foreach(updateCache(id, _))
 
                     v
                 }
             }
 
           case FetcherDeferredSeqOptExplicit(_, ids) =>
-            ids map { id =>
+            ids.map { id =>
               if (cachedResults contains id)
                 cachedResults.get(id)
               else
                 m.get(id) match {
                   case Some(t: Throwable) => throw t
                   case v =>
-                    v foreach (updateCache(id, _))
+                    v.foreach(updateCache(id, _))
 
                     v
                 }
@@ -302,7 +316,9 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
     }
   }
 
-  private def partitionCached(cache: Option[FetcherCache], ids: Vector[Any]): (Vector[Any], MutableMap[Any, Any]) =
+  private def partitionCached(
+      cache: Option[FetcherCache],
+      ids: Vector[Any]): (Vector[Any], MutableMap[Any, Any]) =
     cache match {
       case Some(c) =>
         val misses = new VectorBuilder[Any]
@@ -321,7 +337,11 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
         ids -> MutableMap.empty
     }
 
-  private def partitionCachedRel(cache: Option[FetcherCache], ids: Map[Relation[Any, Any, Any], Vector[Any]]): (Map[Relation[Any, Any, Any], Vector[Any]], MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]]) =
+  private def partitionCachedRel(
+      cache: Option[FetcherCache],
+      ids: Map[Relation[Any, Any, Any], Vector[Any]]): (
+      Map[Relation[Any, Any, Any], Vector[Any]],
+      MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]]) =
     cache match {
       case Some(c) =>
         val misses = MutableMap[Relation[Any, Any, Any], MutableSet[Any]]()
@@ -334,7 +354,7 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
           misses.getOrElseUpdate(rel, MutableSet[Any]()) += relId
 
         ids.foreach { case (rel, ids) =>
-          ids foreach { relId =>
+          ids.foreach { relId =>
             c.getRel(rel, relId) match {
               case Some(v) => addHit(rel, relId, v)
               case None => addMiss(rel, relId)
@@ -342,36 +362,40 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
           }
         }
 
-        misses.map{case (k, v) => k -> v.toVector}.toMap -> hits
+        misses.map { case (k, v) => k -> v.toVector }.toMap -> hits
 
       case None =>
         ids -> MutableMap.empty
     }
 
-  private def groupAndCacheRelations(ctx: FetcherContext[_], relIds: Map[Relation[Any, Any, Any], Vector[Any]], result: Seq[Any]): MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]] = {
+  private def groupAndCacheRelations(
+      ctx: FetcherContext[_],
+      relIds: Map[Relation[Any, Any, Any], Vector[Any]],
+      result: Seq[Any]): MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]] = {
     val grouped = MutableMap[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]]()
 
-    def updateCache[T](rel: Relation[Any, Any, Any], relId: Any, v: Seq[T]): Seq[T] = ctx.cache match {
-      case Some(cache) =>
-        cache.updateRel(rel, relId, ctx.fetcher.idFn.asInstanceOf[T => Any], v)
+    def updateCache[T](rel: Relation[Any, Any, Any], relId: Any, v: Seq[T]): Seq[T] =
+      ctx.cache match {
+        case Some(cache) =>
+          cache.updateRel(rel, relId, ctx.fetcher.idFn.asInstanceOf[T => Any], v)
 
-        v
-      case None => v
-    }
+          v
+        case None => v
+      }
 
-    relIds foreach { case (rel, relIdsForRel) =>
+    relIds.foreach { case (rel, relIdsForRel) =>
       val identified = MutableMap[Any, VectorBuilder[Any]]()
 
-      result foreach { res =>
+      result.foreach { res =>
         val relIds = rel.relIds(res)
         val mappedRes = rel.map(res)
 
-        relIds foreach { relId =>
+        relIds.foreach { relId =>
           identified.getOrElseUpdate(relId, new VectorBuilder[Any]) += mappedRes
         }
       }
 
-      relIdsForRel foreach { relId =>
+      relIdsForRel.foreach { relId =>
         val res = identified.get(relId).fold(Vector.empty[Any])(_.result())
 
         updateCache(rel, relId, res)
@@ -384,8 +408,16 @@ class FetcherBasedDeferredResolver[-Ctx](fetchers: Vector[Fetcher[Ctx, _, _, _]]
   }
 }
 
-case class AbsentDeferredValueError(fetcher: Fetcher[Any, Any, Any, Any], deferred: Deferred[Any], id: Any)
-  extends Exception(s"Fetcher has not resolved non-optional ID '$id'.")
+case class AbsentDeferredValueError(
+    fetcher: Fetcher[Any, Any, Any, Any],
+    deferred: Deferred[Any],
+    id: Any)
+    extends Exception(s"Fetcher has not resolved non-optional ID '$id'.")
 
-case class AbsentDeferredRelValueError(fetcher: Fetcher[Any, Any, Any, Any], deferred: Deferred[Any], rel: Relation[Any, Any, Any], relId: Any)
-  extends Exception(s"Fetcher has not resolved non-optional relation ID '$relId' for relation '$rel'.")
+case class AbsentDeferredRelValueError(
+    fetcher: Fetcher[Any, Any, Any, Any],
+    deferred: Deferred[Any],
+    rel: Relation[Any, Any, Any],
+    relId: Any)
+    extends Exception(
+      s"Fetcher has not resolved non-optional relation ID '$relId' for relation '$rel'.")

@@ -4,13 +4,11 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-
-/**
- * Lone anonymous operation
- *
- * A GraphQL document is only valid if when it contains an anonymous operation
- * (the query short-hand) that it contains only that one operation definition.
- */
+/** Lone anonymous operation
+  *
+  * A GraphQL document is only valid if when it contains an anonymous operation
+  * (the query short-hand) that it contains only that one operation definition.
+  */
 class LoneAnonymousOperation extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     var operationCount = 0

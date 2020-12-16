@@ -13,7 +13,9 @@ object DeriveMacroTestModel {
     def list: List[String]
   }
 
-  case class TestSubject(id: String, list: List[String] = Nil, excluded: Int) extends Parent1 with Parent2
+  case class TestSubject(id: String, list: List[String] = Nil, excluded: Int)
+      extends Parent1
+      with Parent2
 
   case class TestContainer[T](data: Seq[T])
 
@@ -24,23 +26,22 @@ object DeriveMacroTestModel {
   @GraphQLName("MyQueryType")
   @GraphQLDescription("My type!")
   case class TestSubjectAnnotated(
-    @GraphQLDescription("my id")
-    @GraphQLDeprecated("No IDs anymore!")
-    @GraphQLOutputType(IDType)
-    id: String,
+      @GraphQLDescription("my id")
+      @GraphQLDeprecated("No IDs anymore!")
+      @GraphQLOutputType(IDType)
+      id: String,
+      @GraphQLName("myList")
+      @GraphQLFieldTags(CachedTag, AuthorizedTag)
+      list: List[String] = Nil,
+      @GraphQLExclude
+      excluded: Int)
 
-    @GraphQLName("myList")
-    @GraphQLFieldTags(CachedTag, AuthorizedTag)
-    list: List[String] = Nil,
+  val Parent1Type =
+    InterfaceType("Parent1", fields[Unit, Parent1](Field("id", StringType, resolve = _.value.id)))
 
-    @GraphQLExclude
-    excluded: Int)
-
-  val Parent1Type = InterfaceType("Parent1", fields[Unit, Parent1](
-    Field("id", StringType, resolve = _.value.id)))
-
-  val Parent2Type = InterfaceType("Parent2", fields[Unit, Parent2](
-    Field("list", ListType(StringType), resolve = _.value.list)))
+  val Parent2Type = InterfaceType(
+    "Parent2",
+    fields[Unit, Parent2](Field("list", ListType(StringType), resolve = _.value.list)))
 
   @GraphQLName("MyColor")
   @GraphQLDescription("Very nice color")

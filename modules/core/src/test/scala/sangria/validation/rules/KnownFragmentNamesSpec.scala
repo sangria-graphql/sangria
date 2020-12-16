@@ -8,8 +8,7 @@ class KnownFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new KnownFragmentNames)
 
   "Validate: Known fragment names" should {
-    "known fragment names are valid" in expectPasses(
-      """
+    "known fragment names are valid" in expectPasses("""
         {
           human(id: 4) {
             ...HumanFields1
@@ -52,6 +51,7 @@ class KnownFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
         "Unknown fragment 'UnknownFragment1'." -> Some(Pos(4, 13)),
         "Unknown fragment 'UnknownFragment2'." -> Some(Pos(6, 15)),
         "Unknown fragment 'UnknownFragment3'." -> Some(Pos(12, 11))
-      ))
+      )
+    )
   }
 }

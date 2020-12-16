@@ -16,14 +16,26 @@ import sangria.parser.QueryParser
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSupport with StringMatchers {
-  def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) = "\n" + SchemaRenderer.renderSchema(res)+ "\n"
+class SchemaRenderSpec
+    extends AnyWordSpec
+    with Matchers
+    with FutureResultSupport
+    with StringMatchers {
+  def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) =
+    "\n" + SchemaRenderer.renderSchema(res) + "\n"
   def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 
-  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit render: Schema[Unit, Unit] => String) = {
-    val root = ObjectType("Root", fields[Unit, Unit](
-      Field("singleField", tpe.asInstanceOf[OutputType[Unit]], arguments = args, resolve = _ => ())
-    ))
+  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit
+      render: Schema[Unit, Unit] => String) = {
+    val root = ObjectType(
+      "Root",
+      fields[Unit, Unit](
+        Field(
+          "singleField",
+          tpe.asInstanceOf[OutputType[Unit]],
+          arguments = args,
+          resolve = _ => ())
+      ))
     val schema = Schema(root)
 
     render(schema)
@@ -33,7 +45,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
   def `default schema renderer`(implicit render: Schema[Unit, Unit] => String): Unit = {
     "Prints String Field" in {
-      renderSingleFieldSchema(OptionType(StringType)) should equal ("""
+      renderSingleFieldSchema(OptionType(StringType)) should equal("""
         |schema {
         |  query: Root
         |}
@@ -41,11 +53,11 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField: String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints [String] Field" in {
-      renderSingleFieldSchema(OptionType(ListType(OptionType(StringType)))) should equal ("""
+      renderSingleFieldSchema(OptionType(ListType(OptionType(StringType)))) should equal("""
         |schema {
         |  query: Root
         |}
@@ -53,11 +65,11 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField: [String]
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String! Field" in {
-      renderSingleFieldSchema(StringType) should equal ("""
+      renderSingleFieldSchema(StringType) should equal("""
         |schema {
         |  query: Root
         |}
@@ -65,11 +77,11 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField: String!
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints [String]! Field" in {
-      renderSingleFieldSchema(ListType(OptionType(StringType))) should equal ("""
+      renderSingleFieldSchema(ListType(OptionType(StringType))) should equal("""
         |schema {
         |  query: Root
         |}
@@ -77,11 +89,11 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField: [String]!
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints [String!] Field" in {
-      renderSingleFieldSchema(OptionType(ListType(StringType))) should equal ("""
+      renderSingleFieldSchema(OptionType(ListType(StringType))) should equal("""
         |schema {
         |  query: Root
         |}
@@ -89,21 +101,25 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField: [String!]
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Print Object Field" in {
-      val foo = ObjectType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "foo")
-      ))
+      val foo = ObjectType(
+        "Foo",
+        fields[Unit, Unit](
+          Field("str", OptionType(StringType), resolve = _ => "foo")
+        ))
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("foo", OptionType(foo), resolve = _ => ())
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("foo", OptionType(foo), resolve = _ => ())
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal("""
         |schema {
         |  query: Root
         |}
@@ -115,14 +131,14 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  foo: Foo
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String Field With Int Arg" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType)) :: Nil
-      ) should equal ("""
+      ) should equal("""
         |schema {
         |  query: Root
         |}
@@ -130,14 +146,14 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField(argOne: Int): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String Field With Int Arg With Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", OptionInputType(IntType), 2) :: Nil
-      ) should equal ("""
+      ) should equal("""
         |schema {
         |  query: Root
         |}
@@ -145,14 +161,14 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField(argOne: Int = 2): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String Field With Int! Arg" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
         args = Argument("argOne", IntType) :: Nil
-      ) should equal ("""
+      ) should equal("""
         |schema {
         |  query: Root
         |}
@@ -160,14 +176,16 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField(argOne: Int!): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String Field With Multiple Args" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args = Argument("argOne", OptionInputType(IntType)) :: Argument("argTwo", OptionInputType(StringType)) :: Nil
-      ) should equal ("""
+        args = Argument("argOne", OptionInputType(IntType)) :: Argument(
+          "argTwo",
+          OptionInputType(StringType)) :: Nil
+      ) should equal("""
         |schema {
         |  query: Root
         |}
@@ -175,18 +193,17 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField(argOne: Int, argTwo: String): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String Field With Multiple Args, First is Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args =
-          Argument("argOne", OptionInputType(IntType), 1) ::
+        args = Argument("argOne", OptionInputType(IntType), 1) ::
           Argument("argTwo", OptionInputType(StringType)) ::
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
-      ) should equal ("""
+      ) should equal("""
         |schema {
         |  query: Root
         |}
@@ -194,18 +211,17 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String Field With Multiple Args, Second is Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args =
-          Argument("argOne", OptionInputType(IntType)) ::
+        args = Argument("argOne", OptionInputType(IntType)) ::
           Argument("argTwo", OptionInputType(StringType), defaultValue = "foo") ::
           Argument("argThree", OptionInputType(BooleanType)) ::
           Nil
-      ) should equal ("""
+      ) should equal("""
         |schema {
         |  query: Root
         |}
@@ -213,18 +229,17 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Prints String Field With Multiple Args, Last is Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args =
-          Argument("argOne", OptionInputType(IntType)) ::
+        args = Argument("argOne", OptionInputType(IntType)) ::
           Argument("argTwo", OptionInputType(StringType)) ::
           Argument("argThree", OptionInputType(BooleanType), false) ::
           Nil
-      ) should equal ("""
+      ) should equal("""
         |schema {
         |  query: Root
         |}
@@ -232,24 +247,35 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Print Interface" in {
-      val foo = InterfaceType("Foo", "My\ndescription", fields[Unit, Unit](
-        Field("str", OptionType(StringType), description = Some("field\ndescription"), resolve = _ => "foo")
-      ))
+      val foo = InterfaceType(
+        "Foo",
+        "My\ndescription",
+        fields[Unit, Unit](
+          Field(
+            "str",
+            OptionType(StringType),
+            description = Some("field\ndescription"),
+            resolve = _ => "foo")
+        ))
 
-      val bar = ObjectType("Bar", interfaces[Unit, Unit](foo), fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "foo")))
+      val bar = ObjectType(
+        "Bar",
+        interfaces[Unit, Unit](foo),
+        fields[Unit, Unit](Field("str", OptionType(StringType), resolve = _ => "foo")))
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ => ())
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("bar", OptionType(bar), resolve = _ => ())
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal (s"""
+      render(schema) should equal(s"""
         |schema {
         |  query: Root
         |}
@@ -273,27 +299,33 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Print Multiple Interface" in {
-      val foo = InterfaceType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "foo")
-      ))
+      val foo = InterfaceType(
+        "Foo",
+        fields[Unit, Unit](
+          Field("str", OptionType(StringType), resolve = _ => "foo")
+        ))
 
-      val baz = InterfaceType("Baaz", fields[Unit, Unit](
-        Field("int", OptionType(IntType), resolve = _ => 1)
-      ))
+      val baz = InterfaceType(
+        "Baaz",
+        fields[Unit, Unit](
+          Field("int", OptionType(IntType), resolve = _ => 1)
+        ))
 
       val bar = ObjectType("Bar", interfaces[Unit, Unit](foo, baz), Nil)
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ => ())
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("bar", OptionType(bar), resolve = _ => ())
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal("""
         |schema {
         |  query: Root
         |}
@@ -314,27 +346,34 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Print Multiple Interface (with interface hierarchy)" in {
-      val foo = InterfaceType("Foo", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "foo")
-      ))
+      val foo = InterfaceType(
+        "Foo",
+        fields[Unit, Unit](
+          Field("str", OptionType(StringType), resolve = _ => "foo")
+        ))
 
-      val baz = InterfaceType("Baaz", fields[Unit, Unit](
-        Field("int", OptionType(IntType), resolve = _ => 1)
-      ), interfaces[Unit, Unit](foo))
+      val baz = InterfaceType(
+        "Baaz",
+        fields[Unit, Unit](
+          Field("int", OptionType(IntType), resolve = _ => 1)
+        ),
+        interfaces[Unit, Unit](foo))
 
       val bar = ObjectType("Bar", interfaces[Unit, Unit](baz), Nil)
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("bar", OptionType(bar), resolve = _ => ())
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("bar", OptionType(bar), resolve = _ => ())
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal("""
         |schema {
         |  query: Root
         |}
@@ -356,29 +395,35 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  bar: Bar
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Print Unions" in {
-      val foo = ObjectType("Foo", fields[Unit, Unit](
-        Field("bool", OptionType(BooleanType), resolve = _ => true)
-      ))
+      val foo = ObjectType(
+        "Foo",
+        fields[Unit, Unit](
+          Field("bool", OptionType(BooleanType), resolve = _ => true)
+        ))
 
-      val bar = ObjectType("Bar", fields[Unit, Unit](
-        Field("str", OptionType(StringType), resolve = _ => "f")
-      ))
+      val bar = ObjectType(
+        "Bar",
+        fields[Unit, Unit](
+          Field("str", OptionType(StringType), resolve = _ => "f")
+        ))
 
       val singleUnion = UnionType("SingleUnion", types = foo :: Nil)
       val multipleUnion = UnionType("MultipleUnion", types = foo :: bar :: Nil)
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("single", OptionType(singleUnion), resolve = _ => ()),
-        Field("multiple", OptionType(multipleUnion), resolve = _ => ())
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("single", OptionType(singleUnion), resolve = _ => ()),
+          Field("multiple", OptionType(multipleUnion), resolve = _ => ())
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal ("""
+      render(schema) should equal("""
         |schema {
         |  query: Root
         |}
@@ -399,29 +444,55 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |}
         |
         |union SingleUnion = Foo
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Print Input Type" in {
-      val articleType = InputObjectType("Article", "Blog article", List(
-        InputField("title", StringType, description = "The most important field"),
-        InputField("author", OptionInputType(StringType), description = "The author of the article", defaultValue = "Anonymous"),
-        InputField("comments", ListInputType(StringType), description = "comments!")))
+      val articleType = InputObjectType(
+        "Article",
+        "Blog article",
+        List(
+          InputField("title", StringType, description = "The most important field"),
+          InputField(
+            "author",
+            OptionInputType(StringType),
+            description = "The author of the article",
+            defaultValue = "Anonymous"),
+          InputField("comments", ListInputType(StringType), description = "comments!")
+        )
+      )
 
-      val inputType = InputObjectType("InputType", "My\ndescription", List(
-        InputField("int", OptionInputType(IntType), description = "My\nfield\ndescription"),
-        InputField("article", OptionInputType(articleType), description = "has a default!",
-          defaultValue = scalaInput(Map("title" -> "Hello", "auhor" -> "Bob", "comments" -> List("first!", "looks good!"))))))
+      val inputType = InputObjectType(
+        "InputType",
+        "My\ndescription",
+        List(
+          InputField("int", OptionInputType(IntType), description = "My\nfield\ndescription"),
+          InputField(
+            "article",
+            OptionInputType(articleType),
+            description = "has a default!",
+            defaultValue = scalaInput(
+              Map(
+                "title" -> "Hello",
+                "auhor" -> "Bob",
+                "comments" -> List("first!", "looks good!")))
+          )
+        )
+      )
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("str", OptionType(StringType),
-          arguments = Argument("argOne", OptionInputType(inputType)) :: Nil,
-          resolve = _ => None)
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field(
+            "str",
+            OptionType(StringType),
+            arguments = Argument("argOne", OptionInputType(inputType)) :: Nil,
+            resolve = _ => None)
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal (s"""
+      render(schema) should equal(s"""
         |schema {
         |  query: Root
         |}
@@ -457,11 +528,12 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  str(argOne: InputType): String
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Custom Scalar" in {
-      val odd = ScalarType[Int]("Odd",
+      val odd = ScalarType[Int](
+        "Odd",
         description = Some("My\ndescription"),
         coerceOutput = valueOutput,
         coerceUserInput = {
@@ -473,15 +545,18 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           case ast.IntValue(i, _, _) if i % 2 != 0 => Right(i)
           case ast.BigIntValue(i, _, _) if i.isValidInt && i % 2 != BigInt(0) => Right(i.intValue)
           case _ => Left(IntCoercionViolation)
-        })
+        }
+      )
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("odd", OptionType(odd), resolve = _ => None)
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("odd", OptionType(odd), resolve = _ => None)
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal (s"""
+      render(schema) should equal(s"""
         |schema {
         |  query: Root
         |}
@@ -495,24 +570,29 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  odd: Odd
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Enum" in {
-      val rgb = EnumType[Int]("RGB",
+      val rgb = EnumType[Int](
+        "RGB",
         description = Some("My\ndescription"),
         values = List(
           EnumValue("RED", description = Some("My Red\n color"), value = 1),
           EnumValue("GREEN", value = 2, deprecationReason = Some("not cool anymore")),
-          EnumValue("BLUE", value = 3, deprecationReason = Some(DefaultDeprecationReason))))
+          EnumValue("BLUE", value = 3, deprecationReason = Some(DefaultDeprecationReason))
+        )
+      )
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("rgb", OptionType(rgb), resolve = _ => None)
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("rgb", OptionType(rgb), resolve = _ => None)
+        ))
 
       val schema = Schema(root)
 
-      render(schema) should equal (s"""
+      render(schema) should equal(s"""
         |schema {
         |  query: Root
         |}
@@ -534,26 +614,37 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |type Root {
         |  rgb: RGB
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "Directive" in {
-      val myDirective = Directive("myDirective",
-        description = Some("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.\nNunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis."),
-        arguments =
-          Argument("first", OptionInputType(ListInputType(StringType)), "Some descr", scalaInput(List("foo", "bar", "baz"))) ::
-          Argument("middle", OptionInputType(ListInputType(StringType)), "Several\n  lines\nof \"description\"", scalaInput(123)) ::
+      val myDirective = Directive(
+        "myDirective",
+        description = Some(
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.\nNunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis."),
+        arguments = Argument(
+          "first",
+          OptionInputType(ListInputType(StringType)),
+          "Some descr",
+          scalaInput(List("foo", "bar", "baz"))) ::
+          Argument(
+            "middle",
+            OptionInputType(ListInputType(StringType)),
+            "Several\n  lines\nof \"description\"",
+            scalaInput(123)) ::
           Argument("last", OptionInputType(IntType), "Another descr") ::
           Nil,
         locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.InputFieldDefinition),
-        shouldInclude = _ => true)
+        shouldInclude = _ => true
+      )
 
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("foo", OptionType(StringType), resolve = _ => None)))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](Field("foo", OptionType(StringType), resolve = _ => None)))
 
       val schema = Schema(root, directives = BuiltinDirectives :+ myDirective)
-      
-      render(schema) should equal (s"""
+
+      render(schema) should equal(s"""
         |schema {
         |  query: Root
         |}
@@ -579,35 +670,42 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |
         |  "Another descr"
         |  last: Int) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
   }
 
   "Introspection-based Schema Renderer" should {
-    behave like `default schema renderer` (schema => renderForTest(Executor.execute(schema, introspectionQuery).await, schema))
+    behave.like(`default schema renderer`(schema =>
+      renderForTest(Executor.execute(schema, introspectionQuery).await, schema)))
 
     "throw an exception if introspection results contain some errors" in {
-      val root = ObjectType("Root", fields[Unit, Unit](
-        Field("singleField", StringType, resolve = _ => "")
-      ))
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("singleField", StringType, resolve = _ => "")
+        ))
 
       val schema = Schema(root)
 
-      an [IllegalArgumentException] should be thrownBy
-        SchemaRenderer.renderSchema(Executor.execute(schema, graphql"{someUnknownField}").awaitAndRecoverQueryAnalysis)
+      an[IllegalArgumentException] should be thrownBy
+        SchemaRenderer.renderSchema(
+          Executor.execute(schema, graphql"{someUnknownField}").awaitAndRecoverQueryAnalysis)
     }
   }
 
   "Schema-based Schema Renderer" should {
-    behave like `default schema renderer` (schema => renderForTest(schema))
+    behave.like(`default schema renderer`(schema => renderForTest(schema)))
   }
 
   "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
-      val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
-      val rendered = SchemaRenderer.renderSchema(Executor.execute(schema, introspectionQuery).await, SchemaFilter.introspection)
+      val schema =
+        Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
+      val rendered = SchemaRenderer.renderSchema(
+        Executor.execute(schema, introspectionQuery).await,
+        SchemaFilter.introspection)
 
-      ("\n" + rendered + "\n") should equal (s"""
+      ("\n" + rendered + "\n") should equal(s"""
         |$quotes
         |A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
         |
@@ -771,15 +869,16 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |  "Indicates this type is a non-null. `ofType` is a valid field."
         |  NON_NULL
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
   }
 
   "Print schema with legacy comment descriptions" in {
-    val schema = Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
+    val schema =
+      Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
     val rendered = schema.renderPretty(SchemaFilter.introspection.withLegacyCommentDescriptions)
 
-    ("\n" + rendered + "\n") should equal ("""
+    ("\n" + rendered + "\n") should equal("""
       |# A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
       |#
       |# In some cases, you need to provide options to alter GraphQL’s execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.
@@ -939,7 +1038,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
       |  # Indicates this type is a non-null. `ofType` is a valid field.
       |  NON_NULL
       |}
-      |""".stripMargin) (after being strippedOfCarriageReturns)
+      |""".stripMargin)(after.being(strippedOfCarriageReturns))
   }
 
   "Rendering extensions" should {
@@ -949,8 +1048,8 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
       val pretty = document.renderPretty
       val compact = document.renderCompact
 
-      QueryParser.parse(pretty).renderPretty should be (pretty)
-      QueryParser.parse(compact).renderCompact should be (compact)
+      QueryParser.parse(pretty).renderPretty should be(pretty)
+      QueryParser.parse(compact).renderCompact should be(compact)
 
       "\n" + pretty + "\n"
     }
@@ -971,7 +1070,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           extend type Obj1 implements Bar&Baz@foo(arg: 1)
         """
 
-      cycleRender(schema) should equal ("""
+      cycleRender(schema) should equal("""
         |# just testing
         |extend type Obj @someDir(arg: ["foo"])
         |
@@ -981,7 +1080,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |}
         |
         |extend type Obj1 implements Bar & Baz @foo(arg: 1)
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "render input types" in {
@@ -1000,7 +1099,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      cycleRender(schema) should equal ("""
+      cycleRender(schema) should equal("""
         |# just testing
         |extend input Inp @someDir(arg: ["foo"])
         |
@@ -1008,7 +1107,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |  "some docs"
         |  foo: Bar = {hello: "world"}
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "render interface types" in {
@@ -1024,8 +1123,8 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
             foo(arg: Int = 1@hello): Bar @dir(test:true)
           }
         """
-      
-      cycleRender(schema) should equal ("""
+
+      cycleRender(schema) should equal("""
         |# just testing
         |extend interface Foo @someDir(arg: ["foo"])
         |
@@ -1033,7 +1132,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |  "some docs"
         |  foo(arg: Int = 1 @hello): Bar @dir(test: true)
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "render union types" in {
@@ -1047,12 +1146,12 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           extend union FooWithStuff @someDir(arg: 1)@anotherDir=Hello|World
         """
 
-      cycleRender(schema) should equal ("""
+      cycleRender(schema) should equal("""
         |# just testing
         |extend union Foo @someDir(arg: ["foo"])
         |
         |extend union FooWithStuff @someDir(arg: 1) @anotherDir = Hello | World
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "render enum types" in {
@@ -1065,8 +1164,8 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
           extend enum FooWithStuff @someDir(arg: 1)@anotherDir{Hello "docs"World}
         """
-      
-      cycleRender(schema) should equal ("""
+
+      cycleRender(schema) should equal("""
         |# just testing
         |extend enum Foo @someDir(arg: ["foo"])
         |
@@ -1076,7 +1175,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |  "docs"
         |  World
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "render schema extensions" in {
@@ -1096,8 +1195,8 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
             # another comment
           }
         """
-      
-      cycleRender(schema) should equal ("""
+
+      cycleRender(schema) should equal("""
         |# comment 0
         |extend schema @dir4
         |
@@ -1111,7 +1210,7 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         |
         |  # another comment
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "render schema description" in {
@@ -1125,14 +1224,14 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      cycleRender(schema) should equal ("""
+      cycleRender(schema) should equal("""
         |# comment1
         |"test"
         |# comment 2
         |schema @dir1 {
         |  query: Query
         |}
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "render scalar types" in {
@@ -1143,11 +1242,11 @@ class SchemaRenderSpec extends AnyWordSpec with Matchers with FutureResultSuppor
             "foo"
           ])
         """
-      
-      cycleRender(schema) should equal ("""
+
+      cycleRender(schema) should equal("""
         |# just testing
         |extend scalar Int @someDir(arg: ["foo"])
-        |""".stripMargin) (after being strippedOfCarriageReturns)
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
   }
 }

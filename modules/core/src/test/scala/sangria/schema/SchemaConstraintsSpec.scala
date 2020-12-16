@@ -15,32 +15,37 @@ import org.scalatest.wordspec.AnyWordSpec
 class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
   "Schema" should {
     "not allow use same type name for different GraphQL type kinds (input & output type)" in {
-      val inputType = InputObjectType("Point", List(
-        InputField("x", FloatType),
-        InputField("y", FloatType)))
+      val inputType =
+        InputObjectType("Point", List(InputField("x", FloatType), InputField("y", FloatType)))
 
-      val ouputType = ObjectType("Point", fields[Unit, Unit](
-        Field("x", FloatType, resolve = _ => 1.234),
-        Field("y", FloatType, resolve = _ => 1.234),
-        Field("z", FloatType, resolve = _ => 1.234)))
+      val ouputType = ObjectType(
+        "Point",
+        fields[Unit, Unit](
+          Field("x", FloatType, resolve = _ => 1.234),
+          Field("y", FloatType, resolve = _ => 1.234),
+          Field("z", FloatType, resolve = _ => 1.234)))
 
-      val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("foo", OptionType(ouputType),
-          arguments = Argument("points", ListInputType(inputType)) :: Nil,
-          resolve = _ => None)))
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field(
+            "foo",
+            OptionType(ouputType),
+            arguments = Argument("points", ListInputType(inputType)) :: Nil,
+            resolve = _ => None)))
 
-      val error = intercept [SchemaValidationException] (Schema(queryType))
+      val error = intercept[SchemaValidationException](Schema(queryType))
 
-      error.getMessage should include (
+      error.getMessage should include(
         "Type name 'Point' is used for several conflicting GraphQL type kinds: ObjectType, InputObjectType. Conflict found in an argument 'points' defined in field 'foo' of 'Query' type.")
     }
 
     "not allow use same type name for different GraphQL type kinds (input & scalar type)" in {
-      val inputType = InputObjectType("Point", List(
-        InputField("x", FloatType),
-        InputField("y", FloatType)))
+      val inputType =
+        InputObjectType("Point", List(InputField("x", FloatType), InputField("y", FloatType)))
 
-      val scalarType = ScalarType[String]("Point",
+      val scalarType = ScalarType[String](
+        "Point",
         coerceOutput = valueOutput,
         coerceUserInput = {
           case s: String => Right(s)
@@ -49,25 +54,30 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         coerceInput = {
           case ast.StringValue(s, _, _, _, _) => Right(s)
           case _ => Left(StringCoercionViolation)
-        })
+        }
+      )
 
-      val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("foo", OptionType(scalarType),
-          arguments = Argument("points", ListInputType(inputType)) :: Nil,
-          resolve = _ => None)))
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field(
+            "foo",
+            OptionType(scalarType),
+            arguments = Argument("points", ListInputType(inputType)) :: Nil,
+            resolve = _ => None)))
 
-      val error = intercept [SchemaValidationException] (Schema(queryType))
+      val error = intercept[SchemaValidationException](Schema(queryType))
 
-      error.getMessage should include (
+      error.getMessage should include(
         "Type name 'Point' is used for several conflicting GraphQL type kinds: ScalarType, InputObjectType. Conflict found in an argument 'points' defined in field 'foo' of 'Query' type.")
     }
 
     "not allow reserved names" in {
-      val inputType = InputObjectType("__Input", List(
-        InputField("x", FloatType),
-        InputField("__y", FloatType)))
+      val inputType =
+        InputObjectType("__Input", List(InputField("x", FloatType), InputField("__y", FloatType)))
 
-      val scalarType = ScalarType[String]("__Point",
+      val scalarType = ScalarType[String](
+        "__Point",
         coerceOutput = valueOutput,
         coerceUserInput = {
           case s: String => Right(s)
@@ -76,27 +86,37 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         coerceInput = {
           case ast.StringValue(s, _, _, _, _) => Right(s)
           case _ => Left(StringCoercionViolation)
-        })
+        }
+      )
 
-      val bazType = InterfaceType("__Baz", fields[Unit, Unit](
-        Field("id", IntType, resolve = _ => 1)))
+      val bazType =
+        InterfaceType("__Baz", fields[Unit, Unit](Field("id", IntType, resolve = _ => 1)))
 
-      val barType = ObjectType("__Bar", interfaces[Unit, Unit](bazType), fields[Unit, Unit](
-        Field("foo", OptionType(scalarType),resolve = _ => None)))
+      val barType = ObjectType(
+        "__Bar",
+        interfaces[Unit, Unit](bazType),
+        fields[Unit, Unit](Field("foo", OptionType(scalarType), resolve = _ => None)))
 
-      val colorType = EnumType("__Color", values = List(
-        EnumValue("RED", value = 1),
-        EnumValue("__GREEN", value = 2),
-        EnumValue("__BLUE", value = 3)))
+      val colorType = EnumType(
+        "__Color",
+        values = List(
+          EnumValue("RED", value = 1),
+          EnumValue("__GREEN", value = 2),
+          EnumValue("__BLUE", value = 3)))
 
-      val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("__foo", OptionType(scalarType),resolve = _ => None),
-        Field("bar", OptionType(barType),resolve = _ => None),
-        Field("color", OptionType(colorType),resolve = _ => None)))
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field("__foo", OptionType(scalarType), resolve = _ => None),
+          Field("bar", OptionType(barType), resolve = _ => None),
+          Field("color", OptionType(colorType), resolve = _ => None)
+        )
+      )
 
-      val error = intercept [SchemaValidationException] (Schema(queryType, additionalTypes = inputType :: Nil))
+      val error =
+        intercept[SchemaValidationException](Schema(queryType, additionalTypes = inputType :: Nil))
 
-      error.violations.map(_.errorMessage).toSet should be (Set(
+      error.violations.map(_.errorMessage).toSet should be(Set(
         "Input type name '__Input' is invalid. The name is reserved for GraphQL introspection API.",
         "Field name '__y' defined in input type '__Input' is invalid. The name is reserved for GraphQL introspection API.",
         "Field name '__foo' defined in type 'Query' is invalid. The name is reserved for GraphQL introspection API.",
@@ -105,25 +125,31 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         "Enum type name '__Color' is invalid. The name is reserved for GraphQL introspection API.",
         "Enum value name '__GREEN' defined in enum type '__Color' is invalid. The name is reserved for GraphQL introspection API.",
         "Enum value name '__BLUE' defined in enum type '__Color' is invalid. The name is reserved for GraphQL introspection API.",
-        "Scalar type name '__Point' is invalid. The name is reserved for GraphQL introspection API."))
+        "Scalar type name '__Point' is invalid. The name is reserved for GraphQL introspection API."
+      ))
     }
 
     "reject an Enum type with incorrectly named values" in {
-      val colorType = EnumType("Color", values = List(
-        EnumValue("RED", value = 1),
-        EnumValue("true", value = 2),
-        EnumValue("false", value = 3),
-        EnumValue("null", value = 4)))
+      val colorType = EnumType(
+        "Color",
+        values = List(
+          EnumValue("RED", value = 1),
+          EnumValue("true", value = 2),
+          EnumValue("false", value = 3),
+          EnumValue("null", value = 4)))
 
-      val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("color", OptionType(colorType), resolve = _ => None)))
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](Field("color", OptionType(colorType), resolve = _ => None)))
 
-      val error = intercept [SchemaValidationException] (Schema(queryType))
+      val error = intercept[SchemaValidationException](Schema(queryType))
 
-      error.violations.map(_.errorMessage).toSet should be (Set(
-        "Name 'Color.true' can not be used as an Enum value.",
-        "Name 'Color.false' can not be used as an Enum value.",
-        "Name 'Color.null' can not be used as an Enum value."))
+      error.violations.map(_.errorMessage).toSet should be(
+        Set(
+          "Name 'Color.true' can not be used as an Enum value.",
+          "Name 'Color.false' can not be used as an Enum value.",
+          "Name 'Color.null' can not be used as an Enum value."
+        ))
     }
 
     "not allow empty list of fields" in {
@@ -131,51 +157,63 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
       val int2Type = InterfaceType[Unit, Unit]("Interface2", Nil, interfaces[Unit, Unit](int1Type))
       val outType = ObjectType[Unit, Unit]("Output", interfaces[Unit, Unit](int2Type), Nil)
       val inputType = InputObjectType("Input", Nil)
-      val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("foo", OptionType(outType),
-          arguments = Argument("bar", inputType) :: Nil,
-          resolve = _ => ())))
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field(
+            "foo",
+            OptionType(outType),
+            arguments = Argument("bar", inputType) :: Nil,
+            resolve = _ => ())))
 
-      val error = intercept [SchemaValidationException] (Schema(queryType))
+      val error = intercept[SchemaValidationException](Schema(queryType))
 
-      error.violations.map(_.errorMessage).toSet should be (Set(
-        "Input type 'Input' must define one or more fields.",
-        "Interface type 'Interface1' must define one or more fields.",
-        "Interface type 'Interface2' must define one or more fields.",
-        "Object type 'Output' must define one or more fields."))
+      error.violations.map(_.errorMessage).toSet should be(
+        Set(
+          "Input type 'Input' must define one or more fields.",
+          "Interface type 'Interface1' must define one or more fields.",
+          "Interface type 'Interface2' must define one or more fields.",
+          "Object type 'Output' must define one or more fields."
+        ))
     }
 
     "Not allow ObjectTypes with same name to be based on different case classes" in {
       implicit val fooBazType = deriveObjectType[Unit, test.foo.Baz]()
       implicit val barBazType = deriveObjectType[Unit, test.bar.Baz]()
 
-      val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(test.foo.Baz(1))),
-        Field("barBaz", barBazType, resolve = _ => test.bar.Baz("2", 3.0))
-      ))
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(test.foo.Baz(1))),
+          Field("barBaz", barBazType, resolve = _ => test.bar.Baz("2", 3.0))
+        )
+      )
 
-      val error = intercept [SchemaValidationException] (Schema(queryType))
+      val error = intercept[SchemaValidationException](Schema(queryType))
 
-      error.getMessage should include (
+      error.getMessage should include(
         """Type name 'Baz' is used for several conflicting GraphQL ObjectTypes based on different classes. Conflict found in a field 'barBaz' of 'Query' type. One possible fix is to use ObjectTypeName like this: deriveObjectType[Foo, Bar](ObjectTypeName("OtherBar")) to avoid that two ObjectTypes have the same name.""")
     }
 
     "Allow ObjectTypes based on different case classes but with different names" in {
       implicit val fooBazType = deriveObjectType[Unit, test.foo.Baz]()
-      implicit val barBazType = deriveObjectType[Unit, test.bar.Baz](ObjectTypeName("BazWithNewName"))
+      implicit val barBazType =
+        deriveObjectType[Unit, test.bar.Baz](ObjectTypeName("BazWithNewName"))
 
-      val queryType = ObjectType("Query", fields[Unit, Unit](
-        Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(test.foo.Baz(1))),
-        Field("barBaz", barBazType, resolve = _ => test.bar.Baz("2", 3.0))
-      ))
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field("fooBaz", OptionType(fooBazType), resolve = _ => Some(test.foo.Baz(1))),
+          Field("barBaz", barBazType, resolve = _ => test.bar.Baz("2", 3.0))
+        )
+      )
 
       Schema(queryType) // Should not throw any SchemaValidationExceptions
     }
   }
 
   "Type System: Union types must be valid" should {
-    "accepts a Union type with member types" in validSchema(
-      graphql"""
+    "accepts a Union type with member types" in validSchema(graphql"""
         type Query {
           test: GoodUnion
         }
@@ -201,7 +239,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
   
         union BadUnion
       """,
-      "Union type 'BadUnion' must define one or more member types." -> Seq(Pos(6, 9)))
+      "Union type 'BadUnion' must define one or more member types." -> Seq(Pos(6, 9))
+    )
 
     "rejects a Union type with duplicated member type" in invalidSchema(
       {
@@ -231,7 +270,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
         ast1 + ast2
       },
-      "Union type 'BadUnion' can only include type 'TypeA' once." -> Seq(Pos(7, 17), Pos(10, 37)))
+      "Union type 'BadUnion' can only include type 'TypeA' once." -> Seq(Pos(7, 17), Pos(10, 37))
+    )
 
     "rejects a Union type with non-Object members types" in invalidSchema(
       graphql"""
@@ -252,12 +292,12 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           | String
           | TypeB
       """,
-      "Type 'String' is not an object type." -> Seq(Pos(16, 13)))
+      "Type 'String' is not an object type." -> Seq(Pos(16, 13))
+    )
   }
 
   "Type System: Input Objects must have fields" should {
-    "accepts an Input Object type with fields" in validSchema(
-      graphql"""
+    "accepts an Input Object type with fields" in validSchema(graphql"""
         type Query {
           field(arg: SomeInputObject): String
         }
@@ -275,7 +315,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
         input SomeInputObject
       """,
-      "Input type 'SomeInputObject' must define one or more fields." -> Seq(Pos(6, 9)))
+      "Input type 'SomeInputObject' must define one or more fields." -> Seq(Pos(6, 9))
+    )
 
     "rejects an Input Object type with incorrectly typed fields" in invalidSchema(
       graphql"""
@@ -295,7 +336,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           goodInputObject: SomeInputObject
         }
       """,
-      "Type 'SomeObject' is not an input type type." -> Seq(Pos(13, 22)))
+      "Type 'SomeObject' is not an input type type." -> Seq(Pos(13, 22))
+    )
   }
 
   "Type System: Enum types must be well defined" should {
@@ -307,7 +349,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
         enum SomeEnum
       """,
-      "Enum type 'SomeEnum' must define one or more values." -> Seq(Pos(6, 9)))
+      "Enum type 'SomeEnum' must define one or more values." -> Seq(Pos(6, 9))
+    )
 
     "rejects an Enum type with duplicate values" in invalidSchema(
       graphql"""
@@ -320,7 +363,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           SOME_VALUE
         }
       """,
-      "Enum type 'SomeEnum' can include value 'SOME_VALUE' only once." -> Seq(Pos(7, 11), Pos(8, 11)))
+      "Enum type 'SomeEnum' can include value 'SOME_VALUE' only once." -> Seq(
+        Pos(7, 11),
+        Pos(8, 11))
+    )
   }
 
   "Type System: Object fields must have output types" should {
@@ -334,7 +380,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: String
         }
       """,
-      "Type 'SomeInputObject' is not an output type type." -> Seq(Pos(3, 19)))
+      "Type 'SomeInputObject' is not an output type type." -> Seq(Pos(3, 19))
+    )
   }
 
   "Type System: Objects can only implement unique interfaces" should {
@@ -352,7 +399,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: String
         }
       """,
-      "Type 'SomeInputObject' is not an output type type." -> Seq(Pos(10, 35)))
+      "Type 'SomeInputObject' is not an output type type." -> Seq(Pos(10, 35))
+    )
 
     "rejects an Object implementing the same interface twice" in invalidSchema(
       graphql"""
@@ -368,7 +416,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: String
         }
       """,
-      "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(Pos(10, 39), Pos(10, 58)))
+      "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(
+        Pos(10, 39),
+        Pos(10, 58))
+    )
 
     "rejects an Object implementing the same interface twice due to extension" in invalidSchema(
       graphql"""
@@ -386,7 +437,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
         extend type AnotherObject implements AnotherInterface
       """,
-      "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(Pos(10, 39), Pos(14, 46)))
+      "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(
+        Pos(10, 39),
+        Pos(14, 46))
+    )
 
     "rejects an Object implementing the extended interface due to missing field (via extension)" in invalidSchema(
       buildSchema(graphql"""
@@ -404,7 +458,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
       """).extend(graphql"""
         extend type AnotherObject implements AnotherInterface
       """),
-      "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(Pos(10, 39), Pos(2, 46)))
+      "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(
+        Pos(10, 39),
+        Pos(2, 46))
+    )
   }
 
   "Type System: Interface extensions should be valid" should {
@@ -430,7 +487,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           newField: String
         }
       """),
-      "AnotherInterface.newField expects argument 'test', but AnotherObject.newField does not provide it." -> Seq(Pos(3, 20), Pos(7, 11)))
+      "AnotherInterface.newField expects argument 'test', but AnotherObject.newField does not provide it." -> Seq(
+        Pos(3, 20),
+        Pos(7, 11))
+    )
 
     "rejects Objects implementing the extended interface due to mismatching interface type" in invalidSchema(
       buildSchema(graphql"""
@@ -462,7 +522,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           newInterfaceField: MismatchingInterface
         }
       """),
-      "AnotherInterface.newInterfaceField expects type 'NewInterface', but AnotherObject.newInterfaceField provides type 'MismatchingInterface'." -> Seq(Pos(15, 11), Pos(3, 11)))
+      "AnotherInterface.newInterfaceField expects type 'NewInterface', but AnotherObject.newInterfaceField provides type 'MismatchingInterface'." -> Seq(
+        Pos(15, 11),
+        Pos(3, 11))
+    )
   }
 
   "Type System: Interface fields must have output types" should {
@@ -480,7 +543,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           foo: String
         }
       """,
-      "Type 'SomeInputObject' is not an output type type." -> Seq(Pos(7, 18)))
+      "Type 'SomeInputObject' is not an output type type." -> Seq(Pos(7, 18))
+    )
   }
 
   "Type System: Field arguments must have input types" should {
@@ -494,7 +558,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           foo: String
         }
       """,
-      "Type 'SomeObject' is not an input type type." -> Seq(Pos(3, 21)))
+      "Type 'SomeObject' is not an input type type." -> Seq(Pos(3, 21))
+    )
   }
 
   "Type System: Input Object fields must have input types" should {
@@ -512,12 +577,12 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           bar: String
         }
       """,
-      "Type 'SomeObject' is not an input type type." -> Seq(Pos(7, 16)))
+      "Type 'SomeObject' is not an input type type." -> Seq(Pos(7, 16))
+    )
   }
 
   "Objects must adhere to Interface they implement" should {
-    "accepts an Object which implements an Interface" in validSchema(
-      graphql"""
+    "accepts an Object which implements an Interface" in validSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -576,7 +641,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field(input: String): Int
         }
       """,
-      "AnotherInterface.field expects type 'String', but AnotherObject.field provides type 'Int'." -> Seq(Pos(11, 11), Pos(7, 11)))
+      "AnotherInterface.field expects type 'String', but AnotherObject.field provides type 'Int'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
 
     "rejects an Object with a differently typed Interface field" in invalidSchema(
       graphql"""
@@ -595,10 +663,12 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: B
         }
       """,
-      "AnotherInterface.field expects type 'A', but AnotherObject.field provides type 'B'." -> Seq(Pos(14, 11), Pos(10, 11)))
+      "AnotherInterface.field expects type 'A', but AnotherObject.field provides type 'B'." -> Seq(
+        Pos(14, 11),
+        Pos(10, 11))
+    )
 
-    "accepts an Object with a subtyped Interface field (interface)" in validSchema(
-      graphql"""
+    "accepts an Object with a subtyped Interface field (interface)" in validSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -612,8 +682,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         }
       """)
 
-    "accepts an Object with a subtyped Interface field (union)" in validSchema(
-      graphql"""
+    "accepts an Object with a subtyped Interface field (union)" in validSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -647,7 +716,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: String
         }
       """,
-      "AnotherInterface.field expects argument 'input', but AnotherObject.field does not provide it." -> Seq(Pos(7, 17), Pos(11, 11)))
+      "AnotherInterface.field expects argument 'input', but AnotherObject.field does not provide it." -> Seq(
+        Pos(7, 17),
+        Pos(11, 11))
+    )
 
     "rejects an Object with an incorrectly typed Interface argument" in invalidSchema(
       graphql"""
@@ -663,7 +735,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field(input: Int): String
         }
       """,
-      "AnotherInterface.field(input) expects type 'String', but AnotherObject.field(input) provides type 'Int'." -> Seq(Pos(7, 17), Pos(11, 17)))
+      "AnotherInterface.field(input) expects type 'String', but AnotherObject.field(input) provides type 'Int'." -> Seq(
+        Pos(7, 17),
+        Pos(11, 17))
+    )
 
     "rejects an Object with both an incorrectly typed field and argument" in invalidSchema(
       graphql"""
@@ -679,7 +754,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field(input: Int): Int
         }
       """,
-      "AnotherInterface.field expects type 'String', but AnotherObject.field provides type 'Int'." -> Seq(Pos(11, 11), Pos(7, 11)))
+      "AnotherInterface.field expects type 'String', but AnotherObject.field provides type 'Int'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
 
     "rejects an Object which implements an Interface field along with additional required arguments" in invalidSchema(
       graphql"""
@@ -695,10 +773,12 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field(input: String, anotherInput: String!): String
         }
       """,
-      "AnotherObject.field(anotherInput) is of required type 'String!', but is not also provided by the interface AnotherInterface.field." -> Seq(Pos(11, 32), Pos(7, 11)))
+      "AnotherObject.field(anotherInput) is of required type 'String!', but is not also provided by the interface AnotherInterface.field." -> Seq(
+        Pos(11, 32),
+        Pos(7, 11))
+    )
 
-    "accepts an Object with an equivalently wrapped Interface field type" in validSchema(
-      graphql"""
+    "accepts an Object with an equivalently wrapped Interface field type" in validSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -726,7 +806,10 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: String
         }
       """,
-      "AnotherInterface.field expects type '[String]', but AnotherObject.field provides type 'String'." -> Seq(Pos(11, 11), Pos(7, 11)))
+      "AnotherInterface.field expects type '[String]', but AnotherObject.field provides type 'String'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
 
     "rejects an Object with a list Interface field non-list type" in invalidSchema(
       graphql"""
@@ -742,10 +825,12 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: [String]
         }
       """,
-      "AnotherInterface.field expects type 'String', but AnotherObject.field provides type '[String]'." -> Seq(Pos(11, 11), Pos(7, 11)))
+      "AnotherInterface.field expects type 'String', but AnotherObject.field provides type '[String]'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
 
-    "accepts an Object with a subset non-null Interface field type" in validSchema(
-      graphql"""
+    "accepts an Object with a subset non-null Interface field type" in validSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -773,38 +858,44 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           field: String
         }
       """,
-      "AnotherInterface.field expects type 'String!', but AnotherObject.field provides type 'String'." -> Seq(Pos(11, 11), Pos(7, 11)))
+      "AnotherInterface.field expects type 'String!', but AnotherObject.field provides type 'String'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
   }
 
-  def buildSchema(document: ast.Document) = {
+  def buildSchema(document: ast.Document) =
     Schema.buildFromAst(document)
-  }
 
   def validSchema(document: ast.Document) = buildSchema(document)
 
   def invalidSchema(document: ast.Document, expected: (String, Seq[Pos])*): Unit =
     invalidSchema(buildSchema(document), expected: _*)
 
-  def invalidSchema(schema: => Schema[_, _], expected: (String, Seq[Pos])*): Unit = {
+  def invalidSchema(schema: => Schema[_, _], expected: (String, Seq[Pos])*): Unit =
     (Try(schema): @unchecked) match {
       case Success(_) => fail("Schema was built successfully")
       case Failure(e: WithViolations) =>
         val violationsStr =
-          "Actual violations:\n\n" + e.violations.zipWithIndex.map {
-            case (v, idx) =>
+          "Actual violations:\n\n" + e.violations.zipWithIndex
+            .map { case (v, idx) =>
               val helperStr = v match {
-                case n: AstNodeLocation => "    \"" + n.simpleErrorMessage + "\" -> Seq(" + n.locations.map(l => s"Pos(${l.line}, ${l.column})").mkString(", ") + ")"
+                case n: AstNodeLocation =>
+                  "    \"" + n.simpleErrorMessage + "\" -> Seq(" + n.locations
+                    .map(l => s"Pos(${l.line}, ${l.column})")
+                    .mkString(", ") + ")"
                 case n => n.errorMessage
               }
 
               s"(${idx + 1}) " + v.errorMessage + "\n\n" + helperStr
-          }.mkString("\n\n") + "\n\n"
+            }
+            .mkString("\n\n") + "\n\n"
 
         withClue(violationsStr) {
           e.violations should have size expected.size
 
-          expected foreach { case (expected, pos) =>
-            e.violations exists { error =>
+          expected.foreach { case (expected, pos) =>
+            e.violations.exists { error =>
               val message = error.errorMessage
 
               message.contains(expected) && {
@@ -817,5 +908,4 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
           }
         }
     }
-  }
 }

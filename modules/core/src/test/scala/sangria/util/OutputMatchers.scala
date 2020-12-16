@@ -1,6 +1,6 @@
 package sangria.util
 
-import java.io.{PrintStream, ByteArrayOutputStream}
+import java.io.{ByteArrayOutputStream, PrintStream}
 
 import org.scalatest.matchers.should.Matchers
 

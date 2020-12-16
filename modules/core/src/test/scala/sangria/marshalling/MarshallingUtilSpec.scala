@@ -28,7 +28,7 @@ class MarshallingUtilSpec extends AnyWordSpec with Matchers {
 
       val out = in.convertMarshaled[JsValue]
 
-      out should be (
+      out should be(
         JsObject(
           "id" -> JsNumber(1),
           "name" -> JsString("door"),
@@ -40,7 +40,9 @@ class MarshallingUtilSpec extends AnyWordSpec with Matchers {
             JsObject(
               "state" -> JsString("Open"),
               "durability" -> JsNumber(BigDecimal("0.5")),
-              "foo" -> JsNull)))))
+              "foo" -> JsNull)
+          ))
+        ))
     }
 
     "convert query AST to scala map" in {
@@ -59,19 +61,18 @@ class MarshallingUtilSpec extends AnyWordSpec with Matchers {
 
       val out: Any = in.convertMarshaled[Any @@ ScalaInput]
 
-      out should be (
+      out should be(
         Map(
-          "id" -> 1, 
-          "name" -> "door", 
+          "id" -> 1,
+          "name" -> "door",
           "items" -> Vector(
             Map(
-              "state" -> "Open", 
+              "state" -> "Open",
               "durability" -> BigDecimal("0.1465645654675762354763254763343243242")),
             null,
-            Map(
-              "state" -> "Open", 
-              "durability" -> BigDecimal("0.5"),
-              "foo" -> null))))
+            Map("state" -> "Open", "durability" -> BigDecimal("0.5"), "foo" -> null)
+          )
+        ))
     }
   }
 

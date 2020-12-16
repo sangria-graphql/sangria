@@ -8,15 +8,13 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new NoUndefinedVariables)
 
   "Validate: No undefined variables" should {
-    "all variables defined" in expectPasses(
-      """
+    "all variables defined" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           field(a: $a, b: $b, c: $c)
         }
       """)
 
-    "all variables deeply defined" in expectPasses(
-      """
+    "all variables deeply defined" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           field(a: $a) {
             field(b: $b) {
@@ -26,8 +24,7 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "all variables deeply in inline fragments defined" in expectPasses(
-      """
+    "all variables deeply in inline fragments defined" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           ... on Type {
             field(a: $a) {
@@ -41,8 +38,7 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "all variables in fragments deeply defined" in expectPasses(
-      """
+    "all variables in fragments deeply defined" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           ...FragA
         }
@@ -61,8 +57,7 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "variable within single fragment defined in multiple operations" in expectPasses(
-      """
+    "variable within single fragment defined in multiple operations" in expectPasses("""
         query Foo($a: String) {
           ...FragA
         }
@@ -74,8 +69,7 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "variable within fragments defined in operations" in expectPasses(
-      """
+    "variable within fragments defined in operations" in expectPasses("""
         query Foo($a: String) {
           ...FragA
         }
@@ -90,8 +84,7 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "variable within recursive fragment defined" in expectPasses(
-      """
+    "variable within recursive fragment defined" in expectPasses("""
         query Foo($a: String) {
           ...FragA
         }
@@ -110,7 +103,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Variable '$d' is not defined by operation 'Foo'." -> List(Pos(3, 41), Pos(2, 9))
-      ))
+      )
+    )
 
     "variable not defined by un-named query" in expectFailsPosList(
       """
@@ -131,7 +125,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(3, 20), Pos(2, 9)),
         "Variable '$c' is not defined by operation 'Foo'." -> List(Pos(3, 34), Pos(2, 9))
-      ))
+      )
+    )
 
     "variable in fragment not defined by un-named query" in expectFailsPosList(
       """
@@ -144,7 +139,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Variable '$a' is not defined." -> List(Pos(6, 20), Pos(2, 9))
-      ))
+      )
+    )
 
     "variable in fragment not defined by operation" in expectFailsPosList(
       """
@@ -167,7 +163,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Variable '$c' is not defined by operation 'Foo'." -> List(Pos(16, 20), Pos(2, 9))
-      ))
+      )
+    )
 
     "multiple variables in fragments not defined" in expectFailsPosList(
       """
@@ -191,7 +188,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(6, 20), Pos(2, 9)),
         "Variable '$c' is not defined by operation 'Foo'." -> List(Pos(16, 20), Pos(2, 9))
-      ))
+      )
+    )
 
     "single variable in fragment not defined by multiple operations" in expectFailsPosList(
       """
@@ -208,7 +206,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$b' is not defined by operation 'Foo'." -> List(Pos(9, 27), Pos(2, 9)),
         "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(9, 27), Pos(5, 9))
-      ))
+      )
+    )
 
     "variables in fragment not defined by multiple operations" in expectFailsPosList(
       """
@@ -225,7 +224,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(9, 20), Pos(2, 9)),
         "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(9, 27), Pos(5, 9))
-      ))
+      )
+    )
 
     "variable in fragment used by other operation" in expectFailsPosList(
       """
@@ -245,7 +245,8 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$a' is not defined by operation 'Foo'." -> List(Pos(9, 20), Pos(2, 9)),
         "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(12, 20), Pos(5, 9))
-      ))
+      )
+    )
 
     "multiple undefined variables produce multiple errors" in expectFailsPosList(
       """
@@ -271,6 +272,7 @@ class NoUndefinedVariablesSpec extends AnyWordSpec with ValidationSupport {
         "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(9, 28), Pos(5, 9)),
         "Variable '$c' is not defined by operation 'Bar'." -> List(Pos(14, 21), Pos(5, 9)),
         "Variable '$b' is not defined by operation 'Bar'." -> List(Pos(11, 28), Pos(5, 9))
-      ))
+      )
+    )
   }
 }

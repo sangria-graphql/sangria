@@ -16,7 +16,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
 
   var validator: QueryValidator = _
 
-  val schema: Schema[_, _] = {
+  val schema: Schema[_, _] =
     Schema.buildFromAst(
       QueryParser
         .parse("""
@@ -53,25 +53,24 @@ class OverlappingFieldsCanBeMergedBenchmark {
         """)
         .get
     )
-  }
-
 
 //  @Param(Array("10", "20", "30", "50", "80", "110"))
   @Param(Array("2", "10", "100"))
   var size: Int = _
 
-  var overlapFrag: Document     = _
-  var overlapNoFrag: Document   = _
-  var noOverlapFrag: Document   = _
+  var overlapFrag: Document = _
+  var overlapNoFrag: Document = _
+  var noOverlapFrag: Document = _
   var noOverlapNoFrag: Document = _
-  var repeatedFields: Document  = _
+  var repeatedFields: Document = _
   var deepAbstractConcrete: Document = _
 
   @Setup
   def setup(): Unit = {
     validator = validatorType match {
       case "Old" => new RuleBasedQueryValidator(List(new rules.OverlappingFieldsCanBeMerged))
-      case "New" => new RuleBasedQueryValidator(List(new rules.experimental.OverlappingFieldsCanBeMerged))
+      case "New" =>
+        new RuleBasedQueryValidator(List(new rules.experimental.OverlappingFieldsCanBeMerged))
     }
     overlapFrag = makeQuery(size, overlapping = true, fragments = true)
     overlapNoFrag = makeQuery(size, overlapping = true, fragments = false)
@@ -82,34 +81,28 @@ class OverlappingFieldsCanBeMergedBenchmark {
   }
 
   @Benchmark
-  def benchmarkRepeatedFields(bh: Blackhole): Unit = {
+  def benchmarkRepeatedFields(bh: Blackhole): Unit =
     bh.consume(doValidate(validator, repeatedFields))
-  }
 
   @Benchmark
-  def benchmarkOverlapFrag(bh: Blackhole): Unit = {
+  def benchmarkOverlapFrag(bh: Blackhole): Unit =
     bh.consume(doValidate(validator, overlapFrag))
-  }
 
   @Benchmark
-  def benchmarkOverlapNoFrag(bh: Blackhole): Unit = {
+  def benchmarkOverlapNoFrag(bh: Blackhole): Unit =
     bh.consume(doValidate(validator, overlapNoFrag))
-  }
 
   @Benchmark
-  def benchmarkNoOverlapFrag(bh: Blackhole): Unit = {
+  def benchmarkNoOverlapFrag(bh: Blackhole): Unit =
     bh.consume(doValidate(validator, noOverlapFrag))
-  }
 
   @Benchmark
-  def benchmarkNoOverlapNoFrag(bh: Blackhole): Unit = {
+  def benchmarkNoOverlapNoFrag(bh: Blackhole): Unit =
     bh.consume(doValidate(validator, noOverlapNoFrag))
-  }
 
   @Benchmark
-  def benchmarkDeepAbstractConcrete(bh: Blackhole): Unit = {
+  def benchmarkDeepAbstractConcrete(bh: Blackhole): Unit =
     bh.consume(doValidate(validator, deepAbstractConcrete))
-  }
 
   private def doValidate(validator: QueryValidator, document: Document): Vector[Violation] = {
     val result = validator.validateQuery(schema, document)
@@ -117,13 +110,12 @@ class OverlappingFieldsCanBeMergedBenchmark {
     result
   }
 
-  private def makeQuery(size: Int, overlapping: Boolean, fragments: Boolean): Document = {
+  private def makeQuery(size: Int, overlapping: Boolean, fragments: Boolean): Document =
     if (fragments) {
       makeQueryWithFragments(size, overlapping)
     } else {
       makeQueryWithoutFragments(size, overlapping)
     }
-  }
 
   private def makeRepeatedFieldsQuery(size: Int): Document = {
     val b = new StringBuilder
@@ -134,9 +126,8 @@ class OverlappingFieldsCanBeMergedBenchmark {
                |     xingId {
              """.stripMargin)
 
-    for (i <- 1 to size) {
+    for (i <- 1 to size)
       b.append("firstName\n")
-    }
 
     b.append("""
                |    }
@@ -179,9 +170,8 @@ class OverlappingFieldsCanBeMergedBenchmark {
     }
 
     b.append("query testQuery {")
-    for (i <- 1 to size) {
+    for (i <- 1 to size)
       b.append(s"...mergeIdenticalFields${i}\n")
-    }
     b.append("}")
 
     QueryParser.parse(b.result()).get
@@ -223,8 +213,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
   private def makeDeepAbstractConcreteQuery(depth: Int): Document = {
     val q = new StringBuilder
 
-    q.append(
-      """
+    q.append("""
         |fragment multiply on Whatever {
         |   field {
         |     ... on Abstract1 { field { leaf } }
@@ -239,7 +228,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
         |""".stripMargin)
 
     (1 to depth).foreach { _ =>
-        q.append("field { ...multiply ")
+      q.append("field { ...multiply ")
     }
 
     (1 to depth).foreach { _ =>

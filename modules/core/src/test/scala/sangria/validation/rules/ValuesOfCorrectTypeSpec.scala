@@ -9,8 +9,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
 
   "Validate: Argument values of correct type" when {
     "Valid values" should {
-      "Good int value" in expectPasses(
-        """
+      "Good int value" in expectPasses("""
           {
             complicatedArgs {
               intArgField(intArg: 2)
@@ -18,8 +17,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Good big int value" in expectPasses(
-        """
+      "Good big int value" in expectPasses("""
           {
             complicatedArgs {
               bigIntArgField(bigIntArg: 78426587624578962487568746587485)
@@ -27,8 +25,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Good boolean value" in expectPasses(
-        """
+      "Good boolean value" in expectPasses("""
           {
             complicatedArgs {
               booleanArgField(booleanArg: true)
@@ -36,8 +33,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Good string value" in expectPasses(
-        """
+      "Good string value" in expectPasses("""
           {
             complicatedArgs {
               stringArgField(stringArg: "foo")
@@ -45,8 +41,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Good float value" in expectPasses(
-        """
+      "Good float value" in expectPasses("""
           {
             complicatedArgs {
               floatArgField(floatArg: 1.1)
@@ -54,8 +49,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Good big decimal value" in expectPasses(
-        """
+      "Good big decimal value" in expectPasses("""
           {
             complicatedArgs {
               bigDecimalArgField(bigDecimalArg: 18246597864875687436587643875634.127647823648763287463)
@@ -63,8 +57,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Int into Float" in expectPasses(
-        """
+      "Int into Float" in expectPasses("""
           {
             complicatedArgs {
               floatArgField(floatArg: 1)
@@ -72,8 +65,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Int into ID" in expectPasses(
-        """
+      "Int into ID" in expectPasses("""
           {
             complicatedArgs {
               idArgField(idArg: 1)
@@ -81,8 +73,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "String into ID" in expectPasses(
-        """
+      "String into ID" in expectPasses("""
           {
             complicatedArgs {
               idArgField(idArg: "someIdString")
@@ -90,8 +81,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Good enum value" in expectPasses(
-        """
+      "Good enum value" in expectPasses("""
           {
             dog {
               doesKnowCommand(dogCommand: SIT)
@@ -99,8 +89,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "null into nullable type (1)" in expectPasses(
-        """
+      "null into nullable type (1)" in expectPasses("""
           {
             complicatedArgs {
               intArgField(intArg: null)
@@ -108,8 +97,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "null into nullable type (2)" in expectPasses(
-        """
+      "null into nullable type (2)" in expectPasses("""
           {
             dog(a: null, b: null, c:{ requiredField: true, intField: null }) {
               name
@@ -128,8 +116,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'String', found '1'." -> Some(Pos(4, 41))))
+        List("Expected type 'String', found '1'." -> Some(Pos(4, 41)))
+      )
 
       "Float into String" in expectFails(
         """
@@ -139,8 +127,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'String', found '1.0'." -> Some(Pos(4, 41))))
+        List("Expected type 'String', found '1.0'." -> Some(Pos(4, 41)))
+      )
 
       "Boolean into String" in expectFails(
         """
@@ -150,8 +138,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'String', found 'true'." -> Some(Pos(4, 41))))
+        List("Expected type 'String', found 'true'." -> Some(Pos(4, 41)))
+      )
 
       "Unquoted String into String" in expectFails(
         """
@@ -161,8 +149,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'String', found 'BAR'." -> Some(Pos(4, 41))))
+        List("Expected type 'String', found 'BAR'." -> Some(Pos(4, 41)))
+      )
     }
 
     "Invalid Int values" should {
@@ -174,8 +162,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Int', found '\"3\"'." -> Some(Pos(4, 35))))
+        List("Expected type 'Int', found '\"3\"'." -> Some(Pos(4, 35)))
+      )
 
       "Big Int into Int" in expectFails(
         """
@@ -185,8 +173,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Int', found '829384293849283498239482938'." -> Some(Pos(4, 35))))
+        List("Expected type 'Int', found '829384293849283498239482938'." -> Some(Pos(4, 35)))
+      )
 
       "Unquoted String into Int" in expectFails(
         """
@@ -196,8 +184,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Int', found 'FOO'." -> Some(Pos(4, 35))))
+        List("Expected type 'Int', found 'FOO'." -> Some(Pos(4, 35)))
+      )
 
       "Simple Float into Int" in expectFails(
         """
@@ -207,8 +195,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Int', found '3.0'." -> Some(Pos(4, 35))))
+        List("Expected type 'Int', found '3.0'." -> Some(Pos(4, 35)))
+      )
 
       "Float into Int" in expectFails(
         """
@@ -218,8 +206,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Int', found '3.333'." -> Some(Pos(4, 35))))
+        List("Expected type 'Int', found '3.333'." -> Some(Pos(4, 35)))
+      )
     }
 
     "Invalid Float values" should {
@@ -231,8 +219,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Float', found '\"3.333\"'." -> Some(Pos(4, 39))))
+        List("Expected type 'Float', found '\"3.333\"'." -> Some(Pos(4, 39)))
+      )
 
       "Boolean into Float" in expectFails(
         """
@@ -242,8 +230,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Float', found 'true'." -> Some(Pos(4, 39))))
+        List("Expected type 'Float', found 'true'." -> Some(Pos(4, 39)))
+      )
 
       "Unquoted into Float" in expectFails(
         """
@@ -253,8 +241,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Float', found 'FOO'." -> Some(Pos(4, 39))))
+        List("Expected type 'Float', found 'FOO'." -> Some(Pos(4, 39)))
+      )
     }
 
     "Invalid Boolean value" should {
@@ -266,8 +254,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Boolean', found '2'." -> Some(Pos(4, 43))))
+        List("Expected type 'Boolean', found '2'." -> Some(Pos(4, 43)))
+      )
 
       "Float into Boolean" in expectFails(
         """
@@ -277,8 +265,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Boolean', found '2.0'." -> Some(Pos(4, 43))))
+        List("Expected type 'Boolean', found '2.0'." -> Some(Pos(4, 43)))
+      )
 
       "String into Boolean" in expectFails(
         """
@@ -288,8 +276,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Boolean', found '\"true\"'." -> Some(Pos(4, 43))))
+        List("Expected type 'Boolean', found '\"true\"'." -> Some(Pos(4, 43)))
+      )
 
       "Unquoted into Boolean" in expectFails(
         """
@@ -299,8 +287,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'Boolean', found 'TRUE'." -> Some(Pos(4, 43))))
+        List("Expected type 'Boolean', found 'TRUE'." -> Some(Pos(4, 43)))
+      )
     }
 
     "Invalid ID value" should {
@@ -312,8 +300,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'ID', found '1.0'." -> Some(Pos(4, 33))))
+        List("Expected type 'ID', found '1.0'." -> Some(Pos(4, 33)))
+      )
 
       "Boolean into ID" in expectFails(
         """
@@ -323,8 +311,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'ID', found 'true'." -> Some(Pos(4, 33))))
+        List("Expected type 'ID', found 'true'." -> Some(Pos(4, 33)))
+      )
 
       "Unquoted into ID" in expectFails(
         """
@@ -334,8 +322,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'ID', found 'SOMETHING'." -> Some(Pos(4, 33))))
+        List("Expected type 'ID', found 'SOMETHING'." -> Some(Pos(4, 33)))
+      )
     }
 
     "Invalid Enum value" should {
@@ -347,8 +335,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'DogCommand', found '2'." -> Some(Pos(4, 43))))
+        List("Expected type 'DogCommand', found '2'." -> Some(Pos(4, 43)))
+      )
 
       "Float into Enum" in expectFails(
         """
@@ -358,8 +346,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'DogCommand', found '1.0'." -> Some(Pos(4, 43))))
+        List("Expected type 'DogCommand', found '1.0'." -> Some(Pos(4, 43)))
+      )
 
       "String into Enum" in expectFails(
         """
@@ -369,8 +357,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'DogCommand', found '\"SIT\"'." -> Some(Pos(4, 43))))
+        List("Expected type 'DogCommand', found '\"SIT\"'." -> Some(Pos(4, 43)))
+      )
 
       "Boolean into Enum" in expectFails(
         """
@@ -380,8 +368,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List(
-          "Expected type 'DogCommand', found 'true'." -> Some(Pos(4, 43))))
+        List("Expected type 'DogCommand', found 'true'." -> Some(Pos(4, 43)))
+      )
 
       "Unknown Enum Value into Enum" in expectFails(
         """
@@ -392,7 +380,9 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         List(
-          "Expected type 'DogCommand!', found 'JUGGLE'. Enum value 'JUGGLE' is undefined in enum type 'DogCommand'. Known values are: SIT, HEEL, DOWN." -> Some(Pos(4, 43))))
+          "Expected type 'DogCommand!', found 'JUGGLE'. Enum value 'JUGGLE' is undefined in enum type 'DogCommand'. Known values are: SIT, HEEL, DOWN." -> Some(
+            Pos(4, 43)))
+      )
 
       "Different case Enum Value into Enum" in expectFails(
         """
@@ -402,12 +392,14 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        List("Expected type 'DogCommand!', found 'sit'. Enum value 'sit' is undefined in enum type 'DogCommand'. Known values are: SIT, HEEL, DOWN." -> Some(Pos(4, 43))))
+        List(
+          "Expected type 'DogCommand!', found 'sit'. Enum value 'sit' is undefined in enum type 'DogCommand'. Known values are: SIT, HEEL, DOWN." -> Some(
+            Pos(4, 43)))
+      )
     }
 
     "Valid List value" should {
-      "Good list value" in expectPasses(
-        """
+      "Good list value" in expectPasses("""
           {
             complicatedArgs {
               stringListArgField(stringListArg: ["one", null, "two"])
@@ -415,8 +407,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Empty list value" in expectPasses(
-        """
+      "Empty list value" in expectPasses("""
           {
             complicatedArgs {
               stringListArgField(stringListArg: [])
@@ -424,8 +415,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Null value" in expectPasses(
-        """
+      "Null value" in expectPasses("""
           {
             complicatedArgs {
               stringListArgField(stringListArg: null)
@@ -433,8 +423,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Single value into List" in expectPasses(
-        """
+      "Single value into List" in expectPasses("""
           {
             complicatedArgs {
               stringListArgField(stringListArg: "one")
@@ -452,7 +441,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Expected type 'String', found '2'. String value expected" -> Seq(Pos(4, 57)))
+        "Expected type 'String', found '2'. String value expected" -> Seq(Pos(4, 57))
+      )
 
       "Single value of incorrect type" in expectFailsSimple(
         """
@@ -462,12 +452,12 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Expected type '[String]', found '1'. String value expected" -> Seq(Pos(4, 49)))
+        "Expected type '[String]', found '1'. String value expected" -> Seq(Pos(4, 49))
+      )
     }
 
     "Valid non-nullable value" should {
-      "Arg on optional arg" in expectPasses(
-        """
+      "Arg on optional arg" in expectPasses("""
           {
             dog {
               isHousetrained(atOtherHomes: true)
@@ -475,8 +465,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "No Arg on optional arg" in expectPasses(
-        """
+      "No Arg on optional arg" in expectPasses("""
           {
             complicatedArgs {
               multipleReqs(req1: 1, req2: 2)
@@ -484,8 +473,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Multiple args reverse order" in expectPasses(
-        """
+      "Multiple args reverse order" in expectPasses("""
           {
             complicatedArgs {
               multipleReqs(req2: 2, req1: 1)
@@ -493,8 +481,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "No args on multiple optional" in expectPasses(
-        """
+      "No args on multiple optional" in expectPasses("""
           {
             complicatedArgs {
               multipleOpts
@@ -502,8 +489,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "One arg on multiple optional" in expectPasses(
-        """
+      "One arg on multiple optional" in expectPasses("""
           {
             complicatedArgs {
               multipleOpts(opt1: 1)
@@ -511,8 +497,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Second arg on multiple optional" in expectPasses(
-        """
+      "Second arg on multiple optional" in expectPasses("""
           {
             complicatedArgs {
               multipleOpts(opt2: 1)
@@ -520,8 +505,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Multiple reqs on mixedList" in expectPasses(
-        """
+      "Multiple reqs on mixedList" in expectPasses("""
           {
             complicatedArgs {
               multipleOptAndReq(req1: 3, req2: 4)
@@ -529,8 +513,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Multiple reqs and one opt on mixedList" in expectPasses(
-        """
+      "Multiple reqs and one opt on mixedList" in expectPasses("""
           {
             complicatedArgs {
               multipleOptAndReq(req1: 3, req2: 4, opt1: 5)
@@ -538,8 +521,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "All reqs and opts on mixedList" in expectPasses(
-        """
+      "All reqs and opts on mixedList" in expectPasses("""
           {
             complicatedArgs {
               multipleOptAndReq(req1: 3, req2: 4, opt1: 5, opt2: 6)
@@ -558,7 +540,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         "Expected type 'Int!', found '\"two\"'. Int value expected" -> Seq(Pos(4, 34)),
-        "Expected type 'Int!', found '\"one\"'. Int value expected" -> Seq(Pos(4, 47)))
+        "Expected type 'Int!', found '\"one\"'. Int value expected" -> Seq(Pos(4, 47))
+      )
 
       "Incorrect value and missing argument" in expectFailsSimple(
         """
@@ -568,7 +551,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Expected type 'Int!', found '\"one\"'. Int value expected" -> Seq(Pos(4, 34)))
+        "Expected type 'Int!', found '\"one\"'. Int value expected" -> Seq(Pos(4, 34))
+      )
 
       "Null value" in expectFailsSimple(
         """
@@ -578,12 +562,12 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Expected type 'Int!', found 'null'." -> Seq(Pos(4, 34)))
+        "Expected type 'Int!', found 'null'." -> Seq(Pos(4, 34))
+      )
     }
 
     "Valid input object value" should {
-      "Optional arg, despite required field in type" in expectPasses(
-        """
+      "Optional arg, despite required field in type" in expectPasses("""
           {
             complicatedArgs {
               complexArgField
@@ -591,8 +575,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Partial object, only required" in expectPasses(
-        """
+      "Partial object, only required" in expectPasses("""
           {
             complicatedArgs {
               complexArgField(complexArg: { requiredField: true })
@@ -600,8 +583,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Partial object, required field can be falsey" in expectPasses(
-        """
+      "Partial object, required field can be falsey" in expectPasses("""
           {
             complicatedArgs {
               complexArgField(complexArg: { requiredField: false })
@@ -609,8 +591,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Partial object, including required" in expectPasses(
-        """
+      "Partial object, including required" in expectPasses("""
           {
             complicatedArgs {
               complexArgField(complexArg: { requiredField: true, intField: 4 })
@@ -618,8 +599,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Full object" in expectPasses(
-        """
+      "Full object" in expectPasses("""
           {
             complicatedArgs {
               complexArgField(complexArg: {
@@ -633,8 +613,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Full object with fields in different order" in expectPasses(
-        """
+      "Full object with fields in different order" in expectPasses("""
           {
             complicatedArgs {
               complexArgField(complexArg: {
@@ -658,7 +637,9 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Field 'ComplexInput.requiredField' of required type 'Boolean!' was not provided." -> Seq(Pos(4, 43)))
+        "Field 'ComplexInput.requiredField' of required type 'Boolean!' was not provided." -> Seq(
+          Pos(4, 43))
+      )
 
       "Partial object, invalid field type" in expectFailsSimple(
         """
@@ -671,7 +652,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Expected type 'String', found '2'. String value expected" -> Seq(Pos(5, 42)))
+        "Expected type 'String', found '2'. String value expected" -> Seq(Pos(5, 42))
+      )
 
       "Partial object, null to non-null field" in expectFailsSimple(
         """
@@ -684,7 +666,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Expected type 'Boolean!', found 'null'." -> Seq(Pos(6, 31)))
+        "Expected type 'Boolean!', found 'null'." -> Seq(Pos(6, 31))
+      )
 
       "Partial object, unknown field arg" in expectFailsSimple(
         """
@@ -697,12 +680,13 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
             }
           }
         """,
-        "Field 'unknownField' is not defined by type 'ComplexInput'; Did you mean nonNullField, intField or booleanField?" -> Seq(Pos(6, 17)))
+        "Field 'unknownField' is not defined by type 'ComplexInput'; Did you mean nonNullField, intField or booleanField?" -> Seq(
+          Pos(6, 17))
+      )
     }
 
     "Directive arguments" should {
-      "with directives of valid types" in expectPasses(
-        """
+      "with directives of valid types" in expectPasses("""
           {
             dog @include(if: true) {
               name
@@ -722,13 +706,13 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         "Expected type 'Boolean!', found '\"yes\"'. Boolean value expected" -> Seq(Pos(3, 30)),
-        "Expected type 'Boolean!', found 'ENUM'. Boolean value expected" -> Seq(Pos(4, 30)))
+        "Expected type 'Boolean!', found 'ENUM'. Boolean value expected" -> Seq(Pos(4, 30))
+      )
     }
   }
 
   "Variable default values" should {
-    "variables with valid default values" in expectPasses(
-      """
+    "variables with valid default values" in expectPasses("""
         query WithDefaultValues(
           $a: Int = 1,
           $b: String = "ok",
@@ -739,8 +723,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "variables with valid default null values" in expectPasses(
-      """
+    "variables with valid default null values" in expectPasses("""
         query WithDefaultValues(
           $a: Int = null,
           $b: String = null,
@@ -762,7 +745,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
       """,
       "Expected type 'Int!', found 'null'." -> Seq(Pos(3, 22)),
       "Expected type 'String!', found 'null'." -> Seq(Pos(4, 25)),
-      "Expected type 'Boolean!', found 'null'." -> Seq(Pos(5, 47)))
+      "Expected type 'Boolean!', found 'null'." -> Seq(Pos(5, 47))
+    )
 
     "variables with invalid default values" in expectFailsSimple(
       """
@@ -776,7 +760,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
       """,
       "Expected type 'Int', found '\"one\"'. Int value expected" -> Seq(Pos(3, 21)),
       "Expected type 'String', found '4'. String value expected" -> Seq(Pos(4, 24)),
-      "Expected type 'ComplexInput', found '\"notverycomplex\"'." -> Seq(Pos(5, 30)))
+      "Expected type 'ComplexInput', found '\"notverycomplex\"'." -> Seq(Pos(5, 30))
+    )
 
     "variables with complex invalid default values" in expectFailsSimple(
       """
@@ -787,7 +772,8 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       "Expected type 'Boolean!', found '123'. Boolean value expected" -> Seq(Pos(3, 47)),
-      "Expected type 'Int', found '\"abc\"'. Int value expected" -> Seq(Pos(3, 62)))
+      "Expected type 'Int', found '\"abc\"'. Int value expected" -> Seq(Pos(3, 62))
+    )
 
     "complex variables missing required field" in expectFailsSimple(
       """
@@ -795,7 +781,9 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           dog { name }
         }
       """,
-      "Field 'ComplexInput.requiredField' of required type 'Boolean!' was not provided." -> Seq(Pos(2, 55)))
+      "Field 'ComplexInput.requiredField' of required type 'Boolean!' was not provided." -> Seq(
+        Pos(2, 55))
+    )
 
     "list variables with invalid item" in expectFailsSimple(
       """
@@ -803,6 +791,7 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
           dog { name }
         }
       """,
-      "Expected type 'String', found '2'. String value expected" -> Seq(Pos(2, 50)))
+      "Expected type 'String', found '2'. String value expected" -> Seq(Pos(2, 50))
+    )
   }
 }

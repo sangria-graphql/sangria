@@ -25,11 +25,9 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
-        Map(
-          "data" -> Map(
-            "hero" -> Map(
-              "name" -> "R2-D2"))))
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(Map("data" -> Map("hero" -> Map("name" -> "R2-D2"))))
     }
 
     "Allows us to query for the ID and friends of R2-D2" in {
@@ -45,7 +43,9 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "hero" -> Map(
@@ -72,15 +72,22 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         """
 
       val HeroOnlyQuery = ObjectType[CharacterRepo, Unit](
-        "HeroOnlyQuery", fields[CharacterRepo, Unit](
-          Field("hero", TestSchema.Character,
+        "HeroOnlyQuery",
+        fields[CharacterRepo, Unit](
+          Field(
+            "hero",
+            TestSchema.Character,
             arguments = TestSchema.EpisodeArg :: Nil,
-            resolve = (ctx) => ctx.ctx.getHero(ctx.arg(TestSchema.EpisodeArg)))
-        ))
+            resolve = ctx => ctx.ctx.getHero(ctx.arg(TestSchema.EpisodeArg)))
+        )
+      )
 
-      val heroOnlySchema = Schema(HeroOnlyQuery, additionalTypes = TestSchema.Human :: TestSchema.Droid :: Nil)
+      val heroOnlySchema =
+        Schema(HeroOnlyQuery, additionalTypes = TestSchema.Human :: TestSchema.Droid :: Nil)
 
-      Executor.execute(heroOnlySchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(heroOnlySchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "hero" -> Map(
@@ -111,7 +118,9 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "hero" -> Map(
@@ -164,7 +173,9 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "human" -> Map(
@@ -185,14 +196,21 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val args = mapVars("someId" -> "1000")
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, variables = args, deferredResolver = new FriendsResolver).await should be (
-          Map(
-            "data" -> Map(
-              "human" -> Map(
-                "name" -> "Luke Skywalker"
-              )
+      Executor
+        .execute(
+          StarWarsSchema,
+          query,
+          new CharacterRepo,
+          variables = args,
+          deferredResolver = new FriendsResolver)
+        .await should be(
+        Map(
+          "data" -> Map(
+            "human" -> Map(
+              "name" -> "Luke Skywalker"
             )
-          ))
+          )
+        ))
     }
 
     "Allows us to create a generic query, then use it to fetch Han Solo using his ID" in {
@@ -206,14 +224,21 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val args = mapVars("someId" -> "1002")
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, variables = args, deferredResolver = new FriendsResolver).await should be (
-          Map(
-            "data" -> Map(
-              "human" -> Map(
-                "name" -> "Han Solo"
-              )
+      Executor
+        .execute(
+          StarWarsSchema,
+          query,
+          new CharacterRepo,
+          variables = args,
+          deferredResolver = new FriendsResolver)
+        .await should be(
+        Map(
+          "data" -> Map(
+            "human" -> Map(
+              "name" -> "Han Solo"
             )
-          ))
+          )
+        ))
     }
 
     "Allows us to create a generic query, then pass an invalid ID to get null back" in {
@@ -227,12 +252,19 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val args = mapVars("id" -> "not a valid id")
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, variables = args, deferredResolver = new FriendsResolver).await should be (
-          Map(
-            "data" -> Map(
-              "human" -> null
-            )
-          ))
+      Executor
+        .execute(
+          StarWarsSchema,
+          query,
+          new CharacterRepo,
+          variables = args,
+          deferredResolver = new FriendsResolver)
+        .await should be(
+        Map(
+          "data" -> Map(
+            "human" -> null
+          )
+        ))
     }
   }
 
@@ -247,11 +279,12 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
           }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
-            "luke" -> Map(
-              "name" -> "Luke Skywalker")
+            "luke" -> Map("name" -> "Luke Skywalker")
           )
         ))
     }
@@ -269,13 +302,13 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
           }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
-            "luke" -> Map(
-              "name" -> "Luke Skywalker"),
-            "leia" -> Map(
-              "name" -> "Leia Organa")
+            "luke" -> Map("name" -> "Luke Skywalker"),
+            "leia" -> Map("name" -> "Leia Organa")
           )
         ))
     }
@@ -296,15 +329,13 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
-            "luke" -> Map(
-              "name" -> "Luke Skywalker",
-              "homePlanet" -> "Tatooine"),
-            "leia" -> Map(
-              "name" -> "Leia Organa",
-              "homePlanet" -> "Alderaan")
+            "luke" -> Map("name" -> "Luke Skywalker", "homePlanet" -> "Tatooine"),
+            "leia" -> Map("name" -> "Leia Organa", "homePlanet" -> "Alderaan")
           )
         ))
     }
@@ -326,15 +357,13 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
-            "luke" -> Map(
-              "name" -> "Luke Skywalker",
-              "homePlanet" -> "Tatooine"),
-            "leia" -> Map(
-              "name" -> "Leia Organa",
-              "homePlanet" -> "Alderaan")
+            "luke" -> Map("name" -> "Luke Skywalker", "homePlanet" -> "Tatooine"),
+            "leia" -> Map("name" -> "Leia Organa", "homePlanet" -> "Alderaan")
           )
         ))
     }
@@ -351,12 +380,12 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
-            "hero" -> Map(
-              "__typename" -> "Droid",
-              "name" -> "R2-D2")
+            "hero" -> Map("__typename" -> "Droid", "name" -> "R2-D2")
           )
         ))
     }
@@ -371,12 +400,12 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
-            "hero" -> Map(
-              "__typename" -> "Human",
-              "name" -> "Luke Skywalker")
+            "hero" -> Map("__typename" -> "Human", "name" -> "Luke Skywalker")
           )
         ))
     }
@@ -393,19 +422,21 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
+      val res = Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await
+        .asInstanceOf[Map[String, Any]]
 
-      res("data") should be (
-        Map("hero" -> Map("name" -> "R2-D2", "secretBackstory" -> null)))
+      res("data") should be(Map("hero" -> Map("name" -> "R2-D2", "secretBackstory" -> null)))
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (
-        have(size(1)) and
-        contain(Map(
-          "message" -> "secretBackstory is secret.",
-          "path" -> List("hero", "secretBackstory"),
-          "locations" -> Vector(Map("line" -> 5, "column" -> 13)))))
+      errors should (have(size(1)).and(
+        contain(
+          Map(
+            "message" -> "secretBackstory is secret.",
+            "path" -> List("hero", "secretBackstory"),
+            "locations" -> Vector(Map("line" -> 5, "column" -> 13))))))
     }
 
     "Correctly reports error on accessing secretBackstory in a list" in {
@@ -421,33 +452,44 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
+      val res = Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await
+        .asInstanceOf[Map[String, Any]]
 
-      res("data") should be (
-        Map("hero" ->
+      res("data") should be(
+        Map(
+          "hero" ->
             Map(
               "name" -> "R2-D2",
               "friends" -> Vector(
                 Map("name" -> "Luke Skywalker", "secretBackstory" -> null),
                 Map("name" -> "Han Solo", "secretBackstory" -> null),
-                Map("name" -> "Leia Organa", "secretBackstory" -> null)))))
+                Map("name" -> "Leia Organa", "secretBackstory" -> null)
+              )
+            )))
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (
-        have(size(3)) and
-        contain(Map(
-          "message" -> "secretBackstory is secret.",
-          "path" -> Vector("hero", "friends", 0, "secretBackstory"),
-          "locations" -> Vector(Map("line" -> 7, "column" -> 15)))) and
-        contain(Map(
-          "message" -> "secretBackstory is secret.",
-          "path" -> Vector("hero", "friends", 1, "secretBackstory"),
-          "locations" -> Vector(Map("line" -> 7, "column" -> 15)))) and
-        contain(Map(
-          "message" -> "secretBackstory is secret.",
-          "path" -> Vector("hero", "friends", 2, "secretBackstory"),
-          "locations" -> Vector(Map("line" -> 7, "column" -> 15)))))
+      errors should (have(size(3))
+        .and(
+          contain(
+            Map(
+              "message" -> "secretBackstory is secret.",
+              "path" -> Vector("hero", "friends", 0, "secretBackstory"),
+              "locations" -> Vector(Map("line" -> 7, "column" -> 15)))))
+        .and(
+          contain(
+            Map(
+              "message" -> "secretBackstory is secret.",
+              "path" -> Vector("hero", "friends", 1, "secretBackstory"),
+              "locations" -> Vector(Map("line" -> 7, "column" -> 15)))))
+        .and(
+          contain(
+            Map(
+              "message" -> "secretBackstory is secret.",
+              "path" -> Vector("hero", "friends", 2, "secretBackstory"),
+              "locations" -> Vector(Map("line" -> 7, "column" -> 15))))))
     }
 
     "Correctly reports error on accessing through an alias" in {
@@ -460,29 +502,37 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      val res = Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await.asInstanceOf[Map[String, Any]]
+      val res = Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await
+        .asInstanceOf[Map[String, Any]]
 
-      res("data") should be (
-        Map("mainHero" -> Map("name" -> "R2-D2", "story" -> null)))
+      res("data") should be(Map("mainHero" -> Map("name" -> "R2-D2", "story" -> null)))
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (
-        have(size(1)) and
-        contain(Map(
-          "message" -> "secretBackstory is secret.",
-          "path" -> List("mainHero", "story"),
-          "locations" -> Vector(Map("line" -> 5, "column" -> 13)))))
+      errors should (have(size(1)).and(
+        contain(
+          Map(
+            "message" -> "secretBackstory is secret.",
+            "path" -> List("mainHero", "story"),
+            "locations" -> Vector(Map("line" -> 5, "column" -> 13))))))
     }
 
     "Full response path is included when fields are non-nullable" in {
-      lazy val A: ObjectType[Unit, Any] = ObjectType("A", () => fields(
-        Field("nullableA", OptionType(A), resolve = _ => ""),
-        Field("nonNullA", A, resolve = _ => ""),
-        Field("throws", A, resolve = _ => throw PrivacyError("Catch me if you can"))))
+      lazy val A: ObjectType[Unit, Any] = ObjectType(
+        "A",
+        () =>
+          fields(
+            Field("nullableA", OptionType(A), resolve = _ => ""),
+            Field("nonNullA", A, resolve = _ => ""),
+            Field("throws", A, resolve = _ => throw PrivacyError("Catch me if you can"))
+          )
+      )
 
-      val Query = ObjectType("Query", fields[Unit, Unit](
-        Field("nullableA", OptionType(A), resolve = _ => "")))
+      val Query = ObjectType(
+        "Query",
+        fields[Unit, Unit](Field("nullableA", OptionType(A), resolve = _ => "")))
 
       val schema = Schema(Query)
 
@@ -500,19 +550,21 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
-      val res = Executor.execute(schema, query, queryValidator = QueryValidator.empty).await.asInstanceOf[Map[String, Any]]
+      val res = Executor
+        .execute(schema, query, queryValidator = QueryValidator.empty)
+        .await
+        .asInstanceOf[Map[String, Any]]
 
-      res("data") should be (
-        Map("nullableA" -> Map("nullableA" -> null)))
+      res("data") should be(Map("nullableA" -> Map("nullableA" -> null)))
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (
-        have(size(1)) and
-        contain(Map(
-          "message" -> "Catch me if you can",
-          "path" -> List("nullableA", "nullableA", "nonNullA", "nonNullA", "throws"),
-          "locations" -> List(Map("line" -> 7, "column" -> 19)))))
+      errors should (have(size(1)).and(
+        contain(
+          Map(
+            "message" -> "Catch me if you can",
+            "path" -> List("nullableA", "nullableA", "nonNullA", "nonNullA", "throws"),
+            "locations" -> List(Map("line" -> 7, "column" -> 19))))))
     }
   }
 }

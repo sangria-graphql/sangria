@@ -37,10 +37,12 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
       check(opt(IDType), "123.456", None)
     }
 
-    val testEnum = EnumType("TestColor", values = List(
-      EnumValue("RED", value = 1),
-      EnumValue("GREEN", value = 2),
-      EnumValue("BLUE", value = 3)))
+    val testEnum = EnumType(
+      "TestColor",
+      values = List(
+        EnumValue("RED", value = 1),
+        EnumValue("GREEN", value = 2),
+        EnumValue("BLUE", value = 3)))
 
     "converts enum values according to input coercion rules" in {
       check(opt(testEnum), "RED", Some(Some(1)))
@@ -103,17 +105,25 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
       check(nonNullListOfNonNullBool, "[true, null]", None)
     }
 
-    val testInputObj = InputObjectType("TestInput", fields = List(
-      InputField("int", opt(IntType), 42),
-      InputField("bool", opt(BooleanType)),
-      InputField("requiredBool", BooleanType)))
+    val testInputObj = InputObjectType(
+      "TestInput",
+      fields = List(
+        InputField("int", opt(IntType), 42),
+        InputField("bool", opt(BooleanType)),
+        InputField("requiredBool", BooleanType)))
 
     "coerces input objects according to input coercion rules" in {
       check(opt(testInputObj), "null", Some(None))
       check(opt(testInputObj), "123", None)
       check(opt(testInputObj), "[]", None)
-      check(opt(testInputObj), "{ int: 123, requiredBool: false }", Some(Some(Map("int" -> Some(123), "requiredBool" -> false))))
-      check(opt(testInputObj), "{ bool: true, requiredBool: false }", Some(Some(Map("int" -> Some(42), "bool" -> Some(true), "requiredBool" -> false))))
+      check(
+        opt(testInputObj),
+        "{ int: 123, requiredBool: false }",
+        Some(Some(Map("int" -> Some(123), "requiredBool" -> false))))
+      check(
+        opt(testInputObj),
+        "{ bool: true, requiredBool: false }",
+        Some(Some(Map("int" -> Some(42), "bool" -> Some(true), "requiredBool" -> false))))
       check(opt(testInputObj), "{ int: true, requiredBool: true }", None)
       check(opt(testInputObj), "{ requiredBool: null }", None)
       check(opt(testInputObj), "{ bool: true }", None)
@@ -128,36 +138,62 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
     "asserts variables are provided as items in lists" in {
       check(listOfBool, "[ $foo ]", Some(Some(List(None))))
       check(listOfNonNullBool, "[ $foo ]", None)
-      check(listOfNonNullBool, "[ $foo ]", Some(Some(List(true))), "$foo: Boolean!" -> """{"foo": true}""")
-      check(listOfNonNullBool, "$foo", Some(Some(List(true))), "$foo: [Boolean!]" -> """{"foo": true}""")
-      check(listOfNonNullBool, "$foo", Some(Some(List(true))), "$foo: [Boolean!]" -> """{"foo": [true]}""")
+      check(
+        listOfNonNullBool,
+        "[ $foo ]",
+        Some(Some(List(true))),
+        "$foo: Boolean!" -> """{"foo": true}""")
+      check(
+        listOfNonNullBool,
+        "$foo",
+        Some(Some(List(true))),
+        "$foo: [Boolean!]" -> """{"foo": true}""")
+      check(
+        listOfNonNullBool,
+        "$foo",
+        Some(Some(List(true))),
+        "$foo: [Boolean!]" -> """{"foo": [true]}""")
     }
 
     "omits input object fields for unprovided variables" in {
-      check(opt(testInputObj), "{ int: $foo, bool: $foo, requiredBool: true }",
+      check(
+        opt(testInputObj),
+        "{ int: $foo, bool: $foo, requiredBool: true }",
         Some(Some(Map("int" -> Some(42), "requiredBool" -> true))))
 
-      check(opt(testInputObj), "{ int: $foo, bool: $foo, requiredBool: true }",
+      check(
+        opt(testInputObj),
+        "{ int: $foo, bool: $foo, requiredBool: true }",
         Some(Some(Map("int" -> None, "bool" -> None, "requiredBool" -> true))),
-        "$foo: Boolean" -> """{"foo": null}""")
+        "$foo: Boolean" -> """{"foo": null}"""
+      )
 
       check(opt(testInputObj), "{ requiredBool: $foo }", None)
 
-      check(opt(testInputObj), "{ bool: $foo, requiredBool: $foo }",
+      check(
+        opt(testInputObj),
+        "{ bool: $foo, requiredBool: $foo }",
         Some(Some(Map("int" -> Some(42), "bool" -> Some(true), "requiredBool" -> true))),
-        "$foo: Boolean" -> """{"foo": true}""")
+        "$foo: Boolean" -> """{"foo": true}"""
+      )
 
-      check(opt(testInputObj), "$foo",
+      check(
+        opt(testInputObj),
+        "$foo",
         Some(Some(Map("int" -> Some(42), "requiredBool" -> true))),
         "$foo: TestInput" -> """{"foo": {"requiredBool": true}}""")
 
-      check(opt(testInputObj), "$foo",
+      check(
+        opt(testInputObj),
+        "$foo",
         Some(Some(Map("int" -> Some(42), "bool" -> None, "requiredBool" -> true))),
-        "$foo: TestInput" -> """{"foo": {"bool": null, "requiredBool": true}}""")
+        "$foo: TestInput" -> """{"foo": {"bool": null, "requiredBool": true}}"""
+      )
     }
   }
 
-  def coerceInputValue[T](tpe: InputType[T], value: String, vars: (String, String))(implicit fromInput: FromInput[T]) = {
+  def coerceInputValue[T](tpe: InputType[T], value: String, vars: (String, String))(implicit
+      fromInput: FromInput[T]) = {
     val testSchema = Schema.buildFromAst(QueryParser.parse(s"""
       input TestInput {
         int: Int = 42
@@ -173,19 +209,41 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
     import spray.json._
     import sangria.marshalling.sprayJson._
 
-    val valueCollector = new ValueCollector(testSchema, (if (vars._2.nonEmpty) vars._2 else "{}").parseJson, None, DeprecationTracker.empty, (), ExceptionHandler.empty, None, true)
-    val variables = valueCollector.getVariableValues(QueryParser.parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}").operations(Some("Foo")).variables, None).get
+    val valueCollector = new ValueCollector(
+      testSchema,
+      (if (vars._2.nonEmpty) vars._2 else "{}").parseJson,
+      None,
+      DeprecationTracker.empty,
+      (),
+      ExceptionHandler.empty,
+      None,
+      true)
+    val variables = valueCollector
+      .getVariableValues(
+        QueryParser
+          .parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}")
+          .operations(Some("Foo"))
+          .variables,
+        None)
+      .get
 
     val parsed = QueryParser.parseInputWithVariables(value)
-    val args = valueCollector.getArgumentValues(None, Argument("a", tpe) :: Nil, Vector(ast.Argument("a", parsed)), variables).get
+    val args = valueCollector
+      .getArgumentValues(
+        None,
+        Argument("a", tpe) :: Nil,
+        Vector(ast.Argument("a", parsed)),
+        variables)
+      .get
 
     args.raw.get("a")
   }
 
-  def check[T](tpe: InputType[T], value: String, result: Any, vars: (String, String) = "" -> "")(implicit fromInput: FromInput[T]) =
-    coerceInputValue(tpe, value, vars) should be (result)
+  def check[T](tpe: InputType[T], value: String, result: Any, vars: (String, String) = "" -> "")(
+      implicit fromInput: FromInput[T]) =
+    coerceInputValue(tpe, value, vars) should be(result)
 
-  def cls[T : ClassTag] = implicitly[ClassTag[T]].runtimeClass
+  def cls[T: ClassTag] = implicitly[ClassTag[T]].runtimeClass
 
   def opt[T](tpe: InputType[T]): InputType[Option[T]] = OptionInputType(tpe)
 }

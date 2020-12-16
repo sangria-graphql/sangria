@@ -8,60 +8,50 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new PossibleFragmentSpreads)
 
   "Validate: Possible fragment spreads" should {
-    "of the same object" in expectPasses(
-      """
+    "of the same object" in expectPasses("""
         fragment objectWithinObject on Dog { ...dogFragment }
         fragment dogFragment on Dog { barkVolume }
       """)
 
-    "of the same object with inline fragment" in expectPasses(
-      """
+    "of the same object with inline fragment" in expectPasses("""
         fragment objectWithinObjectAnon on Dog { ... on Dog { barkVolume } }
       """)
 
-    "object into an implemented interface" in expectPasses(
-      """
+    "object into an implemented interface" in expectPasses("""
         fragment objectWithinInterface on Pet { ...dogFragment }
         fragment dogFragment on Dog { barkVolume }
       """)
 
-    "object into containing union" in expectPasses(
-      """
+    "object into containing union" in expectPasses("""
         fragment objectWithinUnion on CatOrDog { ...dogFragment }
         fragment dogFragment on Dog { barkVolume }
       """)
 
-    "union into overlapping interface" in expectPasses(
-      """
+    "union into overlapping interface" in expectPasses("""
         fragment unionWithinInterface on Pet { ...catOrDogFragment }
         fragment catOrDogFragment on CatOrDog { __typename }
       """)
 
-    "union into overlapping union" in expectPasses(
-      """
+    "union into overlapping union" in expectPasses("""
         fragment unionWithinUnion on DogOrHuman { ...catOrDogFragment }
         fragment catOrDogFragment on CatOrDog { __typename }
       """)
 
-    "interface into implemented object" in expectPasses(
-      """
+    "interface into implemented object" in expectPasses("""
         fragment interfaceWithinObject on Dog { ...petFragment }
         fragment petFragment on Pet { name }
       """)
 
-    "interface into overlapping interface" in expectPasses(
-      """
+    "interface into overlapping interface" in expectPasses("""
         fragment interfaceWithinInterface on Pet { ...beingFragment }
         fragment beingFragment on Being { name }
       """)
 
-    "interface into overlapping interface in inline fragment" in expectPasses(
-      """
+    "interface into overlapping interface in inline fragment" in expectPasses("""
         fragment interfaceWithinInterface on Pet { ... on Being { name } }
       """)
 
-    "interface into overlapping union" in expectPasses(
-      """
+    "interface into overlapping union" in expectPasses("""
         fragment interfaceWithinUnion on CatOrDog { ...petFragment }
         fragment petFragment on Pet { name }
       """)
@@ -72,8 +62,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment dogFragment on Dog { barkVolume }
       """,
       List(
-        "Fragment 'dogFragment' cannot be spread here as objects of type 'Cat' can never be of type 'Dog'." -> Some(Pos(2, 53))
-      ))
+        "Fragment 'dogFragment' cannot be spread here as objects of type 'Cat' can never be of type 'Dog'." -> Some(
+          Pos(2, 53))
+      )
+    )
 
     "different object into object in inline fragment" in expectFails(
       """
@@ -82,8 +74,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment cannot be spread here as objects of type 'Cat' can never be of type 'Dog'." -> Some(Pos(3, 11))
-      ))
+        "Fragment cannot be spread here as objects of type 'Cat' can never be of type 'Dog'." -> Some(
+          Pos(3, 11))
+      )
+    )
 
     "object into not implementing interface" in expectFails(
       """
@@ -91,8 +85,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment humanFragment on Human { pets { name } }
       """,
       List(
-        "Fragment 'humanFragment' cannot be spread here as objects of type 'Pet' can never be of type 'Human'." -> Some(Pos(2, 56))
-      ))
+        "Fragment 'humanFragment' cannot be spread here as objects of type 'Pet' can never be of type 'Human'." -> Some(
+          Pos(2, 56))
+      )
+    )
 
     "object into not containing union" in expectFails(
       """
@@ -100,8 +96,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment humanFragment on Human { pets { name } }
       """,
       List(
-        "Fragment 'humanFragment' cannot be spread here as objects of type 'CatOrDog' can never be of type 'Human'." -> Some(Pos(2, 57))
-      ))
+        "Fragment 'humanFragment' cannot be spread here as objects of type 'CatOrDog' can never be of type 'Human'." -> Some(
+          Pos(2, 57))
+      )
+    )
 
     "union into not contained object" in expectFails(
       """
@@ -109,8 +107,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment catOrDogFragment on CatOrDog { __typename }
       """,
       List(
-        "Fragment 'catOrDogFragment' cannot be spread here as objects of type 'Human' can never be of type 'CatOrDog'." -> Some(Pos(2, 54))
-      ))
+        "Fragment 'catOrDogFragment' cannot be spread here as objects of type 'Human' can never be of type 'CatOrDog'." -> Some(
+          Pos(2, 54))
+      )
+    )
 
     "union into non overlapping interface" in expectFails(
       """
@@ -118,8 +118,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment humanOrAlienFragment on HumanOrAlien { __typename }
       """,
       List(
-        "Fragment 'humanOrAlienFragment' cannot be spread here as objects of type 'Pet' can never be of type 'HumanOrAlien'." -> Some(Pos(2, 55))
-      ))
+        "Fragment 'humanOrAlienFragment' cannot be spread here as objects of type 'Pet' can never be of type 'HumanOrAlien'." -> Some(
+          Pos(2, 55))
+      )
+    )
 
     "union into non overlapping union" in expectFails(
       """
@@ -127,8 +129,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment humanOrAlienFragment on HumanOrAlien { __typename }
       """,
       List(
-        "Fragment 'humanOrAlienFragment' cannot be spread here as objects of type 'CatOrDog' can never be of type 'HumanOrAlien'." -> Some(Pos(2, 56))
-      ))
+        "Fragment 'humanOrAlienFragment' cannot be spread here as objects of type 'CatOrDog' can never be of type 'HumanOrAlien'." -> Some(
+          Pos(2, 56))
+      )
+    )
 
     "interface into non implementing object" in expectFails(
       """
@@ -136,8 +140,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment intelligentFragment on Intelligent { iq }
       """,
       List(
-        "Fragment 'intelligentFragment' cannot be spread here as objects of type 'Cat' can never be of type 'Intelligent'." -> Some(Pos(2, 56))
-      ))
+        "Fragment 'intelligentFragment' cannot be spread here as objects of type 'Cat' can never be of type 'Intelligent'." -> Some(
+          Pos(2, 56))
+      )
+    )
 
     "interface into non overlapping interface" in expectFails(
       """
@@ -147,8 +153,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment intelligentFragment on Intelligent { iq }
       """,
       List(
-        "Fragment 'intelligentFragment' cannot be spread here as objects of type 'Pet' can never be of type 'Intelligent'." -> Some(Pos(3, 11))
-      ))
+        "Fragment 'intelligentFragment' cannot be spread here as objects of type 'Pet' can never be of type 'Intelligent'." -> Some(
+          Pos(3, 11))
+      )
+    )
 
     "interface into non overlapping interface in inline fragment" in expectFails(
       """
@@ -157,8 +165,10 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment cannot be spread here as objects of type 'Pet' can never be of type 'Intelligent'." -> Some(Pos(3, 11))
-      ))
+        "Fragment cannot be spread here as objects of type 'Pet' can never be of type 'Intelligent'." -> Some(
+          Pos(3, 11))
+      )
+    )
 
     "interface into non overlapping union" in expectFails(
       """
@@ -166,7 +176,9 @@ class PossibleFragmentSpreadsSpec extends AnyWordSpec with ValidationSupport {
         fragment petFragment on Pet { name }
       """,
       List(
-        "Fragment 'petFragment' cannot be spread here as objects of type 'HumanOrAlien' can never be of type 'Pet'." -> Some(Pos(2, 64))
-      ))
+        "Fragment 'petFragment' cannot be spread here as objects of type 'HumanOrAlien' can never be of type 'Pet'." -> Some(
+          Pos(2, 64))
+      )
+    )
   }
 }

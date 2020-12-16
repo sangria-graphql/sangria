@@ -15,16 +15,24 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
 
   case class TestSubject(a: Option[String], b: Option[String])
 
-  val FragDefIncludeDirective = Directive("fragDefInclude",
-    description = Some("Directs the executor to include this fragment definition only when the `if` argument is true."),
+  val FragDefIncludeDirective = Directive(
+    "fragDefInclude",
+    description = Some(
+      "Directs the executor to include this fragment definition only when the `if` argument is true."),
     arguments = IfArg :: Nil,
     locations = Set(DirectiveLocation.FragmentDefinition),
-    shouldInclude = ctx => ctx.arg(IfArg))
+    shouldInclude = ctx => ctx.arg(IfArg)
+  )
 
-  val schema = Schema(ObjectType("TestType", fields[Unit, TestSubject](
-    Field("a", OptionType(StringType), resolve = _.value.a),
-    Field("b", OptionType(StringType), resolve = _.value.b)
-  )), directives = BuiltinDirectives :+ FragDefIncludeDirective)
+  val schema = Schema(
+    ObjectType(
+      "TestType",
+      fields[Unit, TestSubject](
+        Field("a", OptionType(StringType), resolve = _.value.a),
+        Field("b", OptionType(StringType), resolve = _.value.b)
+      )),
+    directives = BuiltinDirectives :+ FragDefIncludeDirective
+  )
 
   val data = TestSubject(Some("a"), Some("b"))
 
@@ -37,32 +45,33 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
   "Execute: handles directives" when {
     "works without directives" should {
       "basic query works" in {
-        executeTestQuery("{ a, b }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+        executeTestQuery("{ a, b }") should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
     }
 
     "works on scalars" should {
       "if true includes scalar" in {
-        executeTestQuery("{ a, b @include(if: true) }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+        executeTestQuery("{ a, b @include(if: true) }") should be(
+          Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "if false omits on scalar" in {
-        executeTestQuery("{ a, b @include(if: false) }") should be (Map("data" -> Map("a" -> "a")))
+        executeTestQuery("{ a, b @include(if: false) }") should be(Map("data" -> Map("a" -> "a")))
       }
 
       "unless false includes scalar" in {
-        executeTestQuery("{ a, b @skip(if: false) }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+        executeTestQuery("{ a, b @skip(if: false) }") should be(
+          Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "unless true omits scalar" in {
-        executeTestQuery("{ a, b @skip(if: true) }") should be (Map("data" -> Map("a" -> "a")))
+        executeTestQuery("{ a, b @skip(if: true) }") should be(Map("data" -> Map("a" -> "a")))
       }
     }
 
     "works on fragment spreads" should {
       "if false omits fragment spread" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag @include(if: false)
@@ -70,12 +79,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
 
       "if true includes fragment spread" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag @include(if: true)
@@ -83,12 +91,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "unless false includes fragment spread" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag @skip(if: false)
@@ -96,12 +103,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "unless true omits fragment spread" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag @skip(if: true)
@@ -109,114 +115,105 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
     }
 
     "works on inline fragment" should {
       "if false omits inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... on TestType @include(if: false) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
 
       "if true includes inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... on TestType @include(if: true) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "unless false includes inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... on TestType @skip(if: false) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "unless true includes inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... on TestType @skip(if: true) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
     }
 
     "works on anonymous inline fragment" should {
       "if false omits anonymous inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... @include(if: false) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
 
       "if true includes anonymous inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... @include(if: true) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "unless false includes anonymous inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... @skip(if: false) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "unless true includes anonymous inline fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ... @skip(if: true) {
                  b
                }
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
     }
 
     "works on fragment" should {
       "if false omits fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag
@@ -224,12 +221,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType @fragDefInclude(if: false) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
 
       "if true includes fragment" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag
@@ -237,12 +233,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType @fragDefInclude(if: true) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+          """) should be(Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "if false omits fragment (unsupported location)" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag
@@ -250,12 +245,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType @include(if: false) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
 
       "if true omits fragment (unsupported location)" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag
@@ -263,12 +257,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType @include(if: true) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
 
       "unless false omits fragment (unsupported location)" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag
@@ -276,12 +269,11 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType @skip(if: false) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
 
       "unless true omits fragment (unsupported location)" in {
-        executeTestQuery(
-          """
+        executeTestQuery("""
              query Q {
                a
                ...Frag
@@ -289,21 +281,24 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
              fragment Frag on TestType @skip(if: true) {
                b
              }
-          """) should be (Map("data" -> Map("a" -> "a")))
+          """) should be(Map("data" -> Map("a" -> "a")))
       }
     }
 
     "works with skip and include directives" should {
       "include and no skip" in {
-        executeTestQuery("{ a, b @include(if: true) @skip(if: false) }") should be (Map("data" -> Map("a" -> "a", "b" -> "b")))
+        executeTestQuery("{ a, b @include(if: true) @skip(if: false) }") should be(
+          Map("data" -> Map("a" -> "a", "b" -> "b")))
       }
 
       "include and skip" in {
-        executeTestQuery("{ a, b @include(if: true) @skip(if: true) }") should be (Map("data" -> Map("a" -> "a")))
+        executeTestQuery("{ a, b @include(if: true) @skip(if: true) }") should be(
+          Map("data" -> Map("a" -> "a")))
       }
 
       "no include or skip" in {
-        executeTestQuery("{ a, b @include(if: false) @skip(if: false) }") should be (Map("data" -> Map("a" -> "a")))
+        executeTestQuery("{ a, b @include(if: false) @skip(if: false) }") should be(
+          Map("data" -> Map("a" -> "a")))
       }
     }
   }

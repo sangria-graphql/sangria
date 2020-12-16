@@ -19,7 +19,8 @@ object NilDeprecationTracker extends DeprecationTracker {
 
 class LoggingDeprecationTracker(logFn: String => Unit) extends DeprecationTracker {
   def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]) =
-    logFn(s"Deprecated field '${ctx.parentType.name}.${ctx.field.name}' used at path '${ctx.path}'.")
+    logFn(
+      s"Deprecated field '${ctx.parentType.name}.${ctx.field.name}' used at path '${ctx.path}'.")
 
   def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx) =
     logFn(s"Deprecated enum value '$value' used of enum '${enum.name}'.")

@@ -8,8 +8,7 @@ import sangria.ast.AstVisitorCommand
 import sangria.validation._
 import sangria.validation.rules.experimental.overlappingfields._
 
-/**
-  * Overlapping fields can be merged
+/** Overlapping fields can be merged
   *
   * A selection set is only valid if all fields (including spreading any
   * fragments) either correspond to distinct response names or can be merged
@@ -59,9 +58,8 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
           val check = new CachedCheck
           roots.forEach {
             new Consumer[SelectionContainer] {
-              override def accept(root: SelectionContainer): Unit = {
+              override def accept(root: SelectionContainer): Unit =
                 check.checkFieldsInSetCanMerge(root.fieldSet, violationsBuilder)
-              }
             }
           }
           val violations = violationsBuilder.result()

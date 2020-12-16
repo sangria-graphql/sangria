@@ -8,8 +8,7 @@ class NoUnusedFragmentsSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new NoUnusedFragments)
 
   "Validate: No unused fragments" should {
-    "all fragment names are used" in expectPasses(
-      """
+    "all fragment names are used" in expectPasses("""
         {
           human(id: 4) {
             ...HumanFields1
@@ -30,8 +29,7 @@ class NoUnusedFragmentsSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "all fragment names are used by multiple operations" in expectPasses(
-      """
+    "all fragment names are used by multiple operations" in expectPasses("""
         query Foo {
           human(id: 4) {
             ...HumanFields1
@@ -86,7 +84,8 @@ class NoUnusedFragmentsSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Fragment 'Unused1' is not used." -> Some(Pos(22, 9)),
         "Fragment 'Unused2' is not used." -> Some(Pos(25, 9))
-      ))
+      )
+    )
 
     "contains unknown fragments with ref cycle" in expectFails(
       """
@@ -122,7 +121,8 @@ class NoUnusedFragmentsSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Fragment 'Unused1' is not used." -> Some(Pos(22, 9)),
         "Fragment 'Unused2' is not used." -> Some(Pos(26, 9))
-      ))
+      )
+    )
 
     "contains unknown and undef fragments" in expectFails(
       """
@@ -137,6 +137,7 @@ class NoUnusedFragmentsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Fragment 'foo' is not used." -> Some(Pos(7, 9))
-      ))
+      )
+    )
   }
 }

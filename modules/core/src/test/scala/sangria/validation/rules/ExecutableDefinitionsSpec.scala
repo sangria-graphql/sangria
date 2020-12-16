@@ -8,8 +8,7 @@ class ExecutableDefinitionsSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new ExecutableDefinitions)
 
   "Validate: Executable definitions" should {
-    "with only operation" in expectPasses(
-      """
+    "with only operation" in expectPasses("""
         query Foo {
           dog {
             name
@@ -17,8 +16,7 @@ class ExecutableDefinitionsSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "with operation and fragment" in expectPasses(
-      """
+    "with operation and fragment" in expectPasses("""
         query Foo {
           dog {
             name
@@ -50,6 +48,7 @@ class ExecutableDefinitionsSpec extends AnyWordSpec with ValidationSupport {
       List(
         "The 'Cow' definition is not executable." -> Some(Pos(8, 9)),
         "The 'Dog' definition is not executable" -> Some(Pos(12, 9))
-      ))
+      )
+    )
   }
 }

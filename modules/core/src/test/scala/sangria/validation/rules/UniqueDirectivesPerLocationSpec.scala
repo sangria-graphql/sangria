@@ -8,36 +8,31 @@ class UniqueDirectivesPerLocationSpec extends AnyWordSpec with ValidationSupport
   override val defaultRule = Some(new UniqueDirectivesPerLocation)
 
   "Validate: Directives Are Unique Per Location" should {
-    "no directives" in expectPasses(
-      """
+    "no directives" in expectPasses("""
         fragment Test on Type {
           field
         }
       """)
 
-    "unique directives in different locations" in expectPasses(
-      """
+    "unique directives in different locations" in expectPasses("""
         fragment Test on Type @directiveA {
           field @directiveB
         }
       """)
 
-    "unique directives in same locations" in expectPasses(
-      """
+    "unique directives in same locations" in expectPasses("""
         fragment Test on Type @directiveA @directiveB {
           field @directiveA @directiveB
         }
       """)
 
-    "same directives in different locations" in expectPasses(
-      """
+    "same directives in different locations" in expectPasses("""
         fragment Test on Type @directiveA {
           field @directiveA
         }
       """)
 
-    "same directives in similar locations" in expectPasses(
-      """
+    "same directives in similar locations" in expectPasses("""
         fragment Test on Type {
           field @directive
           field @directive
@@ -51,8 +46,11 @@ class UniqueDirectivesPerLocationSpec extends AnyWordSpec with ValidationSupport
         }
       """,
       List(
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 28))
-      ))
+        "The directive 'directive' can only be used once at this location." -> List(
+          Pos(3, 17),
+          Pos(3, 28))
+      )
+    )
 
     "many duplicate directives in one location" in expectFailsPosList(
       """
@@ -61,9 +59,14 @@ class UniqueDirectivesPerLocationSpec extends AnyWordSpec with ValidationSupport
         }
       """,
       List(
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 28)),
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 39))
-      ))
+        "The directive 'directive' can only be used once at this location." -> List(
+          Pos(3, 17),
+          Pos(3, 28)),
+        "The directive 'directive' can only be used once at this location." -> List(
+          Pos(3, 17),
+          Pos(3, 39))
+      )
+    )
 
     "different duplicate directives in one location" in expectFailsPosList(
       """
@@ -72,9 +75,14 @@ class UniqueDirectivesPerLocationSpec extends AnyWordSpec with ValidationSupport
         }
       """,
       List(
-        "The directive 'directiveA' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 41)),
-        "The directive 'directiveB' can only be used once at this location." -> List(Pos(3, 29), Pos(3, 53))
-      ))
+        "The directive 'directiveA' can only be used once at this location." -> List(
+          Pos(3, 17),
+          Pos(3, 41)),
+        "The directive 'directiveB' can only be used once at this location." -> List(
+          Pos(3, 29),
+          Pos(3, 53))
+      )
+    )
 
     "duplicate directives in many locations" in expectFailsPosList(
       """
@@ -83,8 +91,13 @@ class UniqueDirectivesPerLocationSpec extends AnyWordSpec with ValidationSupport
         }
       """,
       List(
-        "The directive 'directive' can only be used once at this location." -> List(Pos(2, 31), Pos(2, 42)),
-        "The directive 'directive' can only be used once at this location." -> List(Pos(3, 17), Pos(3, 28))
-      ))
+        "The directive 'directive' can only be used once at this location." -> List(
+          Pos(2, 31),
+          Pos(2, 42)),
+        "The directive 'directive' can only be used once at this location." -> List(
+          Pos(3, 17),
+          Pos(3, 28))
+      )
+    )
   }
 }

@@ -8,8 +8,7 @@ class UniqueVariableNamesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new UniqueVariableNames)
 
   "Validate: Unique variable names" should {
-    "unique variable names" in expectPasses(
-      """
+    "unique variable names" in expectPasses("""
         query A($x: Int, $y: String) { __typename }
         query B($x: String, $y: Int) { __typename }
       """)
@@ -25,6 +24,7 @@ class UniqueVariableNamesSpec extends AnyWordSpec with ValidationSupport {
         "There can be only one variable named 'x'." -> List(Pos(2, 17), Pos(2, 35)),
         "There can be only one variable named 'x'." -> List(Pos(3, 17), Pos(3, 29)),
         "There can be only one variable named 'x'." -> List(Pos(4, 17), Pos(4, 26))
-      ))
+      )
+    )
   }
 }

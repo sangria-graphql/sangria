@@ -34,10 +34,12 @@ object queryAst {
 }
 
 class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
-  def getRootMapValue(node: ast.Value, key: String) = node.asInstanceOf[ast.ObjectValue].fieldsByName get key
+  def getRootMapValue(node: ast.Value, key: String) =
+    node.asInstanceOf[ast.ObjectValue].fieldsByName.get(key)
 
   def isMapNode(node: ast.Value) = node.isInstanceOf[ast.ObjectValue]
-  def getMapValue(node: ast.Value, key: String) = node.asInstanceOf[ast.ObjectValue].fieldsByName get key
+  def getMapValue(node: ast.Value, key: String) =
+    node.asInstanceOf[ast.ObjectValue].fieldsByName.get(key)
   def getMapKeys(node: ast.Value) = node.asInstanceOf[ast.ObjectValue].fieldsByName.keys
 
   def isListNode(node: ast.Value) = node.isInstanceOf[ast.ListValue]
@@ -71,7 +73,8 @@ class QueryAstResultMarshaller extends ResultMarshaller {
   type MapBuilder = ArrayMapBuilder[Node]
 
   def emptyMapNode(keys: Seq[String]) = new ArrayMapBuilder[Node](keys)
-  def addMapNodeElem(builder: MapBuilder, key: String, value: Node, optional: Boolean) = builder.add(key, value)
+  def addMapNodeElem(builder: MapBuilder, key: String, value: Node, optional: Boolean) =
+    builder.add(key, value)
 
   def scalarNode(value: Any, typeName: String, info: Set[ScalarValueInfo]) = value match {
     case v: String => ast.StringValue(v)
@@ -95,7 +98,7 @@ class QueryAstResultMarshaller extends ResultMarshaller {
 
   def mapNode(builder: MapBuilder) = mapNode(builder.toList)
   def mapNode(keyValues: Seq[(String, Node)]) =
-    ast.ObjectValue(keyValues.toVector.map{case (k, v) => ast.ObjectField(k, v)})
+    ast.ObjectValue(keyValues.toVector.map { case (k, v) => ast.ObjectField(k, v) })
 
   def nullNode = ast.NullValue()
 

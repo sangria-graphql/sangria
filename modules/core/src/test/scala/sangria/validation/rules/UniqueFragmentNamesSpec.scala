@@ -8,15 +8,13 @@ class UniqueFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new UniqueFragmentNames)
 
   "Validate: Unique fragment names" should {
-    "no fragments" in expectPasses(
-      """
+    "no fragments" in expectPasses("""
         {
           field
         }
       """)
 
-    "one fragment" in expectPasses(
-      """
+    "one fragment" in expectPasses("""
         {
           ...fragA
         }
@@ -26,8 +24,7 @@ class UniqueFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "many fragments" in expectPasses(
-      """
+    "many fragments" in expectPasses("""
         {
           ...fragA
           ...fragB
@@ -44,8 +41,7 @@ class UniqueFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "inline fragments are always unique" in expectPasses(
-      """
+    "inline fragments are always unique" in expectPasses("""
         {
           ...on Type {
             fieldA
@@ -56,8 +52,7 @@ class UniqueFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "fragment and operation named the same" in expectPasses(
-      """
+    "fragment and operation named the same" in expectPasses("""
         query Foo {
           ...Foo
         }
@@ -80,7 +75,8 @@ class UniqueFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "There can only be one fragment named 'fragA'." -> Some(Pos(8, 9))
-      ))
+      )
+    )
 
     "fragments named the same without being referenced" in expectFails(
       """
@@ -93,6 +89,7 @@ class UniqueFragmentNamesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "There can only be one fragment named 'fragA'." -> Some(Pos(5, 9))
-      ))
+      )
+    )
   }
 }

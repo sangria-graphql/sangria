@@ -13,7 +13,7 @@ class StringUtilBenchmark {
   var expected: Seq[String] = _
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     testCase match {
       case "empty input" =>
         input = ""
@@ -36,7 +36,6 @@ class StringUtilBenchmark {
         options = "length" :: (1 to 50).map(i => s"name_$i").toList
         expected = Seq("length")
     }
-  }
 
   @Benchmark
   def benchCurrent(): Unit = {

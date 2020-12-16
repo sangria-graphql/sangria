@@ -3,7 +3,7 @@ package sangria.starWars
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.starWars.TestSchema.StarWarsSchema
-import sangria.starWars.TestData.{FriendsResolver, CharacterRepo}
+import sangria.starWars.TestData.{CharacterRepo, FriendsResolver}
 import sangria.util.FutureResultSupport
 
 import scala.util.Success
@@ -24,7 +24,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__schema" -> Map(
@@ -61,7 +63,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__schema" -> Map(
@@ -82,7 +86,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__type" -> Map(
@@ -102,7 +108,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__type" -> Map(
@@ -123,7 +131,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__type" -> Map(
@@ -150,7 +160,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__type" -> Map(
@@ -224,7 +236,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__type" -> Map(
@@ -293,7 +307,6 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         ))
     }
 
-
     "Allows querying the schema for field args" in {
       val Success(query) = QueryParser.parse("""
         query IntrospectionQueryTypeQuery {
@@ -320,7 +333,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__schema" -> Map(
@@ -331,8 +346,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
                     "args" -> List(
                       Map(
                         "defaultValue" -> null,
-                        "description" -> (
-                          "If omitted, returns the hero of the whole " +
+                        "description" -> ("If omitted, returns the hero of the whole " +
                           "saga. If provided, returns the hero of " +
                           "that particular episode."),
                         "name" -> "episode",
@@ -397,7 +411,9 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
         }
         """)
 
-      Executor.execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver).await should be (
+      Executor
+        .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "__type" -> Map(

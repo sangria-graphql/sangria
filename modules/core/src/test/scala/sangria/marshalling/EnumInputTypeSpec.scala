@@ -4,7 +4,15 @@ import java.util.concurrent.Executor
 
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 import sangria.parser.QueryParser
-import sangria.schema.{Argument, EnumType, EnumValue, Field, InputField, InputObjectType, ObjectType}
+import sangria.schema.{
+  Argument,
+  EnumType,
+  EnumValue,
+  Field,
+  InputField,
+  InputObjectType,
+  ObjectType
+}
 import spray.json.{JsObject, JsString, JsValue, JsonReader}
 
 import scala.concurrent.duration._
@@ -18,7 +26,8 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
 
   implicit def sprayJsonFromInput[T <: JsValue]: FromInput[T] = sprayJson.sprayJsonFromInput[T]
 
-  implicit def sprayJsonReaderFromInput[T: JsonReader]: FromInput[T] = sprayJson.sprayJsonReaderFromInput[T]
+  implicit def sprayJsonReaderFromInput[T: JsonReader]: FromInput[T] =
+    sprayJson.sprayJsonReaderFromInput[T]
 
   private val enumWithCustomValueType = EnumType[String](
     "CustomEnum",
@@ -29,11 +38,13 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
     )
   )
 
-  private val complexInputType = InputObjectType[JsObject]("customInput", fields = List(InputField("enumValue", enumWithCustomValueType)))
-  private val complexArgument  = Argument("complexArgument", complexInputType)
-  private val enumArgument     = Argument("simpleArgument", enumWithCustomValueType)
+  private val complexInputType = InputObjectType[JsObject](
+    "customInput",
+    fields = List(InputField("enumValue", enumWithCustomValueType)))
+  private val complexArgument = Argument("complexArgument", complexInputType)
+  private val enumArgument = Argument("simpleArgument", enumWithCustomValueType)
 
-  private val valueFromComplexField: Field[Unit, JsValue] = {
+  private val valueFromComplexField: Field[Unit, JsValue] =
     Field(
       "valueFromComplex",
       sangria.schema.StringType,
@@ -42,9 +53,8 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
         ctx.arg(complexArgument).getFields("enumValue").toString()
       }
     )
-  }
 
-  private val valueFromEnumField: Field[Unit, JsValue] = {
+  private val valueFromEnumField: Field[Unit, JsValue] =
     Field(
       "valueFromEnum",
       sangria.schema.StringType,
@@ -53,7 +63,6 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
         JsString(ctx.arg(enumArgument)).value
       }
     )
-  }
 
   val queryType: ObjectType[Unit, JsValue] = ObjectType(
     "query",
@@ -62,11 +71,11 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
 
   val schema = new sangria.schema.Schema(queryType)
 
-  implicit val synchronousExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(new Executor {
-    override def execute(command: Runnable): Unit = {
-      command.run()
-    }
-  })
+  implicit val synchronousExecutionContext: ExecutionContext =
+    ExecutionContext.fromExecutor(new Executor {
+      override def execute(command: Runnable): Unit =
+        command.run()
+    })
 
   private def runQuery(query: String) = {
     val Success(queryAst) = QueryParser.parse(query)
@@ -91,7 +100,7 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
         | }
       """.stripMargin
 
-    runQuery(query) should be (Map("data" -> Map("valueFromComplex" -> "TOP_VALUE")))
+    runQuery(query) should be(Map("data" -> Map("valueFromComplex" -> "TOP_VALUE")))
   }
 
   "correctly unmarshals an enum passed as an argument" in {
@@ -102,6 +111,6 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
         | }
       """.stripMargin
 
-    runQuery(query) should be (Map("data" -> Map("valueFromEnum" -> "TOP_VALUE")))
+    runQuery(query) should be(Map("data" -> Map("valueFromEnum" -> "TOP_VALUE")))
   }
 }

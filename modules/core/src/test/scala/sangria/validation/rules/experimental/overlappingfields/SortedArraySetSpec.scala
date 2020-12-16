@@ -37,7 +37,8 @@ class SortedArraySetSpec extends AnyFunSuite {
 
   test("many elements removes duplicates and equals") {
     val set1 = SortedArraySet.newBuilder[Int]().add(42).add(7).add(3).add(7).add(42).build()
-    val set2 = SortedArraySet.newBuilder[Int]().add(3).add(42).add(3).add(42).add(7).add(3).add(3).build()
+    val set2 =
+      SortedArraySet.newBuilder[Int]().add(3).add(42).add(3).add(42).add(7).add(3).add(3).build()
     val set3 = SortedArraySet.newBuilder[Int]().add(3).add(42).add(2).add(42).add(7).build()
     assert(set1 === set2)
     assert(set1 !== set3)
@@ -46,13 +47,13 @@ class SortedArraySetSpec extends AnyFunSuite {
   }
 
   test("many elements are sorted") {
-    val set = SortedArraySet.newBuilder[Int]().add(3).add(42).add(3).add(42).add(7).add(3).add(3).build()
+    val set =
+      SortedArraySet.newBuilder[Int]().add(3).add(42).add(3).add(42).add(7).add(3).add(3).build()
     val list = List.newBuilder[Int]
     set.forEach {
       new Consumer[Int] {
-        override def accept(member: Int): Unit = {
+        override def accept(member: Int): Unit =
           list += member
-        }
       }
     }
     assert(list.result() == List(3, 7, 42))

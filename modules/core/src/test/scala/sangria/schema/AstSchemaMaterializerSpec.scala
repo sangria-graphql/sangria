@@ -1,7 +1,12 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition, ObjectTypeExtensionDefinition, TypeDefinition}
+import sangria.ast.{
+  FieldDefinition,
+  ObjectTypeDefinition,
+  ObjectTypeExtensionDefinition,
+  TypeDefinition
+}
 import sangria.execution.{Executor, MaterializedSchemaValidationError}
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
@@ -17,7 +22,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureResultSupport with StringMatchers {
+class AstSchemaMaterializerSpec
+    extends AnyWordSpec
+    with Matchers
+    with FutureResultSupport
+    with StringMatchers {
 
   // This function does a full cycle of going from a
   // string with the contents of the DSL, parsed
@@ -47,7 +56,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  bool: Boolean
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "With directives" in {
@@ -62,7 +71,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |
             |directive @foo(arg: Int) on FIELD""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Maintains built-in directives" in {
@@ -81,9 +90,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         schema.directives should have size 3
 
-        schema.directivesByName("skip") should be theSameInstanceAs SkipDirective
-        schema.directivesByName("include") should be theSameInstanceAs IncludeDirective
-        schema.directivesByName("deprecated") should be theSameInstanceAs DeprecatedDirective
+        (schema.directivesByName("skip") should be).theSameInstanceAs(SkipDirective)
+        (schema.directivesByName("include") should be).theSameInstanceAs(IncludeDirective)
+        (schema.directivesByName("deprecated") should be).theSameInstanceAs(DeprecatedDirective)
       }
 
       "Overriding directives excludes specified" in {
@@ -107,9 +116,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
         schema.directives should have size 3
 
         // We don't allow to override the built-in directives, since it's too dangerous
-        schema.directivesByName("skip") should be theSameInstanceAs SkipDirective
-        schema.directivesByName("include") should be theSameInstanceAs IncludeDirective
-        schema.directivesByName("deprecated") should be theSameInstanceAs DeprecatedDirective
+        (schema.directivesByName("skip") should be).theSameInstanceAs(SkipDirective)
+        (schema.directivesByName("include") should be).theSameInstanceAs(IncludeDirective)
+        (schema.directivesByName("deprecated") should be).theSameInstanceAs(DeprecatedDirective)
       }
 
       "Adding directives maintains built-in one" in {
@@ -130,9 +139,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         schema.directives should have size 4
 
-        schema.directivesByName("skip") should be theSameInstanceAs SkipDirective
-        schema.directivesByName("include") should be theSameInstanceAs IncludeDirective
-        schema.directivesByName("deprecated") should be theSameInstanceAs DeprecatedDirective
+        (schema.directivesByName("skip") should be).theSameInstanceAs(SkipDirective)
+        (schema.directivesByName("include") should be).theSameInstanceAs(IncludeDirective)
+        (schema.directivesByName("deprecated") should be).theSameInstanceAs(DeprecatedDirective)
       }
 
       "Type modifiers" in {
@@ -149,7 +158,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  nonNullListOfNonNullStrs: [String!]!
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Recursive type" in {
@@ -163,7 +172,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  recurse: Recurse
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Two types circular" in {
@@ -182,7 +191,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  typeOne: TypeOne
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Single argument field" in {
@@ -199,7 +208,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  strToStr(bool: String): String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Simple type with multiple arguments" in {
@@ -212,7 +221,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  str(int: Int, bool: Boolean): String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Simple type with interface" in {
@@ -229,7 +238,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  str: String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Simple output enum" in {
@@ -246,7 +255,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  hello: Hello
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Simple input enum" in {
@@ -263,7 +272,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  str(hello: Hello): String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Multiple value enum" in {
@@ -281,7 +290,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  hello: Hello
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Simple Union" in {
@@ -300,7 +309,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  str: String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Multiple Union" in {
@@ -323,7 +332,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  str: String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Custom Scalar" in {
@@ -338,7 +347,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  customScalar: CustomScalar
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Input Object" in {
@@ -355,7 +364,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  field(in: Input): String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Simple argument field with default" in {
@@ -368,7 +377,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  str(int: Int = 2): String
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Simple type with mutation" in {
@@ -388,7 +397,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  addHelloScalars(str: String, int: Int, bool: Boolean): HelloScalars
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Unreferenced type implementing referenced interface" in {
@@ -405,7 +414,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  iface: Iface
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Unreferenced type implementing referenced union" in {
@@ -420,7 +429,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |
             |union Union = Concrete""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
       "Supports @deprecated" in {
@@ -437,7 +446,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  enum: MyEnum
             |}""".stripMargin
 
-        cycleOutput(schema) should equal (schema) (after being strippedOfCarriageReturns)
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
     }
 
@@ -450,9 +459,10 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Must provide schema definition with query type or a type named Query.")
+        error.getMessage should include(
+          "Must provide schema definition with query type or a type named Query.")
       }
 
       "Allows only a single schema definition" in {
@@ -471,9 +481,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Must provide only one schema definition.")
+        error.getMessage should include("Must provide only one schema definition.")
       }
 
       "Requires a query type" in {
@@ -488,9 +498,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Must provide only one query type in schema.")
+        error.getMessage should include("Must provide only one query type in schema.")
       }
 
       "Allows only a single query type" in {
@@ -510,9 +520,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Must provide only one query type in schema.")
+        error.getMessage should include("Must provide only one query type in schema.")
       }
 
       "Allows only a single mutation type" in {
@@ -533,9 +543,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Must provide only one mutation type in schema.")
+        error.getMessage should include("Must provide only one mutation type in schema.")
       }
 
       "Allows only a single subscription type" in {
@@ -556,9 +566,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Must provide only one subscription type in schema.")
+        error.getMessage should include("Must provide only one subscription type in schema.")
       }
 
       "Unknown type in interface list" in {
@@ -573,9 +583,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Unknown type 'Bar'.")
+        error.getMessage should include("Unknown type 'Bar'.")
       }
 
       "Unknown type in union list" in {
@@ -589,9 +599,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             type Hello { testUnion: TestUnion }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Unknown type 'Bar'.")
+        error.getMessage should include("Unknown type 'Bar'.")
       }
 
       "Unknown query type" in {
@@ -606,9 +616,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Unknown type 'Wat'.")
+        error.getMessage should include("Unknown type 'Wat'.")
       }
 
       "Unknown mutation type" in {
@@ -624,9 +634,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Unknown type 'Wat'.")
+        error.getMessage should include("Unknown type 'Wat'.")
       }
 
       "Unknown subscription type" in {
@@ -647,9 +657,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Unknown type 'Awesome'.")
+        error.getMessage should include("Unknown type 'Awesome'.")
       }
 
       "Does not consider operation names" in {
@@ -662,9 +672,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             query Foo { field }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Unknown type 'Foo'.")
+        error.getMessage should include("Unknown type 'Foo'.")
       }
 
       "Does not consider fragment names" in {
@@ -677,9 +687,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             fragment Foo on Type { field }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Unknown type 'Foo'.")
+        error.getMessage should include("Unknown type 'Foo'.")
       }
     }
 
@@ -719,8 +729,8 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
-        query.ownFields.map(_.name) should be (List("field1", "field2", "field3", "field4", "add"))
-        query.interfaces.map(_.name) should be (List("Foo", "Bar", "Baz"))
+        query.ownFields.map(_.name) should be(List("field1", "field2", "field3", "field4", "add"))
+        query.interfaces.map(_.name) should be(List("Foo", "Bar", "Baz"))
       }
 
       "allow extending static schema" in {
@@ -733,22 +743,26 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             Some(Article(id, s"Test Article #$id", "blah blah blah...", Some("Bob")))
 
           def loadComments: List[JsValue] =
-            List(JsObject(
-              "text" -> JsString("First!"),
-              "author" -> JsObject(
-                "name" -> JsString("Jane"),
-                "lastComment" -> JsObject(
-                  "text" -> JsString("Boring...")))))
+            List(
+              JsObject(
+                "text" -> JsString("First!"),
+                "author" -> JsObject(
+                  "name" -> JsString("Jane"),
+                  "lastComment" -> JsObject("text" -> JsString("Boring...")))))
         }
 
         val ArticleType = deriveObjectType[Repo, Article]()
 
         val IdArg = Argument("id", StringType)
 
-        val QueryType = ObjectType("Query", fields[Repo, Unit](
-          Field("article", OptionType(ArticleType),
-            arguments = IdArg :: Nil,
-            resolve = c => c.ctx.loadArticle(c arg IdArg))))
+        val QueryType = ObjectType(
+          "Query",
+          fields[Repo, Unit](
+            Field(
+              "article",
+              OptionType(ArticleType),
+              arguments = IdArg :: Nil,
+              resolve = c => c.ctx.loadArticle(c.arg(IdArg)))))
 
         val staticSchema = Schema(QueryType)
 
@@ -783,10 +797,14 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
           def resolveJson(name: String, tpe: OutputType[_], json: JsValue): Any = tpe match {
             case OptionType(ofType) => resolveJson(name, ofType, json)
-            case ListType(ofType) => json.asInstanceOf[JsArray].elements.map(resolveJson(name, ofType, _))
+            case ListType(ofType) =>
+              json.asInstanceOf[JsArray].elements.map(resolveJson(name, ofType, _))
             case StringType => json.asJsObject.fields(name).asInstanceOf[JsString].value
-            case _ if json.asJsObject.fields(name).isInstanceOf[JsObject] => json.asJsObject.fields(name)
-            case t => throw new IllegalStateException(s"Type ${SchemaRenderer.renderTypeName(t)} is not supported")
+            case _ if json.asJsObject.fields(name).isInstanceOf[JsObject] =>
+              json.asJsObject.fields(name)
+            case t =>
+              throw new IllegalStateException(
+                s"Type ${SchemaRenderer.renderTypeName(t)} is not supported")
           }
         }
 
@@ -811,8 +829,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        Executor.execute(schema, query, new Repo).await should be (
-          """
+        Executor.execute(schema, query, new Repo).await should be("""
             {
               "data": {
                 "article": {
@@ -855,9 +872,10 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Object type 'Query' can implement interface 'Foo' only once.")
+        error.getMessage should include(
+          "Object type 'Query' can implement interface 'Foo' only once.")
       }
 
       "don't allow to have duplicate fields in the extension" in {
@@ -878,9 +896,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Object type 'Query' can include field 'field1' only once.")
+        error.getMessage should include("Object type 'Query' can include field 'field1' only once.")
       }
 
       "accepts an Input Object with breakable circular reference" in {
@@ -926,9 +944,10 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'nonNullSelf'.")
+        error.getMessage should include(
+          "Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'nonNullSelf'.")
       }
 
       "rejects Input Objects with non-breakable circular reference spread across them" in {
@@ -955,9 +974,10 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.nextInLoop.closeLoop'.")
+        error.getMessage should include(
+          "Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.nextInLoop.closeLoop'.")
       }
 
       "rejects Input Objects with multiple non-breakable circular reference" in {
@@ -986,11 +1006,14 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [SchemaValidationException] (Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.closeLoop'.")
-        error.getMessage should include ("Cannot reference InputObjectType 'AnotherInputObject' within itself through a series of non-null fields: 'closeLoop.startLoop'.")
-        error.getMessage should include ("Cannot reference InputObjectType 'YetAnotherInputObject' within itself through a series of non-null fields: 'nonNullSelf'.")
+        error.getMessage should include(
+          "Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.closeLoop'.")
+        error.getMessage should include(
+          "Cannot reference InputObjectType 'AnotherInputObject' within itself through a series of non-null fields: 'closeLoop.startLoop'.")
+        error.getMessage should include(
+          "Cannot reference InputObjectType 'YetAnotherInputObject' within itself through a series of non-null fields: 'nonNullSelf'.")
       }
 
       "don't allow to have extensions on non-existing types" in {
@@ -1011,9 +1034,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Cannot extend type 'Foo' because it does not exist.")
+        error.getMessage should include("Cannot extend type 'Foo' because it does not exist.")
       }
 
       "don't allow to have extensions on non-object types" in {
@@ -1038,9 +1061,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val error = intercept [MaterializedSchemaValidationError] (Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include ("Cannot extend non-object type 'Foo'.")
+        error.getMessage should include("Cannot extend non-object type 'Foo'.")
       }
     }
 
@@ -1084,23 +1107,23 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
              |  enum: MyEnum
              |}""".stripMargin
 
-        cycleOutput(schemaDef) should equal (schemaDef) (after being strippedOfCarriageReturns)
+        cycleOutput(schemaDef) should equal(schemaDef)(after.being(strippedOfCarriageReturns))
 
         val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
 
-        schema.description should be (Some("test schema\ndescr"))
+        schema.description should be(Some("test schema\ndescr"))
 
         val myEnum = schema.inputTypes("MyEnum").asInstanceOf[EnumType[_]]
 
-        myEnum.description should be (Some("fooo bar\nbaz"))
-        myEnum.values(0).description should be (Some("value1"))
-        myEnum.values(1).description should be (Some("value 2\nline 2"))
-        myEnum.values(2).description should be (Some("value 3"))
+        myEnum.description should be(Some("fooo bar\nbaz"))
+        myEnum.values(0).description should be(Some("value1"))
+        myEnum.values(1).description should be(Some("value 2\nline 2"))
+        myEnum.values(2).description should be(Some("value 3"))
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
-        query.description should be (Some("My super query!"))
-        query.fields(1).description should be (Some("the second field!"))
+        query.description should be(Some("My super query!"))
+        query.fields(1).description should be(Some("the second field!"))
       }
 
       "Support legacy comment-based SDL descriptions" in {
@@ -1128,20 +1151,21 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             |  enum: MyEnum
             |}""".stripMargin
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef),
+        val schema = Schema.buildFromAst(
+          QueryParser.parse(schemaDef),
           AstSchemaBuilder.defaultWithLegacyCommentDescriptions)
 
         val myEnum = schema.inputTypes("MyEnum").asInstanceOf[EnumType[_]]
 
-        myEnum.description should be (Some("fooo bar\nbaz"))
-        myEnum.values(0).description should be (Some("value1"))
-        myEnum.values(1).description should be (Some("value 2\nline 2"))
-        myEnum.values(2).description should be (Some("value 3"))
+        myEnum.description should be(Some("fooo bar\nbaz"))
+        myEnum.values(0).description should be(Some("value1"))
+        myEnum.values(1).description should be(Some("value 2\nline 2"))
+        myEnum.values(2).description should be(Some("value 3"))
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
-        query.description should be (Some("My super query!"))
-        query.fields(1).description should be (Some("the second field!"))
+        query.description should be(Some("My super query!"))
+        query.fields(1).description should be(Some("the second field!"))
       }
 
       "Use comments for descriptions on arguments" in {
@@ -1173,13 +1197,13 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
-        query.description should be (Some("My super query!"))
+        query.description should be(Some("My super query!"))
 
         val field = query.fields(0)
 
-        field.description should be (None)
-        field.arguments(0).description should be (Some("first arg"))
-        field.arguments(1).description should be (Some("secnd arg\nline 2"))
+        field.description should be(None)
+        field.arguments(0).description should be(Some("first arg"))
+        field.arguments(1).description should be(Some("secnd arg\nline 2"))
       }
 
       "support type extensions" in {
@@ -1254,10 +1278,10 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         errors should have size 8
 
-        errors.foreach(_.isInstanceOf[UnknownDirectiveViolation] should be (true))
+        errors.foreach(_.isInstanceOf[UnknownDirectiveViolation] should be(true))
 
         val schema = Schema.buildFromAst(schemaDef)
-        
+
         ("\n" + schema.renderPretty + "\n") should equal("""
           |type Cat {
           |  cute: Boolean
@@ -1305,7 +1329,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
           |  id: ID!
           |  version: Long!
           |}
-          |""".stripMargin) (after being strippedOfCarriageReturns)
+          |""".stripMargin)(after.being(strippedOfCarriageReturns))
       }
     }
 
@@ -1340,8 +1364,14 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             }
           """
 
-        val ReturnCat = Directive("returnCat", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ => true)
-        val ReturnDog = Directive("returnDog", locations = Set(DirectiveLocation.FieldDefinition), shouldInclude = _ => true)
+        val ReturnCat = Directive(
+          "returnCat",
+          locations = Set(DirectiveLocation.FieldDefinition),
+          shouldInclude = _ => true)
+        val ReturnDog = Directive(
+          "returnDog",
+          locations = Set(DirectiveLocation.FieldDefinition),
+          shouldInclude = _ => true)
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
           override def resolveField(
@@ -1359,39 +1389,49 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             else
               _.value.asInstanceOf[Map[String, Any]](definition.name)
 
-          override def objectTypeInstanceCheck(origin: MatOrigin, definition: ObjectTypeDefinition, extensions: List[ast.ObjectTypeExtensionDefinition]) =
+          override def objectTypeInstanceCheck(
+              origin: MatOrigin,
+              definition: ObjectTypeDefinition,
+              extensions: List[ast.ObjectTypeExtensionDefinition]) =
             Some((value, _) => value.asInstanceOf[Map[String, Any]]("type") == definition.name)
 
           override def scalarCoerceUserInput(definition: ast.ScalarTypeDefinition) =
-            value => definition.name match {
-              case "Custom" => value match {
-                case i: Int => Right(i)
-                case i: BigInt => Right(i.intValue)
-                case _ => Left(IntCoercionViolation)
+            value =>
+              definition.name match {
+                case "Custom" =>
+                  value match {
+                    case i: Int => Right(i)
+                    case i: BigInt => Right(i.intValue)
+                    case _ => Left(IntCoercionViolation)
+                  }
+                case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
               }
-              case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
-            }
 
           override def scalarCoerceInput(definition: ast.ScalarTypeDefinition) =
-            value => definition.name match {
-              case "Custom" => value match {
-                case ast.IntValue(i, _, _) => Right(i)
-                case ast.BigIntValue(i, _, _) => Right(i.intValue)
-                case _ => Left(IntCoercionViolation)
+            value =>
+              definition.name match {
+                case "Custom" =>
+                  value match {
+                    case ast.IntValue(i, _, _) => Right(i)
+                    case ast.BigIntValue(i, _, _) => Right(i.intValue)
+                    case _ => Left(IntCoercionViolation)
+                  }
+                case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
               }
-              case _ => Left(DefaultIntrospectionSchemaBuilder.MaterializedSchemaViolation)
-            }
 
           override def scalarCoerceOutput(definition: ast.ScalarTypeDefinition) =
-            (coerced, _) => definition.name match {
-              case "Custom" => ast.IntValue(coerced.asInstanceOf[Int])
-              case _ => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
-            }
+            (coerced, _) =>
+              definition.name match {
+                case "Custom" => ast.IntValue(coerced.asInstanceOf[Int])
+                case _ => throw DefaultIntrospectionSchemaBuilder.MaterializedSchemaException
+              }
         }
 
         val schema = Schema.buildFromAst(schemaAst, customBuilder)
 
-        check(schema, (),
+        check(
+          schema,
+          (),
           """
             query Yay($v: Custom!) {
               add1: add(a: 123)
@@ -1428,25 +1468,17 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
               }
             }
           """,
-          Map("data" ->
-            Map(
-              "add1" -> 133,
-              "add2" -> 153,
-              "add3" -> 912,
-              "a1" -> Map(
-                "name" -> "bar",
-                "__typename" -> "Dog"),
-              "a2" -> Map(
-                "name" -> "foo",
-                "__typename" -> "Cat"),
-              "a3" -> Map(
-                "__typename" -> "Dog",
-                "name" -> "bar",
-                "nickname" -> "baz"),
-              "a4" -> Map(
-                "__typename" -> "Cat",
-                "name" -> "foo",
-                "age" -> 10))),
+          Map(
+            "data" ->
+              Map(
+                "add1" -> 133,
+                "add2" -> 153,
+                "add3" -> 912,
+                "a1" -> Map("name" -> "bar", "__typename" -> "Dog"),
+                "a2" -> Map("name" -> "foo", "__typename" -> "Cat"),
+                "a3" -> Map("__typename" -> "Dog", "name" -> "bar", "nickname" -> "baz"),
+                "a4" -> Map("__typename" -> "Cat", "name" -> "foo", "age" -> 10)
+              )),
           """{"v": 456}""".parseJson
         )
       }
@@ -1473,16 +1505,18 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
           override def resolveField(
-            origin: MatOrigin,
-            typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
-            extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
-            definition: ast.FieldDefinition,
-            mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
         }
 
         val schema = Schema.buildFromAst(schemaAst, customBuilder)
 
-        check(schema, (),
+        check(
+          schema,
+          (),
           """
             mutation {
               addUser(name: "Bob")
@@ -1490,7 +1524,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
           """,
           Map("data" -> Map("addUser" -> "test Bob")))
 
-        schema.astDirectives.exists(_.name == "fromExt") should be (true)
+        schema.astDirectives.exists(_.name == "fromExt") should be(true)
       }
 
       "allows schema extensions without an explicit schema def" in {
@@ -1511,16 +1545,18 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
           override def resolveField(
-            origin: MatOrigin,
-            typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
-            extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
-            definition: ast.FieldDefinition,
-            mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
         }
 
         val schema = Schema.buildFromAst(schemaAst, customBuilder)
 
-        check(schema, (),
+        check(
+          schema,
+          (),
           """
             mutation {
               addUser(name: "Bob")
@@ -1528,7 +1564,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
           """,
           Map("data" -> Map("addUser" -> "test Bob")))
 
-        schema.astDirectives.exists(_.name == "fromExt") should be (true)
+        schema.astDirectives.exists(_.name == "fromExt") should be(true)
       }
 
       "allows schema extensions for existing schema" in {
@@ -1544,21 +1580,25 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
           """
 
         val existingSchema =
-          Schema(ObjectType("Query", fields[Unit, Unit](
-            Field("test", StringType, resolve = _ => "test"))))
+          Schema(
+            ObjectType(
+              "Query",
+              fields[Unit, Unit](Field("test", StringType, resolve = _ => "test"))))
 
         val customBuilder = new DefaultAstSchemaBuilder[Unit] {
           override def resolveField(
-            origin: MatOrigin,
-            typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
-            extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
-            definition: ast.FieldDefinition,
-            mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
+              origin: MatOrigin,
+              typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Unit, _]],
+              extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
+              definition: ast.FieldDefinition,
+              mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
         }
 
         val schema = existingSchema.extend(schemaAst, customBuilder)
 
-        check(schema, (),
+        check(
+          schema,
+          (),
           """
             mutation {
               addUser(name: "Bob")
@@ -1566,7 +1606,7 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
           """,
           Map("data" -> Map("addUser" -> "test Bob")))
 
-        schema.astDirectives.exists(_.name == "fromExt") should be (true)
+        schema.astDirectives.exists(_.name == "fromExt") should be(true)
       }
 
       "executor should properly handle undefined values (like `null` and `None`) even if GraphQL type is not null" in {
@@ -1613,9 +1653,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
               mat: AstSchemaMaterializer[Unit]) =
             if (definition.name == "foo")
               _ => Some(())
-            else if (definition.name endsWith "None")
+            else if (definition.name.endsWith("None"))
               _ => Value(None)
-            else if (definition.name endsWith "Null")
+            else if (definition.name.endsWith("Null"))
               _ => Value(null)
             else
               _ => Value(None)
@@ -1623,7 +1663,9 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
 
         val schema = Schema.buildFromAst(schemaAst, customBuilder)
 
-        checkContainsErrors(schema, (),
+        checkContainsErrors(
+          schema,
+          (),
           """
             {
               foo {
@@ -1651,7 +1693,8 @@ class AstSchemaMaterializerSpec extends AnyWordSpec with Matchers with FutureRes
             """Cannot return null for non-nullable type""" -> List(Pos(10, 17)),
             """Cannot return null for non-nullable type""" -> List(Pos(11, 17)),
             """Cannot return null for non-nullable type""" -> List(Pos(12, 17)),
-            """Cannot return null for non-nullable type""" -> List(Pos(13, 17)))
+            """Cannot return null for non-nullable type""" -> List(Pos(13, 17))
+          )
         )
       }
     }

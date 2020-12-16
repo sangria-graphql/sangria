@@ -1,6 +1,6 @@
 package sangria.macros
 
-import sangria.parser.{SyntaxError, QueryParser}
+import sangria.parser.{QueryParser, SyntaxError}
 
 import scala.reflect.macros.blackbox
 
@@ -12,7 +12,9 @@ class ParseMacro(context: blackbox.Context) extends {
 
   def impl(args: Expr[Any]*) =
     if (args.nonEmpty)
-      c.abort(c.enclosingPosition, "String interpolation is not supported for `graphql`/`gql` macro at the moment.")
+      c.abort(
+        c.enclosingPosition,
+        "String interpolation is not supported for `graphql`/`gql` macro at the moment.")
     else
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any
@@ -20,9 +22,8 @@ class ParseMacro(context: blackbox.Context) extends {
         case Apply(_, List(Apply(_, t :: Nil))) =>
           val q"${gql: String}" = t
 
-          try {
-            q"${QueryParser.parse(gql).get}"
-          } catch {
+          try q"${QueryParser.parse(gql).get}"
+          catch {
             case error: SyntaxError => syntaxError(error)
           }
         case _ =>
@@ -31,7 +32,9 @@ class ParseMacro(context: blackbox.Context) extends {
 
   def implInput(args: Expr[Any]*) =
     if (args.nonEmpty)
-      c.abort(c.enclosingPosition, "String interpolation is not supported for `graphqlInput`/`gqlInp` macro at the moment.")
+      c.abort(
+        c.enclosingPosition,
+        "String interpolation is not supported for `graphqlInput`/`gqlInp` macro at the moment.")
     else
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any
@@ -39,9 +42,8 @@ class ParseMacro(context: blackbox.Context) extends {
         case Apply(_, List(Apply(_, t :: Nil))) =>
           val q"${gql: String}" = t
 
-          try {
-            q"${QueryParser.parseInput(gql).get}"
-          } catch {
+          try q"${QueryParser.parseInput(gql).get}"
+          catch {
             case error: SyntaxError => syntaxError(error)
           }
         case _ =>
@@ -50,7 +52,9 @@ class ParseMacro(context: blackbox.Context) extends {
 
   def implInputDoc(args: Expr[Any]*) =
     if (args.nonEmpty)
-      c.abort(c.enclosingPosition, "String interpolation is not supported for `gqlInpDoc` macro at the moment.")
+      c.abort(
+        c.enclosingPosition,
+        "String interpolation is not supported for `gqlInpDoc` macro at the moment.")
     else
       c.prefix.tree match {
         // Expects a string interpolation that doesn't contain any
@@ -58,9 +62,8 @@ class ParseMacro(context: blackbox.Context) extends {
         case Apply(_, List(Apply(_, t :: Nil))) =>
           val q"${gql: String}" = t
 
-          try {
-            q"${QueryParser.parseInputDocument(gql).get}"
-          } catch {
+          try q"${QueryParser.parseInputDocument(gql).get}"
+          catch {
             case error: SyntaxError => syntaxError(error)
           }
         case _ =>

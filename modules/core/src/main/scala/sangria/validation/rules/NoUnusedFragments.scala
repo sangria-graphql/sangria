@@ -6,12 +6,11 @@ import sangria.validation._
 
 import scala.collection.mutable.{Set => MutableSet, ListBuffer}
 
-/**
- * No unused fragments
- *
- * A GraphQL document is only valid if all fragment definitions are spread
- * within operations, or spread within other fragments spread within operations.
- */
+/** No unused fragments
+  *
+  * A GraphQL document is only valid if all fragment definitions are spread
+  * within operations, or spread within other fragments spread within operations.
+  */
 class NoUnusedFragments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val fragmentDefs = ListBuffer[ast.FragmentDefinition]()
@@ -25,21 +24,21 @@ class NoUnusedFragments extends ValidationRule {
       case fd: ast.FragmentDefinition =>
         fragmentDefs += fd
         AstVisitorCommand.RightSkip
-     }
+    }
 
-    override def onLeave: ValidationVisit = {
-      case ast.Document(_, _, _, _) =>
-        val fragmentNameUsed = MutableSet[String]()
+    override def onLeave: ValidationVisit = { case ast.Document(_, _, _, _) =>
+      val fragmentNameUsed = MutableSet[String]()
 
-        operationDefs.foreach(operation =>
-          ctx.documentAnalyzer.getRecursivelyReferencedFragments(operation)
-            .foreach(fragment => fragmentNameUsed += fragment.name))
+      operationDefs.foreach(operation =>
+        ctx.documentAnalyzer
+          .getRecursivelyReferencedFragments(operation)
+          .foreach(fragment => fragmentNameUsed += fragment.name))
 
-        val errors = fragmentDefs.toVector
-          .filter(fd => !fragmentNameUsed.contains(fd.name))
-          .map(fd => UnusedFragmentViolation(fd.name, ctx.sourceMapper, fd.location.toList))
+      val errors = fragmentDefs.toVector
+        .filter(fd => !fragmentNameUsed.contains(fd.name))
+        .map(fd => UnusedFragmentViolation(fd.name, ctx.sourceMapper, fd.location.toList))
 
-        if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
+      if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
     }
   }
 }

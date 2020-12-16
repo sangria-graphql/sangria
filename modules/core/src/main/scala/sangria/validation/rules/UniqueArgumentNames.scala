@@ -6,12 +6,11 @@ import sangria.validation._
 
 import scala.collection.mutable.{Set => MutableSet}
 
-/**
- * Unique argument names
- *
- * A GraphQL field or directive is only valid if all supplied arguments are
- * uniquely named.
- */
+/** Unique argument names
+  *
+  * A GraphQL field or directive is only valid if all supplied arguments are
+  * uniquely named.
+  */
 class UniqueArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownArgNames = MutableSet[String]()

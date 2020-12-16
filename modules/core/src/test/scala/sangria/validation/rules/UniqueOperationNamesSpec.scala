@@ -8,29 +8,25 @@ class UniqueOperationNamesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new UniqueOperationNames)
 
   "Validate: Unique operation names" should {
-    "no operations" in expectPasses(
-      """
+    "no operations" in expectPasses("""
         fragment fragA on Type {
           field
         }
       """)
 
-    "one anon operation" in expectPasses(
-      """
+    "one anon operation" in expectPasses("""
         {
           field
         }
       """)
 
-    "one named operation" in expectPasses(
-      """
+    "one named operation" in expectPasses("""
         query Foo {
           field
         }
       """)
 
-    "multiple operations" in expectPasses(
-      """
+    "multiple operations" in expectPasses("""
         query Foo {
           field
         }
@@ -40,8 +36,7 @@ class UniqueOperationNamesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "multiple operations of different types" in expectPasses(
-      """
+    "multiple operations of different types" in expectPasses("""
         query Foo {
           field
         }
@@ -55,8 +50,7 @@ class UniqueOperationNamesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "fragment and operation named the same" in expectPasses(
-      """
+    "fragment and operation named the same" in expectPasses("""
         query Foo {
           ...Foo
         }
@@ -76,7 +70,8 @@ class UniqueOperationNamesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "There can only be one operation named 'Foo'." -> Some(Pos(5, 9))
-      ))
+      )
+    )
 
     "multiple operations of same name of different types (mutation)" in expectFails(
       """
@@ -89,7 +84,8 @@ class UniqueOperationNamesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "There can only be one operation named 'Foo'." -> Some(Pos(5, 9))
-      ))
+      )
+    )
 
     "multiple operations of same name of different types (subscription)" in expectFails(
       """
@@ -102,6 +98,7 @@ class UniqueOperationNamesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "There can only be one operation named 'Foo'." -> Some(Pos(5, 9))
-      ))
+      )
+    )
   }
 }

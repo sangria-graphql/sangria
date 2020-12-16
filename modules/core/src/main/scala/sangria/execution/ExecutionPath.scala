@@ -13,13 +13,11 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
   def isEmpty = path.isEmpty
   def nonEmpty = path.nonEmpty
 
-  /**
-    * @return last index in the path, if available
+  /** @return last index in the path, if available
     */
-  def lastIndex: Option[Int] = path.lastOption.collect {case i: Int => i}
+  def lastIndex: Option[Int] = path.lastOption.collect { case i: Int => i }
 
-  /**
-    * @return the size of the path excluding the indexes
+  /** @return the size of the path excluding the indexes
     */
   def size = cacheKeyPath.size / 2
 

@@ -6,11 +6,10 @@ import sangria.validation._
 
 import scala.collection.mutable.{Set => MutableSet}
 
-/**
- * Unique operation names
- *
- * A GraphQL document is only valid if all defined operations have unique names.
- */
+/** Unique operation names
+  *
+  * A GraphQL document is only valid if all defined operations have unique names.
+  */
 class UniqueOperationNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownOpNames = MutableSet[String]()

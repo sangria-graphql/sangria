@@ -13,8 +13,7 @@ class SelectionContainer {
 
   private val directFields: util.ArrayList[SelectionField] = new util.ArrayList()
 
-  /**
-    * This selection set and all directly or indirectly included spreads.
+  /** This selection set and all directly or indirectly included spreads.
     * Indirectly included spreads come from spreads in directly included
     * spreads, etc.
     */
@@ -24,31 +23,27 @@ class SelectionContainer {
     l
   }
 
-  def addSpread(selectionContainer: SelectionContainer): Unit = {
+  def addSpread(selectionContainer: SelectionContainer): Unit =
     directSpreads.add(selectionContainer)
-  }
 
-  def addField(field: SelectionField): Unit = {
+  def addField(field: SelectionField): Unit =
     directFields.add(field)
-  }
 
-  def fieldSet: SortedArraySet[SelectionField] = {
+  def fieldSet: SortedArraySet[SelectionField] =
     SelectionContainer.fieldSet(effectiveSelections)
-  }
 
   def computeEffectiveSelections(): Unit = {
     if (inProgress || done) return
     inProgress = true
     directFields.forEach {
       new Consumer[SelectionField] {
-        override def accept(field: SelectionField): Unit = {
+        override def accept(field: SelectionField): Unit =
           field.childSelection.computeEffectiveSelections()
-        }
       }
     }
     directSpreads.forEach {
       new Consumer[SelectionContainer] {
-        override def accept(spread: SelectionContainer): Unit = {
+        override def accept(spread: SelectionContainer): Unit =
           // prevent building cycles
           if (!spread.inProgress) {
             // prevent doing work twice
@@ -62,7 +57,6 @@ class SelectionContainer {
               effectiveSelections.addAll(spread.effectiveSelections)
             }
           }
-        }
       }
     }
     inProgress = false
@@ -76,29 +70,27 @@ object SelectionContainer {
     val childSelections = new util.LinkedHashSet[SelectionContainer]()
     fields.forEach {
       new Consumer[SelectionField] {
-        override def accept(field: SelectionField): Unit = {
+        override def accept(field: SelectionField): Unit =
           childSelections.addAll(field.childSelection.effectiveSelections)
-        }
       }
     }
     SelectionContainer.fieldSet(childSelections)
   }
 
-  private def fieldSet(effectiveSelections: util.LinkedHashSet[SelectionContainer]): SortedArraySet[SelectionField] = {
+  private def fieldSet(effectiveSelections: util.LinkedHashSet[SelectionContainer])
+      : SortedArraySet[SelectionField] = {
     var expectedSize: Int = 0
     effectiveSelections.forEach {
       new Consumer[SelectionContainer] {
-        override def accept(selection: SelectionContainer): Unit = {
+        override def accept(selection: SelectionContainer): Unit =
           expectedSize += selection.directFields.size()
-        }
       }
     }
     val builder = SortedArraySet.newBuilder[SelectionField](expectedSize)
     effectiveSelections.forEach {
       new Consumer[SelectionContainer] {
-        override def accept(selection: SelectionContainer): Unit = {
+        override def accept(selection: SelectionContainer): Unit =
           builder.addAll(selection.directFields)
-        }
       }
     }
     builder.build()

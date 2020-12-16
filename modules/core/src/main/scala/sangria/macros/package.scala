@@ -15,4 +15,3 @@ package object macros {
   }
 
 }
-

@@ -40,77 +40,78 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
   case object MegaOrangeAnnotated extends FruitAnnotated
 
   "Enum derivation" should {
-    "support nested enum instances"  in {
+    "support nested enum instances" in {
       val enum = deriveEnumType[Difficulty]()
-      enum.name should be ("Difficulty")
-      enum.values.map(_.name).sorted should be (List(
-        "Easy", "Hard", "Medium"
-      ))
+      enum.name should be("Difficulty")
+      enum.values.map(_.name).sorted should be(
+        List(
+          "Easy",
+          "Hard",
+          "Medium"
+        ))
     }
 
     "use enum name and have no description by default" in {
       val singletonEnum = deriveEnumType[Fruit]()
       val enum = deriveEnumType[Color.Value]()
 
-      singletonEnum.name should be ("Fruit")
-      singletonEnum.description should be (None)
+      singletonEnum.name should be("Fruit")
+      singletonEnum.description should be(None)
 
-      enum.name should be ("Color")
-      enum.description should be (None)
+      enum.name should be("Color")
+      enum.description should be(None)
     }
 
     "allow to change name and description with config" in {
-      val singletonEnum = deriveEnumType[Fruit](
-        EnumTypeName("Foo"),
-        EnumTypeDescription("It's foo"))
+      val singletonEnum =
+        deriveEnumType[Fruit](EnumTypeName("Foo"), EnumTypeDescription("It's foo"))
 
-      val enum = deriveEnumType[Color.Value](
-        EnumTypeName("Bar"),
-        EnumTypeDescription("It's bar"))
+      val enum = deriveEnumType[Color.Value](EnumTypeName("Bar"), EnumTypeDescription("It's bar"))
 
-      singletonEnum.name should be ("Foo")
-      singletonEnum.description should be (Some("It's foo"))
+      singletonEnum.name should be("Foo")
+      singletonEnum.description should be(Some("It's foo"))
 
-      enum.name should be ("Bar")
-      enum.description should be (Some("It's bar"))
+      enum.name should be("Bar")
+      enum.description should be(Some("It's bar"))
     }
 
     "allow to change name and description with annotations" in {
       val singletonEnum = deriveEnumType[FruitAnnotated]()
       val enum = deriveEnumType[ColorAnnotated.Value]()
 
-      singletonEnum.name should be ("MyFruit")
-      singletonEnum.description should be (Some("Very tasty fruit"))
+      singletonEnum.name should be("MyFruit")
+      singletonEnum.description should be(Some("Very tasty fruit"))
 
-      enum.name should be ("MyColor")
-      enum.description should be (Some("Very nice color"))
+      enum.name should be("MyColor")
+      enum.description should be(Some("Very nice color"))
     }
 
     "prioritize config over annotation for name and description" in {
-      val singletonEnum = deriveEnumType[FruitAnnotated](
-        EnumTypeName("Foo"),
-        EnumTypeDescription("It's foo"))
+      val singletonEnum =
+        deriveEnumType[FruitAnnotated](EnumTypeName("Foo"), EnumTypeDescription("It's foo"))
 
-      val enum = deriveEnumType[ColorAnnotated.Value](
-        EnumTypeName("Bar"),
-        EnumTypeDescription("It's bar"))
+      val enum =
+        deriveEnumType[ColorAnnotated.Value](EnumTypeName("Bar"), EnumTypeDescription("It's bar"))
 
-      singletonEnum.name should be ("Foo")
-      singletonEnum.description should be (Some("It's foo"))
+      singletonEnum.name should be("Foo")
+      singletonEnum.description should be(Some("It's foo"))
 
-      enum.name should be ("Bar")
-      enum.description should be (Some("It's bar"))
+      enum.name should be("Bar")
+      enum.description should be(Some("It's bar"))
     }
 
     "expose all enum values" in {
       val singletonEnum = deriveEnumType[Fruit]()
       val enum = deriveEnumType[Color.Value]()
 
-      singletonEnum.values.map(_.name).sorted should be (List("Guave", "MegaOrange", "RedApple", "SuperBanana"))
-      singletonEnum.values.map(_.value).sortBy(_.toString) should be (List(Guave, MegaOrange, RedApple, SuperBanana))
+      singletonEnum.values.map(_.name).sorted should be(
+        List("Guave", "MegaOrange", "RedApple", "SuperBanana"))
+      singletonEnum.values.map(_.value).sortBy(_.toString) should be(
+        List(Guave, MegaOrange, RedApple, SuperBanana))
 
-      enum.values.map(_.name).sorted should be (List("DarkBlue", "LightGreen", "Red"))
-      enum.values.map(_.value).sortBy(_.toString) should be (List(Color.DarkBlue, Color.LightGreen, Color.Red))
+      enum.values.map(_.name).sorted should be(List("DarkBlue", "LightGreen", "Red"))
+      enum.values.map(_.value).sortBy(_.toString) should be(
+        List(Color.DarkBlue, Color.LightGreen, Color.Red))
     }
 
     "validate known values and mutually exclusive props" in {
@@ -130,40 +131,47 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
         IncludeValues("RedApple", "SuperBanana"),
         ExcludeValues("SuperBanana"))
 
-      val enum = deriveEnumType[Color.Value](
-        IncludeValues("Red", "DarkBlue"),
-        ExcludeValues("Red"))
+      val enum = deriveEnumType[Color.Value](IncludeValues("Red", "DarkBlue"), ExcludeValues("Red"))
 
-      singletonEnum.values.map(_.name) should be ("RedApple" :: Nil)
-      enum.values.map(_.name) should be ("DarkBlue" :: Nil)
+      singletonEnum.values.map(_.name) should be("RedApple" :: Nil)
+      enum.values.map(_.name) should be("DarkBlue" :: Nil)
     }
 
     "respect blacklist provided via annotations" in {
       val singletonEnum = deriveEnumType[FruitAnnotated]()
       val enum = deriveEnumType[ColorAnnotated.Value]()
 
-      singletonEnum.values.map(_.name).sorted should be ("JustApple" :: "MegaOrangeAnnotated" :: Nil)
-      enum.values.map(_.name).sorted should be ("Dark1Blue_FooStuff" :: "DarkBlue" :: "NormalRed" :: Nil)
+      singletonEnum.values.map(_.name).sorted should be("JustApple" :: "MegaOrangeAnnotated" :: Nil)
+      enum.values.map(_.name).sorted should be(
+        "Dark1Blue_FooStuff" :: "DarkBlue" :: "NormalRed" :: Nil)
     }
 
     "uppercase GraphQL enum values" in {
       val singletonEnum = deriveEnumType[FruitAnnotated](UppercaseValues)
       val enum = deriveEnumType[ColorAnnotated.Value](UppercaseValues)
 
-      singletonEnum.values.map(_.name).sorted should be ("JUST_APPLE" :: "MEGA_ORANGE_ANNOTATED" :: Nil)
-      enum.values.map(_.name).sorted should be ("DARK1_BLUE_FOO_STUFF" :: "DARK_BLUE" :: "NORMAL_RED" :: Nil)
+      singletonEnum.values.map(_.name).sorted should be(
+        "JUST_APPLE" :: "MEGA_ORANGE_ANNOTATED" :: Nil)
+      enum.values.map(_.name).sorted should be(
+        "DARK1_BLUE_FOO_STUFF" :: "DARK_BLUE" :: "NORMAL_RED" :: Nil)
     }
 
     "allow transformation of GraphQL enum values' names" in {
       val singletonEnum = deriveEnumType[Difficulty](TransformValueNames("Difficulty" + _))
-      val singletonEnumUpperCase = deriveEnumType[Difficulty](TransformValueNames("Difficulty" + _), UppercaseValues)
+      val singletonEnumUpperCase =
+        deriveEnumType[Difficulty](TransformValueNames("Difficulty" + _), UppercaseValues)
       val enum = deriveEnumType[ColorAnnotated.Value](TransformValueNames("Color" + _))
-      val enumUpperCase = deriveEnumType[ColorAnnotated.Value](TransformValueNames("Color" + _), UppercaseValues)
+      val enumUpperCase =
+        deriveEnumType[ColorAnnotated.Value](TransformValueNames("Color" + _), UppercaseValues)
 
-      singletonEnum.values.map(_.name).sorted should be ("DifficultyEasy" :: "DifficultyHard" :: "DifficultyMedium" :: Nil)
-      singletonEnumUpperCase.values.map(_.name).sorted should be ("DIFFICULTY_EASY" :: "DIFFICULTY_HARD" :: "DIFFICULTY_MEDIUM" :: Nil)
-      enum.values.map(_.name).sorted should be ("ColorDark1Blue_FooStuff" :: "ColorDarkBlue" :: "ColorNormalRed" :: Nil)
-      enumUpperCase.values.map(_.name).sorted should be ("COLOR_DARK1_BLUE_FOO_STUFF" :: "COLOR_DARK_BLUE" :: "COLOR_NORMAL_RED" :: Nil)
+      singletonEnum.values.map(_.name).sorted should be(
+        "DifficultyEasy" :: "DifficultyHard" :: "DifficultyMedium" :: Nil)
+      singletonEnumUpperCase.values.map(_.name).sorted should be(
+        "DIFFICULTY_EASY" :: "DIFFICULTY_HARD" :: "DIFFICULTY_MEDIUM" :: Nil)
+      enum.values.map(_.name).sorted should be(
+        "ColorDark1Blue_FooStuff" :: "ColorDarkBlue" :: "ColorNormalRed" :: Nil)
+      enumUpperCase.values.map(_.name).sorted should be(
+        "COLOR_DARK1_BLUE_FOO_STUFF" :: "COLOR_DARK_BLUE" :: "COLOR_NORMAL_RED" :: Nil)
     }
 
     "allow to set name, description and deprecationReason with config" in {
@@ -172,56 +180,66 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
         RenameValue("SuperBanana", "JustBanana"),
         RenameValue("Guave", "Yay"),
         DocumentValue("Guave", "my color"),
-        DeprecateValue("MegaOrange", "not cool"))
+        DeprecateValue("MegaOrange", "not cool")
+      )
 
       val enum = deriveEnumType[Color.Value](
         DocumentValue("Red", "apple!!", deprecationReason = Some("foo")),
         RenameValue("LightGreen", "JustGreen"),
         DocumentValue("DarkBlue", "my color"),
-        DeprecateValue("DarkBlue", "nah"))
+        DeprecateValue("DarkBlue", "nah")
+      )
 
-      singletonEnum.values.sortBy(_.name) should be (List(
-        EnumValue("JustBanana", None, SuperBanana, None),
-        EnumValue("MegaOrange", None, MegaOrange, Some("not cool")),
-        EnumValue("RedApple", Some("apple!"), RedApple, Some("foo")),
-        EnumValue("Yay", Some("my color"), Guave, None)))
+      singletonEnum.values.sortBy(_.name) should be(
+        List(
+          EnumValue("JustBanana", None, SuperBanana, None),
+          EnumValue("MegaOrange", None, MegaOrange, Some("not cool")),
+          EnumValue("RedApple", Some("apple!"), RedApple, Some("foo")),
+          EnumValue("Yay", Some("my color"), Guave, None)
+        ))
 
-      enum.values.sortBy(_.name) should be (List(
-        EnumValue("DarkBlue", Some("my color"), Color.DarkBlue, Some("nah")),
-        EnumValue("JustGreen", None, Color.LightGreen, None),
-        EnumValue("Red", Some("apple!!"), Color.Red, Some("foo"))))
+      enum.values.sortBy(_.name) should be(
+        List(
+          EnumValue("DarkBlue", Some("my color"), Color.DarkBlue, Some("nah")),
+          EnumValue("JustGreen", None, Color.LightGreen, None),
+          EnumValue("Red", Some("apple!!"), Color.Red, Some("foo"))
+        ))
     }
 
     "allow to set name, description and deprecationReason with annotations" in {
       val singletonEnum = deriveEnumType[FruitAnnotated]()
       val enum = deriveEnumType[ColorAnnotated.Value]()
 
-      singletonEnum.values.sortBy(_.name) should be (List(
-        EnumValue("JustApple", Some("The red one"), RedAppleAnnotated, None),
-        EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore"))))
+      singletonEnum.values.sortBy(_.name) should be(
+        List(
+          EnumValue("JustApple", Some("The red one"), RedAppleAnnotated, None),
+          EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore"))))
 
-      enum.values.sortBy(_.name) should be (List(
-        EnumValue("Dark1Blue_FooStuff", None, ColorAnnotated.Dark1Blue_FooStuff, None),
-        EnumValue("DarkBlue", None, ColorAnnotated.DarkBlue, Some("Don't like blue")),
-        EnumValue("NormalRed", Some("The red one"), ColorAnnotated.Red, None)))
+      enum.values.sortBy(_.name) should be(
+        List(
+          EnumValue("Dark1Blue_FooStuff", None, ColorAnnotated.Dark1Blue_FooStuff, None),
+          EnumValue("DarkBlue", None, ColorAnnotated.DarkBlue, Some("Don't like blue")),
+          EnumValue("NormalRed", Some("The red one"), ColorAnnotated.Red, None)
+        ))
     }
 
     "prioritize field config name, description, deprecationReason" in {
-      val singletonEnum = deriveEnumType[FruitAnnotated](
-        RenameValue("RedAppleAnnotated", "FooBar"))
+      val singletonEnum = deriveEnumType[FruitAnnotated](RenameValue("RedAppleAnnotated", "FooBar"))
 
-      val enum = deriveEnumType[ColorAnnotated.Value](
-        UppercaseValues,
-        DocumentValue("Red", "TestTest"))
+      val enum =
+        deriveEnumType[ColorAnnotated.Value](UppercaseValues, DocumentValue("Red", "TestTest"))
 
-      singletonEnum.values.sortBy(_.name) should be (List(
-        EnumValue("FooBar", Some("The red one"), RedAppleAnnotated, None),
-        EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore"))))
+      singletonEnum.values.sortBy(_.name) should be(
+        List(
+          EnumValue("FooBar", Some("The red one"), RedAppleAnnotated, None),
+          EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore"))))
 
-      enum.values.sortBy(_.name) should be (List(
-        EnumValue("DARK1_BLUE_FOO_STUFF", None, ColorAnnotated.Dark1Blue_FooStuff, None),
-        EnumValue("DARK_BLUE", None, ColorAnnotated.DarkBlue, Some("Don't like blue")),
-        EnumValue("NORMAL_RED", Some("TestTest"), ColorAnnotated.Red, None)))
+      enum.values.sortBy(_.name) should be(
+        List(
+          EnumValue("DARK1_BLUE_FOO_STUFF", None, ColorAnnotated.Dark1Blue_FooStuff, None),
+          EnumValue("DARK_BLUE", None, ColorAnnotated.DarkBlue, Some("Don't like blue")),
+          EnumValue("NORMAL_RED", Some("TestTest"), ColorAnnotated.Red, None)
+        ))
     }
   }
 }

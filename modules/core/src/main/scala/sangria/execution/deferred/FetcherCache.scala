@@ -38,12 +38,11 @@ class SimpleFetcherCache extends FetcherCache {
   def get(id: Any) = cache.get(cacheKey(id))
   def getRel(rel: Any, relId: Any) = relCache.get(cacheKeyRel(rel, relId))
 
-  def update(id: Any, value: Any) = {
+  def update(id: Any, value: Any) =
     if (cacheable(id))
       cache.update(cacheKey(id), value)
-  }
 
-  def updateRel[T](rel: Any, relId: Any, idFn: T => Any, values: Seq[T]) = {
+  def updateRel[T](rel: Any, relId: Any, idFn: T => Any, values: Seq[T]) =
     if (cacheableRel(rel, relId)) {
       values.foreach { v =>
         update(idFn(v), v)
@@ -51,7 +50,6 @@ class SimpleFetcherCache extends FetcherCache {
 
       relCache.update(cacheKeyRel(rel, relId), values)
     }
-  }
 
   def clear() = {
     cache.clear()
