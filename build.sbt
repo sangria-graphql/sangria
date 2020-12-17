@@ -5,6 +5,7 @@ import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOpt
 ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.4")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowPublishTargetBranches := List()
+ThisBuild / githubWorkflowBuildPreamble += WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 
 lazy val root = project
   .in(file("."))

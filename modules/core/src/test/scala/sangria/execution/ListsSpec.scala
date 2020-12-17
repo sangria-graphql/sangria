@@ -17,20 +17,29 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     implicit val validAny = new ValidOutType[Any, Any] {}
     val data = Data(testData)
 
-    lazy val Type: ObjectType[Unit, Data] = ObjectType("DataType", () => fields[Unit, Data](
-      Field("test", testType, resolve = _.value.test),
-      Field("nest", OptionType(Type), resolve = _ => data)
-    ))
+    lazy val Type: ObjectType[Unit, Data] = ObjectType(
+      "DataType",
+      () =>
+        fields[Unit, Data](
+          Field("test", testType, resolve = _.value.test),
+          Field("nest", OptionType(Type), resolve = _ => data)
+        ))
 
     val schema = Schema(Type)
 
     val Success(doc) = QueryParser.parse("{ nest { test } }")
 
-    val exceptionHandler = ExceptionHandler {
-      case (m, e: IllegalStateException) => HandledException(e.getMessage)
+    val exceptionHandler = ExceptionHandler { case (m, e: IllegalStateException) =>
+      HandledException(e.getMessage)
     }
 
-    Executor.execute(schema, doc.copy(sourceMapper = None), root = data, exceptionHandler = exceptionHandler).await should be (expected)
+    Executor
+      .execute(
+        schema,
+        doc.copy(sourceMapper = None),
+        root = data,
+        exceptionHandler = exceptionHandler)
+      .await should be(expected)
   }
 
   def success[T](t: T) = Future.successful(t)
@@ -40,30 +49,55 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       val tpe = OptionType(ListType(OptionType(IntType)))
 
       "List[T]" should {
-        "Contains values" in check(tpe, List(Some(1), Some(2)), Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains None" in check(tpe, List(Some(1), None, Some(2)), Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
-        "Contains null" in check(tpe, List(1, null, 2), Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
+        "Contains values" in check(
+          tpe,
+          List(Some(1), Some(2)),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
+        "Contains None" in check(
+          tpe,
+          List(Some(1), None, Some(2)),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
+        "Contains null" in check(
+          tpe,
+          List(1, null, 2),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
         "Returns None" in check(tpe, None, Map("data" -> Map("nest" -> Map("test" -> null))))
         "Returns null" in check(tpe, Value(null), Map("data" -> Map("nest" -> Map("test" -> null))))
       }
 
       "Future[List[T]]" should {
-        "Contains values" in check(tpe,
+        "Contains values" in check(
+          tpe,
           success(List(Some(1), Some(2))),
           Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains None" in check(tpe,
+        "Contains None" in check(
+          tpe,
           success(List(Some(1), None, Some(2))),
           Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
-        "Contains null" in check(tpe,
+        "Contains null" in check(
+          tpe,
           success(List(1, null, 2)),
           Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
-        "Returns None" in check(tpe, success(None), Map("data" -> Map("nest" -> Map("test" -> null))))
-        "Returns null" in check(tpe, FutureValue(success(null)), Map("data" -> Map("nest" -> Map("test" -> null))))
-        "Rejected" in check(tpe,
+        "Returns None" in check(
+          tpe,
+          success(None),
+          Map("data" -> Map("nest" -> Map("test" -> null))))
+        "Returns null" in check(
+          tpe,
+          FutureValue(success(null)),
+          Map("data" -> Map("nest" -> Map("test" -> null))))
+        "Rejected" in check(
+          tpe,
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> Map("test" -> null)),
-            "errors" -> List(Map("message" -> "Boom", "path" -> List("nest", "test"), "locations" -> List(Map("line" -> 1, "column" -> 10))))))
+            "errors" -> List(
+              Map(
+                "message" -> "Boom",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
       }
     }
 
@@ -71,41 +105,68 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       val tpe = ListType(OptionType(IntType))
 
       "List[T]" should {
-        "Contains values" in check(tpe, List(Some(1), Some(2)), Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains None" in check(tpe, List(Some(1), None, Some(2)), Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
-        "Contains null" in check(tpe, List(1, null, 2), Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
-        "Returns null" in check(tpe, Value(null), Map(
-          "data" -> Map("nest" -> null),
-          "errors" -> List(Map(
-            "message" -> "Cannot return null for non-nullable type",
-            "path" -> List("nest", "test"),
-            "locations" -> List(Map("line" -> 1, "column" -> 10))))))
+        "Contains values" in check(
+          tpe,
+          List(Some(1), Some(2)),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
+        "Contains None" in check(
+          tpe,
+          List(Some(1), None, Some(2)),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
+        "Contains null" in check(
+          tpe,
+          List(1, null, 2),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
+        "Returns null" in check(
+          tpe,
+          Value(null),
+          Map(
+            "data" -> Map("nest" -> null),
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
       }
 
       "Future[List[T]]" should {
-        "Contains values" in check(tpe,
+        "Contains values" in check(
+          tpe,
           success(List(Some(1), Some(2))),
           Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains None" in check(tpe,
+        "Contains None" in check(
+          tpe,
           success(List(Some(1), None, Some(2))),
           Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
-        "Contains null" in check(tpe,
+        "Contains null" in check(
+          tpe,
           success(List(1, null, 2)),
           Map("data" -> Map("nest" -> Map("test" -> List(1, null, 2)))))
-        "Returns null" in check(tpe, FutureValue(success(null)), Map(
-          "data" -> Map("nest" -> null),
-          "errors" -> List(Map(
-            "message" -> "Cannot return null for non-nullable type",
-            "path" -> List("nest", "test"),
-            "locations" -> List(Map("line" -> 1, "column" -> 10))))))
-        "Rejected" in check(tpe,
+        "Returns null" in check(
+          tpe,
+          FutureValue(success(null)),
+          Map(
+            "data" -> Map("nest" -> null),
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
+        "Rejected" in check(
+          tpe,
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> null),
-            "errors" -> List(Map(
-              "message" -> "Boom",
-              "path" -> List("nest", "test"),
-              "locations" -> List(Map("line" -> 1, "column" -> 10))))))
+            "errors" -> List(
+              Map(
+                "message" -> "Boom",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10)))))
+        )
       }
     }
 
@@ -113,34 +174,58 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       val tpe = OptionType(ListType(IntType))
 
       "List[T]" should {
-        "Contains values" in check(tpe, List(1, 2), Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains null" in check(tpe, List(1, null, 2), Map(
-          "data" -> Map("nest" -> Map("test" -> null)),
-          "errors" -> List(Map(
-            "message" -> "Cannot return null for non-nullable type",
-            "path" -> List("nest", "test"),
-            "locations" -> List(Map("line" -> 1, "column" -> 10))))))
+        "Contains values" in check(
+          tpe,
+          List(1, 2),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
+        "Contains null" in check(
+          tpe,
+          List(1, null, 2),
+          Map(
+            "data" -> Map("nest" -> Map("test" -> null)),
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
         "Returns null" in check(tpe, Value(null), Map("data" -> Map("nest" -> Map("test" -> null))))
       }
 
       "Future[List[T]]" should {
-        "Contains values" in check(tpe,
+        "Contains values" in check(
+          tpe,
           success(List(1, 2)),
           Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains null" in check(tpe,
+        "Contains null" in check(
+          tpe,
           success(List(1, null, 2)),
           Map(
             "data" -> Map("nest" -> Map("test" -> null)),
-            "errors" -> List(Map(
-              "message" -> "Cannot return null for non-nullable type",
-              "path" -> List("nest", "test"),
-              "locations" -> List(Map("line" -> 1, "column" -> 10))))))
-        "Returns null" in check(tpe, FutureValue(success(null)), Map("data" -> Map("nest" -> Map("test" -> null))))
-        "Rejected" in check(tpe,
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
+        "Returns null" in check(
+          tpe,
+          FutureValue(success(null)),
+          Map("data" -> Map("nest" -> Map("test" -> null))))
+        "Rejected" in check(
+          tpe,
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> Map("test" -> null)),
-            "errors" -> List(Map("message" -> "Boom", "path" -> List("nest", "test"), "locations" -> List(Map("line" -> 1, "column" -> 10))))))
+            "errors" -> List(
+              Map(
+                "message" -> "Boom",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
       }
     }
 
@@ -148,44 +233,76 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       val tpe = ListType(IntType)
 
       "List[T]" should {
-        "Contains values" in check(tpe, List(1, 2), Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains null" in check(tpe, List(1, null, 2), Map(
-          "data" -> Map("nest" -> null),
-          "errors" -> List(Map(
-            "message" -> "Cannot return null for non-nullable type",
-            "path" -> List("nest", "test"),
-            "locations" -> List(Map("line" -> 1, "column" -> 10))))))
-        "Returns null" in check(tpe, Value(null), Map(
-          "data" -> Map("nest" -> null),
-          "errors" -> List(Map(
-            "message" -> "Cannot return null for non-nullable type",
-            "path" -> List("nest", "test"),
-            "locations" -> List(Map("line" -> 1, "column" -> 10))))))
+        "Contains values" in check(
+          tpe,
+          List(1, 2),
+          Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
+        "Contains null" in check(
+          tpe,
+          List(1, null, 2),
+          Map(
+            "data" -> Map("nest" -> null),
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
+        "Returns null" in check(
+          tpe,
+          Value(null),
+          Map(
+            "data" -> Map("nest" -> null),
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
       }
 
       "Future[List[T]]" should {
-        "Contains values" in check(tpe,
+        "Contains values" in check(
+          tpe,
           success(List(1, 2)),
           Map("data" -> Map("nest" -> Map("test" -> List(1, 2)))))
-        "Contains null" in check(tpe,
+        "Contains null" in check(
+          tpe,
           success(List(1, null, 2)),
           Map(
             "data" -> Map("nest" -> null),
-            "errors" -> List(Map(
-              "message" -> "Cannot return null for non-nullable type",
-              "path" -> List("nest", "test"),
-              "locations" -> List(Map("line" -> 1, "column" -> 10))))))
-        "Returns null" in check(tpe, FutureValue(success(null)), Map(
-          "data" -> Map("nest" -> null),
-          "errors" -> List(Map(
-            "message" -> "Cannot return null for non-nullable type",
-            "path" -> List("nest", "test"),
-            "locations" -> List(Map("line" -> 1, "column" -> 10))))))
-        "Rejected" in check(tpe,
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
+        "Returns null" in check(
+          tpe,
+          FutureValue(success(null)),
+          Map(
+            "data" -> Map("nest" -> null),
+            "errors" -> List(
+              Map(
+                "message" -> "Cannot return null for non-nullable type",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10))))
+          )
+        )
+        "Rejected" in check(
+          tpe,
           FutureValue(Future.failed(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> null),
-            "errors" -> List(Map("message" -> "Boom", "path" -> List("nest", "test"), "locations" -> List(Map("line" -> 1, "column" -> 10))))))
+            "errors" -> List(
+              Map(
+                "message" -> "Boom",
+                "path" -> List("nest", "test"),
+                "locations" -> List(Map("line" -> 1, "column" -> 10)))))
+        )
       }
     }
   }

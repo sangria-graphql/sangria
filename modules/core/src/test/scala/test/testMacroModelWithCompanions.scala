@@ -13,8 +13,8 @@ object CompanionA {
 
 case class CompanionB(c: CompanionC)
 object CompanionB {
-  implicit val graphqlType: OutputType[CompanionB] = deriveObjectType[Unit, CompanionB](
-    RenameField("c", "myC"))
+  implicit val graphqlType: OutputType[CompanionB] =
+    deriveObjectType[Unit, CompanionB](RenameField("c", "myC"))
 }
 
 case class CompanionC(e: CompanionEnum, e1: AnotherEnum.ValName)
@@ -28,8 +28,8 @@ object CompanionEnum1 extends CompanionEnum
 object CompanionEnum2 extends CompanionEnum
 
 object CompanionEnum {
-  implicit val graphqlType: EnumType[CompanionEnum] = deriveEnumType[CompanionEnum](
-    RenameValue("CompanionEnum1", "first"))
+  implicit val graphqlType: EnumType[CompanionEnum] =
+    deriveEnumType[CompanionEnum](RenameValue("CompanionEnum1", "first"))
 }
 
 object AnotherEnum extends Enumeration {

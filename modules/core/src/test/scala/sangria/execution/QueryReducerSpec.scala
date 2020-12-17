@@ -20,8 +20,9 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
   case class ATag(num: Int) extends FieldTag
   case object BTag extends FieldTag
 
-  val TestScalar = ScalarType[String]("TestScalar",
-    complexity = 2.5D,
+  val TestScalar = ScalarType[String](
+    "TestScalar",
+    complexity = 2.5d,
     coerceOutput = valueOutput,
     coerceUserInput = {
       case s: String => Right(s)
@@ -30,7 +31,8 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     coerceInput = {
       case ast.StringValue(id, _, _, _, _) => Right(id)
       case _ => Left(StringCoercionViolation)
-    })
+    }
+  )
 
   trait Named {
     def name: Option[String]
@@ -41,59 +43,81 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
   case class Info(nums: Seq[Int])
 
-  val NamedType = InterfaceType("Named", fields[Any, Named](
-    Field("name", OptionType(StringType),
-      complexity = Some((_, _, _) => 10D),
-      resolve = _.value.name)))
+  val NamedType = InterfaceType(
+    "Named",
+    fields[Any, Named](
+      Field(
+        "name",
+        OptionType(StringType),
+        complexity = Some((_, _, _) => 10d),
+        resolve = _.value.name)))
 
-  val DogType = ObjectType("Dog", interfaces[Any, Dog](NamedType), fields[Any, Dog](
-    Field("barks", OptionType(BooleanType),
-      complexity = Some((_, _, _) => 1.2D),
-      resolve = _.value.barks)))
+  val DogType = ObjectType(
+    "Dog",
+    interfaces[Any, Dog](NamedType),
+    fields[Any, Dog](
+      Field(
+        "barks",
+        OptionType(BooleanType),
+        complexity = Some((_, _, _) => 1.2d),
+        resolve = _.value.barks)))
 
-  val CatType = ObjectType("Cat", interfaces[Any, Cat](NamedType), fields[Any, Cat](
-    Field("meows", OptionType(BooleanType), resolve = _.value.meows)))
+  val CatType = ObjectType(
+    "Cat",
+    interfaces[Any, Cat](NamedType),
+    fields[Any, Cat](Field("meows", OptionType(BooleanType), resolve = _.value.meows)))
 
   val PetType = UnionType[Any]("Pet", types = DogType :: CatType :: Nil)
 
-  lazy val TestType: ObjectType[Info, Unit] = ObjectType("Test", () => fields[Info, Unit](
-    Field("scalar", StringType, resolve = _ => "tests"),
-    Field("scalarCustom", StringType,
-      complexity = Some((_, _, c) => 3.0D + c),
-      resolve = _ => "testsc"),
-    Field("scalarArgs", StringType,
-      arguments = Argument("foo", StringType) :: Nil,
-      resolve = _ => "testsa"),
-    Field("complexScalar", TestScalar, resolve = _ => "testcs"),
-    Field("nestList", ListType(TestType),
-      arguments = Argument("size", IntType) :: Nil,
-      complexity = Some((_, args, c) => 1.1D + args.arg[Int]("size") * c),
-      resolve = ctx => (1 to ctx.arg[Int]("size")) map (_ => ())),
-    Field("nest", TestType, resolve = _ => ()),
-    Field("named", OptionType(ListType(NamedType)),
-      arguments = Argument("size", IntType) :: Nil,
-      complexity = Some((_, args, c) => 4.0D + args.arg[Int]("size") * c),
-      resolve = _ => List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))),
-    Field("pets", OptionType(ListType(PetType)),
-      arguments = Argument("size", IntType) :: Nil,
-      complexity = Some((_, args, c) => 3.5D + args.arg[Int]("size") * c),
-      resolve = _ => List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))),
-    Field("a", StringType,
-      tags = ATag(1) :: Nil,
-      resolve = _ => "testa"),
-    Field("b", StringType,
-      tags = BTag :: Nil,
-      resolve = _ => "testb"),
-    Field("ab", StringType,
-      tags = ATag(2) :: BTag :: Nil,
-      resolve = _ => "testab"),
-    Field("info", ListType(IntType), resolve = _.ctx.nums)
-  ))
+  lazy val TestType: ObjectType[Info, Unit] = ObjectType(
+    "Test",
+    () =>
+      fields[Info, Unit](
+        Field("scalar", StringType, resolve = _ => "tests"),
+        Field(
+          "scalarCustom",
+          StringType,
+          complexity = Some((_, _, c) => 3.0d + c),
+          resolve = _ => "testsc"),
+        Field(
+          "scalarArgs",
+          StringType,
+          arguments = Argument("foo", StringType) :: Nil,
+          resolve = _ => "testsa"),
+        Field("complexScalar", TestScalar, resolve = _ => "testcs"),
+        Field(
+          "nestList",
+          ListType(TestType),
+          arguments = Argument("size", IntType) :: Nil,
+          complexity = Some((_, args, c) => 1.1d + args.arg[Int]("size") * c),
+          resolve = ctx => (1 to ctx.arg[Int]("size")).map(_ => ())
+        ),
+        Field("nest", TestType, resolve = _ => ()),
+        Field(
+          "named",
+          OptionType(ListType(NamedType)),
+          arguments = Argument("size", IntType) :: Nil,
+          complexity = Some((_, args, c) => 4.0d + args.arg[Int]("size") * c),
+          resolve = _ => List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))
+        ),
+        Field(
+          "pets",
+          OptionType(ListType(PetType)),
+          arguments = Argument("size", IntType) :: Nil,
+          complexity = Some((_, args, c) => 3.5d + args.arg[Int]("size") * c),
+          resolve = _ => List(Dog(Some("Bob"), Some(true)), Cat(Some("Apples"), Some(true)))
+        ),
+        Field("a", StringType, tags = ATag(1) :: Nil, resolve = _ => "testa"),
+        Field("b", StringType, tags = BTag :: Nil, resolve = _ => "testb"),
+        Field("ab", StringType, tags = ATag(2) :: BTag :: Nil, resolve = _ => "testab"),
+        Field("info", ListType(IntType), resolve = _.ctx.nums)
+      )
+  )
 
   val schema = Schema(TestType)
 
-  val exceptionHandler = ExceptionHandler {
-    case (m, e: IllegalArgumentException) => HandledException(e.getMessage)
+  val exceptionHandler = ExceptionHandler { case (m, e: IllegalArgumentException) =>
+    HandledException(e.getMessage)
   }
 
   "MeasureComplexity" should {
@@ -116,32 +140,37 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
-        Map("data" ->
-          Map(
-            "scalar" -> "tests",
-            "nestList" -> List(
-              Map(
-                "complexScalar" -> "testcs",
-                "nest" -> Map("cc" -> "testsc", "dd" -> "testsc"),
-                "foo" -> Map("cc" -> "testsc", "dd" -> "testsc")),
-              Map(
-                "complexScalar" -> "testcs",
-                "nest" -> Map("cc" -> "testsc", "dd" -> "testsc"),
-                "foo" -> Map("cc" -> "testsc", "dd" -> "testsc")),
-              Map(
-                "complexScalar" -> "testcs",
-                "nest" -> Map("cc" -> "testsc", "dd" -> "testsc"),
-                "foo" -> Map("cc" -> "testsc", "dd" -> "testsc"))))))
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil)
+        .await should be(
+        Map(
+          "data" ->
+            Map(
+              "scalar" -> "tests",
+              "nestList" -> List(
+                Map(
+                  "complexScalar" -> "testcs",
+                  "nest" -> Map("cc" -> "testsc", "dd" -> "testsc"),
+                  "foo" -> Map("cc" -> "testsc", "dd" -> "testsc")),
+                Map(
+                  "complexScalar" -> "testcs",
+                  "nest" -> Map("cc" -> "testsc", "dd" -> "testsc"),
+                  "foo" -> Map("cc" -> "testsc", "dd" -> "testsc")),
+                Map(
+                  "complexScalar" -> "testcs",
+                  "nest" -> Map("cc" -> "testsc", "dd" -> "testsc"),
+                  "foo" -> Map("cc" -> "testsc", "dd" -> "testsc"))
+              )
+            )))
 
-      complexity should be (54.6D)
+      complexity should be(54.6d)
     }
 
     "perform basic calculation with variables" in {
@@ -156,7 +185,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           }
         """
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
@@ -165,7 +194,14 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val vars = mapVars("size" -> 3)
 
-      Executor.execute(schema, query, userContext = Info(Nil), variables = vars, queryReducers = complReducer :: Nil).await should be (
+      Executor
+        .execute(
+          schema,
+          query,
+          userContext = Info(Nil),
+          variables = vars,
+          queryReducers = complReducer :: Nil)
+        .await should be(
         Map(
           "data" -> Map(
             "scalar" -> "tests",
@@ -174,7 +210,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
               Map("complexScalar" -> "testcs"),
               Map("complexScalar" -> "testcs")))))
 
-      complexity should be (12.6D)
+      complexity should be(12.6d)
     }
 
     "not include excluded fields and fragments" in {
@@ -208,20 +244,24 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
-        Map("data" -> Map(
-          "scalarArgs" -> "testsa",
-          "baz" -> "testsa",
-          "test2" -> "tests", "nest" -> Map())))
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil)
+        .await should be(
+        Map(
+          "data" -> Map(
+            "scalarArgs" -> "testsa",
+            "baz" -> "testsa",
+            "test2" -> "tests",
+            "nest" -> Map())))
 
-      complexity should be (4.0D)
+      complexity should be(4.0d)
     }
 
     "when variables unknown, reduce even fields that may be excluded when variables are known" in {
@@ -255,15 +295,19 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      QueryReducerExecutor.reduceQueryWithoutVariables(schema, query, Info(Nil), complReducer :: Nil)
-      complexity should be (40.6D)
+      QueryReducerExecutor.reduceQueryWithoutVariables(
+        schema,
+        query,
+        Info(Nil),
+        complReducer :: Nil)
+      complexity should be(40.6d)
     }
 
     "estimate interface type complexity based on the most complex possible type" in {
@@ -299,27 +343,27 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
-        Map("data" ->
-          Map(
-            "n1" -> List(
-              Map("name" -> "Bob"),
-              Map("name" -> "Apples")),
-            "n2" -> List(
-              Map("name" -> "Bob"),
-              Map("name" -> "Apples", "meows" -> true)),
-            "named" -> List(
-              Map("name" -> "Bob", "barks" -> true),
-              Map("name" -> "Apples", "meows" -> true)))))
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil)
+        .await should be(
+        Map(
+          "data" ->
+            Map(
+              "n1" -> List(Map("name" -> "Bob"), Map("name" -> "Apples")),
+              "n2" -> List(Map("name" -> "Bob"), Map("name" -> "Apples", "meows" -> true)),
+              "named" -> List(
+                Map("name" -> "Bob", "barks" -> true),
+                Map("name" -> "Apples", "meows" -> true))
+            )))
 
-      complexity should be (189.8D)
+      complexity should be(189.8d)
     }
 
     "estimate union type complexity based on the most complex possible type" in {
@@ -356,27 +400,27 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
-        Map("data" ->
-          Map(
-            "p1" -> List(
-              Map("name" -> "Bob"),
-              Map("name" -> "Apples")),
-            "p2" -> List(
-              Map(),
-              Map("name" -> "Apples", "meows" -> true)),
-            "pets" -> List(
-              Map("name" -> "Bob", "barks" -> true),
-              Map("name" -> "Apples", "meows" -> true)))))
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil)
+        .await should be(
+        Map(
+          "data" ->
+            Map(
+              "p1" -> List(Map("name" -> "Bob"), Map("name" -> "Apples")),
+              "p2" -> List(Map(), Map("name" -> "Apples", "meows" -> true)),
+              "pets" -> List(
+                Map("name" -> "Bob", "barks" -> true),
+                Map("name" -> "Apples", "meows" -> true))
+            )))
 
-      complexity should be (188.3D)
+      complexity should be(188.3d)
     }
 
     "ensure that all possible fields are considered in the calculation" in {
@@ -398,21 +442,23 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil).await should be (
-        Map("data" ->
-          Map(
-            "pets" -> List(
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil)
+        .await should be(
+        Map(
+          "data" ->
+            Map("pets" -> List(
               Map("name" -> "Bob", "barks" -> true),
               Map("name" -> "Apples", "meows" -> true)))))
 
-      complexity should be (115.5D)
+      complexity should be(115.5d)
     }
 
     "ability to reject too complex queries" in {
@@ -427,14 +473,18 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
         """)
 
-      val rejectComplexQuery = QueryReducer.rejectComplexQueries[Info](14, (c, _) =>
-        new IllegalArgumentException(s"Too complex query: max allowed complexity is 14.0, but got $c"))
+      val rejectComplexQuery = QueryReducer.rejectComplexQueries[Info](
+        14,
+        (c, _) =>
+          new IllegalArgumentException(
+            s"Too complex query: max allowed complexity is 14.0, but got $c"))
 
-      val error = intercept [QueryReducingError] (Executor.execute(schema, query,
-          userContext = Info(Nil),
-          queryReducers = rejectComplexQuery :: Nil).await)
+      val error = intercept[QueryReducingError](Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = rejectComplexQuery :: Nil)
+        .await)
 
-      error.cause.getMessage should be ("Too complex query: max allowed complexity is 14.0, but got 15.0")
+      error.cause.getMessage should be(
+        "Too complex query: max allowed complexity is 14.0, but got 15.0")
     }
   }
 
@@ -450,27 +500,32 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) => num} ((nums, ctx) =>
+      val tagColl = QueryReducer.collectTags[Info, Int] { case ATag(num) => num }((nums, ctx) =>
         ctx.copy(nums = nums))
 
-      Executor.execute(schema, query,
+      Executor
+        .execute(
+          schema,
+          query,
           userContext = Info(Nil),
-          queryReducers = complReducer :: tagColl :: Nil).await should be (
-        Map("data" ->
+          queryReducers = complReducer :: tagColl :: Nil)
+        .await should be(
+        Map(
+          "data" ->
             Map(
               "info" -> List(1),
               "a" -> "testa",
               "nest" ->
                 Map("b" -> "testb"))))
 
-      complexity should be (4D)
+      complexity should be(4d)
     }
 
     "collect mapped tag values and update a user context using `FutureValue`" in {
@@ -486,21 +541,20 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) => num + 123} ((nums, ctx) =>
-        Future.successful(ctx.copy(nums = nums)))
+      val tagColl =
+        QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
+          Future.successful(ctx.copy(nums = nums)))
 
-      Executor.execute(schema, query,
-          userContext = Info(Nil),
-          queryReducers = tagColl :: Nil).await should be (
-        Map("data" ->
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = tagColl :: Nil)
+        .await should be(
+        Map(
+          "data" ->
             Map(
               "info" -> List(124, 124, 125),
               "a" -> "testa",
               "nest" ->
-                Map(
-                  "a" -> "testa",
-                  "b" -> "testb",
-                  "ab" -> "testab"))))
+                Map("a" -> "testa", "b" -> "testb", "ab" -> "testab"))))
     }
 
     "collect mapped tag values and update a user context using `TryValue`" in {
@@ -516,21 +570,20 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) => num + 123} ((nums, ctx) =>
-        Success(ctx.copy(nums = nums)))
+      val tagColl =
+        QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
+          Success(ctx.copy(nums = nums)))
 
-      Executor.execute(schema, query,
-          userContext = Info(Nil),
-          queryReducers = tagColl :: Nil).await should be (
-        Map("data" ->
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = tagColl :: Nil)
+        .await should be(
+        Map(
+          "data" ->
             Map(
               "info" -> List(124, 124, 125),
               "a" -> "testa",
               "nest" ->
-                Map(
-                  "a" -> "testa",
-                  "b" -> "testb",
-                  "ab" -> "testab"))))
+                Map("a" -> "testa", "b" -> "testb", "ab" -> "testab"))))
     }
 
     "handle thrown exceptions correctly" in {
@@ -546,13 +599,18 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) => num + 123} ((nums, ctx) =>
-        throw new IllegalArgumentException("boom!"))
+      val tagColl =
+        QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
+          throw new IllegalArgumentException("boom!"))
 
-      Executor.execute(schema, query,
+      Executor
+        .execute(
+          schema,
+          query,
           userContext = Info(Nil),
           exceptionHandler = exceptionHandler,
-          queryReducers = tagColl :: Nil).awaitAndRecoverQueryAnalysisScala should be (
+          queryReducers = tagColl :: Nil)
+        .awaitAndRecoverQueryAnalysisScala should be(
         Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
     }
 
@@ -569,13 +627,18 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
         """)
 
-      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) => num + 123} ((nums, ctx) =>
-        Failure(new IllegalArgumentException("boom!")))
+      val tagColl =
+        QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
+          Failure(new IllegalArgumentException("boom!")))
 
-      Executor.execute(schema, query,
+      Executor
+        .execute(
+          schema,
+          query,
           userContext = Info(Nil),
           exceptionHandler = exceptionHandler,
-          queryReducers = tagColl :: Nil).awaitAndRecoverQueryAnalysisScala should be (
+          queryReducers = tagColl :: Nil)
+        .awaitAndRecoverQueryAnalysisScala should be(
         Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
     }
 
@@ -592,13 +655,18 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
         """)
 
-      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) => num + 123} ((nums, ctx) =>
-        Future.failed(new IllegalArgumentException("boom!")))
+      val tagColl =
+        QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
+          Future.failed(new IllegalArgumentException("boom!")))
 
-      Executor.execute(schema, query,
-        userContext = Info(Nil),
-        exceptionHandler = exceptionHandler,
-        queryReducers = tagColl :: Nil).awaitAndRecoverQueryAnalysisScala should be (
+      Executor
+        .execute(
+          schema,
+          query,
+          userContext = Info(Nil),
+          exceptionHandler = exceptionHandler,
+          queryReducers = tagColl :: Nil)
+        .awaitAndRecoverQueryAnalysisScala should be(
         Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
     }
 
@@ -614,29 +682,32 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
         }
       """)
 
-      var complexity = 0.0D
+      var complexity = 0.0d
 
       val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
         complexity = c
         ctx
       }
 
-      val tagColl = QueryReducer.collectTags[Info, Int] {case ATag(num) => num} ((nums, ctx) =>
+      val tagColl = QueryReducer.collectTags[Info, Int] { case ATag(num) => num }((nums, ctx) =>
         ctx.copy(nums = nums))
 
-      Executor.execute(schema, query,
+      Executor
+        .execute(
+          schema,
+          query,
           userContext = Info(Nil),
-          queryReducers = complReducer :: tagColl :: Nil).await
-        Map("data" ->
-            Map(
-              "info" -> List(1, 2),
-              "a" -> "testa",
-              "nest" ->
-                  Map(
-                    "b" -> "testb",
-                    "ab" -> "testab")))
+          queryReducers = complReducer :: tagColl :: Nil)
+        .await
+      Map(
+        "data" ->
+          Map(
+            "info" -> List(1, 2),
+            "a" -> "testa",
+            "nest" ->
+              Map("b" -> "testb", "ab" -> "testab")))
 
-      complexity should be (5D)
+      complexity should be(5d)
     }
   }
 
@@ -645,14 +716,12 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
       val Success(query) = QueryParser.parse(queryStr)
 
       val depth = new AtomicInteger(0)
-      val reducer = QueryReducer.measureDepth[Any]((d, ctx) => {
+      val reducer = QueryReducer.measureDepth[Any] { (d, ctx) =>
         depth.set(d)
         ctx
-      })
+      }
 
-      Executor.execute(schema, query,
-        userContext = Info(Nil),
-        queryReducers = reducer :: Nil).await
+      Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await
 
       depth.get
     }
@@ -684,7 +753,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
            a
          }
        }
-       """) should be (3)
+       """) should be(3)
 
       calcDepth("""
        {
@@ -713,7 +782,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
          info
          a
        }
-       """) should be (3)
+       """) should be(3)
 
       calcDepth("""
        {
@@ -729,7 +798,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
            }
          }
        }
-       """) should be (6)
+       """) should be(6)
     }
 
     "reject max query depth" in {
@@ -751,12 +820,12 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val reducer = QueryReducer.rejectMaxDepth[Any](5)
 
-      val error = intercept [QueryReducingError] (
-        Executor.execute(schema, query,
-          userContext = Info(Nil),
-          queryReducers = reducer :: Nil).await)
+      val error = intercept[QueryReducingError](
+        Executor
+          .execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil)
+          .await)
 
-      error.cause.asInstanceOf[MaxQueryDepthReachedError].maxDepth should be (5)
+      error.cause.asInstanceOf[MaxQueryDepthReachedError].maxDepth should be(5)
     }
 
     "not reject introspection if no introspection is used" in {
@@ -821,10 +890,12 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val reducer = QueryReducer.rejectIntrospection[Info]()
 
-      val error = intercept [QueryReducingError] (
-        Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await)
+      val error = intercept[QueryReducingError](
+        Executor
+          .execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil)
+          .await)
 
-      error.cause should be (IntrospectionNotAllowedError)
+      error.cause should be(IntrospectionNotAllowedError)
     }
 
     "reject introspection if introspection is used (__type)" in {
@@ -842,10 +913,12 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val reducer = QueryReducer.rejectIntrospection[Info]()
 
-      val error = intercept [QueryReducingError] (
-        Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await)
+      val error = intercept[QueryReducingError](
+        Executor
+          .execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil)
+          .await)
 
-      error.cause should be (IntrospectionNotAllowedError)
+      error.cause should be(IntrospectionNotAllowedError)
     }
 
     "reject introspection if introspection is used (__typename)" in {
@@ -860,10 +933,12 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val reducer = QueryReducer.rejectIntrospection[Info]()
 
-      val error = intercept [QueryReducingError] (
-        Executor.execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil).await)
+      val error = intercept[QueryReducingError](
+        Executor
+          .execute(schema, query, userContext = Info(Nil), queryReducers = reducer :: Nil)
+          .await)
 
-      error.cause should be (IntrospectionNotAllowedError)
+      error.cause should be(IntrospectionNotAllowedError)
     }
   }
 
@@ -888,14 +963,14 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
       override def reduceAlternatives(alternatives: Seq[Acc]): Acc = ???
 
       override def reduceField[Val](
-        fieldAcc: Acc,
-        childrenAcc: Acc,
-        path: ExecutionPath,
-        ctx: Info,
-        astFields: Vector[ast.Field],
-        parentType: ObjectType[Info, Val],
-        field: Field[Info, Val],
-        argumentValuesFn: ArgumentValuesFn
+          fieldAcc: Acc,
+          childrenAcc: Acc,
+          path: ExecutionPath,
+          ctx: Info,
+          astFields: Vector[ast.Field],
+          parentType: ObjectType[Info, Val],
+          field: Field[Info, Val],
+          argumentValuesFn: ArgumentValuesFn
       ): Acc = {
         val args = argumentValuesFn(path, field.arguments, astFields.head.arguments)
         assert(args == Success(Args.empty))
@@ -903,32 +978,33 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
       }
 
       override def reduceScalar[T](
-        path: ExecutionPath,
-        ctx: Info,
-        tpe: ScalarType[T]
+          path: ExecutionPath,
+          ctx: Info,
+          tpe: ScalarType[T]
       ): Acc = initial
 
       override def reduceEnum[T](
-        path: ExecutionPath,
-        ctx: Info,
-        tpe: EnumType[T]
+          path: ExecutionPath,
+          ctx: Info,
+          tpe: EnumType[T]
       ): Acc = ???
 
       override def reduceCtx(
-        acc: Acc,
-        ctx: Info
+          acc: Acc,
+          ctx: Info
       ): ReduceAction[Info, Info] = ctx.copy(ctx.nums ++ acc)
     }
 
     "work with variables absent" in {
       val res =
-        QueryReducerExecutor.reduceQueryWithoutVariables(
-          schema,
-          query,
-          Info(Seq(100)),
-          reducer :: Nil
-        )
-        .await
+        QueryReducerExecutor
+          .reduceQueryWithoutVariables(
+            schema,
+            query,
+            Info(Seq(100)),
+            reducer :: Nil
+          )
+          .await
       assert(res._1.nums == Seq(100, 1, 1, 1, 1), "expected 4 nodes to be visited")
     }
   }

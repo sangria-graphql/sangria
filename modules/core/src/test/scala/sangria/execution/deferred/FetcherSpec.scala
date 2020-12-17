@@ -15,7 +15,11 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class Product(id: Int, name: String, inCategories: Vector[String])
-  case class Category(id: String, name: String, children: Seq[String], products: Vector[Int] = Vector.empty)
+  case class Category(
+      id: String,
+      name: String,
+      children: Seq[String],
+      products: Vector[Int] = Vector.empty)
   case class ColorDeferred(id: String) extends Deferred[String]
 
   object Category {
@@ -27,7 +31,8 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   }
 
   val prodCat = Relation[Product, String]("product-category", _.inCategories)
-  val prodComplexCat = Relation[Product, (Seq[String], Product),String]("product-category-complex", _._1, _._2)
+  val prodComplexCat =
+    Relation[Product, (Seq[String], Product), String]("product-category-complex", _._1, _._2)
   val catProd = Relation[Category, Int]("category-product", _.products)
 
   class Repo {
@@ -40,7 +45,8 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       Category("6", "Cat 6", Vector.empty, Vector(5, 6, 1)),
       Category("7", "Cat 7", Vector.empty, Vector(2, 3)),
       Category("8", "Cat 8", Vector("4", "5", "foo!")),
-      Category("20", "Cat 8", (1 to 8).map(_.toString)))
+      Category("20", "Cat 8", (1 to 8).map(_.toString))
+    )
 
     private val products = Vector(
       Product(1, "Rusty sword", Vector("4", "6")),
@@ -48,7 +54,8 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       Product(3, "Health potion", Vector("4", "7")),
       Product(4, "Unidentified potion", Vector("5")),
       Product(5, "Common boots", Vector("6")),
-      Product(6, "Golden ring", Vector("6")))
+      Product(6, "Golden ring", Vector("6"))
+    )
 
     def loadCategories(ids: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Category]] =
       Future(ids.flatMap(id => categories.find(_.id == id)))
@@ -56,10 +63,12 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     def loadProducts(ids: Seq[Int])(implicit ec: ExecutionContext): Future[Seq[Product]] =
       Future(ids.flatMap(id => products.find(_.id == id)))
 
-    def loadProductsByCategory(categoryIds: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Product]] =
+    def loadProductsByCategory(categoryIds: Seq[String])(implicit
+        ec: ExecutionContext): Future[Seq[Product]] =
       Future(products.filter(p => categoryIds.exists(p.inCategories contains _)))
 
-    def loadCategoriesByProduct(productIds: Seq[Int])(implicit ec: ExecutionContext): Future[Seq[Category]] =
+    def loadCategoriesByProduct(productIds: Seq[Int])(implicit
+        ec: ExecutionContext): Future[Seq[Category]] =
       Future(categories.filter(c => productIds.exists(c.products contains _)))
 
     def getCategory(id: String)(implicit ec: ExecutionContext) =
@@ -81,73 +90,128 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
     val complexProdFetcher = Fetcher.relCaching[Repo, Product, (Seq[String], Product), Int](
       (repo, ids) => repo.loadProducts(ids),
-      (repo, ids) => repo.loadProductsByCategory(ids(prodComplexCat)).map(_.map(p => p.inCategories -> p)))
+      (repo, ids) =>
+        repo.loadProductsByCategory(ids(prodComplexCat)).map(_.map(p => p.inCategories -> p)))
 
     val defaultResolver = DeferredResolver.fetchers(defaultProdFetcher, defaultCatFetcher)
 
-    def schema(fetcherCat: Fetcher[Repo, Category, Category, String] = defaultCatFetcher, fetcherProd: Fetcher[Repo, Product, Product, Int] = defaultProdFetcher) = {
-      lazy val ProductType: ObjectType[Repo, Product] = ObjectType("Product", () => fields(
-        Field("id", IntType, resolve = c => c.value.id),
-        Field("name", StringType, resolve = c => c.value.name),
-        Field("categories", ListType(CategoryType),
-          resolve = c => fetcherCat.deferSeqOpt(c.value.inCategories)),
-        Field("categoryRel", CategoryType,
-          resolve = c => fetcherCat.deferRel(catProd, c.value.id)),
-        Field("categoryRelOpt", OptionType(CategoryType),
-          resolve = c => fetcherCat.deferRelOpt(catProd, c.value.id)),
-        Field("categoryRelSeq", ListType(CategoryType),
-          resolve = c => fetcherCat.deferRelSeq(catProd, c.value.id))))
+    def schema(
+        fetcherCat: Fetcher[Repo, Category, Category, String] = defaultCatFetcher,
+        fetcherProd: Fetcher[Repo, Product, Product, Int] = defaultProdFetcher) = {
+      lazy val ProductType: ObjectType[Repo, Product] = ObjectType(
+        "Product",
+        () =>
+          fields(
+            Field("id", IntType, resolve = c => c.value.id),
+            Field("name", StringType, resolve = c => c.value.name),
+            Field(
+              "categories",
+              ListType(CategoryType),
+              resolve = c => fetcherCat.deferSeqOpt(c.value.inCategories)),
+            Field(
+              "categoryRel",
+              CategoryType,
+              resolve = c => fetcherCat.deferRel(catProd, c.value.id)),
+            Field(
+              "categoryRelOpt",
+              OptionType(CategoryType),
+              resolve = c => fetcherCat.deferRelOpt(catProd, c.value.id)),
+            Field(
+              "categoryRelSeq",
+              ListType(CategoryType),
+              resolve = c => fetcherCat.deferRelSeq(catProd, c.value.id))
+          )
+      )
 
-      lazy val CategoryType: ObjectType[Repo, Category] = ObjectType("Category", () => fields(
-        Field("id", StringType, resolve = c => c.value.id),
-        Field("name", StringType, resolve = c => c.value.name),
-        Field("color", StringType, resolve = c => ColorDeferred("red")),
-        Field("self", CategoryType, resolve = c => c.value),
-        Field("selfOpt", OptionType(CategoryType), resolve = c => Some(c.value)),
-        Field("selfFut", CategoryType, resolve = c => Future(c.value)),
-        Field("products", ListType(ProductType),
-          resolve = c => fetcherProd.deferSeqOpt(c.value.products)),
-        Field("productRel", ProductType,
-          resolve = c => fetcherProd.deferRel(prodCat, c.value.id)),
-        Field("productComplexRel", ListType(ProductType),
-          resolve = c => complexProdFetcher.deferRelSeq(prodComplexCat, c.value.id)),
-        Field("productRelOpt", OptionType(ProductType),
-          resolve = c => fetcherProd.deferRelOpt(prodCat, c.value.id)),
-        Field("productRelSeq", ListType(ProductType),
-          resolve = c => fetcherProd.deferRelSeq(prodCat, c.value.id)),
-        Field("categoryNonOpt", CategoryType,
-          arguments = Argument("id", StringType) :: Nil,
-          resolve = c => fetcherCat.defer(c.arg[String]("id"))),
-        Field("childrenSeq", ListType(CategoryType),
-          resolve = c => fetcherCat.deferSeq(c.value.children)),
-        Field("childrenSeqOpt", ListType(CategoryType),
-          resolve = c => fetcherCat.deferSeqOpt(c.value.children)),
-        Field("childrenFut", ListType(CategoryType),
-          resolve = c => Future.successful(
-            fetcherCat.deferSeq(c.value.children)))))
+      lazy val CategoryType: ObjectType[Repo, Category] = ObjectType(
+        "Category",
+        () =>
+          fields(
+            Field("id", StringType, resolve = c => c.value.id),
+            Field("name", StringType, resolve = c => c.value.name),
+            Field("color", StringType, resolve = c => ColorDeferred("red")),
+            Field("self", CategoryType, resolve = c => c.value),
+            Field("selfOpt", OptionType(CategoryType), resolve = c => Some(c.value)),
+            Field("selfFut", CategoryType, resolve = c => Future(c.value)),
+            Field(
+              "products",
+              ListType(ProductType),
+              resolve = c => fetcherProd.deferSeqOpt(c.value.products)),
+            Field(
+              "productRel",
+              ProductType,
+              resolve = c => fetcherProd.deferRel(prodCat, c.value.id)),
+            Field(
+              "productComplexRel",
+              ListType(ProductType),
+              resolve = c => complexProdFetcher.deferRelSeq(prodComplexCat, c.value.id)),
+            Field(
+              "productRelOpt",
+              OptionType(ProductType),
+              resolve = c => fetcherProd.deferRelOpt(prodCat, c.value.id)),
+            Field(
+              "productRelSeq",
+              ListType(ProductType),
+              resolve = c => fetcherProd.deferRelSeq(prodCat, c.value.id)),
+            Field(
+              "categoryNonOpt",
+              CategoryType,
+              arguments = Argument("id", StringType) :: Nil,
+              resolve = c => fetcherCat.defer(c.arg[String]("id"))),
+            Field(
+              "childrenSeq",
+              ListType(CategoryType),
+              resolve = c => fetcherCat.deferSeq(c.value.children)),
+            Field(
+              "childrenSeqOpt",
+              ListType(CategoryType),
+              resolve = c => fetcherCat.deferSeqOpt(c.value.children)),
+            Field(
+              "childrenFut",
+              ListType(CategoryType),
+              resolve = c => Future.successful(fetcherCat.deferSeq(c.value.children)))
+          )
+      )
 
-      val QueryType = ObjectType("Query", fields[Repo, Unit](
-        Field("category", OptionType(CategoryType),
-          arguments = Argument("id", StringType) :: Nil,
-          resolve = c => fetcherCat.deferOpt(c.arg[String]("id"))),
-        Field("categoryEager", OptionType(CategoryType),
-          arguments = Argument("id", StringType) :: Nil,
-          resolve = c => c.ctx.getCategory(c.arg[String]("id"))),
-        Field("categoryNonOpt", CategoryType,
-          arguments = Argument("id", StringType) :: Nil,
-          resolve = c => fetcherCat.defer(c.arg[String]("id"))),
-        Field("products", ListType(ProductType),
-          arguments = Argument("categoryIds", ListInputType(StringType)) :: Nil,
-          resolve = c => fetcherProd.deferRelSeqMany(prodCat, c.arg[Seq[String]]("categoryIds"))),
-        Field("productOpt", OptionType(ProductType),
-          arguments = Argument("id", OptionInputType(IntType)) :: Nil,
-          resolve = c => fetcherProd.deferOpt(c.argOpt[Int]("id"))),
-        Field("productsOptExplicit", ListType(OptionType(ProductType)),
-          arguments = Argument("ids", ListInputType(IntType)) :: Nil,
-          resolve = c => fetcherProd.deferSeqOptExplicit(c.arg[Seq[Int]]("ids"))),
-        Field("root", CategoryType, resolve = _ => fetcherCat.defer("1")),
-        Field("rootFut", CategoryType, resolve = _ =>
-          Future.successful(fetcherCat.defer("1")))))
+      val QueryType = ObjectType(
+        "Query",
+        fields[Repo, Unit](
+          Field(
+            "category",
+            OptionType(CategoryType),
+            arguments = Argument("id", StringType) :: Nil,
+            resolve = c => fetcherCat.deferOpt(c.arg[String]("id"))),
+          Field(
+            "categoryEager",
+            OptionType(CategoryType),
+            arguments = Argument("id", StringType) :: Nil,
+            resolve = c => c.ctx.getCategory(c.arg[String]("id"))),
+          Field(
+            "categoryNonOpt",
+            CategoryType,
+            arguments = Argument("id", StringType) :: Nil,
+            resolve = c => fetcherCat.defer(c.arg[String]("id"))),
+          Field(
+            "products",
+            ListType(ProductType),
+            arguments = Argument("categoryIds", ListInputType(StringType)) :: Nil,
+            resolve = c => fetcherProd.deferRelSeqMany(prodCat, c.arg[Seq[String]]("categoryIds"))
+          ),
+          Field(
+            "productOpt",
+            OptionType(ProductType),
+            arguments = Argument("id", OptionInputType(IntType)) :: Nil,
+            resolve = c => fetcherProd.deferOpt(c.argOpt[Int]("id"))),
+          Field(
+            "productsOptExplicit",
+            ListType(OptionType(ProductType)),
+            arguments = Argument("ids", ListInputType(IntType)) :: Nil,
+            resolve = c => fetcherProd.deferSeqOptExplicit(c.arg[Seq[Int]]("ids"))
+          ),
+          Field("root", CategoryType, resolve = _ => fetcherCat.defer("1")),
+          Field("rootFut", CategoryType, resolve = _ => Future.successful(fetcherCat.defer("1")))
+        )
+      )
 
       Schema(QueryType)
     }
@@ -185,85 +249,79 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       var fetchedIds = Vector.empty[Seq[String]]
 
       val fetcher =
-        Fetcher((repo: Repo, ids: Seq[String]) => {
+        Fetcher { (repo: Repo, ids: Seq[String]) =>
           fetchedIds = fetchedIds :+ ids
 
           repo.loadCategories(ids)
-        })
+        }
 
       var fetchedIdsCached = Vector.empty[Seq[String]]
 
       val fetcherCached =
-        Fetcher.caching((repo: Repo, ids: Seq[String]) => {
+        Fetcher.caching { (repo: Repo, ids: Seq[String]) =>
           fetchedIdsCached = fetchedIdsCached :+ ids
 
           repo.loadCategories(ids)
-        })
+        }
 
+      val res = Executor
+        .execute(
+          schema(fetcher),
+          query,
+          new Repo,
+          deferredResolver = DeferredResolver.fetchers(fetcher))
+        .await
 
-      val res = Executor.execute(schema(fetcher), query, new Repo,
-        deferredResolver = DeferredResolver.fetchers(fetcher)).await
+      val resCached = Executor
+        .execute(
+          schema(fetcherCached),
+          query,
+          new Repo,
+          deferredResolver = DeferredResolver.fetchers(fetcherCached))
+        .await
 
-      val resCached = Executor.execute(schema(fetcherCached), query, new Repo,
-        deferredResolver = DeferredResolver.fetchers(fetcherCached)).await
+      fetchedIds.map(_.sorted) should be(
+        Vector(
+          Vector("1", "8", "non-existing"),
+          Vector("2", "3", "4", "5", "foo!"),
+          Vector("5", "6", "7")))
 
-      fetchedIds.map(_.sorted) should be (Vector(
-        Vector("1", "8", "non-existing"),
-        Vector("2", "3", "4", "5", "foo!"),
-        Vector("5", "6", "7")))
+      fetchedIdsCached.map(_.sorted) should be(
+        Vector(
+          Vector("1", "8", "non-existing"),
+          Vector("2", "3", "4", "5", "foo!"),
+          Vector("6", "7")))
 
-      fetchedIdsCached.map(_.sorted) should be (Vector(
-        Vector("1", "8", "non-existing"),
-        Vector("2", "3", "4", "5", "foo!"),
-        Vector("6", "7")))
-
-      List(res, resCached) foreach (_ should be (
-        Map(
-          "data" -> Map(
-            "c1" -> null,
-            "c3" -> Map(
-              "name" -> "Cat 8",
-              "childrenSeqOpt" -> Vector(
-                Map(
-                  "id" -> "4"),
-                Map(
-                  "id" -> "5"))),
-            "rootFut" -> Map(
-              "id" -> "1",
-              "name" -> "Root",
-              "childrenSeq" -> Vector(
-                Map(
-                  "id" -> "2",
-                  "name" -> "Cat 2",
-                  "childrenSeq" -> Vector(
-                    Map(
-                      "id" -> "5",
-                      "name" -> "Cat 5",
-                      "childrenSeq" -> Vector.empty),
-                    Map(
-                      "id" -> "6",
-                      "name" -> "Cat 6",
-                      "childrenSeq" -> Vector.empty))),
-                Map(
-                  "id" -> "3",
-                  "name" -> "Cat 3",
-                  "childrenSeq" -> Vector(
-                    Map(
-                      "id" -> "7",
-                      "name" -> "Cat 7",
-                      "childrenSeq" -> Vector.empty),
-                    Map(
-                      "id" -> "5",
-                      "name" -> "Cat 5",
-                      "childrenSeq" -> Vector.empty),
-                    Map(
-                      "id" -> "6",
-                      "name" -> "Cat 6",
-                      "childrenSeq" -> Vector.empty))),
-                Map(
-                  "id" -> "4",
-                  "name" -> "Cat 4",
-                  "childrenSeq" -> Vector.empty)))))))
+      List(res, resCached).foreach(
+        _ should be(Map("data" -> Map(
+          "c1" -> null,
+          "c3" -> Map(
+            "name" -> "Cat 8",
+            "childrenSeqOpt" -> Vector(Map("id" -> "4"), Map("id" -> "5"))),
+          "rootFut" -> Map(
+            "id" -> "1",
+            "name" -> "Root",
+            "childrenSeq" -> Vector(
+              Map(
+                "id" -> "2",
+                "name" -> "Cat 2",
+                "childrenSeq" -> Vector(
+                  Map("id" -> "5", "name" -> "Cat 5", "childrenSeq" -> Vector.empty),
+                  Map("id" -> "6", "name" -> "Cat 6", "childrenSeq" -> Vector.empty))
+              ),
+              Map(
+                "id" -> "3",
+                "name" -> "Cat 3",
+                "childrenSeq" -> Vector(
+                  Map("id" -> "7", "name" -> "Cat 7", "childrenSeq" -> Vector.empty),
+                  Map("id" -> "5", "name" -> "Cat 5", "childrenSeq" -> Vector.empty),
+                  Map("id" -> "6", "name" -> "Cat 6", "childrenSeq" -> Vector.empty)
+                )
+              ),
+              Map("id" -> "4", "name" -> "Cat 4", "childrenSeq" -> Vector.empty)
+            )
+          )
+        ))))
     }
 
     "fetch results with `deferOpt` and option argument" in {
@@ -276,16 +334,11 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         """
 
-      val res = Executor.execute(schema(), query, new Repo, deferredResolver = defaultResolver).await
+      val res =
+        Executor.execute(schema(), query, new Repo, deferredResolver = defaultResolver).await
 
-      res should be (
-        Map(
-          "data" -> Map(
-            "p1" -> Map(
-              "id" -> 1,
-              "name" -> "Rusty sword"),
-            "p2" -> null,
-            "p3" -> null)))
+      res should be(Map(
+        "data" -> Map("p1" -> Map("id" -> 1, "name" -> "Rusty sword"), "p2" -> null, "p3" -> null)))
     }
 
     "fetch results with `deferSeqOptExplicit`" in {
@@ -296,7 +349,9 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         """
 
-      Executor.execute(schema(), query, new Repo, deferredResolver = defaultResolver).await should be (
+      Executor
+        .execute(schema(), query, new Repo, deferredResolver = defaultResolver)
+        .await should be(
         Map(
           "data" -> Map(
             "productsOptExplicit" -> Vector(
@@ -343,7 +398,8 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             fetchedRels = fetchedRels :+ ids
 
             repo.loadCategoriesByProduct(ids(catProd))
-          })
+          }
+        )
 
       var fetchedIdsCached = Vector.empty[Seq[String]]
       var fetchedRelsCached = Vector.empty[RelationIds[Category]]
@@ -359,39 +415,58 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             fetchedRelsCached = fetchedRelsCached :+ ids
 
             repo.loadCategoriesByProduct(ids(catProd))
-          })
+          }
+        )
 
       var fetchedRelsOnly = Vector.empty[RelationIds[Category]]
 
       val fetcherRelsOnly =
-        Fetcher.relOnly(
-          (repo: Repo, ids: RelationIds[Category]) => {
-            fetchedRelsOnly = fetchedRelsOnly :+ ids
+        Fetcher.relOnly { (repo: Repo, ids: RelationIds[Category]) =>
+          fetchedRelsOnly = fetchedRelsOnly :+ ids
 
-            repo.loadCategoriesByProduct(ids(catProd))
-          })
+          repo.loadCategoriesByProduct(ids(catProd))
+        }
 
       var fetchedRelsOnlyCached = Vector.empty[RelationIds[Category]]
 
       val fetcherRelsOnlyCached =
-        Fetcher.relOnlyCaching(
-          (repo: Repo, ids: RelationIds[Category]) => {
-            fetchedRelsOnlyCached = fetchedRelsOnlyCached :+ ids
+        Fetcher.relOnlyCaching { (repo: Repo, ids: RelationIds[Category]) =>
+          fetchedRelsOnlyCached = fetchedRelsOnlyCached :+ ids
 
-            repo.loadCategoriesByProduct(ids(catProd))
-          })
+          repo.loadCategoriesByProduct(ids(catProd))
+        }
 
-      val res = Executor.execute(schema(fetcher), query, new Repo,
-        deferredResolver = DeferredResolver.fetchers(fetcher, defaultProdFetcher)).await
+      val res = Executor
+        .execute(
+          schema(fetcher),
+          query,
+          new Repo,
+          deferredResolver = DeferredResolver.fetchers(fetcher, defaultProdFetcher))
+        .await
 
-      val resCached = Executor.execute(schema(fetcherCached), query, new Repo,
-        deferredResolver = DeferredResolver.fetchers(fetcherCached, defaultProdFetcher)).await
+      val resCached = Executor
+        .execute(
+          schema(fetcherCached),
+          query,
+          new Repo,
+          deferredResolver = DeferredResolver.fetchers(fetcherCached, defaultProdFetcher))
+        .await
 
-      val resRelsOnly = Executor.execute(schema(fetcherRelsOnly), query, new Repo,
-        deferredResolver = DeferredResolver.fetchers(fetcherRelsOnly, defaultProdFetcher)).await
+      val resRelsOnly = Executor
+        .execute(
+          schema(fetcherRelsOnly),
+          query,
+          new Repo,
+          deferredResolver = DeferredResolver.fetchers(fetcherRelsOnly, defaultProdFetcher))
+        .await
 
-      val resRelsOnlyCached = Executor.execute(schema(fetcherRelsOnlyCached), query, new Repo,
-        deferredResolver = DeferredResolver.fetchers(fetcherRelsOnlyCached, defaultProdFetcher)).await
+      val resRelsOnlyCached = Executor
+        .execute(
+          schema(fetcherRelsOnlyCached),
+          query,
+          new Repo,
+          deferredResolver = DeferredResolver.fetchers(fetcherRelsOnlyCached, defaultProdFetcher))
+        .await
 
       fetchedIds should have size 0
       fetchedIdsCached should have size 0
@@ -399,21 +474,22 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       val relsOut = Vector(
         RelationIds[Category](Map(catProd -> Vector(1, 2, 3))),
         RelationIds[Category](Map(catProd -> Vector(1, 2, 3))),
-        RelationIds[Category](Map(catProd -> Vector(1, 2, 3))))
+        RelationIds[Category](Map(catProd -> Vector(1, 2, 3)))
+      )
 
       val relsCachedOut = Vector(RelationIds[Category](Map(catProd -> Vector(1, 2, 3))))
 
-      fetchedRels should be (relsOut)
+      fetchedRels should be(relsOut)
 
-      fetchedRelsCached should be (relsCachedOut)
+      fetchedRelsCached should be(relsCachedOut)
 
-      fetchedRelsOnly should be (relsOut)
+      fetchedRelsOnly should be(relsOut)
 
-      fetchedRelsOnlyCached should be (relsCachedOut)
+      fetchedRelsOnlyCached should be(relsCachedOut)
 
-      res should be (resCached)
+      res should be(resCached)
 
-      resRelsOnly should be (resRelsOnlyCached)
+      resRelsOnly should be(resRelsOnlyCached)
     }
 
     "hansle complex relations" in {
@@ -434,38 +510,38 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         """
 
-      val res = Executor.execute(schema(), query, new Repo,
-        deferredResolver = DeferredResolver.fetchers(complexProdFetcher, defaultProdFetcher, defaultCatFetcher)).await
+      val res = Executor
+        .execute(
+          schema(),
+          query,
+          new Repo,
+          deferredResolver =
+            DeferredResolver.fetchers(complexProdFetcher, defaultProdFetcher, defaultCatFetcher))
+        .await
 
-      res should be (Map(
-        "data" -> Map(
-          "c1" -> Map(
-            "productComplexRel" -> Vector(
-              Map(
-                "id" -> 2),
-              Map(
-                "id" -> 4))),
-          "c2" -> Map(
-            "productComplexRel" -> Vector(
-              Map(
-                "name" -> "Rusty sword"),
-              Map(
-                "name" -> "Common boots"),
-              Map(
-                "name" -> "Golden ring"))))))
+      res should be(
+        Map("data" -> Map(
+          "c1" -> Map("productComplexRel" -> Vector(Map("id" -> 2), Map("id" -> 4))),
+          "c2" -> Map("productComplexRel" -> Vector(
+            Map("name" -> "Rusty sword"),
+            Map("name" -> "Common boots"),
+            Map("name" -> "Golden ring")))
+        )))
     }
 
     "should result in error for missing non-optional values" in {
       var fetchedIds = Vector.empty[Seq[String]]
 
       val fetcher =
-        Fetcher((repo: Repo, ids: Seq[String]) => {
+        Fetcher { (repo: Repo, ids: Seq[String]) =>
           fetchedIds = fetchedIds :+ ids
 
           repo.loadCategories(ids)
-        })
+        }
 
-      checkContainsErrors(schema(fetcher), (),
+      checkContainsErrors(
+        schema(fetcher),
+        (),
         """
           {
             c1: category(id: "8") {name childrenSeq {id}}
@@ -477,20 +553,15 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             }
           }
         """,
-        Map(
-          "c1" -> null,
-          "c2" -> Map(
-            "name" -> "Root",
-            "selfOpt" -> null)),
+        Map("c1" -> null, "c2" -> Map("name" -> "Root", "selfOpt" -> null)),
         List(
           "Fetcher has not resolved non-optional ID 'foo!'." -> List(Pos(3, 41)),
           "Fetcher has not resolved non-optional ID 'qwe'." -> List(Pos(7, 17))),
         resolver = DeferredResolver.fetchers(fetcher),
-        userContext = new Repo)
+        userContext = new Repo
+      )
 
-      fetchedIds should be (Vector(
-        Vector("8", "qwe"),
-        Vector("4", "5", "foo!")))
+      fetchedIds should be(Vector(Vector("8", "qwe"), Vector("4", "5", "foo!")))
     }
 
     "use fallback `DeferredResolver`" in {
@@ -498,20 +569,24 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         val callsCount = new AtomicInteger(0)
         val valueCount = new AtomicInteger(0)
 
-        override val includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) => Boolean] =
+        override val includeDeferredFromField
+            : Option[(Field[_, _], Vector[ast.Field], Args, Double) => Boolean] =
           Some((_, _, _, _) => false)
 
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit ec: ExecutionContext) = {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
+            ec: ExecutionContext) = {
           callsCount.getAndIncrement()
           valueCount.addAndGet(deferred.size)
 
-          deferred.map {
-            case ColorDeferred(id) => Future.successful(id + "Color")
+          deferred.map { case ColorDeferred(id) =>
+            Future.successful(id + "Color")
           }
         }
       }
 
-      check(schema(), (),
+      check(
+        schema(),
+        (),
         """
           {
             c1: category(id: "1") {name childrenSeq {id}}
@@ -527,24 +602,24 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           "data" -> Map(
             "c1" -> Map(
               "name" -> "Root",
-              "childrenSeq" -> Vector(
-                Map("id" -> "2"),
-                Map("id" -> "3"),
-                Map("id" -> "4"))),
+              "childrenSeq" -> Vector(Map("id" -> "2"), Map("id" -> "3"), Map("id" -> "4"))),
             "c2" -> Map(
               "color" -> "redColor",
-              "childrenSeq" -> Vector(
-                Map("name" -> "Cat 5"),
-                Map("name" -> "Cat 6"))))),
-        resolver = DeferredResolver.fetchersWithFallback(new MyDeferredResolver, defaultCatFetcher, defaultProdFetcher),
-        userContext = new Repo)
+              "childrenSeq" -> Vector(Map("name" -> "Cat 5"), Map("name" -> "Cat 6")))
+          )),
+        resolver = DeferredResolver.fetchersWithFallback(
+          new MyDeferredResolver,
+          defaultCatFetcher,
+          defaultProdFetcher),
+        userContext = new Repo
+      )
     }
 
     "explicit cache should be used in consequent executions" in {
       var fetchedIds = Vector.empty[Seq[String]]
       val cache = FetcherCache.simple
 
-      (1 to 3) foreach { _ =>
+      (1 to 3).foreach { _ =>
         val fetcher = Fetcher.caching(
           config = FetcherConfig.caching(cache),
           fetch = (repo: Repo, ids: Seq[String]) => {
@@ -553,7 +628,9 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             repo.loadCategories(ids)
           })
 
-        check(schema(fetcher), (),
+        check(
+          schema(fetcher),
+          (),
           """
             {
               root {
@@ -570,33 +647,23 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             }
           """,
           Map(
-            "data" -> Map(
-              "root" -> Map(
-                "childrenSeq" -> Vector(
-                  Map(
-                    "childrenSeq" -> Vector(
-                      Map(
-                        "childrenSeq" -> Vector.empty),
-                      Map(
-                        "childrenSeq" -> Vector.empty))),
-                  Map(
-                    "childrenSeq" -> Vector(
-                      Map(
-                        "childrenSeq" -> Vector.empty),
-                      Map(
-                        "childrenSeq" -> Vector.empty),
-                      Map(
-                        "childrenSeq" -> Vector.empty))),
-                  Map(
-                    "childrenSeq" -> Vector.empty))))),
+            "data" -> Map("root" -> Map("childrenSeq" -> Vector(
+              Map("childrenSeq" -> Vector(
+                Map("childrenSeq" -> Vector.empty),
+                Map("childrenSeq" -> Vector.empty))),
+              Map("childrenSeq" -> Vector(
+                Map("childrenSeq" -> Vector.empty),
+                Map("childrenSeq" -> Vector.empty),
+                Map("childrenSeq" -> Vector.empty))),
+              Map("childrenSeq" -> Vector.empty)
+            )))),
           resolver = DeferredResolver.fetchers(fetcher),
-          userContext = new Repo)
+          userContext = new Repo
+        )
       }
 
-      fetchedIds.map(_.sorted) should be (Vector(
-        Vector("1"),
-        Vector("2", "3", "4"),
-        Vector("5", "6", "7")))
+      fetchedIds.map(_.sorted) should be(
+        Vector(Vector("1"), Vector("2", "3", "4"), Vector("5", "6", "7")))
     }
 
     "clearId should remove entry from cache" in {
@@ -613,22 +680,24 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       var fetchedCatIds = Vector.empty[Seq[String]]
 
       val fetcherCat =
-        Fetcher((repo: Repo, ids: Seq[String]) => {
+        Fetcher { (repo: Repo, ids: Seq[String]) =>
           fetchedCatIds = fetchedCatIds :+ ids
 
           repo.loadCategories(ids)
-        })
+        }
 
       var fetchedProdIds = Vector.empty[Seq[Int]]
 
       val fetcherProd =
-        Fetcher((repo: Repo, ids: Seq[Int]) => {
+        Fetcher { (repo: Repo, ids: Seq[Int]) =>
           fetchedProdIds = fetchedProdIds :+ ids
 
           repo.loadProducts(ids)
-        })
+        }
 
-      check(schema(fetcherCat, fetcherProd), (),
+      check(
+        schema(fetcherCat, fetcherProd),
+        (),
         """
           {
             root {
@@ -653,127 +722,122 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         """,
         Map(
-          "data" -> Map(
-            "root" -> Map(
-              "name" -> "Root",
-              "products" -> Vector.empty,
-              "childrenSeq" -> Vector(
-                Map(
-                  "name" -> "Cat 2",
-                  "products" -> Vector.empty,
-                  "childrenSeq" -> Vector(
-                    Map(
-                      "name" -> "Cat 5",
-                      "products" -> Vector(
-                        Map(
-                          "name" -> "Magic belt",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 4"),
-                            Map("name" -> "Cat 5"),
-                            Map("name" -> "Cat 7"))),
-                        Map(
-                          "name" -> "Unidentified potion",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 5"))))),
-                    Map(
-                      "name" -> "Cat 6",
-                      "products" -> Vector(
-                        Map(
-                          "name" -> "Common boots",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 6"))),
-                        Map(
-                          "name" -> "Golden ring",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 6"))),
-                        Map(
-                          "name" -> "Rusty sword",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 4"),
-                            Map("name" -> "Cat 6"))))))),
-                Map(
-                  "name" -> "Cat 3",
-                  "products" -> Vector.empty,
-                  "childrenSeq" -> Vector(
-                    Map(
-                      "name" -> "Cat 7",
-                      "products" -> Vector(
-                        Map(
-                          "name" -> "Magic belt",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 4"),
-                            Map("name" -> "Cat 5"),
-                            Map("name" -> "Cat 7"))),
-                        Map(
-                          "name" -> "Health potion",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 4"),
-                            Map("name" -> "Cat 7"))))),
-                    Map(
-                      "name" -> "Cat 5",
-                      "products" -> Vector(
-                        Map(
-                          "name" -> "Magic belt",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 4"),
-                            Map("name" -> "Cat 5"),
-                            Map("name" -> "Cat 7"))),
-                        Map(
-                          "name" -> "Unidentified potion",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 5"))))),
-                    Map(
-                      "name" -> "Cat 6",
-                      "products" -> Vector(
-                        Map(
-                          "name" -> "Common boots",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 6"))),
-                        Map(
-                          "name" -> "Golden ring",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 6"))),
-                        Map(
-                          "name" -> "Rusty sword",
-                          "categories" -> Vector(
-                            Map("name" -> "Cat 4"),
-                            Map("name" -> "Cat 6"))))))),
-                Map(
-                  "name" -> "Cat 4",
-                  "products" -> Vector(
-                    Map(
-                      "name" -> "Rusty sword",
-                      "categories" -> Vector(
-                        Map("name" -> "Cat 4"),
-                        Map("name" -> "Cat 6"))),
-                    Map(
-                      "name" -> "Magic belt",
-                      "categories" -> Vector(
-                        Map("name" -> "Cat 4"),
-                        Map("name" -> "Cat 5"),
-                        Map("name" -> "Cat 7"))),
-                    Map(
-                      "name" -> "Health potion",
-                      "categories" -> Vector(
-                        Map("name" -> "Cat 4"),
-                        Map("name" -> "Cat 7")))),
-                  "childrenSeq" -> Vector.empty))))),
+          "data" -> Map("root" -> Map(
+            "name" -> "Root",
+            "products" -> Vector.empty,
+            "childrenSeq" -> Vector(
+              Map(
+                "name" -> "Cat 2",
+                "products" -> Vector.empty,
+                "childrenSeq" -> Vector(
+                  Map(
+                    "name" -> "Cat 5",
+                    "products" -> Vector(
+                      Map(
+                        "name" -> "Magic belt",
+                        "categories" -> Vector(
+                          Map("name" -> "Cat 4"),
+                          Map("name" -> "Cat 5"),
+                          Map("name" -> "Cat 7"))),
+                      Map(
+                        "name" -> "Unidentified potion",
+                        "categories" -> Vector(Map("name" -> "Cat 5")))
+                    )
+                  ),
+                  Map(
+                    "name" -> "Cat 6",
+                    "products" -> Vector(
+                      Map("name" -> "Common boots", "categories" -> Vector(Map("name" -> "Cat 6"))),
+                      Map("name" -> "Golden ring", "categories" -> Vector(Map("name" -> "Cat 6"))),
+                      Map(
+                        "name" -> "Rusty sword",
+                        "categories" -> Vector(Map("name" -> "Cat 4"), Map("name" -> "Cat 6")))
+                    )
+                  )
+                )
+              ),
+              Map(
+                "name" -> "Cat 3",
+                "products" -> Vector.empty,
+                "childrenSeq" -> Vector(
+                  Map(
+                    "name" -> "Cat 7",
+                    "products" -> Vector(
+                      Map(
+                        "name" -> "Magic belt",
+                        "categories" -> Vector(
+                          Map("name" -> "Cat 4"),
+                          Map("name" -> "Cat 5"),
+                          Map("name" -> "Cat 7"))),
+                      Map(
+                        "name" -> "Health potion",
+                        "categories" -> Vector(Map("name" -> "Cat 4"), Map("name" -> "Cat 7")))
+                    )
+                  ),
+                  Map(
+                    "name" -> "Cat 5",
+                    "products" -> Vector(
+                      Map(
+                        "name" -> "Magic belt",
+                        "categories" -> Vector(
+                          Map("name" -> "Cat 4"),
+                          Map("name" -> "Cat 5"),
+                          Map("name" -> "Cat 7"))),
+                      Map(
+                        "name" -> "Unidentified potion",
+                        "categories" -> Vector(Map("name" -> "Cat 5")))
+                    )
+                  ),
+                  Map(
+                    "name" -> "Cat 6",
+                    "products" -> Vector(
+                      Map("name" -> "Common boots", "categories" -> Vector(Map("name" -> "Cat 6"))),
+                      Map("name" -> "Golden ring", "categories" -> Vector(Map("name" -> "Cat 6"))),
+                      Map(
+                        "name" -> "Rusty sword",
+                        "categories" -> Vector(Map("name" -> "Cat 4"), Map("name" -> "Cat 6")))
+                    )
+                  )
+                )
+              ),
+              Map(
+                "name" -> "Cat 4",
+                "products" -> Vector(
+                  Map(
+                    "name" -> "Rusty sword",
+                    "categories" -> Vector(Map("name" -> "Cat 4"), Map("name" -> "Cat 6"))),
+                  Map(
+                    "name" -> "Magic belt",
+                    "categories" -> Vector(
+                      Map("name" -> "Cat 4"),
+                      Map("name" -> "Cat 5"),
+                      Map("name" -> "Cat 7"))),
+                  Map(
+                    "name" -> "Health potion",
+                    "categories" -> Vector(Map("name" -> "Cat 4"), Map("name" -> "Cat 7")))
+                ),
+                "childrenSeq" -> Vector.empty
+              )
+            )
+          ))),
         resolver = DeferredResolver.fetchers(fetcherCat, fetcherProd),
-        userContext = new Repo)
+        userContext = new Repo
+      )
 
-      fetchedCatIds.map(_.sorted) should be (Vector(
-        Vector("1"),
-        Vector("2", "3", "4"),
-        Vector("5", "6", "7"),
-        Vector("4", "5", "6", "7"),
-        Vector("4", "5", "6", "7")))
+      fetchedCatIds.map(_.sorted) should be(
+        Vector(
+          Vector("1"),
+          Vector("2", "3", "4"),
+          Vector("5", "6", "7"),
+          Vector("4", "5", "6", "7"),
+          Vector("4", "5", "6", "7")))
 
-      fetchedProdIds.map(_.sorted) should be (Vector(
-        Vector(1, 2, 3),
-        Vector(1, 2, 3, 4, 5, 6)))
+      fetchedProdIds.map(_.sorted) should be(Vector(Vector(1, 2, 3), Vector(1, 2, 3, 4, 5, 6)))
     }
 
-    "support a single relation" in check(schema(), (),
+    "support a single relation" in check(
+      schema(),
+      (),
       """
         {
           category(id: "4") {
@@ -788,16 +852,15 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         }
       """,
       Map(
-        "data" -> Map(
-          "category" -> Map(
-            "productRel" -> Map(
-              "name" -> "Rusty sword",
-              "categoryRel" -> Map(
-                "name" -> "Cat 4"))))),
+        "data" -> Map("category" -> Map(
+          "productRel" -> Map("name" -> "Rusty sword", "categoryRel" -> Map("name" -> "Cat 4"))))),
       resolver = defaultResolver,
-      userContext = new Repo)
+      userContext = new Repo
+    )
 
-    "single relation should produce an error if value is not resolved" in checkContainsErrors(schema(), (),
+    "single relation should produce an error if value is not resolved" in checkContainsErrors(
+      schema(),
+      (),
       """
         {
           category(id: "1") {
@@ -808,11 +871,16 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         }
       """,
       Map("category" -> null),
-      List("Fetcher has not resolved non-optional relation ID '1' for relation 'SimpleRelation(product-category)'." -> List(Pos(4, 13))),
+      List(
+        "Fetcher has not resolved non-optional relation ID '1' for relation 'SimpleRelation(product-category)'." -> List(
+          Pos(4, 13))),
       resolver = defaultResolver,
-      userContext = new Repo)
+      userContext = new Repo
+    )
 
-    "support a optional and list relations" in check(schema(), (),
+    "support a optional and list relations" in check(
+      schema(),
+      (),
       """
         {
           c1: category(id: "1") {
@@ -846,20 +914,15 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       """,
       Map(
         "data" -> Map(
-          "c1" -> Map(
-            "productRelOpt" -> null,
-            "productRelSeq" -> Vector.empty),
+          "c1" -> Map("productRelOpt" -> null, "productRelSeq" -> Vector.empty),
           "c2" -> Map(
             "productRelOpt" -> Map(
               "name" -> "Rusty sword",
-              "categoryRelOpt" -> Map(
-                "name" -> "Cat 4")),
+              "categoryRelOpt" -> Map("name" -> "Cat 4")),
             "productRelSeq" -> Vector(
               Map(
                 "name" -> "Rusty sword",
-                "categoryRelSeq" -> Vector(
-                  Map("name" -> "Cat 4"),
-                  Map("name" -> "Cat 6"))),
+                "categoryRelSeq" -> Vector(Map("name" -> "Cat 4"), Map("name" -> "Cat 6"))),
               Map(
                 "name" -> "Magic belt",
                 "categoryRelSeq" -> Vector(
@@ -868,13 +931,17 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
                   Map("name" -> "Cat 7"))),
               Map(
                 "name" -> "Health potion",
-                "categoryRelSeq" -> Vector(
-                  Map("name" -> "Cat 4"),
-                  Map("name" -> "Cat 7"))))))),
+                "categoryRelSeq" -> Vector(Map("name" -> "Cat 4"), Map("name" -> "Cat 7")))
+            )
+          )
+        )),
       resolver = defaultResolver,
-      userContext = new Repo)
+      userContext = new Repo
+    )
 
-    "support multiple relations" in check(schema(), (),
+    "support multiple relations" in check(
+      schema(),
+      (),
       """
         {
           products(categoryIds: ["1", "2", "5", "6", "4"]) {
@@ -883,28 +950,17 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         }
       """,
       Map(
-        "data" -> Map(
-          "products" -> Vector(
-            Map(
-              "id" -> 2,
-              "name" -> "Magic belt"),
-            Map(
-              "id" -> 4,
-              "name" -> "Unidentified potion"),
-            Map(
-              "id" -> 1,
-              "name" -> "Rusty sword"),
-            Map(
-              "id" -> 5,
-              "name" -> "Common boots"),
-            Map(
-              "id" -> 6,
-              "name" -> "Golden ring"),
-            Map(
-              "id" -> 3,
-              "name" -> "Health potion")))),
+        "data" -> Map("products" -> Vector(
+          Map("id" -> 2, "name" -> "Magic belt"),
+          Map("id" -> 4, "name" -> "Unidentified potion"),
+          Map("id" -> 1, "name" -> "Rusty sword"),
+          Map("id" -> 5, "name" -> "Common boots"),
+          Map("id" -> 6, "name" -> "Golden ring"),
+          Map("id" -> 3, "name" -> "Health potion")
+        ))),
       resolver = defaultResolver,
-      userContext = new Repo)
+      userContext = new Repo
+    )
 
     "support manual cache updates" in {
       var fetchedProdIds = Vector.empty[Seq[Int]]
@@ -927,7 +983,9 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         }
 
-      check(schema(fetcherCat, fetcherProd), (),
+      check(
+        schema(fetcherCat, fetcherProd),
+        (),
         """
           {
             category(id: "5") {
@@ -940,26 +998,24 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         """,
         Map(
-          "data" -> Map(
-            "category" -> Map(
-              "name" -> "Cat 5",
-              "products" -> Vector(
-                Map("name" -> "Magic belt"),
-                Map("name" -> "Manually Cached"))))),
+          "data" -> Map("category" -> Map(
+            "name" -> "Cat 5",
+            "products" -> Vector(Map("name" -> "Magic belt"), Map("name" -> "Manually Cached"))))),
         resolver = DeferredResolver.fetchers(fetcherCat, fetcherProd),
-        userContext = new Repo)
+        userContext = new Repo
+      )
 
-      fetchedProdIds.map(_.sorted) should be (Vector(Vector(2)))
+      fetchedProdIds.map(_.sorted) should be(Vector(Vector(2)))
     }
   }
 
   "Fetcher" when {
     "using standard execution context" should {
-      behave like properFetcher (ExecutionContext.Implicits.global)
+      behave.like(properFetcher(ExecutionContext.Implicits.global))
     }
 
     "using sync execution context" should {
-      behave like properFetcher (sync.executionContext)
+      behave.like(properFetcher(sync.executionContext))
     }
   }
 }

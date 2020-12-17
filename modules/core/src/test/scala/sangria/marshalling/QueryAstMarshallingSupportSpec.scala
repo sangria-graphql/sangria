@@ -16,21 +16,28 @@ import scala.util.Success
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class QueryAstMarshallingSupportSpec extends AnyWordSpec with Matchers with FutureResultSupport with MarshallingBehaviour with InputHandlingBehaviour with ParsingBehaviour {
+class QueryAstMarshallingSupportSpec
+    extends AnyWordSpec
+    with Matchers
+    with FutureResultSupport
+    with MarshallingBehaviour
+    with InputHandlingBehaviour
+    with ParsingBehaviour {
   "QueryAstMarshalling" should {
-    behave like `value (un)marshaller` (queryAstResultMarshaller)
+    behave.like(`value (un)marshaller`(queryAstResultMarshaller))
 
-    behave like `AST-based input unmarshaller` (queryAstFromInput[ast.Value])
-    behave like `AST-based input marshaller` (queryAstResultMarshaller)
+    behave.like(`AST-based input unmarshaller`(queryAstFromInput[ast.Value]))
+    behave.like(`AST-based input marshaller`(queryAstResultMarshaller))
 
-    behave like `input parser` (ParseTestSubjects(
-      complex = "{a: [null, 123, [{foo: \"bar\"}]], b: {c: true, d: null}}",
-      simpleString = "\"bar\"",
-      simpleInt = "12345",
-      simpleNull = "null",
-      list = "[\"bar\", 1, null, true, [1, 2, 3]]",
-      syntaxError = List("[123, FOO BAR")
-    ))
+    behave.like(
+      `input parser`(ParseTestSubjects(
+        complex = "{a: [null, 123, [{foo: \"bar\"}]], b: {c: true, d: null}}",
+        simpleString = "\"bar\"",
+        simpleInt = "12345",
+        simpleNull = "null",
+        list = "[\"bar\", 1, null, true, [1, 2, 3]]",
+        syntaxError = List("[123, FOO BAR")
+      )))
 
     "marshal and unmarshal" in {
       val Success(query) = QueryParser.parse("""
@@ -48,12 +55,16 @@ class QueryAstMarshallingSupportSpec extends AnyWordSpec with Matchers with Futu
 
       val args = graphqlInput"""{someId: "1000"}"""
 
-      val result = Executor.execute(StarWarsSchema, query, new CharacterRepo,
-        variables = args,
-        deferredResolver = new FriendsResolver).await
+      val result = Executor
+        .execute(
+          StarWarsSchema,
+          query,
+          new CharacterRepo,
+          variables = args,
+          deferredResolver = new FriendsResolver)
+        .await
 
-      QueryRenderer.render(result, QueryRenderer.PrettyInput) should be (
-        """{
+      QueryRenderer.render(result, QueryRenderer.PrettyInput) should be("""{
           |  data: {
           |    human: {
           |      name: "Luke Skywalker"
@@ -76,26 +87,39 @@ class QueryAstMarshallingSupportSpec extends AnyWordSpec with Matchers with Futu
           |}""".stripMargin)
     }
 
-    val toRender = ast.ObjectValue(Vector(
-      ast.ObjectField("a", ast.ListValue(Vector(ast.NullValue(), ast.IntValue(123), ast.ListValue(Vector(ast.ObjectValue(Vector(ast.ObjectField("foo", ast.StringValue("bar"))))))))),
-      ast.ObjectField("b", ast.ObjectValue(Vector(
-        ast.ObjectField("c", ast.BooleanValue(true)),
-        ast.ObjectField("d", ast.NullValue()))))))
+    val toRender = ast.ObjectValue(
+      Vector(
+        ast.ObjectField(
+          "a",
+          ast.ListValue(
+            Vector(
+              ast.NullValue(),
+              ast.IntValue(123),
+              ast.ListValue(
+                Vector(ast.ObjectValue(Vector(ast.ObjectField("foo", ast.StringValue("bar"))))))))
+        ),
+        ast.ObjectField(
+          "b",
+          ast.ObjectValue(
+            Vector(
+              ast.ObjectField("c", ast.BooleanValue(true)),
+              ast.ObjectField("d", ast.NullValue()))))
+      ))
 
     "InputUnmarshaller" should {
       "throw an exception on invalid scalar values" in {
-        an [IllegalStateException] should be thrownBy
-            queryAstInputUnmarshaller.getScalaScalarValue(ast.NullValue())
+        an[IllegalStateException] should be thrownBy
+          queryAstInputUnmarshaller.getScalaScalarValue(ast.NullValue())
       }
 
       "handle variable names" in {
-        queryAstInputUnmarshaller.getVariableName(ast.VariableValue("foo")) should be ("foo")
+        queryAstInputUnmarshaller.getVariableName(ast.VariableValue("foo")) should be("foo")
       }
 
       "render JSON values" in {
         val rendered = queryAstInputUnmarshaller.render(toRender)
 
-        rendered should be ("""{a:[null,123,[{foo:"bar"}]],b:{c:true,d:null}}""")
+        rendered should be("""{a:[null,123,[{foo:"bar"}]],b:{c:true,d:null}}""")
       }
     }
 
@@ -103,13 +127,13 @@ class QueryAstMarshallingSupportSpec extends AnyWordSpec with Matchers with Futu
       "render pretty JSON values" in {
         val rendered = queryAstResultMarshaller.renderPretty(toRender)
 
-        rendered should be ("""{a: [null, 123, [{foo: "bar"}]], b: {c: true, d: null}}""")
+        rendered should be("""{a: [null, 123, [{foo: "bar"}]], b: {c: true, d: null}}""")
       }
 
       "render compact JSON values" in {
         val rendered = queryAstResultMarshaller.renderCompact(toRender)
 
-        rendered should be ("""{a:[null,123,[{foo:"bar"}]],b:{c:true,d:null}}""")
+        rendered should be("""{a:[null,123,[{foo:"bar"}]],b:{c:true,d:null}}""")
       }
     }
   }

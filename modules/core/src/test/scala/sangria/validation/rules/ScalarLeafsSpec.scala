@@ -8,8 +8,7 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new ScalarLeafs)
 
   "Validate: Scalar leafs" should {
-    "valid scalar selection" in expectPasses(
-      """
+    "valid scalar selection" in expectPasses("""
         fragment scalarSelection on Dog {
           barks
         }
@@ -23,7 +22,8 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Field 'human' of type 'Human' must have a sub selection." -> Some(Pos(3, 11))
-      ))
+      )
+    )
 
     "interface type missing selection" in expectFails(
       """
@@ -35,8 +35,7 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
         "Field 'pets' of type '[Pet]' must have a sub selection." -> Some(Pos(3, 19))
       ))
 
-    "valid scalar selection with args" in expectPasses(
-      """
+    "valid scalar selection with args" in expectPasses("""
         fragment scalarSelectionWithArgs on Dog {
           doesKnowCommand(dogCommand: SIT)
         }
@@ -50,7 +49,8 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Field 'barks' of type 'Boolean' must not have a sub selection." -> Some(Pos(3, 11))
-      ))
+      )
+    )
 
     "scalar selection not allowed on Enum" in expectFails(
       """
@@ -60,7 +60,8 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Field 'furColor' of type 'FurColor' must not have a sub selection." -> Some(Pos(3, 11))
-      ))
+      )
+    )
 
     "scalar selection not allowed with args" in expectFails(
       """
@@ -69,8 +70,10 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'doesKnowCommand' of type 'Boolean' must not have a sub selection." -> Some(Pos(3, 11))
-      ))
+        "Field 'doesKnowCommand' of type 'Boolean' must not have a sub selection." -> Some(
+          Pos(3, 11))
+      )
+    )
 
     "Scalar selection not allowed with directives" in expectFails(
       """
@@ -80,7 +83,8 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Field 'name' of type 'String' must not have a sub selection." -> Some(Pos(3, 11))
-      ))
+      )
+    )
 
     "Scalar selection not allowed with directives and args" in expectFails(
       """
@@ -89,7 +93,9 @@ class ScalarLeafsSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Field 'doesKnowCommand' of type 'Boolean' must not have a sub selection." -> Some(Pos(3, 11))
-      ))
+        "Field 'doesKnowCommand' of type 'Boolean' must not have a sub selection." -> Some(
+          Pos(3, 11))
+      )
+    )
   }
 }

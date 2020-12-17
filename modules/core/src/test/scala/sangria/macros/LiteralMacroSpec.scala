@@ -40,7 +40,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
 
       ast.sourceMapper should not be 'empty
 
-      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be (
+      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
           Vector(
             OperationDefinition(
@@ -62,7 +62,8 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                   Vector.empty,
                   Vector.empty,
                   None
-                )),
+                )
+              ),
               Vector(
                 Directive(
                   "include",
@@ -87,7 +88,8 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                     )),
                   Vector.empty,
                   None
-                )),
+                )
+              ),
               Vector(
                 Field(
                   Some("luke"),
@@ -112,23 +114,22 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                       Vector.empty,
                       None
                     )),
-                  Vector(
-                    Field(
-                      None,
-                      "friends",
-                      Vector(
-                        Argument(
-                          "sort",
-                          EnumValue("NAME", Vector.empty, None),
-                          Vector.empty,
-                          None
-                        )),
-                      Vector.empty,
-                      Vector.empty,
-                      Vector.empty,
-                      Vector.empty,
-                      None
-                    )),
+                  Vector(Field(
+                    None,
+                    "friends",
+                    Vector(
+                      Argument(
+                        "sort",
+                        EnumValue("NAME", Vector.empty, None),
+                        Vector.empty,
+                        None
+                      )),
+                    Vector.empty,
+                    Vector.empty,
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )),
                   Vector.empty,
                   Vector.empty,
                   None
@@ -156,41 +157,39 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                       None
                     )),
                   Vector.empty,
-                  Vector(
-                    Comment(" some name", None)),
+                  Vector(Comment(" some name", None)),
                   None
                 ),
                 InlineFragment(
                   Some(NamedType("User", None)),
                   Vector.empty,
-                  Vector(
-                    Field(
-                      None,
-                      "birth",
-                      Vector.empty,
-                      Vector.empty,
-                      Vector(
-                        Field(
-                          None,
-                          "day",
-                          Vector.empty,
-                          Vector.empty,
-                          Vector.empty,
-                          Vector.empty,
-                          Vector.empty,
-                          None
-                        )),
-                      Vector.empty,
-                      Vector.empty,
-                      None
-                    )),
+                  Vector(Field(
+                    None,
+                    "birth",
+                    Vector.empty,
+                    Vector.empty,
+                    Vector(
+                      Field(
+                        None,
+                        "day",
+                        Vector.empty,
+                        Vector.empty,
+                        Vector.empty,
+                        Vector.empty,
+                        Vector.empty,
+                        None
+                      )),
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )),
                   Vector.empty,
                   Vector.empty,
                   None
                 ),
-                FragmentSpread("Foo", Vector.empty, Vector.empty, None)),
-              Vector(
-                Comment(" test query", None)),
+                FragmentSpread("Foo", Vector.empty, Vector.empty, None)
+              ),
+              Vector(Comment(" test query", None)),
               Vector.empty,
               None
             ),
@@ -223,10 +222,10 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                 )),
               Vector.empty,
               Vector.empty,
-              Vector(
-                Comment(" field in fragment!", None)),
+              Vector(Comment(" field in fragment!", None)),
               None
-            )),
+            )
+          ),
           Vector.empty,
           None,
           None
@@ -291,7 +290,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
 
       ast.sourceMapper should not be 'empty
 
-      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be (
+      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
           Vector(
             OperationDefinition(
@@ -313,52 +312,90 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                   Vector.empty,
                   Vector.empty,
                   None
-                )),
+                )
+              ),
               Vector.empty,
-              Vector(
-                Field(
-                  Some("whoever123is"),
-                  "node",
-                  Vector(
-                    Argument(
-                      "id",
-                      ListValue(
-                        Vector(
-                          BigIntValue(123, Vector.empty, None),
-                          BigIntValue(456, Vector.empty, None)),
-                        Vector.empty,
-                        None
-                      ),
-                      Vector.empty,
-                      None
-                    )),
-                  Vector.empty,
-                  Vector(
-                    Field(
-                      None,
-                      "id",
-                      Vector.empty,
-                      Vector.empty,
-                      Vector.empty,
-                      Vector.empty,
+              Vector(Field(
+                Some("whoever123is"),
+                "node",
+                Vector(
+                  Argument(
+                    "id",
+                    ListValue(
+                      Vector(
+                        BigIntValue(123, Vector.empty, None),
+                        BigIntValue(456, Vector.empty, None)),
                       Vector.empty,
                       None
                     ),
-                    InlineFragment(
-                      Some(NamedType("User", None)),
-                      Vector(
-                        Directive(
-                          "defer",
-                          Vector.empty,
-                          Vector.empty,
-                          None
-                        )),
+                    Vector.empty,
+                    None
+                  )),
+                Vector.empty,
+                Vector(
+                  Field(
+                    None,
+                    "id",
+                    Vector.empty,
+                    Vector.empty,
+                    Vector.empty,
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  ),
+                  InlineFragment(
+                    Some(NamedType("User", None)),
+                    Vector(
+                      Directive(
+                        "defer",
+                        Vector.empty,
+                        Vector.empty,
+                        None
+                      )),
+                    Vector(Field(
+                      None,
+                      "field2",
+                      Vector.empty,
+                      Vector.empty,
                       Vector(
                         Field(
                           None,
-                          "field2",
+                          "id",
                           Vector.empty,
                           Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          None
+                        ),
+                        Field(
+                          Some("alias"),
+                          "field1",
+                          Vector(
+                            Argument(
+                              "first",
+                              BigIntValue(10, Vector.empty, None),
+                              Vector.empty,
+                              None
+                            ),
+                            Argument(
+                              "after",
+                              VariableValue("foo", Vector.empty, None),
+                              Vector.empty,
+                              None
+                            )),
+                          Vector(
+                            Directive(
+                              "include",
+                              Vector(Argument(
+                                "if",
+                                VariableValue("foo", Vector.empty, None),
+                                Vector.empty,
+                                None
+                              )),
+                              Vector.empty,
+                              None
+                            )),
                           Vector(
                             Field(
                               None,
@@ -370,70 +407,39 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                               Vector.empty,
                               None
                             ),
-                            Field(
-                              Some("alias"),
-                              "field1",
-                              Vector(
-                                Argument(
-                                  "first",
-                                  BigIntValue(10, Vector.empty, None),
-                                  Vector.empty,
-                                  None
-                                ),
-                                Argument(
-                                  "after",
-                                  VariableValue("foo", Vector.empty, None),
-                                  Vector.empty,
-                                  None
-                                )),
-                              Vector(
-                                Directive(
-                                  "include",
-                                  Vector(
-                                    Argument(
-                                      "if",
-                                      VariableValue("foo", Vector.empty, None),
-                                      Vector.empty,
-                                      None
-                                    )),
-                                  Vector.empty,
-                                  None
-                                )),
-                              Vector(
-                                Field(
-                                  None,
-                                  "id",
-                                  Vector.empty,
-                                  Vector.empty,
-                                  Vector.empty,
-                                  Vector.empty,
-                                  Vector.empty,
-                                  None
-                                ),
-                                FragmentSpread("frag", Vector.empty, Vector.empty, None)),
-                              Vector.empty,
-                              Vector.empty,
-                              None
-                            )),
+                            FragmentSpread("frag", Vector.empty, Vector.empty, None)),
                           Vector.empty,
                           Vector.empty,
                           None
-                        )),
+                        )
+                      ),
                       Vector.empty,
                       Vector.empty,
                       None
                     )),
-                  Vector.empty,
-                  Vector.empty,
-                  None
-                )),
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )
+                ),
+                Vector.empty,
+                Vector.empty,
+                None
+              )),
               Vector(
                 Comment(" Copyright (c) 2015, Facebook, Inc.", None),
                 Comment(" All rights reserved.", None),
                 Comment("", None),
-                Comment(" This source code is licensed under the BSD-style license found in the", None),
-                Comment(" LICENSE file in the root directory of this source tree. An additional grant", None),
-                Comment(" of patent rights can be found in the PATENTS file in the same directory.", None)),
+                Comment(
+                  " This source code is licensed under the BSD-style license found in the",
+                  None),
+                Comment(
+                  " LICENSE file in the root directory of this source tree. An additional grant",
+                  None),
+                Comment(
+                  " of patent rights can be found in the PATENTS file in the same directory.",
+                  None)
+              ),
               Vector.empty,
               None
             ),
@@ -450,61 +456,35 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                   None
                 )),
               Vector.empty,
-              Vector(
-                Field(
+              Vector(Field(
+                None,
+                "storyLikeSubscribe",
+                Vector(
+                  Argument(
+                    "input",
+                    VariableValue("input", Vector.empty, None),
+                    Vector.empty,
+                    None
+                  )),
+                Vector.empty,
+                Vector(Field(
                   None,
-                  "storyLikeSubscribe",
-                  Vector(
-                    Argument(
-                      "input",
-                      VariableValue("input", Vector.empty, None),
-                      Vector.empty,
-                      None
-                    )),
+                  "story",
+                  Vector.empty,
                   Vector.empty,
                   Vector(
                     Field(
                       None,
-                      "story",
+                      "likers",
                       Vector.empty,
                       Vector.empty,
                       Vector(
                         Field(
                           None,
-                          "likers",
+                          "count",
                           Vector.empty,
                           Vector.empty,
-                          Vector(
-                            Field(
-                              None,
-                              "count",
-                              Vector.empty,
-                              Vector.empty,
-                              Vector.empty,
-                              Vector.empty,
-                              Vector.empty,
-                              None
-                            )),
                           Vector.empty,
-                          Vector.empty,
-                          None
-                        ),
-                        Field(
-                          None,
-                          "likeSentence",
-                          Vector.empty,
-                          Vector.empty,
-                          Vector(
-                            Field(
-                              None,
-                              "text",
-                              Vector.empty,
-                              Vector.empty,
-                              Vector.empty,
-                              Vector.empty,
-                              Vector.empty,
-                              None
-                            )),
                           Vector.empty,
                           Vector.empty,
                           None
@@ -512,11 +492,36 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                       Vector.empty,
                       Vector.empty,
                       None
-                    )),
+                    ),
+                    Field(
+                      None,
+                      "likeSentence",
+                      Vector.empty,
+                      Vector.empty,
+                      Vector(
+                        Field(
+                          None,
+                          "text",
+                          Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          Vector.empty,
+                          None
+                        )),
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )
+                  ),
                   Vector.empty,
                   Vector.empty,
                   None
                 )),
+                Vector.empty,
+                Vector.empty,
+                None
+              )),
               Vector.empty,
               Vector.empty,
               None
@@ -526,41 +531,35 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
               Some("likeStory"),
               Vector.empty,
               Vector.empty,
-              Vector(
-                Field(
+              Vector(Field(
+                None,
+                "like",
+                Vector(
+                  Argument(
+                    "story",
+                    BigIntValue(123, Vector.empty, None),
+                    Vector.empty,
+                    None
+                  )),
+                Vector(
+                  Directive(
+                    "defer",
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )),
+                Vector(Field(
                   None,
-                  "like",
-                  Vector(
-                    Argument(
-                      "story",
-                      BigIntValue(123, Vector.empty, None),
-                      Vector.empty,
-                      None
-                    )),
-                  Vector(
-                    Directive(
-                      "defer",
-                      Vector.empty,
-                      Vector.empty,
-                      None
-                    )),
+                  "story",
+                  Vector.empty,
+                  Vector.empty,
                   Vector(
                     Field(
                       None,
-                      "story",
+                      "id",
                       Vector.empty,
                       Vector.empty,
-                      Vector(
-                        Field(
-                          None,
-                          "id",
-                          Vector.empty,
-                          Vector.empty,
-                          Vector.empty,
-                          Vector.empty,
-                          Vector.empty,
-                          None
-                        )),
+                      Vector.empty,
                       Vector.empty,
                       Vector.empty,
                       None
@@ -569,6 +568,10 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                   Vector.empty,
                   None
                 )),
+                Vector.empty,
+                Vector.empty,
+                None
+              )),
               Vector.empty,
               Vector.empty,
               None
@@ -577,45 +580,45 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
               "frag",
               NamedType("Friend", None),
               Vector.empty,
-              Vector(
-                Field(
-                  None,
-                  "foo",
-                  Vector(
-                    Argument(
-                      "size",
-                      VariableValue("size", Vector.empty, None),
+              Vector(Field(
+                None,
+                "foo",
+                Vector(
+                  Argument(
+                    "size",
+                    VariableValue("size", Vector.empty, None),
+                    Vector.empty,
+                    None
+                  ),
+                  Argument(
+                    "bar",
+                    VariableValue("b", Vector.empty, None),
+                    Vector.empty,
+                    None
+                  ),
+                  Argument(
+                    "obj",
+                    ObjectValue(
+                      Vector(
+                        ObjectField(
+                          "key",
+                          StringValue("value", false, None, Vector.empty, None),
+                          Vector.empty,
+                          None
+                        )),
                       Vector.empty,
                       None
                     ),
-                    Argument(
-                      "bar",
-                      VariableValue("b", Vector.empty, None),
-                      Vector.empty,
-                      None
-                    ),
-                    Argument(
-                      "obj",
-                      ObjectValue(
-                        Vector(
-                          ObjectField(
-                            "key",
-                            StringValue("value", false, None, Vector.empty, None),
-                            Vector.empty,
-                            None
-                          )),
-                        Vector.empty,
-                        None
-                      ),
-                      Vector.empty,
-                      None
-                    )),
-                  Vector.empty,
-                  Vector.empty,
-                  Vector.empty,
-                  Vector.empty,
-                  None
-                )),
+                    Vector.empty,
+                    None
+                  )
+                ),
+                Vector.empty,
+                Vector.empty,
+                Vector.empty,
+                Vector.empty,
+                None
+              )),
               Vector.empty,
               Vector.empty,
               Vector.empty,
@@ -658,11 +661,13 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                   Vector.empty,
                   Vector.empty,
                   None
-                )),
+                )
+              ),
               Vector.empty,
               Vector.empty,
               None
-            )),
+            )
+          ),
           Vector.empty,
           None,
           None
@@ -757,52 +762,165 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
 
       ast.sourceMapper should not be 'empty
 
-      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be (
+      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
           Vector(
             SchemaDefinition(
               Vector(
-                OperationTypeDefinition(OperationType.Query, NamedType("QueryType", None), Vector.empty, None),
-                OperationTypeDefinition(OperationType.Mutation, NamedType("MutationType", None), Vector.empty, None)),
+                OperationTypeDefinition(
+                  OperationType.Query,
+                  NamedType("QueryType", None),
+                  Vector.empty,
+                  None),
+                OperationTypeDefinition(
+                  OperationType.Mutation,
+                  NamedType("MutationType", None),
+                  Vector.empty,
+                  None)
+              ),
               Vector.empty,
               None,
               Vector(
                 Comment(" Copyright (c) 2015, Facebook, Inc.", None),
                 Comment(" All rights reserved.", None),
                 Comment("", None),
-                Comment(" This source code is licensed under the BSD-style license found in the", None),
-                Comment(" LICENSE file in the root directory of this source tree. An additional grant", None),
-                Comment(" of patent rights can be found in the PATENTS file in the same directory.", None)),
+                Comment(
+                  " This source code is licensed under the BSD-style license found in the",
+                  None),
+                Comment(
+                  " LICENSE file in the root directory of this source tree. An additional grant",
+                  None),
+                Comment(
+                  " of patent rights can be found in the PATENTS file in the same directory.",
+                  None)
+              ),
               Vector.empty,
               None
             ),
             ObjectTypeDefinition(
               "Foo",
+              Vector(NamedType("Bar", None)),
               Vector(
-                NamedType("Bar", None)),
-              Vector(
-                FieldDefinition("one", NamedType("Type", None), Vector.empty, Vector.empty, None, Vector.empty, None),
-                FieldDefinition("two", NamedType("Type", None), Vector(InputValueDefinition("argument", NotNullType(NamedType("InputType", None), None), None, Vector.empty, None, Vector.empty, None)), Vector.empty, Some(StringValue("another description", false, None, Vector.empty, None)), Vector.empty, None),
-                FieldDefinition("three", NamedType("Int", None), Vector(InputValueDefinition("argument", NamedType("InputType", None), None, Vector.empty, None, Vector.empty, None), InputValueDefinition("other", NamedType("String", None), None, Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None),
-                FieldDefinition("four", NamedType("String", None), Vector(InputValueDefinition("argument", NamedType("String", None), Some(StringValue("string", false, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None),
-                FieldDefinition("five", NamedType("String", None), Vector(InputValueDefinition("argument", ListType(NamedType("String", None), None), Some(ListValue(
-                  Vector(
-                    StringValue("string", false, None, Vector.empty, None),
-                    StringValue("string", false, None, Vector.empty, None)),
+                FieldDefinition(
+                  "one",
+                  NamedType("Type", None),
                   Vector.empty,
-                  None
-                )), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None),
-                FieldDefinition("six", NamedType("Type", None), Vector(InputValueDefinition("argument", NamedType("InputType", None), Some(ObjectValue(
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None),
+                FieldDefinition(
+                  "two",
+                  NamedType("Type", None),
                   Vector(
-                    ObjectField(
-                      "key",
-                      StringValue("value", false, None, Vector.empty, None),
+                    InputValueDefinition(
+                      "argument",
+                      NotNullType(NamedType("InputType", None), None),
+                      None,
                       Vector.empty,
-                      None
-                    )),
+                      None,
+                      Vector.empty,
+                      None)),
+                  Vector.empty,
+                  Some(StringValue("another description", false, None, Vector.empty, None)),
                   Vector.empty,
                   None
-                )), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
+                ),
+                FieldDefinition(
+                  "three",
+                  NamedType("Int", None),
+                  Vector(
+                    InputValueDefinition(
+                      "argument",
+                      NamedType("InputType", None),
+                      None,
+                      Vector.empty,
+                      None,
+                      Vector.empty,
+                      None),
+                    InputValueDefinition(
+                      "other",
+                      NamedType("String", None),
+                      None,
+                      Vector.empty,
+                      None,
+                      Vector.empty,
+                      None)
+                  ),
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None
+                ),
+                FieldDefinition(
+                  "four",
+                  NamedType("String", None),
+                  Vector(
+                    InputValueDefinition(
+                      "argument",
+                      NamedType("String", None),
+                      Some(StringValue("string", false, None, Vector.empty, None)),
+                      Vector.empty,
+                      None,
+                      Vector.empty,
+                      None)),
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None
+                ),
+                FieldDefinition(
+                  "five",
+                  NamedType("String", None),
+                  Vector(InputValueDefinition(
+                    "argument",
+                    ListType(NamedType("String", None), None),
+                    Some(
+                      ListValue(
+                        Vector(
+                          StringValue("string", false, None, Vector.empty, None),
+                          StringValue("string", false, None, Vector.empty, None)),
+                        Vector.empty,
+                        None
+                      )),
+                    Vector.empty,
+                    None,
+                    Vector.empty,
+                    None
+                  )),
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None
+                ),
+                FieldDefinition(
+                  "six",
+                  NamedType("Type", None),
+                  Vector(InputValueDefinition(
+                    "argument",
+                    NamedType("InputType", None),
+                    Some(
+                      ObjectValue(
+                        Vector(ObjectField(
+                          "key",
+                          StringValue("value", false, None, Vector.empty, None),
+                          Vector.empty,
+                          None
+                        )),
+                        Vector.empty,
+                        None
+                      )),
+                    Vector.empty,
+                    None,
+                    Vector.empty,
+                    None
+                  )),
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None
+                )
+              ),
               Vector.empty,
               Some(StringValue("Type description *test*", false, None, Vector.empty, None)),
               Vector.empty,
@@ -812,18 +930,34 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             ObjectTypeDefinition(
               "AnnotatedObject",
               Vector.empty,
-              Vector(
-                FieldDefinition("annotatedField", NamedType("Type", None), Vector(InputValueDefinition("arg", NamedType("Type", None), Some(StringValue("default", false, None, Vector.empty, None)), Vector(Directive(
-                  "onArg",
-                  Vector.empty,
+              Vector(FieldDefinition(
+                "annotatedField",
+                NamedType("Type", None),
+                Vector(InputValueDefinition(
+                  "arg",
+                  NamedType("Type", None),
+                  Some(StringValue("default", false, None, Vector.empty, None)),
+                  Vector(Directive(
+                    "onArg",
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )),
+                  None,
                   Vector.empty,
                   None
-                )), None, Vector.empty, None)), Vector(Directive(
-                  "onField",
-                  Vector.empty,
-                  Vector.empty,
-                  None
-                )), None, Vector.empty, None)),
+                )),
+                Vector(
+                  Directive(
+                    "onField",
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )),
+                None,
+                Vector.empty,
+                None
+              )),
               Vector(
                 Directive(
                   "onObject",
@@ -845,29 +979,69 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             InterfaceTypeDefinition(
               "Bar",
               Vector(
-                FieldDefinition("one", NamedType("Type", None), Vector.empty, Vector.empty, None, Vector.empty, None),
-                FieldDefinition("four", NamedType("String", None), Vector(InputValueDefinition("argument", NamedType("String", None), Some(StringValue("string", false, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
+                FieldDefinition(
+                  "one",
+                  NamedType("Type", None),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None),
+                FieldDefinition(
+                  "four",
+                  NamedType("String", None),
+                  Vector(
+                    InputValueDefinition(
+                      "argument",
+                      NamedType("String", None),
+                      Some(StringValue("string", false, None, Vector.empty, None)),
+                      Vector.empty,
+                      None,
+                      Vector.empty,
+                      None)),
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None
+                )
+              ),
               Vector.empty,
               None,
-              Vector(
-                Comment(" It's an interface!", None)),
+              Vector(Comment(" It's an interface!", None)),
               Vector.empty,
               None
             ),
             InterfaceTypeDefinition(
               "AnnotatedInterface",
-              Vector(
-                FieldDefinition("annotatedField", NamedType("Type", None), Vector(InputValueDefinition("arg", NamedType("Type", None), None, Vector(Directive(
-                  "onArg",
-                  Vector.empty,
-                  Vector.empty,
-                  None
-                )), None, Vector.empty, None)), Vector(Directive(
-                  "onField",
-                  Vector.empty,
-                  Vector.empty,
-                  None
-                )), None, Vector.empty, None)),
+              Vector(FieldDefinition(
+                "annotatedField",
+                NamedType("Type", None),
+                Vector(
+                  InputValueDefinition(
+                    "arg",
+                    NamedType("Type", None),
+                    None,
+                    Vector(
+                      Directive(
+                        "onArg",
+                        Vector.empty,
+                        Vector.empty,
+                        None
+                      )),
+                    None,
+                    Vector.empty,
+                    None)),
+                Vector(
+                  Directive(
+                    "onField",
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )),
+                None,
+                Vector.empty,
+                None
+              )),
               Vector(
                 Directive(
                   "onInterface",
@@ -893,9 +1067,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             ),
             UnionTypeDefinition(
               "AnnotatedUnion",
-              Vector(
-                NamedType("A", None),
-                NamedType("B", None)),
+              Vector(NamedType("A", None), NamedType("B", None)),
               Vector(
                 Directive(
                   "onUnion",
@@ -930,8 +1102,19 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             EnumTypeDefinition(
               "Site",
               Vector(
-                EnumValueDefinition("DESKTOP", Vector.empty, None, Vector(Comment(" value 1", None)), None),
-                EnumValueDefinition("MOBILE", Vector.empty, None, Vector(Comment(" value 2", None)), None)),
+                EnumValueDefinition(
+                  "DESKTOP",
+                  Vector.empty,
+                  None,
+                  Vector(Comment(" value 1", None)),
+                  None),
+                EnumValueDefinition(
+                  "MOBILE",
+                  Vector.empty,
+                  None,
+                  Vector(Comment(" value 2", None)),
+                  None)
+              ),
               Vector.empty,
               None,
               Vector.empty,
@@ -941,13 +1124,20 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             EnumTypeDefinition(
               "AnnotatedEnum",
               Vector(
-                EnumValueDefinition("ANNOTATED_VALUE", Vector(Directive(
-                  "onEnumValue",
+                EnumValueDefinition(
+                  "ANNOTATED_VALUE",
+                  Vector(
+                    Directive(
+                      "onEnumValue",
+                      Vector.empty,
+                      Vector.empty,
+                      None
+                    )),
+                  None,
                   Vector.empty,
-                  Vector.empty,
-                  None
-                )), None, Vector.empty, None),
-                EnumValueDefinition("OTHER_VALUE", Vector.empty, None, Vector.empty, None)),
+                  None),
+                EnumValueDefinition("OTHER_VALUE", Vector.empty, None, Vector.empty, None)
+              ),
               Vector(
                 Directive(
                   "onEnum",
@@ -963,8 +1153,23 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             InputObjectTypeDefinition(
               "InputType",
               Vector(
-                InputValueDefinition("key", NotNullType(NamedType("String", None), None), None, Vector.empty, None, Vector.empty, None),
-                InputValueDefinition("answer", NamedType("Int", None), Some(BigIntValue(42, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
+                InputValueDefinition(
+                  "key",
+                  NotNullType(NamedType("String", None), None),
+                  None,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None),
+                InputValueDefinition(
+                  "answer",
+                  NamedType("Int", None),
+                  Some(BigIntValue(42, Vector.empty, None)),
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None)
+              ),
               Vector.empty,
               None,
               Vector.empty,
@@ -973,13 +1178,21 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             ),
             InputObjectTypeDefinition(
               "AnnotatedInput",
-              Vector(
-                InputValueDefinition("annotatedField", NamedType("Type", None), None, Vector(Directive(
-                  "onField",
-                  Vector.empty,
-                  Vector.empty,
-                  None
-                )), None, Vector(Comment(" field comment", None)), None)),
+              Vector(InputValueDefinition(
+                "annotatedField",
+                NamedType("Type", None),
+                None,
+                Vector(
+                  Directive(
+                    "onField",
+                    Vector.empty,
+                    Vector.empty,
+                    None
+                  )),
+                None,
+                Vector(Comment(" field comment", None)),
+                None
+              )),
               Vector(
                 Directive(
                   "onInputObjectType",
@@ -995,8 +1208,23 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             ObjectTypeExtensionDefinition(
               "Foo",
               Vector.empty,
-              Vector(
-                FieldDefinition("seven", NamedType("Type", None), Vector(InputValueDefinition("argument", ListType(NamedType("String", None), None), None, Vector.empty, None, Vector.empty, None)), Vector.empty, None, Vector.empty, None)),
+              Vector(FieldDefinition(
+                "seven",
+                NamedType("Type", None),
+                Vector(
+                  InputValueDefinition(
+                    "argument",
+                    ListType(NamedType("String", None), None),
+                    None,
+                    Vector.empty,
+                    None,
+                    Vector.empty,
+                    None)),
+                Vector.empty,
+                None,
+                Vector.empty,
+                None
+              )),
               Vector.empty,
               Vector.empty,
               Vector.empty,
@@ -1006,7 +1234,14 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
               "Foo",
               Vector.empty,
               Vector(
-                FieldDefinition("foo", NamedType("String", None), Vector.empty, Vector.empty, None, Vector.empty, None)),
+                FieldDefinition(
+                  "foo",
+                  NamedType("String", None),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None)),
               Vector(
                 Directive(
                   "onType",
@@ -1021,11 +1256,19 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             DirectiveDefinition(
               "skip",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", None), None), None, Vector.empty, None, Vector.empty, None)),
+                InputValueDefinition(
+                  "if",
+                  NotNullType(NamedType("Boolean", None), None),
+                  None,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None)),
               Vector(
                 DirectiveLocation("FIELD", Vector.empty, None),
                 DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, None),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)
+              ),
               None,
               Vector.empty,
               None
@@ -1033,15 +1276,24 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             DirectiveDefinition(
               "include",
               Vector(
-                InputValueDefinition("if", NotNullType(NamedType("Boolean", None), None), None, Vector.empty, None, Vector.empty, None)),
+                InputValueDefinition(
+                  "if",
+                  NotNullType(NamedType("Boolean", None), None),
+                  None,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  None)),
               Vector(
                 DirectiveLocation("FIELD", Vector.empty, None),
                 DirectiveLocation("FRAGMENT_SPREAD", Vector.empty, None),
-                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)),
+                DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)
+              ),
               None,
               Vector.empty,
               None
-            )),
+            )
+          ),
           Vector.empty,
           None,
           None
@@ -1062,7 +1314,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
         }
       """
 
-      ast should be (
+      ast should be(
         ObjectValue(
           Vector(
             ObjectField(
@@ -1074,8 +1326,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             ObjectField(
               "b",
               BigIntValue(1, Vector.empty, Some(AstLocation(68, 6, 14))),
-              Vector(
-                Comment(" test comment", Some(AstLocation(40, 5, 11)))),
+              Vector(Comment(" test comment", Some(AstLocation(40, 5, 11)))),
               Some(AstLocation(65, 6, 11))
             ),
             ObjectField(
@@ -1093,13 +1344,15 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                     EnumValue("HELLO", Vector.empty, Some(AstLocation(130, 9, 19))),
                     Vector.empty,
                     Some(AstLocation(124, 9, 13))
-                  )),
+                  )
+                ),
                 Vector.empty,
                 Some(AstLocation(83, 7, 14))
               ),
               Vector.empty,
               Some(AstLocation(80, 7, 11))
-            )),
+            )
+          ),
           Vector.empty,
           Some(AstLocation(9, 2, 9))
         ))

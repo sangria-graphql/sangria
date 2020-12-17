@@ -17,13 +17,16 @@ class DefaultSourceMapper(val id: String, val parserInput: ParserInput) extends 
     s"(line ${location.line}, column ${location.column})"
 
   def renderLinePosition(location: AstLocation, prefix: String = "") =
-    parserInput.getLine(location.line).replace("\r", "") + "\n" + prefix + (" " * (location.column - 1)) + "^"
+    parserInput
+      .getLine(location.line)
+      .replace("\r", "") + "\n" + prefix + (" " * (location.column - 1)) + "^"
 }
 
-class AggregateSourceMapper(val id: String, val delegates: Vector[SourceMapper]) extends SourceMapper {
+class AggregateSourceMapper(val id: String, val delegates: Vector[SourceMapper])
+    extends SourceMapper {
   lazy val delegateById: Map[String, SourceMapper] = delegates.iterator.map(d => d.id -> d).toMap
 
-  lazy val source = delegates.map(_.source.trim) mkString "\n\n"
+  lazy val source = delegates.map(_.source.trim).mkString("\n\n")
 
   def renderLocation(location: AstLocation) =
     delegateById.get(location.sourceId).fold("")(sm => sm.renderLocation(location))

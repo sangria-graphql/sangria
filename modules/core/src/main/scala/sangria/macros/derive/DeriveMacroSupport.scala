@@ -1,6 +1,6 @@
 package sangria.macros.derive
 
-import scala.reflect.internal.{StdNames, SymbolTable, Definitions}
+import scala.reflect.internal.{Definitions, StdNames, SymbolTable}
 import scala.reflect.macros.blackbox
 
 trait DeriveMacroSupport {
@@ -14,50 +14,50 @@ trait DeriveMacroSupport {
 
     val (lastPos, lastError) = errors.last
 
-    errors.dropRight(1).foreach{case (pos, error) => c.error(pos, error)}
+    errors.dropRight(1).foreach { case (pos, error) => c.error(pos, error) }
 
     c.abort(lastPos, lastError)
   }
 
   protected def symbolName(annotations: List[Annotation]): Option[Tree] =
     annotations
-      .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] => arg}
+      .map(_.tree)
+      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] => arg }
       .headOption
 
   protected def symbolOutputType(annotations: List[Annotation]): Option[Tree] =
     annotations
-      .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLOutputType] => arg}
+      .map(_.tree)
+      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLOutputType] => arg }
       .headOption
 
   protected def symbolInputType(annotations: List[Annotation]): Option[Tree] =
     annotations
-      .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLInputType] => arg}
+      .map(_.tree)
+      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLInputType] => arg }
       .headOption
 
   protected def symbolDescription(annotations: List[Annotation]): Option[Tree] =
     annotations
-      .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] => arg}
+      .map(_.tree)
+      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] => arg }
       .headOption
 
   protected def symbolDefault(annotations: List[Annotation]): Option[Tree] =
     annotations
-      .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDefault] => arg}
+      .map(_.tree)
+      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDefault] => arg }
       .headOption
 
   protected def symbolDeprecation(annotations: List[Annotation]): Option[Tree] =
     annotations
-      .map (_.tree)
-      .collect {case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDeprecated] => arg}
+      .map(_.tree)
+      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDeprecated] => arg }
       .headOption
 
   protected def symbolFieldTags(annotations: List[Annotation]): Tree =
     annotations
-      .map (_.tree)
+      .map(_.tree)
       .foldLeft(q"List[sangria.execution.FieldTag]()") {
         case (acc, q"new $name(..$fieldTags)") if name.tpe =:= typeOf[GraphQLFieldTags] =>
           q"$acc ++ $fieldTags"
@@ -77,5 +77,5 @@ trait DeriveMacroSupport {
     defs.nme.defaultGetterName(defs.newTermName(method), pos)
   }
 
-  def checkSetting[T : WeakTypeTag](setting: Tree) = weakTypeTag[T].tpe =:= c.typecheck(setting).tpe
+  def checkSetting[T: WeakTypeTag](setting: Tree) = weakTypeTag[T].tpe =:= c.typecheck(setting).tpe
 }

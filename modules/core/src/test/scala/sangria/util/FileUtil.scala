@@ -12,7 +12,6 @@ import net.jcazevedo.moultingyaml._
 
 import scala.collection.JavaConverters._
 
-
 object FileUtil extends StringMatchers {
   def loadQuery(name: String) =
     loadResource("queries/" + name)
@@ -26,7 +25,8 @@ object FileUtil extends StringMatchers {
       .scan()
       .getResourcesWithExtension("yaml")
       .asScala
-      .groupBy(_.getPath).mapValues(_.head) // deduplicate (`ClassGraph` gives duplicates for some reason)
+      .groupBy(_.getPath)
+      .mapValues(_.head) // deduplicate (`ClassGraph` gives duplicates for some reason)
       .values
       .toVector
 
@@ -46,9 +46,11 @@ object FileUtil extends StringMatchers {
   def loadTestData(path: String): Either[YamlValue, JsValue] = {
     val text = loadResource(path)
 
-    if (path endsWith ".yaml") Left(text.parseYaml)
-    else if (path endsWith ".json") Right(text.parseJson)
-    else throw new IllegalArgumentException(s"Unsupported file format for test data '$path'. Only `*.json` and `*.yaml` files are supported.")
+    if (path.endsWith(".yaml")) Left(text.parseYaml)
+    else if (path.endsWith(".json")) Right(text.parseJson)
+    else
+      throw new IllegalArgumentException(
+        s"Unsupported file format for test data '$path'. Only `*.json` and `*.yaml` files are supported.")
   }
 
   def loadResource(path: String) =

@@ -28,7 +28,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
   }
 
   val UUIDType =
-    ScalarType[UUID]("UUID",
+    ScalarType[UUID](
+      "UUID",
       coerceOutput = (v, _) => v.toString,
       coerceUserInput = {
         case s: String => parseUuid(s)
@@ -37,29 +38,37 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       coerceInput = {
         case ast.StringValue(s, _, _, _, _) => parseUuid(s)
         case _ => Left(UUIDViolation)
-      })
+      }
+    )
 
   "ResolverBasedAstSchemaBuilder" should {
     "provide basic resolution capabilities" in {
       import sangria.marshalling.sprayJson._
-      
-      val ValueArg = Argument("value", StringType)
-      val TestDir = Directive("test", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
 
-      case class CustomIntViolation(value: Int, min: Option[Int], max: Option[Int]) extends BaseViolation(
-        s"Int value must be ${min.fold("")(_ + " <= ")}$value${max.fold("")(" <= " + _)}.")
+      val ValueArg = Argument("value", StringType)
+      val TestDir =
+        Directive("test", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
+
+      case class CustomIntViolation(value: Int, min: Option[Int], max: Option[Int])
+          extends BaseViolation(
+            s"Int value must be ${min.fold("")(_ + " <= ")}$value${max.fold("")(" <= " + _)}.")
 
       val MinArg = Argument("min", OptionInputType(IntType))
       val MaxArg = Argument("max", OptionInputType(IntType))
-      val ValidateIntDir = Directive("validateInt", arguments = MinArg :: MaxArg :: Nil, locations = Set(DL.ArgumentDefinition, DL.InputFieldDefinition))
+      val ValidateIntDir = Directive(
+        "validateInt",
+        arguments = MinArg :: MaxArg :: Nil,
+        locations = Set(DL.ArgumentDefinition, DL.InputFieldDefinition))
 
-      def intValidationAlias(min: Option[Int], max: Option[Int]) = ScalarAlias[Int, Int](IntType,
+      def intValidationAlias(min: Option[Int], max: Option[Int]) = ScalarAlias[Int, Int](
+        IntType,
         toScalar = identity,
         fromScalar = v => {
           if (min.isDefined && v < min.get) Left(CustomIntViolation(v, min, max))
           else if (max.isDefined && v > max.get) Left(CustomIntViolation(v, min, max))
           else Right(v)
-        })
+        }
+      )
 
       val NVArg = Argument("v", IntType)
 
@@ -69,20 +78,39 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
 
       val builder = resolverBased[Any](
         AdditionalTypes(UUIDType),
-        DirectiveFieldProvider(AddExtraFieldsDir, c => List(MaterializedField(c.origin,
-          ast.FieldDefinition("extraField", ast.NamedType("Int"), Vector.empty)))),
-        DynamicDirectiveFieldProvider[Any, JsValue]("addExtraDynFields", c => List(MaterializedField(c.origin,
-          Field("extraDynField", c.materializer.getScalarType(c.origin, ast.NamedType("String")),
-            resolve = (_: Context[Any, Any]) => "foo")))),
+        DirectiveFieldProvider(
+          AddExtraFieldsDir,
+          c =>
+            List(
+              MaterializedField(
+                c.origin,
+                ast.FieldDefinition("extraField", ast.NamedType("Int"), Vector.empty)))),
+        DynamicDirectiveFieldProvider[Any, JsValue](
+          "addExtraDynFields",
+          c =>
+            List(
+              MaterializedField(
+                c.origin,
+                Field(
+                  "extraDynField",
+                  c.materializer.getScalarType(c.origin, ast.NamedType("String")),
+                  resolve = (_: Context[Any, Any]) => "foo")))
+        ),
         AdditionalDirectives(Seq(NumDir)),
-        DirectiveInputTypeResolver(ValidateIntDir, c => c.withArgs(MinArg, MaxArg)((min, max) =>
-          c.inputType(c.definition.valueType, intValidationAlias(min, max)))),
+        DirectiveInputTypeResolver(
+          ValidateIntDir,
+          c =>
+            c.withArgs(MinArg, MaxArg)((min, max) =>
+              c.inputType(c.definition.valueType, intValidationAlias(min, max)))),
         DirectiveScalarResolver(CoolDir, _ => StringType),
         DirectiveResolver(TestDir, resolve = _.arg(ValueArg)),
         DynamicDirectiveResolver[Any, JsValue]("json", resolve = _.args),
-        FieldResolver {case (TypeName("Query"), FieldName("id")) => _ => UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")},
+        FieldResolver { case (TypeName("Query"), FieldName("id")) =>
+          _ => UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")
+        },
         LegacyCommentDescriptionsResolver(),
-        AnyFieldResolver.defaultInput[Any, JsValue])
+        AnyFieldResolver.defaultInput[Any, JsValue]
+      )
 
       val schemaAst =
         gql"""
@@ -109,10 +137,11 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val collectedValue = schemaAst.analyzer.resolveDirectives(
-        GenericDirectiveResolver(NumDir, resolve = c => Some(c arg NVArg))).sum
+      val collectedValue = schemaAst.analyzer
+        .resolveDirectives(GenericDirectiveResolver(NumDir, resolve = c => Some(c.arg(NVArg))))
+        .sum
 
-      collectedValue should be (145)
+      collectedValue should be(145)
 
       val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
 
@@ -132,8 +161,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      Executor.execute(schema, query).await should be (
-        """
+      Executor.execute(schema, query).await should be("""
         {
           "data": {
             "id": "a26bdfd4-0fcf-484f-b363-585091b3319f",
@@ -173,8 +201,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      Executor.execute(schema, introspectionQuery).await should be (
-        """
+      Executor.execute(schema, introspectionQuery).await should be("""
         {
           "data": {
             "__type": {
@@ -247,19 +274,25 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
     "resolve fields based on the directives" in {
       val ValueArg = Argument("value", StringType)
 
-      val ConstDir = Directive("const", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
-      val AddDir = Directive("add", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
+      val ConstDir =
+        Directive("const", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
+      val AddDir =
+        Directive("add", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
       val AddFinalDir = Directive("addFinal", locations = Set(DL.Schema, DL.FieldDefinition))
 
       val builder = resolverBased[Any](
         DirectiveResolver(ConstDir, c => c.arg(ValueArg)),
-        DirectiveResolver(AddDir, c => c.withArgs(ValueArg) { value =>
-          c.lastValue match {
-            case Some(last) => last.map(_ + value)
-            case None => value
-          }
-        }),
-        DirectiveResolver(AddFinalDir,
+        DirectiveResolver(
+          AddDir,
+          c =>
+            c.withArgs(ValueArg) { value =>
+              c.lastValue match {
+                case Some(last) => last.map(_ + value)
+                case None => value
+              }
+            }),
+        DirectiveResolver(
+          AddFinalDir,
           c => {
             val finalValue = c.ctx.arg[String]("final")
 
@@ -268,7 +301,9 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
               case None => finalValue
             }
           },
-          complexity = Some(_ => (_, _, _) => 100.0)))
+          complexity = Some(_ => (_, _, _) => 100.0)
+        )
+      )
 
       val schemaAst =
         gql"""
@@ -291,13 +326,10 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       val complexity = new AtomicInteger(0)
       val reducer = QueryReducer.measureComplexity[Any]((c, _) => complexity.set(c.toInt))
 
-      Executor.execute(schema, query, queryReducers = reducer :: Nil).await should be (
-        Map(
-          "data" -> Map(
-            "myStr" -> "first-second-last",
-            "myStr1" -> "realFirst-second")))
+      Executor.execute(schema, query, queryReducers = reducer :: Nil).await should be(
+        Map("data" -> Map("myStr" -> "first-second-last", "myStr1" -> "realFirst-second")))
 
-      complexity.get should be (200)
+      complexity.get should be(200)
     }
 
     "resolve enum values" in {
@@ -307,10 +339,12 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           case (TypeName("Color"), v) if v.name == "GREEN" => "#00FF00"
           case (TypeName("Color"), v) if v.name == "BLUE" => "#0000FF"
         },
-        FieldResolver {
-          case (TypeName("Mutation"), FieldName("eat")) =>
-            ctx => "tasty " + ctx.arg[String]("color") + " " + ctx.arg[InputObjectType.DefaultInput]("fruit")("color")
-        })
+        FieldResolver { case (TypeName("Mutation"), FieldName("eat")) =>
+          ctx =>
+            "tasty " + ctx.arg[String]("color") + " " + ctx.arg[InputObjectType.DefaultInput](
+              "fruit")("color")
+        }
+      )
 
       val schemaAst =
         gql"""
@@ -329,10 +363,14 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
         """
 
       val existingSchema = Schema(
-        query = ObjectType("Query", fields[Any, Unit](
-          Field("testQuery", StringType, resolve = _ => "test"))),
-        mutation = Some(ObjectType("Mutation", fields[Any, Unit](
-          Field("testMut", StringType, resolve = _ => "test")))))
+        query = ObjectType(
+          "Query",
+          fields[Any, Unit](Field("testQuery", StringType, resolve = _ => "test"))),
+        mutation = Some(
+          ObjectType(
+            "Mutation",
+            fields[Any, Unit](Field("testMut", StringType, resolve = _ => "test"))))
+      )
 
       val schema = existingSchema.extend(schemaAst, builder.validateSchemaWithException(schemaAst))
 
@@ -344,10 +382,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      Executor.execute(schema, query).await should be (
-        Map("data" -> Map(
-          "testMut" -> "test",
-          "eat" -> "tasty #00FF00 #FF0000")))
+      Executor.execute(schema, query).await should be(
+        Map("data" -> Map("testMut" -> "test", "eat" -> "tasty #00FF00 #FF0000")))
 
       val queryWithVars =
         gql"""
@@ -360,29 +396,30 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       val vars = InputUnmarshaller.mapVars(
         "color1" -> "RED",
         "color2" -> "BLUE",
-        "fruit" -> Map(
-          "name" -> "Banana",
-          "color" -> "GREEN"))
+        "fruit" -> Map("name" -> "Banana", "color" -> "GREEN"))
 
-      Executor.execute(schema, queryWithVars, variables = vars).await should be (
-        Map("data" -> Map(
-          "eat" -> "tasty #0000FF #FF0000",
-          "more" -> "tasty #FF0000 #00FF00")))
+      Executor.execute(schema, queryWithVars, variables = vars).await should be(
+        Map("data" -> Map("eat" -> "tasty #0000FF #FF0000", "more" -> "tasty #FF0000 #00FF00")))
     }
 
     "resolve fields based on the dynamic directives" in {
       import sangria.marshalling.sprayJson._
 
       val builder = resolverBased[Any](
-        DynamicDirectiveResolver[Any, JsValue]("add", c => c.args.asJsObject.fields("value") match {
-          case JsString(str) =>
-            c.lastValue match {
-              case Some(last) => last.map(_ + str)
-              case None => str
+        DynamicDirectiveResolver[Any, JsValue](
+          "add",
+          c =>
+            c.args.asJsObject.fields("value") match {
+              case JsString(str) =>
+                c.lastValue match {
+                  case Some(last) => last.map(_ + str)
+                  case None => str
+                }
+              case _ => c.lastValue.getOrElse("")
             }
-          case _ => c.lastValue.getOrElse("")
-        }),
-        DynamicDirectiveResolver[Any, JsValue]("addFinal",
+        ),
+        DynamicDirectiveResolver[Any, JsValue](
+          "addFinal",
           c => {
             val finalValue = c.ctx.arg[String]("final")
 
@@ -391,7 +428,9 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
               case None => finalValue
             }
           },
-          complexity = Some(_ => (_, _, _) => 100.0)))
+          complexity = Some(_ => (_, _, _) => 100.0)
+        )
+      )
 
       val schemaAst =
         gql"""
@@ -414,8 +453,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       val complexity = new AtomicInteger(0)
       val reducer = QueryReducer.measureComplexity[Any]((c, _) => complexity.set(c.toInt))
 
-      Executor.execute(schema, query, queryReducers = reducer :: Nil).await should be (
-        """
+      Executor.execute(schema, query, queryReducers = reducer :: Nil).await should be("""
           {
             "data": {
               "myStr": "first-last",
@@ -424,31 +462,31 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """.parseJson)
 
-      complexity.get should be (200)
+      complexity.get should be(200)
     }
 
     "resolve fields based on names" in {
       val builder = resolverBased[Unit](
         FieldResolver {
-          case (TypeName("Query"), field @ FieldName(fieldName)) if fieldName startsWith "test" =>
+          case (TypeName("Query"), field @ FieldName(fieldName)) if fieldName.startsWith("test") =>
             c => c.arg[Int](field.arguments.head.name) + 1
         },
-        FieldResolver.map(
-          "Query" -> Map(
-            "a" -> (_ => "a value"),
-            "b" -> (_ => "b value"))),
+        FieldResolver.map("Query" -> Map("a" -> (_ => "a value"), "b" -> (_ => "b value"))),
         ExistingFieldResolver {
-          case (_, _, field) if field.name startsWith "existing" =>
+          case (_, _, field) if field.name.startsWith("existing") =>
             c => "replacement"
         },
-        ExistingFieldResolver.map(
-          "Query" -> Map(
-            "c" -> (_ => "c value"))))
+        ExistingFieldResolver.map("Query" -> Map("c" -> (_ => "c value")))
+      )
 
-      val existingSchema = Schema(ObjectType("Query", fields[Unit, Unit](
-        Field("simple", StringType, resolve = _ => "value"),
-        Field("c", StringType, resolve = _ => "c value"),
-        Field("existingField", StringType, resolve = _ => "foo"))))
+      val existingSchema = Schema(
+        ObjectType(
+          "Query",
+          fields[Unit, Unit](
+            Field("simple", StringType, resolve = _ => "value"),
+            Field("c", StringType, resolve = _ => "c value"),
+            Field("existingField", StringType, resolve = _ => "foo"))
+        ))
 
       val schemaAst =
         gql"""
@@ -475,20 +513,21 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      Executor.execute(schema, query).await should be (Map(
-        "data" -> Map(
-          "simple" -> "value",
-          "existingField" -> "replacement",
-          "testOne" -> 124,
-          "testTwo" -> 2,
-          "a" -> "a value",
-          "b" -> "b value",
-          "c" -> "c value")))
+      Executor.execute(schema, query).await should be(
+        Map(
+          "data" -> Map(
+            "simple" -> "value",
+            "existingField" -> "replacement",
+            "testOne" -> 124,
+            "testTwo" -> 2,
+            "a" -> "a value",
+            "b" -> "b value",
+            "c" -> "c value")))
     }
 
     "support instance check" in {
       import sangria.marshalling.sprayJson._
-      
+
       val builder = resolverBased[Unit](
         InstanceCheck.simple {
           case value: JsValue if value.asJsObject.fields.contains("type") =>
@@ -498,7 +537,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           case _ =>
             "Cat"
         },
-        AnyFieldResolver.defaultInput[Unit, JsValue])
+        AnyFieldResolver.defaultInput[Unit, JsValue]
+      )
 
       val schemaAst =
         gql"""
@@ -577,8 +617,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """.parseJson
 
-      Executor.execute(schema, query, root = data).await should be (
-        """
+      Executor.execute(schema, query, root = data).await should be("""
           {
             "data": {
               "fruits": [{
@@ -653,8 +692,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """.parseJson
 
-      Executor.execute(schema, query, root = data).await should be (
-        """
+      Executor.execute(schema, query, root = data).await should be("""
           {
             "data": {
               "pets": [{
@@ -701,19 +739,17 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val builder = resolverBased[Any](
-        FieldResolver {
-          case (_, FieldName("name")) => _ => "test"
-          case (_, _) => _ => ()
-        })
+      val builder = resolverBased[Any](FieldResolver {
+        case (_, FieldName("name")) => _ => "test"
+        case (_, _) => _ => ()
+      })
 
       val resolverBuilder = builder.validateSchemaWithException(schemaDocument)
 
       val schema: Schema[Any, Any] =
         Schema.buildFromAst[Any](schemaDocument, resolverBuilder)
 
-      Executor.execute(schema, query).await should be (
-        """
+      Executor.execute(schema, query).await should be("""
           {
             "data": {
               "createPerson": {
@@ -741,24 +777,29 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       val NameArg = Argument("name", OptionInputType(StringType))
       val TestDir = Directive("objectDir", arguments = NameArg :: Nil, locations = Set(DL.Object))
 
-      val builder = resolverBased[Any](
-        AdditionalDirectives(Seq(TestDir)))
+      val builder = resolverBased[Any](AdditionalDirectives(Seq(TestDir)))
 
       val violations = builder.validateSchema(schemaDocument)
 
-      assertViolations(violations,
+      assertViolations(
+        violations,
         "Directive 'objectDir' may not be used on field definition." -> Seq(Pos(7, 29)),
         "Expected type 'String', found 'true'. String value expected" -> Seq(Pos(6, 46)),
-        "Directive 'objectDir' may not be used on input object type extension definition." -> Seq(Pos(10, 28)))
+        "Directive 'objectDir' may not be used on input object type extension definition." -> Seq(
+          Pos(10, 28))
+      )
     }
 
     "support generic InputTypeResolver/OutputTypeResolver" in {
       import sangria.marshalling.sprayJson._
 
       case object EmptyIdViolation extends BaseViolation("ID cannot be an empty string")
-      case object EmptyIdError extends Exception("ID cannot be an empty string") with UserFacingError
+      case object EmptyIdError
+          extends Exception("ID cannot be an empty string")
+          with UserFacingError
 
-      val MyIdType = ScalarAlias[String, String](IDType,
+      val MyIdType = ScalarAlias[String, String](
+        IDType,
         toScalar = s =>
           if (s.trim.isEmpty) throw EmptyIdError // sanity check
           else s,
@@ -775,7 +816,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           case c if c.fieldDefinition.fieldType.namedType.name == "ID" =>
             c.outputType(c.fieldDefinition.fieldType, MyIdType)
         },
-        AnyFieldResolver.defaultInput[Unit, JsValue])
+        AnyFieldResolver.defaultInput[Unit, JsValue]
+      )
 
       val schemaAst =
         gql"""
@@ -811,13 +853,13 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """.parseJson
 
-      val vars = InputUnmarshaller.mapVars(
-        "id" -> "   ")
+      val vars = InputUnmarshaller.mapVars("id" -> "   ")
 
       checkContainsViolations(
         Executor.execute(schema, query, variables = vars, root = data).await,
         "Expected type 'ID!', found '\"\"'. ID cannot be an empty string" -> Seq(Pos(3, 35)),
-        "Expected type 'ID!', found '\"  \"'. ID cannot be an empty string" -> Seq(Pos(3, 39)))
+        "Expected type 'ID!', found '\"  \"'. ID cannot be an empty string" -> Seq(Pos(3, 39))
+      )
 
       val query1 =
         gql"""
@@ -826,8 +868,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      Executor.execute(schema, query1, variables = vars, root = data).await should be (
-        """
+      Executor.execute(schema, query1, variables = vars, root = data).await should be("""
           {
             "data": {
               "article": null
@@ -847,8 +888,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      Executor.execute(schema, query2, variables = vars, root = data).await should be (
-        """
+      Executor.execute(schema, query2, variables = vars, root = data).await should be("""
           {
             "data": {
               "article": [{

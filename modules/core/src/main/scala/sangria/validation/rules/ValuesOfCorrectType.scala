@@ -8,8 +8,7 @@ import sangria.ast.AstVisitorCommand._
 import sangria.schema.{EnumType, InputObjectType, ScalarAlias, ScalarType, Type}
 import sangria.util.StringUtil
 
-/**
-  * Value literals of correct type
+/** Value literals of correct type
   *
   * A GraphQL document is only valid if all value literals are of the type
   * expected at their position.
@@ -22,7 +21,7 @@ class ValuesOfCorrectType extends ValidationRule {
           case Some(tpe) if !tpe.isOptional => badValue(tpe, v)
           case _ => RightContinue
         }
-        
+
       case v: ast.ListValue =>
         // Note: TypeInfo will traverse into a list's item type, so look to the parent input type to check if it is a list.
         ctx.typeInfo.parentInputType match {
@@ -41,7 +40,13 @@ class ValuesOfCorrectType extends ValidationRule {
               tpe.fields.toVector.flatMap { fieldDef =>
                 v.fieldsByName.get(fieldDef.name) match {
                   case None if !fieldDef.fieldType.isOptional && fieldDef.defaultValue.isEmpty =>
-                    Vector(RequiredFieldViolation(tpe.name, fieldDef.name, SchemaRenderer.renderTypeName(fieldDef.fieldType), ctx.sourceMapper, v.location.toList))
+                    Vector(
+                      RequiredFieldViolation(
+                        tpe.name,
+                        fieldDef.name,
+                        SchemaRenderer.renderTypeName(fieldDef.fieldType),
+                        ctx.sourceMapper,
+                        v.location.toList))
                   case _ => Vector.empty
                 }
               }
@@ -66,7 +71,14 @@ class ValuesOfCorrectType extends ValidationRule {
               if (suggestions.nonEmpty) Some(s"Did you mean ${StringUtil.orList(suggestions)}?")
               else None
 
-            Left(Vector(UnknownFieldViolation(tpe.name, v.name, didYouMean, ctx.sourceMapper, v.location.toList)))
+            Left(
+              Vector(
+                UnknownFieldViolation(
+                  tpe.name,
+                  v.name,
+                  didYouMean,
+                  ctx.sourceMapper,
+                  v.location.toList)))
 
           case _ => RightContinue
         }
@@ -94,13 +106,14 @@ class ValuesOfCorrectType extends ValidationRule {
       Left(badValueV(SchemaRenderer.renderTypeName(tpe), node, violation))
 
     def badValueV(tpe: String, node: ast.AstNode, violation: Option[Violation]) =
-      Vector(BadValueViolation(
-        tpe,
-        QueryRenderer.render(node),
-        violation,
-        ctx.sourceMapper,
-        node.location.toList
-      ))
+      Vector(
+        BadValueViolation(
+          tpe,
+          QueryRenderer.render(node),
+          violation,
+          ctx.sourceMapper,
+          node.location.toList
+        ))
 
     def enumTypeSuggestion(tpe: Type, node: ast.Value): Option[Violation] = tpe match {
       case enum: EnumType[_] =>
@@ -126,10 +139,11 @@ class ValuesOfCorrectType extends ValidationRule {
             case s: ScalarAlias[_, _] =>
               s.aliasFor.coerceInput(value) match {
                 case Left(violation) => badValue(tpe, value, Some(violation))
-                case Right(v) => s.fromScalar(v) match {
-                  case Left(violation) => badValue(tpe, value, Some(violation))
-                  case _ => RightContinue
-                }
+                case Right(v) =>
+                  s.fromScalar(v) match {
+                    case Left(violation) => badValue(tpe, value, Some(violation))
+                    case _ => RightContinue
+                  }
               }
 
             case t =>

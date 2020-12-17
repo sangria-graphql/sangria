@@ -7,18 +7,27 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers {
-  val NumberType = EnumType("Number", values = List(
-    EnumValue("ONE", value = 1),
-    EnumValue("TWO", value = 2, deprecationReason = Some("Some enum reason."))))
+  val NumberType = EnumType(
+    "Number",
+    values = List(
+      EnumValue("ONE", value = 1),
+      EnumValue("TWO", value = 2, deprecationReason = Some("Some enum reason."))))
 
-  val QueryType = ObjectType("Query", fields[Unit, Unit](
-    Field("normalField", OptionType(NumberType),
-      arguments = Argument("enumArg", OptionInputType(NumberType)) :: Nil,
-      resolve = ctx => ctx.argOpt[Int]("enumArg")),
-
-    Field("deprecatedField", OptionType(StringType),
-      deprecationReason = Some("Some field reason."),
-      resolve = _ => "foo")))
+  val QueryType = ObjectType(
+    "Query",
+    fields[Unit, Unit](
+      Field(
+        "normalField",
+        OptionType(NumberType),
+        arguments = Argument("enumArg", OptionInputType(NumberType)) :: Nil,
+        resolve = ctx => ctx.argOpt[Int]("enumArg")),
+      Field(
+        "deprecatedField",
+        OptionType(StringType),
+        deprecationReason = Some("Some field reason."),
+        resolve = _ => "foo")
+    )
+  )
 
   val schema = Schema(QueryType)
 
@@ -28,17 +37,26 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
     }
 
     "report usage of deprecated fields" in {
-      schema.analyzer(gql"""{ normalField, deprecatedField }""").deprecatedUsages.map(_.errorMessage) should
+      schema
+        .analyzer(gql"""{ normalField, deprecatedField }""")
+        .deprecatedUsages
+        .map(_.errorMessage) should
         contain("The field 'Query.deprecatedField' is deprecated. Some field reason.")
     }
 
     "report usage of deprecated enums" in {
-      schema.analyzer(gql"""{ normalField(enumArg: TWO) }""").deprecatedUsages.map(_.errorMessage) should
+      schema
+        .analyzer(gql"""{ normalField(enumArg: TWO) }""")
+        .deprecatedUsages
+        .map(_.errorMessage) should
         contain("The enum value 'Number.TWO' is deprecated. Some enum reason.")
     }
 
     "report usage of deprecated enums in variables" in {
-      schema.analyzer(gql"""query Foo($$x: Number = TWO) { normalField }""").deprecatedUsages.map(_.errorMessage) should
+      schema
+        .analyzer(gql"""query Foo($$x: Number = TWO) { normalField }""")
+        .deprecatedUsages
+        .map(_.errorMessage) should
         contain("The enum value 'Number.TWO' is deprecated. Some enum reason.")
     }
 
@@ -63,11 +81,11 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           }
         """
 
-      schema.analyzer(query).introspectionUsages.map(_.errorMessage) should (
-          contain("Introspection field '__Schema.queryType' is used.") and
-          contain("Introspection field 'Query.__type' is used.") and
-          contain("Introspection field 'Query.__schema' is used.") and
-          contain("Introspection field '__Type.name' is used."))
+      schema.analyzer(query).introspectionUsages.map(_.errorMessage) should (contain(
+        "Introspection field '__Schema.queryType' is used.")
+        .and(contain("Introspection field 'Query.__type' is used."))
+        .and(contain("Introspection field 'Query.__schema' is used."))
+        .and(contain("Introspection field '__Type.name' is used.")))
     }
 
     "separates one AST into multiple, maintaining document order" in {
@@ -109,10 +127,9 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           }
         """
 
-      query.separateOperations.keySet should be (Set(None, Some("One"), Some("Two")))
+      query.separateOperations.keySet should be(Set(None, Some("One"), Some("Two")))
 
-      query.separateOperations(None).renderPretty should equal (
-        """{
+      query.separateOperations(None).renderPretty should equal("""{
           |  ...Y
           |  ...X
           |}
@@ -123,10 +140,9 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |
           |fragment Y on T {
           |  fieldY
-          |}""".stripMargin) (after being strippedOfCarriageReturns)
+          |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      query.separateOperations(Some("One")).renderPretty should equal (
-        """query One {
+      query.separateOperations(Some("One")).renderPretty should equal("""query One {
           |  foo
           |  bar
           |  ...A
@@ -144,10 +160,9 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |
           |fragment B on T {
           |  something
-          |}""".stripMargin) (after being strippedOfCarriageReturns)
+          |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      query.separateOperations(Some("Two")).renderPretty should equal (
-        """fragment A on T {
+      query.separateOperations(Some("Two")).renderPretty should equal("""fragment A on T {
           |  field
           |  ...B
           |}
@@ -164,7 +179,7 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |
           |fragment B on T {
           |  something
-          |}""".stripMargin) (after being strippedOfCarriageReturns)
+          |}""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
     "ASt separation survives circular dependencies" in {
@@ -187,10 +202,9 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           }
         """
 
-      query.separateOperations.keySet should be (Set(Some("One"), Some("Two")))
+      query.separateOperations.keySet should be(Set(Some("One"), Some("Two")))
 
-      query.separateOperations(Some("One")).renderPretty should equal (
-        """query One {
+      query.separateOperations(Some("One")).renderPretty should equal("""query One {
           |  ...A
           |}
           |
@@ -200,10 +214,9 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |
           |fragment B on T {
           |  ...A
-          |}""".stripMargin) (after being strippedOfCarriageReturns)
+          |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      query.separateOperations(Some("Two")).renderPretty should equal (
-        """fragment A on T {
+      query.separateOperations(Some("Two")).renderPretty should equal("""fragment A on T {
           |  ...B
           |}
           |
@@ -213,7 +226,7 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |
           |query Two {
           |  ...B
-          |}""".stripMargin) (after being strippedOfCarriageReturns)
+          |}""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
   }
 }

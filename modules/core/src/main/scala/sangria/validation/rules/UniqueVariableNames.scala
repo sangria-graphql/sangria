@@ -7,8 +7,7 @@ import sangria.validation._
 
 import scala.collection.mutable.{Map => MutableMap}
 
-/**
-  * Unique variable names
+/** Unique variable names
   *
   * A GraphQL operation is only valid if all its variables are uniquely named.
   */
@@ -22,7 +21,7 @@ class UniqueVariableNames extends ValidationRule {
         AstVisitorCommand.RightContinue
 
       case ast.VariableDefinition(name, _, _, _, _, pos) =>
-        knownVariableNames get name match {
+        knownVariableNames.get(name) match {
           case Some(otherPos) =>
             Left(Vector(DuplicateVariableViolation(name, ctx.sourceMapper, otherPos ++ pos.toList)))
           case None =>

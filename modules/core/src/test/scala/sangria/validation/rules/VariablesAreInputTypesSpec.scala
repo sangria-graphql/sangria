@@ -8,8 +8,7 @@ class VariablesAreInputTypesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new VariablesAreInputTypes)
 
   "Validate: Variables are input types" should {
-    "input types are valid" in expectPasses(
-      """
+    "input types are valid" in expectPasses("""
         query Foo($a: String, $b: [Boolean!]!, $c: ComplexInput) {
           field(a: $a, b: $b, c: $c)
         }
@@ -25,6 +24,7 @@ class VariablesAreInputTypesSpec extends AnyWordSpec with ValidationSupport {
         "Variable '$a' cannot be non input type 'Dog'." -> Some(Pos(2, 23)),
         "Variable '$b' cannot be non input type '[[CatOrDog!]]!'." -> Some(Pos(2, 32)),
         "Variable '$c' cannot be non input type 'Pet'." -> Some(Pos(2, 52))
-      ))
+      )
+    )
   }
 }

@@ -8,29 +8,25 @@ class UniqueInputFieldNamesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new UniqueInputFieldNames)
 
   "Validate: Unique input field names" should {
-    "input object with fields" in expectPasses(
-      """
+    "input object with fields" in expectPasses("""
         {
           field(arg: { f: true })
         }
       """)
 
-    "same input object within two args" in expectPasses(
-      """
+    "same input object within two args" in expectPasses("""
         {
           field(arg1: { f: true }, arg2: { f: true })
         }
       """)
 
-    "multiple input object fields" in expectPasses(
-      """
+    "multiple input object fields" in expectPasses("""
         {
           field(arg: { f1: "value", f2: "value", f3: "value" })
         }
       """)
 
-    "multiple input object fields with the same name in different objects" in expectPasses(
-      """
+    "multiple input object fields with the same name in different objects" in expectPasses("""
         {
           field(arg: {f1: "value", f2: {f1: "another value", f3: "v3"}, f3: "v4"})
         }
@@ -44,7 +40,8 @@ class UniqueInputFieldNamesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "There can be only one input field named 'f1'." -> List(Pos(3, 24), Pos(3, 37))
-      ))
+      )
+    )
 
     "many duplicate input object fields" in expectFailsPosList(
       """
@@ -55,6 +52,7 @@ class UniqueInputFieldNamesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "There can be only one input field named 'f1'." -> List(Pos(3, 24), Pos(3, 37)),
         "There can be only one input field named 'f1'." -> List(Pos(3, 24), Pos(3, 50))
-      ))
+      )
+    )
   }
 }

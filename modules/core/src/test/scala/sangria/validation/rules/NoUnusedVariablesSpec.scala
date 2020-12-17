@@ -8,15 +8,13 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new NoUnusedVariables)
 
   "Validate: No unused variables" should {
-    "uses all variables" in expectPasses(
-      """
+    "uses all variables" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           field(a: $a, b: $b, c: $c)
         }
       """)
 
-    "uses all variables deeply" in expectPasses(
-      """
+    "uses all variables deeply" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           field(a: $a) {
             field(b: $b) {
@@ -26,8 +24,7 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "uses all variables deeply in inline fragments" in expectPasses(
-      """
+    "uses all variables deeply in inline fragments" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           ... on Type {
             field(a: $a) {
@@ -41,8 +38,7 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "uses all variables in fragments" in expectPasses(
-      """
+    "uses all variables in fragments" in expectPasses("""
         query Foo($a: String, $b: String, $c: String) {
           ...FragA
         }
@@ -61,8 +57,7 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "variable used by fragment in multiple operations" in expectPasses(
-      """
+    "variable used by fragment in multiple operations" in expectPasses("""
         query Foo($a: String) {
           ...FragA
         }
@@ -77,8 +72,7 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "variable used by recursive fragment" in expectPasses(
-      """
+    "variable used by recursive fragment" in expectPasses("""
         query Foo($a: String) {
           ...FragA
         }
@@ -97,7 +91,8 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Variable '$c' is not used in operation Foo." -> Some(Pos(2, 43))
-      ))
+      )
+    )
 
     "multiple variables not used" in expectFails(
       """
@@ -108,7 +103,8 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$a' is not used in operation Foo." -> Some(Pos(2, 19)),
         "Variable '$c' is not used in operation Foo." -> Some(Pos(2, 43))
-      ))
+      )
+    )
 
     "variable not used in fragments" in expectFails(
       """
@@ -131,7 +127,8 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Variable '$c' is not used in operation Foo." -> Some(Pos(2, 43))
-      ))
+      )
+    )
 
     "multiple variables not used 1" in expectFails(
       """
@@ -155,7 +152,8 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$a' is not used in operation Foo." -> Some(Pos(2, 19)),
         "Variable '$c' is not used in operation Foo." -> Some(Pos(2, 43))
-      ))
+      )
+    )
 
     "variable not used by unreferenced fragment" in expectFails(
       """
@@ -171,7 +169,8 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Variable '$b' is not used in operation Foo." -> Some(Pos(2, 19))
-      ))
+      )
+    )
 
     "variable not used by fragment used by other operation" in expectFails(
       """
@@ -191,6 +190,7 @@ class NoUnusedVariablesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Variable '$b' is not used in operation Foo." -> Some(Pos(2, 19)),
         "Variable '$a' is not used in operation Bar." -> Some(Pos(5, 19))
-      ))
+      )
+    )
   }
 }

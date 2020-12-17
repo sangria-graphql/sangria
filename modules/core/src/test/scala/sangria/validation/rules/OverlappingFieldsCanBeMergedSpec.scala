@@ -9,16 +9,14 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
   override val defaultRule = Some(new OverlappingFieldsCanBeMerged)
 
   "Validate: Overlapping fields can be merged" should {
-    "unique fields" in expectPasses(
-      """
+    "unique fields" in expectPasses("""
         fragment uniqueFields on Dog {
           name
           nickname
         }
       """)
 
-    "allows inline typeless fragments" in expectPasses(
-      """
+    "allows inline typeless fragments" in expectPasses("""
         {
           a
           ... {
@@ -27,8 +25,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """)
 
-    "unique fields on inline fragments without type condition" in expectPasses(
-      """
+    "unique fields on inline fragments without type condition" in expectPasses("""
         fragment uniqueFields on Dog {
           ... {
             name
@@ -41,32 +38,28 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """)
 
-    "identical fields" in expectPasses(
-      """
+    "identical fields" in expectPasses("""
         fragment mergeIdenticalFields on Dog {
           name
           name
         }
       """)
 
-    "identical fields with identical args" in expectPasses(
-      """
+    "identical fields with identical args" in expectPasses("""
         fragment mergeIdenticalFieldsWithIdenticalArgs on Dog {
           doesKnowCommand(dogCommand: SIT)
           doesKnowCommand(dogCommand: SIT)
         }
       """)
 
-    "identical fields with identical directives" in expectPasses(
-      """
+    "identical fields with identical directives" in expectPasses("""
         fragment mergeSameFieldsWithSameDirectives on Dog {
           name @include(if: true)
           name @include(if: true)
         }
       """)
 
-    "different args with different aliases" in expectPasses(
-      """
+    "different args with different aliases" in expectPasses("""
         fragment differentArgsWithDifferentAliases on Dog {
           knowsSit: doesKnowCommand(dogCommand: SIT)
           knowsDown: doesKnowCommand(dogCommand: DOWN)
@@ -76,16 +69,14 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
     // Note: Differing skip/include directives don't create an ambiguous return
     // value and are acceptable in conditions where differing runtime values
     // may have the same desired effect of including or skipping a field.
-    "different skip/include directives accepted" in expectPasses(
-      """
+    "different skip/include directives accepted" in expectPasses("""
         fragment differentDirectivesWithDifferentAliases on Dog {
           name @include(if: true)
           name @include(if: false)
         }
       """)
 
-    "different directives with different aliases" in expectPasses(
-      """
+    "different directives with different aliases" in expectPasses("""
         fragment differentDirectivesWithDifferentAliases on Dog {
           nameIfTrue: name @include(if: true)
           nameIfFalse: name @include(if: false)
@@ -100,11 +91,13 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields." -> List(Pos(3, 11), Pos(4, 11))
-      ))
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields." -> List(
+          Pos(3, 11),
+          Pos(4, 11))
+      )
+    )
 
-    "Same aliases allowed on non-overlapping fields" in expectPasses(
-      """
+    "Same aliases allowed on non-overlapping fields" in expectPasses("""
         fragment sameAliasesWithDifferentFieldTargets on Pet {
           ... on Dog {
             name
@@ -123,8 +116,11 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'name' conflict because 'nickname' and 'name' are different fields." -> List(Pos(3, 11), Pos(4, 11))
-      ))
+        "Field 'name' conflict because 'nickname' and 'name' are different fields." -> List(
+          Pos(3, 11),
+          Pos(4, 11))
+      )
+    )
 
     "different args, second adds an argument" in expectFailsPosList(
       """
@@ -134,8 +130,11 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(Pos(3, 11), Pos(4, 11))
-      ))
+        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(
+          Pos(3, 11),
+          Pos(4, 11))
+      )
+    )
 
     "different args, second missing an argument" in expectFailsPosList(
       """
@@ -145,8 +144,11 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(Pos(3, 11), Pos(4, 11))
-      ))
+        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(
+          Pos(3, 11),
+          Pos(4, 11))
+      )
+    )
 
     "conflicting args" in expectFailsPosList(
       """
@@ -156,11 +158,13 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(Pos(3, 11), Pos(4, 11))
-      ))
+        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(
+          Pos(3, 11),
+          Pos(4, 11))
+      )
+    )
 
-    "allows different args where no conflict is possible" in expectPasses(
-      """
+    "allows different args where no conflict is possible" in expectPasses("""
         fragment conflictingArgs on Pet {
           ... on Dog {
             name(surname: true)
@@ -185,8 +189,11 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(Pos(7, 11), Pos(10, 11))
-      ))
+        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(
+          Pos(7, 11),
+          Pos(10, 11))
+      )
+    )
 
     "reports each conflict once" in expectFailsPosList(
       """
@@ -213,10 +220,17 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(Pos(18, 11), Pos(21, 11)),
-        "Field 'x' conflict because 'c' and 'a' are different fields." -> List(Pos(14, 13), Pos(18, 11)),
-        "Field 'x' conflict because 'c' and 'b' are different fields." -> List(Pos(14, 13), Pos(21, 11))
-      ))
+        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(
+          Pos(18, 11),
+          Pos(21, 11)),
+        "Field 'x' conflict because 'c' and 'a' are different fields." -> List(
+          Pos(14, 13),
+          Pos(18, 11)),
+        "Field 'x' conflict because 'c' and 'b' are different fields." -> List(
+          Pos(14, 13),
+          Pos(21, 11))
+      )
+    )
 
     "deep conflict" in expectFailsPosList(
       """
@@ -230,8 +244,13 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." -> List(Pos(3, 11), Pos(4, 13), Pos(6, 11), Pos(7, 13))
-      ))
+        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." -> List(
+          Pos(3, 11),
+          Pos(4, 13),
+          Pos(6, 11),
+          Pos(7, 13))
+      )
+    )
 
     "deep conflict with multiple issues" in expectFailsPosList(
       """
@@ -249,7 +268,8 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
       List(
         "Field 'field' conflict because subfields 'y' conflict because 'c' and 'd' are different fields and subfields 'x' conflict because 'a' and 'b' are different fields." ->
           List(Pos(3, 11), Pos(5, 13), Pos(4, 13), Pos(7, 11), Pos(9, 13), Pos(8, 13))
-      ))
+      )
+    )
 
     "very deep conflict" in expectFailsPosList(
       """
@@ -269,7 +289,8 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
       List(
         "Field 'field' conflict because subfields 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
           List(Pos(3, 11), Pos(4, 13), Pos(5, 15), Pos(8, 11), Pos(9, 13), Pos(10, 15))
-      ))
+      )
+    )
 
     "reports deep conflict to nearest common ancestor" in expectFailsPosList(
       """
@@ -292,7 +313,8 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
       List(
         "Field 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
           List(Pos(4, 13), Pos(5, 15), Pos(7, 13), Pos(8, 15))
-      ))
+      )
+    )
 
     "reports deep conflict to nearest common ancestor in fragments" in expectFailsPosList(
       """
@@ -323,7 +345,8 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
       List(
         "Field 'deeperField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
           List(Pos(12, 13), Pos(13, 15), Pos(15, 13), Pos(16, 15))
-      ))
+      )
+    )
 
     "reports deep conflict in nested fragments" in expectFailsPosList(
       """
@@ -353,10 +376,10 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
       List(
         "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields and subfields 'y' conflict because 'c' and 'd' are different fields." ->
           List(Pos(3, 11), Pos(11, 11), Pos(15, 11), Pos(6, 11), Pos(22, 11), Pos(18, 11))
-      ))
+      )
+    )
 
-    "ignores unknown fragments" in expectPasses(
-      """
+    "ignores unknown fragments" in expectPasses("""
         {
           field
           ...Unknown
@@ -370,72 +393,129 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
       """)
 
     "return types must be unambiguous" should {
-      lazy val SomeBox: InterfaceType[Unit, Unit] = InterfaceType("SomeBox", () => fields[Unit, Unit](
-        Field("deepBox", OptionType(SomeBox), resolve = _ => None),
-        Field("unrelatedField", OptionType(StringType), resolve = _ => None)
-      ))
-
-      lazy val StringBox: ObjectType[Unit, Unit] = ObjectType("StringBox", interfaces[Unit, Unit](SomeBox), () => fields[Unit, Unit](
-        Field("unrelatedField", OptionType(StringType), resolve = _ => None),
-        Field("deepBox", OptionType(StringBox), resolve = _ => None),
-        Field("scalar", OptionType(StringType), resolve = _ => None),
-        Field("listStringBox", OptionType(ListType(OptionType(StringBox))), resolve = _ => None),
-        Field("stringBox", OptionType(StringBox), resolve = _ => None),
-        Field("intBox", OptionType(IntBox), resolve = _ => None)
-      ))
-
-      lazy val IntBox: ObjectType[Unit, Unit] = ObjectType("IntBox", interfaces[Unit, Unit](SomeBox), () => fields[Unit, Unit](
-        Field("unrelatedField", OptionType(StringType), resolve = _ => None),
-        Field("deepBox", OptionType(IntBox), resolve = _ => None),
-        Field("scalar", OptionType(IntType), resolve = _ => None),
-        Field("listStringBox", OptionType(ListType(OptionType(StringBox))), resolve = _ => None),
-        Field("stringBox", OptionType(StringBox), resolve = _ => None),
-        Field("intBox", OptionType(IntBox), resolve = _ => None)
-      ))
-
-      val NonNullStringBox1 = InterfaceType("NonNullStringBox1", fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ => "")
-      ))
-
-      val NonNullStringBox1Impl = ObjectType("NonNullStringBox1Impl", interfaces[Unit, Unit](SomeBox, NonNullStringBox1), fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ => ""),
-        Field("unrelatedField", OptionType(StringType), resolve = _ => None),
-        Field("deepBox", OptionType(SomeBox), resolve = _ => None)
-      ))
-
-      val NonNullStringBox2 = InterfaceType("NonNullStringBox2", fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ => "")
-      ))
-
-      val NonNullStringBox2Impl = ObjectType("NonNullStringBox2Impl", interfaces[Unit, Unit](SomeBox, NonNullStringBox2), fields[Unit, Unit](
-        Field("scalar", StringType, resolve = _ => ""),
-        Field("unrelatedField", OptionType(StringType), resolve = _ => None),
-        Field("deepBox", OptionType(SomeBox), resolve = _ => None)
-      ))
-
-      val Connection = ObjectType("Connection", fields[Unit, Unit](
-        Field("edges", OptionType(ListType(OptionType(
-          ObjectType("Edge", fields[Unit, Unit](
-            Field("node", OptionType(
-              ObjectType("Node", fields[Unit, Unit](
-                Field("id", OptionType(IDType), resolve = _ => ""),
-                Field("name", OptionType(StringType), resolve = _ => "")
-              ))
-            ), resolve = _ => ())
+      lazy val SomeBox: InterfaceType[Unit, Unit] = InterfaceType(
+        "SomeBox",
+        () =>
+          fields[Unit, Unit](
+            Field("deepBox", OptionType(SomeBox), resolve = _ => None),
+            Field("unrelatedField", OptionType(StringType), resolve = _ => None)
           ))
-        ))), resolve = _ => Nil)
-      ))
 
-      val schema = Schema(ObjectType("QueryRoot", fields[Unit, Unit](
-        Field("someBox", OptionType(SomeBox), resolve = _ => ()),
-        Field("connection", OptionType(Connection), resolve = _ => ())
-      )), additionalTypes = IntBox :: StringBox :: NonNullStringBox1 :: NonNullStringBox1Impl :: NonNullStringBox2 :: NonNullStringBox2Impl :: Nil)
+      lazy val StringBox: ObjectType[Unit, Unit] = ObjectType(
+        "StringBox",
+        interfaces[Unit, Unit](SomeBox),
+        () =>
+          fields[Unit, Unit](
+            Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+            Field("deepBox", OptionType(StringBox), resolve = _ => None),
+            Field("scalar", OptionType(StringType), resolve = _ => None),
+            Field(
+              "listStringBox",
+              OptionType(ListType(OptionType(StringBox))),
+              resolve = _ => None),
+            Field("stringBox", OptionType(StringBox), resolve = _ => None),
+            Field("intBox", OptionType(IntBox), resolve = _ => None)
+          )
+      )
+
+      lazy val IntBox: ObjectType[Unit, Unit] = ObjectType(
+        "IntBox",
+        interfaces[Unit, Unit](SomeBox),
+        () =>
+          fields[Unit, Unit](
+            Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+            Field("deepBox", OptionType(IntBox), resolve = _ => None),
+            Field("scalar", OptionType(IntType), resolve = _ => None),
+            Field(
+              "listStringBox",
+              OptionType(ListType(OptionType(StringBox))),
+              resolve = _ => None),
+            Field("stringBox", OptionType(StringBox), resolve = _ => None),
+            Field("intBox", OptionType(IntBox), resolve = _ => None)
+          )
+      )
+
+      val NonNullStringBox1 = InterfaceType(
+        "NonNullStringBox1",
+        fields[Unit, Unit](
+          Field("scalar", StringType, resolve = _ => "")
+        ))
+
+      val NonNullStringBox1Impl = ObjectType(
+        "NonNullStringBox1Impl",
+        interfaces[Unit, Unit](SomeBox, NonNullStringBox1),
+        fields[Unit, Unit](
+          Field("scalar", StringType, resolve = _ => ""),
+          Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+          Field("deepBox", OptionType(SomeBox), resolve = _ => None)
+        )
+      )
+
+      val NonNullStringBox2 = InterfaceType(
+        "NonNullStringBox2",
+        fields[Unit, Unit](
+          Field("scalar", StringType, resolve = _ => "")
+        ))
+
+      val NonNullStringBox2Impl = ObjectType(
+        "NonNullStringBox2Impl",
+        interfaces[Unit, Unit](SomeBox, NonNullStringBox2),
+        fields[Unit, Unit](
+          Field("scalar", StringType, resolve = _ => ""),
+          Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+          Field("deepBox", OptionType(SomeBox), resolve = _ => None)
+        )
+      )
+
+      val Connection = ObjectType(
+        "Connection",
+        fields[Unit, Unit](
+          Field(
+            "edges",
+            OptionType(
+              ListType(
+                OptionType(
+                  ObjectType(
+                    "Edge",
+                    fields[Unit, Unit](
+                      Field(
+                        "node",
+                        OptionType(
+                          ObjectType(
+                            "Node",
+                            fields[Unit, Unit](
+                              Field("id", OptionType(IDType), resolve = _ => ""),
+                              Field("name", OptionType(StringType), resolve = _ => "")
+                            ))
+                        ),
+                        resolve = _ => ()
+                      )
+                    )
+                  )
+                ))),
+            resolve = _ => Nil
+          )
+        )
+      )
+
+      val schema = Schema(
+        ObjectType(
+          "QueryRoot",
+          fields[Unit, Unit](
+            Field("someBox", OptionType(SomeBox), resolve = _ => ()),
+            Field("connection", OptionType(Connection), resolve = _ => ())
+          )),
+        additionalTypes =
+          IntBox :: StringBox :: NonNullStringBox1 :: NonNullStringBox1Impl :: NonNullStringBox2 :: NonNullStringBox2Impl :: Nil
+      )
 
       // This is invalid since an object could potentially be both the Object
       // type IntBox and the interface type NonNullStringBox1. While that
       // condition does not exist in the current schema, the schema could
       // expand in the future to allow this. Thus it is invalid.
-      "conflicting return types which potentially overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "conflicting return types which potentially overlap" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -451,9 +531,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         List(
           "Field 'scalar' conflict because they return conflicting types 'Int' and 'String!'." ->
             List(Pos(5, 17), Pos(8, 17))
-        ))
+        )
+      )
 
-      "same wrapped scalar return types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "same wrapped scalar return types" in expectValid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -465,9 +548,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
               }
             }
           }
-        """)
+        """
+      )
 
-      "allows non-conflicting overlaping types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "allows non-conflicting overlaping types" in expectValid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -479,9 +565,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
               }
             }
           }
-        """)
+        """
+      )
 
-      "compares deep types including list" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "compares deep types including list" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             connection {
@@ -505,9 +594,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         List(
           "Field 'edges' conflict because subfields 'node' conflict because subfields 'id' conflict because 'name' and 'id' are different fields." ->
             List(Pos(5, 15), Pos(6, 17), Pos(7, 19), Pos(14, 13), Pos(15, 15), Pos(16, 17))
-        ))
+        )
+      )
 
-      "ignores unknown types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "ignores unknown types" in expectValid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -519,12 +611,15 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
               }
             }
           }
-        """)
+        """
+      )
 
       // In this case `deepBox` returns `SomeBox` in the first usage, and
       // `StringBox` in the second usage. These return types are not the same!
       // however this is valid because the return *shapes* are compatible.
-      "compatible return shapes on different return types" in expectValid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "compatible return shapes on different return types" in expectValid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -540,9 +635,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
               }
             }
           }
-        """)
+        """
+      )
 
-      "disallows differing return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "disallows differing return types despite no overlap" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -555,9 +653,15 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             }
           }
         """,
-        List("Field 'scalar' conflict because they return conflicting types 'Int' and 'String'" -> List(Pos(5, 17), Pos(8, 17))))
+        List(
+          "Field 'scalar' conflict because they return conflicting types 'Int' and 'String'" -> List(
+            Pos(5, 17),
+            Pos(8, 17)))
+      )
 
-      "reports correctly when a non-exclusive follows an exclusive" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "reports correctly when a non-exclusive follows an exclusive" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -602,10 +706,14 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             scalar: unrelatedField
           }
         """,
-        List("Field 'other' conflict because subfields 'scalar' conflict because 'scalar' and 'unrelatedField' are different fields." ->
-          List(Pos(31, 13), Pos(39, 13), Pos(34, 13), Pos(42, 13))))
+        List(
+          "Field 'other' conflict because subfields 'scalar' conflict because 'scalar' and 'unrelatedField' are different fields." ->
+            List(Pos(31, 13), Pos(39, 13), Pos(34, 13), Pos(42, 13)))
+      )
 
-      "disallows differing return type nullability despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "disallows differing return type nullability despite no overlap" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -618,9 +726,15 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             }
           }
         """,
-        List("Field 'scalar' conflict because they return conflicting types 'String!' and 'String'" -> List(Pos(5, 17), Pos(8, 17))))
+        List(
+          "Field 'scalar' conflict because they return conflicting types 'String!' and 'String'" -> List(
+            Pos(5, 17),
+            Pos(8, 17)))
+      )
 
-      "disallows differing return type list despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "disallows differing return type list despite no overlap" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -637,9 +751,15 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             }
           }
         """,
-        List("Field 'box' conflict because they return conflicting types '[StringBox]' and 'StringBox'" -> List(Pos(5, 17), Pos(10, 17))))
+        List(
+          "Field 'box' conflict because they return conflicting types '[StringBox]' and 'StringBox'" -> List(
+            Pos(5, 17),
+            Pos(10, 17)))
+      )
 
-      "disallows differing return type list despite no overlap (reverse)" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "disallows differing return type list despite no overlap (reverse)" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -656,9 +776,15 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             }
           }
         """,
-        List("Field 'box' conflict because they return conflicting types 'StringBox' and '[StringBox]'" -> List(Pos(5, 17), Pos(10, 17))))
+        List(
+          "Field 'box' conflict because they return conflicting types 'StringBox' and '[StringBox]'" -> List(
+            Pos(5, 17),
+            Pos(10, 17)))
+      )
 
-      "disallows differing subfields" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "disallows differing subfields" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -677,9 +803,14 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'val' conflict because 'scalar' and 'unrelatedField' are different fields." -> List(Pos(6, 19), Pos(7, 19))))
+          "Field 'val' conflict because 'scalar' and 'unrelatedField' are different fields." -> List(
+            Pos(6, 19),
+            Pos(7, 19)))
+      )
 
-      "disallows differing deep return types despite no overlap" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+      "disallows differing deep return types despite no overlap" in expectInvalid(
+        schema,
+        new OverlappingFieldsCanBeMerged :: Nil,
         """
           {
             someBox {
@@ -696,22 +827,21 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             }
           }
         """,
-        List("Field 'box' conflict because subfields 'scalar' conflict because they return conflicting types 'String' and 'Int'" ->
-          List(Pos(5, 17), Pos(6, 19), Pos(10, 17), Pos(11, 19))))
+        List(
+          "Field 'box' conflict because subfields 'scalar' conflict because they return conflicting types 'String' and 'Int'" ->
+            List(Pos(5, 17), Pos(6, 19), Pos(10, 17), Pos(11, 19)))
+      )
     }
 
-    "does not infinite loop on recursive fragment" in expectPasses(
-      """
+    "does not infinite loop on recursive fragment" in expectPasses("""
         fragment fragA on Human {name relatives { name ...fragA } }
       """)
-    
-    "does not infinite loop on immediately spread fragment" in expectPasses(
-      """
+
+    "does not infinite loop on immediately spread fragment" in expectPasses("""
         fragment fragA on Human {name ...fragA }
       """)
 
-    "does not infinite loop on a larger cycle" in expectPasses(
-      """
+    "does not infinite loop on a larger cycle" in expectPasses("""
         fragment fragA on Human {name ...fragB }
         fragment fragB on Human {name ...fragA }
       """)
@@ -727,7 +857,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
     // Because this is an invalid query by another rule (NoFragmentCycles), I'm
     // not too worried about this case... and since we used to infinite loop,
     // this is strictly better.
-    "finds invalid case even with immediately spread fragment" in expectInvalid(schema, new OverlappingFieldsCanBeMerged :: Nil,
+    "finds invalid case even with immediately spread fragment" in expectInvalid(
+      schema,
+      new OverlappingFieldsCanBeMerged :: Nil,
       """
         fragment sameAliasesWithDifferentFieldTargets on Dog {
          ...sameAliasesWithDifferentFieldTargets
@@ -736,8 +868,16 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
        }
       """,
       List(
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(Pos(4, 10), Pos(5, 10)),
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(Pos(4, 10), Pos(5, 10)),
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(Pos(4, 10), Pos(5, 10))))
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(
+          Pos(4, 10),
+          Pos(5, 10)),
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(
+          Pos(4, 10),
+          Pos(5, 10)),
+        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(
+          Pos(4, 10),
+          Pos(5, 10))
+      )
+    )
   }
 }

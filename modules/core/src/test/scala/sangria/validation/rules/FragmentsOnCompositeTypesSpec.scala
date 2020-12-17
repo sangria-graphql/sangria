@@ -8,22 +8,19 @@ class FragmentsOnCompositeTypesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new FragmentsOnCompositeTypes)
 
   "Validate: Fragments on composite types" should {
-    "object is valid fragment type" in expectPasses(
-      """
+    "object is valid fragment type" in expectPasses("""
         fragment validFragment on Dog {
           barks
         }
       """)
 
-    "interface is valid fragment type" in expectPasses(
-      """
+    "interface is valid fragment type" in expectPasses("""
         fragment validFragment on Pet {
           name
         }
       """)
 
-    "object is valid inline fragment type" in expectPasses(
-      """
+    "object is valid inline fragment type" in expectPasses("""
         fragment validFragment on Pet {
           ... on Dog {
             barks
@@ -31,8 +28,7 @@ class FragmentsOnCompositeTypesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "union is valid fragment type" in expectPasses(
-      """
+    "union is valid fragment type" in expectPasses("""
         fragment validFragment on CatOrDog {
           __typename
         }
@@ -45,8 +41,10 @@ class FragmentsOnCompositeTypesSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment 'scalarFragment' cannot condition on non composite type 'Boolean'." -> Some(Pos(2, 36))
-      ))
+        "Fragment 'scalarFragment' cannot condition on non composite type 'Boolean'." -> Some(
+          Pos(2, 36))
+      )
+    )
 
     "enum is invalid fragment type" in expectFails(
       """
@@ -55,8 +53,10 @@ class FragmentsOnCompositeTypesSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment 'scalarFragment' cannot condition on non composite type 'FurColor'." -> Some(Pos(2, 36))
-      ))
+        "Fragment 'scalarFragment' cannot condition on non composite type 'FurColor'." -> Some(
+          Pos(2, 36))
+      )
+    )
 
     "input object is invalid fragment type" in expectFails(
       """
@@ -65,8 +65,10 @@ class FragmentsOnCompositeTypesSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Fragment 'inputFragment' cannot condition on non composite type 'ComplexInput'." -> Some(Pos(2, 35))
-      ))
+        "Fragment 'inputFragment' cannot condition on non composite type 'ComplexInput'." -> Some(
+          Pos(2, 35))
+      )
+    )
 
     "scalar is invalid inline fragment type" in expectFails(
       """
@@ -78,10 +80,10 @@ class FragmentsOnCompositeTypesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Fragment cannot condition on non composite type 'String'." -> Some(Pos(3, 18))
-      ))
+      )
+    )
 
-    "inline fragment without type is valid" in expectPasses(
-      """
+    "inline fragment without type is valid" in expectPasses("""
         fragment validFragment on Pet {
           ... {
             name

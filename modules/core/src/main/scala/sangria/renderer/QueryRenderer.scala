@@ -1,7 +1,7 @@
 package sangria.renderer
 
 import sangria.ast.AstLocation
-import sangria.util.StringUtil.{escapeString, escapeBlockString}
+import sangria.util.StringUtil.{escapeBlockString, escapeString}
 import sangria.ast._
 
 object QueryRenderer {
@@ -17,7 +17,8 @@ object QueryRenderer {
     formatInputValues = false,
     renderComments = true,
     formatBlockStrings = true,
-    legacyImplementsInterface = false)
+    legacyImplementsInterface = false
+  )
 
   val PrettyInput = Pretty.copy(
     inputFieldSeparator = "\n",
@@ -37,24 +38,42 @@ object QueryRenderer {
     formatInputValues = false,
     renderComments = false,
     formatBlockStrings = false,
-    legacyImplementsInterface = false)
+    legacyImplementsInterface = false
+  )
 
-  def renderSelections(sels: Vector[Selection], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig) =
+  def renderSelections(
+      sels: Vector[Selection],
+      tc: WithTrailingComments,
+      indent: Indent,
+      config: QueryRendererConfig) =
     if (sels.nonEmpty) {
-      val rendered = sels.zipWithIndex map {
-        case (sel, idx) =>
+      val rendered = sels.zipWithIndex
+        .map { case (sel, idx) =>
           val prev = if (idx == 0) None else Some(sels(idx - 1))
           val next = if (idx == sels.size - 1) None else Some(sels(idx + 1))
 
           val trailingNext =
-            for (n <- next; c <- n.comments.headOption; cp <- c.location; sp <- sel.location; if cp.line == sp.line) yield c
+            for {
+              n <- next
+              c <- n.comments.headOption
+              cp <- c.location
+              sp <- sel.location
+              if cp.line == sp.line
+            } yield c
 
           val trailing =
-            trailingNext orElse (for (c <- tc.trailingComments.headOption; cp <- c.location; sp <- sel.location; if cp.line == sp.line) yield c)
+            trailingNext.orElse(for {
+              c <- tc.trailingComments.headOption
+              cp <- c.location
+              sp <- sel.location
+              if cp.line == sp.line
+            } yield c)
 
-          (if (idx != 0 && shouldRenderComment(sel, prev, config)) config.lineBreak else "") + renderNode(sel, config, indent.inc, prev = prev) +
+          (if (idx != 0 && shouldRenderComment(sel, prev, config)) config.lineBreak
+           else "") + renderNode(sel, config, indent.inc, prev = prev) +
             trailing.fold("")(c => renderIndividualComment(c, " ", config))
-      } mkString config.mandatoryLineBreak
+        }
+        .mkString(config.mandatoryLineBreak)
 
       "{" +
         config.lineBreak +
@@ -65,23 +84,42 @@ object QueryRenderer {
         "}"
     } else ""
 
-  def renderFieldDefinitions(fields: Vector[FieldDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
+  def renderFieldDefinitions(
+      fields: Vector[FieldDefinition],
+      tc: WithTrailingComments,
+      indent: Indent,
+      config: QueryRendererConfig,
+      frontSep: Boolean = false) =
     if (fields.nonEmpty) {
-      val rendered = fields.zipWithIndex map {
-        case (field, idx) =>
+      val rendered = fields.zipWithIndex
+        .map { case (field, idx) =>
           val prev = if (idx == 0) None else Some(fields(idx - 1))
           val next = if (idx == fields.size - 1) None else Some(fields(idx + 1))
 
           val trailingNext =
-            for (n <- next; c <- n.description.fold(n.comments)(_.comments).headOption; cp <- c.location; sp <- field.location; if cp.line == sp.line) yield c
+            for {
+              n <- next
+              c <- n.description.fold(n.comments)(_.comments).headOption
+              cp <- c.location
+              sp <- field.location
+              if cp.line == sp.line
+            } yield c
 
           val trailing =
-            trailingNext orElse (for (c <- tc.trailingComments.headOption; cp <- c.location; sp <- field.location; if cp.line == sp.line) yield c)
+            trailingNext.orElse(for {
+              c <- tc.trailingComments.headOption
+              cp <- c.location
+              sp <- field.location
+              if cp.line == sp.line
+            } yield c)
 
-          (if (idx != 0 && (shouldRenderComment(field, prev, config) || shouldRenderDescription(field))) config.lineBreak else "") +
+          (if (idx != 0 && (shouldRenderComment(field, prev, config) || shouldRenderDescription(
+               field))) config.lineBreak
+           else "") +
             renderNode(field, config, indent.inc, prev = prev) +
             trailing.fold("")(c => renderIndividualComment(c, " ", config))
-      } mkString config.mandatoryLineBreak
+        }
+        .mkString(config.mandatoryLineBreak)
 
       (if (frontSep) config.separator else "") +
         "{" +
@@ -93,7 +131,12 @@ object QueryRenderer {
         "}"
     } else ""
 
-  def renderInputFieldDefinitions(fields: Vector[InputValueDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
+  def renderInputFieldDefinitions(
+      fields: Vector[InputValueDefinition],
+      tc: WithTrailingComments,
+      indent: Indent,
+      config: QueryRendererConfig,
+      frontSep: Boolean = false) =
     if (fields.nonEmpty) {
       (if (frontSep) config.separator else "") +
         "{" +
@@ -105,10 +148,15 @@ object QueryRenderer {
         "}"
     } else ""
 
-  def renderEnumValues(values: Vector[EnumValueDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
+  def renderEnumValues(
+      values: Vector[EnumValueDefinition],
+      tc: WithTrailingComments,
+      indent: Indent,
+      config: QueryRendererConfig,
+      frontSep: Boolean = false) =
     if (values.nonEmpty) {
-      val renderedValues = values.zipWithIndex map {
-        case (value, idx) =>
+      val renderedValues = values.zipWithIndex
+        .map { case (value, idx) =>
           val prev = if (idx == 0) None else Some(values(idx - 1))
           val next = if (idx == values.size - 1) None else Some(values(idx + 1))
 
@@ -122,13 +170,20 @@ object QueryRenderer {
             } yield c
 
           val trailing =
-            trailingNext orElse (for (c <- tc.trailingComments.headOption; cp <- c.location; sp <- value.location; if cp.line == sp.line) yield c)
+            trailingNext.orElse(for {
+              c <- tc.trailingComments.headOption
+              cp <- c.location
+              sp <- value.location
+              if cp.line == sp.line
+            } yield c)
 
-          (if (idx != 0 && (shouldRenderComment(value, prev, config) || shouldRenderDescription(value))) config.lineBreak else "") +
+          (if (idx != 0 && (shouldRenderComment(value, prev, config) || shouldRenderDescription(
+               value))) config.lineBreak
+           else "") +
             renderNode(value, config, indent.inc, prev = prev) +
             trailing.fold("")(c => renderIndividualComment(c, " ", config))
-      } mkString config.mandatoryLineBreak
-
+        }
+        .mkString(config.mandatoryLineBreak)
 
       (if (frontSep) config.separator else "") +
         "{" +
@@ -140,12 +195,19 @@ object QueryRenderer {
         "}"
     } else ""
 
-  def renderOperationTypeDefinitions(ops: Vector[OperationTypeDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig, frontSep: Boolean = false) =
+  def renderOperationTypeDefinitions(
+      ops: Vector[OperationTypeDefinition],
+      tc: WithTrailingComments,
+      indent: Indent,
+      config: QueryRendererConfig,
+      frontSep: Boolean = false) =
     if (ops.nonEmpty) {
-      val renderedOps = ops.zipWithIndex map { case (op, idx) =>
-        (if (idx != 0 && shouldRenderComment(op, None, config)) config.lineBreak else "") +
+      val renderedOps = ops.zipWithIndex
+        .map { case (op, idx) =>
+          (if (idx != 0 && shouldRenderComment(op, None, config)) config.lineBreak else "") +
             renderNode(op, config, indent.inc)
-      } mkString config.mandatoryLineBreak
+        }
+        .mkString(config.mandatoryLineBreak)
 
       (if (frontSep) config.separator else "") +
         "{" +
@@ -156,68 +218,129 @@ object QueryRenderer {
         indent.str + "}"
     } else ""
 
-  def renderDirs(dirs: Vector[Directive], config: QueryRendererConfig, indent: Indent, frontSep: Boolean = false, withSep: Boolean = true) =
+  def renderDirs(
+      dirs: Vector[Directive],
+      config: QueryRendererConfig,
+      indent: Indent,
+      frontSep: Boolean = false,
+      withSep: Boolean = true) =
     (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
-      (dirs map (renderNode(_, config, indent.zero)) mkString config.separator) +
+      (dirs.map(renderNode(_, config, indent.zero)).mkString(config.separator)) +
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
 
-  def renderArgs(args: Vector[Argument], indent: Indent, config: QueryRendererConfig, withSep: Boolean = true) =
+  def renderArgs(
+      args: Vector[Argument],
+      indent: Indent,
+      config: QueryRendererConfig,
+      withSep: Boolean = true) =
     if (args.nonEmpty) {
-      val argsRendered = args.zipWithIndex map { case (a, idx) =>
+      val argsRendered = args.zipWithIndex.map { case (a, idx) =>
         (if (idx != 0 && shouldRenderComment(a, None, config)) config.lineBreak else "") +
-            (if (shouldRenderComment(a, None, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
-            renderNode(a, config, if (shouldRenderComment(a, None, config)) indent.inc else indent.zero)
+          (if (shouldRenderComment(a, None, config)) config.mandatoryLineBreak
+           else if (idx != 0) config.separator
+           else "") +
+          renderNode(
+            a,
+            config,
+            if (shouldRenderComment(a, None, config)) indent.inc else indent.zero)
       }
 
-      "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
+      "(" + (argsRendered.mkString(",")) + ")" + (if (withSep) config.separator else "")
     } else ""
 
-  def renderInputValueDefs(args: Vector[InputValueDefinition], indent: Indent, config: QueryRendererConfig, withSep: Boolean = true) =
+  def renderInputValueDefs(
+      args: Vector[InputValueDefinition],
+      indent: Indent,
+      config: QueryRendererConfig,
+      withSep: Boolean = true) =
     if (args.nonEmpty) {
-      val argsRendered = args.zipWithIndex map { case (a, idx) =>
-        (if (idx != 0 && (shouldRenderComment(a, None, config) || shouldRenderDescription(a))) config.lineBreak else "") +
-          (if (shouldRenderComment(a, None, config) || shouldRenderDescription(a)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
-          renderNode(a, config, if (shouldRenderComment(a, None, config) || shouldRenderDescription(a)) indent.inc else indent.zero)
+      val argsRendered = args.zipWithIndex.map { case (a, idx) =>
+        (if (idx != 0 && (shouldRenderComment(a, None, config) || shouldRenderDescription(a)))
+           config.lineBreak
+         else "") +
+          (if (shouldRenderComment(a, None, config) || shouldRenderDescription(a))
+             config.mandatoryLineBreak
+           else if (idx != 0) config.separator
+           else "") +
+          renderNode(
+            a,
+            config,
+            if (shouldRenderComment(a, None, config) || shouldRenderDescription(a)) indent.inc
+            else indent.zero)
       }
 
-      "(" + (argsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
+      "(" + (argsRendered.mkString(",")) + ")" + (if (withSep) config.separator else "")
     } else ""
 
-  def renderVarDefs(vars: Vector[VariableDefinition], indent: Indent, config: QueryRendererConfig, withSep: Boolean = true) =
+  def renderVarDefs(
+      vars: Vector[VariableDefinition],
+      indent: Indent,
+      config: QueryRendererConfig,
+      withSep: Boolean = true) =
     if (vars.nonEmpty) {
-      val varsRendered = vars.zipWithIndex map { case (v, idx) =>
+      val varsRendered = vars.zipWithIndex.map { case (v, idx) =>
         (if (idx != 0 && shouldRenderComment(v, None, config)) config.lineBreak else "") +
-          (if (shouldRenderComment(v, None, config)) config.mandatoryLineBreak else if (idx != 0) config.separator else "") +
-          renderNode(v, config, if (shouldRenderComment(v, None, config)) indent + 2 else indent.zero)
+          (if (shouldRenderComment(v, None, config)) config.mandatoryLineBreak
+           else if (idx != 0) config.separator
+           else "") +
+          renderNode(
+            v,
+            config,
+            if (shouldRenderComment(v, None, config)) indent + 2 else indent.zero)
       }
 
-      "(" + (varsRendered mkString ",") + ")" + (if (withSep) config.separator else "")
+      "(" + (varsRendered.mkString(",")) + ")" + (if (withSep) config.separator else "")
     } else ""
 
-  def renderInputObjectFieldDefs(fields: Vector[InputValueDefinition], tc: WithTrailingComments, indent: Indent, config: QueryRendererConfig) = {
-    val fieldsRendered = fields.zipWithIndex map { case (f, idx) =>
+  def renderInputObjectFieldDefs(
+      fields: Vector[InputValueDefinition],
+      tc: WithTrailingComments,
+      indent: Indent,
+      config: QueryRendererConfig) = {
+    val fieldsRendered = fields.zipWithIndex.map { case (f, idx) =>
       val prev = if (idx == 0) None else Some(fields(idx - 1))
       val next = if (idx == fields.size - 1) None else Some(fields(idx + 1))
 
       val trailingNext =
-        for (n <- next; c <- n.description.fold(n.comments)(_.comments).headOption; cp <- c.location; sp <- f.location; if cp.line == sp.line) yield c
+        for {
+          n <- next
+          c <- n.description.fold(n.comments)(_.comments).headOption
+          cp <- c.location
+          sp <- f.location
+          if cp.line == sp.line
+        } yield c
 
       val trailing =
-        trailingNext orElse (for (c <- tc.trailingComments.headOption; cp <- c.location; sp <- f.location; if cp.line == sp.line) yield c)
+        trailingNext.orElse(for {
+          c <- tc.trailingComments.headOption
+          cp <- c.location
+          sp <- f.location
+          if cp.line == sp.line
+        } yield c)
 
-      (if (idx != 0 && (shouldRenderComment(f, prev, config) || shouldRenderDescription(f))) config.lineBreak else "") +
+      (if (idx != 0 && (shouldRenderComment(f, prev, config) || shouldRenderDescription(f)))
+         config.lineBreak
+       else "") +
         renderNode(f, config, indent.inc, prev = prev) +
         trailing.fold("")(c => renderIndividualComment(c, " ", config))
     }
 
-    fieldsRendered mkString config.mandatoryLineBreak
+    fieldsRendered.mkString(config.mandatoryLineBreak)
   }
 
-  def renderInterfaces(interfaces: Vector[NamedType], config: QueryRendererConfig, indent: Indent, frontSep: Boolean = false, withSep: Boolean = true) =
+  def renderInterfaces(
+      interfaces: Vector[NamedType],
+      config: QueryRendererConfig,
+      indent: Indent,
+      frontSep: Boolean = false,
+      withSep: Boolean = true) =
     if (interfaces.nonEmpty)
       (if (frontSep) config.mandatorySeparator else "") +
         "implements" + config.mandatorySeparator +
-        (interfaces map (renderNode(_, config, indent.zero)) mkString (if (config.legacyImplementsInterface) "," + config.separator else config.separator + "&" + config.separator )) +
+        (interfaces
+          .map(renderNode(_, config, indent.zero))
+          .mkString(if (config.legacyImplementsInterface) "," + config.separator
+          else config.separator + "&" + config.separator)) +
         (if (withSep) config.separator else "")
     else ""
 
@@ -228,7 +351,12 @@ object QueryRenderer {
   }
 
   def actualComments(node: WithComments, prev: Option[AstNode]) = {
-    val ignoreFirst = for (ls <- prev; p <- ls.location; c <- node.comments.headOption; cp <- c.location) yield cp.line == p.line
+    val ignoreFirst = for {
+      ls <- prev
+      p <- ls.location
+      c <- node.comments.headOption
+      cp <- c.location
+    } yield cp.line == p.line
 
     ignoreFirst match {
       case Some(true) => node.comments.tail
@@ -236,13 +364,17 @@ object QueryRenderer {
     }
   }
 
-  def shouldRenderComment(node: WithComments, prev: Option[AstNode], config: QueryRendererConfig) = {
+  def shouldRenderComment(
+      node: WithComments,
+      prev: Option[AstNode],
+      config: QueryRendererConfig) = {
     val comments = actualComments(node, prev)
 
     config.renderComments && comments.nonEmpty
   }
 
-  def shouldRenderDescription(node: WithDescription) = node.description.fold(false)(_.value.trim.nonEmpty)
+  def shouldRenderDescription(node: WithDescription) =
+    node.description.fold(false)(_.value.trim.nonEmpty)
 
   def shouldRenderComment(node: WithTrailingComments, config: QueryRendererConfig) =
     config.renderComments && node.trailingComments.nonEmpty
@@ -254,9 +386,14 @@ object QueryRenderer {
     text.charAt(0).isWhitespace
 
   def renderIndividualComment(node: Comment, indent: String, config: QueryRendererConfig): String =
-    indent + "#" + (if (node.text.trim.nonEmpty && !startsWithWhitespace(node.text)) " " else "") + node.text
+    indent + "#" + (if (node.text.trim.nonEmpty && !startsWithWhitespace(node.text)) " "
+                    else "") + node.text
 
-  def renderDescription(node: WithDescription, prev: Option[AstNode], indent: Indent, config: QueryRendererConfig): String = {
+  def renderDescription(
+      node: WithDescription,
+      prev: Option[AstNode],
+      indent: Indent,
+      config: QueryRendererConfig): String =
     node.description match {
       case Some(description) =>
         renderComment(description, prev, indent, config) +
@@ -264,33 +401,51 @@ object QueryRenderer {
           config.mandatoryLineBreak
       case None => ""
     }
-  }
 
-  def renderComment(node: WithComments, prev: Option[AstNode], indent: Indent, config: QueryRendererConfig): String = {
+  def renderComment(
+      node: WithComments,
+      prev: Option[AstNode],
+      indent: Indent,
+      config: QueryRendererConfig): String = {
     val comments = actualComments(node, prev)
 
     if (shouldRenderComment(comments, config)) {
       val lines = renderCommentLines(comments, node.location, indent, config)
 
-      lines mkString ("", config.mandatoryLineBreak, config.mandatoryLineBreak)
+      lines.mkString("", config.mandatoryLineBreak, config.mandatoryLineBreak)
     } else ""
   }
 
-  def renderCommentLines(comments: Vector[Comment], nodePos: Option[AstLocation], indent: Indent, config: QueryRendererConfig) = {
-    val nodeLine = nodePos.map(_.line).orElse(comments.last.location.map(_.line + 1)).fold(1)(identity)
+  def renderCommentLines(
+      comments: Vector[Comment],
+      nodePos: Option[AstLocation],
+      indent: Indent,
+      config: QueryRendererConfig) = {
+    val nodeLine =
+      nodePos.map(_.line).orElse(comments.last.location.map(_.line + 1)).fold(1)(identity)
 
-    comments.foldRight((nodeLine, Vector.empty[String])) {
-      case (c, (lastLine, acc)) =>
+    comments
+      .foldRight((nodeLine, Vector.empty[String])) { case (c, (lastLine, acc)) =>
         val currLine = c.location.fold(lastLine - 1)(_.line)
         val diffLines = lastLine - currLine
-        val fill = if (diffLines  > 1) config.lineBreak else ""
+        val fill = if (diffLines > 1) config.lineBreak else ""
 
         currLine -> ((renderIndividualComment(c, indent.str, config) + fill) +: acc)
-    }._2
+      }
+      ._2
   }
 
-  def renderTrailingComment(node: WithTrailingComments, lastSelection: Option[AstNode], indent: Indent, config: QueryRendererConfig): String = {
-    val ignoreFirst = for (ls <- lastSelection; p <- ls.location; c <- node.trailingComments.headOption; cp <- c.location) yield cp.line == p.line
+  def renderTrailingComment(
+      node: WithTrailingComments,
+      lastSelection: Option[AstNode],
+      indent: Indent,
+      config: QueryRendererConfig): String = {
+    val ignoreFirst = for {
+      ls <- lastSelection
+      p <- ls.location
+      c <- node.trailingComments.headOption
+      cp <- c.location
+    } yield cp.line == p.line
     val comments = ignoreFirst match {
       case Some(true) => node.trailingComments.tail
       case _ => node.trailingComments
@@ -299,48 +454,72 @@ object QueryRenderer {
     if (shouldRenderComment(comments, config)) {
       val lines = renderCommentLines(comments, None, indent, config)
 
-      lines mkString (config.lineBreak + config.mandatoryLineBreak, config.mandatoryLineBreak, "")
+      lines.mkString(config.lineBreak + config.mandatoryLineBreak, config.mandatoryLineBreak, "")
     } else ""
   }
 
   def renderInputComment(node: WithComments, indent: Indent, config: QueryRendererConfig) =
-    if (config.formatInputValues && shouldRenderComment(node, None, config)) renderComment(node, None, indent, config) + indent.str else ""
+    if (config.formatInputValues && shouldRenderComment(node, None, config))
+      renderComment(node, None, indent, config) + indent.str
+    else ""
 
-  def renderStringValue(node: StringValue, indent: Indent, config: QueryRendererConfig, extraIndent: Boolean = true) =
-    if (node.block && config.formatBlockStrings) renderBlockString(node, indent, config, extraIndent)
+  def renderStringValue(
+      node: StringValue,
+      indent: Indent,
+      config: QueryRendererConfig,
+      extraIndent: Boolean = true) =
+    if (node.block && config.formatBlockStrings)
+      renderBlockString(node, indent, config, extraIndent)
     else renderNonBlockString(node, indent, config)
 
   def renderNonBlockString(node: StringValue, indent: Indent, config: QueryRendererConfig) =
     s""""${escapeString(node.value)}""""
 
-  def renderBlockString(node: StringValue, indent: Indent, config: QueryRendererConfig, extraIndent: Boolean = true) =
+  def renderBlockString(
+      node: StringValue,
+      indent: Indent,
+      config: QueryRendererConfig,
+      extraIndent: Boolean = true) =
     if (node.value.trim.nonEmpty) {
       val ind = if (extraIndent) indent.incForce.str else indent.strForce
       val lines = escapeBlockString(node.value).split("\n").map(ind + _)
 
-      lines.mkString("\"\"\"" + config.mandatoryLineBreak,  config.mandatoryLineBreak, config.mandatoryLineBreak + ind + "\"\"\"")
+      lines.mkString(
+        "\"\"\"" + config.mandatoryLineBreak,
+        config.mandatoryLineBreak,
+        config.mandatoryLineBreak + ind + "\"\"\"")
     } else "\"\""
 
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0): String =
     renderNode(node, config, Indent(config, indentLevel, indentLevel))
 
-  def renderNode(node: AstNode, config: QueryRendererConfig, indent: Indent, prefix: Option[String] = None, prev: Option[AstNode] = None): String =
+  def renderNode(
+      node: AstNode,
+      config: QueryRendererConfig,
+      indent: Indent,
+      prefix: Option[String] = None,
+      prev: Option[AstNode] = None): String =
     node match {
       case d @ Document(defs, _, _, _) =>
-        (defs map (renderNode(_, config, indent)) mkString config.definitionSeparator) +
+        (defs.map(renderNode(_, config, indent)).mkString(config.definitionSeparator)) +
           renderTrailingComment(d, None, indent, config)
 
       case d @ InputDocument(defs, _, _, _) =>
-        (defs map (renderNode(_, config, indent)) mkString config.definitionSeparator) +
+        (defs.map(renderNode(_, config, indent)).mkString(config.definitionSeparator)) +
           renderTrailingComment(d, None, indent, config)
 
-      case op @ OperationDefinition(OperationType.Query, None, vars, dirs, sels, _, _, _) if vars.isEmpty && dirs.isEmpty =>
-        renderComment(op, prev, indent, config) + indent.str + renderSelections(sels, op, indent, config)
+      case op @ OperationDefinition(OperationType.Query, None, vars, dirs, sels, _, _, _)
+          if vars.isEmpty && dirs.isEmpty =>
+        renderComment(op, prev, indent, config) + indent.str + renderSelections(
+          sels,
+          op,
+          indent,
+          config)
 
       case op @ OperationDefinition(opType, name, vars, dirs, sels, _, _, _) =>
         renderComment(op, prev, indent, config) +
           indent.str + renderOpType(opType) + config.mandatorySeparator +
-          (name getOrElse "") +
+          (name.getOrElse("")) +
           renderVarDefs(vars, indent, config, withSep = false) +
           config.separator +
           renderDirs(dirs, config, indent) +
@@ -348,7 +527,11 @@ object QueryRenderer {
 
       case fd @ FragmentDefinition(name, typeCondition, dirs, sels, vars, _, _, _) =>
         renderComment(fd, prev, indent, config) +
-          indent.str + "fragment" + config.mandatorySeparator + name + renderVarDefs(vars, indent, config, withSep = false) + config.mandatorySeparator + "on" +
+          indent.str + "fragment" + config.mandatorySeparator + name + renderVarDefs(
+            vars,
+            indent,
+            config,
+            withSep = false) + config.mandatorySeparator + "on" +
           config.mandatorySeparator + typeCondition.name + config.separator +
           renderDirs(dirs, config, indent) +
           renderSelections(sels, fd, indent, config)
@@ -357,7 +540,10 @@ object QueryRenderer {
         renderComment(vd, prev, indent, config) +
           indent.str + "$" + name + ":" + config.separator +
           renderNode(tpe, config, indent.zero) +
-          (defaultValue map (v => config.separator + "=" + config.separator + renderNode(v, config, indent.zero)) getOrElse "") +
+          (defaultValue
+            .map(v =>
+              config.separator + "=" + config.separator + renderNode(v, config, indent.zero))
+            .getOrElse("")) +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case NotNullType(ofType, _) =>
@@ -371,7 +557,7 @@ object QueryRenderer {
 
       case f @ Field(alias, name, args, dirs, sels, _, _, _) =>
         renderComment(f, prev, indent, config) +
-          indent.str + (alias map (_ + ":" + config.separator) getOrElse "") + name +
+          indent.str + (alias.map(_ + ":" + config.separator).getOrElse("")) + name +
           renderArgs(args, indent, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config, indent, withSep = sels.nonEmpty) +
@@ -383,12 +569,17 @@ object QueryRenderer {
 
       case ifr @ InlineFragment(typeCondition, dirs, sels, _, _, _) =>
         renderComment(ifr, prev, indent, config) +
-          indent.str + "..." + config.mandatorySeparator + typeCondition.fold("")("on" + config.mandatorySeparator + _.name) + config.separator +
+          indent.str + "..." + config.mandatorySeparator + typeCondition.fold("")(
+            "on" + config.mandatorySeparator + _.name) + config.separator +
           renderDirs(dirs, config, indent) +
           renderSelections(sels, ifr, indent, config)
 
       case Directive(name, args, _, _) =>
-        indent.str + "@" + name + renderArgs(args, indent, config.copy(renderComments = false), withSep = false)
+        indent.str + "@" + name + renderArgs(
+          args,
+          indent,
+          config.copy(renderComments = false),
+          withSep = false)
 
       case a @ Argument(name, value, _, _) =>
         renderComment(a, prev, indent, config) +
@@ -401,7 +592,8 @@ object QueryRenderer {
       case v @ BooleanValue(value, _, _) => renderInputComment(v, indent, config) + value
       case v @ NullValue(_, _) => renderInputComment(v, indent, config) + "null"
       case v @ EnumValue(value, _, _) => renderInputComment(v, indent, config) + value
-      case v @ StringValue(_, _, _, _, _) => renderInputComment(v, indent, config) + renderStringValue(v, indent, config)
+      case v @ StringValue(_, _, _, _, _) =>
+        renderInputComment(v, indent, config) + renderStringValue(v, indent, config)
 
       case v @ ListValue(value, _, _) =>
         def addIdent(v: Value) = v match {
@@ -418,19 +610,27 @@ object QueryRenderer {
             (if (idx != 0) config.separator else "") + renderNode(v, config, indent)
 
         renderInputComment(v, indent, config) +
-          "[" + (value.zipWithIndex map {case (v, idx) => renderValue(v, idx)} mkString config.inputListSeparator) + "]"
+          "[" + (value.zipWithIndex
+            .map { case (v, idx) => renderValue(v, idx) }
+            .mkString(config.inputListSeparator)) + "]"
       case v @ ObjectValue(value, _, _) =>
         renderInputComment(v, indent, config) +
           "{" + inputLineBreak(config) +
-          (value.zipWithIndex map {case (v, idx) => (if (idx != 0 && config.formatInputValues && shouldRenderComment(v, None, config)) config.lineBreak else "") + renderNode(v, config, inputFieldIndent(config, indent))} mkString config.inputFieldSeparator) +
+          (value.zipWithIndex
+            .map { case (v, idx) =>
+              (if (idx != 0 && config.formatInputValues && shouldRenderComment(v, None, config))
+                 config.lineBreak
+               else "") + renderNode(v, config, inputFieldIndent(config, indent))
+            }
+            .mkString(config.inputFieldSeparator)) +
           inputLineBreak(config) + inputIndent(config, indent) + "}"
       case VariableValue(name, _, _) => indent.str + "$" + name
       case v @ ObjectField(name, value, _, _) =>
         val rendered =
-            if (config.formatInputValues && shouldRenderComment(value, None, config))
-              config.lineBreak + renderNode(value, config, indent.inc)
-            else
-              config.separator + renderNode(value, config, indent)
+          if (config.formatInputValues && shouldRenderComment(value, None, config))
+            config.lineBreak + renderNode(value, config, indent.inc)
+          else
+            config.separator + renderNode(value, config, indent)
 
         (if (config.formatInputValues) renderComment(v, prev, indent, config) else "") +
           indent.str + name + ":" + rendered
@@ -439,13 +639,13 @@ object QueryRenderer {
 
       case std @ ScalarTypeDefinition(name, dirs, description, _, _) =>
         renderDescription(std, prev, indent, config) +
-          renderComment(std, description orElse prev, indent, config) +
+          renderComment(std, description.orElse(prev), indent, config) +
           indent.str + "scalar" + config.mandatorySeparator + name +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case otd @ ObjectTypeDefinition(name, interfaces, fields, dirs, description, _, _, _) =>
         renderDescription(otd, prev, indent, config) +
-          renderComment(otd, description orElse prev, indent, config) +
+          renderComment(otd, description.orElse(prev), indent, config) +
           indent.str + prefix.getOrElse("") + "type" + config.mandatorySeparator + name +
           config.mandatorySeparator +
           renderInterfaces(interfaces, config, indent) +
@@ -454,14 +654,14 @@ object QueryRenderer {
 
       case itd @ InputObjectTypeDefinition(name, fields, dirs, description, _, _, _) =>
         renderDescription(itd, prev, indent, config) +
-          renderComment(itd, description orElse prev, indent, config) +
+          renderComment(itd, description.orElse(prev), indent, config) +
           indent.str + "input" + config.mandatorySeparator + name +
           renderDirs(dirs, config, indent, frontSep = true) +
           renderInputFieldDefinitions(fields, itd, indent, config, frontSep = true)
 
       case itd @ InterfaceTypeDefinition(name, fields, dirs, description, _, _, _) =>
         renderDescription(itd, prev, indent, config) +
-          renderComment(itd, description orElse prev, indent, config) +
+          renderComment(itd, description.orElse(prev), indent, config) +
           indent.str + "interface" + config.mandatorySeparator + name +
           renderDirs(dirs, config, indent, frontSep = true) +
           renderFieldDefinitions(fields, itd, indent, config, frontSep = true)
@@ -470,31 +670,33 @@ object QueryRenderer {
         val typesString =
           if (types.nonEmpty)
             config.separator + "=" + config.separator +
-              (types map(renderNode(_, config, indent.zero)) mkString (config.separator + "|" + config.separator))
+              (types
+                .map(renderNode(_, config, indent.zero))
+                .mkString(config.separator + "|" + config.separator))
           else
             ""
         renderDescription(utd, prev, indent, config) +
-          renderComment(utd, description orElse prev, indent, config) +
+          renderComment(utd, description.orElse(prev), indent, config) +
           indent.str + "union" + config.mandatorySeparator + name +
           renderDirs(dirs, config, indent, frontSep = true) +
           typesString
 
       case etd @ EnumTypeDefinition(name, values, dirs, description, _, _, _) =>
         renderDescription(etd, prev, indent, config) +
-          renderComment(etd, description orElse prev, indent, config) +
+          renderComment(etd, description.orElse(prev), indent, config) +
           indent.str + "enum" + config.mandatorySeparator + name +
           renderDirs(dirs, config, indent, frontSep = true) +
           renderEnumValues(values, etd, indent, config, frontSep = true)
 
       case evd @ EnumValueDefinition(name, dirs, description, _, _) =>
         renderDescription(evd, prev, indent, config) +
-          renderComment(evd, description orElse prev, indent, config) +
+          renderComment(evd, description.orElse(prev), indent, config) +
           indent.str + name +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case fd @ FieldDefinition(name, fieldType, args, dirs, description, _, _) =>
         renderDescription(fd, prev, indent, config) +
-          renderComment(fd, description orElse prev, indent, config) +
+          renderComment(fd, description.orElse(prev), indent, config) +
           indent.str + name +
           renderInputValueDefs(args, indent, config, withSep = false) +
           ":" + config.separator + renderNode(fieldType, config, indent.zero) +
@@ -502,14 +704,16 @@ object QueryRenderer {
 
       case ivd @ InputValueDefinition(name, valueType, default, dirs, description, _, _) =>
         renderDescription(ivd, prev, indent, config) +
-          renderComment(ivd, description orElse prev, indent, config) +
+          renderComment(ivd, description.orElse(prev), indent, config) +
           indent.str + name + ":" + config.separator + renderNode(valueType, config, indent.zero) +
-          default.fold("")(d => config.separator + "=" + config.separator + renderNode(d, config, indent.zero)) +
+          default.fold("")(d =>
+            config.separator + "=" + config.separator + renderNode(d, config, indent.zero)) +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case ted @ ObjectTypeExtensionDefinition(name, interfaces, fields, dirs, _, _, _) =>
         renderComment(ted, prev, indent, config) +
-          indent.str + prefix.getOrElse("") + "extend" + config.mandatorySeparator + "type" + config.mandatorySeparator + name +
+          indent.str + prefix.getOrElse(
+            "") + "extend" + config.mandatorySeparator + "type" + config.mandatorySeparator + name +
           config.mandatorySeparator +
           renderInterfaces(interfaces, config, indent) +
           renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
@@ -525,7 +729,9 @@ object QueryRenderer {
         val typesString =
           if (types.nonEmpty)
             config.separator + "=" + config.separator +
-              (types map(renderNode(_, config, indent.zero)) mkString (config.separator + "|" + config.separator))
+              (types
+                .map(renderNode(_, config, indent.zero))
+                .mkString(config.separator + "|" + config.separator))
           else
             ""
 
@@ -558,17 +764,24 @@ object QueryRenderer {
           renderOperationTypeDefinitions(ops, ext, indent, config, frontSep = true)
 
       case dd @ DirectiveDefinition(name, args, locations, description, _, _) =>
-        val locsRendered = locations.zipWithIndex map { case (l, idx) =>
+        val locsRendered = locations.zipWithIndex.map { case (l, idx) =>
           (if (idx != 0 && shouldRenderComment(l, None, config)) config.lineBreak else "") +
-            (if (shouldRenderComment(l, None, config)) config.lineBreak else if (idx != 0) config.separator else "") +
-            renderNode(l, config, if (shouldRenderComment(l, None, config)) indent.inc else indent.zero)
+            (if (shouldRenderComment(l, None, config)) config.lineBreak
+             else if (idx != 0) config.separator
+             else "") +
+            renderNode(
+              l,
+              config,
+              if (shouldRenderComment(l, None, config)) indent.inc else indent.zero)
         }
 
         renderDescription(dd, prev, indent, config) +
-          renderComment(dd, description orElse prev, indent, config) +
+          renderComment(dd, description.orElse(prev), indent, config) +
           indent.str + "directive" + config.separator + "@" + name +
-          renderInputValueDefs(args, indent, config) + (if (args.isEmpty) config.mandatorySeparator else "") +
-          "on" + (if (shouldRenderComment(locations.head, None, config)) "" else config.mandatorySeparator) +
+          renderInputValueDefs(args, indent, config) + (if (args.isEmpty) config.mandatorySeparator
+                                                        else "") +
+          "on" + (if (shouldRenderComment(locations.head, None, config)) ""
+                  else config.mandatorySeparator) +
           locsRendered.mkString(config.separator + "|")
 
       case dl @ DirectiveLocation(name, _, _) =>
@@ -576,14 +789,17 @@ object QueryRenderer {
 
       case sd @ SchemaDefinition(ops, dirs, description, _, _, _) =>
         renderDescription(sd, prev, indent, config) +
-          renderComment(sd, description orElse prev, indent, config) +
-          indent.str + "schema"  + config.separator +
+          renderComment(sd, description.orElse(prev), indent, config) +
+          indent.str + "schema" + config.separator +
           renderDirs(dirs, config, indent) +
           renderOperationTypeDefinitions(ops, sd, indent, config)
 
       case otd @ OperationTypeDefinition(op, tpe, _, _) =>
         renderComment(otd, prev, indent, config) +
-          indent.str + renderOpType(op) + ":" + config.separator + renderNode(tpe, config, indent.zero)
+          indent.str + renderOpType(op) + ":" + config.separator + renderNode(
+            tpe,
+            config,
+            indent.zero)
     }
 
   private def trailingLineBreak(tc: WithTrailingComments, config: QueryRendererConfig) =
@@ -626,15 +842,15 @@ case class Indent(config: QueryRendererConfig, level: Int, prevLevel: Int) {
 }
 
 case class QueryRendererConfig(
-  indentLevel: String,
-  lineBreak: String,
-  mandatorySeparator: String,
-  mandatoryLineBreak: String,
-  separator: String,
-  definitionSeparator: String,
-  inputFieldSeparator: String,
-  inputListSeparator: String,
-  formatInputValues: Boolean,
-  formatBlockStrings: Boolean,
-  renderComments: Boolean,
-  legacyImplementsInterface: Boolean)
+    indentLevel: String,
+    lineBreak: String,
+    mandatorySeparator: String,
+    mandatoryLineBreak: String,
+    separator: String,
+    definitionSeparator: String,
+    inputFieldSeparator: String,
+    inputListSeparator: String,
+    formatInputValues: Boolean,
+    formatBlockStrings: Boolean,
+    renderComments: Boolean,
+    legacyImplementsInterface: Boolean)

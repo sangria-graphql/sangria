@@ -8,8 +8,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
   override val defaultRule = Some(new VariablesInAllowedPosition)
 
   "Validate: Variables are in allowed positions" should {
-    "Boolean => Boolean" in expectPasses(
-      """
+    "Boolean => Boolean" in expectPasses("""
         query Query($booleanArg: Boolean)
         {
           complicatedArgs {
@@ -18,8 +17,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "Boolean => Boolean within fragment" in expectPasses(
-      """
+    "Boolean => Boolean within fragment" in expectPasses("""
         fragment booleanArgFrag on ComplicatedArgs {
           booleanArgField(booleanArg: $booleanArg)
         }
@@ -31,8 +29,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "Boolean => Boolean within fragment (bonus)" in expectPasses(
-      """
+    "Boolean => Boolean within fragment (bonus)" in expectPasses("""
         query Query($booleanArg: Boolean)
         {
           complicatedArgs {
@@ -44,8 +41,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "Boolean! => Boolean" in expectPasses(
-      """
+    "Boolean! => Boolean" in expectPasses("""
         query Query($nonNullBooleanArg: Boolean!)
         {
           complicatedArgs {
@@ -54,8 +50,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "Boolean! => Boolean within fragment" in expectPasses(
-      """
+    "Boolean! => Boolean within fragment" in expectPasses("""
         fragment booleanArgFrag on ComplicatedArgs {
           booleanArgField(booleanArg: $nonNullBooleanArg)
         }
@@ -67,9 +62,8 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
           }
         }
       """)
-    
-    "[String] => [String]" in expectPasses(
-      """
+
+    "[String] => [String]" in expectPasses("""
         query Query($stringListVar: [String])
         {
           complicatedArgs {
@@ -78,8 +72,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "[String!] => [String]" in expectPasses(
-      """
+    "[String!] => [String]" in expectPasses("""
         query Query($stringListVar: [String!])
         {
           complicatedArgs {
@@ -88,8 +81,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "String => [String] in item position" in expectPasses(
-      """
+    "String => [String] in item position" in expectPasses("""
         query Query($stringVar: String)
         {
           complicatedArgs {
@@ -98,8 +90,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "String! => [String] in item position" in expectPasses(
-      """
+    "String! => [String] in item position" in expectPasses("""
         query Query($stringVar: String!)
         {
           complicatedArgs {
@@ -108,8 +99,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "ComplexInput => ComplexInput" in expectPasses(
-      """
+    "ComplexInput => ComplexInput" in expectPasses("""
         query Query($complexVar: ComplexInput)
         {
           complicatedArgs {
@@ -118,8 +108,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "ComplexInput => ComplexInput in field position" in expectPasses(
-      """
+    "ComplexInput => ComplexInput in field position" in expectPasses("""
         query Query($boolVar: Boolean = false)
         {
           complicatedArgs {
@@ -128,14 +117,13 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "Boolean! => Boolean! in directive" in expectPasses(
-      """
+    "Boolean! => Boolean! in directive" in expectPasses("""
         query Query($boolVar: Boolean!)
         {
           dog @include(if: $boolVar)
         }
       """)
-    
+
     "Int => Int!" in expectFailsPosList(
       """
         query Query($intArg: Int)
@@ -146,8 +134,11 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """,
       List(
-        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> List(Pos(2, 21), Pos(5, 47))
-      ))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> List(
+          Pos(2, 21),
+          Pos(5, 47))
+      )
+    )
 
     "Int => Int! within fragment" in expectFailsPosList(
       """
@@ -163,8 +154,11 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """,
       List(
-        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> List(Pos(6, 21), Pos(3, 45))
-      ))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> List(
+          Pos(6, 21),
+          Pos(3, 45))
+      )
+    )
 
     "Int => Int! within nested fragment" in expectFailsPosList(
       """
@@ -184,8 +178,11 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """,
       List(
-        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> List(Pos(10, 21), Pos(7, 45))
-      ))
+        "Variable '$intArg' of type 'Int' used in position expecting type 'Int!'." -> List(
+          Pos(10, 21),
+          Pos(7, 45))
+      )
+    )
 
     "String over Boolean" in expectFailsPosList(
       """
@@ -197,8 +194,11 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """,
       List(
-        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean'." -> List(Pos(2, 21), Pos(5, 41))
-      ))
+        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean'." -> List(
+          Pos(2, 21),
+          Pos(5, 41))
+      )
+    )
 
     "String => [String]" in expectFailsPosList(
       """
@@ -210,8 +210,11 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """,
       List(
-        "Variable '$stringVar' of type 'String' used in position expecting type '[String]'." -> List(Pos(2, 21), Pos(5, 47))
-      ))
+        "Variable '$stringVar' of type 'String' used in position expecting type '[String]'." -> List(
+          Pos(2, 21),
+          Pos(5, 47))
+      )
+    )
 
     "Boolean => Boolean! in directive" in expectFailsPosList(
       """
@@ -221,8 +224,11 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """,
       List(
-        "Variable '$boolVar' of type 'Boolean' used in position expecting type 'Boolean!'." -> List(Pos(2, 21), Pos(4, 28))
-      ))
+        "Variable '$boolVar' of type 'Boolean' used in position expecting type 'Boolean!'." -> List(
+          Pos(2, 21),
+          Pos(4, 28))
+      )
+    )
 
     "String => Boolean! in directive" in expectFailsPosList(
       """
@@ -232,8 +238,11 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """,
       List(
-        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean!'." -> List(Pos(2, 21), Pos(4, 28))
-      ))
+        "Variable '$stringVar' of type 'String' used in position expecting type 'Boolean!'." -> List(
+          Pos(2, 21),
+          Pos(4, 28))
+      )
+    )
 
     "Allows optional (nullable) variables with default values" in expectFailsSimple(
       """
@@ -243,10 +252,12 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
           }
         }
       """,
-      "Variable '$intVar' of type 'Int' used in position expecting type 'Int!'." -> Seq(Pos(2, 21), Pos(4, 47)))
+      "Variable '$intVar' of type 'Int' used in position expecting type 'Int!'." -> Seq(
+        Pos(2, 21),
+        Pos(4, 47))
+    )
 
-    "Int => Int! when variable provides non-null default value" in expectPasses(
-      """
+    "Int => Int! when variable provides non-null default value" in expectPasses("""
         query Query($intVar: Int = 1) {
           complicatedArgs {
             nonNullIntArgField(nonNullIntArg: $intVar)
@@ -254,8 +265,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "Int => Int! when optional argument provides default value" in expectPasses(
-      """
+    "Int => Int! when optional argument provides default value" in expectPasses("""
         query Query($intVar: Int) {
           complicatedArgs {
             nonNullFieldWithDefault(nonNullIntArg: $intVar)
@@ -263,8 +273,7 @@ class VariablesInAllowedPositionSpec extends AnyWordSpec with ValidationSupport 
         }
       """)
 
-    "Boolean => Boolean! in directive with default value with option" in expectPasses(
-      """
+    "Boolean => Boolean! in directive with default value with option" in expectPasses("""
         query Query($boolVar: Boolean = false) {
           dog @include(if: $boolVar)
         }

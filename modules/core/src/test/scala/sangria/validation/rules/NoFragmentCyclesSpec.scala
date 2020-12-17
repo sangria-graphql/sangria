@@ -8,27 +8,23 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new NoFragmentCycles)
 
   "Validate: No circular fragment spreads" should {
-    "single reference is valid" in expectPasses(
-      """
+    "single reference is valid" in expectPasses("""
         fragment fragA on Dog { ...fragB }
         fragment fragB on Dog { name }
       """)
 
-    "spreading twice is not circular" in expectPasses(
-      """
+    "spreading twice is not circular" in expectPasses("""
         fragment fragA on Dog { ...fragB, ...fragB }
         fragment fragB on Dog { name }
       """)
 
-    "spreading twice indirectly is not circular" in expectPasses(
-      """
+    "spreading twice indirectly is not circular" in expectPasses("""
         fragment fragA on Dog { ...fragB, ...fragC }
         fragment fragB on Dog { ...fragC }
         fragment fragC on Dog { name }
       """)
 
-    "double spread within abstract types" in expectPasses(
-      """
+    "double spread within abstract types" in expectPasses("""
         fragment nameFragment on Pet {
           ... on Dog { name }
           ... on Cat { name }
@@ -40,8 +36,7 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
         }
       """)
 
-    "does not false positive on unknown fragment" in expectPasses(
-      """
+    "does not false positive on unknown fragment" in expectPasses("""
         fragment nameFragment on Pet {
           ...UnknownFragment
         }
@@ -73,7 +68,8 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Cannot spread fragment 'fragA' within itself." -> Some(Pos(4, 13))
-      ))
+      )
+    )
 
     "no spreading itself indirectly" in expectFailsPosList(
       """
@@ -82,7 +78,8 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Cannot spread fragment 'fragA' within itself via 'fragB'." -> List(Pos(2, 33), Pos(3, 33))
-      ))
+      )
+    )
 
     "no spreading itself indirectly reports opposite order" in expectFailsPosList(
       """
@@ -91,7 +88,8 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Cannot spread fragment 'fragB' within itself via 'fragA'." -> List(Pos(2, 33), Pos(3, 33))
-      ))
+      )
+    )
 
     "no spreading itself indirectly within inline fragment" in expectFailsPosList(
       """
@@ -108,7 +106,8 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Cannot spread fragment 'fragA' within itself via 'fragB'." -> List(Pos(4, 13), Pos(9, 13))
-      ))
+      )
+    )
 
     "no spreading itself deeply" in expectFailsPosList(
       """
@@ -123,10 +122,11 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Cannot spread fragment 'fragA' within itself via 'fragB', 'fragC', 'fragO', 'fragP'." ->
-            List(Pos(2, 33), Pos(3, 33), Pos(4, 33), Pos(8, 33), Pos(9, 33)),
+          List(Pos(2, 33), Pos(3, 33), Pos(4, 33), Pos(8, 33), Pos(9, 33)),
         "Cannot spread fragment 'fragO' within itself via 'fragP', 'fragX', 'fragY', 'fragZ'." ->
-            List(Pos(8, 33), Pos(9, 43), Pos(5, 33), Pos(6, 33), Pos(7, 33))
-      ))
+          List(Pos(8, 33), Pos(9, 43), Pos(5, 33), Pos(6, 33), Pos(7, 33))
+      )
+    )
 
     "no spreading itself deeply two paths" in expectFailsPosList(
       """
@@ -137,7 +137,8 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Cannot spread fragment 'fragA' within itself via 'fragB'." -> List(Pos(2, 33), Pos(3, 33)),
         "Cannot spread fragment 'fragA' within itself via 'fragC'." -> List(Pos(2, 43), Pos(4, 33))
-      ))
+      )
+    )
 
     "no spreading itself deeply two paths -- alt traverse order" in expectFailsPosList(
       """
@@ -148,7 +149,8 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       List(
         "Cannot spread fragment 'fragA' within itself via 'fragC'." -> List(Pos(2, 33), Pos(4, 33)),
         "Cannot spread fragment 'fragC' within itself via 'fragB'." -> List(Pos(4, 43), Pos(3, 33))
-      ))
+      )
+    )
 
     "no spreading itself deeply and immediately" in expectFailsPosList(
       """
@@ -158,8 +160,12 @@ class NoFragmentCyclesSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Cannot spread fragment 'fragB' within itself" -> List(Pos(3, 33)),
-        "Cannot spread fragment 'fragA' within itself via 'fragB', 'fragC'." -> List(Pos(2, 33), Pos(3, 43), Pos(4, 33)),
+        "Cannot spread fragment 'fragA' within itself via 'fragB', 'fragC'." -> List(
+          Pos(2, 33),
+          Pos(3, 43),
+          Pos(4, 33)),
         "Cannot spread fragment 'fragB' within itself via 'fragC'." -> List(Pos(3, 43), Pos(4, 43))
-      ))
+      )
+    )
   }
 }

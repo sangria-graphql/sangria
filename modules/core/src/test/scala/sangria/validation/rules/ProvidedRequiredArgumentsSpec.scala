@@ -8,8 +8,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new ProvidedRequiredArguments)
 
   "Validate: Provided required arguments" should {
-    "ignores unknown arguments" in expectPasses(
-      """
+    "ignores unknown arguments" in expectPasses("""
         {
           dog {
             isHousetrained(unknownArgument: true)
@@ -18,8 +17,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
       """)
 
     "Valid non-nullable value" should {
-      "Arg on optional arg" in expectPasses(
-        """
+      "Arg on optional arg" in expectPasses("""
           {
             dog {
               isHousetrained(atOtherHomes: true)
@@ -27,8 +25,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "No Arg on optional arg" in expectPasses(
-        """
+      "No Arg on optional arg" in expectPasses("""
           {
             dog {
               isHousetrained
@@ -36,8 +33,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "No arg on non-null field with default" in expectPasses(
-        """
+      "No arg on non-null field with default" in expectPasses("""
           {
             complicatedArgs {
               nonNullFieldWithDefault
@@ -45,8 +41,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Multiple args" in expectPasses(
-        """
+      "Multiple args" in expectPasses("""
           {
             complicatedArgs {
               multipleReqs(req1: 1, req2: 2)
@@ -54,8 +49,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Multiple args reverse order" in expectPasses(
-        """
+      "Multiple args reverse order" in expectPasses("""
           {
             complicatedArgs {
               multipleReqs(req2: 2, req1: 1)
@@ -63,8 +57,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "No args on multiple optional" in expectPasses(
-        """
+      "No args on multiple optional" in expectPasses("""
           {
             complicatedArgs {
               multipleOpts(opt1: 1)
@@ -72,8 +65,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Second arg on multiple optional" in expectPasses(
-        """
+      "Second arg on multiple optional" in expectPasses("""
           {
             complicatedArgs {
               multipleOpts(opt2: 1)
@@ -81,8 +73,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Multiple reqs on mixedList" in expectPasses(
-        """
+      "Multiple reqs on mixedList" in expectPasses("""
           {
             complicatedArgs {
               multipleOptAndReq(req1: 3, req2: 4)
@@ -90,8 +81,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "Multiple reqs and one opt on mixedList" in expectPasses(
-        """
+      "Multiple reqs and one opt on mixedList" in expectPasses("""
           {
             complicatedArgs {
               multipleOptAndReq(req1: 3, req2: 4, opt1: 5)
@@ -99,8 +89,7 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """)
 
-      "All reqs and opts on mixedList" in expectPasses(
-        """
+      "All reqs and opts on mixedList" in expectPasses("""
           {
             complicatedArgs {
               multipleOptAndReq(req1: 3, req2: 4, opt1: 5, opt2: 6)
@@ -119,8 +108,10 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." -> Some(Pos(4, 15))
-        ))
+          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." -> Some(
+            Pos(4, 15))
+        )
+      )
 
       "Missing multiple non-nullable arguments" in expectFails(
         """
@@ -131,9 +122,12 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." -> Some(Pos(4, 15)),
-          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." -> Some(Pos(4, 15))
-        ))
+          "Field 'multipleReqs' argument 'req1' of type 'Int!' is required but not provided." -> Some(
+            Pos(4, 15)),
+          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." -> Some(
+            Pos(4, 15))
+        )
+      )
 
       "Incorrect value and missing argument" in expectFails(
         """
@@ -144,20 +138,20 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." -> Some(Pos(4, 15))
-        ))
+          "Field 'multipleReqs' argument 'req2' of type 'Int!' is required but not provided." -> Some(
+            Pos(4, 15))
+        )
+      )
     }
 
     "Directive arguments" should {
-      "ignores unknown directives" in expectPasses(
-        """
+      "ignores unknown directives" in expectPasses("""
           {
             dog @unknown
           }
         """)
 
-      "with directives of valid types" in expectPasses(
-        """
+      "with directives of valid types" in expectPasses("""
           {
             dog @include(if: true) {
               name
@@ -177,9 +171,12 @@ class ProvidedRequiredArgumentsSpec extends AnyWordSpec with ValidationSupport {
           }
         """,
         List(
-          "Field 'include' argument 'if' of type 'Boolean!' is required but not provided." -> Some(Pos(3, 17)),
-          "Field 'skip' argument 'if' of type 'Boolean!' is required but not provided." -> Some(Pos(4, 20))
-        ))
+          "Field 'include' argument 'if' of type 'Boolean!' is required but not provided." -> Some(
+            Pos(3, 17)),
+          "Field 'skip' argument 'if' of type 'Boolean!' is required but not provided." -> Some(
+            Pos(4, 20))
+        )
+      )
     }
   }
 }

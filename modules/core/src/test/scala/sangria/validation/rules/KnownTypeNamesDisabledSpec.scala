@@ -9,8 +9,7 @@ class KnownTypeNamesDisabledSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new KnownTypeNames(suggestion = SuggestionFunction.Disabled))
 
   "Validate: Known type names" should {
-    "known type names are valid" in expectPasses(
-      """
+    "known type names are valid" in expectPasses("""
         query Foo($var: String, $required: [String!]!) {
           user(id: 4) {
             pets { ... on Pet { name }, ...PetFields, ... { name }}
@@ -37,6 +36,7 @@ class KnownTypeNamesDisabledSpec extends AnyWordSpec with ValidationSupport {
         "Unknown type 'JumbledUpLetters'." -> Some(Pos(2, 25)),
         "Unknown type 'Badger'." -> Some(Pos(5, 27)),
         "Unknown type 'Peettt'." -> Some(Pos(8, 31))
-      ))
+      )
+    )
   }
 }

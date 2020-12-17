@@ -5,16 +5,15 @@ import sangria.ast._
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox
 
-/**
- * Implements the Liftable type class for AstNode, so we can use them in
- * quasiquotes.
- */
+/** Implements the Liftable type class for AstNode, so we can use them in
+  * quasiquotes.
+  */
 trait AstLiftable {
   val universe: Universe
 
   import universe._
 
-  implicit def liftSeq[T : Liftable]: Liftable[Seq[T]] = Liftable { seq =>
+  implicit def liftSeq[T: Liftable]: Liftable[Seq[T]] = Liftable { seq =>
     q"_root_.scala.collection.immutable.Vector(..$seq)"
   }
 
@@ -35,9 +34,8 @@ trait AstLiftable {
     case ListType(o, p) => q"_root_.sangria.ast.ListType($o, $p)"
   }
 
-  implicit def liftComment: Liftable[Comment] = Liftable {
-    case Comment(l, p) =>
-      q"_root_.sangria.ast.Comment($l, $p)"
+  implicit def liftComment: Liftable[Comment] = Liftable { case Comment(l, p) =>
+    q"_root_.sangria.ast.Comment($l, $p)"
   }
 
   implicit def liftVarDef: Liftable[VariableDefinition] = Liftable {
@@ -131,8 +129,8 @@ trait AstLiftable {
       q"_root_.sangria.ast.BigDecimalValue(_root_.scala.math.BigDecimal(${v.toString()}), $c, $p)"
   }
 
-  implicit def directive: Liftable[sangria.ast.Directive] = Liftable {
-    case Directive(n, a, c, p) => q"_root_.sangria.ast.Directive($n, $a, $c, $p)"
+  implicit def directive: Liftable[sangria.ast.Directive] = Liftable { case Directive(n, a, c, p) =>
+    q"_root_.sangria.ast.Directive($n, $a, $c, $p)"
   }
 
   implicit def selection[T <: Selection]: Liftable[T] = Liftable {
@@ -144,12 +142,13 @@ trait AstLiftable {
       q"_root_.sangria.ast.InlineFragment($t, $d, $s, $c, $tc, $p)"
   }
 
-  implicit def liftDocument: Liftable[Document] = Liftable {
-    case doc @ Document(d, c, p, _) => q"_root_.sangria.ast.Document($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.DefaultSourceMapper(${doc.sourceMapper.get.id}, _root_.org.parboiled2.ParserInput(${doc.source.get}))))"
+  implicit def liftDocument: Liftable[Document] = Liftable { case doc @ Document(d, c, p, _) =>
+    q"_root_.sangria.ast.Document($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.DefaultSourceMapper(${doc.sourceMapper.get.id}, _root_.org.parboiled2.ParserInput(${doc.source.get}))))"
   }
 
   implicit def liftInputDocument: Liftable[InputDocument] = Liftable {
-    case doc @ InputDocument(d, c, p, _) => q"_root_.sangria.ast.InputDocument($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.DefaultSourceMapper(${doc.sourceMapper.get.id}, _root_.org.parboiled2.ParserInput(${doc.source.get}))))"
+    case doc @ InputDocument(d, c, p, _) =>
+      q"_root_.sangria.ast.InputDocument($d, $c, $p, _root_.scala.Some(new _root_.sangria.parser.DefaultSourceMapper(${doc.sourceMapper.get.id}, _root_.org.parboiled2.ParserInput(${doc.source.get}))))"
   }
 }
 

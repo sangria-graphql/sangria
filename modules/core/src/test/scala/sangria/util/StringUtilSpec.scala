@@ -7,51 +7,52 @@ import org.scalatest.wordspec.AnyWordSpec
 class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
   "camelCaseToUnderscore" should {
     "convert camel-case identifiers to underscore-based one" in {
-      camelCaseToUnderscore("FooBar") should be ("foo_bar")
-      camelCaseToUnderscore("Foo1Bar") should be ("foo1_bar")
-      camelCaseToUnderscore("FooBar_Baz") should be ("foo_bar_baz")
-      camelCaseToUnderscore("_Foo_Bar_") should be ("foo_bar")
+      camelCaseToUnderscore("FooBar") should be("foo_bar")
+      camelCaseToUnderscore("Foo1Bar") should be("foo1_bar")
+      camelCaseToUnderscore("FooBar_Baz") should be("foo_bar_baz")
+      camelCaseToUnderscore("_Foo_Bar_") should be("foo_bar")
     }
   }
 
   "quotedOrList" should {
     "Does not accept an empty list" in {
-      an [IllegalArgumentException] should be thrownBy quotedOrList(Nil)
+      an[IllegalArgumentException] should be thrownBy quotedOrList(Nil)
     }
 
     "Returns single quoted item" in {
-      quotedOrList(Seq("A")) should be ("'A'")
+      quotedOrList(Seq("A")) should be("'A'")
     }
 
     "Returns two item list" in {
-      quotedOrList(Seq("A", "B")) should be ("'A' or 'B'")
+      quotedOrList(Seq("A", "B")) should be("'A' or 'B'")
     }
 
     "Returns comma separated many item list" in {
-      quotedOrList(Seq("A", "B", "C")) should be ("'A', 'B' or 'C'")
+      quotedOrList(Seq("A", "B", "C")) should be("'A', 'B' or 'C'")
     }
 
     "Limits to five items" in {
-      quotedOrList(Seq("A", "B", "C", "D", "E", "F")) should be ("'A', 'B', 'C', 'D' or 'E'")
+      quotedOrList(Seq("A", "B", "C", "D", "E", "F")) should be("'A', 'B', 'C', 'D' or 'E'")
     }
   }
 
   "suggestionList" should {
     "Returns results with only one character when input is empty" in {
-      suggestionList("", Seq("a")) should be (Seq("a"))
-      suggestionList("", Seq("ab", "b")) should be (Seq("b"))
+      suggestionList("", Seq("a")) should be(Seq("a"))
+      suggestionList("", Seq("ab", "b")) should be(Seq("b"))
     }
 
     "Returns empty array when there are no options" in {
-      suggestionList("input", Seq.empty) should be (Seq.empty)
+      suggestionList("input", Seq.empty) should be(Seq.empty)
     }
-    
+
     "Returns options sorted based on similarity" in {
-      suggestionList("abc", Seq("a", "ab", "abc")) should be (Seq("abc", "ab"))
-      suggestionList("descritpion", Seq("description", "descriptionn", "descriptionnn")) should be (Seq("description", "descriptionn", "descriptionnn"))
+      suggestionList("abc", Seq("a", "ab", "abc")) should be(Seq("abc", "ab"))
+      suggestionList("descritpion", Seq("description", "descriptionn", "descriptionnn")) should be(
+        Seq("description", "descriptionn", "descriptionnn"))
 
       val options = "description" :: (1 to 50).map(i => s"name_$i").toList
-      suggestionList("descritpion", options) should be (Seq("description"))
+      suggestionList("descritpion", options) should be(Seq("description"))
     }
   }
 
@@ -65,13 +66,13 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
           |    Yours,
           |      GraphQL.
           |""".stripMargin
-      ) should equal (
+      ) should equal(
         """Hello,
           |  World!
           |
           |Yours,
           |  GraphQL.""".stripMargin
-      ) (after being strippedOfCarriageReturns)
+      )(after.being(strippedOfCarriageReturns))
     }
 
     "removes empty leading and trailing lines" in {
@@ -85,13 +86,13 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
           |      GraphQL.
           |
           |""".stripMargin
-      ) should equal (
+      ) should equal(
         """Hello,
           |  World!
           |
           |Yours,
           |  GraphQL.""".stripMargin
-      ) (after being strippedOfCarriageReturns)
+      )(after.being(strippedOfCarriageReturns))
     }
 
     "removes blank leading and trailing lines" in {
@@ -107,13 +108,13 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
            |      GraphQL.
            |$spaces
            |""".stripMargin
-      ) should equal (
+      ) should equal(
         """Hello,
           |  World!
           |
           |Yours,
           |  GraphQL.""".stripMargin
-      ) (after being strippedOfCarriageReturns)
+      )(after.being(strippedOfCarriageReturns))
     }
 
     "retains indentation from first line" in {
@@ -124,13 +125,13 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
            |    Yours,
            |      GraphQL.
            |""".stripMargin
-      ) should equal (
+      ) should equal(
         """    Hello,
           |  World!
           |
           |Yours,
           |  GraphQL.""".stripMargin
-      ) (after being strippedOfCarriageReturns)
+      )(after.being(strippedOfCarriageReturns))
     }
 
     "does not alter trailing spaces" in {
@@ -144,13 +145,13 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
            |    Yours,$spaces
            |      GraphQL.$spaces
            |""".stripMargin
-      ) should equal (
+      ) should equal(
         s"""Hello,$spaces
            |  World!$spaces
            |$spaces
            |Yours,$spaces
            |  GraphQL.$spaces""".stripMargin
-      ) (after being strippedOfCarriageReturns)
+      )(after.being(strippedOfCarriageReturns))
     }
 
     "handles empty strings" in {
@@ -162,11 +163,11 @@ class StringUtilSpec extends AnyWordSpec with Matchers with StringMatchers {
            |
            |$spaces
            |""".stripMargin
-      ) should equal (
+      ) should equal(
         "".stripMargin
-      ) (after being strippedOfCarriageReturns)
+      )(after.being(strippedOfCarriageReturns))
 
-      blockStringValue("") should equal ("")
+      blockStringValue("") should equal("")
     }
   }
 }

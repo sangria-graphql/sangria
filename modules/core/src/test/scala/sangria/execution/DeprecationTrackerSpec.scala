@@ -9,7 +9,11 @@ import scala.util.Success
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResultSupport with OutputMatchers {
+class DeprecationTrackerSpec
+    extends AnyWordSpec
+    with Matchers
+    with FutureResultSupport
+    with OutputMatchers {
   class RecordingDeprecationTracker extends DeprecationTracker {
     val times = new AtomicInteger(0)
     var ctx: Option[Context[_, _]] = None
@@ -31,11 +35,18 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
   }
 
   "DeprecationTracker" should {
-    "not track non-deprecated fields" in  {
-      val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
-      ))
+    "not track non-deprecated fields" in {
+      val testType = ObjectType(
+        "TestType",
+        fields[Unit, Unit](
+          Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+          Field(
+            "deprecated",
+            OptionType(StringType),
+            deprecationReason = Some("Removed in 1.0"),
+            resolve = _ => None)
+        )
+      )
 
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated }")
@@ -43,15 +54,22 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
-      deprecationTracker.times.get should be (0)
-      deprecationTracker.ctx should be (None)
+      deprecationTracker.times.get should be(0)
+      deprecationTracker.ctx should be(None)
     }
 
-    "track deprecated fields" in  {
-      val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
-      ))
+    "track deprecated fields" in {
+      val testType = ObjectType(
+        "TestType",
+        fields[Unit, Unit](
+          Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+          Field(
+            "deprecated",
+            OptionType(StringType),
+            deprecationReason = Some("Removed in 1.0"),
+            resolve = _ => None)
+        )
+      )
 
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
@@ -59,17 +77,25 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
-      deprecationTracker.times.get should be (1)
-      deprecationTracker.ctx.get.path.path should be (Vector("deprecated"))
-      deprecationTracker.ctx.get.field.name should be ("deprecated")
+      deprecationTracker.times.get should be(1)
+      deprecationTracker.ctx.get.path.path should be(Vector("deprecated"))
+      deprecationTracker.ctx.get.field.name should be("deprecated")
     }
 
-    "provide context information" in  {
-      lazy val testType: ObjectType[Unit, Unit] = ObjectType("TestType", () => fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None),
-        Field("nested", OptionType(testType), resolve = _ => Some(()))
-      ))
+    "provide context information" in {
+      lazy val testType: ObjectType[Unit, Unit] = ObjectType(
+        "TestType",
+        () =>
+          fields[Unit, Unit](
+            Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+            Field(
+              "deprecated",
+              OptionType(StringType),
+              deprecationReason = Some("Removed in 1.0"),
+              resolve = _ => None),
+            Field("nested", OptionType(testType), resolve = _ => Some(()))
+          )
+      )
 
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nested { aa: nested { bb: deprecated }}}")
@@ -77,20 +103,30 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
-      deprecationTracker.times.get should be (1)
-      deprecationTracker.ctx.get.path.path should be (Vector("nested", "aa", "bb"))
-      deprecationTracker.ctx.get.field.name should be ("deprecated")
-      deprecationTracker.ctx.get.parentType.name should be ("TestType")
+      deprecationTracker.times.get should be(1)
+      deprecationTracker.ctx.get.path.path should be(Vector("nested", "aa", "bb"))
+      deprecationTracker.ctx.get.field.name should be("deprecated")
+      deprecationTracker.ctx.get.parentType.name should be("TestType")
     }
 
-    "report usage even if field is defined only in the interface type" in  {
-      val testInt = InterfaceType("TestInterface", () => fields[Unit, Unit](
-        Field("foo", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
-      ))
+    "report usage even if field is defined only in the interface type" in {
+      val testInt = InterfaceType(
+        "TestInterface",
+        () =>
+          fields[Unit, Unit](
+            Field(
+              "foo",
+              OptionType(StringType),
+              deprecationReason = Some("Removed in 1.0"),
+              resolve = _ => None)
+          ))
 
-      val testType = ObjectType("TestType", interfaces[Unit, Unit](testInt), fields[Unit, Unit](
-        Field("foo", OptionType(StringType), resolve = _ => None)
-      ))
+      val testType = ObjectType(
+        "TestType",
+        interfaces[Unit, Unit](testInt),
+        fields[Unit, Unit](
+          Field("foo", OptionType(StringType), resolve = _ => None)
+        ))
 
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ foo }")
@@ -98,28 +134,34 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
-      deprecationTracker.times.get should be (1)
-      deprecationTracker.ctx.get.path.path should be (Vector("foo"))
-      deprecationTracker.ctx.get.field.name should be ("foo")
-      deprecationTracker.ctx.get.parentType.name should be ("TestType")
+      deprecationTracker.times.get should be(1)
+      deprecationTracker.ctx.get.path.path should be(Vector("foo"))
+      deprecationTracker.ctx.get.field.name should be("foo")
+      deprecationTracker.ctx.get.parentType.name should be("TestType")
     }
 
-    "track deprecated enum values" in  {
-      val testEnum = EnumType[Int]("TestEnum", values = List(
-        EnumValue("NONDEPRECATED", value = 1),
-        EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
-        EnumValue("ALSONONDEPRECATED", value = 3)))
+    "track deprecated enum values" in {
+      val testEnum = EnumType[Int](
+        "TestEnum",
+        values = List(
+          EnumValue("NONDEPRECATED", value = 1),
+          EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
+          EnumValue("ALSONONDEPRECATED", value = 3))
+      )
 
-      val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("testEnum", OptionType(StringType),
-          arguments = Argument("foo", testEnum) :: Nil,
-          resolve = _ => None)
-      ))
+      val testType = ObjectType(
+        "TestType",
+        fields[Unit, Unit](
+          Field(
+            "testEnum",
+            OptionType(StringType),
+            arguments = Argument("foo", testEnum) :: Nil,
+            resolve = _ => None)
+        ))
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
-        """
+      val Success(query) = QueryParser.parse("""
           {
             a: testEnum(foo: NONDEPRECATED)
             b: testEnum(foo: DEPRECATED)
@@ -130,27 +172,33 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
-      deprecationTracker.times.get should be (1)
-      deprecationTracker.enum should be (Some("TestEnum"))
-      deprecationTracker.enumValue should be (Some(2))
+      deprecationTracker.times.get should be(1)
+      deprecationTracker.enum should be(Some("TestEnum"))
+      deprecationTracker.enumValue should be(Some(2))
     }
 
-    "not track non-deprecated enum values" in  {
-      val testEnum = EnumType[Int]("TestEnum", values = List(
-        EnumValue("NONDEPRECATED", value = 1),
-        EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
-        EnumValue("ALSONONDEPRECATED", value = 3)))
+    "not track non-deprecated enum values" in {
+      val testEnum = EnumType[Int](
+        "TestEnum",
+        values = List(
+          EnumValue("NONDEPRECATED", value = 1),
+          EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
+          EnumValue("ALSONONDEPRECATED", value = 3))
+      )
 
-      val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("testEnum", OptionType(StringType),
-          arguments = Argument("foo", testEnum) :: Nil,
-          resolve = _ => None)
-      ))
+      val testType = ObjectType(
+        "TestType",
+        fields[Unit, Unit](
+          Field(
+            "testEnum",
+            OptionType(StringType),
+            arguments = Argument("foo", testEnum) :: Nil,
+            resolve = _ => None)
+        ))
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
-        """
+      val Success(query) = QueryParser.parse("""
           {
             a: testEnum(foo: NONDEPRECATED)
             b: testEnum(foo: ALSONONDEPRECATED)
@@ -161,18 +209,25 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
-      deprecationTracker.times.get should be (0)
-      deprecationTracker.enum should be (None)
-      deprecationTracker.enumValue should be (None)
+      deprecationTracker.times.get should be(0)
+      deprecationTracker.enum should be(None)
+      deprecationTracker.enumValue should be(None)
     }
   }
 
   "NilDeprecationTracker" should {
-    "shouldn't do anything" in  {
-      val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
-      ))
+    "shouldn't do anything" in {
+      val testType = ObjectType(
+        "TestType",
+        fields[Unit, Unit](
+          Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+          Field(
+            "deprecated",
+            OptionType(StringType),
+            deprecationReason = Some("Removed in 1.0"),
+            resolve = _ => None)
+        )
+      )
 
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated }")
@@ -182,22 +237,28 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
   }
 
   "LoggingDeprecationTracker" should {
-    "track deprecated enum values" in  {
-      val testEnum = EnumType[Int]("TestEnum", values = List(
-        EnumValue("NONDEPRECATED", value = 1),
-        EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
-        EnumValue("ALSONONDEPRECATED", value = 3)))
+    "track deprecated enum values" in {
+      val testEnum = EnumType[Int](
+        "TestEnum",
+        values = List(
+          EnumValue("NONDEPRECATED", value = 1),
+          EnumValue("DEPRECATED", value = 2, deprecationReason = Some("Removed in 1.0")),
+          EnumValue("ALSONONDEPRECATED", value = 3))
+      )
 
-      val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("testEnum", OptionType(StringType),
-          arguments = Argument("foo", testEnum) :: Nil,
-          resolve = _ => None)
-      ))
+      val testType = ObjectType(
+        "TestType",
+        fields[Unit, Unit](
+          Field(
+            "testEnum",
+            OptionType(StringType),
+            arguments = Argument("foo", testEnum) :: Nil,
+            resolve = _ => None)
+        ))
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
-        """
+      val Success(query) = QueryParser.parse("""
           {
             a: testEnum(foo: NONDEPRECATED)
             b: testEnum(foo: DEPRECATED)
@@ -209,14 +270,21 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = tracker).await
 
-      sb.toString() should include ("Deprecated enum value '2' used of enum 'TestEnum'.")
+      sb.toString() should include("Deprecated enum value '2' used of enum 'TestEnum'.")
     }
 
-    "track deprecated fields" in  {
-      val testType = ObjectType("TestType", fields[Unit, Unit](
-        Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
-        Field("deprecated", OptionType(StringType), deprecationReason = Some("Removed in 1.0"), resolve = _ => None)
-      ))
+    "track deprecated fields" in {
+      val testType = ObjectType(
+        "TestType",
+        fields[Unit, Unit](
+          Field("nonDeprecated", OptionType(StringType), resolve = _ => None),
+          Field(
+            "deprecated",
+            OptionType(StringType),
+            deprecationReason = Some("Removed in 1.0"),
+            resolve = _ => None)
+        )
+      )
 
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
@@ -226,7 +294,8 @@ class DeprecationTrackerSpec extends AnyWordSpec with Matchers with FutureResult
 
       Executor.execute(schema, query, deprecationTracker = tracker).await
 
-      sb.toString() should include ("Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
+      sb.toString() should include(
+        "Deprecated field 'TestType.deprecated' used at path 'deprecated'.")
     }
   }
 }

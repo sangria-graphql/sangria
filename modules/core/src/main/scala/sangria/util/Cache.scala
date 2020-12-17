@@ -29,10 +29,10 @@ object Cache {
 
   def emptyTrieMap[Key, Value] = new TrieMapCache[Key, Value]
   def emptyConcurrentHashMap[Key, Value] = new ConcurrentHashMapCache[Key, Value]
-  
+
   def apply[Key, Value](elems: (Key, Value)*) = {
     val c = empty[Key, Value]
-    elems.foreach {case (key, value) => c(key) = value}
+    elems.foreach { case (key, value) => c(key) = value }
     c
   }
 }

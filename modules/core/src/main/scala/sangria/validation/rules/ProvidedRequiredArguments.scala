@@ -5,12 +5,10 @@ import sangria.ast.AstVisitorCommand
 import sangria.renderer.SchemaRenderer
 import sangria.validation._
 
-
-/**
- * Provided required arguments
- *
- * A field or directive is only valid if all required (non-null without a default value) field arguments have been provided.
- */
+/** Provided required arguments
+  *
+  * A field or directive is only valid if all required (non-null without a default value) field arguments have been provided.
+  */
 class ProvidedRequiredArguments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     override val onLeave: ValidationVisit = {
@@ -21,8 +19,15 @@ class ProvidedRequiredArguments extends ValidationRule {
             val astArgs = args.map(_.name).toSet
 
             val errors = fieldDef.arguments.toVector.collect {
-              case argDef if !astArgs.contains(argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty =>
-                MissingFieldArgViolation(name, argDef.name, SchemaRenderer.renderTypeName(argDef.argumentType), ctx.sourceMapper, pos.toList)
+              case argDef
+                  if !astArgs.contains(
+                    argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty =>
+                MissingFieldArgViolation(
+                  name,
+                  argDef.name,
+                  SchemaRenderer.renderTypeName(argDef.argumentType),
+                  ctx.sourceMapper,
+                  pos.toList)
             }
 
             if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
@@ -35,8 +40,15 @@ class ProvidedRequiredArguments extends ValidationRule {
             val astArgs = args.map(_.name).toSet
 
             val errors = dirDef.arguments.toVector.collect {
-              case argDef if !astArgs.contains(argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty =>
-                MissingFieldArgViolation(name, argDef.name, SchemaRenderer.renderTypeName(argDef.argumentType), ctx.sourceMapper, pos.toList)
+              case argDef
+                  if !astArgs.contains(
+                    argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty =>
+                MissingFieldArgViolation(
+                  name,
+                  argDef.name,
+                  SchemaRenderer.renderTypeName(argDef.argumentType),
+                  ctx.sourceMapper,
+                  pos.toList)
             }
 
             if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue

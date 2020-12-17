@@ -19,18 +19,27 @@ class FieldCollector[Ctx, Val](
 
   private val resultCache = Cache.empty[(ExecutionPath.PathCacheKey, String), Try[CollectedFields]]
 
-  def collectFields(path: ExecutionPath, tpe: ObjectType[Ctx, _], selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
-    resultCache.getOrElseUpdate(path.cacheKey -> tpe.name, {
-      val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
+  def collectFields(
+      path: ExecutionPath,
+      tpe: ObjectType[Ctx, _],
+      selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
+    resultCache.getOrElseUpdate(
+      path.cacheKey -> tpe.name, {
+        val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
 
-      selections.foldLeft(builder) {
-        case (acc, s) => collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
+        selections.foldLeft(builder) { case (acc, s) =>
+          collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
+        }
+
+        builder.map(_.build)
       }
+    )
 
-      builder map (_.build)
-    })
-
-  private def collectFieldsInternal(tpe: ObjectType[Ctx, _], selections: Vector[ast.Selection], visitedFragments: MutableSet[String], initial: Try[CollectedFieldsBuilder]): Try[CollectedFieldsBuilder] =
+  private def collectFieldsInternal(
+      tpe: ObjectType[Ctx, _],
+      selections: Vector[ast.Selection],
+      visitedFragments: MutableSet[String],
+      initial: Try[CollectedFieldsBuilder]): Try[CollectedFieldsBuilder] =
     selections.foldLeft(initial) {
       case (f @ Failure(_), selection) => f
       case (s @ Success(acc), selection) =>
@@ -58,8 +67,7 @@ class FieldCollector[Ctx, Val](
             } yield fragmentFields
           case ast.FragmentSpread(name, _, _, _) if visitedFragments contains name => s
           case ast.FragmentSpread(name, dirs, _, position) =>
-            shouldIncludeNode(dirs, selection) flatMap { shouldInclude =>
-
+            shouldIncludeNode(dirs, selection).flatMap { shouldInclude =>
               if (shouldInclude) {
                 visitedFragments += name
 
@@ -74,51 +82,128 @@ class FieldCollector[Ctx, Val](
                         else s
                     } yield fragmentFields
                   case None =>
-                    Failure(new ExecutionError(s"Fragment with name '$name' is not defined", exceptionHandler, sourceMapper, position.toList))
+                    Failure(
+                      new ExecutionError(
+                        s"Fragment with name '$name' is not defined",
+                        exceptionHandler,
+                        sourceMapper,
+                        position.toList))
                 }
               } else s
             }
         }
     }
 
-  def shouldIncludeNode(directives: Vector[ast.Directive], selection: ast.WithDirectives): Try[Boolean] = {
+  def shouldIncludeNode(
+      directives: Vector[ast.Directive],
+      selection: ast.WithDirectives): Try[Boolean] = {
     val possibleDirs = directives
-        .map(d => schema.directivesByName
+      .map(d =>
+        schema.directivesByName
           .get(d.name)
-          .map(dd => selection match {
-            case _: ast.Field if !dd.locations.contains(DirectiveLocation.Field) =>
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fields", exceptionHandler, sourceMapper, d.location.toList))
-            case _: ast.InlineFragment if !dd.locations.contains(DirectiveLocation.InlineFragment) =>
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on inline fragment", exceptionHandler, sourceMapper, d.location.toList))
-            case _: ast.FragmentSpread if !dd.locations.contains(DirectiveLocation.FragmentSpread) =>
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment spread", exceptionHandler, sourceMapper, d.location.toList))
-            case _: ast.FragmentDefinition if !dd.locations.contains(DirectiveLocation.FragmentDefinition) =>
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on fragment definition", exceptionHandler, sourceMapper, d.location.toList))
-            case op: ast.OperationDefinition if op.operationType == OperationType.Query && !dd.locations.contains(DirectiveLocation.Query) =>
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on query operation", exceptionHandler, sourceMapper, d.location.toList))
-            case op: ast.OperationDefinition if op.operationType == OperationType.Mutation && !dd.locations.contains(DirectiveLocation.Mutation) =>
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on mutation operation", exceptionHandler, sourceMapper, d.location.toList))
-            case op: ast.OperationDefinition if op.operationType == OperationType.Subscription && !dd.locations.contains(DirectiveLocation.Subscription) =>
-              Failure(new ExecutionError(s"Directive '${dd.name}' is not allowed to be used on subscription operation", exceptionHandler, sourceMapper, d.location.toList))
-            case _ => Success(d -> dd)
-          })
-          .getOrElse(Failure(new ExecutionError(s"Directive '${d.name}' not found.", exceptionHandler, sourceMapper, d.location.toList))))
-        .map(_.flatMap{case (astDir, dir) => valueCollector.getArgumentValues(Some(astDir), dir.arguments, astDir.arguments, variables) map (dir -> _)})
+          .map(dd =>
+            selection match {
+              case _: ast.Field if !dd.locations.contains(DirectiveLocation.Field) =>
+                Failure(
+                  new ExecutionError(
+                    s"Directive '${dd.name}' is not allowed to be used on fields",
+                    exceptionHandler,
+                    sourceMapper,
+                    d.location.toList))
+              case _: ast.InlineFragment
+                  if !dd.locations.contains(DirectiveLocation.InlineFragment) =>
+                Failure(
+                  new ExecutionError(
+                    s"Directive '${dd.name}' is not allowed to be used on inline fragment",
+                    exceptionHandler,
+                    sourceMapper,
+                    d.location.toList))
+              case _: ast.FragmentSpread
+                  if !dd.locations.contains(DirectiveLocation.FragmentSpread) =>
+                Failure(
+                  new ExecutionError(
+                    s"Directive '${dd.name}' is not allowed to be used on fragment spread",
+                    exceptionHandler,
+                    sourceMapper,
+                    d.location.toList))
+              case _: ast.FragmentDefinition
+                  if !dd.locations.contains(DirectiveLocation.FragmentDefinition) =>
+                Failure(
+                  new ExecutionError(
+                    s"Directive '${dd.name}' is not allowed to be used on fragment definition",
+                    exceptionHandler,
+                    sourceMapper,
+                    d.location.toList))
+              case op: ast.OperationDefinition
+                  if op.operationType == OperationType.Query && !dd.locations.contains(
+                    DirectiveLocation.Query) =>
+                Failure(
+                  new ExecutionError(
+                    s"Directive '${dd.name}' is not allowed to be used on query operation",
+                    exceptionHandler,
+                    sourceMapper,
+                    d.location.toList))
+              case op: ast.OperationDefinition
+                  if op.operationType == OperationType.Mutation && !dd.locations.contains(
+                    DirectiveLocation.Mutation) =>
+                Failure(
+                  new ExecutionError(
+                    s"Directive '${dd.name}' is not allowed to be used on mutation operation",
+                    exceptionHandler,
+                    sourceMapper,
+                    d.location.toList))
+              case op: ast.OperationDefinition
+                  if op.operationType == OperationType.Subscription && !dd.locations.contains(
+                    DirectiveLocation.Subscription) =>
+                Failure(
+                  new ExecutionError(
+                    s"Directive '${dd.name}' is not allowed to be used on subscription operation",
+                    exceptionHandler,
+                    sourceMapper,
+                    d.location.toList))
+              case _ => Success(d -> dd)
+            })
+          .getOrElse(
+            Failure(
+              new ExecutionError(
+                s"Directive '${d.name}' not found.",
+                exceptionHandler,
+                sourceMapper,
+                d.location.toList))))
+      .map(_.flatMap { case (astDir, dir) =>
+        valueCollector
+          .getArgumentValues(Some(astDir), dir.arguments, astDir.arguments, variables)
+          .map(dir -> _)
+      })
 
-    possibleDirs.collect{case Failure(error) => error}.headOption map (Failure(_)) getOrElse {
-      val validDirs = possibleDirs collect {case Success(v) => v}
-      val should = validDirs.forall { case (dir, args) => dir.shouldInclude(DirectiveContext(selection, dir, args)) }
+    possibleDirs.collect { case Failure(error) => error }.headOption.map(Failure(_)).getOrElse {
+      val validDirs = possibleDirs.collect { case Success(v) => v }
+      val should = validDirs.forall { case (dir, args) =>
+        dir.shouldInclude(DirectiveContext(selection, dir, args))
+      }
 
       Success(should)
     }
   }
 
-  def doesFragmentConditionMatch(tpe: ObjectType[_, _], conditional: ast.ConditionalFragment): Try[Boolean] =
+  def doesFragmentConditionMatch(
+      tpe: ObjectType[_, _],
+      conditional: ast.ConditionalFragment): Try[Boolean] =
     conditional.typeConditionOpt match {
       case Some(tc) =>
-        schema.outputTypes.get(tc.name)
-          .map(condTpe => Success(condTpe.name == tpe.name || (condTpe.isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
-          .getOrElse(Failure(new ExecutionError(s"Unknown type '${tc.name}'.", exceptionHandler, sourceMapper, conditional.location.toList)))
+        schema.outputTypes
+          .get(tc.name)
+          .map(condTpe =>
+            Success(
+              condTpe.name == tpe.name || (condTpe
+                .isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
+          .getOrElse(
+            Failure(
+              new ExecutionError(
+                s"Unknown type '${tc.name}'.",
+                exceptionHandler,
+                sourceMapper,
+                conditional.location.toList)))
       case None => Success(true)
     }
 }
@@ -170,8 +255,8 @@ class CollectedFieldsBuilder {
   }
 
   def build = {
-    val builtFields = firstFields.toVector.zipWithIndex map {
-      case (f, idx) => CollectedField(names(idx), f, fields(idx) map (_.toVector))
+    val builtFields = firstFields.toVector.zipWithIndex.map { case (f, idx) =>
+      CollectedField(names(idx), f, fields(idx).map(_.toVector))
     }
 
     CollectedFields(names.toVector, builtFields)

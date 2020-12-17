@@ -31,8 +31,16 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
   @GraphQLDeprecated("Not tasty anymore")
   case object MegaOrangeAnnotated extends FruitAnnotated
 
-  case class Comment(author: String, text: Option[String], color: ColorAnnotated.Value = ColorAnnotated.Red)
-  case class Article(title: String, text: Option[String], tags: Option[Vector[String]], comments: Option[Vector[Option[Comment]]], fruit: FruitAnnotated = RedAppleAnnotated)
+  case class Comment(
+      author: String,
+      text: Option[String],
+      color: ColorAnnotated.Value = ColorAnnotated.Red)
+  case class Article(
+      title: String,
+      text: Option[String],
+      tags: Option[Vector[String]],
+      comments: Option[Vector[Option[Comment]]],
+      fruit: FruitAnnotated = RedAppleAnnotated)
 
   case class Pet(name: String, size: Option[Int])
 
@@ -40,24 +48,23 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
     "use class name and have no description by default" in {
       val tpe = deriveObjectType[Unit, TestSubject]()
 
-      tpe.name should be ("TestSubject")
-      tpe.description should be (None)
+      tpe.name should be("TestSubject")
+      tpe.description should be(None)
     }
 
     "allow to change name and description with config" in {
-      val tpe = deriveObjectType[Unit, TestSubject](
-        ObjectTypeName("Foo"),
-        ObjectTypeDescription("my desc"))
+      val tpe =
+        deriveObjectType[Unit, TestSubject](ObjectTypeName("Foo"), ObjectTypeDescription("my desc"))
 
-      tpe.name should be ("Foo")
-      tpe.description should be (Some("my desc"))
+      tpe.name should be("Foo")
+      tpe.description should be(Some("my desc"))
     }
 
     "allow to change name and description with annotations" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated]()
 
-      tpe.name should be ("MyQueryType")
-      tpe.description should be (Some("My type!"))
+      tpe.name should be("MyQueryType")
+      tpe.description should be(Some("My type!"))
     }
 
     "prioritize config over annotation for name and description" in {
@@ -65,23 +72,21 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         ObjectTypeName("Foo"),
         ObjectTypeDescription("my desc"))
 
-      tpe.name should be ("Foo")
-      tpe.description should be (Some("my desc"))
+      tpe.name should be("Foo")
+      tpe.description should be(Some("my desc"))
     }
 
     "allow to specify interfaces via config" in {
-      val tpe = deriveObjectType[Unit, TestSubject](
-        Interfaces(Parent1Type, Parent2Type))
+      val tpe = deriveObjectType[Unit, TestSubject](Interfaces(Parent1Type, Parent2Type))
 
-      tpe.interfaces.map(_.name).sorted should be ("Parent1" :: "Parent2" :: Nil)
+      tpe.interfaces.map(_.name).sorted should be("Parent1" :: "Parent2" :: Nil)
     }
 
     "allow to specify interfaces via multiple config entries" in {
-      val tpe = deriveObjectType[Unit, TestSubject](
-        Interfaces(Parent1Type),
-        Interfaces(Parent2Type))
+      val tpe =
+        deriveObjectType[Unit, TestSubject](Interfaces(Parent1Type), Interfaces(Parent2Type))
 
-      tpe.interfaces.map(_.name).sorted should be ("Parent1" :: "Parent2" :: Nil)
+      tpe.interfaces.map(_.name).sorted should be("Parent1" :: "Parent2" :: Nil)
     }
 
     "expose case class fields" in {
@@ -90,14 +95,14 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       fields should have size 3
 
-      fields(0).name should be ("id")
-      fields(0).fieldType should be (StringType)
+      fields(0).name should be("id")
+      fields(0).fieldType should be(StringType)
 
-      fields(1).name should be ("list")
-      fields(1).fieldType should be (ListType(StringType))
+      fields(1).name should be("list")
+      fields(1).fieldType should be(ListType(StringType))
 
-      fields(2).name should be ("excluded")
-      fields(2).fieldType should be (IntType)
+      fields(2).name should be("excluded")
+      fields(2).fieldType should be(IntType)
     }
 
     "validate known field names" in {
@@ -112,13 +117,12 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "respect whitelist and blacklist provided via config" in {
-      val tpe = deriveObjectType[Unit, TestSubject](
-        IncludeFields("id", "list"),
-        ExcludeFields("list"))
+      val tpe =
+        deriveObjectType[Unit, TestSubject](IncludeFields("id", "list"), ExcludeFields("list"))
 
       tpe.fields should have size 1
 
-      tpe.fields(0).name should be ("id")
+      tpe.fields(0).name should be("id")
     }
 
     "respect blacklist provided via annotations" in {
@@ -127,7 +131,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         ExcludeFields("id"))
 
       tpe.fields should have size 1
-      tpe.fields(0).name should be ("myList")
+      tpe.fields(0).name should be("myList")
     }
 
     "allow to add new fields" in {
@@ -139,14 +143,14 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 3
 
-      tpe.fields(0).name should be ("id")
-      tpe.fields(0).fieldType should be (StringType)
+      tpe.fields(0).name should be("id")
+      tpe.fields(0).fieldType should be(StringType)
 
-      tpe.fields(1).name should be ("foo")
-      tpe.fields(1).fieldType should be (ListType(StringType))
+      tpe.fields(1).name should be("foo")
+      tpe.fields(1).fieldType should be(ListType(StringType))
 
-      tpe.fields(2).name should be ("bar")
-      tpe.fields(2).fieldType should be (BooleanType)
+      tpe.fields(2).name should be("bar")
+      tpe.fields(2).fieldType should be(BooleanType)
     }
 
     "allow to override fields" in {
@@ -156,21 +160,21 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 3
 
-      tpe.fields(0).name should be ("excluded")
-      tpe.fields(0).fieldType should be (IntType)
+      tpe.fields(0).name should be("excluded")
+      tpe.fields(0).fieldType should be(IntType)
 
-      tpe.fields(1).name should be ("id")
-      tpe.fields(1).fieldType should be (ListType(StringType))
+      tpe.fields(1).name should be("id")
+      tpe.fields(1).fieldType should be(ListType(StringType))
 
-      tpe.fields(2).name should be ("bar")
-      tpe.fields(2).fieldType should be (BooleanType)
+      tpe.fields(2).name should be("bar")
+      tpe.fields(2).fieldType should be(BooleanType)
     }
 
     "allow to set field complexity with config" in {
-      val tpe = deriveObjectType[Unit, TestSubject](
-        FieldComplexity("id", (_, _, child) => child * 123.0))
+      val tpe =
+        deriveObjectType[Unit, TestSubject](FieldComplexity("id", (_, _, child) => child * 123.0))
 
-      tpe.fields(0).complexity.get((), Args.empty, 2D) should be (246.0)
+      tpe.fields(0).complexity.get((), Args.empty, 2d) should be(246.0)
     }
 
     "allow to set name, description, deprecationReason and fieldTags with config" in {
@@ -180,48 +184,46 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         RenameField("list", "colors"),
         DocumentField("list", "my colors"),
         DeprecateField("excluded", "bar"),
-        FieldTags("list", CachedTag, AuthorizedTag))
+        FieldTags("list", CachedTag, AuthorizedTag)
+      )
 
       tpe.fields should have size 3
 
-      tpe.fields(0).name should be ("identifier")
-      tpe.fields(0).description should be (Some("the object ID"))
-      tpe.fields(0).deprecationReason should be (Some("foo"))
-      tpe.fields(0).tags should be (Nil)
-      tpe.fields(0).fieldType should be (StringType)
+      tpe.fields(0).name should be("identifier")
+      tpe.fields(0).description should be(Some("the object ID"))
+      tpe.fields(0).deprecationReason should be(Some("foo"))
+      tpe.fields(0).tags should be(Nil)
+      tpe.fields(0).fieldType should be(StringType)
 
-      tpe.fields(1).name should be ("colors")
-      tpe.fields(1).description should be (Some("my colors"))
-      tpe.fields(1).deprecationReason should be (None)
-      tpe.fields(1).tags should be (List(CachedTag, AuthorizedTag))
-      tpe.fields(1).fieldType should be (ListType(StringType))
+      tpe.fields(1).name should be("colors")
+      tpe.fields(1).description should be(Some("my colors"))
+      tpe.fields(1).deprecationReason should be(None)
+      tpe.fields(1).tags should be(List(CachedTag, AuthorizedTag))
+      tpe.fields(1).fieldType should be(ListType(StringType))
 
-      tpe.fields(2).name should be ("excluded")
-      tpe.fields(2).description should be (None)
-      tpe.fields(2).deprecationReason should be (Some("bar"))
-      tpe.fields(2).tags should be (Nil)
-      tpe.fields(2).fieldType should be (IntType)
+      tpe.fields(2).name should be("excluded")
+      tpe.fields(2).description should be(None)
+      tpe.fields(2).deprecationReason should be(Some("bar"))
+      tpe.fields(2).tags should be(Nil)
+      tpe.fields(2).fieldType should be(IntType)
     }
 
     "allow field names transformation" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(_.toUpperCase))
-      
-      tpe.fields.map(_.name) should (
-        have(size(2)) and
-        contain("ID") and 
-        contain("MYLIST"))
 
-      val transformer2 = (s: String) => s.zipWithIndex.map {
-        case (c, i) if i % 2 == 0 => c.toLower
-        case (c, _) => c.toUpper
-      }.mkString("")
+      tpe.fields.map(_.name) should (have(size(2)).and(contain("ID")).and(contain("MYLIST")))
+
+      val transformer2 = (s: String) =>
+        s.zipWithIndex
+          .map {
+            case (c, i) if i % 2 == 0 => c.toLower
+            case (c, _) => c.toUpper
+          }
+          .mkString("")
 
       val tpe2 = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(transformer2))
 
-      tpe2.fields.map(_.name) should (
-        have(size(2)) and
-        contain("iD") and
-        contain("mYlIsT"))
+      tpe2.fields.map(_.name) should (have(size(2)).and(contain("iD")).and(contain("mYlIsT")))
     }
 
     "allow to set name, description, deprecationReason and fieldTags with annotations" in {
@@ -229,17 +231,17 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 2
 
-      tpe.fields(0).name should be ("id")
-      tpe.fields(0).description should be (Some("my id"))
-      tpe.fields(0).deprecationReason should be (Some("No IDs anymore!"))
-      tpe.fields(0).tags should be (Nil)
-      tpe.fields(0).fieldType should be (IDType)
+      tpe.fields(0).name should be("id")
+      tpe.fields(0).description should be(Some("my id"))
+      tpe.fields(0).deprecationReason should be(Some("No IDs anymore!"))
+      tpe.fields(0).tags should be(Nil)
+      tpe.fields(0).fieldType should be(IDType)
 
-      tpe.fields(1).name should be ("myList")
-      tpe.fields(1).description should be (None)
-      tpe.fields(1).deprecationReason should be (None)
-      tpe.fields(1).tags should be (List(CachedTag, AuthorizedTag))
-      tpe.fields(1).fieldType should be (ListType(StringType))
+      tpe.fields(1).name should be("myList")
+      tpe.fields(1).description should be(None)
+      tpe.fields(1).deprecationReason should be(None)
+      tpe.fields(1).tags should be(List(CachedTag, AuthorizedTag))
+      tpe.fields(1).fieldType should be(ListType(StringType))
     }
 
     "prioritize field config name, description, deprecationReason and merge fieldTags" in {
@@ -251,17 +253,17 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 2
 
-      tpe.fields(0).name should be ("id")
-      tpe.fields(0).description should be (Some("new descr"))
-      tpe.fields(0).deprecationReason should be (Some("new depr"))
-      tpe.fields(0).tags should be (List(FooTag))
-      tpe.fields(0).fieldType should be (IDType)
+      tpe.fields(0).name should be("id")
+      tpe.fields(0).description should be(Some("new descr"))
+      tpe.fields(0).deprecationReason should be(Some("new depr"))
+      tpe.fields(0).tags should be(List(FooTag))
+      tpe.fields(0).fieldType should be(IDType)
 
-      tpe.fields(1).name should be ("fooBar")
-      tpe.fields(1).description should be (None)
-      tpe.fields(1).deprecationReason should be (None)
-      tpe.fields(1).tags should be (List(FooTag, CachedTag, AuthorizedTag))
-      tpe.fields(1).fieldType should be (ListType(StringType))
+      tpe.fields(1).name should be("fooBar")
+      tpe.fields(1).description should be(None)
+      tpe.fields(1).deprecationReason should be(None)
+      tpe.fields(1).tags should be(List(FooTag, CachedTag, AuthorizedTag))
+      tpe.fields(1).fieldType should be(ListType(StringType))
     }
 
     "support overriding field types" in {
@@ -275,8 +277,8 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 1
 
-      tpe.fields(0).name should be ("id")
-      tpe.fields(0).fieldType should be (IDType)
+      tpe.fields(0).name should be("id")
+      tpe.fields(0).fieldType should be(IDType)
     }
 
     "support overriding field types with optionals" in {
@@ -290,8 +292,8 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 1
 
-      tpe.fields(0).name should be ("id")
-      tpe.fields(0).fieldType should be (OptionType(IDType))
+      tpe.fields(0).name should be("id")
+      tpe.fields(0).fieldType should be(OptionType(IDType))
     }
 
     "overwriting type should work even if implicit type is not found" in {
@@ -312,8 +314,8 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 1
 
-      tpe.fields(0).name should be ("inner")
-      tpe.fields(0).fieldType should be (OptionType(innerClassType))
+      tpe.fields(0).name should be("inner")
+      tpe.fields(0).fieldType should be(OptionType(innerClassType))
     }
 
     "support vals" in {
@@ -328,20 +330,17 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 1
 
-      tpe.fields(0).name should be ("foo")
-      tpe.fields(0).description should be (Some("test field"))
-      tpe.fields(0).deprecationReason should be (None)
-      tpe.fields(0).fieldType should be (OptionType(ListType(IntType)))
+      tpe.fields(0).name should be("foo")
+      tpe.fields(0).description should be(Some("test field"))
+      tpe.fields(0).deprecationReason should be(None)
+      tpe.fields(0).fieldType should be(OptionType(ListType(IntType)))
     }
 
     "support companion objects for `Enumeration`s" in {
       val enum = test.AnotherEnum.valNameType
 
       enum.values.map(_.name) should (
-        have(size(3)) and
-        contain("FOO") and
-        contain("BAR") and
-        contain("BAZ")
+        have(size(3)).and(contain("FOO")).and(contain("BAR")).and(contain("BAZ"))
       )
     }
 
@@ -353,10 +352,12 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         DocumentField("author", "The comment author"),
         DocumentField("text", "Comment text"))
 
-      val ArticleType = deriveObjectType[Unit, Article](
-        RenameField("tags", "myTags"))
+      val ArticleType = deriveObjectType[Unit, Article](RenameField("tags", "myTags"))
 
-      val testArticle = Article("My First Article", Some("foo bar"), None,
+      val testArticle = Article(
+        "My First Article",
+        Some("foo bar"),
+        None,
         Some(Vector(Some(Comment("bob", None)), None, Some(Comment("jane", Some("yay!"))))))
 
       val query =
@@ -376,8 +377,8 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       val schema = Schema(ArticleType)
 
-      Executor.execute(schema, query, root = testArticle).await should be (Map(
-        "data" -> Map(
+      Executor.execute(schema, query, root = testArticle).await should be(
+        Map("data" -> Map(
           "title" -> "My First Article",
           "text" -> "foo bar",
           "myTags" -> null,
@@ -385,42 +386,48 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
           "comments" -> List(
             Map("author" -> "bob", "text" -> null, "color" -> "NormalRed"),
             null,
-            Map("author" -> "jane", "text" -> "yay!", "color" -> "NormalRed")))))
+            Map("author" -> "jane", "text" -> "yay!", "color" -> "NormalRed"))
+        )))
 
       import sangria.marshalling.queryAst._
       import sangria.parser.DeliveryScheme.Throw
 
-      val intro = IntrospectionParser.parse(Executor.execute(schema, sangria.introspection.introspectionQuery, root = testArticle).await)
+      val intro = IntrospectionParser.parse(
+        Executor
+          .execute(schema, sangria.introspection.introspectionQuery, root = testArticle)
+          .await)
 
-      intro.queryType.name should be ("Article")
+      intro.queryType.name should be("Article")
 
       val Some(articleIntro: IntrospectionObjectType) = intro.types.find(_.name == "Article")
       val Some(commentIntro: IntrospectionObjectType) = intro.types.find(_.name == "Comment")
 
       commentIntro.fields should have size 3
 
-      commentIntro.fields(0).name should be ("author")
-      commentIntro.fields(0).description should be (Some("The comment author"))
+      commentIntro.fields(0).name should be("author")
+      commentIntro.fields(0).description should be(Some("The comment author"))
 
-      commentIntro.fields(1).name should be ("text")
-      commentIntro.fields(1).description should be (Some("Comment text"))
+      commentIntro.fields(1).name should be("text")
+      commentIntro.fields(1).description should be(Some("Comment text"))
 
-      commentIntro.fields(2).name should be ("color")
-      commentIntro.fields(2).description should be (None)
+      commentIntro.fields(2).name should be("color")
+      commentIntro.fields(2).description should be(None)
 
-      articleIntro.fields(3).name should be ("comments")
-      articleIntro.fields(3).tpe should be (IntrospectionListTypeRef(IntrospectionNamedTypeRef(TypeKind.Object, "Comment")))
+      articleIntro.fields(3).name should be("comments")
+      articleIntro.fields(3).tpe should be(
+        IntrospectionListTypeRef(IntrospectionNamedTypeRef(TypeKind.Object, "Comment")))
 
-      articleIntro.fields(4).name should be ("fruit")
-      articleIntro.fields(4).tpe should be (IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "MyFruit")))
+      articleIntro.fields(4).name should be("fruit")
+      articleIntro.fields(4).tpe should be(
+        IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "MyFruit")))
     }
 
     "be able handle recursive types with field overrides" in {
       case class A(id: Int, b: B)
       case class B(name: String, a: A, b: B)
 
-      implicit lazy val AType = deriveObjectType[Unit, A](
-        ReplaceField("b", Field("b", BType, resolve = _.value.b)))
+      implicit lazy val AType =
+        deriveObjectType[Unit, A](ReplaceField("b", Field("b", BType, resolve = _.value.b)))
 
       implicit lazy val BType: ObjectType[Unit, B] = deriveObjectType(
         ReplaceField("a", Field("a", AType, resolve = _.value.a)),
@@ -431,8 +438,13 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
       val query =
         graphql"{id, b {name, a {id}, b {name}} }"
 
-      Executor.execute(schema, query, root = A(1, B("foo", A(2, null), B("bar", null, null)))).await should be (Map(
-        "data" -> Map("id" -> 1, "b" -> Map("name" -> "foo", "a" -> Map("id" -> 2), "b" -> Map("name" -> "bar")))))
+      Executor
+        .execute(schema, query, root = A(1, B("foo", A(2, null), B("bar", null, null))))
+        .await should be(
+        Map(
+          "data" -> Map(
+            "id" -> 1,
+            "b" -> Map("name" -> "foo", "a" -> Map("id" -> 2), "b" -> Map("name" -> "bar")))))
     }
 
     "use companion object to resolve derived types" in {
@@ -442,8 +454,13 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       val query = graphql"{b {myC {e, e1}}}"
 
-      Executor.execute(schema, query, root = CompanionA(CompanionB(CompanionC(CompanionEnum1, AnotherEnum.FOO)))).await should be (Map(
-        "data" -> Map("b" -> Map("myC" -> Map("e" -> "first", "e1" -> "FOO")))))
+      Executor
+        .execute(
+          schema,
+          query,
+          root = CompanionA(CompanionB(CompanionC(CompanionEnum1, AnotherEnum.FOO))))
+        .await should be(
+        Map("data" -> Map("b" -> Map("myC" -> Map("e" -> "first", "e1" -> "FOO")))))
     }
 
     "support `Future`, `Try`, `Defer` and `Action` return types" in {
@@ -460,12 +477,13 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       val tpe = deriveObjectType[Unit, MyTest]()
 
-      tpe.fields.sortBy(_.name).map(f => f.name -> f.fieldType) should be (List(
-        "actionVal" -> OptionType(ListType(IntType)),
-        "deferVal" -> OptionType(ListType(IntType)),
-        "futureVal" -> ListType(IntType),
-        "tryVal" -> OptionType(ListType(IntType))
-      ))
+      tpe.fields.sortBy(_.name).map(f => f.name -> f.fieldType) should be(
+        List(
+          "actionVal" -> OptionType(ListType(IntType)),
+          "deferVal" -> OptionType(ListType(IntType)),
+          "futureVal" -> ListType(IntType),
+          "tryVal" -> OptionType(ListType(IntType))
+        ))
     }
 
     "derive methods with arguments via annotations" in {
@@ -485,21 +503,20 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         @GraphQLField
         @GraphQLName("foo")
         def hello(
-          @GraphQLDefault(123)
-          id: Int,
-          songs: Seq[String]
+            @GraphQLDefault(123)
+            id: Int,
+            songs: Seq[String]
         )(
-          ctx: Context[Ctx, Unit],
-
-          @GraphQLDefault(Pet("xxx", Some(322)))
-          pet: Pet,
-
-          @GraphQLName("aaa")
-          @GraphQLDescription("bbbb")
-          @GraphQLDefault(ScalaInput.scalaInput(List(Color.Red)))
-          colors: Seq[Color.Value]
+            ctx: Context[Ctx, Unit],
+            @GraphQLDefault(Pet("xxx", Some(322)))
+            pet: Pet,
+            @GraphQLName("aaa")
+            @GraphQLDescription("bbbb")
+            @GraphQLDefault(ScalaInput.scalaInput(List(Color.Red)))
+            colors: Seq[Color.Value]
         ) =
-          s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}, pet = $pet, ctx = ${ctx.ctx.num}"
+          s"id = $id, songs = ${songs.mkString(",")}, cc = ${colors.mkString(
+            ",")}, pet = $pet, ctx = ${ctx.ctx.num}"
 
         @GraphQLField
         def opt(str: Option[String], color: Option[Color.Value])(pet: Option[Pet]) =
@@ -529,17 +546,21 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
           }
         """
 
-      Executor.execute(schema, query, Ctx(987, new FooBar)).await should be (
+      Executor.execute(schema, query, Ctx(987, new FooBar)).await should be(
         JsObject("data" -> JsObject(
           "foo" -> JsString("id = 123, songs = a,b, cc = Red, pet = Pet(xxx,Some(322)), ctx = 987"),
-          "foo1" -> JsString("id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"),
+          "foo1" -> JsString(
+            "id = 123, songs = a,b, cc = Red, pet = Pet(mypet,Some(156)), ctx = 987"),
           "opt" -> JsString("str = None, color = None, pet = None"),
-          "opt1" -> JsString("str = Some(test), color = Some(Red), pet = Some(Pet(anotherPet,Some(321)))"),
-          "paramType" -> JsString("id = 345, defaultId = 47589"))))
+          "opt1" -> JsString(
+            "str = Some(test), color = Some(Red), pet = Some(Pet(anotherPet,Some(321)))"),
+          "paramType" -> JsString("id = 345, defaultId = 47589")
+        )))
 
       import sangria.parser.DeliveryScheme.Throw
 
-      val intro = IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
+      val intro = IntrospectionParser.parse(
+        Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
       val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
 
       introType.fields should have size 3
@@ -548,28 +569,72 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       helloField.args should have size 4
 
-      helloField.args should be (List(
-        IntrospectionInputValue("id", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "Int"), Some("123")),
-        IntrospectionInputValue("songs", None,
-          IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),None),
-        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), Some("""{name:"xxx",size:322}""")),
-        IntrospectionInputValue("aaa", Some("bbbb"), IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))), Some("[Red]"))))
+      helloField.args should be(
+        List(
+          IntrospectionInputValue(
+            "id",
+            None,
+            IntrospectionNamedTypeRef(TypeKind.Scalar, "Int"),
+            Some("123")),
+          IntrospectionInputValue(
+            "songs",
+            None,
+            IntrospectionNonNullTypeRef(IntrospectionListTypeRef(
+              IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),
+            None
+          ),
+          IntrospectionInputValue(
+            "pet",
+            None,
+            IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
+            Some("""{name:"xxx",size:322}""")),
+          IntrospectionInputValue(
+            "aaa",
+            Some("bbbb"),
+            IntrospectionListTypeRef(
+              IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))),
+            Some("[Red]"))
+        ))
 
       val Some(optField) = introType.fields.find(_.name == "opt")
 
       optField.args should have size 3
 
-      optField.args should be (List(
-        IntrospectionInputValue("str", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
-        IntrospectionInputValue("color", None, IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
-        IntrospectionInputValue("pet", None, IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), None)))
+      optField.args should be(
+        List(
+          IntrospectionInputValue(
+            "str",
+            None,
+            IntrospectionNamedTypeRef(TypeKind.Scalar, "String"),
+            None),
+          IntrospectionInputValue(
+            "color",
+            None,
+            IntrospectionNamedTypeRef(TypeKind.Enum, "Color"),
+            None),
+          IntrospectionInputValue(
+            "pet",
+            None,
+            IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
+            None)
+        ))
 
       val Some(paramTypeField) = introType.fields.find(_.name == "paramType")
 
       paramTypeField.args should have size 2
-      paramTypeField.args should be (Vector(
-        IntrospectionInputValue("id", None, IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "ID")), None),
-        IntrospectionInputValue("defaultId", None, IntrospectionNamedTypeRef(TypeKind.Scalar, "ID"), Some(""""47589""""))))
+      paramTypeField.args should be(
+        Vector(
+          IntrospectionInputValue(
+            "id",
+            None,
+            IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "ID")),
+            None),
+          IntrospectionInputValue(
+            "defaultId",
+            None,
+            IntrospectionNamedTypeRef(TypeKind.Scalar, "ID"),
+            Some(""""47589""""))
+        ))
     }
 
     "allow to rename arguments, set arguments descriptions and default values with config" in {
@@ -586,28 +651,34 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
       case class Ctx(num: Int, fooBar: FooBar)
 
       class FooBar {
-        def hello(id: Int, songs: Seq[String])(ctx: Context[Ctx, Unit], pet: Pet, colors: Seq[Color.Value]) =
-          s"id = $id, songs = ${songs mkString ","}, cc = ${colors mkString ","}, pet = $pet, ctx = ${ctx.ctx.num}"
+        def hello(
+            id: Int,
+            songs: Seq[String])(ctx: Context[Ctx, Unit], pet: Pet, colors: Seq[Color.Value]) =
+          s"id = $id, songs = ${songs.mkString(",")}, cc = ${colors.mkString(
+            ",")}, pet = $pet, ctx = ${ctx.ctx.num}"
 
         def opt(str: Option[String], color: Option[Color.Value])(pet: Option[Pet]) =
           s"str = $str, color = $color, pet = $pet"
       }
 
-      val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar,
+      val tpe = deriveContextObjectType[Ctx, FooBar, Unit](
+        _.fooBar,
         IncludeMethods("hello", "opt"),
         MethodArgumentDescription("hello", "id", "`id`"),
         MethodArgumentDescription("hello", "songs", "`songs`"),
         MethodArgumentRename("opt", "str", "description"),
         MethodArgumentsDescription("opt", "str" -> "Optional description", "color" -> "a color"),
-        MethodArgumentDefault("hello", "songs",  "My favorite song" :: Nil),
-        MethodArgumentDefault("opt", "pet",  """{"name": "Bell", "size": 3}""".parseJson),
-        MethodArgument("hello", "pet", "`pet`", Pet("Octocat", None)))
+        MethodArgumentDefault("hello", "songs", "My favorite song" :: Nil),
+        MethodArgumentDefault("opt", "pet", """{"name": "Bell", "size": 3}""".parseJson),
+        MethodArgument("hello", "pet", "`pet`", Pet("Octocat", None))
+      )
 
       val schema = Schema(tpe)
 
       import sangria.parser.DeliveryScheme.Throw
 
-      val intro = IntrospectionParser.parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
+      val intro = IntrospectionParser.parse(
+        Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
       val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
 
       introType.fields should have size 2
@@ -616,29 +687,56 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       helloField.args should have size 4
 
-      helloField.args should be (List(
-        IntrospectionInputValue("id", Some("`id`"),
-          IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "Int")), None),
-        IntrospectionInputValue("songs", Some("`songs`"),
-          IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String"))),
-          Some("""["My favorite song"]""")),
-        IntrospectionInputValue("pet", Some("`pet`"),
-          IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-          Some("""{name:"Octocat"}""")),
-        IntrospectionInputValue("colors", None,
-          IntrospectionNonNullTypeRef(IntrospectionListTypeRef(IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color")))), None)))
+      helloField.args should be(
+        List(
+          IntrospectionInputValue(
+            "id",
+            Some("`id`"),
+            IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "Int")),
+            None),
+          IntrospectionInputValue(
+            "songs",
+            Some("`songs`"),
+            IntrospectionListTypeRef(
+              IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String"))),
+            Some("""["My favorite song"]""")
+          ),
+          IntrospectionInputValue(
+            "pet",
+            Some("`pet`"),
+            IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
+            Some("""{name:"Octocat"}""")),
+          IntrospectionInputValue(
+            "colors",
+            None,
+            IntrospectionNonNullTypeRef(IntrospectionListTypeRef(
+              IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color")))),
+            None
+          )
+        ))
 
       val Some(optField) = introType.fields.find(_.name == "opt")
 
       optField.args should have size 3
 
-      optField.args should be (List(
-        IntrospectionInputValue("description", Some("Optional description"),
-          IntrospectionNamedTypeRef(TypeKind.Scalar, "String"), None),
-        IntrospectionInputValue("color", Some("a color"),
-          IntrospectionNamedTypeRef(TypeKind.Enum, "Color"), None),
-        IntrospectionInputValue("pet", None,
-          IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"), Some("""{name:"Bell",size:3}"""))))
+      optField.args should be(
+        List(
+          IntrospectionInputValue(
+            "description",
+            Some("Optional description"),
+            IntrospectionNamedTypeRef(TypeKind.Scalar, "String"),
+            None),
+          IntrospectionInputValue(
+            "color",
+            Some("a color"),
+            IntrospectionNamedTypeRef(TypeKind.Enum, "Color"),
+            None),
+          IntrospectionInputValue(
+            "pet",
+            None,
+            IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
+            Some("""{name:"Bell",size:3}"""))
+        ))
     }
 
     "validate known argument names" in {
@@ -662,9 +760,15 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       val schema = Schema(QueryType)
 
-      val intro = IntrospectionParser.parse(Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await)
+      val intro = IntrospectionParser.parse(
+        Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await)
 
-      intro.typesByName("Query").asInstanceOf[IntrospectionObjectType].fieldsByName("foo").argsByName("a").defaultValue should be (None)
+      intro
+        .typesByName("Query")
+        .asInstanceOf[IntrospectionObjectType]
+        .fieldsByName("foo")
+        .argsByName("a")
+        .defaultValue should be(None)
     }
 
     "derive object types for type-parameterized classes" in {

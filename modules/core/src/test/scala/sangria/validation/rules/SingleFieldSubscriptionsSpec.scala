@@ -8,8 +8,7 @@ class SingleFieldSubscriptionsSpec extends AnyWordSpec with ValidationSupport {
   override val defaultRule = Some(new SingleFieldSubscriptions)
 
   "Validate: Subscriptions with single field" should {
-    "valid subscription" in expectPasses(
-      """
+    "valid subscription" in expectPasses("""
         subscription ImportantEmails {
           importantEmails
         }
@@ -24,7 +23,8 @@ class SingleFieldSubscriptionsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Subscription 'ImportantEmails' must select only one top level field." -> Some(Pos(4, 11))
-      ))
+      )
+    )
 
     "fails with more than one root field including introspection" in expectFails(
       """
@@ -35,7 +35,8 @@ class SingleFieldSubscriptionsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Subscription 'ImportantEmails' must select only one top level field." -> Some(Pos(4, 11))
-      ))
+      )
+    )
 
     "fails with many more than one root field" in expectFailsPosList(
       """
@@ -46,8 +47,11 @@ class SingleFieldSubscriptionsSpec extends AnyWordSpec with ValidationSupport {
         }
       """,
       List(
-        "Subscription 'ImportantEmails' must select only one top level field." -> List(Pos(4, 11), Pos(5, 11))
-      ))
+        "Subscription 'ImportantEmails' must select only one top level field." -> List(
+          Pos(4, 11),
+          Pos(5, 11))
+      )
+    )
 
     "fails with more than one root field in anonymous subscriptions" in expectFailsPosList(
       """
@@ -58,6 +62,7 @@ class SingleFieldSubscriptionsSpec extends AnyWordSpec with ValidationSupport {
       """,
       List(
         "Anonymous Subscription must select only one top level field." -> List(Pos(4, 11))
-      ))
+      )
+    )
   }
 }
