@@ -2,6 +2,8 @@ package sangria.execution
 
 import sangria.ast.AstLocation
 import sangria.ast
+import sangria.effect.Effect
+import sangria.effect.Effect._
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.marshalling.{ResultMarshaller, ScalarValueInfo}
 import sangria.parser.SourceMapper
@@ -150,11 +152,11 @@ class Resolver[Ctx](
       throw new IllegalStateException(s"Unsupported execution scheme: $s")
   }
 
-  def processFinalResolve(resolve: Resolve)(implicit
-      executionContext: ExecutionContext): Future[(Vector[RegisteredError], marshaller.Node)] =
+  def processFinalResolve[F[_]: Effect](
+      resolve: Resolve): F[(Vector[RegisteredError], marshaller.Node)] =
     resolve match {
       case Result(errors, data, _) =>
-        Future.successful(
+        Effect[F]().pure(
           errors.originalErrors ->
             marshalResult(
               data.asInstanceOf[Option[resultResolver.marshaller.Node]],
@@ -162,7 +164,7 @@ class Resolver[Ctx](
               marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]
             ).asInstanceOf[marshaller.Node])
 
-      case dr: DeferredResult =>
+      case dr: DeferredResult[F] =>
         immediatelyResolveDeferred(
           userContext,
           dr,
@@ -189,10 +191,10 @@ class Resolver[Ctx](
     else None
   }
 
-  private def immediatelyResolveDeferred[T](
+  private def immediatelyResolveDeferred[T, F[_]: Effect](
       uc: Ctx,
-      dr: DeferredResult,
-      fn: Future[Result] => Future[T])(implicit executionContext: ExecutionContext): Future[T] = {
+      dr: DeferredResult[F],
+      fn: F[Result] => F[T]): F[T] = {
     val res = fn(dr.futureValue)
 
     resolveDeferredWithGrouping(dr.deferred).foreach(groups =>
@@ -728,8 +730,7 @@ class Resolver[Ctx](
       fieldsPath: ExecutionPath,
       astFields: Vector[ast.Field],
       field: Field[Ctx, _],
-      actions: Seq[LeafAction[Any, Any]])(implicit
-      executionContext: ExecutionContext): Seq[SeqRes] =
+      actions: Seq[LeafAction[Any, Any]]): Seq[SeqRes] =
     actions.map {
       case Value(v) => SeqRes(SeqFutRes(v))
       case TryValue(Success(v)) => SeqRes(SeqFutRes(v))
@@ -785,7 +786,7 @@ class Resolver[Ctx](
       tpe: ObjectType[Ctx, _],
       actions: Actions,
       userCtx: Ctx,
-      fieldsNamesOrdered: Vector[String])(implicit executionContext: ExecutionContext): Resolve = {
+      fieldsNamesOrdered: Vector[String]): Resolve = {
     val (errors, res) = actions
 
     def resolveUc(newUc: Option[MappedCtxUpdate[Ctx, Any, Any]], v: Any) =
@@ -1151,24 +1152,22 @@ class Resolver[Ctx](
     }
   }
 
-  private def resolveDeferred(uc: Ctx, toResolve: Vector[Defer])(implicit
-      executionContext: ExecutionContext) =
+  private def resolveDeferred[F[_]: Effect](uc: Ctx, toResolve: Vector[Defer]): Unit =
     if (toResolve.nonEmpty) {
       def findActualDeferred(deferred: Deferred[_]): Deferred[_] = deferred match {
         case MappingDeferred(d, _) => findActualDeferred(d)
         case d => d
       }
 
-      def mapAllDeferred(
-          deferred: Deferred[_],
-          value: Future[Any]): Future[(Any, Vector[Throwable])] = deferred match {
-        case MappingDeferred(d, fn) =>
-          mapAllDeferred(d, value).map { case (v, errors) =>
-            val (mappedV, newErrors) = fn(v)
-            mappedV -> (errors ++ newErrors)
-          }
-        case _ => value.map(_ -> Vector.empty)
-      }
+      def mapAllDeferred(deferred: Deferred[_], value: F[Any]): F[(Any, Vector[Throwable])] =
+        deferred match {
+          case MappingDeferred(d, fn) =>
+            mapAllDeferred(d, value).map { case (v, errors) =>
+              val (mappedV, newErrors) = fn(v)
+              mappedV -> (errors ++ newErrors)
+            }
+          case _ => value.map(_ -> Vector.empty)
+        }
 
       try {
         val resolved = deferredResolver.resolve(
@@ -1201,15 +1200,14 @@ class Resolver[Ctx](
       }
     }
 
-  def resolveValue(
+  def resolveValue[F[_]: Effect](
       path: ExecutionPath,
       astFields: Vector[ast.Field],
       tpe: OutputType[_],
       field: Field[Ctx, _],
       value: Any,
       userCtx: Ctx,
-      actualType: Option[InputType[_]] = None)(implicit
-      executionContext: ExecutionContext): Resolve =
+      actualType: Option[InputType[_]] = None): Resolve =
     tpe match {
       case OptionType(optTpe) =>
         val actualValue = value match {
@@ -1241,23 +1239,23 @@ class Resolver[Ctx](
             resolveSimpleListValue(simpleRes, path, optional, astFields.head.location)
           else {
             // this is very hot place, so resorting to mutability to minimize the footprint
-            val deferredBuilder = new VectorBuilder[Future[Vector[Defer]]]
-            val resultFutures = new VectorBuilder[Future[Result]]
+            val deferredBuilder = new VectorBuilder[F[Vector[Defer]]]
+            val resultFutures = new VectorBuilder[F[Result]]
 
             val resIt = res.iterator
 
             while (resIt.hasNext)
               resIt.next() match {
                 case r: Result =>
-                  resultFutures += Future.successful(r)
-                case dr: DeferredResult =>
+                  resultFutures += effect.pure(r)
+                case dr: DeferredResult[F] =>
                   resultFutures += dr.futureValue
                   deferredBuilder ++= dr.deferred
               }
 
             DeferredResult(
               deferred = deferredBuilder.result(),
-              futureValue = Future
+              futureValue = effect
                 .sequence(resultFutures.result())
                 .map(resolveSimpleListValue(_, path, optional, astFields.head.location))
             )
@@ -1704,15 +1702,16 @@ class Resolver[Ctx](
         position: Option[AstLocation]): Resolve
   }
 
-  case class DeferredResult(deferred: Vector[Future[Vector[Defer]]], futureValue: Future[Result])(
-      implicit executionContext: ExecutionContext)
+  case class DeferredResult[F[_]: Effect](
+      deferred: Vector[F[Vector[Defer]]],
+      futureValue: F[Result])
       extends Resolve {
     def appendErrors(
         path: ExecutionPath,
         errors: Vector[Throwable],
-        position: Option[AstLocation]) =
+        position: Option[AstLocation]): DeferredResult[F] =
       if (errors.nonEmpty)
-        copy(futureValue = futureValue.map(_.appendErrors(path, errors, position)))
+        copy(futureValue = Effect[F]().map(futureValue)(_.appendErrors(path, errors, position)))
       else this
   }
 
@@ -1770,12 +1769,12 @@ class Resolver[Ctx](
       else this
   }
 
-  case class ParentDeferredContext(uc: Ctx, expectedBranches: Int) {
+  case class ParentDeferredContext[F[_]: Effect](uc: Ctx, expectedBranches: Int) {
     val children =
-      Vector.fill(expectedBranches)(ChildDeferredContext(Promise[Vector[Future[Vector[Defer]]]]()))
+      Vector.fill(expectedBranches)(ChildDeferredContext(Promise[Vector[F[Vector[Defer]]]]()))
 
-    def init()(implicit executionContext: ExecutionContext): Unit =
-      Future.sequence(children.map(_.promise.future)).onComplete { res =>
+    def init(): Unit =
+      Effect[F]().sequence(children.map(_.promise.future)).onComplete { res =>
         val allDeferred = res.get.flatten
 
         if (allDeferred.nonEmpty)
@@ -1784,13 +1783,13 @@ class Resolver[Ctx](
       }
   }
 
-  case class ChildDeferredContext(promise: Promise[Vector[Future[Vector[Defer]]]]) {
-    def resolveDeferredResult(uc: Ctx, res: DeferredResult): Future[Result] = {
+  case class ChildDeferredContext[F[_]: Effect](promise: Promise[Vector[F[Vector[Defer]]]]) {
+    def resolveDeferredResult(uc: Ctx, res: DeferredResult[F]): F[Result] = {
       promise.success(res.deferred)
       res.futureValue
     }
 
-    def resolveResult(res: Result): Future[Result] = {
+    def resolveResult(res: Result): F[Result] = {
       promise.success(Vector.empty)
       Future.successful(res)
     }
