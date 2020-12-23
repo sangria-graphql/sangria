@@ -1,7 +1,5 @@
 package sangria.execution
 
-import language.higherKinds
-
 import sangria.ast.AstLocation
 import sangria.ast
 import sangria.execution.deferred.{Deferred, DeferredResolver}

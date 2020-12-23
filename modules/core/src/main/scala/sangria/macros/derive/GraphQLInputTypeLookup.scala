@@ -3,8 +3,6 @@ package sangria.macros.derive
 import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.util.tag.@@
 
-import language.higherKinds
-
 import sangria.schema._
 
 import scala.annotation.implicitNotFound
