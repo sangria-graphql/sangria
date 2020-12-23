@@ -2,12 +2,6 @@ package sangria.schema
 
 import sangria.util.Pos
 import sangria.util.SimpleGraphQlSupport._
-import sangria.validation.{
-  ImplementationExtraFieldArgumentNotOptionalViolation,
-  InvalidImplementationFieldArgumentTypeViolation,
-  InvalidImplementationFieldTypeViolation,
-  MissingImplementationFieldArgumentViolation
-}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

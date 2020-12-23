@@ -2,7 +2,7 @@ package sangria.renderer
 
 import sangria.ast._
 import sangria.parser.{ParserConfig, QueryParser}
-import sangria.util.{DebugUtil, FileUtil, StringMatchers}
+import sangria.util.{FileUtil, StringMatchers}
 import sangria.ast
 import sangria.macros._
 import sangria.visitor.VisitorCommand

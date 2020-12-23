@@ -36,7 +36,7 @@ object DebugUtil {
             case ot: OperationType => "OperationType." + ot
             case aGenMap: GenMap[_, _] =>
               (if (indentMap) indent(level + 1) else "") + "Map(\n" +
-                aGenMap.toIterator
+                aGenMap.iterator
                   .map { case (key, value) =>
                     indent(level + 1) + loop(key, level) + " -> " + loop(
                       value,

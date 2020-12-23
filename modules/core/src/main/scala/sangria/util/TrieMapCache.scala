@@ -18,7 +18,7 @@ class TrieMapCache[Key, Value] extends Cache[Key, Value] {
   def getOrElseUpdate(key: Key, fn: => Value) = cache.getOrElseUpdate(key, fn)
   def find(fn: (Key, Value) => Boolean) = cache.find { case (key, value) => fn(key, value) }
   def mapToSet[R](fn: (Key, Value) => R) = cache.map { case (key, value) => fn(key, value) }.toSet
-  def mapValues[R](fn: Value => R) = cache.mapValues(fn).toMap
+  def mapValues[R](fn: Value => R) = cache.map { case (k, v) => (k, fn(v)) }.toMap
   def keyExists(fn: Key => Boolean) = cache.keySet.exists(fn)
   def forEachValue(fn: Value => Unit) = cache.values.foreach(fn)
   def removeKeys(fn: Key => Boolean) =

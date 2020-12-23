@@ -441,7 +441,7 @@ package object introspection {
     __Schema :: __TypeKind :: __DirectiveLocation :: __Type :: __Field :: __InputValue :: __EnumValue :: __Directive :: Nil
 
   val IntrospectionTypesByName: Map[String, Type with Named] =
-    IntrospectionTypes.groupBy(_.name).mapValues(_.head).toMap
+    IntrospectionTypes.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
   def introspectionQuery: ast.Document = introspectionQuery()
 

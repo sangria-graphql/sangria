@@ -7,7 +7,7 @@ import sangria.ast.Document
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.macros._
 import sangria.schema._
-import sangria.util.{Cache, DebugUtil, FutureResultSupport}
+import sangria.util.{Cache, FutureResultSupport}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}

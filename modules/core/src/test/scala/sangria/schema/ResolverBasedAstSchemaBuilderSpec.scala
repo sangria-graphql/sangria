@@ -51,7 +51,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
 
       case class CustomIntViolation(value: Int, min: Option[Int], max: Option[Int])
           extends BaseViolation(
-            s"Int value must be ${min.fold("")(_ + " <= ")}$value${max.fold("")(" <= " + _)}.")
+            s"Int value must be ${min.fold("")(_.toString + " <= ")}$value${max.fold("")(" <= " + _)}.")
 
       val MinArg = Argument("min", OptionInputType(IntType))
       val MaxArg = Argument("max", OptionInputType(IntType))
@@ -287,7 +287,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           c =>
             c.withArgs(ValueArg) { value =>
               c.lastValue match {
-                case Some(last) => last.map(_ + value)
+                case Some(last) => last.map(_.toString + value)
                 case None => value
               }
             }),
@@ -297,7 +297,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
             val finalValue = c.ctx.arg[String]("final")
 
             c.lastValue match {
-              case Some(last) => last.map(_ + finalValue)
+              case Some(last) => last.map(_.toString + finalValue)
               case None => finalValue
             }
           },
@@ -412,7 +412,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
             c.args.asJsObject.fields("value") match {
               case JsString(str) =>
                 c.lastValue match {
-                  case Some(last) => last.map(_ + str)
+                  case Some(last) => last.map(_.toString + str)
                   case None => str
                 }
               case _ => c.lastValue.getOrElse("")
@@ -424,7 +424,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
             val finalValue = c.ctx.arg[String]("final")
 
             c.lastValue match {
-              case Some(last) => last.map(_ + finalValue)
+              case Some(last) => last.map(_.toString + finalValue)
               case None => finalValue
             }
           },

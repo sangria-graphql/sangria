@@ -3,7 +3,7 @@ package sangria.introspection
 import sangria.execution.Executor
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 
 import scala.concurrent.ExecutionContext.Implicits.global

@@ -265,7 +265,7 @@ class DeprecationTrackerSpec
           }
         """)
 
-      val sb = StringBuilder.newBuilder
+      val sb = new StringBuilder()
       val tracker = new LoggingDeprecationTracker(sb.append(_))
 
       Executor.execute(schema, query, deprecationTracker = tracker).await
@@ -289,7 +289,7 @@ class DeprecationTrackerSpec
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
 
-      val sb = StringBuilder.newBuilder
+      val sb = new StringBuilder()
       val tracker = new LoggingDeprecationTracker(sb.append(_))
 
       Executor.execute(schema, query, deprecationTracker = tracker).await

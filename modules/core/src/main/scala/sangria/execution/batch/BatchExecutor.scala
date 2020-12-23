@@ -403,7 +403,8 @@ object BatchExecutor {
         case (f @ Failure(_), _) => f
       }
 
-    val exportedRelevant = exportedAll.filterKeys(operationNames.contains).toMap
+    val exportedRelevant: Map[String, ExportOperation] =
+      exportedAll.filter { case (k, _) => operationNames.contains(k) }.toMap
 
     collectResult
       .flatMap { _ =>
