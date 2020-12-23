@@ -139,7 +139,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
         operationNames = List("q1", "q2", "q3"),
         variables = vars)
 
-      res.compile.toVector.unsafeRunSync.toSet should be(
+      res.compile.toVector.unsafeRunSync().toSet should be(
         Set(
           """
           {
@@ -223,7 +223,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
         operationNames = List("q3", "q1", "q2"),
         middleware = BatchExecutor.OperationNameExtension :: Nil)
 
-      res.compile.toVector.unsafeRunSync.toSet should be(
+      res.compile.toVector.unsafeRunSync().toSet should be(
         Set(
           """
           {
@@ -360,7 +360,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
           .executeBatch(schema, query, operationNames = List("q1", "q2"))
           .compile
           .toVector
-          .unsafeRunSync,
+          .unsafeRunSync(),
         "Inferred variable '$ids' in operation 'q2' is used with two conflicting types: '[Int!]!' and 'Int!'." -> List(
           Pos(7, 24),
           Pos(8, 24)),
@@ -402,7 +402,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
           .executeBatch(schema, query, operationNames = List("q1", "q2", "q3"))
           .compile
           .toVector
-          .unsafeRunSync,
+          .unsafeRunSync(),
         "Operation 'q1' has a circular dependency at path 'q1($from3) -> q3($from2) -> q2($from1) -> q1'." -> List(
           Pos(2, 11)),
         "Operation 'q3' has a circular dependency at path 'q3($from2) -> q2($from1) -> q1($from3) -> q3'." -> List(

@@ -10,7 +10,7 @@ import sangria.schema._
 import sangria.macros._
 import sangria.macros.derive._
 import sangria.marshalling.ScalaInput.scalaInput
-import sangria.validation.{AstNodeViolation, ValueCoercionViolation}
+import sangria.validation.ValueCoercionViolation
 import sangria.util.SimpleGraphQlSupport._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -172,7 +172,7 @@ class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport
                 val id: UUID = inp("id").asInstanceOf[UUID]
                 val id1: UUID = inp("id1").asInstanceOf[UUID]
 
-                id + "/" + id1
+                s"${id.toString}/${id1.toString}"
               }
             )
           )

@@ -1,7 +1,5 @@
 package sangria.macros.derive
 
-import language.higherKinds
-
 import sangria.schema._
 
 import scala.annotation.implicitNotFound

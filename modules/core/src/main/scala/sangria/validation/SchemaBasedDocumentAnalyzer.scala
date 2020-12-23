@@ -1,6 +1,5 @@
 package sangria.validation
 
-import language.existentials
 import sangria.ast
 import sangria.ast.AstVisitor
 import sangria.visitor.VisitorCommand.{Continue, Skip}

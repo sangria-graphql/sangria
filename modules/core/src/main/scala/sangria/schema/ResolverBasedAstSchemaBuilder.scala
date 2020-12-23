@@ -1,6 +1,6 @@
 package sangria.schema
 
-import language.{existentials, postfixOps}
+import language.existentials
 import sangria.ast
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ToInput}
@@ -289,7 +289,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       mat: AstSchemaMaterializer[Ctx]) =
     buildInputTypeResolver(
       origin,
-      typeDefinition.right.toOption,
+      typeDefinition.toOption,
       typeDefinition.left.toOption,
       fieldDefinition,
       definition,
@@ -306,7 +306,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       mat: AstSchemaMaterializer[Ctx]) =
     buildInputTypeResolver(
       origin,
-      typeDefinition.right.toOption,
+      typeDefinition.toOption,
       typeDefinition.left.toOption,
       None,
       definition,

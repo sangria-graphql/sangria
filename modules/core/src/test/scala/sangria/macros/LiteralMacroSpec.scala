@@ -2,7 +2,6 @@ package sangria.macros
 
 import sangria.ast.AstLocation
 import sangria.ast._
-import sangria.util.DebugUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -38,7 +37,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
           }
         """
 
-      ast.sourceMapper should not be 'empty
+      ast.sourceMapper should not be Symbol("empty")
 
       AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
@@ -288,7 +287,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
           }
         """
 
-      ast.sourceMapper should not be 'empty
+      ast.sourceMapper should not be Symbol("empty")
 
       AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
@@ -760,7 +759,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
 
         """
 
-      ast.sourceMapper should not be 'empty
+      ast.sourceMapper should not be Symbol("empty")
 
       AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(

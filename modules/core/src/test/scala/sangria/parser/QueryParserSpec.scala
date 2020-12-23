@@ -4,7 +4,7 @@ import language.postfixOps
 import sangria.ast.AstLocation
 import sangria.ast
 import sangria.ast._
-import sangria.util.{DebugUtil, FileUtil, StringMatchers}
+import sangria.util.{FileUtil, StringMatchers}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}

@@ -887,8 +887,10 @@ case class EnumType[T](
     with UnmodifiedType
     with Named
     with HasAstInfo {
-  lazy val byName = values.groupBy(_.name).mapValues(_.head)
-  lazy val byValue = values.groupBy(_.value).mapValues(_.head)
+  lazy val byName: Map[String, EnumValue[T]] =
+    values.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
+  lazy val byValue: Map[T, EnumValue[T]] =
+    values.groupBy(_.value).map { case (k, v) => (k, v.head) }.toMap
 
   def coerceUserInput(value: Any): Either[Violation, (T, Boolean)] = value match {
     case valueName: String =>
@@ -942,7 +944,8 @@ case class InputObjectType[T](
     with Named
     with HasAstInfo {
   lazy val fields = fieldsFn()
-  lazy val fieldsByName = fields.groupBy(_.name).mapValues(_.head)
+  lazy val fieldsByName: Map[String, InputField[_]] =
+    fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
 
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
@@ -1329,12 +1332,13 @@ case class Schema[Ctx, Val](
   lazy val outputTypes = types.collect { case (name, (_, tpe: OutputType[_])) => name -> tpe }
   lazy val scalarTypes = types.collect { case (name, (_, tpe: ScalarType[_])) => name -> tpe }
   lazy val unionTypes: Map[String, UnionType[_]] =
-    types
+    types.iterator
       .filter(_._2._2.isInstanceOf[UnionType[_]])
-      .mapValues(_._2.asInstanceOf[UnionType[_]])
+      .map { case (k, v) => (k, v._2.asInstanceOf[UnionType[_]]) }
       .toMap
 
-  lazy val directivesByName = directives.groupBy(_.name).mapValues(_.head)
+  lazy val directivesByName: Map[String, Directive] =
+    directives.groupBy(_.name).mapValues(_.head).toMap
 
   def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
     case ast.NamedType(name, _) => inputTypes.get(name).map(OptionInputType(_))
@@ -1363,7 +1367,7 @@ case class Schema[Ctx, Val](
       .collect { case objectLike: ObjectLikeType[_, _] => objectLike }
       .flatMap(objectLike => objectLike.interfaces.map(_.name -> objectLike))
       .groupBy(_._1)
-      .mapValues(_.map(_._2))
+      .map { case (k, v) => (k, v.map(_._2)) }
       .toMap
 
   lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = {

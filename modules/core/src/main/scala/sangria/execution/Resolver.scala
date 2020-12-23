@@ -1,7 +1,5 @@
 package sangria.execution
 
-import language.{existentials, higherKinds}
-
 import sangria.ast.AstLocation
 import sangria.ast
 import sangria.execution.deferred.{Deferred, DeferredResolver}
@@ -1175,7 +1173,7 @@ class Resolver[Ctx](
           for (i <- toResolve.indices) {
             val toRes = toResolve(i)
 
-            toRes.promise.tryCompleteWith(
+            toRes.promise.completeWith(
               mapAllDeferred(toRes.deferred, resolved(i))
                 .map(v => (dctx.children(i), v._1, v._2))
                 .recover { case NonFatal(e) =>

@@ -331,8 +331,11 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
             ))
       }
 
-    def getArgument(pos: Position, methodName: String, argName: String) =
-      getMethod(pos, methodName).right.flatMap { method =>
+    def getArgument(
+        pos: Position,
+        methodName: String,
+        argName: String): Either[List[(c.universe.Position, String)], c.universe.Symbol] =
+      getMethod(pos, methodName).flatMap { method =>
         val knownArguments = method.paramLists.flatten
         knownArguments
           .find(_.name.decodedName.toString == argName)
@@ -345,7 +348,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
       }
 
     def validateHasArgument(pos: Position, methodName: String, argName: String) =
-      getArgument(pos, methodName, argName).right.map(_ => Nil).merge
+      getArgument(pos, methodName, argName).map(_ => Nil).merge
 
     config.toList.flatMap {
       case MacroIncludeFields(fields, pos) if !fields.forall(knownMembersSet.contains) =>

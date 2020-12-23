@@ -1,11 +1,10 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.execution.{MaterializedSchemaValidationError, WithViolations}
+import sangria.execution.WithViolations
 import sangria.validation._
 import sangria.macros._
 import sangria.macros.derive.{ObjectTypeName, deriveObjectType}
-import sangria.parser.QueryParser
 import sangria.util.Pos
 
 import scala.util.{Failure, Success, Try}

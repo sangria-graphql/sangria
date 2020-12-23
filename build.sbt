@@ -1,11 +1,20 @@
 import sbt.Developer
-import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOptions, scmInfo, startYear}
+import sbt.Keys.{
+  crossScalaVersions,
+  developers,
+  organizationHomepage,
+  scalacOptions,
+  scmInfo,
+  startYear
+}
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.4")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowPublishTargetBranches := List()
-ThisBuild / githubWorkflowBuildPreamble += WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
+ThisBuild / githubWorkflowBuildPreamble += WorkflowStep.Sbt(
+  List("scalafmtCheckAll"),
+  name = Some("Check formatting"))
 
 lazy val root = project
   .in(file("."))
@@ -28,19 +37,14 @@ lazy val core = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.2.1",
-
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.2",
-
       // Marshalling
       "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.4",
-
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.1",
-
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-
       // Testing
       "co.fs2" %% "fs2-core" % "2.5.0" % Test,
       "org.scalatest" %% "scalatest" % "3.2.3" % Test,
@@ -50,7 +54,6 @@ lazy val core = project
       "org.sangria-graphql" %% "sangria-ion" % "2.0.0" % Test,
       "org.sangria-graphql" %% "sangria-monix" % "2.0.0" % Test,
       "eu.timepit" %% "refined" % "0.9.19" % Test,
-
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
       "io.github.classgraph" % "classgraph" % "4.8.97" % Test
@@ -65,7 +68,7 @@ lazy val benchmarks = project
   .settings(scalacSettings ++ shellSettings ++ noPublishSettings)
   .settings(
     name := "sangria-benchmarks",
-    description := "Benchmarks of Sangria functionality",
+    description := "Benchmarks of Sangria functionality"
   )
 
 /* Commonly used functionality across the projects
@@ -74,21 +77,27 @@ lazy val benchmarks = project
 lazy val projectInfo = Seq(
   organization := "org.sangria-graphql",
   homepage := Some(url("http://sangria-graphql.org")),
-  licenses := Seq("Apache License, ASL Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  licenses := Seq(
+    "Apache License, ASL Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   startYear := Some(2015),
   organizationHomepage := Some(url("https://github.com/sangria-graphql")),
-  developers := Developer("OlegIlyenko", "Oleg Ilyenko", "", url("https://github.com/OlegIlyenko")) :: Nil,
-  scmInfo := Some(ScmInfo(
-    browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
-    connection = "scm:git:git@github.com:sangria-graphql/sangria.git"
-  ))
+  developers := Developer(
+    "OlegIlyenko",
+    "Oleg Ilyenko",
+    "",
+    url("https://github.com/OlegIlyenko")) :: Nil,
+  scmInfo := Some(
+    ScmInfo(
+      browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
+      connection = "scm:git:git@github.com:sangria-graphql/sangria.git"
+    ))
 )
 
 lazy val scalacSettings = Seq(
-  scalacOptions ++= Seq(
-    "-deprecation",
-    "-feature",
-    "-Xlint:-missing-interpolator,_"),
+  scalacOptions ++= Seq("-deprecation", "-feature", "-Xlint:-missing-interpolator,_"),
+  scalacOptions ++= {
+    if (scalaVersion.value.startsWith("2.12")) Seq("-language:higherKinds") else List.empty[String]
+  },
   scalacOptions += "-target:jvm-1.8",
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
@@ -109,9 +118,9 @@ lazy val publishSettings = Seq(
   pomIncludeRepository := (_ => false),
   publishTo := Some(
     if (isSnapshot.value)
-      "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+      "snapshots".at("https://oss.sonatype.org/content/repositories/snapshots")
     else
-      "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+      "releases".at("https://oss.sonatype.org/service/local/staging/deploy/maven2"))
 )
 
 lazy val noPublishSettings = Seq(

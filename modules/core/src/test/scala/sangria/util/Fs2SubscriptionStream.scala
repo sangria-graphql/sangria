@@ -4,7 +4,6 @@ import cats.effect.{ContextShift, IO}
 import fs2.Stream
 import sangria.streaming.SubscriptionStream
 import scala.concurrent.Future
-import scala.language.higherKinds
 
 object Fs2Support {
   type IOS[A] = Stream[IO, A]
@@ -23,7 +22,7 @@ object Fs2Support {
       source.evalMap(a => IO.fromFuture(IO(fn(a))))
 
     def first[T](s: IOS[T]) =
-      s.compile.toVector.map(_.head).unsafeToFuture
+      s.compile.toVector.map(_.head).unsafeToFuture()
 
     def failed[T](e: Throwable) = Stream.raiseError[IO](e)
 

@@ -3,7 +3,7 @@ package sangria.execution
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport, OutputMatchers, StringMatchers}
+import sangria.util.{FutureResultSupport, OutputMatchers, StringMatchers}
 import sangria.validation.{
   AstNodeLocation,
   BadValueViolation,

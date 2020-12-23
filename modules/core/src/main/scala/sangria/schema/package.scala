@@ -193,13 +193,13 @@ package object schema {
     BuiltinGraphQLScalars ++ BuiltinSangriaScalars
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinScalars.groupBy(_.name).mapValues(_.head).toMap
+    BuiltinScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
 
   val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinGraphQLScalars.groupBy(_.name).mapValues(_.head).toMap
+    BuiltinGraphQLScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
 
   val BuiltinSangriaScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinSangriaScalars.groupBy(_.name).mapValues(_.head).toMap
+    BuiltinSangriaScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
 
   val IfArg = Argument("if", BooleanType, "Included when true.")
 
@@ -255,7 +255,7 @@ package object schema {
   val BuiltinDirectives = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
 
   val BuiltinDirectivesByName: Map[String, Directive] =
-    BuiltinDirectives.groupBy(_.name).mapValues(_.head).toMap
+    BuiltinDirectives.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
 
   def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
 

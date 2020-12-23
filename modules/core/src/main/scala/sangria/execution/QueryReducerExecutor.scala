@@ -1,7 +1,6 @@
 package sangria.execution
 
 import sangria.ast
-import sangria.execution._
 import sangria.marshalling.{InputUnmarshaller, ScalaInput}
 import sangria.schema._
 import sangria.util.tag.@@
@@ -121,32 +120,34 @@ object QueryReducerExecutor {
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) =>
               // Using mutability here locally in order to reduce footprint
-              ff.fields.foldLeft(Array(initialValues: _*)) {
-                case (acc, CollectedField(_, _, Success(fields)))
-                    if objTpe.getField(schema, fields.head.name).nonEmpty =>
-                  val astField = fields.head
-                  val field = objTpe.getField(schema, astField.name).head
-                  val newPath = path.add(astField, objTpe)
-                  val childReduced = loop(newPath, field.fieldType, fields)
+              ff.fields
+                .foldLeft(Array(initialValues: _*)) {
+                  case (acc, CollectedField(_, _, Success(fields)))
+                      if objTpe.getField(schema, fields.head.name).nonEmpty =>
+                    val astField = fields.head
+                    val field = objTpe.getField(schema, astField.name).head
+                    val newPath = path.add(astField, objTpe)
+                    val childReduced = loop(newPath, field.fieldType, fields)
 
-                  for (i <- reducers.indices) {
-                    val reducer = reducers(i)
+                    for (i <- reducers.indices) {
+                      val reducer = reducers(i)
 
-                    acc(i) = reducer.reduceField[Any](
-                      acc(i).asInstanceOf[reducer.Acc],
-                      childReduced(i).asInstanceOf[reducer.Acc],
-                      newPath,
-                      userContext,
-                      fields,
-                      objTpe.asInstanceOf[ObjectType[Any, Any]],
-                      field.asInstanceOf[Field[Ctx, Any]],
-                      argumentValuesFn
-                    )
-                  }
+                      acc(i) = reducer.reduceField[Any](
+                        acc(i).asInstanceOf[reducer.Acc],
+                        childReduced(i).asInstanceOf[reducer.Acc],
+                        newPath,
+                        userContext,
+                        fields,
+                        objTpe.asInstanceOf[ObjectType[Any, Any]],
+                        field.asInstanceOf[Field[Ctx, Any]],
+                        argumentValuesFn
+                      )
+                    }
 
-                  acc
-                case (acc, _) => acc
-              }
+                    acc
+                  case (acc, _) => acc
+                }
+                .toIndexedSeq
             case Failure(_) => initialValues
           }
         case abst: AbstractType =>

@@ -2,7 +2,6 @@ package sangria.execution
 
 import sangria.streaming.SubscriptionStream
 
-import language.higherKinds
 import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait ExecutionScheme {

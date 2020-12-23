@@ -3,7 +3,7 @@ package sangria.parser
 import sangria.ast.AstLocation
 import sangria.ast
 import sangria.ast._
-import sangria.util.{DebugUtil, FileUtil, StringMatchers}
+import sangria.util.{FileUtil, StringMatchers}
 
 import scala.util.Success
 import org.scalatest.matchers.should.Matchers

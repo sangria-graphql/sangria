@@ -32,7 +32,8 @@ class AstSchemaMaterializer[Ctx] private (
   private lazy val allDefinitions =
     document.definitions ++ builder.additionalTypeExtensionDefs ++ builder.additionalDirectiveDefs
 
-  private lazy val additionalTypeDefsMap = builder.additionalTypes.groupBy(_.name).mapValues(_.head)
+  private lazy val additionalTypeDefsMap =
+    builder.additionalTypes.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
   private lazy val objectTypeExtensionDefs: Vector[ast.ObjectTypeExtensionDefinition] =
     allDefinitions.collect { case d: ast.ObjectTypeExtensionDefinition =>
@@ -911,7 +912,7 @@ object AstSchemaMaterializer {
         schemas.map { schema =>
           val allOperationTypes = schema.operationTypes ++ extensions.flatMap(_.operationTypes)
 
-          findOperationsTypes(allOperationTypes, document.sourceMapper, false, false, false).right
+          findOperationsTypes(allOperationTypes, document.sourceMapper, false, false, false)
             .map { case (query, mutation, subscription) =>
               SchemaInfo(query.get, mutation, subscription, Some(schema))
             }
@@ -939,7 +940,7 @@ object AstSchemaMaterializer {
             document.sourceMapper,
             true,
             mutation.isDefined,
-            subscription.isDefined).right.map { case (_, mutationExt, subscriptionExt) =>
+            subscription.isDefined).map { case (_, mutationExt, subscriptionExt) =>
             SchemaInfo(
               ast.NamedType(query.name),
               mutationExt.orElse(mutation),

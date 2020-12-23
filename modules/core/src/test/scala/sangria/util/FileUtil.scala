@@ -1,7 +1,5 @@
 package sangria.util
 
-import java.io.File
-
 import io.github.classgraph.ClassGraph
 import sangria.parser.QueryParser
 import sangria.parser.DeliveryScheme.Throw
@@ -21,12 +19,14 @@ object FileUtil extends StringMatchers {
 
   def loadScenarios(path: String, root: String = "scenarios") = this.synchronized {
     val yamlResources = new ClassGraph()
-      .whitelistPackages(root + "." + path)
+      .acceptPackages(root + "." + path)
       .scan()
       .getResourcesWithExtension("yaml")
       .asScala
       .groupBy(_.getPath)
-      .mapValues(_.head) // deduplicate (`ClassGraph` gives duplicates for some reason)
+      .map { case (k, v) =>
+        (k, v.head)
+      } // deduplicate (`ClassGraph` gives duplicates for some reason)
       .values
       .toVector
 

@@ -156,7 +156,7 @@ object CatsScenarioExecutor extends FutureResultSupport {
       ResolvePromiseString,
       c =>
         Future {
-          Thread.sleep((math.random * 50).toLong)
+          Thread.sleep((math.random() * 50).toLong)
           correctValue(c.ctx.field.fieldType, replacePlaceholders(c.arg(ValueArg), c.ctx.args))
         }
     ),
@@ -168,14 +168,14 @@ object CatsScenarioExecutor extends FutureResultSupport {
       ResolvePromiseTestData,
       c =>
         Future {
-          Thread.sleep((math.random * 50).toLong)
+          Thread.sleep((math.random() * 50).toLong)
           correctValue(c.ctx.field.fieldType, testData(c.arg(NameArg)))
         }),
     DirectiveResolver(
       ResolvePromise,
       c =>
         Future {
-          Thread.sleep((math.random * 50).toLong)
+          Thread.sleep((math.random() * 50).toLong)
           extractCorrectValue(
             c.ctx.field.fieldType,
             c.ctx.value.asInstanceOf[JsValue].get(c.fieldDefinition.name),
@@ -361,7 +361,7 @@ object CatsAssertions extends Matchers {
 
             withClue(
               s"Actual violations:${violations.map(v => "  * " + v.errorMessage).mkString("\n", "\n", "\n")}") {
-              v should not be 'empty
+              v should not be Symbol("empty")
             }
 
             v
@@ -374,7 +374,7 @@ object CatsAssertions extends Matchers {
 
             withClue(
               s"Actual violations:${violations.map(v => "  * " + v.errorMessage).mkString("\n", "\n", "\n")}") {
-              v should not be 'empty
+              v should not be Symbol("empty")
             }
             v
           }
@@ -386,7 +386,7 @@ object CatsAssertions extends Matchers {
       withClue(s"Can't find error code '$code'${if (args.nonEmpty)
         s" with args: ${args.map { case (k, v) => k + " = " + v }.mkString(", ")}"
       else ""}${if (locations.nonEmpty)
-        s" ${locations.map { case l => l.line + ":" + l.column }.mkString("(", ", ", ")")}"
+        s" ${locations.map(l => s"${l.line}:${l.column}").mkString("(", ", ", ")")}"
       else ""}.") {
         val v = violations
           .collect { case v: SpecViolation => v }
@@ -394,7 +394,7 @@ object CatsAssertions extends Matchers {
 
         withClue(
           s"Actual violations:\n${violations.map(v => "* " + s"[${v.getClass.getSimpleName}] " + v.errorMessage).mkString("\n", "\n", "\n")}") {
-          v should not be 'empty
+          v should not be Symbol("empty")
         }
       }
 
@@ -420,7 +420,7 @@ object CatsAssertions extends Matchers {
           val v = withClue(s"Can't find error message: $text") {
             val v = errors.find(_("message").stringValue.contains(text))
 
-            v should not be 'empty
+            v should not be Symbol("empty")
             v
           }
 
@@ -429,7 +429,7 @@ object CatsAssertions extends Matchers {
           val v = withClue(s"Can't find error pattern: $pattern") {
             val v = errors.find(v => pattern.matcher(v("message").stringValue).matches)
 
-            v should not be 'empty
+            v should not be Symbol("empty")
             v
           }
 
