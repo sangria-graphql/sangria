@@ -358,7 +358,8 @@ object BatchExecutor {
       scheme: ExecutionScheme
   )(implicit
       marshaller: ResultMarshaller,
-      um: InputUnmarshaller[Input]): scheme.Result[Ctx, marshaller.Node] = {
+      um: InputUnmarshaller[Input],
+      ec: ExecutionContext): scheme.Result[Ctx, marshaller.Node] = {
     implicit val s = scheme
 
     executor

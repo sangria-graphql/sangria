@@ -32,7 +32,7 @@ class Resolver[Ctx](
     validationTiming: TimeMeasurement,
     queryReducerTiming: TimeMeasurement,
     queryAst: ast.Document
-)(implicit executionContext: ExecutionContext) {
+) {
   val resultResolver = new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
   val toScalarMiddleware = Middleware.composeToScalarMiddleware(middleware.map(_._2), userContext)
 
@@ -40,7 +40,8 @@ class Resolver[Ctx](
   import Resolver._
 
   def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(
-      scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
+      scheme: ExecutionScheme)(implicit
+      executionContext: ExecutionContext): scheme.Result[Ctx, marshaller.Node] = {
     val actions =
       collectActionsPar(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, userContext)
 
@@ -52,14 +53,16 @@ class Resolver[Ctx](
   }
 
   def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(
-      scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
+      scheme: ExecutionScheme)(implicit
+      executionContext: ExecutionContext): scheme.Result[Ctx, marshaller.Node] = {
     val result = resolveSeq(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty)
 
     handleScheme(result.flatMap(res => processFinalResolve(res._1).map(_ -> res._2)), scheme)
   }
 
   def resolveFieldsSubs(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(
-      scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] =
+      scheme: ExecutionScheme)(implicit
+      executionContext: ExecutionContext): scheme.Result[Ctx, marshaller.Node] =
     scheme match {
       case ExecutionScheme.Default =>
         val (s, res) = resolveSubs[({ type X[Y] })#X](
@@ -122,7 +125,8 @@ class Resolver[Ctx](
 
   def handleScheme(
       result: Future[((Vector[RegisteredError], marshaller.Node), Ctx)],
-      scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = scheme match {
+      scheme: ExecutionScheme)(implicit
+      executionContext: ExecutionContext): scheme.Result[Ctx, marshaller.Node] = scheme match {
     case ExecutionScheme.Default =>
       result.map { case ((_, res), _) => res }.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
@@ -146,30 +150,32 @@ class Resolver[Ctx](
       throw new IllegalStateException(s"Unsupported execution scheme: $s")
   }
 
-  def processFinalResolve(resolve: Resolve) = resolve match {
-    case Result(errors, data, _) =>
-      Future.successful(
-        errors.originalErrors ->
-          marshalResult(
-            data.asInstanceOf[Option[resultResolver.marshaller.Node]],
-            marshalErrors(errors),
-            marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]
-          ).asInstanceOf[marshaller.Node])
-
-    case dr: DeferredResult =>
-      immediatelyResolveDeferred(
-        userContext,
-        dr,
-        _.map { case (Result(errors, data, _)) =>
+  def processFinalResolve(resolve: Resolve)(implicit
+      executionContext: ExecutionContext): Future[(Vector[RegisteredError], marshaller.Node)] =
+    resolve match {
+      case Result(errors, data, _) =>
+        Future.successful(
           errors.originalErrors ->
             marshalResult(
               data.asInstanceOf[Option[resultResolver.marshaller.Node]],
               marshalErrors(errors),
               marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]
-            ).asInstanceOf[marshaller.Node]
-        }
-      )
-  }
+            ).asInstanceOf[marshaller.Node])
+
+      case dr: DeferredResult =>
+        immediatelyResolveDeferred(
+          userContext,
+          dr,
+          _.map { case (Result(errors, data, _)) =>
+            errors.originalErrors ->
+              marshalResult(
+                data.asInstanceOf[Option[resultResolver.marshaller.Node]],
+                marshalErrors(errors),
+                marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]
+              ).asInstanceOf[marshaller.Node]
+          }
+        )
+    }
 
   private def marshallExtensions: Option[marshaller.Node] = {
     val extensions =
@@ -186,7 +192,7 @@ class Resolver[Ctx](
   private def immediatelyResolveDeferred[T](
       uc: Ctx,
       dr: DeferredResult,
-      fn: Future[Result] => Future[T]): Future[T] = {
+      fn: Future[Result] => Future[T])(implicit executionContext: ExecutionContext): Future[T] = {
     val res = fn(dr.futureValue)
 
     resolveDeferredWithGrouping(dr.deferred).foreach(groups =>
@@ -195,7 +201,8 @@ class Resolver[Ctx](
     res
   }
 
-  private def resolveDeferredWithGrouping(deferred: Vector[Future[Vector[Defer]]]) =
+  private def resolveDeferredWithGrouping(deferred: Vector[Future[Vector[Defer]]])(implicit
+      executionContext: ExecutionContext) =
     Future.sequence(deferred).map(listOfDef => deferredResolver.groupDeferred(listOfDef.flatten))
 
   private type Actions = (
@@ -210,7 +217,7 @@ class Resolver[Ctx](
       value: Any,
       fields: CollectedFields,
       errorReg: ErrorRegistry,
-      requestedStream: Option[SubscriptionStream[S]])
+      requestedStream: Option[SubscriptionStream[S]])(implicit executionContext: ExecutionContext)
       : (SubscriptionStream[S], S[(Vector[RegisteredError], marshaller.Node)]) = {
     val firstStream = tpe.uniqueFields.head.tags
       .collectFirst { case SubscriptionField(s) => s }
@@ -313,7 +320,7 @@ class Resolver[Ctx](
       tpe: ObjectType[Ctx, _],
       value: Any,
       fields: CollectedFields,
-      errorReg: ErrorRegistry): Future[(Result, Ctx)] =
+      errorReg: ErrorRegistry)(implicit executionContext: ExecutionContext): Future[(Result, Ctx)] =
     fields.fields
       .foldLeft(
         Future.successful(
@@ -372,7 +379,7 @@ class Resolver[Ctx](
       fields: Vector[ast.Field],
       accRes: Result,
       acc: Any // from `accRes`
-  ): Future[(Result, Ctx)] =
+  )(implicit executionContext: ExecutionContext): Future[(Result, Ctx)] =
     resolveField(uc, tpe, path.add(origField, tpe), value, errors, name, fields) match {
       case ErrorFieldResolution(updatedErrors) if isOptional(tpe, origField.name) =>
         Future.successful(
@@ -410,7 +417,7 @@ class Resolver[Ctx](
       accRes: Result,
       acc: Any, // from `accRes`
       resolution: StandardFieldResolution
-  ): Future[(Result, Ctx)] = {
+  )(implicit executionContext: ExecutionContext): Future[(Result, Ctx)] = {
     val StandardFieldResolution(updatedErrors, result, newUc) = resolution
     val sfield = tpe.getField(schema, origField.name).head
     val fieldPath = path.add(fields.head, tpe)
@@ -721,7 +728,8 @@ class Resolver[Ctx](
       fieldsPath: ExecutionPath,
       astFields: Vector[ast.Field],
       field: Field[Ctx, _],
-      actions: Seq[LeafAction[Any, Any]]): Seq[SeqRes] =
+      actions: Seq[LeafAction[Any, Any]])(implicit
+      executionContext: ExecutionContext): Seq[SeqRes] =
     actions.map {
       case Value(v) => SeqRes(SeqFutRes(v))
       case TryValue(Success(v)) => SeqRes(SeqFutRes(v))
@@ -777,7 +785,7 @@ class Resolver[Ctx](
       tpe: ObjectType[Ctx, _],
       actions: Actions,
       userCtx: Ctx,
-      fieldsNamesOrdered: Vector[String]): Resolve = {
+      fieldsNamesOrdered: Vector[String])(implicit executionContext: ExecutionContext): Resolve = {
     val (errors, res) = actions
 
     def resolveUc(newUc: Option[MappedCtxUpdate[Ctx, Any, Any]], v: Any) =
@@ -1143,7 +1151,8 @@ class Resolver[Ctx](
     }
   }
 
-  private def resolveDeferred(uc: Ctx, toResolve: Vector[Defer]) =
+  private def resolveDeferred(uc: Ctx, toResolve: Vector[Defer])(implicit
+      executionContext: ExecutionContext) =
     if (toResolve.nonEmpty) {
       def findActualDeferred(deferred: Deferred[_]): Deferred[_] = deferred match {
         case MappingDeferred(d, _) => findActualDeferred(d)
@@ -1199,7 +1208,8 @@ class Resolver[Ctx](
       field: Field[Ctx, _],
       value: Any,
       userCtx: Ctx,
-      actualType: Option[InputType[_]] = None): Resolve =
+      actualType: Option[InputType[_]] = None)(implicit
+      executionContext: ExecutionContext): Resolve =
     tpe match {
       case OptionType(optTpe) =>
         val actualValue = value match {
@@ -1694,7 +1704,8 @@ class Resolver[Ctx](
         position: Option[AstLocation]): Resolve
   }
 
-  case class DeferredResult(deferred: Vector[Future[Vector[Defer]]], futureValue: Future[Result])
+  case class DeferredResult(deferred: Vector[Future[Vector[Defer]]], futureValue: Future[Result])(
+      implicit executionContext: ExecutionContext)
       extends Resolve {
     def appendErrors(
         path: ExecutionPath,
@@ -1763,7 +1774,7 @@ class Resolver[Ctx](
     val children =
       Vector.fill(expectedBranches)(ChildDeferredContext(Promise[Vector[Future[Vector[Defer]]]]()))
 
-    def init(): Unit =
+    def init()(implicit executionContext: ExecutionContext): Unit =
       Future.sequence(children.map(_.promise.future)).onComplete { res =>
         val allDeferred = res.get.flatten
 

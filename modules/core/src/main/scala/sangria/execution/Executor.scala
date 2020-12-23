@@ -20,14 +20,16 @@ case class Executor[Ctx, Root](
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
     queryReducers: List[QueryReducer[Ctx, _]] = Nil
-)(implicit executionContext: ExecutionContext) {
+) {
   def prepare[Input](
       queryAst: ast.Document,
       userContext: Ctx,
       root: Root,
       operationName: Option[String] = None,
       variables: Input = emptyMapVars
-  )(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
+  )(implicit
+      um: InputUnmarshaller[Input],
+      ec: ExecutionContext): Future[PreparedQuery[Ctx, Root, Input]] = {
     val (violations, validationTiming) =
       TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
@@ -138,7 +140,8 @@ case class Executor[Ctx, Root](
   )(implicit
       marshaller: ResultMarshaller,
       um: InputUnmarshaller[Input],
-      scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
+      scheme: ExecutionScheme,
+      ec: ExecutionContext): scheme.Result[Ctx, marshaller.Node] = {
     val (violations, validationTiming) =
       TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
@@ -233,7 +236,7 @@ case class Executor[Ctx, Root](
       scheme: ExecutionScheme,
       validationTiming: TimeMeasurement,
       queryReducerTiming: TimeMeasurement
-  ): scheme.Result[Ctx, marshaller.Node] = {
+  )(implicit executionContext: ExecutionContext): scheme.Result[Ctx, marshaller.Node] = {
     val middlewareCtx = MiddlewareQueryContext(
       ctx,
       this,
