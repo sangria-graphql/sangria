@@ -40,7 +40,7 @@ lazy val core = project
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.2",
       // Marshalling
-      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.4",
+      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.5",
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.1",
       // Macros
