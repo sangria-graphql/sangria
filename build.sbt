@@ -42,7 +42,7 @@ lazy val core = project
       // Marshalling
       "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.4",
       // Streaming
-      "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.1",
+      "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.2",
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
