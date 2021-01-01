@@ -25,6 +25,7 @@ lazy val root = project
   .settings(
     scalacSettings ++ shellSettings ++ publishSettings ++ noPublishSettings
   )
+  .disablePlugins(MimaPlugin)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -71,6 +72,7 @@ lazy val benchmarks = project
     name := "sangria-benchmarks",
     description := "Benchmarks of Sangria functionality"
   )
+  .disablePlugins(MimaPlugin)
 
 /* Commonly used functionality across the projects
  */
