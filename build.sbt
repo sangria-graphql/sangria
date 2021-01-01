@@ -38,7 +38,7 @@ lazy val core = project
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.2.1",
       // AST Visitor
-      "org.sangria-graphql" %% "macro-visit" % "0.1.2",
+      "org.sangria-graphql" %% "macro-visit" % "0.1.3",
       // Marshalling
       "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.4",
       // Streaming
