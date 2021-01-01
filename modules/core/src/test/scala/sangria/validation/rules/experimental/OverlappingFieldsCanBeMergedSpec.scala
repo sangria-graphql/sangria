@@ -118,7 +118,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'fido' because 'name' and 'nickname' are different fields." → List(
+        "Conflict at 'fido' because 'name' and 'nickname' are different fields." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -149,7 +149,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'name' because 'nickname' and 'name' are different fields." → List(
+        "Conflict at 'name' because 'nickname' and 'name' are different fields." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -166,7 +166,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'doesKnowCommand' because of differing arguments." → List(
+        "Conflict at 'doesKnowCommand' because of differing arguments." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -183,7 +183,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'doesKnowCommand' because of differing arguments." → List(
+        "Conflict at 'doesKnowCommand' because of differing arguments." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -200,7 +200,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'doesKnowCommand' because of differing arguments." → List(
+        "Conflict at 'doesKnowCommand' because of differing arguments." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -234,7 +234,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'x' because 'a' and 'b' are different fields." → List(Pos(7, 11), Pos(10, 11))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(Pos(7, 11), Pos(10, 11))
       )
     )
 
@@ -290,7 +290,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'x' because 'a' and 'b' are different fields." → List(Pos(4, 13), Pos(7, 13))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(Pos(4, 13), Pos(7, 13))
       )
     )
 
@@ -456,69 +456,75 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
     "return types must be unambiguous" should {
       lazy val SomeBox: InterfaceType[Unit, Unit] = InterfaceType(
         "SomeBox",
-        () ⇒
+        () =>
           fields[Unit, Unit](
-            Field("deepBox", OptionType(SomeBox), resolve = _ ⇒ None),
-            Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None)
+            Field("deepBox", OptionType(SomeBox), resolve = _ => None),
+            Field("unrelatedField", OptionType(StringType), resolve = _ => None)
           ))
 
       lazy val StringBox: ObjectType[Unit, Unit] = ObjectType(
         "StringBox",
         interfaces[Unit, Unit](SomeBox),
-        () ⇒
+        () =>
           fields[Unit, Unit](
-            Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
-            Field("deepBox", OptionType(StringBox), resolve = _ ⇒ None),
-            Field("scalar", OptionType(StringType), resolve = _ ⇒ None),
-            Field("listStringBox", OptionType(ListType(OptionType(StringBox))), resolve = _ ⇒ None),
-            Field("stringBox", OptionType(StringBox), resolve = _ ⇒ None),
-            Field("intBox", OptionType(IntBox), resolve = _ ⇒ None)
+            Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+            Field("deepBox", OptionType(StringBox), resolve = _ => None),
+            Field("scalar", OptionType(StringType), resolve = _ => None),
+            Field(
+              "listStringBox",
+              OptionType(ListType(OptionType(StringBox))),
+              resolve = _ => None),
+            Field("stringBox", OptionType(StringBox), resolve = _ => None),
+            Field("intBox", OptionType(IntBox), resolve = _ => None)
           )
       )
 
       lazy val IntBox: ObjectType[Unit, Unit] = ObjectType(
         "IntBox",
         interfaces[Unit, Unit](SomeBox),
-        () ⇒
+        () =>
           fields[Unit, Unit](
-            Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
-            Field("deepBox", OptionType(IntBox), resolve = _ ⇒ None),
-            Field("scalar", OptionType(IntType), resolve = _ ⇒ None),
-            Field("listStringBox", OptionType(ListType(OptionType(StringBox))), resolve = _ ⇒ None),
-            Field("stringBox", OptionType(StringBox), resolve = _ ⇒ None),
-            Field("intBox", OptionType(IntBox), resolve = _ ⇒ None)
+            Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+            Field("deepBox", OptionType(IntBox), resolve = _ => None),
+            Field("scalar", OptionType(IntType), resolve = _ => None),
+            Field(
+              "listStringBox",
+              OptionType(ListType(OptionType(StringBox))),
+              resolve = _ => None),
+            Field("stringBox", OptionType(StringBox), resolve = _ => None),
+            Field("intBox", OptionType(IntBox), resolve = _ => None)
           )
       )
 
       val NonNullStringBox1 = InterfaceType(
         "NonNullStringBox1",
         fields[Unit, Unit](
-          Field("scalar", StringType, resolve = _ ⇒ "")
+          Field("scalar", StringType, resolve = _ => "")
         ))
 
       val NonNullStringBox1Impl = ObjectType(
         "NonNullStringBox1Impl",
         interfaces[Unit, Unit](SomeBox, NonNullStringBox1),
         fields[Unit, Unit](
-          Field("scalar", StringType, resolve = _ ⇒ ""),
-          Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
-          Field("deepBox", OptionType(SomeBox), resolve = _ ⇒ None)
+          Field("scalar", StringType, resolve = _ => ""),
+          Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+          Field("deepBox", OptionType(SomeBox), resolve = _ => None)
         )
       )
 
       val NonNullStringBox2 = InterfaceType(
         "NonNullStringBox2",
         fields[Unit, Unit](
-          Field("scalar", StringType, resolve = _ ⇒ "")
+          Field("scalar", StringType, resolve = _ => "")
         ))
 
       val NonNullStringBox2Impl = ObjectType(
         "NonNullStringBox2Impl",
         interfaces[Unit, Unit](SomeBox, NonNullStringBox2),
         fields[Unit, Unit](
-          Field("scalar", StringType, resolve = _ ⇒ ""),
-          Field("unrelatedField", OptionType(StringType), resolve = _ ⇒ None),
-          Field("deepBox", OptionType(SomeBox), resolve = _ ⇒ None)
+          Field("scalar", StringType, resolve = _ => ""),
+          Field("unrelatedField", OptionType(StringType), resolve = _ => None),
+          Field("deepBox", OptionType(SomeBox), resolve = _ => None)
         )
       )
 
@@ -539,16 +545,16 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
                           ObjectType(
                             "Node",
                             fields[Unit, Unit](
-                              Field("id", OptionType(IDType), resolve = _ ⇒ ""),
-                              Field("name", OptionType(StringType), resolve = _ ⇒ "")
+                              Field("id", OptionType(IDType), resolve = _ => ""),
+                              Field("name", OptionType(StringType), resolve = _ => "")
                             ))
                         ),
-                        resolve = _ ⇒ ()
+                        resolve = _ => ()
                       )
                     )
                   )
                 ))),
-            resolve = _ ⇒ Nil
+            resolve = _ => Nil
           )
         )
       )
@@ -557,8 +563,8 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         ObjectType(
           "QueryRoot",
           fields[Unit, Unit](
-            Field("someBox", OptionType(SomeBox), resolve = _ ⇒ ()),
-            Field("connection", OptionType(Connection), resolve = _ ⇒ ())
+            Field("someBox", OptionType(SomeBox), resolve = _ => ()),
+            Field("connection", OptionType(Connection), resolve = _ => ())
           )),
         additionalTypes =
           IntBox :: StringBox :: NonNullStringBox1 :: NonNullStringBox1Impl :: NonNullStringBox2 :: NonNullStringBox2Impl :: Nil
@@ -714,7 +720,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Conflict at 'scalar' because they return conflicting types 'Int' and 'String'." → List(
+          "Conflict at 'scalar' because they return conflicting types 'Int' and 'String'." -> List(
             Pos(5, 17),
             Pos(8, 17)))
       )
@@ -767,7 +773,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Conflict at 'scalar' because 'scalar' and 'unrelatedField' are different fields." → List(
+          "Conflict at 'scalar' because 'scalar' and 'unrelatedField' are different fields." -> List(
             Pos(39, 13),
             Pos(42, 13)))
       )
@@ -788,7 +794,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Conflict at 'scalar' because they return conflicting types 'String!' and 'String'." → List(
+          "Conflict at 'scalar' because they return conflicting types 'String!' and 'String'." -> List(
             Pos(5, 17),
             Pos(8, 17)))
       )
@@ -813,7 +819,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Conflict at 'box' because they return conflicting types '[StringBox]' and 'StringBox'." → List(
+          "Conflict at 'box' because they return conflicting types '[StringBox]' and 'StringBox'." -> List(
             Pos(5, 17),
             Pos(10, 17)))
       )
@@ -838,7 +844,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Conflict at 'box' because they return conflicting types 'StringBox' and '[StringBox]'." → List(
+          "Conflict at 'box' because they return conflicting types 'StringBox' and '[StringBox]'." -> List(
             Pos(5, 17),
             Pos(10, 17)))
       )
@@ -864,7 +870,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Conflict at 'val' because 'scalar' and 'unrelatedField' are different fields." → List(
+          "Conflict at 'val' because 'scalar' and 'unrelatedField' are different fields." -> List(
             Pos(6, 19),
             Pos(7, 19)))
       )
@@ -889,7 +895,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Conflict at 'scalar' because they return conflicting types 'String' and 'Int'." → List(
+          "Conflict at 'scalar' because they return conflicting types 'String' and 'Int'." -> List(
             Pos(6, 19),
             Pos(11, 19)))
       )
@@ -932,7 +938,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Conflict at 'fido' because 'name' and 'nickname' are different fields." → List(
+        "Conflict at 'fido' because 'name' and 'nickname' are different fields." -> List(
           Pos(4, 10),
           Pos(5, 10)))
     )

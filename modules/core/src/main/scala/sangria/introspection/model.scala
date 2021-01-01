@@ -22,7 +22,7 @@ case class IntrospectionSchema(
   def renderCompact: String = toAst.renderCompact
   def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
 
-  lazy val typesByName = types.groupBy(_.name).mapValues(_.head)
+  lazy val typesByName = types.groupBy(_.name).map { case (k, v) => (k, v.head) }
 }
 
 sealed trait IntrospectionType {
@@ -43,7 +43,7 @@ case class IntrospectionObjectType(
     interfaces: Seq[IntrospectionNamedTypeRef])
     extends IntrospectionType {
   val kind = TypeKind.Object
-  lazy val fieldsByName = fields.groupBy(_.name).mapValues(_.head)
+  lazy val fieldsByName = fields.groupBy(_.name).map { case (k, v) => (k, v.head) }
 }
 
 case class IntrospectionInputObjectType(
@@ -52,7 +52,7 @@ case class IntrospectionInputObjectType(
     inputFields: Seq[IntrospectionInputValue])
     extends IntrospectionType {
   val kind = TypeKind.InputObject
-  lazy val inputFieldsByName = inputFields.groupBy(_.name).mapValues(_.head)
+  lazy val inputFieldsByName = inputFields.groupBy(_.name).map { case (k, v) => (k, v.head) }
 }
 
 case class IntrospectionInterfaceType(
@@ -88,7 +88,7 @@ case class IntrospectionField(
     isDeprecated: Boolean,
     deprecationReason: Option[String]
 ) {
-  lazy val argsByName = args.groupBy(_.name).mapValues(_.head)
+  lazy val argsByName = args.groupBy(_.name).map { case (k, v) => (k, v.head) }
 }
 
 case class IntrospectionEnumValue(

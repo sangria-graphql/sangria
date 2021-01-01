@@ -1,7 +1,7 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.ast.{FieldDefinition, ObjectTypeDefinition, ObjectTypeExtensionDefinition}
+import sangria.ast.{ObjectTypeDefinition, ObjectTypeExtensionDefinition}
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.renderer.SchemaRenderer
 import sangria.util.SimpleGraphQlSupport.check
@@ -128,7 +128,7 @@ class SchemaExtensionSpec
           }
         """
 
-      val query = graphql"{ newField }"
+      val _ = graphql"{ newField }"
 
       SimpleGraphQlSupport.checkContainsErrors(
         schema = schema.extend(ast),

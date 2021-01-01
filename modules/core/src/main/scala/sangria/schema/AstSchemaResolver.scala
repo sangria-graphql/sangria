@@ -1,8 +1,6 @@
 package sangria.schema
 
-import language.existentials
 import sangria.ast
-import sangria.ast.{FieldDefinition, TypeSystemDefinition}
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType}
 import sangria.schema.AstSchemaBuilder.TypeName
 

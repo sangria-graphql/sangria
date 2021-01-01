@@ -1,7 +1,5 @@
 package sangria.schema
 
-import language.existentials
-
 import sangria.execution.ValueCoercionHelper
 import sangria.renderer.SchemaRenderer
 import sangria.ast

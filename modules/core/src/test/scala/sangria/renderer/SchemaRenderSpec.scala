@@ -5,7 +5,7 @@ import sangria.execution.Executor
 import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 import sangria.macros._
-import sangria.util.{DebugUtil, FutureResultSupport, StringMatchers}
+import sangria.util.{FutureResultSupport, StringMatchers}
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 

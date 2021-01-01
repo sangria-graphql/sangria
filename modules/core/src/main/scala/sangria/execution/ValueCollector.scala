@@ -122,7 +122,7 @@ object ValueCollector {
     if (argumentDefs.isEmpty)
       emptyArgs
     else {
-      val astArgMap = argumentAsts.groupBy(_.name).mapValues(_.head)
+      val astArgMap = argumentAsts.groupBy(_.name).map { case (k, v) => (k, v.head) }
       val marshaller = CoercedScalaResultMarshaller.default
       val errors = new VectorBuilder[Violation]
       val defaultInfo = Some(Cache.empty[String, Any])

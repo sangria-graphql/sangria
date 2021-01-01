@@ -224,7 +224,7 @@ class ArgsSpec extends AnyWordSpec with Matchers {
 
         fields(NonDefaultArgumentName) should be(JsNumber(1))
         fields(DefaultArgumentName) should be(JsNumber(2))
-        fields.get(OptionalArgumentName) should be('empty)
+        fields.get(OptionalArgumentName) should be(Symbol("empty"))
       }
     }
 
@@ -272,7 +272,7 @@ class ArgsSpec extends AnyWordSpec with Matchers {
 
         fields(NonDefaultArgumentName) should be(JsNumber(1))
         fields(DefaultArgumentName) should be(JsNumber(2))
-        fields.get(OptionalArgumentName) should be('empty)
+        fields.get(OptionalArgumentName) should be(Symbol("empty"))
       }
     }
   }

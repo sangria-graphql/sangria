@@ -84,8 +84,8 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           "masterVariant",
           VariantType,
           tags = ProjectionName("master1") :: ProjectionName("master2") :: Nil,
-          resolve = _.value.right.get.variants.head),
-        Field("variants", ListType(VariantType), resolve = _.value.right.get.variants.tail)
+          resolve = _.value.toOption.get.variants.head),
+        Field("variants", ListType(VariantType), resolve = _.value.toOption.get.variants.tail)
       )
     )
 

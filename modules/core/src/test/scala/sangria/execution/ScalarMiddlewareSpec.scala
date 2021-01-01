@@ -3,7 +3,7 @@ package sangria.execution
 import sangria.macros._
 import sangria.marshalling.ScalaInput
 import sangria.schema._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 import sangria.validation.{ValueCoercionViolation, Violation}
 
 import scala.concurrent.ExecutionContext.Implicits.global

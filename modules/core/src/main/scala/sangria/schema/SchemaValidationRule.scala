@@ -11,7 +11,6 @@ import sangria.ast.{
   UnionTypeExtensionDefinition
 }
 
-import language.higherKinds
 import sangria.execution._
 import sangria.introspection
 import sangria.marshalling.{CoercedScalaResultMarshaller, ToInput}

@@ -110,14 +110,12 @@ class CoercionSpec extends AnyWordSpec with Matchers {
           .isLeft should be(true)
 
         FloatType.coerceInput(FloatValue(12.34)) should be(Right(12.34d))
-        FloatType.coerceInput(FloatValue(Double.NaN)).right.exists(_.isNaN) should be(true)
+        FloatType.coerceInput(FloatValue(Double.NaN)).exists(_.isNaN) should be(true)
         FloatType
           .coerceInput(FloatValue(Double.PositiveInfinity))
-          .right
           .exists(_.isPosInfinity) should be(true)
         FloatType
           .coerceInput(FloatValue(Double.NegativeInfinity))
-          .right
           .exists(_.isNegInfinity) should be(true)
         FloatType.coerceInput(BigDecimalValue(BigDecimal(12.34))) should be(Right(12.34d))
         FloatType
@@ -262,11 +260,9 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         FloatType.coerceUserInput(BigInt("12323443874982374987329749823")).isLeft should be(true)
 
         FloatType.coerceUserInput(12.34) should be(Right(12.34d))
-        FloatType.coerceUserInput(Double.NaN).right.exists(_.isNaN) should be(true)
-        FloatType.coerceUserInput(Double.PositiveInfinity).right.exists(_.isPosInfinity) should be(
-          true)
-        FloatType.coerceUserInput(Double.NegativeInfinity).right.exists(_.isNegInfinity) should be(
-          true)
+        FloatType.coerceUserInput(Double.NaN).exists(_.isNaN) should be(true)
+        FloatType.coerceUserInput(Double.PositiveInfinity).exists(_.isPosInfinity) should be(true)
+        FloatType.coerceUserInput(Double.NegativeInfinity).exists(_.isNegInfinity) should be(true)
         FloatType.coerceUserInput(BigDecimal(12.34)) should be(Right(12.34d))
         FloatType
           .coerceUserInput(BigDecimal("367476315476516457632.473854635267452376546732"))

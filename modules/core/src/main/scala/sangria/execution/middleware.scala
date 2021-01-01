@@ -1,6 +1,6 @@
 package sangria.execution
 
-import language.{existentials, higherKinds, implicitConversions}
+import language.{higherKinds, implicitConversions}
 import sangria.marshalling.InputUnmarshaller
 
 import sangria.ast

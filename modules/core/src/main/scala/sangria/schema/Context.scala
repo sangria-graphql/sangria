@@ -1,6 +1,6 @@
 package sangria.schema
 
-import language.{existentials, higherKinds, implicitConversions}
+import language.{higherKinds, implicitConversions}
 import sangria.execution._
 import sangria.marshalling._
 import sangria.parser.SourceMapper
@@ -110,8 +110,7 @@ case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx,
       ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, (v: Val) => (fn(v), Vector.empty)))
 
-  def mapWithErrors[NewVal](fn: Val => (NewVal, Vector[Throwable]))(implicit
-      ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
+  def mapWithErrors[NewVal](fn: Val => (NewVal, Vector[Throwable])): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, fn))
 }
 

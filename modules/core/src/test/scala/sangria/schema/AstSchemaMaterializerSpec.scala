@@ -1,16 +1,11 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.ast.{
-  FieldDefinition,
-  ObjectTypeDefinition,
-  ObjectTypeExtensionDefinition,
-  TypeDefinition
-}
+import sangria.ast.ObjectTypeDefinition
 import sangria.execution.{Executor, MaterializedSchemaValidationError}
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
-import sangria.util.{DebugUtil, FutureResultSupport, Pos, StringMatchers}
+import sangria.util.{FutureResultSupport, Pos, StringMatchers}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.macros._
 import sangria.macros.derive._

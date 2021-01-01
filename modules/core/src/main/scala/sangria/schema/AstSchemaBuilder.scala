@@ -1,7 +1,5 @@
 package sangria.schema
 
-import language.existentials
-
 import sangria.ast
 import sangria.execution.FieldTag
 import sangria.marshalling.{FromInput, MarshallerCapability, ScalarValueInfo, ToInput}

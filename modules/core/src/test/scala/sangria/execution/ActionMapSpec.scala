@@ -3,7 +3,7 @@ package sangria.execution
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.{DebugUtil, FutureResultSupport}
+import sangria.util.FutureResultSupport
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
