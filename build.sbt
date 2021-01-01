@@ -12,9 +12,10 @@ import sbt.Keys.{
 ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.4")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowPublishTargetBranches := List()
-ThisBuild / githubWorkflowBuildPreamble += WorkflowStep.Sbt(
-  List("scalafmtCheckAll"),
-  name = Some("Check formatting"))
+ThisBuild / githubWorkflowBuildPreamble ++= List(
+  WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
+  WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
+)
 
 lazy val root = project
   .in(file("."))
@@ -24,6 +25,7 @@ lazy val root = project
   .settings(
     scalacSettings ++ shellSettings ++ publishSettings ++ noPublishSettings
   )
+  .disablePlugins(MimaPlugin)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -32,7 +34,7 @@ lazy val core = project
   .settings(
     name := "sangria",
     description := "Scala GraphQL implementation",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "1.4.2"),
+    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.0"),
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Parser
@@ -70,6 +72,7 @@ lazy val benchmarks = project
     name := "sangria-benchmarks",
     description := "Benchmarks of Sangria functionality"
   )
+  .disablePlugins(MimaPlugin)
 
 /* Commonly used functionality across the projects
  */
