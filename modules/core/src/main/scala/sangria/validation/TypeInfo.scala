@@ -129,14 +129,12 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         defaultValueStack.push(defaultValue)
         inputTypeStack.push(fieldType)
       case ast.EnumValue(name, _, _) =>
-        enumValue = inputType match {
-          case Some(it) =>
-            it.namedType match {
-              case enum: EnumType[_] => enum.byName.get(name)
-              case _ => None
-            }
-          case None => None
-        }
+        enumValue = inputType
+          .map(_.namedType)
+          .collect { case enum: EnumType[_] =>
+            enum.byName.get(name)
+          }
+          .flatten
       case _ => // ignore
     }
   }
