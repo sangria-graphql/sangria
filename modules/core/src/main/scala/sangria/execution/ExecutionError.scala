@@ -46,10 +46,10 @@ abstract class InternalExecutionError(message: String)
   override def getMessage() = super.getMessage + astLocation
 }
 
-case class UndefinedConcreteTypeError(
+case class UndefinedConcreteTypeError[F[_]](
     path: ExecutionPath,
     abstractType: AbstractType,
-    possibleTypes: Vector[ObjectType[_, _]],
+    possibleTypes: Vector[ObjectType[_, _, F]],
     value: Any,
     exceptionHandler: ExceptionHandler,
     sourceMapper: Option[SourceMapper] = None,
@@ -62,11 +62,11 @@ case class UndefinedConcreteTypeError(
 
 object UndefinedConcreteTypeError {
   private def renderAbstractType(abstractType: AbstractType) = abstractType match {
-    case _: UnionType[_] => "a union"
-    case _: InterfaceType[_, _] => "an interface"
+    case _: UnionType[_, _] => "a union"
+    case _: InterfaceType[_, _, _] => "an interface"
   }
 
-  private def renderPossibleTypes(possibleTypes: Vector[ObjectType[_, _]]) =
+  private def renderPossibleTypes[F[_]](possibleTypes: Vector[ObjectType[_, _, F]]) =
     if (possibleTypes.isEmpty) "none"
     else
       possibleTypes.map(pt => s"${pt.name} (defined for '${pt.valClass.getName}')").mkString(", ")

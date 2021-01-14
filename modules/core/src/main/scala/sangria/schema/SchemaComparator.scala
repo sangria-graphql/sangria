@@ -6,10 +6,10 @@ import sangria.ast
 import sangria.ast.AstNode
 
 object SchemaComparator {
-  def compare(oldSchema: Schema[_, _], newSchema: Schema[_, _]): Vector[SchemaChange] =
+  def compare[F[_]](oldSchema: Schema[_, _, F], newSchema: Schema[_, _, F]): Vector[SchemaChange] =
     findChanges(oldSchema, newSchema)
 
-  private def findChanges(oldSchema: Schema[_, _], newSchema: Schema[_, _]) = {
+  private def findChanges[F[_]](oldSchema: Schema[_, _, F], newSchema: Schema[_, _, F]) = {
     val oldTypes = oldSchema.availableTypeNames.toSet
     val newTypes = newSchema.availableTypeNames.toSet
 
@@ -36,7 +36,7 @@ object SchemaComparator {
       findInDirectives(oldSchema, newSchema)
   }
 
-  private def findInDirectives(oldSchema: Schema[_, _], newSchema: Schema[_, _]) = {
+  private def findInDirectives[F[_]](oldSchema: Schema[_, _, F], newSchema: Schema[_, _, F]) = {
     val oldDirs = oldSchema.directives.map(_.name).toSet
     val newDirs = newSchema.directives.map(_.name).toSet
 
@@ -96,9 +96,9 @@ object SchemaComparator {
     removed ++ added
   }
 
-  def findChangesInSchema(
-      oldSchema: Schema[_, _],
-      newSchema: Schema[_, _]): Vector[SchemaChange] = {
+  def findChangesInSchema[F[_]](
+      oldSchema: Schema[_, _, F],
+      newSchema: Schema[_, _, F]): Vector[SchemaChange] = {
     val withQuery =
       if (oldSchema.query.name != newSchema.query.name)
         Vector(SchemaChange.SchemaQueryTypeChanged(oldSchema.query, newSchema.query))
@@ -137,11 +137,11 @@ object SchemaComparator {
       newType: Type with Named): Vector[SchemaChange] = {
     val typeChanges = (oldType, newType) match {
       case (o: EnumType[_], n: EnumType[_]) => findInEnumTypes(o, n)
-      case (o: UnionType[_], n: UnionType[_]) => findInUnionTypes(o, n)
+      case (o: UnionType[_, _], n: UnionType[_, _]) => findInUnionTypes(o, n)
       case (o: ScalarType[_], n: ScalarType[_]) => findInScalarTypes(o, n)
       case (o: InputObjectType[_], n: InputObjectType[_]) => findInInputObjectTypes(o, n)
-      case (o: ObjectType[_, _], n: ObjectType[_, _]) => findInObjectTypes(o, n)
-      case (o: InterfaceType[_, _], n: InterfaceType[_, _]) => findInInterfaceTypes(o, n)
+      case (o: ObjectType[_, _, _], n: ObjectType[_, _, _]) => findInObjectTypes(o, n)
+      case (o: InterfaceType[_, _, _], n: InterfaceType[_, _, _]) => findInInterfaceTypes(o, n)
       case _ => Vector.empty
     }
 
@@ -151,9 +151,9 @@ object SchemaComparator {
       SchemaChange.TypeDescriptionChanged(newType, _, _))
   }
 
-  private def findInUnionTypes(
-      oldType: UnionType[_],
-      newType: UnionType[_]): Vector[SchemaChange] = {
+  private def findInUnionTypes[F[_]](
+      oldType: UnionType[_, F],
+      newType: UnionType[_, F]): Vector[SchemaChange] = {
     val oldTypes = oldType.types.map(_.name).toSet
     val newTypes = newType.types.map(_.name).toSet
 
@@ -271,9 +271,9 @@ object SchemaComparator {
     removed ++ added ++ changed ++ directiveChanges
   }
 
-  private def findInObjectTypes(
-      oldType: ObjectType[_, _],
-      newType: ObjectType[_, _]): Vector[SchemaChange] = {
+  private def findInObjectTypes[F[_]](
+      oldType: ObjectType[_, _, F],
+      newType: ObjectType[_, _, F]): Vector[SchemaChange] = {
     val interfaceChanges = findInObjectTypeInterfaces(oldType, newType)
     val fieldChanges = findInObjectTypeFields(oldType, newType)
     val directiveChanges = findInAstDirs(
@@ -286,9 +286,9 @@ object SchemaComparator {
     interfaceChanges ++ fieldChanges ++ directiveChanges
   }
 
-  private def findInInterfaceTypes(
-      oldType: InterfaceType[_, _],
-      newType: InterfaceType[_, _]): Vector[SchemaChange] =
+  private def findInInterfaceTypes[F[_]](
+      oldType: InterfaceType[_, _, F],
+      newType: InterfaceType[_, _, F]): Vector[SchemaChange] =
     findInObjectTypeFields(oldType, newType) ++
       findInAstDirs(
         oldType.astDirectives,
@@ -297,9 +297,9 @@ object SchemaComparator {
         removed = SchemaChange.InterfaceTypeAstDirectiveRemoved(newType, _)
       )
 
-  private def findInObjectTypeInterfaces(
-      oldType: ObjectType[_, _],
-      newType: ObjectType[_, _]): Vector[SchemaChange] = {
+  private def findInObjectTypeInterfaces[F[_]](
+      oldType: ObjectType[_, _, F],
+      newType: ObjectType[_, _, F]): Vector[SchemaChange] = {
     val oldInts = oldType.allInterfaces.map(_.name).toSet
     val newInts = newType.allInterfaces.map(_.name).toSet
 
@@ -319,9 +319,9 @@ object SchemaComparator {
     removed ++ added
   }
 
-  private def findInObjectTypeFields(
-      oldType: ObjectLikeType[_, _],
-      newType: ObjectLikeType[_, _]): Vector[SchemaChange] = {
+  private def findInObjectTypeFields[F[_]](
+      oldType: ObjectLikeType[_, _, F],
+      newType: ObjectLikeType[_, _, F]): Vector[SchemaChange] = {
     val oldFields = oldType.fields.map(_.name).toSet
     val newFields = newType.fields.map(_.name).toSet
 
@@ -353,11 +353,11 @@ object SchemaComparator {
     removed ++ added ++ changed
   }
 
-  private def findInFields(
-      oldType: ObjectLikeType[_, _],
-      newType: ObjectLikeType[_, _],
-      oldField: Field[_, _],
-      newField: Field[_, _]): Vector[SchemaChange] = {
+  private def findInFields[F[_]](
+      oldType: ObjectLikeType[_, _, F],
+      newType: ObjectLikeType[_, _, F],
+      oldField: Field[_, _, F],
+      newField: Field[_, _, F]): Vector[SchemaChange] = {
     val oldFieldType = SchemaRenderer.renderTypeName(oldField.fieldType)
     val newFieldType = SchemaRenderer.renderTypeName(newField.fieldType)
 
@@ -552,7 +552,7 @@ object SchemaComparator {
     case tpe => tpe
   }
 
-  private def nonContainer(field: Field[_, _]) = field.fieldType match {
+  private def nonContainer[F[_]](field: Field[_, _, F]) = field.fieldType match {
     case OptionType(ofType) => ofType
     case tpe => tpe
   }
@@ -633,7 +633,7 @@ object SchemaChange {
         true)
       with TypeChange
 
-  case class UnionMemberRemoved(tpe: UnionType[_], member: ObjectType[_, _])
+  case class UnionMemberRemoved[F[_]](tpe: UnionType[_, F], member: ObjectType[_, _, F])
       extends AbstractChange(s"`${member.name}` type was removed from union `${tpe.name}`", true)
       with TypeChange
 
@@ -643,9 +643,9 @@ object SchemaChange {
         true)
       with TypeChange
 
-  case class ObjectTypeArgumentRemoved(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class ObjectTypeArgumentRemoved[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       argument: Argument[_])
       extends AbstractChange(
         s"Argument `${argument.name}` was removed from `${tpe.name}.${field.name}` field",
@@ -657,12 +657,14 @@ object SchemaChange {
         s"Argument `${argument.name}` was removed from `${directive.name}` directive",
         true)
 
-  case class SchemaQueryTypeChanged(oldType: ObjectType[_, _], newType: ObjectType[_, _])
+  case class SchemaQueryTypeChanged[F[_]](
+      oldType: ObjectType[_, _, F],
+      newType: ObjectType[_, _, F])
       extends AbstractChange(
         s"Schema query type changed from `${oldType.name}` to `${newType.name}` type",
         true)
 
-  case class FieldRemoved(tpe: ObjectLikeType[_, _], field: Field[_, _])
+  case class FieldRemoved[F[_]](tpe: ObjectLikeType[_, _, F], field: Field[_, _, F])
       extends AbstractChange(s"Field `${field.name}` was removed from `${tpe.name}` type", true)
       with TypeChange
 
@@ -671,7 +673,9 @@ object SchemaChange {
         s"`$location` directive location removed from `${directive.name}` directive",
         true)
 
-  case class ObjectTypeInterfaceRemoved(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
+  case class ObjectTypeInterfaceRemoved[F[_]](
+      tpe: ObjectType[_, _, F],
+      interface: InterfaceType[_, _, F])
       extends AbstractChange(
         s"`${tpe.name}` object type no longer implements `${interface.name}` interface",
         true)
@@ -726,7 +730,7 @@ object SchemaChange {
         false)
       with DeprecationChange
 
-  case class UnionMemberAdded(tpe: UnionType[_], member: ObjectType[_, _])
+  case class UnionMemberAdded[F[_]](tpe: UnionType[_, F], member: ObjectType[_, _, F])
       extends AbstractChange(s"`${member.name}` type was added to union `${tpe.name}`", false, true)
       with TypeChange
 
@@ -745,18 +749,18 @@ object SchemaChange {
       newDescription: Option[String])
       extends AbstractChange(s"`${directive.name}` directive description is changed", false)
 
-  case class FieldDescriptionChanged(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class FieldDescriptionChanged[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       oldDescription: Option[String],
       newDescription: Option[String])
       extends AbstractChange(s"`${tpe.name}.${field.name}` description is changed", false)
       with DescriptionChange
       with TypeChange
 
-  case class ObjectTypeArgumentDescriptionChanged(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class ObjectTypeArgumentDescriptionChanged[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       argument: Argument[_],
       oldDescription: Option[String],
       newDescription: Option[String])
@@ -774,9 +778,9 @@ object SchemaChange {
       extends AbstractChange(s"`${directive.name}(${argument.name})` description is changed", false)
       with DescriptionChange
 
-  case class FieldDeprecationChanged(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class FieldDeprecationChanged[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       oldDeprecationReason: Option[String],
       newDeprecationReason: Option[String])
       extends AbstractChange(s"Field `${field.name}` was deprecated in `${tpe.name}` type", false)
@@ -793,9 +797,9 @@ object SchemaChange {
         false)
       with TypeChange
 
-  case class ObjectTypeArgumentDefaultChanged(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class ObjectTypeArgumentDefaultChanged[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       argument: Argument[_],
       oldDefault: Option[ast.Value],
       newDefault: Option[ast.Value])
@@ -818,14 +822,16 @@ object SchemaChange {
         false,
         true)
 
-  case class ObjectTypeInterfaceAdded(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
+  case class ObjectTypeInterfaceAdded[F[_]](
+      tpe: ObjectType[_, _, F],
+      interface: InterfaceType[_, _, F])
       extends AbstractChange(
         s"`${tpe.name}` object type now implements `${interface.name}` interface",
         false,
         true)
       with TypeChange
 
-  case class FieldAdded(tpe: ObjectLikeType[_, _], field: Field[_, _])
+  case class FieldAdded[F[_]](tpe: ObjectLikeType[_, _, F], field: Field[_, _, F])
       extends AbstractChange(s"Field `${field.name}` was added to `${tpe.name}` type", false)
       with TypeChange
 
@@ -860,17 +866,17 @@ object SchemaChange {
     val dangerousChange = false
   }
 
-  case class FieldAstDirectiveAdded(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class FieldAstDirectiveAdded[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
         s"Directive `${directive.renderCompact}` added on a field `${tpe.name}.${field.name}`",
         DirectiveLocation.FieldDefinition)
 
-  case class FieldAstDirectiveRemoved(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class FieldAstDirectiveRemoved[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
         s"Directive `${directive.renderCompact}` removed from a field `${tpe.name}.${field.name}`",
@@ -924,50 +930,54 @@ object SchemaChange {
         s"Directive `${directive.renderCompact}` removed from a directive argument `${dir.name}.${argument.name}`",
         DirectiveLocation.ArgumentDefinition)
 
-  case class FieldArgumentAstDirectiveAdded(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class FieldArgumentAstDirectiveAdded[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
         s"Directive `${directive.renderCompact}` added on a field argument `${tpe.name}.${field.name}[${argument.name}]`",
         DirectiveLocation.ArgumentDefinition)
 
-  case class FieldArgumentAstDirectiveRemoved(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class FieldArgumentAstDirectiveRemoved[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
         s"Directive `${directive.renderCompact}` removed from a field argument `${tpe.name}.${field.name}[${argument.name}]`",
         DirectiveLocation.ArgumentDefinition)
 
-  case class ObjectTypeAstDirectiveAdded(tpe: ObjectType[_, _], directive: ast.Directive)
+  case class ObjectTypeAstDirectiveAdded[F[_]](tpe: ObjectType[_, _, F], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
         s"Directive `${directive.renderCompact}` added on an object type `${tpe.name}`",
         DirectiveLocation.Object)
 
-  case class ObjectTypeAstDirectiveRemoved(tpe: ObjectType[_, _], directive: ast.Directive)
+  case class ObjectTypeAstDirectiveRemoved[F[_]](tpe: ObjectType[_, _, F], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
         s"Directive `${directive.renderCompact}` removed from an object type `${tpe.name}`",
         DirectiveLocation.Object)
 
-  case class InterfaceTypeAstDirectiveAdded(tpe: InterfaceType[_, _], directive: ast.Directive)
+  case class InterfaceTypeAstDirectiveAdded[F[_]](
+      tpe: InterfaceType[_, _, F],
+      directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
         s"Directive `${directive.renderCompact}` added on an interface type `${tpe.name}`",
         DirectiveLocation.Interface)
 
-  case class InterfaceTypeAstDirectiveRemoved(tpe: InterfaceType[_, _], directive: ast.Directive)
+  case class InterfaceTypeAstDirectiveRemoved[F[_]](
+      tpe: InterfaceType[_, _, F],
+      directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
         s"Directive `${directive.renderCompact}` removed from an interface type `${tpe.name}`",
         DirectiveLocation.Interface)
 
-  case class UnionTypeAstDirectiveAdded(tpe: UnionType[_], directive: ast.Directive)
+  case class UnionTypeAstDirectiveAdded[F[_]](tpe: UnionType[_, F], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
         s"Directive `${directive.renderCompact}` added on a union type `${tpe.name}`",
         DirectiveLocation.Union)
 
-  case class UnionTypeAstDirectiveRemoved(tpe: UnionType[_], directive: ast.Directive)
+  case class UnionTypeAstDirectiveRemoved[F[_]](tpe: UnionType[_, F], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
         s"Directive `${directive.renderCompact}` removed from a union type `${tpe.name}`",
         DirectiveLocation.Union)
@@ -1002,12 +1012,12 @@ object SchemaChange {
         s"Directive `${directive.renderCompact}` removed from an input type `${tpe.name}`",
         DirectiveLocation.InputObject)
 
-  case class SchemaAstDirectiveAdded(schema: Schema[_, _], directive: ast.Directive)
+  case class SchemaAstDirectiveAdded[F[_]](schema: Schema[_, _, F], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
         s"Directive `${directive.renderCompact}` added on a schema",
         DirectiveLocation.Schema)
 
-  case class SchemaAstDirectiveRemoved(schema: Schema[_, _], directive: ast.Directive)
+  case class SchemaAstDirectiveRemoved[F[_]](schema: Schema[_, _, F], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
         s"Directive `${directive.renderCompact}` removed from a schema",
         DirectiveLocation.Schema)
@@ -1020,9 +1030,9 @@ object SchemaChange {
         breaking)
       with TypeChange
 
-  case class ObjectTypeArgumentAdded(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class ObjectTypeArgumentAdded[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       argument: Argument[_],
       breaking: Boolean)
       extends AbstractChange(
@@ -1047,9 +1057,9 @@ object SchemaChange {
         breaking)
       with TypeChange
 
-  case class ObjectTypeArgumentTypeChanged(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class ObjectTypeArgumentTypeChanged[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       argument: Argument[_],
       breaking: Boolean,
       oldFieldType: InputType[_],
@@ -1071,9 +1081,9 @@ object SchemaChange {
           oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
         breaking)
 
-  case class FieldTypeChanged(
-      tpe: ObjectLikeType[_, _],
-      field: Field[_, _],
+  case class FieldTypeChanged[F[_]](
+      tpe: ObjectLikeType[_, _, F],
+      field: Field[_, _, F],
       breaking: Boolean,
       oldFieldType: OutputType[_],
       newFieldType: OutputType[_])
@@ -1083,17 +1093,17 @@ object SchemaChange {
         breaking)
       with TypeChange
 
-  case class SchemaMutationTypeChanged(
-      oldType: Option[ObjectType[_, _]],
-      newType: Option[ObjectType[_, _]])
+  case class SchemaMutationTypeChanged[F[_]](
+      oldType: Option[ObjectType[_, _, F]],
+      newType: Option[ObjectType[_, _, F]])
       extends AbstractChange(
         s"Schema mutation type changed from ${oldType.fold("none")(t =>
           "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
         oldType.nonEmpty)
 
-  case class SchemaSubscriptionTypeChanged(
-      oldType: Option[ObjectType[_, _]],
-      newType: Option[ObjectType[_, _]])
+  case class SchemaSubscriptionTypeChanged[F[_]](
+      oldType: Option[ObjectType[_, _, F]],
+      newType: Option[ObjectType[_, _, F]])
       extends AbstractChange(
         s"Schema subscription type changed from ${oldType.fold("none")(t =>
           "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
@@ -1102,11 +1112,11 @@ object SchemaChange {
   private val AnArticleLetters = Set('a', 'e', 'i', 'o')
 
   private def kind(tpe: Type) = tpe match {
-    case _: ObjectType[_, _] => "Object"
-    case _: InterfaceType[_, _] => "Interface"
+    case _: ObjectType[_, _, _] => "Object"
+    case _: InterfaceType[_, _, _] => "Interface"
     case _: ScalarType[_] => "Scalar"
     case _: ScalarAlias[_, _] => "Scalar"
-    case _: UnionType[_] => "Union"
+    case _: UnionType[_, _] => "Union"
     case _: EnumType[_] => "Enum"
     case _: InputObjectType[_] => "InputObject"
     case t => throw new IllegalStateException(s"Unsupported type kind: $t")

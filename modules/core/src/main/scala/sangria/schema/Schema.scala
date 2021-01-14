@@ -17,6 +17,8 @@ import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 import sangria.util.tag._
 
+import scala.concurrent.Future
+
 sealed trait Type {
   def namedType: Type with Named = {
     def getNamedType(tpe: Type): Type with Named =
@@ -61,10 +63,10 @@ sealed trait CompositeType[T] extends Type with Named with OutputType[T]
 sealed trait AbstractType extends Type with Named {
   def name: String
 
-  def typeOf[Ctx](value: Any, schema: Schema[Ctx, _]): Option[ObjectType[Ctx, _]] =
+  def typeOf[Ctx, F[_]](value: Any, schema: Schema[Ctx, _, F]): Option[ObjectType[Ctx, _, F]] =
     schema.possibleTypes
       .get(name)
-      .flatMap(_.find(_.isInstanceOf(value)).asInstanceOf[Option[ObjectType[Ctx, _]]])
+      .flatMap(_.find(_.isInstanceOf(value)).asInstanceOf[Option[ObjectType[Ctx, _, F]]])
 }
 
 sealed trait MappedAbstractType[T] extends Type with AbstractType with OutputType[T] {
@@ -156,15 +158,15 @@ case class ScalarAlias[T, ST](
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
-sealed trait ObjectLikeType[Ctx, Val]
+sealed trait ObjectLikeType[Ctx, Val, F[_]]
     extends OutputType[Val]
     with CompositeType[Val]
     with NullableType
     with UnmodifiedType
     with Named
     with HasAstInfo {
-  def interfaces: List[InterfaceType[Ctx, _]]
-  def fieldsFn: () => List[Field[Ctx, Val]]
+  def interfaces: List[InterfaceType[Ctx, _, F]]
+  def fieldsFn: () => List[Field[Ctx, Val, F]]
 
   lazy val ownFields = fieldsFn().toVector
 
@@ -176,45 +178,45 @@ sealed trait ObjectLikeType[Ctx, Val]
       }
       ._2
 
-  lazy val allInterfaces: Vector[InterfaceType[Ctx, _]] =
+  lazy val allInterfaces: Vector[InterfaceType[Ctx, _, F]] =
     removeDuplicates(
       interfaces.toVector.flatMap(i => i +: i.allInterfaces),
-      (i: InterfaceType[Ctx, _]) => i.name)
+      (i: InterfaceType[Ctx, _, F]) => i.name)
 
-  lazy val fields: Vector[Field[Ctx, _]] =
-    ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[Vector[Field[Ctx, _]]])
+  lazy val fields: Vector[Field[Ctx, _, F]] =
+    ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[Vector[Field[Ctx, _, F]]])
 
-  lazy val uniqueFields: Vector[Field[Ctx, _]] =
-    removeDuplicates(fields, (e: Field[Ctx, _]) => e.name)
+  lazy val uniqueFields: Vector[Field[Ctx, _, F]] =
+    removeDuplicates(fields, (e: Field[Ctx, _, F]) => e.name)
 
-  lazy val fieldsByName: Map[String, Vector[Field[Ctx, _]]] = fields.groupBy(_.name)
+  lazy val fieldsByName: Map[String, Vector[Field[Ctx, _, F]]] = fields.groupBy(_.name)
 
-  def getField(schema: Schema[_, _], fieldName: String): Vector[Field[Ctx, _]] =
+  def getField(schema: Schema[_, _, F], fieldName: String): Vector[Field[Ctx, _, F]] =
     if (sangria.introspection.MetaFieldNames contains fieldName)
       if (fieldName == SchemaMetaField.name && name == schema.query.name)
-        Vector(SchemaMetaField.asInstanceOf[Field[Ctx, _]])
+        Vector(SchemaMetaField.asInstanceOf[Field[Ctx, _, F]])
       else if (fieldName == TypeMetaField.name && name == schema.query.name)
-        Vector(TypeMetaField.asInstanceOf[Field[Ctx, _]])
+        Vector(TypeMetaField.asInstanceOf[Field[Ctx, _, F]])
       else if (fieldName == TypeNameMetaField.name)
-        Vector(TypeNameMetaField.asInstanceOf[Field[Ctx, _]])
+        Vector(TypeNameMetaField.asInstanceOf[Field[Ctx, _, F]])
       else Vector.empty
     else fieldsByName.getOrElse(fieldName, Vector.empty)
 
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
-case class ObjectType[Ctx, Val: ClassTag](
+case class ObjectType[Ctx, Val: ClassTag, F[_]](
     name: String,
     description: Option[String],
-    fieldsFn: () => List[Field[Ctx, Val]],
-    interfaces: List[InterfaceType[Ctx, _]],
-    instanceCheck: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean,
+    fieldsFn: () => List[Field[Ctx, Val, F]],
+    interfaces: List[InterfaceType[Ctx, _, F]],
+    instanceCheck: (Any, Class[_], ObjectType[Ctx, Val, F]) => Boolean,
     astDirectives: Vector[ast.Directive],
     astNodes: Vector[ast.AstNode]
-) extends ObjectLikeType[Ctx, Val] {
+) extends ObjectLikeType[Ctx, Val, F] {
   lazy val valClass = implicitly[ClassTag[Val]].runtimeClass
 
-  def withInstanceCheck(fn: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean) =
+  def withInstanceCheck(fn: (Any, Class[_], ObjectType[Ctx, Val, F]) => Boolean) =
     copy(instanceCheck = fn)
 
   def isInstanceOf(value: Any) = instanceCheck(value, valClass, this)
@@ -223,7 +225,9 @@ case class ObjectType[Ctx, Val: ClassTag](
 }
 
 object ObjectType {
-  def apply[Ctx, Val: ClassTag](name: String, fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+  def apply[Ctx, Val: ClassTag, F[_]](
+      name: String,
+      fields: List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       None,
@@ -232,10 +236,11 @@ object ObjectType {
       instanceCheck = defaultInstanceCheck,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val: ClassTag](
+
+  def apply[Ctx, Val: ClassTag, F[_]](
       name: String,
       description: String,
-      fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+      fields: List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       Some(description),
@@ -244,10 +249,11 @@ object ObjectType {
       instanceCheck = defaultInstanceCheck,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val: ClassTag](
+
+  def apply[Ctx, Val: ClassTag, F[_]](
       name: String,
-      interfaces: List[PossibleInterface[Ctx, Val]],
-      fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+      interfaces: List[PossibleInterface[Ctx, Val, F]],
+      fields: List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       None,
@@ -256,11 +262,12 @@ object ObjectType {
       instanceCheck = defaultInstanceCheck,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val: ClassTag](
+
+  def apply[Ctx, Val: ClassTag, F[_]](
       name: String,
       description: String,
-      interfaces: List[PossibleInterface[Ctx, Val]],
-      fields: List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+      interfaces: List[PossibleInterface[Ctx, Val, F]],
+      fields: List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       Some(description),
@@ -270,9 +277,9 @@ object ObjectType {
       Vector.empty,
       Vector.empty)
 
-  def apply[Ctx, Val: ClassTag](
+  def apply[Ctx, Val: ClassTag, F[_]](
       name: String,
-      fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+      fieldsFn: () => List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       None,
@@ -281,10 +288,11 @@ object ObjectType {
       instanceCheck = defaultInstanceCheck,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val: ClassTag](
+
+  def apply[Ctx, Val: ClassTag, F[_]](
       name: String,
       description: String,
-      fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+      fieldsFn: () => List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       Some(description),
@@ -293,10 +301,11 @@ object ObjectType {
       instanceCheck = defaultInstanceCheck,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val: ClassTag](
+
+  def apply[Ctx, Val: ClassTag, F[_]](
       name: String,
-      interfaces: List[PossibleInterface[Ctx, Val]],
-      fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+      interfaces: List[PossibleInterface[Ctx, Val, F]],
+      fieldsFn: () => List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       None,
@@ -305,11 +314,12 @@ object ObjectType {
       instanceCheck = defaultInstanceCheck,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val: ClassTag](
+
+  def apply[Ctx, Val: ClassTag, F[_]](
       name: String,
       description: String,
-      interfaces: List[PossibleInterface[Ctx, Val]],
-      fieldsFn: () => List[Field[Ctx, Val]]): ObjectType[Ctx, Val] =
+      interfaces: List[PossibleInterface[Ctx, Val, F]],
+      fieldsFn: () => List[Field[Ctx, Val, F]]): ObjectType[Ctx, Val, F] =
     ObjectType(
       name,
       Some(description),
@@ -319,11 +329,11 @@ object ObjectType {
       Vector.empty,
       Vector.empty)
 
-  def createFromMacro[Ctx, Val: ClassTag](
+  def createFromMacro[Ctx, Val: ClassTag, F[_]](
       name: String,
       description: Option[String],
-      interfaces: List[InterfaceType[Ctx, _]],
-      fieldsFn: () => List[Field[Ctx, Val]]) =
+      interfaces: List[InterfaceType[Ctx, _, F]],
+      fieldsFn: () => List[Field[Ctx, Val, F]]) =
     ObjectType(
       name,
       description,
@@ -333,34 +343,37 @@ object ObjectType {
       Vector.empty,
       Vector.empty)
 
-  implicit def acceptUnitCtx[Ctx, Val](objectType: ObjectType[Unit, Val]): ObjectType[Ctx, Val] =
-    objectType.asInstanceOf[ObjectType[Ctx, Val]]
+  implicit def acceptUnitCtx[Ctx, Val, F[_]](
+      objectType: ObjectType[Unit, Val, F]): ObjectType[Ctx, Val, F] =
+    objectType.asInstanceOf[ObjectType[Ctx, Val, F]]
 
-  def defaultInstanceCheck[Ctx, Val]: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean =
+  def defaultInstanceCheck[Ctx, Val, F[_]]: (Any, Class[_], ObjectType[Ctx, Val, F]) => Boolean =
     (value, valClass, tpe) => valClass.isAssignableFrom(value.getClass)
 }
 
-case class InterfaceType[Ctx, Val](
+case class InterfaceType[Ctx, Val, F[_]](
     name: String,
     description: Option[String] = None,
-    fieldsFn: () => List[Field[Ctx, Val]],
-    interfaces: List[InterfaceType[Ctx, _]],
-    manualPossibleTypes: () => List[ObjectType[_, _]],
+    fieldsFn: () => List[Field[Ctx, Val, F]],
+    interfaces: List[InterfaceType[Ctx, _, F]],
+    manualPossibleTypes: () => List[ObjectType[_, _, F]],
     astDirectives: Vector[ast.Directive],
     astNodes: Vector[ast.AstNode] = Vector.empty
-) extends ObjectLikeType[Ctx, Val]
+) extends ObjectLikeType[Ctx, Val, F]
     with AbstractType {
-  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) =
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val, F]*) =
     copy(manualPossibleTypes = () => possible.toList.map(_.objectType))
-  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) =
+  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val, F]]) =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
 }
 
 object InterfaceType {
-  val emptyPossibleTypes: () => List[ObjectType[_, _]] = () => Nil
+  def emptyPossibleTypes[F[_]]: () => List[ObjectType[_, _, F]] = () => Nil
 
-  def apply[Ctx, Val](name: String, fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
+  def apply[Ctx, Val, F[_]](
+      name: String,
+      fields: List[Field[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(
       name,
       None,
@@ -369,10 +382,10 @@ object InterfaceType {
       emptyPossibleTypes,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val](
+  def apply[Ctx, Val, F[_]](
       name: String,
       description: String,
-      fields: List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
+      fields: List[Field[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(
       name,
       Some(description),
@@ -381,10 +394,10 @@ object InterfaceType {
       emptyPossibleTypes,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val](
+  def apply[Ctx, Val, F[_]](
       name: String,
-      fields: List[Field[Ctx, Val]],
-      interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+      fields: List[Field[Ctx, Val, F]],
+      interfaces: List[PossibleInterface[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(
       name,
       None,
@@ -393,11 +406,11 @@ object InterfaceType {
       emptyPossibleTypes,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val](
+  def apply[Ctx, Val, F[_]](
       name: String,
       description: String,
-      fields: List[Field[Ctx, Val]],
-      interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+      fields: List[Field[Ctx, Val, F]],
+      interfaces: List[PossibleInterface[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(
       name,
       Some(description),
@@ -407,14 +420,14 @@ object InterfaceType {
       Vector.empty,
       Vector.empty)
 
-  def apply[Ctx, Val](
+  def apply[Ctx, Val, F[_]](
       name: String,
-      fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
+      fieldsFn: () => List[Field[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(name, None, fieldsFn, Nil, emptyPossibleTypes, Vector.empty, Vector.empty)
-  def apply[Ctx, Val](
+  def apply[Ctx, Val, F[_]](
       name: String,
       description: String,
-      fieldsFn: () => List[Field[Ctx, Val]]): InterfaceType[Ctx, Val] =
+      fieldsFn: () => List[Field[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(
       name,
       Some(description),
@@ -423,10 +436,10 @@ object InterfaceType {
       emptyPossibleTypes,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val](
+  def apply[Ctx, Val, F[_]](
       name: String,
-      fieldsFn: () => List[Field[Ctx, Val]],
-      interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+      fieldsFn: () => List[Field[Ctx, Val, F]],
+      interfaces: List[PossibleInterface[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(
       name,
       None,
@@ -435,11 +448,11 @@ object InterfaceType {
       emptyPossibleTypes,
       Vector.empty,
       Vector.empty)
-  def apply[Ctx, Val](
+  def apply[Ctx, Val, F[_]](
       name: String,
       description: String,
-      fieldsFn: () => List[Field[Ctx, Val]],
-      interfaces: List[PossibleInterface[Ctx, Val]]): InterfaceType[Ctx, Val] =
+      fieldsFn: () => List[Field[Ctx, Val, F]],
+      interfaces: List[PossibleInterface[Ctx, Val, F]]): InterfaceType[Ctx, Val, F] =
     InterfaceType(
       name,
       Some(description),
@@ -450,33 +463,33 @@ object InterfaceType {
       Vector.empty)
 }
 
-case class PossibleInterface[Ctx, Concrete](interfaceType: InterfaceType[Ctx, _])
+case class PossibleInterface[Ctx, Concrete, F[_]](interfaceType: InterfaceType[Ctx, _, F])
 
 object PossibleInterface extends PossibleInterfaceLowPrioImplicits {
-  def apply[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit
-      ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
-    PossibleInterface[Ctx, Concrete](interface)
-  implicit def convert[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit
-      ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
-    PossibleInterface[Ctx, Concrete](interface)
+  def apply[Ctx, Abstract, Concrete, F[_]](interface: InterfaceType[Ctx, Abstract, F])(implicit
+      ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete, F] =
+    PossibleInterface[Ctx, Concrete, F](interface)
+  implicit def convert[Ctx, Abstract, Concrete, F[_]](interface: InterfaceType[Ctx, Abstract, F])(
+      implicit ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete, F] =
+    PossibleInterface[Ctx, Concrete, F](interface)
 }
 
 trait PossibleInterfaceLowPrioImplicits {
-  implicit def applyUnit[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit
-      ev: PossibleType[Abstract, Concrete]): PossibleInterface[Unit, Concrete] =
-    PossibleInterface[Unit, Concrete](interface.asInstanceOf[InterfaceType[Unit, Abstract]])
+  implicit def applyUnit[Ctx, Abstract, Concrete, F[_]](interface: InterfaceType[Ctx, Abstract, F])(
+      implicit ev: PossibleType[Abstract, Concrete]): PossibleInterface[Unit, Concrete, F] =
+    PossibleInterface[Unit, Concrete, F](interface.asInstanceOf[InterfaceType[Unit, Abstract, F]])
 }
 
-case class PossibleObject[Ctx, Abstract](objectType: ObjectType[Ctx, _])
+case class PossibleObject[Ctx, Abstract, F[_]](objectType: ObjectType[Ctx, _, F])
 
 object PossibleObject {
-  implicit def apply[Ctx, Abstract, Concrete](obj: ObjectType[Ctx, Concrete])(implicit
-      ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract] =
-    PossibleObject[Ctx, Abstract](obj)
+  implicit def apply[Ctx, Abstract, Concrete, F[_]](obj: ObjectType[Ctx, Concrete, F])(implicit
+      ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract, F] =
+    PossibleObject[Ctx, Abstract, F](obj)
 
-  implicit def applyUnit[Ctx, Abstract, Concrete](obj: ObjectType[Unit, Concrete])(implicit
-      ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract] =
-    PossibleObject[Ctx, Abstract](obj.asInstanceOf[ObjectType[Ctx, Concrete]])
+  implicit def applyUnit[Ctx, Abstract, Concrete, F[_]](obj: ObjectType[Unit, Concrete, F])(implicit
+      ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract, F] =
+    PossibleObject[Ctx, Abstract, F](obj.asInstanceOf[ObjectType[Ctx, Concrete, F]])
 }
 
 trait PossibleType[AbstrType, ConcreteType]
@@ -492,10 +505,10 @@ object PossibleType {
     create[Abstract, Concrete]
 }
 
-case class UnionType[Ctx](
+case class UnionType[Ctx, F[_]](
     name: String,
     description: Option[String] = None,
-    typesFn: () => List[ObjectType[Ctx, _]],
+    typesFn: () => List[ObjectType[Ctx, _, F]],
     astDirectives: Vector[ast.Directive] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty)
     extends OutputType[Any]
@@ -510,7 +523,7 @@ case class UnionType[Ctx](
   /** Creates a type-safe version of union type which might be useful in cases where the value is wrapped in a type like `Either`.
     */
   def mapValue[T](func: T => Any): OutputType[T] =
-    new UnionType[Ctx](name, description, typesFn, astDirectives, astNodes)
+    new UnionType[Ctx, F](name, description, typesFn, astDirectives, astNodes)
       with MappedAbstractType[T] {
       override def contraMap(value: T): Any = func(value)
     }.asInstanceOf[OutputType[T]]
@@ -519,68 +532,68 @@ case class UnionType[Ctx](
 }
 
 object UnionType {
-  def apply[Ctx](name: String, types: List[ObjectType[Ctx, _]]): UnionType[Ctx] =
-    UnionType[Ctx](name, None, () => types)
+  def apply[Ctx, F[_]](name: String, types: List[ObjectType[Ctx, _, F]]): UnionType[Ctx, F] =
+    UnionType[Ctx, F](name, None, () => types)
 
-  def apply[Ctx](
+  def apply[Ctx, F[_]](
       name: String,
       description: Option[String],
-      types: List[ObjectType[Ctx, _]]): UnionType[Ctx] =
-    UnionType[Ctx](name, description, () => types)
+      types: List[ObjectType[Ctx, _, F]]): UnionType[Ctx, F] =
+    UnionType[Ctx, F](name, description, () => types)
 
-  def apply[Ctx](
+  def apply[Ctx, F[_]](
       name: String,
       description: Option[String],
-      types: List[ObjectType[Ctx, _]],
-      astDirectives: Vector[ast.Directive]): UnionType[Ctx] =
-    UnionType[Ctx](name, description, () => types, astDirectives)
+      types: List[ObjectType[Ctx, _, F]],
+      astDirectives: Vector[ast.Directive]): UnionType[Ctx, F] =
+    UnionType[Ctx, F](name, description, () => types, astDirectives)
 
-  def apply[Ctx](
+  def apply[Ctx, F[_]](
       name: String,
       description: Option[String],
-      types: List[ObjectType[Ctx, _]],
+      types: List[ObjectType[Ctx, _, F]],
       astDirectives: Vector[ast.Directive],
-      astNodes: Vector[ast.AstNode]): UnionType[Ctx] =
-    UnionType[Ctx](name, description, () => types, astDirectives, astNodes)
+      astNodes: Vector[ast.AstNode]): UnionType[Ctx, F] =
+    UnionType[Ctx, F](name, description, () => types, astDirectives, astNodes)
 }
 
-case class Field[Ctx, Val](
+case class Field[Ctx, Val, F[_]](
     name: String,
     fieldType: OutputType[_],
     description: Option[String],
     arguments: List[Argument[_]],
-    resolve: Context[Ctx, Val] => Action[Ctx, _],
+    resolve: Context[Ctx, Val, F] => Action[Ctx, _, F],
     deprecationReason: Option[String],
     tags: List[FieldTag],
     complexity: Option[(Ctx, Args, Double) => Double],
-    manualPossibleTypes: () => List[ObjectType[_, _]],
+    manualPossibleTypes: () => List[ObjectType[_, _, F]],
     astDirectives: Vector[ast.Directive],
     astNodes: Vector[ast.AstNode])
     extends Named
     with HasArguments
     with HasDeprecation
     with HasAstInfo {
-  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) =
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val, F]*) =
     copy(manualPossibleTypes = () => possible.toList.map(_.objectType))
-  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) =
+  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val, F]]) =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.FieldDefinition = SchemaRenderer.renderField(this)
 }
 
 object Field {
-  def apply[Ctx, Val, Res, Out](
+  def apply[Ctx, Val, Res, Out, F[_]](
       name: String,
       fieldType: OutputType[Out],
       description: Option[String] = None,
       arguments: List[Argument[_]] = Nil,
-      resolve: Context[Ctx, Val] => Action[Ctx, Res],
-      possibleTypes: => List[PossibleObject[_, _]] = Nil,
+      resolve: Context[Ctx, Val, F] => Action[Ctx, Res, F],
+      possibleTypes: => List[PossibleObject[_, _, F]] = Nil,
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) => Double] = None,
       deprecationReason: Option[String] = None)(implicit
-      ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
-    Field[Ctx, Val](
+      ev: ValidOutType[Res, Out]): Field[Ctx, Val, F] =
+    Field[Ctx, Val, F](
       name,
       fieldType,
       description,
@@ -593,34 +606,34 @@ object Field {
       Vector.empty,
       Vector.empty)
 
-  def subs[Ctx, Val, StreamSource, Res, Out](
-      name: String,
-      fieldType: OutputType[Out],
-      description: Option[String] = None,
-      arguments: List[Argument[_]] = Nil,
-      resolve: Context[Ctx, Val] => StreamSource,
-      possibleTypes: => List[PossibleObject[_, _]] = Nil,
-      tags: List[FieldTag] = Nil,
-      complexity: Option[(Ctx, Args, Double) => Double] = None,
-      deprecationReason: Option[String] = None
-  )(implicit
-      stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out]): Field[Ctx, Val] = {
-    val s = stream.subscriptionStream
-
-    Field[Ctx, Val](
-      name,
-      fieldType,
-      description,
-      arguments,
-      ctx => SubscriptionValue[Ctx, StreamSource, stream.StreamSource](resolve(ctx), s),
-      deprecationReason,
-      SubscriptionField[stream.StreamSource](s) +: tags,
-      complexity,
-      () => possibleTypes.map(_.objectType),
-      Vector.empty,
-      Vector.empty
-    )
-  }
+//  def subs[Ctx, Val, StreamSource, Res, Out, F[_]](
+//      name: String,
+//      fieldType: OutputType[Out],
+//      description: Option[String] = None,
+//      arguments: List[Argument[_]] = Nil,
+//      resolve: Context[Ctx, Val, F] => StreamSource,
+//      possibleTypes: => List[PossibleObject[_, _, F]] = Nil,
+//      tags: List[FieldTag] = Nil,
+//      complexity: Option[(Ctx, Args, Double) => Double] = None,
+//      deprecationReason: Option[String] = None
+//  )(implicit stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out])
+//      : Field[Ctx, Val, F] = {
+//    val s = stream.subscriptionStream
+//
+//    Field[Ctx, Val, F](
+//      name,
+//      fieldType,
+//      description,
+//      arguments,
+//      ctx => SubscriptionValue[Ctx, StreamSource, stream.StreamSource, Future](resolve(ctx), s),
+//      deprecationReason,
+//      SubscriptionField[stream.StreamSource](s) +: tags,
+//      complexity,
+//      () => possibleTypes.map(_.objectType),
+//      Vector.empty,
+//      Vector.empty
+//    )
+//  }
 }
 
 @implicitNotFound(msg = "${Res} is invalid type for the resulting GraphQL type ${Out}.")
@@ -1152,10 +1165,10 @@ case class Directive(
   def toAst: ast.DirectiveDefinition = SchemaRenderer.renderDirective(this)
 }
 
-case class Schema[Ctx, Val](
-    query: ObjectType[Ctx, Val],
-    mutation: Option[ObjectType[Ctx, Val]] = None,
-    subscription: Option[ObjectType[Ctx, Val]] = None,
+case class Schema[Ctx, Val, F[_]](
+    query: ObjectType[Ctx, Val, F],
+    mutation: Option[ObjectType[Ctx, Val, F]] = None,
+    subscription: Option[ObjectType[Ctx, Val, F]] = None,
     additionalTypes: List[Type with Named] = Nil,
     description: Option[String] = None,
     directives: List[Directive] = BuiltinDirectives,
@@ -1166,10 +1179,10 @@ case class Schema[Ctx, Val](
     with HasDescription {
   def extend(
       document: ast.Document,
-      builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
+      builder: AstSchemaBuilder[Ctx, F] = AstSchemaBuilder.default[Ctx, F]): Schema[Ctx, Val, F] =
     AstSchemaMaterializer.extendSchema(this, document, builder)
 
-  def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
+  def compare(oldSchema: Schema[_, _, F]): Vector[SchemaChange] =
     SchemaComparator.compare(oldSchema, this)
 
   lazy val toAst: Document = SchemaRenderer.schemaAst(this)
@@ -1186,7 +1199,7 @@ case class Schema[Ctx, Val](
       val sameSangriaType = t1.getClass.getName == t2.getClass.getName
 
       (t1, t2) match {
-        case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) =>
+        case (ot1: ObjectType[_, _, _], ot2: ObjectType[_, _, _]) =>
           sameSangriaType && (ot1.valClass == ot2.valClass)
         case _ => sameSangriaType
       }
@@ -1194,7 +1207,7 @@ case class Schema[Ctx, Val](
 
     def typeConflict(name: String, t1: Type, t2: Type, parentInfo: String) =
       (t1, t2) match {
-        case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) =>
+        case (ot1: ObjectType[_, _, _], ot2: ObjectType[_, _, _]) =>
           throw SchemaValidationException(
             Vector(ConflictingObjectTypeCaseClassViolation(name, parentInfo)))
 
@@ -1260,7 +1273,7 @@ case class Schema[Ctx, Val](
               field.fieldType,
               acc)
           }
-        case t: ObjectLikeType[_, _] =>
+        case t: ObjectLikeType[_, _, _] =>
           val own = t.fields.foldLeft(updated(priority, t.name, t, result, parentInfo)) {
             case (acc, field) =>
               val fromArgs = field.arguments.foldLeft(
@@ -1286,7 +1299,7 @@ case class Schema[Ctx, Val](
           }
 
           val withPossible = t match {
-            case i: InterfaceType[_, _] =>
+            case i: InterfaceType[_, _, _] =>
               i.manualPossibleTypes().foldLeft(own) { case (acc, objectType) =>
                 collectTypes(
                   s"a manualPossibleType defined in '${i.name}' type",
@@ -1331,10 +1344,10 @@ case class Schema[Ctx, Val](
   lazy val inputTypes = types.collect { case (name, (_, tpe: InputType[_])) => name -> tpe }
   lazy val outputTypes = types.collect { case (name, (_, tpe: OutputType[_])) => name -> tpe }
   lazy val scalarTypes = types.collect { case (name, (_, tpe: ScalarType[_])) => name -> tpe }
-  lazy val unionTypes: Map[String, UnionType[_]] =
+  lazy val unionTypes: Map[String, UnionType[_, F]] =
     types.iterator
-      .filter(_._2._2.isInstanceOf[UnionType[_]])
-      .map { case (k, v) => (k, v._2.asInstanceOf[UnionType[_]]) }
+      .filter(_._2._2.isInstanceOf[UnionType[_, F]])
+      .map { case (k, v) => (k, v._2.asInstanceOf[UnionType[_, F]]) }
       .toMap
 
   lazy val directivesByName: Map[String, Directive] =
@@ -1362,18 +1375,18 @@ case class Schema[Ctx, Val](
     case ast.ListType(ofType, _) => getOutputType(ofType).map(ListType(_))
   }
 
-  lazy val directImplementations: Map[String, Vector[ObjectLikeType[_, _]]] =
+  lazy val directImplementations: Map[String, Vector[ObjectLikeType[_, _, F]]] =
     typeList
-      .collect { case objectLike: ObjectLikeType[_, _] => objectLike }
+      .collect { case objectLike: ObjectLikeType[_, _, F] => objectLike }
       .flatMap(objectLike => objectLike.interfaces.map(_.name -> objectLike))
       .groupBy(_._1)
       .map { case (k, v) => (k, v.map(_._2)) }
       .toMap
 
-  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = {
-    def findConcreteTypes(tpe: ObjectLikeType[_, _]): Vector[ObjectType[_, _]] = tpe match {
-      case obj: ObjectType[_, _] => Vector(obj)
-      case interface: InterfaceType[_, _] =>
+  lazy val implementations: Map[String, Vector[ObjectType[_, _, F]]] = {
+    def findConcreteTypes(tpe: ObjectLikeType[_, _, F]): Vector[ObjectType[_, _, F]] = tpe match {
+      case obj: ObjectType[_, _, F] => Vector(obj)
+      case interface: InterfaceType[_, _, F] =>
         directImplementations(interface.name).flatMap(findConcreteTypes)
     }
 
@@ -1382,10 +1395,10 @@ case class Schema[Ctx, Val](
     }
   }
 
-  lazy val possibleTypes: Map[String, Vector[ObjectType[_, _]]] =
+  lazy val possibleTypes: Map[String, Vector[ObjectType[_, _, F]]] =
     implementations ++ unionTypes.values.map(ut => ut.name -> ut.types.toVector)
 
-  def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
+  def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _, F]) =
     possibleTypes.get(baseTypeName).exists(_.exists(_.name == tpe.name))
 
   def analyzer(query: Document) = SchemaBasedDocumentAnalyzer(this, query)
@@ -1443,18 +1456,18 @@ object Schema {
   def buildFromAst(document: ast.Document) =
     AstSchemaMaterializer.buildSchema(document)
 
-  def buildFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
-    AstSchemaMaterializer.buildSchema[Ctx](document, builder)
+  def buildFromAst[Ctx, F[_]](document: ast.Document, builder: AstSchemaBuilder[Ctx, F]) =
+    AstSchemaMaterializer.buildSchema[Ctx, F](document, builder)
 
   def buildStubFromAst(document: ast.Document) =
     AstSchemaMaterializer.buildSchema(Document.emptyStub + document)
 
-  def buildStubFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
-    AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
+  def buildStubFromAst[Ctx, F[_]](document: ast.Document, builder: AstSchemaBuilder[Ctx, F]) =
+    AstSchemaMaterializer.buildSchema[Ctx, F](Document.emptyStub + document, builder)
 
   def buildDefinitions(document: ast.Document) =
     AstSchemaMaterializer.definitions(document)
 
-  def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
-    AstSchemaMaterializer.definitions[Ctx](document, builder)
+  def buildDefinitions[Ctx, F[_]](document: ast.Document, builder: AstSchemaBuilder[Ctx, F]) =
+    AstSchemaMaterializer.definitions[Ctx, F](document, builder)
 }

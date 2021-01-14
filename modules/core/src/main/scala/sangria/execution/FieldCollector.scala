@@ -9,19 +9,19 @@ import sangria.util.Cache
 import scala.collection.mutable.{ArrayBuffer, Map => MutableMap, Set => MutableSet}
 import scala.util.{Failure, Success, Try}
 
-class FieldCollector[Ctx, Val](
-    schema: Schema[Ctx, Val],
+class FieldCollector[Ctx, Val, F[_]](
+    schema: Schema[Ctx, Val, F],
     document: ast.Document,
     variables: Map[String, VariableValue],
     sourceMapper: Option[SourceMapper],
-    valueCollector: ValueCollector[Ctx, _],
+    valueCollector: ValueCollector[Ctx, _, F],
     exceptionHandler: ExceptionHandler) {
 
   private val resultCache = Cache.empty[(ExecutionPath.PathCacheKey, String), Try[CollectedFields]]
 
   def collectFields(
       path: ExecutionPath,
-      tpe: ObjectType[Ctx, _],
+      tpe: ObjectType[Ctx, _, F],
       selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
     resultCache.getOrElseUpdate(
       path.cacheKey -> tpe.name, {
@@ -36,7 +36,7 @@ class FieldCollector[Ctx, Val](
     )
 
   private def collectFieldsInternal(
-      tpe: ObjectType[Ctx, _],
+      tpe: ObjectType[Ctx, _, F],
       selections: Vector[ast.Selection],
       visitedFragments: MutableSet[String],
       initial: Try[CollectedFieldsBuilder]): Try[CollectedFieldsBuilder] =
@@ -187,7 +187,7 @@ class FieldCollector[Ctx, Val](
   }
 
   def doesFragmentConditionMatch(
-      tpe: ObjectType[_, _],
+      tpe: ObjectType[_, _, F],
       conditional: ast.ConditionalFragment): Try[Boolean] =
     conditional.typeConditionOpt match {
       case Some(tc) =>

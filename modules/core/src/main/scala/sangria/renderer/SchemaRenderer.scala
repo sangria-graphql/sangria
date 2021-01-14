@@ -48,7 +48,7 @@ object SchemaRenderer {
   def renderImplementedInterfaces(tpe: IntrospectionObjectType) =
     tpe.interfaces.map(t => ast.NamedType(t.name)).toVector
 
-  def renderImplementedInterfaces(tpe: ObjectLikeType[_, _]) =
+  def renderImplementedInterfaces[F[_]](tpe: ObjectLikeType[_, _, F]) =
     tpe.allInterfaces.map(t => ast.NamedType(t.name))
 
   def renderTypeName(tpe: IntrospectionTypeRef): ast.Type =
@@ -104,7 +104,7 @@ object SchemaRenderer {
   def renderFieldsI(fields: Seq[IntrospectionField]) =
     fields.map(renderField).toVector
 
-  def renderFields(fields: Seq[Field[_, _]]) =
+  def renderFields[F[_]](fields: Seq[Field[_, _, F]]) =
     fields.map(renderField).toVector
 
   def renderInputFieldsI(fields: Seq[IntrospectionInputValue]) =
@@ -122,7 +122,7 @@ object SchemaRenderer {
       renderDescription(field.description)
     )
 
-  def renderField(field: Field[_, _]) =
+  def renderField[F[_]](field: Field[_, _, F]) =
     ast.FieldDefinition(
       field.name,
       renderTypeNameAst(field.fieldType),
@@ -156,7 +156,7 @@ object SchemaRenderer {
       renderFieldsI(tpe.fields),
       description = renderDescription(tpe.description))
 
-  def renderObject(tpe: ObjectType[_, _]) =
+  def renderObject[F[_]](tpe: ObjectType[_, _, F]) =
     ast.ObjectTypeDefinition(
       tpe.name,
       renderImplementedInterfaces(tpe),
@@ -222,7 +222,7 @@ object SchemaRenderer {
       renderFieldsI(tpe.fields),
       description = renderDescription(tpe.description))
 
-  def renderInterface(tpe: InterfaceType[_, _]) =
+  def renderInterface[F[_]](tpe: InterfaceType[_, _, F]) =
     ast.InterfaceTypeDefinition(
       tpe.name,
       renderFields(tpe.uniqueFields),
@@ -235,7 +235,7 @@ object SchemaRenderer {
       tpe.possibleTypes.map(t => ast.NamedType(t.name)).toVector,
       description = renderDescription(tpe.description))
 
-  def renderUnion(tpe: UnionType[_]) =
+  def renderUnion[F[_]](tpe: UnionType[_, F]) =
     ast.UnionTypeDefinition(
       tpe.name,
       tpe.types.map(t => ast.NamedType(t.name)).toVector,
@@ -261,7 +261,7 @@ object SchemaRenderer {
       Some(ast.SchemaDefinition(withSubs, description = renderDescription(schema.description)))
     }
 
-  private def renderSchemaDefinition(schema: Schema[_, _]): Option[ast.SchemaDefinition] =
+  private def renderSchemaDefinition[F[_]](schema: Schema[_, _, F]): Option[ast.SchemaDefinition] =
     if (isSchemaOfCommonNames(
         schema.query.name,
         schema.mutation.map(_.name),
@@ -302,9 +302,9 @@ object SchemaRenderer {
 
   def renderType(tpe: Type with Named): ast.TypeDefinition =
     tpe match {
-      case o: ObjectType[_, _] => renderObject(o)
-      case u: UnionType[_] => renderUnion(u)
-      case i: InterfaceType[_, _] => renderInterface(i)
+      case o: ObjectType[_, _, _] => renderObject(o)
+      case u: UnionType[_, _] => renderUnion(u)
+      case i: InterfaceType[_, _, _] => renderInterface(i)
       case io: InputObjectType[_] => renderInputObject(io)
       case s: ScalarType[_] => renderScalar(s)
       case s: ScalarAlias[_, _] => renderScalar(s.aliasFor)
@@ -365,7 +365,9 @@ object SchemaRenderer {
     schemaAstFromIntrospection(IntrospectionParser.parse(introspectionResult), filter).renderPretty
   }
 
-  def schemaAst(schema: Schema[_, _], filter: SchemaFilter = SchemaFilter.default): ast.Document = {
+  def schemaAst[F[_]](
+      schema: Schema[_, _, F],
+      filter: SchemaFilter = SchemaFilter.default): ast.Document = {
     val schemaDef = if (filter.renderSchema) renderSchemaDefinition(schema) else None
     val types =
       schema.typeList.filter(t => filter.filterTypes(t.name)).sortBy(_.name).map(renderType)
@@ -420,10 +422,10 @@ object SchemaRenderer {
   private def commentDescription(node: ast.WithDescription) =
     node.description.toVector.flatMap(sv => sv.value.split("\\r?\\n").toVector.map(ast.Comment(_)))
 
-  def renderSchema(schema: Schema[_, _]): String =
+  def renderSchema[F[_]](schema: Schema[_, _, F]): String =
     schemaAst(schema, SchemaFilter.default).renderPretty
 
-  def renderSchema(schema: Schema[_, _], filter: SchemaFilter): String =
+  def renderSchema[F[_]](schema: Schema[_, _, F], filter: SchemaFilter): String =
     schemaAst(schema, filter).renderPretty
 }
 

@@ -8,10 +8,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
 
-class FetcherBasedDeferredResolver[-Ctx](
+class FetcherBasedDeferredResolver[-Ctx, F[_]](
     fetchers: Vector[Fetcher[Ctx, _, _, _]],
-    fallback: Option[DeferredResolver[Ctx]])
-    extends DeferredResolver[Ctx] {
+    fallback: Option[DeferredResolver[Ctx, F]])
+    extends DeferredResolver[Ctx, F] {
   private val fetchersMap: Map[AnyRef, Fetcher[Ctx, _, _, _]] @uncheckedVariance =
     fetchers.map(f => f -> f).toMap
 

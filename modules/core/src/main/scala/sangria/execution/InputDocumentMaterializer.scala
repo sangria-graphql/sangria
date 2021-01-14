@@ -14,13 +14,13 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-case class InputDocumentMaterializer[Vars](
-    schema: Schema[_, _],
+case class InputDocumentMaterializer[Vars, F[_]](
+    schema: Schema[_, _, F],
     variables: Vars = InputUnmarshaller.emptyMapVars)(implicit iu: InputUnmarshaller[Vars]) {
   def to[T](document: InputDocument, inputType: InputType[T])(implicit
       fromInput: FromInput[T],
       scheme: DeliveryScheme[Vector[T]]): scheme.Result = {
-    val collector = new ValueCollector[Unit, Vars](
+    val collector = new ValueCollector[Unit, Vars, F](
       schema,
       variables,
       document.sourceMapper,
@@ -87,15 +87,15 @@ case class InputDocumentMaterializer[Vars](
 }
 
 object InputDocumentMaterializer {
-  def to[T](
-      schema: Schema[_, _],
+  def to[T, F[_]](
+      schema: Schema[_, _, F],
       document: InputDocument,
       inputType: InputType[T]
   )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer(schema, InputUnmarshaller.emptyMapVars).to(document, inputType)
 
-  def to[T, Vars](
-      schema: Schema[_, _],
+  def to[T, Vars, F[_]](
+      schema: Schema[_, _, F],
       document: InputDocument,
       inputType: InputType[T],
       variables: Vars
@@ -105,7 +105,7 @@ object InputDocumentMaterializer {
       scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer(schema, variables).to(document, inputType)
 
-  def to[T](
+  def to[T, F[_]](
       document: InputDocument,
       inputType: InputType[T]
   )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
@@ -121,11 +121,11 @@ object InputDocumentMaterializer {
       scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     to(emptyStubSchema(inputType), document, inputType, variables)
 
-  private def emptyStubSchema[T: FromInput](inputType: InputType[T]): Schema[_, _] =
+  private def emptyStubSchema[T: FromInput, F[_]](inputType: InputType[T]): Schema[_, _, F] =
     Schema(
       ObjectType(
         "Query",
-        fields[Unit, Unit](
+        fields[Unit, Unit, F](
           Field(
             "stub",
             StringType,

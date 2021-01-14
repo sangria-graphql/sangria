@@ -5,7 +5,7 @@ import sangria.ast
 import sangria.schema.ObjectType
 
 case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath.PathCacheKey) {
-  def add(field: ast.Field, parentType: ObjectType[_, _]) =
+  def add[F[_]](field: ast.Field, parentType: ObjectType[_, _, F]) =
     new ExecutionPath(path :+ field.outputName, cacheKey :+ field.outputName :+ parentType.name)
 
   def withIndex(idx: Int) = new ExecutionPath(path :+ idx, cacheKey)

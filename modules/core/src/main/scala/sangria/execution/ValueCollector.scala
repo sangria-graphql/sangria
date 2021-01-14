@@ -11,8 +11,8 @@ import sangria.validation._
 import scala.collection.immutable.VectorBuilder
 import scala.util.{Failure, Success, Try}
 
-class ValueCollector[Ctx, Input](
-    schema: Schema[_, _],
+class ValueCollector[Ctx, Input, F[_]](
+    schema: Schema[_, _, F],
     inputVars: Input,
     sourceMapper: Option[SourceMapper],
     deprecationTracker: DeprecationTracker,

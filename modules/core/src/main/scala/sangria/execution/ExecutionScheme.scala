@@ -42,7 +42,7 @@ trait AlternativeExecutionScheme {
   }
 
   implicit object Extended extends ExecutionScheme {
-    type Result[Ctx, T] = Future[ExecutionResult[Ctx, T]]
+    type Result[Ctx, T] = Future[ExecutionResult[Ctx, T, Future]]
 
     def failed[Ctx, Res](error: Throwable): Result[Ctx, Res] =
       Future.failed(error)
@@ -84,10 +84,10 @@ trait AlternativeExecutionScheme {
 
   implicit def StreamExtended[S[_]](implicit
       stream: SubscriptionStream[S]): ExecutionScheme with StreamBasedExecutionScheme[S] {
-    type Result[Ctx, T] = S[ExecutionResult[Ctx, T]]
+    type Result[Ctx, T] = S[ExecutionResult[Ctx, T, Future]]
   } =
     new ExecutionScheme with StreamBasedExecutionScheme[S] {
-      type Result[Ctx, T] = S[ExecutionResult[Ctx, T]]
+      type Result[Ctx, T] = S[ExecutionResult[Ctx, T, Future]]
 
       def subscriptionStream = stream
       def extended = true
@@ -105,10 +105,10 @@ trait AlternativeExecutionScheme {
     }
 }
 
-case class ExecutionResult[Ctx, Res](
+case class ExecutionResult[Ctx, Res, F[_]](
     ctx: Ctx,
     result: Res,
     errors: Vector[RegisteredError],
-    middlewareVals: List[(Any, Middleware[_])],
+    middlewareVals: List[(Any, Middleware[_, F])],
     validationTiming: TimeMeasurement,
     queryReducerTiming: TimeMeasurement)

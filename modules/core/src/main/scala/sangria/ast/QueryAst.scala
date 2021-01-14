@@ -118,14 +118,14 @@ case class InputDocument(
     */
   def +(other: InputDocument) = merge(other)
 
-  def to[T](
-      schema: Schema[_, _],
+  def to[T, F[_]](
+      schema: Schema[_, _, F],
       inputType: InputType[T]
   )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer.to(schema, this, inputType)
 
-  def to[T, Vars](
-      schema: Schema[_, _],
+  def to[T, Vars, F[_]](
+      schema: Schema[_, _, F],
       inputType: InputType[T],
       variables: Vars
   )(implicit
@@ -646,11 +646,12 @@ sealed trait AstNode {
   def visit(onEnter: AstNode => VisitorCommand, onLeave: AstNode => VisitorCommand): this.type =
     AstVisitor.visit(this, onEnter, onLeave)
 
-  def visitAstWithTypeInfo(schema: Schema[_, _])(visitorFn: TypeInfo => AstVisitor): this.type =
-    AstVisitor.visitAstWithTypeInfo[this.type](schema, this)(visitorFn)
+  def visitAstWithTypeInfo[F[_]](schema: Schema[_, _, F])(
+      visitorFn: TypeInfo[F] => AstVisitor): this.type =
+    AstVisitor.visitAstWithTypeInfo[this.type, F](schema, this)(visitorFn)
 
-  def visitAstWithState[S](schema: Schema[_, _], state: S)(
-      visitorFn: (TypeInfo, S) => AstVisitor): S =
+  def visitAstWithState[S, F[_]](schema: Schema[_, _, F], state: S)(
+      visitorFn: (TypeInfo[F], S) => AstVisitor): S =
     AstVisitor.visitAstWithState(schema, this, state)(visitorFn)
 }
 
@@ -732,8 +733,8 @@ object AstVisitor {
         if (visitor.onLeave.isDefinedAt(node)) visitor.onLeave(node) else VisitorCommand.Continue
     )
 
-  def visitAstWithTypeInfo[T <: AstNode](schema: Schema[_, _], root: T)(
-      visitorFn: TypeInfo => AstVisitor): T = {
+  def visitAstWithTypeInfo[T <: AstNode, F[_]](schema: Schema[_, _, F], root: T)(
+      visitorFn: TypeInfo[F] => AstVisitor): T = {
     val typeInfo = new TypeInfo(schema)
     val visitor = visitorFn(typeInfo)
 
@@ -750,8 +751,8 @@ object AstVisitor {
     )
   }
 
-  def visitAstWithState[S](schema: Schema[_, _], root: AstNode, state: S)(
-      visitorFn: (TypeInfo, S) => AstVisitor): S = {
+  def visitAstWithState[S, F[_]](schema: Schema[_, _, F], root: AstNode, state: S)(
+      visitorFn: (TypeInfo[F], S) => AstVisitor): S = {
     val typeInfo = new TypeInfo(schema)
     val visitor = visitorFn(typeInfo, state)
 

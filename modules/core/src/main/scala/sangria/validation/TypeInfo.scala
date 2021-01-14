@@ -5,13 +5,13 @@ import sangria.introspection.{SchemaMetaField, TypeMetaField, TypeNameMetaField}
 import sangria.marshalling.ToInput
 import sangria.schema._
 
-class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
+class TypeInfo[F[_]](schema: Schema[_, _, F], initialType: Option[Type] = None) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val typeStack: ValidatorStack[Option[Type]] = ValidatorStack.empty
   private val parentTypeStack: ValidatorStack[Option[CompositeType[_]]] = ValidatorStack.empty
   private val inputTypeStack: ValidatorStack[Option[InputType[_]]] = ValidatorStack.empty
-  private val fieldDefStack: ValidatorStack[Option[Field[_, _]]] = ValidatorStack.empty
+  private val fieldDefStack: ValidatorStack[Option[Field[_, _, F]]] = ValidatorStack.empty
   private val ancestorStack: ValidatorStack[ast.AstNode] = ValidatorStack.empty
   private val documentStack: ValidatorStack[ast.Document] = ValidatorStack.empty
   private val defaultValueStack: ValidatorStack[Option[(_, ToInput[_, _])]] = ValidatorStack.empty
@@ -197,7 +197,7 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
     ancestorStack.pop()
   }
 
-  def getFieldDef(parent: CompositeType[_], astField: ast.Field): Option[Field[_, _]] =
+  def getFieldDef(parent: CompositeType[_], astField: ast.Field): Option[Field[_, _, F]] =
     if (astField.name == SchemaMetaField.name && schema.query.name == parent.name)
       Some(SchemaMetaField)
     else if (astField.name == TypeMetaField.name && schema.query.name == parent.name)
@@ -206,7 +206,7 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
       Some(TypeNameMetaField)
     else
       parent match {
-        case o: ObjectLikeType[_, _] => o.getField(schema, astField.name).headOption
+        case o: ObjectLikeType[_, _, F] => o.getField(schema, astField.name).headOption
         case _ => None
       }
 }

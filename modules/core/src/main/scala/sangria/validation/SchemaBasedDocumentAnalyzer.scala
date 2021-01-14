@@ -10,7 +10,7 @@ import sangria.util.Cache
 
 import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 
-case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Document) {
+case class SchemaBasedDocumentAnalyzer[F[_]](schema: Schema[_, _, F], document: ast.Document) {
   import SchemaBasedDocumentAnalyzer._
 
   private val variableUsages = Cache.empty[Int, List[VariableUsage]]

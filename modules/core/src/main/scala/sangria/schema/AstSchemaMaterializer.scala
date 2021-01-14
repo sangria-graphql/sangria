@@ -12,9 +12,9 @@ import sangria.validation._
 import scala.reflect.ClassTag
 import scala.collection.Set
 
-class AstSchemaMaterializer[Ctx] private (
+class AstSchemaMaterializer[Ctx, F[_]] private (
     val document: ast.Document,
-    builder: AstSchemaBuilder[Ctx]) {
+    builder: AstSchemaBuilder[Ctx, F]) {
   import AstSchemaMaterializer.extractSchemaInfo
 
   private val sdlOrigin = SDLOrigin(document)
@@ -80,7 +80,7 @@ class AstSchemaMaterializer[Ctx] private (
   // maybe it would worth an effort to find more elegant way
   private var existingDefsMat: Map[String, MaterializedType] = Map.empty
 
-  def extend[Val](schema: Schema[Ctx, Val]): Schema[Ctx, Val] = {
+  def extend[Val](schema: Schema[Ctx, Val, F]): Schema[Ctx, Val, F] = {
     val existingOrigin = ExistingSchemaOrigin(schema)
 
     val defErrors = validateExtensions(schema)
@@ -110,12 +110,12 @@ class AstSchemaMaterializer[Ctx] private (
         case Right((_, mutationExt, subscriptionExt)) =>
           val mutationType =
             mutationExt
-              .map(getObjectType(sdlOrigin, _).asInstanceOf[ObjectType[Ctx, Val]])
+              .map(getObjectType(sdlOrigin, _).asInstanceOf[ObjectType[Ctx, Val, F]])
               .orElse(schema.mutation)
               .map(getTypeFromDef(existingOrigin, _))
           val subscriptionType =
             subscriptionExt
-              .map(getObjectType(sdlOrigin, _).asInstanceOf[ObjectType[Ctx, Val]])
+              .map(getObjectType(sdlOrigin, _).asInstanceOf[ObjectType[Ctx, Val, F]])
               .orElse(schema.subscription)
               .map(getTypeFromDef(existingOrigin, _))
           val directives = directiveDefs.flatMap(buildDirective(existingOrigin, _))
@@ -137,7 +137,7 @@ class AstSchemaMaterializer[Ctx] private (
     }
   }
 
-  lazy val build: Schema[Ctx, Any] = {
+  lazy val build: Schema[Ctx, Any, F] = {
     val defErrors = validateDefinitions
 
     extractSchemaInfo(document, typeDefs, schemaExtensionDefs) match {
@@ -177,7 +177,7 @@ class AstSchemaMaterializer[Ctx] private (
     unused._1.toVector.map(getNamedType(sdlOrigin, _, None)) ++ unused._2 ++ directives
   }
 
-  def validateExtensions(schema: Schema[Ctx, _]): Vector[Violation] = {
+  def validateExtensions(schema: Schema[Ctx, _, F]): Vector[Violation] = {
     val nestedErrors = Vector(
       typeDefsMap.toVector.collect {
         case (name, defs) if defs.size > 1 =>
@@ -201,9 +201,9 @@ class AstSchemaMaterializer[Ctx] private (
             defs.flatMap(_.location).toList)
       },
       objectTypeExtensionDefs.flatMap(
-        validateExtensions[ObjectType[_, _], ast.ObjectTypeDefinition](schema, _, "object")),
+        validateExtensions[ObjectType[_, _, F], ast.ObjectTypeDefinition](schema, _, "object")),
       interfaceTypeExtensionDefs.flatMap(
-        validateExtensions[InterfaceType[_, _], ast.InterfaceTypeDefinition](
+        validateExtensions[InterfaceType[_, _, F], ast.InterfaceTypeDefinition](
           schema,
           _,
           "interface")),
@@ -217,14 +217,14 @@ class AstSchemaMaterializer[Ctx] private (
       scalarTypeExtensionDefs.flatMap(
         validateExtensions[ScalarType[_], ast.ScalarTypeDefinition](schema, _, "scalar")),
       unionTypeExtensionDefs.flatMap(
-        validateExtensions[UnionType[_], ast.UnionTypeDefinition](schema, _, "union"))
+        validateExtensions[UnionType[_, F], ast.UnionTypeDefinition](schema, _, "union"))
     )
 
     nestedErrors.flatten
   }
 
   private def validateExtensions[T1: ClassTag, T2: ClassTag](
-      schema: Schema[Ctx, _],
+      schema: Schema[Ctx, _, F],
       ext: ast.TypeExtensionDefinition,
       typeKind: String): Option[Violation] = {
     val instClass = implicitly[ClassTag[T1]].runtimeClass
@@ -269,9 +269,9 @@ class AstSchemaMaterializer[Ctx] private (
           defs.flatMap(_.location).toList)
       },
       objectTypeExtensionDefs.flatMap(
-        validateExtensionsAst[ObjectType[_, _], ast.ObjectTypeDefinition](_, "object")),
+        validateExtensionsAst[ObjectType[_, _, F], ast.ObjectTypeDefinition](_, "object")),
       interfaceTypeExtensionDefs.flatMap(
-        validateExtensionsAst[InterfaceType[_, _], ast.InterfaceTypeDefinition](_, "interface")),
+        validateExtensionsAst[InterfaceType[_, _, F], ast.InterfaceTypeDefinition](_, "interface")),
       enumTypeExtensionDefs.flatMap(
         validateExtensionsAst[EnumType[_], ast.EnumTypeDefinition](_, "enum")),
       inputObjectTypeExtensionDefs.flatMap(
@@ -281,7 +281,7 @@ class AstSchemaMaterializer[Ctx] private (
       scalarTypeExtensionDefs.flatMap(
         validateExtensionsAst[ScalarType[_], ast.ScalarTypeDefinition](_, "scalar")),
       unionTypeExtensionDefs.flatMap(
-        validateExtensionsAst[UnionType[_], ast.UnionTypeDefinition](_, "union"))
+        validateExtensionsAst[UnionType[_, F], ast.UnionTypeDefinition](_, "union"))
     )
 
     nestedErrors.flatten
@@ -361,7 +361,7 @@ class AstSchemaMaterializer[Ctx] private (
       getNamedType(tpe.origin, tpe.name, tpe.location)))
   }
 
-  def findUnusedTypes(schema: Schema[_, _], referenced: Set[String]): Vector[Type with Named] = {
+  def findUnusedTypes(schema: Schema[_, _, F], referenced: Set[String]): Vector[Type with Named] = {
     val existingOrigin = ExistingSchemaOrigin(schema)
 
     resolveAllLazyFields()
@@ -383,7 +383,7 @@ class AstSchemaMaterializer[Ctx] private (
       iteration += 1
 
       typeDefCache.forEachValue {
-        case o: ObjectLikeType[_, _] => o.fields
+        case o: ObjectLikeType[_, _, _] => o.fields
         case o: InputObjectType[_] => o.fields
         case _ => // do nothing
       }
@@ -424,9 +424,9 @@ class AstSchemaMaterializer[Ctx] private (
         this
       ))
 
-  def getObjectType(origin: MatOrigin, tpe: ast.NamedType): ObjectType[Ctx, Any] =
+  def getObjectType(origin: MatOrigin, tpe: ast.NamedType): ObjectType[Ctx, Any, F] =
     getOutputType(origin, tpe, optional = false) match {
-      case obj: ObjectType[_, _] => obj.asInstanceOf[ObjectType[Ctx, Any]]
+      case obj: ObjectType[_, _, F] => obj.asInstanceOf[ObjectType[Ctx, Any, F]]
       case _ =>
         throw MaterializedSchemaValidationError(
           Vector(
@@ -450,9 +450,9 @@ class AstSchemaMaterializer[Ctx] private (
               tpe.location.toList)))
     }
 
-  def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType): InterfaceType[Ctx, Any] =
+  def getInterfaceType(origin: MatOrigin, tpe: ast.NamedType): InterfaceType[Ctx, Any, F] =
     getOutputType(origin, tpe, optional = false) match {
-      case obj: InterfaceType[_, _] => obj.asInstanceOf[InterfaceType[Ctx, Any]]
+      case obj: InterfaceType[_, _, F] => obj.asInstanceOf[InterfaceType[Ctx, Any, F]]
       case _ =>
         throw MaterializedSchemaValidationError(
           Vector(
@@ -579,14 +579,14 @@ class AstSchemaMaterializer[Ctx] private (
         extendScalarAlias(origin, tpe.asInstanceOf[ScalarAlias[Any, Any]])
       case tpe: EnumType[_] => extendEnumType(origin, tpe)
       case tpe: InputObjectType[_] => extendInputObjectType(origin, tpe)
-      case tpe: UnionType[Ctx] => extendUnionType(origin, tpe)
-      case tpe: ObjectType[Ctx, _] => extendObjectType(origin, tpe)
-      case tpe: InterfaceType[Ctx, _] => extendInterfaceType(origin, tpe)
+      case tpe: UnionType[Ctx, F] => extendUnionType(origin, tpe)
+      case tpe: ObjectType[Ctx, _, F] => extendObjectType(origin, tpe)
+      case tpe: InterfaceType[Ctx, _, F] => extendInterfaceType(origin, tpe)
     }
 
   def buildField(
       origin: MatOrigin,
-      typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
+      typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _, F]],
       extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
       field: ast.FieldDefinition) = {
     val args = field.arguments.flatMap(buildArgument(origin, typeDefinition, Some(field), _)) toList
@@ -595,8 +595,11 @@ class AstSchemaMaterializer[Ctx] private (
     builder.buildField(origin, typeDefinition, extensions, field, fieldType, args, this)
   }
 
-  def extendField(origin: MatOrigin, tpe: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]) = {
-    val f = field.asInstanceOf[Field[Ctx, Any]]
+  def extendField(
+      origin: MatOrigin,
+      tpe: Option[ObjectLikeType[Ctx, _, F]],
+      field: Field[Ctx, _, F]) = {
+    val f = field.asInstanceOf[Field[Ctx, Any, F]]
 
     builder.extendField(
       origin,
@@ -609,8 +612,8 @@ class AstSchemaMaterializer[Ctx] private (
 
   def extendArgument(
       origin: MatOrigin,
-      tpe: Option[ObjectLikeType[Ctx, _]],
-      field: Field[Ctx, Any],
+      tpe: Option[ObjectLikeType[Ctx, _, F]],
+      field: Field[Ctx, Any, F],
       argument: Argument[_]) = {
     val a = argument.asInstanceOf[Argument[Any]]
 
@@ -647,7 +650,7 @@ class AstSchemaMaterializer[Ctx] private (
     )
   }
 
-  def extendObjectType(origin: MatOrigin, tpe: ObjectType[Ctx, _]) = {
+  def extendObjectType(origin: MatOrigin, tpe: ObjectType[Ctx, _, F]) = {
     val extensions = findObjectExtensions(tpe.name)
 
     builder.extendObjectType(
@@ -699,7 +702,7 @@ class AstSchemaMaterializer[Ctx] private (
     builder.transformInputObjectType(origin, extensions, tpe, fieldsFn, this)
   }
 
-  def extendInterfaceType(origin: MatOrigin, tpe: InterfaceType[Ctx, _]) = {
+  def extendInterfaceType(origin: MatOrigin, tpe: InterfaceType[Ctx, _, F]) = {
     val extensions = findInterfaceExtensions(tpe.name)
 
     builder.extendInterfaceType(
@@ -723,12 +726,12 @@ class AstSchemaMaterializer[Ctx] private (
 
   def extendInterfaces(
       origin: MatOrigin,
-      tpe: ObjectType[Ctx, _],
+      tpe: ObjectType[Ctx, _, F],
       extensions: Vector[ast.ObjectTypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.interfaces)
 
     val ei = extraInts.map(getInterfaceType(origin, _))
-    val oi = tpe.interfaces.map(getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any]])
+    val oi = tpe.interfaces.map(getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any, F]])
 
     (ei ++ oi).toList
   }
@@ -752,7 +755,7 @@ class AstSchemaMaterializer[Ctx] private (
 
   def extendFields(
       origin: MatOrigin,
-      tpe: ObjectLikeType[Ctx, _],
+      tpe: ObjectLikeType[Ctx, _, F],
       extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]) = {
     val extraFields = extensions.flatMap(e => e.fields.map(e -> _))
 
@@ -793,7 +796,7 @@ class AstSchemaMaterializer[Ctx] private (
       this)
   }
 
-  def extendUnionType(origin: MatOrigin, tpe: UnionType[Ctx]) = {
+  def extendUnionType(origin: MatOrigin, tpe: UnionType[Ctx, F]) = {
     val extensions = findUnionExtensions(tpe.name)
     val extraTypes = extensions.flatMap(_.types)
 
@@ -858,7 +861,7 @@ class AstSchemaMaterializer[Ctx] private (
 
   def buildArgument(
       origin: MatOrigin,
-      typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]],
+      typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _, F]],
       fieldDef: Option[ast.FieldDefinition],
       value: ast.InputValueDefinition) = {
     val default = buildDefault(value.defaultValue)
@@ -995,21 +998,25 @@ object AstSchemaMaterializer {
     else Right((queries.headOption, mutations.headOption, subscriptions.headOption))
   }
 
-  def buildSchema(document: ast.Document): Schema[Any, Any] =
-    buildSchema[Any](document, AstSchemaBuilder.default)
+  def buildSchema[F[_]](document: ast.Document): Schema[Any, Any, F] =
+    buildSchema[Any, F](document, AstSchemaBuilder.default)
 
-  def buildSchema[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
-    new AstSchemaMaterializer[Ctx](document, builder).build
-
-  def definitions(document: ast.Document): Vector[Named] =
-    definitions[Any](document, AstSchemaBuilder.default)
-
-  def definitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Vector[Named] =
-    new AstSchemaMaterializer[Ctx](document, builder).definitions
-
-  def extendSchema[Ctx, Val](
-      schema: Schema[Ctx, Val],
+  def buildSchema[Ctx, F[_]](
       document: ast.Document,
-      builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default): Schema[Ctx, Val] =
-    new AstSchemaMaterializer[Ctx](document, builder).extend(schema)
+      builder: AstSchemaBuilder[Ctx, F]): Schema[Ctx, Any, F] =
+    new AstSchemaMaterializer[Ctx, F](document, builder).build
+
+  def definitions[F[_]](document: ast.Document): Vector[Named] =
+    definitions[Any, F](document, AstSchemaBuilder.default)
+
+  def definitions[Ctx, F[_]](
+      document: ast.Document,
+      builder: AstSchemaBuilder[Ctx, F]): Vector[Named] =
+    new AstSchemaMaterializer[Ctx, F](document, builder).definitions
+
+  def extendSchema[Ctx, Val, F[_]](
+      schema: Schema[Ctx, Val, F],
+      document: ast.Document,
+      builder: AstSchemaBuilder[Ctx, F] = AstSchemaBuilder.default): Schema[Ctx, Val, F] =
+    new AstSchemaMaterializer[Ctx, F](document, builder).extend(schema)
 }

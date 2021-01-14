@@ -10,16 +10,16 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 object QueryReducerExecutor {
-  def reduceQueryWithoutVariables[Ctx, Root](
-      schema: Schema[Ctx, Root],
+  def reduceQueryWithoutVariables[Ctx, Root, F[_]](
+      schema: Schema[Ctx, Root, F],
       queryAst: ast.Document,
       userContext: Ctx,
-      queryReducers: List[QueryReducer[Ctx, _]],
+      queryReducers: List[QueryReducer[Ctx, _, F]],
       operationName: Option[String] = None,
       queryValidator: QueryValidator = QueryValidator.default,
       exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
       deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-      middleware: List[Middleware[Ctx]] = Nil
+      middleware: List[Middleware[Ctx, F]] = Nil
   )(implicit executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] = {
     val violations = queryValidator.validateQuery(schema, queryAst)
 
@@ -27,7 +27,7 @@ object QueryReducerExecutor {
       Future.failed(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, _ @@ ScalaInput](
+      val valueCollector = new ValueCollector[Ctx, _ @@ ScalaInput, F](
         schema,
         InputUnmarshaller.emptyMapVars,
         queryAst.sourceMapper,
@@ -39,7 +39,7 @@ object QueryReducerExecutor {
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
-        fieldCollector = new FieldCollector[Ctx, Root](
+        fieldCollector = new FieldCollector[Ctx, Root, F](
           schema,
           queryAst,
           Map.empty,
@@ -71,14 +71,14 @@ object QueryReducerExecutor {
   }
 
   /** Returns either new Ctx or future of it (with time measurement) */
-  def reduceQuery[Ctx, Root, Val](
-      schema: Schema[Ctx, Root],
-      queryReducers: List[QueryReducer[Ctx, _]],
+  def reduceQuery[Ctx, Root, Val, F[_]](
+      schema: Schema[Ctx, Root, F],
+      queryReducers: List[QueryReducer[Ctx, _, F]],
       exceptionHandler: ExceptionHandler,
-      fieldCollector: FieldCollector[Ctx, Root],
-      valueCollector: ValueCollector[Ctx, _],
+      fieldCollector: FieldCollector[Ctx, Root, F],
+      valueCollector: ValueCollector[Ctx, _, F],
       variables: Map[String, VariableValue],
-      rootTpe: ObjectType[Ctx, Root],
+      rootTpe: ObjectType[Ctx, Root, F],
       fields: CollectedFields,
       userContext: Ctx)(implicit
       executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] =
@@ -97,14 +97,14 @@ object QueryReducerExecutor {
         .recover { case error: Throwable => throw QueryReducingError(error, exceptionHandler) }
     } else Future.successful(userContext -> TimeMeasurement.empty)
 
-  private def reduceQueryUnsafe[Ctx, Val](
-      schema: Schema[Ctx, _],
-      fieldCollector: FieldCollector[Ctx, Val],
-      valueCollector: ValueCollector[Ctx, _],
+  private def reduceQueryUnsafe[Ctx, Val, F[_]](
+      schema: Schema[Ctx, _, F],
+      fieldCollector: FieldCollector[Ctx, Val, F],
+      valueCollector: ValueCollector[Ctx, _, F],
       variables: Map[String, VariableValue],
-      rootTpe: ObjectType[Ctx, _],
+      rootTpe: ObjectType[Ctx, _, F],
       fields: CollectedFields,
-      reducers: Vector[QueryReducer[Ctx, _]],
+      reducers: Vector[QueryReducer[Ctx, _, F]],
       userContext: Ctx)(implicit executionContext: ExecutionContext): Future[Ctx] = {
     val argumentValuesFn: QueryReducer.ArgumentValuesFn =
       (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) =>
@@ -116,7 +116,7 @@ object QueryReducerExecutor {
       tpe match {
         case OptionType(ofType) => loop(path, ofType, astFields)
         case ListType(ofType) => loop(path, ofType, astFields)
-        case objTpe: ObjectType[Ctx @unchecked, _] =>
+        case objTpe: ObjectType[Ctx @unchecked, _, F] =>
           fieldCollector.collectFields(path, objTpe, astFields) match {
             case Success(ff) =>
               // Using mutability here locally in order to reduce footprint
@@ -138,8 +138,8 @@ object QueryReducerExecutor {
                         newPath,
                         userContext,
                         fields,
-                        objTpe.asInstanceOf[ObjectType[Any, Any]],
-                        field.asInstanceOf[Field[Ctx, Any]],
+                        objTpe.asInstanceOf[ObjectType[Any, Any, F]],
+                        field.asInstanceOf[Field[Ctx, Any, F]],
                         argumentValuesFn
                       )
                     }
@@ -183,8 +183,8 @@ object QueryReducerExecutor {
             path,
             userContext,
             astFields,
-            rootTpe.asInstanceOf[ObjectType[Any, Any]],
-            field.asInstanceOf[Field[Ctx, Any]],
+            rootTpe.asInstanceOf[ObjectType[Any, Any, F]],
+            field.asInstanceOf[Field[Ctx, Any, F]],
             argumentValuesFn
           )
         }

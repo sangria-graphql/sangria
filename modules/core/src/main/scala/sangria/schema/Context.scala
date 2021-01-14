@@ -16,71 +16,75 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
 import scala.util.control.NonFatal
 
-sealed trait Action[+Ctx, +Val] {
-  def map[NewVal](fn: Val => NewVal): Action[Ctx, NewVal]
+sealed trait Action[+Ctx, +Val, F[_]] {
+  def map[NewVal](fn: Val => NewVal): Action[Ctx, NewVal, F]
 }
-sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val] {
-  def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal]
+sealed trait LeafAction[+Ctx, +Val, F[_]] extends Action[Ctx, Val, F] {
+  def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal, F]
 }
-sealed trait ReduceAction[+Ctx, +Val] extends Action[Ctx, Val] {
-  def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal]
+sealed trait ReduceAction[+Ctx, +Val, F[_]] extends Action[Ctx, Val, F] {
+  def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal, F]
 }
 
 object ReduceAction {
-  implicit def futureAction[Ctx, Val, F[_]: Effect](value: F[Val]): ReduceAction[Ctx, Val] =
+  implicit def futureAction[Ctx, Val, F[_]: Effect](value: F[Val]): ReduceAction[Ctx, Val, F] =
     FutureValue(value)
-  implicit def tryAction[Ctx, Val](value: Try[Val]): ReduceAction[Ctx, Val] = TryValue(value)
-  implicit def defaultAction[Ctx, Val](value: Val): ReduceAction[Ctx, Val] = Value(value)
+  implicit def tryAction[Ctx, Val](value: Try[Val]): ReduceAction[Ctx, Val, Any] = TryValue(value)
+  implicit def defaultAction[Ctx, Val](value: Val): ReduceAction[Ctx, Val, Any] = Value(value)
 }
 
 object Action extends LowPrioActions {
-  def sequence[Ctx, Val](actions: Seq[LeafAction[Ctx, Val]]): SequenceLeafAction[Ctx, Val] =
-    SequenceLeafAction[Ctx, Val](actions)
+  def sequence[Ctx, Val, F[_]](
+      actions: Seq[LeafAction[Ctx, Val, F]]): SequenceLeafAction[Ctx, Val, F] =
+    SequenceLeafAction[Ctx, Val, F](actions)
 
-  def apply[Ctx, Val](a: Action[Ctx, Val]): Action[Ctx, Val] = a
+  def apply[Ctx, Val, F[_]](a: Action[Ctx, Val, F]): Action[Ctx, Val, F] = a
 
-  implicit def deferredAction[Ctx, Val](value: Deferred[Val]): LeafAction[Ctx, Val] = DeferredValue(
-    value)
-  implicit def tryAction[Ctx, Val](value: Try[Val]): LeafAction[Ctx, Val] = TryValue(value)
+  implicit def deferredAction[Ctx, Val, F[_]](value: Deferred[Val]): LeafAction[Ctx, Val, F] =
+    DeferredValue(value)
+  implicit def tryAction[Ctx, Val, F[_]](value: Try[Val]): LeafAction[Ctx, Val, F] = TryValue(value)
 }
 
 trait LowPrioActions extends LowestPrioActions {
   implicit def deferredFutureAction[Ctx, Val, F[_]: Effect](
-      value: F[Deferred[Val]]): LeafAction[Ctx, Val] =
+      value: F[Deferred[Val]]): LeafAction[Ctx, Val, F] =
     DeferredFutureValue(value)
 }
 
 trait LowestPrioActions {
-  implicit def futureAction[Ctx, Val, F[_]: Effect](value: F[Val]): LeafAction[Ctx, Val] =
+  implicit def futureAction[Ctx, Val, F[_]: Effect](value: F[Val]): LeafAction[Ctx, Val, F] =
     FutureValue(value)
-  implicit def defaultAction[Ctx, Val](value: Val): LeafAction[Ctx, Val] = Value(value)
+  implicit def defaultAction[Ctx, Val, F[_]](value: Val): LeafAction[Ctx, Val, F] = Value(value)
 }
 
 object LeafAction {
-  def sequence[Ctx, Val](actions: Seq[LeafAction[Ctx, Val]]): SequenceLeafAction[Ctx, Val] =
-    SequenceLeafAction[Ctx, Val](actions)
+  def sequence[Ctx, Val, F[_]](
+      actions: Seq[LeafAction[Ctx, Val, F]]): SequenceLeafAction[Ctx, Val, F] =
+    SequenceLeafAction[Ctx, Val, F](actions)
 
-  def apply[Ctx, Val](a: LeafAction[Ctx, Val]) = a
+  def apply[Ctx, Val, F[_]](a: LeafAction[Ctx, Val, F]) = a
 }
 
-case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal] =
+case class Value[Ctx, Val, F[_]](value: Val)
+    extends LeafAction[Ctx, Val, F]
+    with ReduceAction[Ctx, Val, F] {
+  override def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal, F] =
     try Value(fn(value))
     catch {
       case NonFatal(e) => TryValue(Failure(e))
     }
 }
 
-case class TryValue[Ctx, Val](value: Try[Val])
-    extends LeafAction[Ctx, Val]
-    with ReduceAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal): TryValue[Ctx, NewVal] =
+case class TryValue[Ctx, Val, F[_]](value: Try[Val])
+    extends LeafAction[Ctx, Val, F]
+    with ReduceAction[Ctx, Val, F] {
+  override def map[NewVal](fn: Val => NewVal): TryValue[Ctx, NewVal, F] =
     TryValue(value.map(fn))
 }
 
-case class PartialValue[Ctx, Val](value: Val, errors: Vector[Throwable])
-    extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal] =
+case class PartialValue[Ctx, Val, F[_]](value: Val, errors: Vector[Throwable])
+    extends LeafAction[Ctx, Val, F] {
+  override def map[NewVal](fn: Val => NewVal): LeafAction[Ctx, NewVal, F] =
     try PartialValue(fn(value), errors)
     catch {
       case NonFatal(e) => TryValue(Failure(e))
@@ -88,32 +92,32 @@ case class PartialValue[Ctx, Val](value: Val, errors: Vector[Throwable])
 }
 
 case class FutureValue[Ctx, Val, F[_]: Effect](value: F[Val])
-    extends LeafAction[Ctx, Val]
-    with ReduceAction[Ctx, Val] {
+    extends LeafAction[Ctx, Val, F]
+    with ReduceAction[Ctx, Val, F] {
   override def map[NewVal](fn: Val => NewVal): FutureValue[Ctx, NewVal, F] =
     FutureValue(value.map(fn))
 }
 
-case class PartialFutureValue[Ctx, Val, F[_]: Effect](value: F[PartialValue[Ctx, Val]])
-    extends LeafAction[Ctx, Val] {
+case class PartialFutureValue[Ctx, Val, F[_]: Effect](value: F[PartialValue[Ctx, Val, F]])
+    extends LeafAction[Ctx, Val, F] {
   override def map[NewVal](fn: Val => NewVal): PartialFutureValue[Ctx, NewVal, F] =
     PartialFutureValue(value.map(_.map(fn) match {
-      case v: PartialValue[Ctx, NewVal] => v
+      case v: PartialValue[Ctx, NewVal, F] => v
       case TryValue(Failure(e)) => throw e
       case v => throw new IllegalStateException("Unexpected result from `PartialValue.map`: " + v)
     }))
 }
 
-case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal): DeferredValue[Ctx, NewVal] =
+case class DeferredValue[Ctx, Val, F[_]](value: Deferred[Val]) extends LeafAction[Ctx, Val, F] {
+  override def map[NewVal](fn: Val => NewVal): DeferredValue[Ctx, NewVal, F] =
     DeferredValue(MappingDeferred(value, (v: Val) => (fn(v), Vector.empty)))
 
-  def mapWithErrors[NewVal](fn: Val => (NewVal, Vector[Throwable])): DeferredValue[Ctx, NewVal] =
+  def mapWithErrors[NewVal](fn: Val => (NewVal, Vector[Throwable])): DeferredValue[Ctx, NewVal, F] =
     DeferredValue(MappingDeferred(value, fn))
 }
 
 case class DeferredFutureValue[Ctx, Val, F[_]: Effect](value: F[Deferred[Val]])
-    extends LeafAction[Ctx, Val] {
+    extends LeafAction[Ctx, Val, F] {
   override def map[NewVal](fn: Val => NewVal): DeferredFutureValue[Ctx, NewVal, F] =
     DeferredFutureValue(value.map(MappingDeferred(_, (v: Val) => (fn(v), Vector.empty))))
 
@@ -122,46 +126,47 @@ case class DeferredFutureValue[Ctx, Val, F[_]: Effect](value: F[Deferred[Val]])
     DeferredFutureValue(value.map(MappingDeferred(_, fn)))
 }
 
-case class SequenceLeafAction[Ctx, Val](value: Seq[LeafAction[Ctx, Val]])
-    extends LeafAction[Ctx, Seq[Val]] {
-  override def map[NewVal](fn: Seq[Val] => NewVal): MappedSequenceLeafAction[Ctx, Val, NewVal] =
-    new MappedSequenceLeafAction[Ctx, Val, NewVal](this, fn)
+case class SequenceLeafAction[Ctx, Val, F[_]](value: Seq[LeafAction[Ctx, Val, F]])
+    extends LeafAction[Ctx, Seq[Val], F] {
+  override def map[NewVal](fn: Seq[Val] => NewVal): MappedSequenceLeafAction[Ctx, Val, NewVal, F] =
+    new MappedSequenceLeafAction[Ctx, Val, NewVal, F](this, fn)
 }
 
-class MappedSequenceLeafAction[Ctx, Val, NewVal](
-    val action: SequenceLeafAction[Ctx, Val],
+class MappedSequenceLeafAction[Ctx, Val, NewVal, F[_]](
+    val action: SequenceLeafAction[Ctx, Val, F],
     val mapFn: Seq[Val] => NewVal)
-    extends LeafAction[Ctx, NewVal] {
+    extends LeafAction[Ctx, NewVal, F] {
   override def map[NewNewVal](
-      fn: NewVal => NewNewVal): MappedSequenceLeafAction[Ctx, Val, NewNewVal] =
-    new MappedSequenceLeafAction[Ctx, Val, NewNewVal](action, v => fn(mapFn(v)))
+      fn: NewVal => NewNewVal): MappedSequenceLeafAction[Ctx, Val, NewNewVal, F] =
+    new MappedSequenceLeafAction[Ctx, Val, NewNewVal, F](action, v => fn(mapFn(v)))
 }
 
-class UpdateCtx[Ctx, Val](val action: LeafAction[Ctx, Val], val nextCtx: Val => Ctx)
-    extends Action[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal): MappedUpdateCtx[Ctx, Val, NewVal] =
-    new MappedUpdateCtx[Ctx, Val, NewVal](action, nextCtx, fn)
+class UpdateCtx[Ctx, Val, F[_]](val action: LeafAction[Ctx, Val, F], val nextCtx: Val => Ctx)
+    extends Action[Ctx, Val, F] {
+  override def map[NewVal](fn: Val => NewVal): MappedUpdateCtx[Ctx, Val, NewVal, F] =
+    new MappedUpdateCtx[Ctx, Val, NewVal, F](action, nextCtx, fn)
 }
 
-class MappedUpdateCtx[Ctx, Val, NewVal](
-    val action: LeafAction[Ctx, Val],
+class MappedUpdateCtx[Ctx, Val, NewVal, F[_]](
+    val action: LeafAction[Ctx, Val, F],
     val nextCtx: Val => Ctx,
     val mapFn: Val => NewVal)
-    extends Action[Ctx, NewVal] {
-  override def map[NewNewVal](fn: NewVal => NewNewVal): MappedUpdateCtx[Ctx, Val, NewNewVal] =
-    new MappedUpdateCtx[Ctx, Val, NewNewVal](action, nextCtx, v => fn(mapFn(v)))
+    extends Action[Ctx, NewVal, F] {
+  override def map[NewNewVal](fn: NewVal => NewNewVal): MappedUpdateCtx[Ctx, Val, NewNewVal, F] =
+    new MappedUpdateCtx[Ctx, Val, NewNewVal, F](action, nextCtx, v => fn(mapFn(v)))
 }
 
 object UpdateCtx {
-  def apply[Ctx, Val](action: LeafAction[Ctx, Val])(newCtx: Val => Ctx): UpdateCtx[Ctx, Val] =
+  def apply[Ctx, Val, F[_]](action: LeafAction[Ctx, Val, F])(
+      newCtx: Val => Ctx): UpdateCtx[Ctx, Val, F] =
     new UpdateCtx(action, newCtx)
 }
 
-private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
+private[sangria] case class SubscriptionValue[Ctx, Val, S[_], F[_]](
     source: Val,
     stream: SubscriptionStream[S])
-    extends LeafAction[Ctx, Val] {
-  override def map[NewVal](fn: Val => NewVal): SubscriptionValue[Ctx, NewVal, S] =
+    extends LeafAction[Ctx, Val, F] {
+  override def map[NewVal](fn: Val => NewVal): SubscriptionValue[Ctx, NewVal, S, F] =
     throw new IllegalStateException(
       "`map` is not supported subscription actions. Action is only intended for internal use.")
 }
@@ -169,26 +174,27 @@ private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
 case class ProjectionName(name: String) extends FieldTag
 case object ProjectionExclude extends FieldTag
 
-trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
+trait Projector[Ctx, Val, Res, F[_]] extends (Context[Ctx, Val, F] => Action[Ctx, Res, F]) {
   val maxLevel: Int = Integer.MAX_VALUE
-  def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res]
+  def apply(ctx: Context[Ctx, Val, F], projected: Vector[ProjectedName]): Action[Ctx, Res, F]
 }
 
 object Projector {
-  def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
-    new Projector[Ctx, Val, Res] {
-      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
-      override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException(
+  def apply[Ctx, Val, Res, F[_]](
+      fn: (Context[Ctx, Val, F], Vector[ProjectedName]) => Action[Ctx, Res, F]) =
+    new Projector[Ctx, Val, Res, F] {
+      def apply(ctx: Context[Ctx, Val, F], projected: Vector[ProjectedName]) = fn(ctx, projected)
+      override def apply(ctx: Context[Ctx, Val, F]) = throw new IllegalStateException(
         "Default apply should not be called on projector!")
     }
 
-  def apply[Ctx, Val, Res](
+  def apply[Ctx, Val, Res, F[_]](
       levels: Int,
-      fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
-    new Projector[Ctx, Val, Res] {
+      fn: (Context[Ctx, Val, F], Vector[ProjectedName]) => Action[Ctx, Res, F]) =
+    new Projector[Ctx, Val, Res, F] {
       override val maxLevel = levels
-      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
-      override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException(
+      def apply(ctx: Context[Ctx, Val, F], projected: Vector[ProjectedName]) = fn(ctx, projected)
+      override def apply(ctx: Context[Ctx, Val, F]) = throw new IllegalStateException(
         "Default apply should not be called on projector!")
     }
 }
@@ -276,14 +282,15 @@ trait WithInputTypeRendering[Ctx] {
     DefaultValueRenderer.renderInputValueCompact(value, tpe, coercionHelper)
 }
 
-case class DefaultValueParser[T](
-    schema: Schema[_, _],
+case class DefaultValueParser[T, F[_]](
+    schema: Schema[_, _, F],
     parser: InputParser[T],
     toInput: ToInput[T, _])
 
 object DefaultValueParser {
-  def forType[T](schema: Schema[_, _])(implicit parser: InputParser[T], toInput: ToInput[T, _]) =
-    DefaultValueParser[T](schema, parser, toInput)
+  def forType[T, F[_]](
+      schema: Schema[_, _, F])(implicit parser: InputParser[T], toInput: ToInput[T, _]) =
+    DefaultValueParser[T, F](schema, parser, toInput)
 }
 
 object DefaultValueRenderer {
@@ -370,13 +377,13 @@ object DefaultValueRenderer {
   }
 }
 
-case class Context[Ctx, Val](
+case class Context[Ctx, Val, F[_]](
     value: Val,
     ctx: Ctx,
     args: Args,
-    schema: Schema[Ctx, Val],
-    field: Field[Ctx, Val],
-    parentType: ObjectType[Ctx, Any],
+    schema: Schema[Ctx, Val, F],
+    field: Field[Ctx, Val, F],
+    parentType: ObjectType[Ctx, Any, F],
     marshaller: ResultMarshaller,
     query: ast.Document,
     sourceMapper: Option[SourceMapper],

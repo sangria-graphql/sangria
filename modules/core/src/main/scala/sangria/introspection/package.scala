@@ -4,6 +4,8 @@ import sangria.parser.QueryParser
 import sangria.parser.DeliveryScheme.Throw
 import sangria.schema._
 
+import scala.concurrent.Future
+
 package object introspection {
   object TypeKind extends Enumeration {
     val Scalar, Object, Interface, Union, Enum, InputObject, List, NonNull = Value
@@ -163,7 +165,7 @@ package object introspection {
     description = "Object and Interface types are described by a list of Fields, each of " +
       "which has a name, potentially a list of arguments, and a return type.",
     fieldsFn = () =>
-      List[Field[Unit, Field[_, _]]](
+      List[Field[Unit, Field[_, _, Any], Any]](
         Field("name", StringType, resolve = _.value.name),
         Field("description", OptionType(StringType), resolve = _.value.description),
         Field("args", ListType(__InputValue), resolve = _.value.arguments),
@@ -182,9 +184,9 @@ package object introspection {
       case _ if !optional => TypeKind.NonNull
       case _: ScalarType[_] => TypeKind.Scalar
       case _: ScalarAlias[_, _] => TypeKind.Scalar
-      case _: ObjectType[_, _] => TypeKind.Object
-      case _: InterfaceType[_, _] => TypeKind.Interface
-      case _: UnionType[_] => TypeKind.Union
+      case _: ObjectType[_, _, _] => TypeKind.Object
+      case _: InterfaceType[_, _, _] => TypeKind.Interface
+      case _: UnionType[_, _] => TypeKind.Union
       case _: EnumType[_] => TypeKind.Enum
       case _: InputObjectType[_] => TypeKind.InputObject
       case _: ListType[_] | _: ListInputType[_] => TypeKind.List
@@ -212,7 +214,7 @@ package object introspection {
     case _ => None
   }
 
-  val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType(
+  val __Type: ObjectType[Unit, (Boolean, Type), Future] = ObjectType(
     name = "__Type",
     description = "The fundamental unit of any GraphQL Schema is the type. There are " +
       "many kinds of types in GraphQL as represented by the `__TypeKind` enum." +
@@ -223,7 +225,7 @@ package object introspection {
       "types, Union and Interface, provide the Object types possible " +
       "at runtime. List and NonNull types compose other types.",
     fieldsFn = () =>
-      List[Field[Unit, (Boolean, Type)]](
+      List[Field[Unit, (Boolean, Type), Future]](
         Field("kind", __TypeKind, resolve = ctx => getKind(ctx.value)),
         Field(
           "name",
@@ -252,7 +254,7 @@ package object introspection {
             val (_, tpe) = ctx.value
 
             tpe match {
-              case t: ObjectLikeType[_, _] if incDep =>
+              case t: ObjectLikeType[_, _, _] if incDep =>
                 Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]])
               case t: ObjectLikeType[_, _] =>
                 Some(
@@ -267,7 +269,7 @@ package object introspection {
           "interfaces",
           OptionType(ListType(__Type)),
           resolve = _.value._2 match {
-            case t: ObjectType[_, _] =>
+            case t: ObjectType[_, _, _] =>
               Some(t.allInterfaces.asInstanceOf[Vector[Type]].map(true -> _))
             case _ => None
           }
@@ -321,7 +323,7 @@ package object introspection {
       )
   )
 
-  val __InputValue: ObjectType[Unit, InputValue[_]] = ObjectType(
+  val __InputValue: ObjectType[Unit, InputValue[_], Future] = ObjectType(
     name = "__InputValue",
     description = "Arguments provided to Fields or Directives and the input fields of an " +
       "InputObject are represented as Input Values which describe their type " +
@@ -341,7 +343,7 @@ package object introspection {
     )
   )
 
-  val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(
+  val __EnumValue: ObjectType[Unit, EnumValue[_], Future] = ObjectType(
     name = "__EnumValue",
     description = "One possible value for a given Enum. Enum values are unique values, not " +
       "a placeholder for a string or numeric value. However an Enum value is " +
@@ -362,7 +364,7 @@ package object introspection {
       "execution behavior in ways field arguments will not suffice, such as " +
       "conditionally including or skipping a field. Directives provide this by " +
       "describing additional information to the executor.",
-    fields = fields[Unit, Directive](
+    fields = fields[Unit, Directive, Any](
       Field("name", StringType, resolve = _.value.name),
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field(
@@ -378,7 +380,7 @@ package object introspection {
     description = "A GraphQL Schema defines the capabilities of a GraphQL " +
       "server. It exposes all available types and directives on " +
       "the server, as well as the entry points for query, mutation, and subscription operations.",
-    fields = List[Field[Unit, Schema[Any, Any]]](
+    fields = List[Field[Unit, Schema[Any, Any, Future]]](
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field(
         "types",
@@ -412,13 +414,14 @@ package object introspection {
     )
   )
 
-  val SchemaMetaField: Field[Unit, Unit] = Field(
+  val SchemaMetaField: Field[Unit, Unit, Future] = Field(
     name = "__schema",
     fieldType = __Schema,
     description = Some("Access the current type schema of this server."),
-    resolve = _.schema.asInstanceOf[Schema[Any, Any]])
+    resolve = _.schema.asInstanceOf[Schema[Any, Any, Any]]
+  )
 
-  val TypeMetaField: Field[Unit, Unit] = Field(
+  val TypeMetaField: Field[Unit, Unit, Future] = Field(
     name = "__type",
     fieldType = OptionType(__Type),
     description = Some("Request the type information of a single type."),
@@ -426,7 +429,7 @@ package object introspection {
     resolve = ctx => ctx.schema.types.get(ctx.arg[String]("name")).map(true -> _._2)
   )
 
-  val TypeNameMetaField: Field[Unit, Unit] = Field(
+  val TypeNameMetaField: Field[Unit, Unit, Future] = Field(
     name = "__typename",
     fieldType = StringType,
     description = Some("The name of the current Object type at runtime."),
@@ -434,7 +437,7 @@ package object introspection {
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 
-  def isIntrospection(tpe: CompositeType[_], field: Field[_, _]): Boolean =
+  def isIntrospection[F[_]](tpe: CompositeType[_], field: Field[_, _, F]): Boolean =
     Schema.isIntrospectionType(tpe.name) || MetaFieldNames.contains(field.name)
 
   val IntrospectionTypes: List[Type with Named] =

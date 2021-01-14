@@ -12,7 +12,7 @@ import scala.collection.mutable.{ListBuffer, Map => MutableMap, Set => MutableSe
 import scala.reflect.{ClassTag, classTag}
 
 trait QueryValidator {
-  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
+  def validateQuery[F[_]](schema: Schema[_, _, F], queryAst: ast.Document): Vector[Violation]
 }
 
 object QueryValidator {
@@ -49,7 +49,7 @@ object QueryValidator {
   def ruleBased(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
 
   val empty = new QueryValidator {
-    def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
+    def validateQuery[F[_]](schema: Schema[_, _, _], queryAst: ast.Document): Vector[Violation] =
       Vector.empty
   }
 
@@ -57,7 +57,7 @@ object QueryValidator {
 }
 
 class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
-  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
+  def validateQuery[F[_]](schema: Schema[_, _, _], queryAst: ast.Document): Vector[Violation] = {
     val ctx = new ValidationContext(schema, queryAst, queryAst.sourceMapper, new TypeInfo(schema))
 
     validateUsingRules(queryAst, ctx, rules.map(_.visitor(ctx)), topLevel = true)
@@ -65,8 +65,8 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     ctx.violations
   }
 
-  def validateInputDocument(
-      schema: Schema[_, _],
+  def validateInputDocument[F[_]](
+      schema: Schema[_, _, F],
       doc: ast.InputDocument,
       inputTypeName: String): Vector[Violation] =
     schema.getInputType(ast.NamedType(inputTypeName)) match {
@@ -77,8 +77,8 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
             .mkString(", ")}.")
     }
 
-  def validateInputDocument(
-      schema: Schema[_, _],
+  def validateInputDocument[F[_]](
+      schema: Schema[_, _, F],
       doc: ast.InputDocument,
       inputType: InputType[_]): Vector[Violation] = {
     val typeInfo = new TypeInfo(schema, Some(inputType))
@@ -145,11 +145,11 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
   }
 }
 
-class ValidationContext(
-    val schema: Schema[_, _],
+class ValidationContext[F[_]](
+    val schema: Schema[_, _, F],
     val doc: ast.Document,
     val sourceMapper: Option[SourceMapper],
-    val typeInfo: TypeInfo) {
+    val typeInfo: TypeInfo[F]) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val errors = ListBuffer[Violation]()

@@ -12,6 +12,6 @@ trait MatOrigin {
 abstract class BaseMatOrigin(val description: String) extends MatOrigin
 
 case class SDLOrigin(document: Document) extends BaseMatOrigin("SDL")
-case class ExistingSchemaOrigin[Ctx, Val](schema: Schema[Ctx, Val])
+case class ExistingSchemaOrigin[Ctx, Val, F[_]](schema: Schema[Ctx, Val, F])
     extends BaseMatOrigin("existing schema")
 case object StandaloneOrigin extends BaseMatOrigin("standalone")

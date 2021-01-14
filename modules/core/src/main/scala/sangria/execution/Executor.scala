@@ -6,20 +6,22 @@ import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.validation.QueryValidator
 import InputUnmarshaller.emptyMapVars
+import sangria.effect.Effect
 import sangria.execution.deferred.DeferredResolver
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-case class Executor[Ctx, Root](
-    schema: Schema[Ctx, Root],
+case class Executor[Ctx, Root, F[_]: Effect](
+    schema: Schema[Ctx, Root, F],
     queryValidator: QueryValidator = QueryValidator.default,
-    deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
+    deferredResolver: DeferredResolver[Ctx, F] = DeferredResolver.empty,
     exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-    middleware: List[Middleware[Ctx]] = Nil,
+    middleware: List[Middleware[Ctx, F]] = Nil,
     maxQueryDepth: Option[Int] = None,
-    queryReducers: List[QueryReducer[Ctx, _]] = Nil
+    queryReducers: List[QueryReducer[Ctx, _, F]] = Nil
 ) {
   def prepare[Input](
       queryAst: ast.Document,
@@ -29,7 +31,7 @@ case class Executor[Ctx, Root](
       variables: Input = emptyMapVars
   )(implicit
       um: InputUnmarshaller[Input],
-      ec: ExecutionContext): Future[PreparedQuery[Ctx, Root, Input]] = {
+      ec: ExecutionContext): Future[PreparedQuery[Ctx, Root, Input, F]] = {
     val (violations, validationTiming) =
       TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
@@ -37,7 +39,7 @@ case class Executor[Ctx, Root](
       Future.failed(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, Input](
+      val valueCollector = new ValueCollector[Ctx, Input, F](
         schema,
         variables,
         queryAst.sourceMapper,
@@ -52,7 +54,7 @@ case class Executor[Ctx, Root](
         unmarshalledVariables <- valueCollector.getVariableValues(
           operation.variables,
           scalarMiddleware)
-        fieldCollector = new FieldCollector[Ctx, Root](
+        fieldCollector = new FieldCollector[Ctx, Root, F](
           schema,
           queryAst,
           unmarshalledVariables,
@@ -69,7 +71,7 @@ case class Executor[Ctx, Root](
         val preparedFields = fields.fields.flatMap {
           case CollectedField(_, astField, Success(_)) =>
             val allFields =
-              tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
+              tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root, F]]]
             val field = allFields.head
             val args = valueCollector.getFieldArgumentValues(
               ExecutionPath.empty.add(astField, tpe),
@@ -94,7 +96,7 @@ case class Executor[Ctx, Root](
             fields,
             userContext)
           .map { case (newCtx, timing) =>
-            new PreparedQuery[Ctx, Root, Input](
+            new PreparedQuery[Ctx, Root, Input, F](
               queryAst,
               operation,
               tpe,
@@ -149,7 +151,7 @@ case class Executor[Ctx, Root](
       scheme.failed(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, Input](
+      val valueCollector = new ValueCollector[Ctx, Input, F](
         schema,
         variables,
         queryAst.sourceMapper,
@@ -164,7 +166,7 @@ case class Executor[Ctx, Root](
         unmarshalledVariables <- valueCollector.getVariableValues(
           operation.variables,
           scalarMiddleware)
-        fieldCollector = new FieldCollector[Ctx, Root](
+        fieldCollector = new FieldCollector[Ctx, Root, F](
           schema,
           queryAst,
           unmarshalledVariables,
@@ -225,11 +227,11 @@ case class Executor[Ctx, Root](
       inputUnmarshaller: InputUnmarshaller[Input],
       operation: ast.OperationDefinition,
       sourceMapper: Option[SourceMapper],
-      valueCollector: ValueCollector[Ctx, _],
-      fieldCollector: FieldCollector[Ctx, Root],
+      valueCollector: ValueCollector[Ctx, _, F],
+      fieldCollector: FieldCollector[Ctx, Root, F],
       marshaller: ResultMarshaller,
       variables: Map[String, VariableValue],
-      tpe: ObjectType[Ctx, Root],
+      tpe: ObjectType[Ctx, Root, F],
       fields: CollectedFields,
       ctx: Ctx,
       root: Root,
@@ -251,10 +253,10 @@ case class Executor[Ctx, Root](
       val middlewareVal = middleware.map(m => m.beforeQuery(middlewareCtx) -> m)
       val deferredResolverState = deferredResolver.initialQueryState
 
-      val resolver = new Resolver[Ctx](
+      val resolver = new Resolver[Ctx, F](
         marshaller,
-        middlewareCtx,
-        schema,
+        middlewareCtx.asInstanceOf[MiddlewareQueryContext[Ctx, _, _, F]],
+        schema.asInstanceOf[Schema[Ctx, _, F]],
         valueCollector,
         variables,
         fieldCollector,
@@ -263,7 +265,7 @@ case class Executor[Ctx, Root](
         deferredResolver,
         sourceMapper,
         deprecationTracker,
-        middlewareVal,
+        middlewareVal.asInstanceOf[List[(Any, sangria.execution.Middleware[Ctx, F])]],
         maxQueryDepth,
         deferredResolverState,
         scheme.extended,
@@ -312,20 +314,20 @@ case class Executor[Ctx, Root](
 object Executor {
   type ExceptionHandler = sangria.execution.ExceptionHandler
 
-  def execute[Ctx, Root, Input](
-      schema: Schema[Ctx, Root],
+  def execute[Ctx, Root, Input, F[_]: Effect](
+      schema: Schema[Ctx, Root, F],
       queryAst: ast.Document,
       userContext: Ctx = (),
       root: Root = (),
       operationName: Option[String] = None,
       variables: Input = emptyMapVars,
       queryValidator: QueryValidator = QueryValidator.default,
-      deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
+      deferredResolver: DeferredResolver[Ctx, F] = DeferredResolver.empty,
       exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
       deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-      middleware: List[Middleware[Ctx]] = Nil,
+      middleware: List[Middleware[Ctx, F]] = Nil,
       maxQueryDepth: Option[Int] = None,
-      queryReducers: List[QueryReducer[Ctx, _]] = Nil
+      queryReducers: List[QueryReducer[Ctx, _, F]] = Nil
   )(implicit
       executionContext: ExecutionContext,
       marshaller: ResultMarshaller,
@@ -342,23 +344,23 @@ object Executor {
       queryReducers)
       .execute(queryAst, userContext, root, operationName, variables)
 
-  def prepare[Ctx, Root, Input](
-      schema: Schema[Ctx, Root],
+  def prepare[Ctx, Root, Input, F[_]: Effect](
+      schema: Schema[Ctx, Root, F],
       queryAst: ast.Document,
       userContext: Ctx = (),
       root: Root = (),
       operationName: Option[String] = None,
       variables: Input = emptyMapVars,
       queryValidator: QueryValidator = QueryValidator.default,
-      deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
+      deferredResolver: DeferredResolver[Ctx, F] = DeferredResolver.empty,
       exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
       deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-      middleware: List[Middleware[Ctx]] = Nil,
+      middleware: List[Middleware[Ctx, F]] = Nil,
       maxQueryDepth: Option[Int] = None,
-      queryReducers: List[QueryReducer[Ctx, _]] = Nil
+      queryReducers: List[QueryReducer[Ctx, _, F]] = Nil
   )(implicit
       executionContext: ExecutionContext,
-      um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] =
+      um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input, F]] =
     Executor(
       schema,
       queryValidator,
@@ -370,8 +372,8 @@ object Executor {
       queryReducers)
       .prepare(queryAst, userContext, root, operationName, variables)
 
-  def getOperationRootType[Ctx, Root](
-      schema: Schema[Ctx, Root],
+  def getOperationRootType[Ctx, Root, F[_]](
+      schema: Schema[Ctx, Root, F],
       exceptionHandler: ExceptionHandler,
       operation: ast.OperationDefinition,
       sourceMapper: Option[SourceMapper]) = operation.operationType match {
@@ -432,13 +434,13 @@ object Executor {
     }
 }
 
-class PreparedQuery[Ctx, Root, Input] private[execution] (
+class PreparedQuery[Ctx, Root, Input, F[_]] private[execution] (
     val queryAst: ast.Document,
     val operation: ast.OperationDefinition,
-    val tpe: ObjectType[Ctx, Root],
+    val tpe: ObjectType[Ctx, Root, F],
     val userContext: Ctx,
     val root: Root,
-    val fields: Seq[PreparedField[Ctx, Root]],
+    val fields: Seq[PreparedField[Ctx, Root, F]],
     execFn: (Ctx, Root, ResultMarshaller, ExecutionScheme) => Any) {
   def execute(userContext: Ctx = userContext, root: Root = root)(implicit
       marshaller: ResultMarshaller,
@@ -446,4 +448,4 @@ class PreparedQuery[Ctx, Root, Input] private[execution] (
     execFn(userContext, root, marshaller, scheme).asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 }
 
-case class PreparedField[Ctx, Root](field: Field[Ctx, Root], args: Args)
+case class PreparedField[Ctx, Root, F[_]](field: Field[Ctx, Root, F], args: Args)

@@ -257,13 +257,13 @@ package object schema {
   val BuiltinDirectivesByName: Map[String, Directive] =
     BuiltinDirectives.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
 
-  def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
+  def fields[Ctx, Val, F[_]](fields: Field[Ctx, Val, F]*): List[Field[Ctx, Val, F]] = fields.toList
 
-  def interfaces[Ctx, Concrete](
-      interfaces: PossibleInterface[Ctx, Concrete]*): List[PossibleInterface[Ctx, Concrete]] =
+  def interfaces[Ctx, Concrete, F[_]](
+      interfaces: PossibleInterface[Ctx, Concrete, F]*): List[PossibleInterface[Ctx, Concrete, F]] =
     interfaces.toList
 
-  def possibleTypes[Ctx, Abstract](
-      objectTypes: PossibleObject[Ctx, Abstract]*): List[PossibleObject[Ctx, Abstract]] =
+  def possibleTypes[Ctx, Abstract, F[_]](
+      objectTypes: PossibleObject[Ctx, Abstract, F]*): List[PossibleObject[Ctx, Abstract, F]] =
     objectTypes.toList
 }
