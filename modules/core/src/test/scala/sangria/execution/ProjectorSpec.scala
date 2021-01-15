@@ -2,7 +2,7 @@ package sangria.execution
 
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.parser.QueryParser
-import sangria.schema._
+import sangria.schema.{Args, _}
 import sangria.util.FutureResultSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,12 +10,16 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sangria.marshalling.InputUnmarshaller.mapVars
 
 class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class Product(id: String, variants: List[Variant])
   case class Variant(id: String, relatedProductIds: List[String])
 
   case class ProductDefer(productIds: List[String]) extends Deferred[List[Right[String, Product]]]
+
+  val IntArgument = Argument("intArg", IntType)
+  val StringArgument = Argument("stringArg", StringType)
 
   val ProductAttributeType = InterfaceType(
     "ProductAttribute",
@@ -60,7 +64,7 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             1,
             (ctx, projected) =>
               projected match {
-                case Vector(ProjectedName("id", _)) =>
+                case Vector(ProjectedName("id", _, _)) =>
                   Value(ctx.value.relatedProductIds.map(Left(_)))
                 case _ => ProductDefer(ctx.value.relatedProductIds)
               }
@@ -84,8 +88,14 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           "masterVariant",
           VariantType,
           tags = ProjectionName("master1") :: ProjectionName("master2") :: Nil,
-          resolve = _.value.toOption.get.variants.head),
-        Field("variants", ListType(VariantType), resolve = _.value.toOption.get.variants.tail)
+          arguments = IntArgument :: Nil,
+          resolve = _.value.toOption.get.variants.head
+        ),
+        Field(
+          "variants",
+          ListType(VariantType),
+          arguments = StringArgument :: Nil,
+          resolve = _.value.toOption.get.variants.tail)
       )
     )
 
@@ -158,7 +168,7 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             projectAll {
               id
               typeId
-              variants {
+              variants(stringArg: "a") {
                 id
                 attributes {
                   name
@@ -170,7 +180,7 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
                 relatedProducts {
                   id
                   typeId
-                  variants {
+                  variants(stringArg: "b") {
                     id
                   }
                 }
@@ -179,7 +189,7 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             projectOne {
               id
               typeId
-              variants {
+              variants(stringArg: "c") {
                 id
                 typeId
               }
@@ -239,8 +249,16 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
               "rp",
               Vector(
                 ProjectedName("id", Vector.empty),
-                ProjectedName("variants", Vector(ProjectedName("id", Vector.empty)))))
-          )
+                ProjectedName(
+                  "variants",
+                  Vector(
+                    ProjectedName("id", Vector.empty)
+                  )
+                )
+              )
+            )
+          ),
+          Args(StringArgument :: Nil, "stringArg" -> "a")
         )
       )
 
@@ -249,19 +267,21 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       }
 
       ctx.oneLevelprojections should be(
-        Vector(ProjectedName("id", Vector.empty), ProjectedName("variants", Vector.empty)))
+        Vector(
+          ProjectedName("id", Vector.empty),
+          ProjectedName("variants", Vector.empty, Args(StringArgument :: Nil, "stringArg" -> "c"))))
     }
 
     "handle multiple projected names" in {
       val Success(query) = QueryParser.parse("""
-          {
+          query someQuery($withVariable: String!) {
             projectAll {
               id
               variantIds
-              masterVariant {
+              masterVariant(intArg: 1) {
                 mixed
               }
-              variants {
+              variants(stringArg: $withVariable) {
                 id
                 mixed
               }
@@ -270,10 +290,10 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             projectOne {
               id
               variantIds
-              masterVariant {
+              masterVariant(intArg: 2) {
                 mixed
               }
-              variants {
+              variants(stringArg: "b") {
                 id
                 mixed
               }
@@ -282,8 +302,11 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         """)
 
       val ctx = new Ctx
+      val variables = mapVars("withVariable" -> "a")
 
-      Executor.execute(schema, query, ctx, deferredResolver = new ProductResolver).await should be(
+      Executor
+        .execute(schema, query, ctx, variables = variables, deferredResolver = new ProductResolver)
+        .await should be(
         Map(
           "data" ->
             Map(
@@ -320,16 +343,22 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           ProjectedName("variants.id", Vector.empty),
           ProjectedName(
             "master1",
-            Vector(ProjectedName("mixed1", Vector.empty), ProjectedName("mixed2", Vector.empty))),
+            Vector(ProjectedName("mixed1", Vector.empty), ProjectedName("mixed2", Vector.empty)),
+            Args(IntArgument :: Nil, "intArg" -> 1)
+          ),
           ProjectedName(
             "master2",
-            Vector(ProjectedName("mixed1", Vector.empty), ProjectedName("mixed2", Vector.empty))),
+            Vector(ProjectedName("mixed1", Vector.empty), ProjectedName("mixed2", Vector.empty)),
+            Args(IntArgument :: Nil, "intArg" -> 1)
+          ),
           ProjectedName(
             "variants",
             Vector(
               ProjectedName("id", Vector.empty),
               ProjectedName("mixed1", Vector.empty),
-              ProjectedName("mixed2", Vector.empty)))
+              ProjectedName("mixed2", Vector.empty)),
+            Args(StringArgument :: Nil, "stringArg" -> "a")
+          )
         ))
 
       ctx.oneLevelprojections should be(
@@ -337,9 +366,9 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           ProjectedName("id", Vector.empty),
           ProjectedName("masterVariant.id", Vector.empty),
           ProjectedName("variants.id", Vector.empty),
-          ProjectedName("master1", Vector.empty),
-          ProjectedName("master2", Vector.empty),
-          ProjectedName("variants", Vector.empty)
+          ProjectedName("master1", Vector.empty, Args(IntArgument :: Nil, "intArg" -> 2)),
+          ProjectedName("master2", Vector.empty, Args(IntArgument :: Nil, "intArg" -> 2)),
+          ProjectedName("variants", Vector.empty, Args(StringArgument :: Nil, "stringArg" -> "b"))
         ))
     }
   }
