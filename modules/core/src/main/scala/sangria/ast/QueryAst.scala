@@ -376,7 +376,7 @@ case class ObjectValue(
     fields: Vector[ObjectField],
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
-    extends Value {
+    extends ScalarValue {
   lazy val fieldsByName =
     fields.foldLeft(ListMap.empty[String, Value]) { case (acc, field) =>
       acc + (field.name -> field.value)

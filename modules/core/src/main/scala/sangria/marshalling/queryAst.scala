@@ -51,6 +51,12 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
 
   def isScalarNode(node: ast.Value) = node.isInstanceOf[ast.ScalarValue]
   def getScalarValue(node: ast.Value) = node
+
+  import sangria.marshalling.MarshallingUtil._
+  import sangria.util.tag.@@
+  import sangria.marshalling.scalaMarshalling._
+  import queryAst._
+
   def getScalaScalarValue(node: ast.Value) = node match {
     case ast.BooleanValue(b, _, _) => b
     case ast.BigIntValue(i, _, _) => i
@@ -59,6 +65,7 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
     case ast.IntValue(i, _, _) => i
     case ast.StringValue(s, _, _, _, _) => s
     case ast.EnumValue(s, _, _) => s
+    case obj: ast.ObjectValue => convert[ast.Value, Any @@ ScalaInput](obj)
     case node => throw new IllegalStateException("Unsupported scalar node: " + node)
   }
 
@@ -85,6 +92,7 @@ class QueryAstResultMarshaller extends ResultMarshaller {
     case v: Double => ast.FloatValue(v)
     case v: BigInt => ast.BigIntValue(v)
     case v: BigDecimal => ast.BigDecimalValue(v)
+    case v: ast.ObjectValue => v
     case v => throw new IllegalArgumentException("Unsupported scalar value: " + v)
   }
 
