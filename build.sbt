@@ -7,6 +7,7 @@ import sbt.Keys.{
   scmInfo,
   startYear
 }
+import com.typesafe.tools.mima.core.{ProblemFilters, Problem}
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.4")
@@ -15,6 +16,12 @@ ThisBuild / githubWorkflowPublishTargetBranches := List()
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
+)
+
+// Binary Incompatible Changes, we'll document.
+ThisBuild / mimaBinaryIssueFilters ++= Seq(
+  ProblemFilters.exclude[Problem]("sangria.schema.ProjectedName*"),
+  ProblemFilters.exclude[Problem]("sangria.schema.Args*")
 )
 
 lazy val root = project

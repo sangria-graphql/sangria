@@ -200,7 +200,10 @@ object Projector {
     }
 }
 
-case class ProjectedName(name: String, children: Vector[ProjectedName] = Vector.empty) {
+case class ProjectedName(
+    name: String,
+    children: Vector[ProjectedName] = Vector.empty,
+    args: Args = Args.empty) {
   lazy val asVector = {
     def loop(name: ProjectedName): Vector[Vector[String]] =
       Vector(name.name) +: (name.children.flatMap(loop).map(name.name +: _))
@@ -518,7 +521,10 @@ object Args {
   def apply(definitions: List[Argument[_]], values: Map[String, Any]): Args =
     apply(definitions, input = ScalaInput.scalaInput(values))
 
-  def apply[In: InputUnmarshaller](definitions: List[Argument[_]], input: In): Args = {
+  def apply[In: InputUnmarshaller](
+      definitions: List[Argument[_]],
+      input: In,
+      variables: Option[Map[String, VariableValue]] = None): Args = {
     import sangria.marshalling.queryAst._
 
     val iu = implicitly[InputUnmarshaller[In]]
@@ -530,7 +536,7 @@ object Args {
         iu.getMapKeys(input).flatMap(key => definitions.find(_.name == key)).map { arg =>
           val astValue = iu
             .getRootMapValue(input, arg.name)
-            .flatMap(x => this.convert[In, ast.Value](x, arg.argumentType))
+            .flatMap(x => this.convert[In, ast.Value](x, arg.argumentType, variables))
 
           ast.Argument(name = arg.name, value = astValue.getOrElse(ast.NullValue()))
         }
@@ -556,9 +562,23 @@ object Args {
         astElem.arguments.map(arg => ast.ObjectField(arg.name, arg.value))): ast.Value)
   }
 
+  def apply(
+      schemaElem: HasArguments,
+      astElem: ast.WithArguments,
+      variables: Map[String, VariableValue]): Args = {
+    import sangria.marshalling.queryAst._
+
+    apply(
+      schemaElem.arguments,
+      ast.ObjectValue(astElem.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value))): ast.Value,
+      Some(variables)
+    )
+  }
+
   private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](
       value: In,
-      tpe: InputType[_]): Option[Out] = {
+      tpe: InputType[_],
+      variables: Option[Map[String, VariableValue]] = None): Option[Out] = {
     val rm = implicitly[ResultMarshallerForType[Out]]
 
     ValueCoercionHelper.default.coerceInputValue(
@@ -566,7 +586,7 @@ object Args {
       List("stub"),
       value,
       None,
-      None,
+      variables,
       rm.marshaller,
       rm.marshaller,
       isArgument = false) match {
