@@ -7,14 +7,14 @@ import sbt.Keys.{
   scmInfo,
   startYear
 }
-import com.typesafe.tools.mima.core.{ProblemFilters, Problem}
+import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.4")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowPublishTargetBranches := List()
 ThisBuild / githubWorkflowBuildPreamble ++= List(
-  WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
+//  WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 )
 
