@@ -27,7 +27,9 @@ case class Executor[Ctx, Root](
       root: Root,
       operationName: Option[String] = None,
       variables: Input = emptyMapVars
-  )(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
+  )(implicit
+      um: InputUnmarshaller[Input],
+      astUm: InputUnmarshaller[ast.Value]): Future[PreparedQuery[Ctx, Root, Input]] = {
     val (violations, validationTiming) =
       TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
@@ -43,7 +45,7 @@ case class Executor[Ctx, Root](
         userContext,
         exceptionHandler,
         scalarMiddleware,
-        false)(um)
+        false)(um, astUm)
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
@@ -138,6 +140,7 @@ case class Executor[Ctx, Root](
   )(implicit
       marshaller: ResultMarshaller,
       um: InputUnmarshaller[Input],
+      astUm: InputUnmarshaller[ast.Value],
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val (violations, validationTiming) =
       TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
@@ -154,7 +157,7 @@ case class Executor[Ctx, Root](
         userContext,
         exceptionHandler,
         scalarMiddleware,
-        false)(um)
+        false)(um, astUm)
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
@@ -327,6 +330,7 @@ object Executor {
       executionContext: ExecutionContext,
       marshaller: ResultMarshaller,
       um: InputUnmarshaller[Input],
+      astUm: InputUnmarshaller[ast.Value] = sangria.marshalling.queryAst.queryAstInputUnmarshaller,
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] =
     Executor(
       schema,
@@ -355,7 +359,9 @@ object Executor {
       queryReducers: List[QueryReducer[Ctx, _]] = Nil
   )(implicit
       executionContext: ExecutionContext,
-      um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] =
+      um: InputUnmarshaller[Input],
+      astUm: InputUnmarshaller[ast.Value] = sangria.marshalling.queryAst.queryAstInputUnmarshaller
+  ): Future[PreparedQuery[Ctx, Root, Input]] =
     Executor(
       schema,
       queryValidator,
@@ -365,7 +371,7 @@ object Executor {
       middleware,
       maxQueryDepth,
       queryReducers)
-      .prepare(queryAst, userContext, root, operationName, variables)
+      .prepare(queryAst, userContext, root, operationName, variables)(um, astUm)
 
   def getOperationRootType[Ctx, Root](
       schema: Schema[Ctx, Root],

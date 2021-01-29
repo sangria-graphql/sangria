@@ -28,7 +28,7 @@ case class InputDocumentMaterializer[Vars](
       (),
       ExceptionHandler.empty,
       None,
-      false)(iu)
+      false)(iu, sangria.marshalling.queryAst.queryAstInputUnmarshaller)
 
     val violations = QueryValidator.default.validateInputDocument(schema, document, inputType)
 

@@ -80,6 +80,7 @@ object BatchExecutor {
       executionContext: ExecutionContext,
       marshaller: SymmetricMarshaller[T],
       um: InputUnmarshaller[Input],
+      astUm: InputUnmarshaller[ast.Value] = sangria.marshalling.queryAst.queryAstInputUnmarshaller,
       scheme: ExecutionScheme): scheme.Result[Ctx, T] = {
     val executor = Executor(
       schema,
@@ -358,7 +359,8 @@ object BatchExecutor {
       scheme: ExecutionScheme
   )(implicit
       marshaller: ResultMarshaller,
-      um: InputUnmarshaller[Input]): scheme.Result[Ctx, marshaller.Node] = {
+      um: InputUnmarshaller[Input],
+      astUm: InputUnmarshaller[ast.Value]): scheme.Result[Ctx, marshaller.Node] = {
     implicit val s = scheme
 
     executor

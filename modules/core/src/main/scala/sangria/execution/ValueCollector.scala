@@ -19,7 +19,9 @@ class ValueCollector[Ctx, Input](
     userContext: Ctx,
     exceptionHandler: ExceptionHandler,
     fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]],
-    ignoreErrors: Boolean)(implicit um: InputUnmarshaller[Input]) {
+    ignoreErrors: Boolean)(implicit
+    um: InputUnmarshaller[Input],
+    astUm: InputUnmarshaller[ast.Value]) {
   val coercionHelper =
     new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
@@ -116,7 +118,7 @@ object ValueCollector {
       ignoreErrors: Boolean = false,
       sourceMapper: Option[SourceMapper] = None,
       fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]] = None
-  ): Try[Args] = {
+  )(implicit um: InputUnmarshaller[ast.Value]): Try[Args] = {
     import coercionHelper._
 
     if (argumentDefs.isEmpty)
@@ -134,8 +136,6 @@ object ValueCollector {
           val argPath = argDef.name :: Nil
           val astValue = astArgMap.get(argDef.name).map(_.value)
           val fromInput = argDef.fromInput
-
-          implicit val um = sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
           try resolveMapValue(
             argDef.argumentType,

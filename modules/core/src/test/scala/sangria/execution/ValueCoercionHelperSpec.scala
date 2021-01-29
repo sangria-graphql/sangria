@@ -1,6 +1,6 @@
 package sangria.execution
 
-import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput}
+import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, InputUnmarshaller}
 import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
 import sangria.schema._
@@ -13,6 +13,8 @@ import org.scalatest.wordspec.AnyWordSpec
 class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
   val helper = ValueCoercionHelper.default
   val marshaller = CoercedScalaResultMarshaller.default
+  implicit val astUm: InputUnmarshaller[ast.Value] =
+    sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
   "ValueCoercionHelper" should {
     "converts according to input coercion rules" in {

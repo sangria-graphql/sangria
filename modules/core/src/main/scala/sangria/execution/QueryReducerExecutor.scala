@@ -35,7 +35,9 @@ object QueryReducerExecutor {
         userContext,
         exceptionHandler,
         scalarMiddleware,
-        true)(InputUnmarshaller.scalaInputUnmarshaller[_ @@ ScalaInput])
+        true)(
+        InputUnmarshaller.scalaInputUnmarshaller[_ @@ ScalaInput],
+        sangria.marshalling.queryAst.queryAstInputUnmarshaller)
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
