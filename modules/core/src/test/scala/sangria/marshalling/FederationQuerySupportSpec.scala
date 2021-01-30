@@ -8,7 +8,6 @@ import sangria.util.FutureResultSupport
 import sangria.macros._
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.util.tag.@@
 
 import scala.util.Success
 
@@ -74,7 +73,7 @@ class FederationQuerySupportSpec extends AnyWordSpec with Matchers with FutureRe
 
       result.renderPretty should be("""{
         |  data: {
-        |    entities: "ListMap(__typename -> State, id -> 1)"
+        |    entities: "(__typename -> State, id -> 1)"
         |  }
         |}""".stripMargin)
     }
@@ -82,7 +81,7 @@ class FederationQuerySupportSpec extends AnyWordSpec with Matchers with FutureRe
 }
 
 object FederationQuerySupportSpec {
-  case class _Any(fields: Map[String, Any])
+  case class _Any(obj: ast.ObjectValue)
 
   object _Any {
 
@@ -90,23 +89,25 @@ object FederationQuerySupportSpec {
 
     case object AnyCoercionViolation extends ValueCoercionViolation("_Any value expected")
 
-    def Type(implicit
-        in: InputUnmarshaller[sangria.ast.Value],
-        out: ResultMarshallerForType[Any @@ ScalaInput]) = ScalarType[_Any](
+    def toString(v: ast.Value): String =
+      v match {
+        case obj: ast.ObjectValue =>
+          obj.fieldsByName.map { case (k, v) => s"$k -> ${toString(v)}" }.mkString("(", ", ", ")")
+        case s: ast.StringValue => s.value
+        case s: ast.BigIntValue => s.value.toString()
+        case other => other.toString
+      }
+
+    val Type = ScalarType[_Any](
       name = "_Any",
       coerceOutput = { case (_Any(output), _) =>
-        output.toString
+        toString(output)
       },
       coerceUserInput = { _ =>
         Left(AnyCoercionViolation)
       },
       coerceInput = {
-        case obj: ast.ObjectValue =>
-          Right(
-            _Any(
-              MarshallingUtil
-                .convert[sangria.ast.Value, Any @@ ScalaInput](obj)
-                .asInstanceOf[Map[String, Any]]))
+        case obj: ast.ObjectValue => Right(_Any(obj))
         case _ => Left(AnyCoercionViolation)
       }
     )
