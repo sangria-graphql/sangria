@@ -13,13 +13,12 @@ import sangria.parser.QueryParser
 import sangria.renderer.QueryRenderer
 import sangria.util.FutureResultSupport
 
-class MapValueAsScalarSpec extends AnyWordSpec with Matchers with FutureResultSupport {
-
-  import MapValueAsScalarSpec._
+class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   import sangria.schema._
+  import FederationSpec._
 
-  "Unmarshaller" should {
+  "To support Apollo Federation, an unmarshaller" should {
     "accept a map value as a scalar" in {
       val ast =
         graphql"""
@@ -78,7 +77,7 @@ class MapValueAsScalarSpec extends AnyWordSpec with Matchers with FutureResultSu
   }
 }
 
-object MapValueAsScalarSpec {
+object FederationSpec {
 
   implicit val um = new InputUnmarshaller[JValue] {
     def getRootMapValue(node: JValue, key: String) =
