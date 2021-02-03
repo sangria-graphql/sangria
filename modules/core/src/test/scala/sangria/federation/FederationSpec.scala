@@ -36,9 +36,7 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
          """
 
       val federationSupport =
-        new FederationSupport(sangria.marshalling.json4s.jackson.Json4sJacksonInputUnmarshaller)({
-          case obj: org.json4s.JObject => obj
-        })
+        new FederationSupport(sangria.marshalling.json4s.jackson.Json4sJacksonInputUnmarshaller)
 
       val schema: Schema[Any, Any] = Schema.buildFromAst(
         AST,
@@ -81,8 +79,16 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
 
 object FederationSpec {
 
-  class FederationSupport[Node, NodeObject <: Node](default: InputUnmarshaller[Node])(
-      extractObject: PartialFunction[Any, NodeObject]) {
+  class FederationSupport[Node](default: InputUnmarshaller[Node]) {
+
+    trait NodeObject {
+      def render: String
+    }
+    object NodeObject {
+      def apply(node: Node): NodeObject = new NodeObject {
+        override def render: String = default.render(node)
+      }
+    }
 
     case class _Any(fields: NodeObject)
 
@@ -97,12 +103,12 @@ object FederationSpec {
       val Type: ScalarType[_Any] = ScalarType[_Any](
         name = "_Any",
         coerceOutput = { case (_Any(output), _) =>
-          default.render(output)
+          output.render
         },
-        coerceUserInput = input =>
-          extractObject
-            .andThen(obj => Right(_Any(obj)))
-            .applyOrElse[Any, Either[Violation, _Any]](input, _ => Left(AnyCoercionViolation)),
+        coerceUserInput = {
+          case n: NodeObject => Right(_Any(n))
+          case _ => Left(AnyCoercionViolation)
+        },
         coerceInput = { _ => Left(AnyCoercionViolation) }
       )
     }
@@ -122,15 +128,17 @@ object FederationSpec {
         override def isDefined(node: Node): Boolean = default.isDefined(node)
         override def isEnumNode(node: Node): Boolean = default.isEnumNode(node)
         override def isVariableNode(node: Node): Boolean = default.isVariableNode(node)
-        override def getScalaScalarValue(node: Node): Any = default.getScalaScalarValue(node)
+        override def getScalaScalarValue(node: Node): Any =
+          default.getScalaScalarValue(node)
         override def getVariableName(node: Node): String = default.getVariableName(node)
         override def render(node: Node): String = default.render(node)
 
         override def isScalarNode(node: Node): Boolean =
-          extractObject.isDefinedAt(node) || default.isScalarNode(node)
+          default.isMapNode(node) || default.isScalarNode(node)
 
         override def getScalarValue(node: Node): Any =
-          extractObject.applyOrElse(node, default.getScalarValue)
+          if (default.isMapNode(node)) NodeObject(node)
+          else default.getScalarValue(node)
       }
   }
 }
