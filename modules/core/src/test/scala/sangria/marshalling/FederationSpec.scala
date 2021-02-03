@@ -60,6 +60,7 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
 
       import scala.concurrent.ExecutionContext.Implicits.global
       import sangria.marshalling.queryAst.queryAstResultMarshaller
+      import sangria.marshalling.json4s.jackson.Json4sJacksonInputUnmarshaller
 
       val result = Executor
         .execute(
@@ -79,7 +80,7 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
 
 object FederationSpec {
 
-  implicit val um = new InputUnmarshaller[JValue] {
+  val um = new InputUnmarshaller[JValue] {
     def getRootMapValue(node: JValue, key: String) =
       node.asInstanceOf[JObject].obj.find(_._1 == key).map(_._2)
 
