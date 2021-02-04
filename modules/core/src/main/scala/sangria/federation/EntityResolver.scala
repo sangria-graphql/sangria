@@ -2,27 +2,31 @@ package sangria.federation
 
 import sangria.schema._
 
-trait EntityResolver[Ctx] {
+trait EntityResolver[Ctx, Node] {
+  type Arg
+
+  val decoder: Decoder[Node, Arg]
 
   def typename: String
 
-  def resolve(obj: NodeObject): LeafAction[Ctx, Option[_]]
+  def resolve(arg: Arg): LeafAction[Ctx, Option[_]]
 }
 
 object EntityResolver {
 
-  def apply[Ctx, Val, Arg](
+  def apply[Ctx, Node, Val, A](
     __typeName: String,
-    resolver: Arg => LeafAction[Ctx, Option[Val]]
-  ) = new EntityResolver[Ctx] {
+    ev: Decoder[Node, A],
+    resolver: A => LeafAction[Ctx, Option[Val]]
+  ) = new EntityResolver[Ctx, Node] {
+
+    type Arg = A
+
+    val decoder = ev
 
     def typename = __typeName
 
-    /** @todo better error management */
-    def resolve(obj: NodeObject): LeafAction[Ctx, Option[Val]] =
-      obj.decode[Arg] match {
-        case Right(value) => resolver(value)
-        case Left(_) => None
-      }
+    def resolve(arg: Arg): LeafAction[Ctx, Option[Val]] =
+      resolver(arg)
   }
 }

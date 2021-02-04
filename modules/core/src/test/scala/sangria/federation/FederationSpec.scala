@@ -1,16 +1,15 @@
 package sangria.federation
 
+import scala.util.Success
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.json4s.JValue
 import sangria.util.FutureResultSupport
 import sangria.macros._
 import sangria.execution.{ExecutionScheme, Executor}
-import sangria.marshalling.InputUnmarshaller
 import sangria.parser.QueryParser
-import sangria.schema.{AdditionalTypes, Argument, AstSchemaBuilder, FieldResolver, Schema}
-import sangria.validation.Violation
-
-import scala.util.Success
+import sangria.schema.{AstSchemaBuilder, FieldResolver, Schema}
 
 class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   import FederationSpec._
@@ -23,7 +22,9 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
             query: Query
           }
 
-          type Query
+          type Query {
+            states: [State]
+          }
 
           type State @key(fields : "id") {
             id: Int!
@@ -31,17 +32,22 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
           }
         """
 
-      val stateResolver = EntityResolver[Any, State, StateArg](
-         __typeName = "State",
-        arg => Some(State(arg.id, arg.id.toString)))
-
-      val (schema, um) = Federation.federate(
-        Schema.buildFromAst(AST),
-        sangria.marshalling.json4s.jackson.Json4sJacksonInputUnmarshaller)
+      val (schema, um) = Federation.federate[Any, JValue](
+        Schema.buildFromAst(
+          AST,
+          AstSchemaBuilder.resolverBased[Any](
+            FieldResolver.map(
+              "Query" -> Map(
+                "states" -> (_ => None)
+              )
+            )
+          )),
+        sangria.marshalling.json4s.jackson.Json4sJacksonInputUnmarshaller,
+        stateResolver)
 
       val Success(query) = QueryParser.parse("""
-        query FetchState($representation: [_Any!]!) {
-          entities(representation: $representation) {
+        query FetchState($representations: [_Any!]!) {
+          _entities(representations: $representations) {
             __typename
             ... on State {
               id
@@ -52,7 +58,7 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
         """)
 
       val args: org.json4s.JValue = org.json4s.jackson.JsonMethods
-        .parse(""" { "representation": [{ "__typename": "State", "id": 1 }] } """)
+        .parse(""" { "representations": [{ "__typename": "State", "id": 1 }] } """)
 
       val result = Executor
         .execute(schema = schema, queryAst = query, variables = args)(
@@ -79,4 +85,13 @@ object FederationSpec {
     key: String)
 
   case class StateArg(id: Int)
+
+  implicit val decoder = new Decoder[JValue, StateArg] {
+    override def decode(node: JValue): Either[Exception, StateArg] = Right(StateArg(0))
+  }
+
+  val stateResolver = EntityResolver[Any, JValue, State, StateArg](
+    __typeName = "State",
+    decoder,
+    arg => Some(State(0, "initial")))
 }

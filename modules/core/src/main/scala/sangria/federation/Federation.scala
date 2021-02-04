@@ -8,13 +8,13 @@ object Federation {
   import Query._
 
   def federate[Ctx, Node](
-    schema: Schema[Ctx, _],
+    schema: Schema[Ctx, Any],
     um: InputUnmarshaller[Node],
-    resolvers: EntityResolver[Ctx]*
-  ): (Schema[Ctx, _], InputUnmarshaller[Node])= {
+    resolvers: EntityResolver[Ctx, Node]*
+  ): (Schema[Ctx, Any], InputUnmarshaller[Node])= {
 
     val resolversMap = resolvers.map(r => r.typename -> r).toMap
-    val representationsArg = Argument("representations", ListInputType(_Any.Type))
+    val representationsArg = Argument("representations", ListInputType(_Any.__type[Node]))
 
     val entities = schema.allTypes.values.collect {
       case obj: ObjectType[Ctx, _]@unchecked if obj.astDirectives.exists(_.name == "key") => obj
@@ -25,16 +25,22 @@ object Federation {
       AstSchemaBuilder.resolverBased[Ctx](
         FieldResolver.map(
           "Query" -> Map(
-            "_entities" -> (ctx => ctx.withArgs(representationsArg) { args =>
+            "_entities" -> (ctx => ctx.withArgs(representationsArg) { anys =>
               Action.sequence(
-                args.map(arg => resolversMap(arg.__typename).resolve(arg.fields)))
+                anys.map { any =>
+                  val resolver = resolversMap(any.__typename)
+
+                  any.fields.decode[resolver.Arg](resolver.decoder) match {
+                    case Right(value) =>  resolver.resolve(value)
+                    case Left(_) => LeafAction(None)
+                  }
+                })
             })
           )
         ),
-        AdditionalTypes(_Any.Type, _Entity(entities)))),
+        AdditionalTypes(_Any.__type[Node], _Entity(entities)))),
     upgrade(um))
   }
-
 
   def upgrade[Node](default: InputUnmarshaller[Node]): InputUnmarshaller[Node] = new InputUnmarshaller[Node] {
 
@@ -62,11 +68,12 @@ object Federation {
     override def isScalarNode(node: Node): Boolean =
       default.isMapNode(node) || default.isScalarNode(node)
     override def getScalarValue(node: Node): Any =
-      if (default.isMapNode(node)) new NodeObject {
+      if (default.isMapNode(node)) new NodeObject[Node] {
         override def __typename: String =
           getScalarValue(getMapValue(node, "__typename").get).asInstanceOf[String]
 
-        override def decode[T]: Either[Exception, T] = ???
+        override def decode[T](implicit ev: Decoder[Node, T]): Either[Exception, T] =
+          ev.decode(node)
       }
       else default.getScalarValue(node)
   }

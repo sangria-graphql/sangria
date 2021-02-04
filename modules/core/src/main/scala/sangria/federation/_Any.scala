@@ -1,6 +1,6 @@
 package sangria.federation
 
-case class _Any(__typename: String, fields: NodeObject)
+case class _Any[Node](__typename: String, fields: NodeObject[Node])
 
 object _Any {
 
@@ -10,11 +10,11 @@ object _Any {
 
   import sangria.schema.ScalarType
 
-  val Type: ScalarType[_Any] = ScalarType[_Any](
+  def __type[Node] = ScalarType[_Any[Node]](
     name = "_Any",
     coerceOutput = { case _ => "output" },
     coerceUserInput = {
-      case n: NodeObject => Right(_Any(n.__typename, n))
+      case n: NodeObject[Node] => Right(_Any(n.__typename, n))
       case _ => Left(AnyCoercionViolation)
     },
     coerceInput = { _ => Left(AnyCoercionViolation) }

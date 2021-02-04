@@ -1,7 +1,7 @@
 package sangria.federation
 
-trait NodeObject {
+trait NodeObject[Node] {
 
   def __typename: String
-  def decode[T]: Either[Exception, T]
+  def decode[T](implicit ev: Decoder[Node, T]): Either[Exception, T]
 }
