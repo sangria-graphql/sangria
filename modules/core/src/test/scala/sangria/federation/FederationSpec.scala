@@ -9,6 +9,7 @@ import sangria.util.FutureResultSupport
 import sangria.macros._
 import sangria.execution.{ExecutionScheme, Executor}
 import sangria.parser.QueryParser
+import sangria.renderer.QueryRenderer
 import sangria.schema.{AstSchemaBuilder, FieldResolver, Schema}
 
 class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport {
@@ -38,9 +39,14 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
           AstSchemaBuilder.resolverBased[Any](
             FieldResolver.map(
               "Query" -> Map(
-                "states" -> (_ => None)
+                "states" -> (_ => State(1, "one") :: Nil)
               )
-            )
+            ),
+            FieldResolver.map(
+              "State" -> Map(
+                "id" -> (ctx => ctx.value.asInstanceOf[State].id),
+                "value" -> (ctx => ctx.value.asInstanceOf[State].value)
+              )),
           )),
         sangria.marshalling.json4s.jackson.Json4sJacksonInputUnmarshaller,
         stateResolver)
@@ -52,7 +58,7 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
             ... on State {
               id
               value
-            }
+           }
           }
         }
         """)
@@ -69,9 +75,13 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
         )
         .await
 
-      result.renderPretty should be("""{
+      QueryRenderer.render(result, QueryRenderer.PrettyInput) should be("""{
         |  data: {
-        |    entities: "{\"__typename\":\"State\",\"id\":1,\"value\":\"1\"}"
+        |    _entities: [{
+        |      __typename: "State"
+        |      id: 0
+        |      value: "initial"
+        |    }]
         |  }
         |}""".stripMargin)
     }
@@ -82,7 +92,7 @@ object FederationSpec {
 
   case class State(
     id: Int,
-    key: String)
+    value: String)
 
   case class StateArg(id: Int)
 
@@ -93,5 +103,5 @@ object FederationSpec {
   val stateResolver = EntityResolver[Any, JValue, State, StateArg](
     __typeName = "State",
     decoder,
-    arg => Some(State(0, "initial")))
+    _ => Some(State(0, "initial")))
 }
