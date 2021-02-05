@@ -9,7 +9,6 @@ import sangria.util.FutureResultSupport
 import sangria.macros._
 import sangria.execution.{ExecutionScheme, Executor}
 import sangria.parser.QueryParser
-import sangria.renderer.QueryRenderer
 import sangria.schema.{AstSchemaBuilder, FieldResolver, Schema}
 
 class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport {
@@ -75,7 +74,7 @@ class FederationSpec extends AnyWordSpec with Matchers with FutureResultSupport 
         )
         .await
 
-      QueryRenderer.render(result, QueryRenderer.PrettyInput) should be("""{
+      result.renderPretty should be("""{
         |  data: {
         |    _entities: [{
         |      __typename: "State"
