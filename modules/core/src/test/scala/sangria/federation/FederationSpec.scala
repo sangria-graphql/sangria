@@ -4,7 +4,7 @@ import scala.util.Success
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.json4s.JValue
+import org.json4s.{JObject, JValue}
 import sangria.util.FutureResultSupport
 import sangria.macros._
 import sangria.execution.{ExecutionScheme, Executor}
@@ -95,8 +95,14 @@ object FederationSpec {
 
   case class StateArg(id: Int)
 
-  implicit val decoder = new Decoder[JValue, StateArg] {
-    override def decode(node: JValue): Either[Exception, StateArg] = Right(StateArg(0))
+  implicit val decoder: Decoder[JValue, StateArg] = (node: JValue) => {
+    import org.json4s.DefaultReaders._
+
+    node match {
+      case obj: JObject =>
+        (obj \ "id").getAs[Int].map(id => StateArg(id)).toRight(new Exception(s"cannot parse $node"))
+      case _ => Left(new Exception("expected object"))
+    }
   }
 
   val stateResolver = EntityResolver[Any, JValue, State, StateArg](

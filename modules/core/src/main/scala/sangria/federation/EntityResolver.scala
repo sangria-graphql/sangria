@@ -3,12 +3,12 @@ package sangria.federation
 import sangria.schema._
 
 trait EntityResolver[Ctx, Node] {
+
   type Arg
 
   val decoder: Decoder[Node, Arg]
 
   def typename: String
-
   def resolve(arg: Arg): LeafAction[Ctx, Option[_]]
 }
 
@@ -25,8 +25,6 @@ object EntityResolver {
     val decoder = ev
 
     def typename = __typeName
-
-    def resolve(arg: Arg): LeafAction[Ctx, Option[Val]] =
-      resolver(arg)
+    def resolve(arg: Arg): LeafAction[Ctx, Option[Val]] = resolver(arg)
   }
 }

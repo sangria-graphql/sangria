@@ -69,6 +69,7 @@ object Federation {
       default.isMapNode(node) || default.isScalarNode(node)
     override def getScalarValue(node: Node): Any =
       if (default.isMapNode(node)) new NodeObject[Node] {
+
         override def __typename: String =
           getScalarValue(getMapValue(node, "__typename").get).asInstanceOf[String]
 
