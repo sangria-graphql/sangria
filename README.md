@@ -37,7 +37,7 @@ Sangria is a spec compliant GraphQL implementation, so it works out of the box w
 In this example we will use [circe](https://github.com/circe/circe) JSON marshalling, so we also need to include following dependency:
 
 ```scala
-libraryDependencies += "org.sangria-graphql" %% "sangria-circe" % "1.2.1"
+libraryDependencies += "org.sangria-graphql" %% "sangria-circe" % "1.3.1"
 ```
 
 The most simple Hello World application might look like this:
