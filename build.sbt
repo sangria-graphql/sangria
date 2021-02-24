@@ -10,7 +10,7 @@ import sbt.Keys.{
 import com.typesafe.tools.mima.core.{ProblemFilters, Problem}
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.4")
+ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowPublishTargetBranches := List()
 ThisBuild / githubWorkflowBuildPreamble ++= List(
@@ -55,8 +55,8 @@ lazy val core = project
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
-      "co.fs2" %% "fs2-core" % "2.5.2" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.5" % Test,
+      "co.fs2" %% "fs2-core" % "2.5.3" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.4" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1" % Test,
