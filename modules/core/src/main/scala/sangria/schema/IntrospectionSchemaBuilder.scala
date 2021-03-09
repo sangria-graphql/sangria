@@ -36,6 +36,7 @@ trait IntrospectionSchemaBuilder[Ctx] {
   def buildInterfaceType(
       definition: IntrospectionInterfaceType,
       fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[InterfaceType[Ctx, Any]]
 
   def buildUnionType(
@@ -157,13 +158,14 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
   def buildInterfaceType(
       definition: IntrospectionInterfaceType,
       fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]) =
     Some(
       InterfaceType[Ctx, Any](
         name = typeName(definition),
         description = typeDescription(definition),
         fieldsFn = fields,
-        interfaces = Nil,
+        interfaces = interfaces,
         manualPossibleTypes = () => Nil,
         astDirectives = Vector.empty,
         astNodes = Vector.empty

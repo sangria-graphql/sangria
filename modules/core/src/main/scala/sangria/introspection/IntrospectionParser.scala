@@ -48,10 +48,7 @@ object IntrospectionParser {
         .map(um.getListValue)
         .getOrElse(Vector.empty)
         .map(field => parseField(field, path :+ "fields")),
-      interfaces = mapFieldOpt(tpe, "interfaces")
-        .map(um.getListValue)
-        .getOrElse(Vector.empty)
-        .map(i => parseNamedTypeRef(i, path :+ "interfaces"))
+      interfaces = parseNamedInterfacesTypeRef(tpe, path),
     )
 
   private def parseInterface[In: InputUnmarshaller](tpe: In, path: Vector[String]) =
@@ -62,6 +59,7 @@ object IntrospectionParser {
         .map(um.getListValue)
         .getOrElse(Vector.empty)
         .map(field => parseField(field, path :+ "fields")),
+      interfaces = parseNamedInterfacesTypeRef(tpe, path),
       possibleTypes = mapFieldOpt(tpe, "possibleTypes")
         .map(um.getListValue)
         .getOrElse(Vector.empty)
@@ -165,6 +163,12 @@ object IntrospectionParser {
         IntrospectionNonNullTypeRef(parseTypeRef(mapField(in, "ofType", path), path :+ "ofType"))
       case _ => parseNamedTypeRef(in, path)
     }
+
+  private def parseNamedInterfacesTypeRef[In: InputUnmarshaller](in: In, path: Vector[String]): Seq[IntrospectionNamedTypeRef] =
+    mapFieldOpt(in, "interfaces")
+      .map(um.getListValue)
+      .getOrElse(Vector.empty)
+      .map(i => parseNamedTypeRef(i, path :+ "interfaces"))
 
   private def required[T](obj: Option[T], path: Vector[String]) = obj match {
     case Some(o) => o

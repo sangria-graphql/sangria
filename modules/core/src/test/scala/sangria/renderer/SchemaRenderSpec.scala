@@ -378,7 +378,7 @@ class SchemaRenderSpec
         |  query: Root
         |}
         |
-        |interface Baaz {
+        |interface Baaz implements Foo {
         |  int: Int
         |  str: String
         |}

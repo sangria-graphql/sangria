@@ -451,6 +451,7 @@ case class ObjectTypeDefinition(
 
 case class InterfaceTypeDefinition(
     name: String,
+    interfaces: Vector[NamedType],
     fields: Vector[FieldDefinition],
     directives: Vector[Directive] = Vector.empty,
     description: Option[StringValue] = None,
@@ -528,6 +529,7 @@ case class ObjectTypeExtensionDefinition(
 
 case class InterfaceTypeExtensionDefinition(
     name: String,
+    interfaces: Vector[NamedType],
     fields: Vector[FieldDefinition],
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
@@ -670,6 +672,7 @@ sealed trait TypeExtensionDefinition extends TypeSystemExtensionDefinition with 
 
 sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
   def fields: Vector[FieldDefinition]
+  def interfaces: Vector[NamedType]
 }
 
 object AstNode {
@@ -993,6 +996,7 @@ object AstVisitor {
           }
         case n @ InterfaceTypeDefinition(
               _,
+              interfaces,
               fields,
               dirs,
               description,
@@ -1000,6 +1004,7 @@ object AstVisitor {
               trailingComments,
               _) =>
           if (breakOrSkip(onEnter(n))) {
+            interfaces.foreach(d => loop(d))
             fields.foreach(d => loop(d))
             dirs.foreach(d => loop(d))
             description.foreach(s => loop(s))
@@ -1055,8 +1060,9 @@ object AstVisitor {
             tc.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InterfaceTypeExtensionDefinition(_, fields, dirs, comment, tc, _) =>
+        case n @ InterfaceTypeExtensionDefinition(_, interfaces, fields, dirs, comment, tc, _) =>
           if (breakOrSkip(onEnter(n))) {
+            interfaces.foreach(d => loop(d))
             fields.foreach(d => loop(d))
             dirs.foreach(d => loop(d))
             comment.foreach(s => loop(s))

@@ -81,8 +81,8 @@ trait AstLiftable {
 
     case ObjectTypeExtensionDefinition(n, i, f, d, c, tc, p) =>
       q"_root_.sangria.ast.ObjectTypeExtensionDefinition($n, $i, $f, $d, $c, $tc, $p)"
-    case InterfaceTypeExtensionDefinition(n, f, d, c, tc, p) =>
-      q"_root_.sangria.ast.InterfaceTypeExtensionDefinition($n, $f, $d, $c, $tc, $p)"
+    case InterfaceTypeExtensionDefinition(n, i, f, d, c, tc, p) =>
+      q"_root_.sangria.ast.InterfaceTypeExtensionDefinition($n, $i, $f, $d, $c, $tc, $p)"
     case InputObjectTypeExtensionDefinition(n, f, d, c, tc, p) =>
       q"_root_.sangria.ast.InputObjectTypeExtensionDefinition($n, $f, $d, $c, $tc, $p)"
     case UnionTypeExtensionDefinition(n, t, d, c, p) =>
@@ -98,8 +98,8 @@ trait AstLiftable {
       q"_root_.sangria.ast.EnumTypeDefinition($n, $v, $d, $desc, $c, $tc, $p)"
     case InputObjectTypeDefinition(n, f, d, desc, c, tc, p) =>
       q"_root_.sangria.ast.InputObjectTypeDefinition($n, $f, $d, $desc, $c, $tc, $p)"
-    case InterfaceTypeDefinition(n, f, d, desc, c, tc, p) =>
-      q"_root_.sangria.ast.InterfaceTypeDefinition($n, $f, $d, $desc, $c, $tc, $p)"
+    case InterfaceTypeDefinition(n, i, f, d, desc, c, tc, p) =>
+      q"_root_.sangria.ast.InterfaceTypeDefinition($n, $i, $f, $d, $desc, $c, $tc, $p)"
     case ObjectTypeDefinition(n, i, f, d, desc, c, tc, p) =>
       q"_root_.sangria.ast.ObjectTypeDefinition($n, $i, $f, $d, $desc, $c, $tc, $p)"
     case ScalarTypeDefinition(n, d, desc, c, p) =>

@@ -233,8 +233,8 @@ trait TypeSystemDefinitions {
   }
 
   def ObjectTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
-      Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition.? ~> (
+    Description ~ Comments ~ trackPos ~ `type` ~ Name ~ OptImplementsInterfaces ~
+      (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition.? ~> (
       (descr, comment, location, name, interfaces, dirs, fields) =>
         ast.ObjectTypeDefinition(
           name,
@@ -272,8 +272,8 @@ trait TypeSystemDefinitions {
   }
 
   def ObjectTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
-      Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition ~> (
+    (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ OptImplementsInterfaces ~
+      (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition ~> (
       (comment, location, name, interfaces, dirs, fields) =>
         ast.ObjectTypeExtensionDefinition(
           name,
@@ -283,8 +283,8 @@ trait TypeSystemDefinitions {
           comment,
           fields._2,
           location))) |
-      (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
-        Vector.empty))) ~ DirectivesConst ~> ((comment, location, name, interfaces, dirs) =>
+      (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ OptImplementsInterfaces ~
+        DirectivesConst ~> ((comment, location, name, interfaces, dirs) =>
         ast.ObjectTypeExtensionDefinition(
           name,
           interfaces,
@@ -306,21 +306,33 @@ trait TypeSystemDefinitions {
   }
 
   def InterfaceTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
-      Vector.empty))) ~ FieldsDefinition ~> ((comment, location, name, dirs, fields) =>
+    (Comments ~ trackPos ~ extend ~ interface ~ Name ~ OptImplementsInterfaces ~ (DirectivesConst.? ~> (_.getOrElse(
+      Vector.empty))) ~ FieldsDefinition ~> ((comment, location, name, interfaces, dirs, fields) =>
       ast.InterfaceTypeExtensionDefinition(
         name,
+        interfaces,
         fields._1.toVector,
         dirs,
         comment,
         fields._2,
         location))) |
-      (Comments ~ trackPos ~ extend ~ interface ~ Name ~ DirectivesConst ~> (
-        (comment, location, name, dirs) =>
+      (Comments ~ trackPos ~ extend ~ interface ~ Name ~ OptImplementsInterfaces ~ DirectivesConst ~> (
+        (comment, location, name, interfaces, dirs) =>
           ast.InterfaceTypeExtensionDefinition(
             name,
+            interfaces,
             Vector.empty,
             dirs,
+            comment,
+            Vector.empty,
+            location))) |
+      (Comments ~ trackPos ~ extend ~ interface ~ Name ~ ImplementsInterfaces ~> (
+        (comment, location, name, interfaces) =>
+          ast.InterfaceTypeExtensionDefinition(
+            name,
+            interfaces,
+            Vector.empty,
+            Vector.empty,
             comment,
             Vector.empty,
             location)))
@@ -388,6 +400,11 @@ trait TypeSystemDefinitions {
       implements ~ ws('&').? ~ NamedType.+(ws('&')) ~> (_.toVector)
   }
 
+  def OptImplementsInterfaces = rule {
+    ImplementsInterfaces.? ~> (_.getOrElse(
+      Vector.empty))
+  }
+
   def FieldsDefinition = rule {
     wsNoComment('{') ~ (test(
       legacyEmptyFields) ~ FieldDefinition.* | FieldDefinition.+) ~ Comments ~ wsNoComment(
@@ -413,10 +430,11 @@ trait TypeSystemDefinitions {
   }
 
   def InterfaceTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
-      Vector.empty))) ~ FieldsDefinition.? ~> ((descr, comment, location, name, dirs, fields) =>
+    Description ~ Comments ~ trackPos ~ interface ~ Name ~ OptImplementsInterfaces ~ (DirectivesConst.? ~> (_.getOrElse(
+      Vector.empty))) ~ FieldsDefinition.? ~> ((descr, comment, location, name, interfaces, dirs, fields) =>
       ast.InterfaceTypeDefinition(
         name,
+        interfaces,
         fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector),
         dirs,
         descr,
