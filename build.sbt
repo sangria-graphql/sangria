@@ -56,7 +56,7 @@ lazy val core = project
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
       "co.fs2" %% "fs2-core" % "2.5.3" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.5" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.6" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1" % Test,
