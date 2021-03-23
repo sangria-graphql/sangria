@@ -17,7 +17,8 @@ object GraphQLOutputTypeLookup extends GraphQLOutputTypeLookupLowPrio {
       override val graphqlType: OutputType[T] = out
     }
 
-  implicit def interfaceLookup[T](implicit interfaceType: InterfaceType[_, T]): GraphQLOutputTypeLookup[T] =
+  implicit def interfaceLookup[T](implicit
+      interfaceType: InterfaceType[_, T]): GraphQLOutputTypeLookup[T] =
     new GraphQLOutputTypeLookup[T] {
       override def graphqlType: OutputType[T] = interfaceType
     }
