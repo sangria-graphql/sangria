@@ -776,5 +776,17 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       "deriveObjectType[Unit, TestContainer[TestSubject]]()" should compile
     }
+
+    "derive a context object type with an implicit interface type and an implicit object type implementing the interface" in {
+      implicit val Parent1ObjectType = Parent1Type
+      implicit val TestSubjectType = deriveObjectType[Unit, TestSubject](Interfaces(Parent1Type))
+
+      class Query {
+        @GraphQLField
+        def myMethod: Parent1 = TestSubject("123", List("1", "2", "3"), 123)
+      }
+
+      "deriveContextObjectType[Unit, Query, Unit](_ => new Query)" should compile
+    }
   }
 }
