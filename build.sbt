@@ -42,7 +42,7 @@ lazy val core = project
     name := "sangria",
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.0"),
-    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
+    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.2.1",
@@ -124,7 +124,7 @@ lazy val publishSettings = Seq(
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   releaseVcsSign := true,
   publishMavenStyle := true,
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := (_ => false),
   publishTo := Some(
     if (isSnapshot.value)
