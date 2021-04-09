@@ -4,7 +4,12 @@ import sangria.ast
 import sangria.execution.WithViolations
 import sangria.validation._
 import sangria.macros._
-import sangria.macros.derive.{ObjectTypeName, deriveObjectType}
+import sangria.macros.derive.{
+  InputObjectTypeName,
+  ObjectTypeName,
+  deriveInputObjectType,
+  deriveObjectType
+}
 import sangria.util.Pos
 
 import scala.util.{Failure, Success, Try}
@@ -177,8 +182,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     }
 
     "Not allow ObjectTypes with same name to be based on different case classes" in {
-      implicit val fooBazType = deriveObjectType[Unit, test.foo.Baz]()
-      implicit val barBazType = deriveObjectType[Unit, test.bar.Baz]()
+      val fooBazType = deriveObjectType[Unit, test.foo.Baz]()
+      val barBazType = deriveObjectType[Unit, test.bar.Baz]()
 
       val queryType = ObjectType(
         "Query",
@@ -192,6 +197,40 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
       error.getMessage should include(
         """Type name 'Baz' is used for several conflicting GraphQL ObjectTypes based on different classes. Conflict found in a field 'barBaz' of 'Query' type. One possible fix is to use ObjectTypeName like this: deriveObjectType[Foo, Bar](ObjectTypeName("OtherBar")) to avoid that two ObjectTypes have the same name.""")
+    }
+
+    "Not allow InputObjectTypes with same name but with different field names" in {
+      val fooBazType: InputObjectType[test.foo.Baz] =
+        deriveInputObjectType(InputObjectTypeName("baz"))
+      val barBazType: InputObjectType[test.bar.Baz] =
+        deriveInputObjectType(InputObjectTypeName("baz"))
+
+      val draftType = InputObjectType(
+        name = "DraftType",
+        fields = List(
+          InputField("fooBaz", OptionInputType(fooBazType)),
+          InputField("barBaz", barBazType)
+        )
+      )
+
+      val draft = Argument("draft", draftType)
+
+      val mutationType = ObjectType(
+        "Mutation",
+        fields[Unit, Unit](
+          Field("nothing", StringType, arguments = draft :: Nil, resolve = _ => "hello")
+        )
+      )
+      val queryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field("nothing", StringType, resolve = _ => "hello")
+        ))
+
+      val error = intercept[SchemaValidationException](Schema(queryType, Some(mutationType)))
+
+      error.getMessage should include(
+        """Type name 'baz' is used for several conflicting GraphQL InputObjectTypes based on different classes. Conflict found in a field 'barBaz' of 'DraftType' input object type. One possible fix is to use InputObjectTypeName like this: deriveInputObjectType[Foo, Bar](InputObjectTypeName("OtherBar")) to avoid that two InputObjectTypes have the same name.""")
     }
 
     "Allow ObjectTypes based on different case classes but with different names" in {
