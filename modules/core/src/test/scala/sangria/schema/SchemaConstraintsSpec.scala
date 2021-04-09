@@ -199,7 +199,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         """Type name 'Baz' is used for several conflicting GraphQL ObjectTypes based on different classes. Conflict found in a field 'barBaz' of 'Query' type. One possible fix is to use ObjectTypeName like this: deriveObjectType[Foo, Bar](ObjectTypeName("OtherBar")) to avoid that two ObjectTypes have the same name.""")
     }
 
-    "Not allow InputObjectTypes with same name to be based on different case classes" in {
+    "Not allow InputObjectTypes with same name but with different field names" in {
       val fooBazType: InputObjectType[test.foo.Baz] =
         deriveInputObjectType(InputObjectTypeName("baz"))
       val barBazType: InputObjectType[test.bar.Baz] =
