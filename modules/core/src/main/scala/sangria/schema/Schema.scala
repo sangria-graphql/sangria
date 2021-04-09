@@ -1188,6 +1188,8 @@ case class Schema[Ctx, Val](
       (t1, t2) match {
         case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) =>
           sameSangriaType && (ot1.valClass == ot2.valClass)
+        case (ot1: InputObjectType[_], ot2: InputObjectType[_]) =>
+          sameSangriaType && (ot1.fieldsByName.keySet == ot2.fieldsByName.keySet)
         case _ => sameSangriaType
       }
     }
@@ -1197,6 +1199,10 @@ case class Schema[Ctx, Val](
         case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) =>
           throw SchemaValidationException(
             Vector(ConflictingObjectTypeCaseClassViolation(name, parentInfo)))
+
+        case (ot1: InputObjectType[_], ot2: InputObjectType[_]) =>
+          throw SchemaValidationException(
+            Vector(ConflictingInputObjectTypeCaseClassViolation(name, parentInfo)))
 
         case _ =>
           val conflictingTypes = List(t1, t2).map(_.getClass.getSimpleName)
@@ -1232,12 +1238,10 @@ case class Schema[Ctx, Val](
               "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
         case t: Named if result contains t.name =>
           result.get(t.name) match {
-            case Some(found)
-                if !sameType(found._2, t) && t.isInstanceOf[ScalarAlias[_, _]] && found._2
-                  .isInstanceOf[ScalarType[_]] =>
-              result
             case Some(found) if !sameType(found._2, t) =>
-              typeConflict(t.name, found._2, t, parentInfo)
+              if (t.isInstanceOf[ScalarAlias[_, _]] && found._2.isInstanceOf[ScalarType[_]])
+                result
+              else typeConflict(t.name, found._2, t, parentInfo)
             case _ => result
           }
         case OptionType(ofType) => collectTypes(parentInfo, priority, ofType, result)
