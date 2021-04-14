@@ -182,6 +182,38 @@ class FetcherBasedDeferredResolver[-Ctx](
     }
   }
 
+  private def resolveConcurrentBatches(
+      ctx: FetcherContext[Ctx] @uncheckedVariance,
+      f: Fetcher[Ctx, Any, Any, Any] @uncheckedVariance,
+      nonCachedIds: Vector[Any]
+  )(implicit ec: ExecutionContext): Iterator[Future[(Vector[Any], Try[Seq[Any]])]] = {
+    val groupedIds: Iterator[Vector[Any]] = ctx.fetcher.config.maxBatchSizeConfig match {
+      case Some(size) => nonCachedIds.grouped(size)
+      case None => Iterator(nonCachedIds)
+    }
+
+    val groupedBatches: Iterator[TraversableOnce[Vector[Any]]] =
+      ctx.fetcher.config.maxConcurrentBatchesConfig match {
+        case Some(size) => groupedIds.grouped(size)
+        case None => Iterator(groupedIds)
+      }
+
+    groupedBatches
+      .foldLeft(Iterator.empty[Future[(Vector[Any], Try[Seq[Any]])]]) {
+        (accumFutureSeq, groupedIds) =>
+          val results: Iterator[Future[(Vector[Any], Try[Seq[Any]])]] = groupedIds.toIterator.map {
+            group =>
+              if (group.nonEmpty)
+                f.fetch(ctx, group)
+                  .map(r => group -> Success(r): (Vector[Any], Try[Seq[Any]]))
+                  .recover { case e => group -> Failure(e) }
+              else
+                Future.successful(group -> Success(Seq.empty))
+          }
+          accumFutureSeq ++ results
+      }
+  }
+
   private def resolveEntities(
       ctx: FetcherContext[Ctx] @uncheckedVariance,
       deferredToResolve: Vector[Deferred[Any]],
@@ -191,19 +223,7 @@ class FetcherBasedDeferredResolver[-Ctx](
     val ids = ctx.fetcher.ids(deferredToResolve)
     val (nonCachedIds, cachedResults) = partitionCached(ctx.cache, ids)
 
-    val groupedIds = ctx.fetcher.config.maxBatchSizeConfig match {
-      case Some(size) => nonCachedIds.grouped(size)
-      case None => Iterator(nonCachedIds)
-    }
-
-    val results = groupedIds.map { group =>
-      if (group.nonEmpty)
-        f.fetch(ctx, group).map(r => group -> Success(r): (Vector[Any], Try[Seq[Any]])).recover {
-          case e => group -> Failure(e)
-        }
-      else
-        Future.successful(group -> Success(Seq.empty))
-    }
+    val results = resolveConcurrentBatches(ctx, f, nonCachedIds)
 
     val futureRes = Future.sequence(results).map { allResults =>
       val byId =
