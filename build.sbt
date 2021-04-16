@@ -7,16 +7,20 @@ import sbt.Keys.{
   scmInfo,
   startYear
 }
-import com.typesafe.tools.mima.core.{ProblemFilters, Problem}
+import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
-ThisBuild / githubWorkflowPublishTargetBranches := List()
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 )
+
+// Release
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches :=
+  Seq(RefPredicate.StartsWith(Ref.Tag("v")))
 
 // Binary Incompatible Changes, we'll document.
 ThisBuild / mimaBinaryIssueFilters ++= Seq(
@@ -31,14 +35,14 @@ lazy val root = project
   .aggregate(core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
-    scalacSettings ++ shellSettings ++ publishSettings ++ noPublishSettings
+    scalacSettings ++ shellSettings ++ noPublishSettings
   )
   .disablePlugins(MimaPlugin)
 
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
-  .settings(scalacSettings ++ shellSettings ++ publishSettings)
+  .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria",
     description := "Scala GraphQL implementation",
@@ -87,16 +91,17 @@ lazy val benchmarks = project
 
 lazy val projectInfo = Seq(
   organization := "org.sangria-graphql",
-  homepage := Some(url("http://sangria-graphql.org")),
+  homepage := Some(url("https://sangria-graphql.github.io/")),
   licenses := Seq(
     "Apache License, ASL Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   startYear := Some(2015),
   organizationHomepage := Some(url("https://github.com/sangria-graphql")),
-  developers := Developer(
-    "OlegIlyenko",
-    "Oleg Ilyenko",
-    "",
-    url("https://github.com/OlegIlyenko")) :: Nil,
+  developers :=
+    Developer("OlegIlyenko", "Oleg Ilyenko", "", url("https://github.com/OlegIlyenko")) ::
+      Developer("yanns", "Yann Simon", "", url("https://github.com/yanns")) ::
+      Developer("nickhudkins", "Nick Hudkins", "", url("https://github.com/nickhudkins")) ::
+      Developer("sh0hei", "Shohei Shimomura", "", url("https://github.com/sh0hei")) ::
+      Nil,
   scmInfo := Some(
     ScmInfo(
       browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
@@ -120,22 +125,6 @@ lazy val shellSettings = Seq(
   }
 )
 
-lazy val publishSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseVcsSign := true,
-  publishMavenStyle := true,
-  Test / publishArtifact := false,
-  pomIncludeRepository := (_ => false),
-  publishTo := Some(
-    if (isSnapshot.value)
-      "snapshots".at("https://oss.sonatype.org/content/repositories/snapshots")
-    else
-      "releases".at("https://oss.sonatype.org/service/local/staging/deploy/maven2"))
-)
-
 lazy val noPublishSettings = Seq(
-  publish := {},
-  publishLocal := {},
-  publishArtifact := false
+  publish / skip := true
 )
