@@ -1,5 +1,7 @@
 # Release process
 
+How to create a new [release](../../releases).
+
 ## Releasing
 
 The release process is automated thanks to:
@@ -14,10 +16,10 @@ git push origin v0.1.0
 ```
 Note that the tag version MUST start with `v`.
 
-Wait for the CI pipeline to release the new version. Publishing the artifacts on maven central can take time.
+Wait for the [CI pipeline](../../actions) to release the new version. Publishing the artifacts on maven central can take time.
 
 ## Updating the release notes
 
-Open the [releases](releases). A draft should already be prepared.
+Open the [releases](../../releases). A draft should already be prepared.
 
 Edit the draft release to set the released version. Complete the release notes if necessary. And save it.
