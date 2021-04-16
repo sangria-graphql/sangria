@@ -570,7 +570,8 @@ object Args {
 
     apply(
       schemaElem.arguments,
-      ast.ObjectValue(astElem.arguments.map(arg ⇒ ast.ObjectField(arg.name, arg.value))): ast.Value,
+      ast.ObjectValue(
+        astElem.arguments.map(arg => ast.ObjectField(arg.name, arg.value))): ast.Value,
       Some(variables)
     )
   }

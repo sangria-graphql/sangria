@@ -21,7 +21,8 @@ ThisBuild / githubWorkflowBuildPreamble ++= List(
 // Binary Incompatible Changes, we'll document.
 ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[Problem]("sangria.schema.ProjectedName*"),
-  ProblemFilters.exclude[Problem]("sangria.schema.Args*")
+  ProblemFilters.exclude[Problem]("sangria.schema.Args*"),
+  ProblemFilters.exclude[Problem]("sangria.execution.deferred.FetcherConfig*")
 )
 
 lazy val root = project
