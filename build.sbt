@@ -116,7 +116,7 @@ lazy val projectInfo = Seq(
       Nil,
   scmInfo := Some(
     ScmInfo(
-      browseUrl = url("https://github.com/sangria-graphql/sangria.git"),
+      browseUrl = url("https://github.com/sangria-graphql/sangria"),
       connection = "scm:git:git@github.com:sangria-graphql/sangria.git"
     ))
 )
