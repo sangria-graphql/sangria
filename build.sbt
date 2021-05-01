@@ -82,7 +82,7 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.24" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.104" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.105" % Test
     )
   )
 
