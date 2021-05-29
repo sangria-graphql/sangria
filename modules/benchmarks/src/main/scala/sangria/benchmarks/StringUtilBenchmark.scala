@@ -28,11 +28,11 @@ class StringUtilBenchmark {
         options = Seq("a", "ab", "abc")
         expected = Seq("abc", "ab")
       case "description" =>
-        input = "descritpion"
+        input = "description"
         options = "description" :: (1 to 50).map(i => s"ab_$i").toList
         expected = Seq("description")
       case "length" =>
-        input = "lenght"
+        input = "length"
         options = "length" :: (1 to 50).map(i => s"name_$i").toList
         expected = Seq("length")
     }
