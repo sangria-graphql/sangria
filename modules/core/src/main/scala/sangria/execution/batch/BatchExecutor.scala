@@ -81,7 +81,7 @@ object BatchExecutor {
       marshaller: SymmetricMarshaller[T],
       um: InputUnmarshaller[Input],
       scheme: ExecutionScheme): scheme.Result[Ctx, T] = {
-    val executor = Executor(
+    val executor = Executor.Default(
       schema,
       QueryValidator.empty,
       deferredResolver,

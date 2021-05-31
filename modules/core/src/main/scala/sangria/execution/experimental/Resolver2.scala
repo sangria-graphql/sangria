@@ -1,8 +1,9 @@
-package sangria.execution
+package sangria.execution.experimental
 
 import sangria.ast.AstLocation
 import sangria.ast
 import sangria.execution.deferred.{Deferred, DeferredResolver}
+import sangria.execution._
 import sangria.marshalling.{ResultMarshaller, ScalarValueInfo}
 import sangria.parser.SourceMapper
 import sangria.schema._
@@ -13,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-class Resolver[Ctx](
+class Resolver2[Ctx](
     val marshaller: ResultMarshaller,
     middlewareCtx: MiddlewareQueryContext[Ctx, _, _],
     schema: Schema[Ctx, _],
@@ -37,7 +38,7 @@ class Resolver[Ctx](
   val toScalarMiddleware = Middleware.composeToScalarMiddleware(middleware.map(_._2), userContext)
 
   import resultResolver._
-  import Resolver._
+  import Resolver2._
 
   def resolveFieldsPar(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
@@ -1827,7 +1828,7 @@ case class MappedCtxUpdate[Ctx, Val, NewVal](
     mapFn: Val => NewVal,
     onError: Throwable => Unit)
 
-object Resolver {
+object Resolver2 {
   val DefaultComplexity = 1.0d
 
   def marshalEnumValue(
@@ -1867,12 +1868,4 @@ object Resolver {
         values.map(v => v.name -> marshalAstValue(v.value, marshaller, typeName, scalarInfo)))
     case ast.VariableValue(name, _, _) => marshaller.enumNode(name, typeName)
   }
-}
-
-trait DeferredWithInfo {
-  def deferred: Deferred[Any]
-  def complexity: Double
-  def field: Field[_, _]
-  def astFields: Vector[ast.Field]
-  def args: Args
 }

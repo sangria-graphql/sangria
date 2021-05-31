@@ -43,3 +43,51 @@ object ExecutionPath {
 
   val empty = new ExecutionPath(Vector.empty, Vector.empty)
 }
+
+/*
+case class ExecutionPath private (
+    path: List[Any],
+    cacheKeyPath: ExecutionPath.PathCacheKey,
+    rawSize: Int) {
+  def add(field: ast.Field, parentType: ObjectType[_, _]) =
+    new ExecutionPath(
+      path :+ field.outputName,
+      cacheKey :+ field.outputName :+ parentType.name,
+      rawSize + 1)
+
+  def withIndex(idx: Int) = new ExecutionPath(idx +: path, cacheKey, rawSize + 1)
+
+  def isEmpty = rawSize == 0
+  def nonEmpty = rawSize != 0
+
+  /** @return last index in the path, if available
+ */
+  def lastIndex: Option[Int] = path.headOption.collect { case i: Int => i }
+
+  /** @return the size of the path excluding the indexes
+ */
+  def size = rawSize / 2
+
+  def marshal(m: ResultMarshaller): m.Node = m.arrayNode(path.toVector.reverse.map {
+    case s: String => m.scalarNode(s, "String", Set.empty)
+    case i: Int => m.scalarNode(i, "Int", Set.empty)
+  })
+
+  def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath
+
+  override def toString = path.foldLeft("") {
+    case ("", str: String) => str
+    case (acc, str: String) => acc + "." + str
+    case (acc, idx: Int) => acc + "[" + idx + "]"
+
+    case ("", other) => other.toString
+    case (acc, other) => acc + "." + other.toString
+  }
+}
+
+object ExecutionPath {
+  type PathCacheKey = List[String]
+
+  val empty = new ExecutionPath(Nil, Nil, 0)
+}
+ */
