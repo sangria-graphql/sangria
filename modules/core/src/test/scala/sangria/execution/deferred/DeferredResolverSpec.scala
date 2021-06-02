@@ -50,7 +50,7 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
             arguments = Argument("count", IntType) :: Nil,
             resolve = c =>
               DeferredFutureValue(
-                Future.successful(LoadCategories((1 to c.arg[Int]("count")).map(i =>
+                Future.value(LoadCategories((1 to c.arg[Int]("count")).map(i =>
                   s"${c.value}.$i"))))
           )
         )
@@ -67,7 +67,7 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
           "rootFut",
           CategoryType,
           resolve =
-            _ => DeferredFutureValue(Future.successful(LoadCategories(Seq("root")))).map(_.head)),
+            _ => DeferredFutureValue(Future.value(LoadCategories(Seq("root")))).map(_.head)),
         Field(
           "fail1",
           OptionType(CategoryType),
@@ -117,8 +117,8 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
 
         deferred.map {
           case LoadCategories(ids) if ids contains "fail" =>
-            Future.failed(new IllegalStateException("foo"))
-          case LoadCategories(ids) => Future.successful(ids)
+            Future.exception(new IllegalStateException("foo"))
+          case LoadCategories(ids) => Future.value(ids)
         }
       }
     }

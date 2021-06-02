@@ -12,7 +12,7 @@ import sangria.validation.QueryValidator
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import com.twitter.util.{Throw, Return}
 
 case class InputDocumentMaterializer[Vars](
     schema: Schema[_, _],
@@ -38,8 +38,8 @@ case class InputDocumentMaterializer[Vars](
       val variableDefinitions = inferVariableDefinitions(document, inputType)
 
       collector.getVariableValues(variableDefinitions, None) match {
-        case Failure(e) => scheme.failure(e)
-        case Success(vars) =>
+        case Throw(e) => scheme.failure(e)
+        case Return(vars) =>
           try scheme.success(document.values.flatMap { value =>
             collector.coercionHelper.coerceInputValue(
               inputType,

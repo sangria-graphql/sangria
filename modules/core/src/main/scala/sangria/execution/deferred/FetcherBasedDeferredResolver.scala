@@ -4,8 +4,7 @@ import sangria.execution.DeferredWithInfo
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Future, Throw, Return, Try}
 import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
 
 class FetcherBasedDeferredResolver[-Ctx](
@@ -27,8 +26,7 @@ class FetcherBasedDeferredResolver[-Ctx](
   override def initialQueryState =
     fetchers.flatMap(f => f.config.cacheConfig.map(cacheFn => (f: AnyRef) -> cacheFn())).toMap
 
-  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any)(implicit
-      ec: ExecutionContext) = {
+  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any) = {
     val fetcherCaches = queryState.asInstanceOf[Map[AnyRef, FetcherCache]]
 
     val grouped = deferred.groupBy {
@@ -65,7 +63,7 @@ class FetcherBasedDeferredResolver[-Ctx](
             for (i <- deferred.indices)
               resolved(deferred(i)) = res(i)
           case None =>
-            deferred.foreach(d => resolved(d) = Future.failed(UnsupportedDeferError(d)))
+            deferred.foreach(d => resolved(d) = Future.exception(UnsupportedDeferError(d)))
 
         }
     }
@@ -77,7 +75,7 @@ class FetcherBasedDeferredResolver[-Ctx](
       ctx: FetcherContext[Ctx] @uncheckedVariance,
       deferredToResolve: Vector[Deferred[Any]],
       resolved: MutableMap[Deferred[Any], Future[Any]]
-  )(implicit ec: ExecutionContext) = {
+  ) = {
     val f = ctx.fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
     val relIds = ctx.fetcher.relIds(deferredToResolve)
 
@@ -94,11 +92,11 @@ class FetcherBasedDeferredResolver[-Ctx](
           f.fetchRel(ctx, RelationIds(Map(rel -> group)))
             .map(groupAndCacheRelations(ctx, Map(rel -> group), _))
         else
-          Future.successful(MutableMap.empty[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]])
+          Future.value(MutableMap.empty[Relation[Any, Any, Any], MutableMap[Any, Seq[Any]]])
       }
     }
 
-    val futureRes = Future.sequence(results).map { allResults =>
+    val futureRes = Future.collect(results.toVector).map { allResults =>
       val byRel = MutableMap[Relation[Any, _, _], MutableMap[Any, Seq[Any]]]()
 
       allResults.foreach(relResult =>
@@ -190,7 +188,7 @@ class FetcherBasedDeferredResolver[-Ctx](
       ctx: FetcherContext[Ctx] @uncheckedVariance,
       f: Fetcher[Ctx, Any, Any, Any] @uncheckedVariance,
       nonCachedIds: Vector[Any]
-  )(implicit ec: ExecutionContext): Iterator[Future[(Vector[Any], Try[Seq[Any]])]] = {
+  ): Iterator[Future[(Vector[Any], Try[Seq[Any]])]] = {
 
     val groupedIds = ctx.fetcher.config.maxBatchSizeConfig match {
       case Some(size) => nonCachedIds.grouped(size)
@@ -209,10 +207,10 @@ class FetcherBasedDeferredResolver[-Ctx](
           groupedIds.toIterator.collect {
             case group if group.nonEmpty =>
               f.fetch(ctx, group)
-                .map(r => group -> Success(r): (Vector[Any], Try[Seq[Any]]))
-                .recover { case e => group -> Failure(e) }
+                .map(r => group -> Return(r): (Vector[Any], Try[Seq[Any]]))
+                .handle { case e => group -> Throw(e) }
             case group =>
-              Future.successful(group -> Success(Seq.empty))
+              Future.value(group -> Return(Seq.empty))
           }
         accumFutureSeq ++ results
       }
@@ -222,23 +220,23 @@ class FetcherBasedDeferredResolver[-Ctx](
       ctx: FetcherContext[Ctx] @uncheckedVariance,
       deferredToResolve: Vector[Deferred[Any]],
       resolved: MutableMap[Deferred[Any], Future[Any]]
-  )(implicit ec: ExecutionContext) = {
+  ) = {
     val f = ctx.fetcher.asInstanceOf[Fetcher[Ctx, Any, Any, Any]]
     val ids = ctx.fetcher.ids(deferredToResolve)
     val (nonCachedIds, cachedResults) = partitionCached(ctx.cache, ids)
 
     val results = resolveConcurrentBatches(ctx, f, nonCachedIds)
 
-    val futureRes = Future.sequence(results).map { allResults =>
+    val futureRes = Future.collect(results.toVector).map { allResults =>
       val byId =
         MutableMap[Any, Any]() // can contain either exception or actual value! (using `Any` to avoid unnecessary boxing)
 
       allResults.toVector.foreach { case (group, groupResult) =>
         groupResult match {
-          case Success(values) =>
+          case Return(values) =>
             values.foreach(v => byId(f.idFn(v)) = v)
 
-          case Failure(e) =>
+          case Throw(e) =>
             group.foreach(id => byId(id) = e)
         }
       }

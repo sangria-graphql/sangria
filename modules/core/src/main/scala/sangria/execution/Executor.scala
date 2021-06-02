@@ -7,9 +7,8 @@ import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.parser.SourceMapper
 import sangria.schema._
 import sangria.validation.QueryValidator
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Future, Throw, Return, Try}
 
 trait Executor[Ctx, Root] {
   def prepare[Input](
@@ -45,7 +44,7 @@ object Executor {
       middleware: List[Middleware[Ctx]] = Nil,
       maxQueryDepth: Option[Int] = None,
       queryReducers: List[QueryReducer[Ctx, _]] = Nil
-  )(implicit executionContext: ExecutionContext)
+  )
       extends Executor[Ctx, Root] {
     override def prepare[Input](
         queryAst: ast.Document,
@@ -58,7 +57,7 @@ object Executor {
         TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst))
 
       if (violations.nonEmpty)
-        Future.failed(ValidationError(violations, exceptionHandler))
+        Future.exception(ValidationError(violations, exceptionHandler))
       else {
         val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
         val valueCollector = new ValueCollector[Ctx, Input](
@@ -91,7 +90,7 @@ object Executor {
           fields <- fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
         } yield {
           val preparedFields = fields.fields.flatMap {
-            case CollectedField(_, astField, Success(_)) =>
+            case CollectedField(_, astField, Return(_)) =>
               val allFields =
                 tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
               val field = allFields.head
@@ -149,8 +148,8 @@ object Executor {
         }
 
         executionResult match {
-          case Success(future) => future
-          case Failure(error) => Future.failed(error)
+          case Return(future) => future
+          case Throw(error) => Future.exception(error)
         }
       }
     }
@@ -235,8 +234,8 @@ object Executor {
         }
 
         executionResult match {
-          case Success(result) => result
-          case Failure(error) => scheme.failed(error)
+          case Return(result) => result
+          case Throw(error) => scheme.failed(error)
         }
       }
     }
@@ -347,7 +346,6 @@ object Executor {
       maxQueryDepth: Option[Int] = None,
       queryReducers: List[QueryReducer[Ctx, _]] = Nil
   )(implicit
-      executionContext: ExecutionContext,
       marshaller: ResultMarshaller,
       um: InputUnmarshaller[Input],
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] =
@@ -378,7 +376,6 @@ object Executor {
       maxQueryDepth: Option[Int] = None,
       queryReducers: List[QueryReducer[Ctx, _]] = Nil
   )(implicit
-      executionContext: ExecutionContext,
       um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] =
     Default(
       schema,
@@ -397,12 +394,12 @@ object Executor {
       operation: ast.OperationDefinition,
       sourceMapper: Option[SourceMapper]) = operation.operationType match {
     case ast.OperationType.Query =>
-      Success(schema.query)
+      Return(schema.query)
     case ast.OperationType.Mutation =>
       schema.mutation
-        .map(Success(_))
+        .map(Return(_))
         .getOrElse(
-          Failure(
+          Throw(
             OperationSelectionError(
               "Schema is not configured for mutations",
               exceptionHandler,
@@ -410,9 +407,9 @@ object Executor {
               operation.location.toList)))
     case ast.OperationType.Subscription =>
       schema.subscription
-        .map(Success(_))
+        .map(Return(_))
         .getOrElse(
-          Failure(
+          Throw(
             OperationSelectionError(
               "Schema is not configured for subscriptions",
               exceptionHandler,
@@ -425,7 +422,7 @@ object Executor {
       document: ast.Document,
       operationName: Option[String]): Try[ast.OperationDefinition] =
     if (document.operations.size != 1 && operationName.isEmpty)
-      Failure(
+      Throw(
         OperationSelectionError(
           "Must provide operation name if query contains multiple operations",
           exceptionHandler))
@@ -435,7 +432,7 @@ object Executor {
 
       unexpectedDefinition match {
         case Some(unexpected) =>
-          Failure(new ExecutionError(
+          Throw(new ExecutionError(
             s"GraphQL cannot execute a request containing a ${unexpected.getClass.getSimpleName}.",
             exceptionHandler))
         case None =>
@@ -443,11 +440,11 @@ object Executor {
             case Some(opName) =>
               document.operations
                 .get(Some(opName))
-                .map(Success(_))
-                .getOrElse(Failure(
+                .map(Return(_))
+                .getOrElse(Throw(
                   OperationSelectionError(s"Unknown operation name '$opName'", exceptionHandler)))
             case None =>
-              Success(document.operations.values.head)
+              Return(document.operations.values.head)
           }
       }
     }

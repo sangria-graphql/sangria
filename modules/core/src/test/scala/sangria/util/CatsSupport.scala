@@ -185,7 +185,7 @@ object CatsScenarioExecutor extends FutureResultSupport {
     DirectiveResolver(ResolveError, c => throw ResolveException(c.arg(MessageArg))),
     DirectiveResolver(
       ResolvePromiseReject,
-      c => Future.failed[Any](ResolveException(c.arg(MessageArg)))),
+      c => Future.exception[Any](ResolveException(c.arg(MessageArg)))),
     DirectiveResolver(
       ResolveErrorList,
       c =>
@@ -196,7 +196,7 @@ object CatsScenarioExecutor extends FutureResultSupport {
       resolvePromiseRejectList,
       c =>
         PartialFutureValue(
-          Future.successful(
+          Future.value(
             PartialValue[Any, Any](
               correctValue(c.ctx.field.fieldType, c.arg(ValuesArg)),
               c.arg(MessagesArg).map(ResolveException(_)).toVector)))

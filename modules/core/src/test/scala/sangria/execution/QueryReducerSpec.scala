@@ -543,7 +543,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val tagColl =
         QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
-          Future.successful(ctx.copy(nums = nums)))
+          Future.value(ctx.copy(nums = nums)))
 
       Executor
         .execute(schema, query, userContext = Info(Nil), queryReducers = tagColl :: Nil)
@@ -657,7 +657,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val tagColl =
         QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
-          Future.failed(new IllegalArgumentException("boom!")))
+          Future.exception(new IllegalArgumentException("boom!")))
 
       Executor
         .execute(

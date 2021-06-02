@@ -19,7 +19,7 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   class ColorResolver extends DeferredResolver[Any] {
     override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
         ec: ExecutionContext) = deferred.map { case ColorDefer(num) =>
-      Future.successful("[" + (num + 45) + "]")
+      Future.value("[" + (num + 45) + "]")
     }
   }
 
@@ -39,16 +39,16 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       Field(
         "future",
         StringType,
-        resolve = _ => FutureValue(Future.successful("green")).map("light-" + _)),
+        resolve = _ => FutureValue(Future.value("green")).map("light-" + _)),
       Field(
         "futureDouble",
         ColorType,
-        resolve = _ => FutureValue(Future.successful("green")).map("light-" + _).map(Color(_))),
+        resolve = _ => FutureValue(Future.value("green")).map("light-" + _).map(Color(_))),
       Field(
         "futureTriple",
         StringType,
         resolve = _ =>
-          FutureValue(Future.successful("green"))
+          FutureValue(Future.value("green"))
             .map("light-" + _)
             .map(Color(_))
             .map("super-" + _.name)),
@@ -69,12 +69,12 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       Field(
         "futureDeferred",
         StringType,
-        resolve = _ => DeferredFutureValue(Future.successful(ColorDefer(34))).map(x => x + 56)),
+        resolve = _ => DeferredFutureValue(Future.value(ColorDefer(34))).map(x => x + 56)),
       Field(
         "futureDeferredPartialError",
         StringType,
         resolve = _ =>
-          DeferredFutureValue(Future.successful(ColorDefer(34)))
+          DeferredFutureValue(Future.value(ColorDefer(34)))
             .mapWithErrors(x =>
               (x + 10, Vector(SimpleError("ooops"), SimpleError("something went wrong"))))
             .map(x => x + "foo")
@@ -84,14 +84,14 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         "futureDeferredDouble",
         StringType,
         resolve = _ =>
-          DeferredFutureValue(Future.successful(ColorDefer(34)))
+          DeferredFutureValue(Future.value(ColorDefer(34)))
             .map(x => x + 576)
             .map("Yay! " + _ + " +++")),
       Field(
         "futureDeferredTriple",
         StringType,
         resolve = _ =>
-          DeferredFutureValue(Future.successful(ColorDefer(34)))
+          DeferredFutureValue(Future.value(ColorDefer(34)))
             .map(x => x + 576)
             .map(Color(_))
             .map(c => "Yay! " + c.name + " +++")
@@ -100,7 +100,7 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         "ctxUpdate",
         ColorType,
         resolve = ctx =>
-          UpdateCtx(DeferredFutureValue(Future.successful(ColorDefer(11)))) { v =>
+          UpdateCtx(DeferredFutureValue(Future.value(ColorDefer(11)))) { v =>
             require(v == "[56]"); ctx.ctx
           }.map("!" + _ + "?")
             .map(x => x + 576)

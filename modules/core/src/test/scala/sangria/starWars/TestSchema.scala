@@ -100,7 +100,7 @@ object TestSchema {
         "name",
         OptionType(StringType),
         Some("The name of the droid."),
-        resolve = ctx => Future.successful(ctx.value.name)),
+        resolve = ctx => Future.value(ctx.value.name)),
       Field(
         "friends",
         OptionType(ListType(OptionType(Character))),

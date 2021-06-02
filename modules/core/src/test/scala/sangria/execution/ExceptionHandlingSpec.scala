@@ -57,7 +57,7 @@ class ExceptionHandlingSpec
       Field(
         "futureError",
         OptionType(StringType),
-        resolve = _ => Future.failed[String](new IllegalStateException("Boom!")))
+        resolve = _ => Future.exception[String](new IllegalStateException("Boom!")))
     )
   )
 

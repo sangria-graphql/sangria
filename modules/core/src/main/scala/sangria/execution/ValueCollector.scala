@@ -9,7 +9,7 @@ import sangria.util.Cache
 import sangria.validation._
 
 import scala.collection.immutable.VectorBuilder
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Throw, Return, Try}
 
 class ValueCollector[Ctx, Input](
     schema: Schema[_, _],
@@ -31,7 +31,7 @@ class ValueCollector[Ctx, Input](
       fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]])
       : Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
-      Failure(
+      Throw(
         new ExecutionError(
           s"Variables should be a map-like object, like JSON object. Got: ${um.render(inputVars)}",
           exceptionHandler))
@@ -66,11 +66,11 @@ class ValueCollector[Ctx, Input](
       val (errors, values) = res.partition(_._2.isLeft)
 
       if (errors.nonEmpty)
-        Failure(
+        Throw(
           VariableCoercionError(
             errors.collect { case (name, Left(errors)) => errors }.flatten,
             exceptionHandler))
-      else Success(Map(values.collect { case (name, Right(v)) => name -> v }: _*))
+      else Return(Map(values.collect { case (name, Right(v)) => name -> v }: _*))
     }
 
   def getFieldArgumentValues(
@@ -104,7 +104,7 @@ class ValueCollector[Ctx, Input](
 }
 
 object ValueCollector {
-  private[execution] val emptyArgs = Success(Args.empty)
+  private[execution] val emptyArgs = Return(Args.empty)
 
   def getArgumentValues[Ctx](
       coercionHelper: ValueCoercionHelper[Ctx],
@@ -180,12 +180,12 @@ object ValueCollector {
       val errorRes = errors.result()
 
       if (errorRes.nonEmpty && !ignoreErrors)
-        Failure(AttributeCoercionError(errorRes, exceptionHandler))
+        Throw(AttributeCoercionError(errorRes, exceptionHandler))
       else {
         val optionalArgs = argumentDefs.filter(_.argumentType.isOptional).map(_.name).toSet
         val argsWithDefault = argumentDefs.filter(_.defaultValue.isDefined).map(_.name).toSet
 
-        Success(
+        Return(
           Args(
             marshaller.mapNode(res).asInstanceOf[Map[String, Any]],
             argsWithDefault,

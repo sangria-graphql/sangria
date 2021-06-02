@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.execution.DeferredWithInfo
 import sangria.schema.{Args, Field}
 
-import scala.concurrent.{ExecutionContext, Future}
+import com.twitter.util.Future
 
 trait DeferredResolver[-Ctx] {
   def includeDeferredFromField: Option[(Field[_, _], Vector[ast.Field], Args, Double) => Boolean] =
@@ -15,15 +15,13 @@ trait DeferredResolver[-Ctx] {
 
   def initialQueryState: Any = ()
 
-  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any)(implicit
-      ec: ExecutionContext): Vector[Future[Any]]
+  def resolve(deferred: Vector[Deferred[Any]], ctx: Ctx, queryState: Any): Vector[Future[Any]]
 }
 
 object DeferredResolver {
   val empty = new DeferredResolver[Any] {
-    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-        ec: ExecutionContext) =
-      deferred.map(d => Future.failed(UnsupportedDeferError(d)))
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) =
+      deferred.map(d => Future.exception(UnsupportedDeferError(d)))
   }
 
   def fetchers[Ctx](fetchers: Fetcher[Ctx, _, _, _]*): DeferredResolver[Ctx] =

@@ -167,7 +167,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
         Field(
           "futureError",
           OptionType(StringType),
-          resolve = _ => Future.failed[Option[String]](new IllegalStateException("boom"))),
+          resolve = _ => Future.exception[Option[String]](new IllegalStateException("boom"))),
         Field("defError", OptionType(StringType), resolve = _ => Fail),
         Field("someString", StringType, resolve = _ => "nothing special"),
         Field(
@@ -195,7 +195,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
   class BrokenResolver extends DeferredResolver[Any] {
     def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
         ec: ExecutionContext) = deferred.map { case Fail =>
-      Future.failed(new IllegalStateException("error in resolver"))
+      Future.exception(new IllegalStateException("error in resolver"))
     }
   }
 
@@ -266,8 +266,8 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
       class Resolver extends DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
             ec: ExecutionContext) = deferred.map {
-          case ED => Future.failed(error("deferred error"))
-          case SD => Future.successful(Some("deferred success"))
+          case ED => Future.exception(error("deferred error"))
+          case SD => Future.value(Some("deferred success"))
         }
       }
 
@@ -283,16 +283,16 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
             Field(
               "e3",
               OptionType(StringType),
-              resolve = _ => FutureValue(Future.failed(error("e3 error")))),
+              resolve = _ => FutureValue(Future.exception(error("e3 error")))),
             Field("e4", OptionType(StringType), resolve = _ => DeferredValue(ED)),
             Field(
               "e5",
               OptionType(StringType),
-              resolve = _ => DeferredFutureValue(Future.successful(ED))),
+              resolve = _ => DeferredFutureValue(Future.value(ED))),
             Field(
               "e6",
               OptionType(StringType),
-              resolve = _ => DeferredFutureValue(Future.failed(error("e6 error")))),
+              resolve = _ => DeferredFutureValue(Future.exception(error("e6 error")))),
             Field(
               "e7",
               OptionType(StringType),
@@ -303,7 +303,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
               OptionType(StringType),
               resolve = _ =>
                 PartialFutureValue(
-                  Future.successful(
+                  Future.value(
                     PartialValue[Unit, Option[String]](
                       Some("e8 success"),
                       Vector(error("e81 error"), error("e82 error")))))
@@ -311,7 +311,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
             Field(
               "e9",
               OptionType(StringType),
-              resolve = _ => PartialFutureValue(Future.failed(error("e9")))),
+              resolve = _ => PartialFutureValue(Future.exception(error("e9")))),
             Field("s1", OptionType(StringType), resolve = _ => Value(Some("s1 success"))),
             Field(
               "s2",
@@ -320,12 +320,12 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
             Field(
               "s3",
               OptionType(StringType),
-              resolve = _ => FutureValue(Future.successful(Some("s3 success")))),
+              resolve = _ => FutureValue(Future.value(Some("s3 success")))),
             Field("s4", OptionType(StringType), resolve = _ => DeferredValue(SD)),
             Field(
               "s5",
               OptionType(StringType),
-              resolve = _ => DeferredFutureValue(Future.successful(SD)))
+              resolve = _ => DeferredFutureValue(Future.value(SD)))
           )
       )
 

@@ -23,23 +23,23 @@ class NotNullSpec extends AnyWordSpec with Matchers with FutureResultSupport wit
   class ThrowingSubject extends TestSubject {
     def sync = throw new IllegalStateException("sync")
     def nonNullSync = throw new IllegalStateException("nonNullSync")
-    def promise = Future.failed(new IllegalStateException("promise"))
-    def nonNullPromise = Future.failed(new IllegalStateException("nonNullPromise"))
+    def promise = Future.exception(new IllegalStateException("promise"))
+    def nonNullPromise = Future.exception(new IllegalStateException("nonNullPromise"))
     def nest = Some(new ThrowingSubject)
     def nonNullNest = new ThrowingSubject
-    def promiseNest = Future.successful(Some(new ThrowingSubject))
-    def nonNullPromiseNest = Future.successful(new ThrowingSubject)
+    def promiseNest = Future.value(Some(new ThrowingSubject))
+    def nonNullPromiseNest = Future.value(new ThrowingSubject)
   }
 
   class NullingSubject extends TestSubject {
     def sync = None
     def nonNullSync = null
-    def promise = Future.successful(None)
-    def nonNullPromise = Future.successful(null)
+    def promise = Future.value(None)
+    def nonNullPromise = Future.value(null)
     def nest = Some(new NullingSubject)
     def nonNullNest = new NullingSubject
-    def promiseNest = Future.successful(Some(new NullingSubject))
-    def nonNullPromiseNest = Future.successful(new NullingSubject)
+    def promiseNest = Future.value(Some(new NullingSubject))
+    def nonNullPromiseNest = Future.value(new NullingSubject)
   }
 
   val DataType: ObjectType[Unit, TestSubject] = ObjectType(

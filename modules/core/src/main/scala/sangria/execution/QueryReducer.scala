@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.introspection.{TypeNameMetaField, isIntrospection}
 import sangria.schema._
 import scala.annotation.unchecked.uncheckedVariance
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Throw, Return, Try}
 
 trait QueryReducer[-Ctx, +Out] {
   type Acc
@@ -86,8 +86,8 @@ class MeasureComplexity[Ctx](action: (Double, Ctx) => ReduceAction[Ctx, Ctx])
     val estimate = field.complexity match {
       case Some(fn) =>
         argumentValuesFn(path, field.arguments, astFields.head.arguments) match {
-          case Success(args) => fn(ctx, args, childrenAcc)
-          case Failure(_) => DefaultComplexity + childrenAcc
+          case Return(args) => fn(ctx, args, childrenAcc)
+          case Throw(_) => DefaultComplexity + childrenAcc
         }
       case None => DefaultComplexity + childrenAcc
     }

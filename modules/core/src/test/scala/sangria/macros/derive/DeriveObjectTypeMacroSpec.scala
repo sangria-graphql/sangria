@@ -466,13 +466,13 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
     "support `Future`, `Try`, `Defer` and `Action` return types" in {
       case class MyTest(deferVal: TestDefer) {
         @GraphQLField
-        def futureVal: Future[List[Int]] = Future.successful(List(11, 22))
+        def futureVal: Future[List[Int]] = Future.value(List(11, 22))
 
         @GraphQLField
         def tryVal: Try[Option[List[Int]]] = Success(Some(List(33, 44)))
 
         @GraphQLField
-        def actionVal = DeferredFutureValue(Future.successful(TestDefer(1)))
+        def actionVal = DeferredFutureValue(Future.value(TestDefer(1)))
       }
 
       val tpe = deriveObjectType[Unit, MyTest]()

@@ -169,7 +169,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             Field(
               "childrenFut",
               ListType(CategoryType),
-              resolve = c => Future.successful(fetcherCat.deferSeq(c.value.children)))
+              resolve = c => Future.value(fetcherCat.deferSeq(c.value.children)))
           )
       )
 
@@ -209,7 +209,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             resolve = c => fetcherProd.deferSeqOptExplicit(c.arg[Seq[Int]]("ids"))
           ),
           Field("root", CategoryType, resolve = _ => fetcherCat.defer("1")),
-          Field("rootFut", CategoryType, resolve = _ => Future.successful(fetcherCat.defer("1")))
+          Field("rootFut", CategoryType, resolve = _ => Future.value(fetcherCat.defer("1")))
         )
       )
 
@@ -579,7 +579,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           valueCount.addAndGet(deferred.size)
 
           deferred.map { case ColorDeferred(id) =>
-            Future.successful(id + "Color")
+            Future.value(id + "Color")
           }
         }
       }

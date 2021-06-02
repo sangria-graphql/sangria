@@ -148,7 +148,7 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         }
 
         val cherryPicker = Fetcher.caching[Ctx, Fruit, Int]((ctx, ids) =>
-          Future.successful(ids.map(id => Fruit(id, "cherry", "red"))))(HasId(_.id))
+          Future.value(ids.map(id => Fruit(id, "cherry", "red"))))(HasId(_.id))
 
         val FruitType = ObjectType(
           "Fruit",

@@ -20,8 +20,8 @@ class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
   class Resolver extends DeferredResolver[Any] {
     def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
         ec: ExecutionContext) = deferred.map {
-      case SuccessfulDefer(n) => Future.successful(n)
-      case FailedDefer(_) => Future.failed(new IllegalStateException("error in resolver"))
+      case SuccessfulDefer(n) => Future.value(n)
+      case FailedDefer(_) => Future.exception(new IllegalStateException("error in resolver"))
     }
   }
 
@@ -111,7 +111,7 @@ class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             OptionType(NumberHolderType),
             arguments = NewNumberArg :: Nil,
             resolve = ctx =>
-              UpdateCtx(DeferredFutureValue(Future.successful(
+              UpdateCtx(DeferredFutureValue(Future.value(
                 SuccessfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v =>
                 ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))
           ),
@@ -120,7 +120,7 @@ class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             OptionType(NumberHolderType),
             arguments = NewNumberArg :: Nil,
             resolve = ctx =>
-              UpdateCtx(DeferredFutureValue(Future.successful(
+              UpdateCtx(DeferredFutureValue(Future.value(
                 FailedDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v =>
                 ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))
           ),
@@ -300,7 +300,7 @@ class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             child,
             arguments = AddArg :: Nil,
             resolve = c =>
-              UpdateCtx(Future.successful(c.ctx + " " + c.arg(AddArg)))(v => v + " ctx ").map(v =>
+              UpdateCtx(Future.value(c.ctx + " " + c.arg(AddArg)))(v => v + " ctx ").map(v =>
                 v + " map")),
           Field(
             "updateTry",

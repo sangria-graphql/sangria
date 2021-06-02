@@ -42,7 +42,7 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       .await should be(expected)
   }
 
-  def success[T](t: T) = Future.successful(t)
+  def success[T](t: T) = Future.value(t)
 
   "Execute: Handles list nullability" when {
     "[T]" when {
@@ -88,7 +88,7 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           Map("data" -> Map("nest" -> Map("test" -> null))))
         "Rejected" in check(
           tpe,
-          FutureValue(Future.failed(new IllegalStateException("Boom"))),
+          FutureValue(Future.exception(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> Map("test" -> null)),
             "errors" -> List(
@@ -158,7 +158,7 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         )
         "Rejected" in check(
           tpe,
-          FutureValue(Future.failed(new IllegalStateException("Boom"))),
+          FutureValue(Future.exception(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> null),
             "errors" -> List(
@@ -216,7 +216,7 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           Map("data" -> Map("nest" -> Map("test" -> null))))
         "Rejected" in check(
           tpe,
-          FutureValue(Future.failed(new IllegalStateException("Boom"))),
+          FutureValue(Future.exception(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> Map("test" -> null)),
             "errors" -> List(
@@ -294,7 +294,7 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         )
         "Rejected" in check(
           tpe,
-          FutureValue(Future.failed(new IllegalStateException("Boom"))),
+          FutureValue(Future.exception(new IllegalStateException("Boom"))),
           Map(
             "data" -> Map("nest" -> null),
             "errors" -> List(

@@ -6,14 +6,14 @@ import sangria.parser.DeliveryScheme.Throw
 import sangria.renderer.SchemaRenderer
 import sangria.util.Cache
 
-import scala.util.{Failure, Success}
+import com.twitter.util.{Throw => TryThrow, Return}
 
 class IntrospectionSchemaMaterializer[Ctx, T: InputUnmarshaller](
     introspectionResult: T,
     builder: IntrospectionSchemaBuilder[Ctx]) {
   private val typeDefCache = Cache.empty[String, Type with Named]
 
-  private lazy val schemaDef = IntrospectionParser.parse(introspectionResult)
+  private lazy val schemaDef: IntrospectionSchema = IntrospectionParser.parse(introspectionResult)
 
   lazy val build: Schema[Ctx, Any] = {
     val queryType = getObjectType(schemaDef.queryType)
@@ -110,7 +110,7 @@ class IntrospectionSchemaMaterializer[Ctx, T: InputUnmarshaller](
         .getOrElse(
           schemaDef.types
             .find(_.name == typeName)
-            .flatMap(buildType)
+            .flatMap(buildType _)
             .getOrElse(throw new SchemaMaterializationException(
               s"Invalid or incomplete schema, unknown type: $typeName. Ensure that a full introspection query is used in order to build a client schema.")))
     )
@@ -163,8 +163,8 @@ class IntrospectionSchemaMaterializer[Ctx, T: InputUnmarshaller](
   def buildDefault(defaultValue: Option[String]) =
     defaultValue.map(dv =>
       sangria.marshalling.queryAst.QueryAstInputParser.parse(dv) match {
-        case Success(parsed) => parsed -> sangria.marshalling.queryAst.queryAstToInput
-        case Failure(error) =>
+        case Return(parsed) => parsed -> sangria.marshalling.queryAst.queryAstToInput
+        case TryThrow(error) =>
           throw new SchemaMaterializationException(s"Unable to parse default value '$dv'.", error)
       })
 

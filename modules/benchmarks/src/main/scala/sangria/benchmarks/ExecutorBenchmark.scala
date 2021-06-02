@@ -4,13 +4,11 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 import sangria.ast.Document
 import sangria.execution.Executor
-import sangria.execution.experimental.Executor2
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.validation.QueryValidator
 import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import com.twitter.util.Await
 
 // TODO: figure out if there is any interplay between Scope.Thread and the
 // ExecutionContext used with Executor
@@ -42,20 +40,20 @@ class ExecutorBenchmark {
           // This benchmark focuses on performance of the underlying Resolver.
           // Let's disable query validation for maximum speed.
           queryValidator = QueryValidator.empty
-        )(scala.concurrent.ExecutionContext.global)
+        )
 
       case "Experimental" =>
-        executor = Executor2(
+        /*executor = Executor2(
           schema,
           queryValidator = QueryValidator.empty
-        )(scala.concurrent.ExecutionContext.global)
+        )(scala.concurrent.ExecutionContext.global)*/
     }
   }
 
   @Benchmark
   def bench(bh: Blackhole): Unit = {
     val fut = executor.execute(query, (), ())
-    val result = Await.result(fut, Duration.Inf)
+    val result = Await.result(fut)
     bh.consume(result)
   }
 

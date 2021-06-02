@@ -1,7 +1,7 @@
 package sangria.execution.deferred
 
 import scala.collection.mutable.{Set => MutableSet, Map => MutableMap}
-import scala.concurrent.Future
+import com.twitter.util.Future
 
 class Fetcher[Ctx, Res, RelRes, Id](
     val idFn: Res => Id,
@@ -92,11 +92,11 @@ class Fetcher[Ctx, Res, RelRes, Id](
 object Fetcher {
   private def relationUnsupported[Ctx, Id, Res]
       : (FetcherContext[Ctx], RelationIds[Res]) => Future[Seq[Res]] =
-    (_, _) => Future.failed(new RelationNotSupportedError)
+    (_, _) => Future.exception(new RelationNotSupportedError)
 
   private def relationOnlySupported[Ctx, Id, Res]
       : (FetcherContext[Ctx], Seq[Id]) => Future[Seq[Res]] =
-    (_, _) => Future.failed(new RelationOnlySupportedError)
+    (_, _) => Future.exception(new RelationOnlySupportedError)
 
   def apply[Ctx, Res, Id](
       fetch: (Ctx, Seq[Id]) => Future[Seq[Res]],

@@ -7,7 +7,7 @@ import sangria.ast
 import sangria.util.Cache
 
 import scala.collection.mutable.{ArrayBuffer, Map => MutableMap, Set => MutableSet}
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Throw, Return, Try}
 
 class FieldCollector[Ctx, Val](
     schema: Schema[Ctx, Val],
@@ -25,7 +25,7 @@ class FieldCollector[Ctx, Val](
       selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
     resultCache.getOrElseUpdate(
       path.cacheKey -> tpe.name, {
-        val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
+        val builder: Try[CollectedFieldsBuilder] = Return(new CollectedFieldsBuilder)
 
         selections.foldLeft(builder) { case (acc, s) =>
           collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
@@ -41,18 +41,18 @@ class FieldCollector[Ctx, Val](
       visitedFragments: MutableSet[String],
       initial: Try[CollectedFieldsBuilder]): Try[CollectedFieldsBuilder] =
     selections.foldLeft(initial) {
-      case (f @ Failure(_), selection) => f
-      case (s @ Success(acc), selection) =>
+      case (f @ Throw(_), selection) => f
+      case (s @ Return(acc), selection) =>
         selection match {
           case field @ ast.Field(_, _, _, dirs, _, _, _, _) =>
             val name = field.outputName
 
             shouldIncludeNode(dirs, selection) match {
-              case Success(true) =>
+              case Return(true) =>
                 acc.add(name, field)
                 s
-              case Success(false) => s
-              case Failure(error) =>
+              case Return(false) => s
+              case Throw(error) =>
                 acc.addError(name, field, error)
                 s
             }
@@ -82,7 +82,7 @@ class FieldCollector[Ctx, Val](
                         else s
                     } yield fragmentFields
                   case None =>
-                    Failure(
+                    Throw(
                       new ExecutionError(
                         s"Fragment with name '$name' is not defined",
                         exceptionHandler,
@@ -104,7 +104,7 @@ class FieldCollector[Ctx, Val](
           .map(dd =>
             selection match {
               case _: ast.Field if !dd.locations.contains(DirectiveLocation.Field) =>
-                Failure(
+                Throw(
                   new ExecutionError(
                     s"Directive '${dd.name}' is not allowed to be used on fields",
                     exceptionHandler,
@@ -112,7 +112,7 @@ class FieldCollector[Ctx, Val](
                     d.location.toList))
               case _: ast.InlineFragment
                   if !dd.locations.contains(DirectiveLocation.InlineFragment) =>
-                Failure(
+                Throw(
                   new ExecutionError(
                     s"Directive '${dd.name}' is not allowed to be used on inline fragment",
                     exceptionHandler,
@@ -120,7 +120,7 @@ class FieldCollector[Ctx, Val](
                     d.location.toList))
               case _: ast.FragmentSpread
                   if !dd.locations.contains(DirectiveLocation.FragmentSpread) =>
-                Failure(
+                Throw(
                   new ExecutionError(
                     s"Directive '${dd.name}' is not allowed to be used on fragment spread",
                     exceptionHandler,
@@ -128,7 +128,7 @@ class FieldCollector[Ctx, Val](
                     d.location.toList))
               case _: ast.FragmentDefinition
                   if !dd.locations.contains(DirectiveLocation.FragmentDefinition) =>
-                Failure(
+                Throw(
                   new ExecutionError(
                     s"Directive '${dd.name}' is not allowed to be used on fragment definition",
                     exceptionHandler,
@@ -137,7 +137,7 @@ class FieldCollector[Ctx, Val](
               case op: ast.OperationDefinition
                   if op.operationType == OperationType.Query && !dd.locations.contains(
                     DirectiveLocation.Query) =>
-                Failure(
+                Throw(
                   new ExecutionError(
                     s"Directive '${dd.name}' is not allowed to be used on query operation",
                     exceptionHandler,
@@ -146,7 +146,7 @@ class FieldCollector[Ctx, Val](
               case op: ast.OperationDefinition
                   if op.operationType == OperationType.Mutation && !dd.locations.contains(
                     DirectiveLocation.Mutation) =>
-                Failure(
+                Throw(
                   new ExecutionError(
                     s"Directive '${dd.name}' is not allowed to be used on mutation operation",
                     exceptionHandler,
@@ -155,16 +155,16 @@ class FieldCollector[Ctx, Val](
               case op: ast.OperationDefinition
                   if op.operationType == OperationType.Subscription && !dd.locations.contains(
                     DirectiveLocation.Subscription) =>
-                Failure(
+                Throw(
                   new ExecutionError(
                     s"Directive '${dd.name}' is not allowed to be used on subscription operation",
                     exceptionHandler,
                     sourceMapper,
                     d.location.toList))
-              case _ => Success(d -> dd)
+              case _ => Return(d -> dd)
             })
           .getOrElse(
-            Failure(
+            Throw(
               new ExecutionError(
                 s"Directive '${d.name}' not found.",
                 exceptionHandler,
@@ -176,13 +176,13 @@ class FieldCollector[Ctx, Val](
           .map(dir -> _)
       })
 
-    possibleDirs.collect { case Failure(error) => error }.headOption.map(Failure(_)).getOrElse {
-      val validDirs = possibleDirs.collect { case Success(v) => v }
+    possibleDirs.collect { case Throw(error) => error }.headOption.map(Throw(_)).getOrElse {
+      val validDirs = possibleDirs.collect { case Return(v) => v }
       val should = validDirs.forall { case (dir, args) =>
         dir.shouldInclude(DirectiveContext(selection, dir, args))
       }
 
-      Success(should)
+      Return(should)
     }
   }
 
@@ -194,17 +194,17 @@ class FieldCollector[Ctx, Val](
         schema.outputTypes
           .get(tc.name)
           .map(condTpe =>
-            Success(
+            Return(
               condTpe.name == tpe.name || (condTpe
                 .isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
           .getOrElse(
-            Failure(
+            Throw(
               new ExecutionError(
                 s"Unknown type '${tc.name}'.",
                 exceptionHandler,
                 sourceMapper,
                 conditional.location.toList)))
-      case None => Success(true)
+      case None => Return(true)
     }
 }
 
@@ -223,14 +223,14 @@ class CollectedFieldsBuilder {
     indexLookup.get(name) match {
       case Some(idx) =>
         fields(idx) match {
-          case s @ Success(list) => list += field
+          case s @ Return(list) => list += field
           case _ => // do nothing because there is already an error
         }
       case None =>
         indexLookup(name) = fields.size
         firstFields += field
         names += name
-        fields += Success(ArrayBuffer(field))
+        fields += Return(ArrayBuffer(field))
     }
 
     this
@@ -240,15 +240,15 @@ class CollectedFieldsBuilder {
     indexLookup.get(name) match {
       case Some(idx) =>
         fields(idx) match {
-          case s @ Success(list) =>
-            fields(idx) = Failure(error)
+          case s @ Return(list) =>
+            fields(idx) = Throw(error)
           case _ => // do nothing because there is already an error
         }
       case None =>
         indexLookup(name) = fields.size
         firstFields += field
         names += name
-        fields += Failure(error)
+        fields += Throw(error)
     }
 
     this

@@ -27,8 +27,7 @@ import sangria.validation.{QueryValidator, TypeInfo, Violation}
 import sangria.visitor.VisitorCommand
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Future, Throw, Return, Try}
 import scala.util.control.Breaks.{break, breakable}
 import BatchExecutionPlan._
 
@@ -77,7 +76,6 @@ object BatchExecutor {
       queryReducers: List[QueryReducer[Ctx, _]] = Nil,
       inferVariableDefinitions: Boolean = true
   )(implicit
-      executionContext: ExecutionContext,
       marshaller: SymmetricMarshaller[T],
       um: InputUnmarshaller[Input],
       scheme: ExecutionScheme): scheme.Result[Ctx, T] = {
@@ -102,8 +100,8 @@ object BatchExecutor {
         .flatMap { case res @ (updatedDocument, _) =>
           val violations = queryValidator.validateQuery(schema, updatedDocument)
 
-          if (violations.nonEmpty) Failure(ValidationError(violations, exceptionHandler))
-          else Success(res)
+          if (violations.nonEmpty) Throw(ValidationError(violations, exceptionHandler))
+          else Return(res)
         }
 
     implicit val m = marshaller.marshaller
@@ -111,8 +109,8 @@ object BatchExecutor {
     val convertedVariables = convertVariables(variables, marshaller)
 
     validations match {
-      case Failure(e) => scheme.failed(e)
-      case Success((updatedDocument, executionPlan)) =>
+      case Throw(e) => scheme.failed(e)
+      case Return((updatedDocument, executionPlan)) =>
         scheme match {
           case ss: ExecutionScheme.StreamBasedExecutionScheme[_] =>
             val childScheme =
@@ -188,7 +186,6 @@ object BatchExecutor {
   )(
       executeFn: (String, Any, InputUnmarshaller[Any]) => Future[T]
   )(implicit
-      executionContext: ExecutionContext,
       inputUnmarshaller: InputUnmarshaller[In]): Vector[Future[T]] = {
     val inProgress = new mutable.HashMap[String, Future[T]]
 
@@ -200,11 +197,11 @@ object BatchExecutor {
             loop(dep, plan.dependencies(dep)).map(d -> _)
           }
 
-          Future.sequence(depFutures).flatMap { resolved =>
+          Future.collect(depFutures).flatMap { resolved =>
             collectVariables(
               opName,
               plan,
-              resolved,
+              resolved.toVector,
               marshaller,
               convertedVariables,
               extendedScheme) match {
@@ -371,15 +368,15 @@ object BatchExecutor {
       operationNames: Seq[String],
       exceptionHandler: ExceptionHandler): Try[Unit] =
     if (operationNames.isEmpty)
-      Failure(
+      Throw(
         OperationSelectionError(
           s"List of operations to execute in batch is empty.",
           exceptionHandler))
     else
       operationNames.find(op => !document.operations.contains(Some(op))) match {
         case Some(opName) =>
-          Failure(OperationSelectionError(s"Unknown operation name '$opName'.", exceptionHandler))
-        case None => Success(())
+          Throw(OperationSelectionError(s"Unknown operation name '$opName'.", exceptionHandler))
+        case None => Return(())
       }
 
   private def calcExecutionPlan(
@@ -391,16 +388,16 @@ object BatchExecutor {
     val (exportedAll, exportFragments) = findUsages(schema, queryAst)
 
     val collectResult =
-      exportedAll.foldLeft(Success(exportedAll): Try[mutable.HashMap[String, ExportOperation]]) {
-        case (s @ Success(ops), (opName, op)) =>
+      exportedAll.foldLeft(Return(exportedAll): Try[mutable.HashMap[String, ExportOperation]]) {
+        case (s @ Return(ops), (opName, op)) =>
           collectFragmentInfo(op, exportFragments, exceptionHandler) match {
-            case Success(o) =>
+            case Return(o) =>
               ops(opName) = o
               s
 
-            case Failure(e) => Failure(e)
+            case Throw(e) => Throw(e)
           }
-        case (f @ Failure(_), _) => f
+        case (f @ Throw(_), _) => f
       }
 
     val exportedRelevant: Map[String, ExportOperation] =
@@ -422,9 +419,9 @@ object BatchExecutor {
             }
 
           if (violations.nonEmpty)
-            Failure(BatchExecutionViolationError(violations.toVector, exceptionHandler))
+            Throw(BatchExecutionViolationError(violations.toVector, exceptionHandler))
           else
-            Success(queryAst)
+            Return(queryAst)
         }
       }
       .flatMap { updatedQueryAst =>
@@ -469,9 +466,9 @@ object BatchExecutor {
     }
 
     if (violations.nonEmpty)
-      Failure(BatchExecutionViolationError(violations.toVector, exceptionHandler))
+      Throw(BatchExecutionViolationError(violations.toVector, exceptionHandler))
     else
-      Success(queryAst -> dependencies)
+      Return(queryAst -> dependencies)
   }
 
   private def findOperationDependencies(
@@ -559,9 +556,9 @@ object BatchExecutor {
       )
 
     if (inferenceViolations.nonEmpty)
-      Failure(BatchExecutionViolationError(inferenceViolations.toVector, exceptionHandler))
+      Throw(BatchExecutionViolationError(inferenceViolations.toVector, exceptionHandler))
     else
-      Success(updatedDocument)
+      Return(updatedDocument)
   }
 
   private def findUndefinedVariableUsages(exportOperation: ExportOperation) = {
@@ -602,22 +599,22 @@ object BatchExecutor {
     loop(exportOperation.fragmentSpreads, Set.empty, Vector.empty)
 
     if (recursive.nonEmpty)
-      Failure(
+      Throw(
         BatchExecutionError(
           s"Query contains recursive fragments: ${recursive.mkString(", ")}.",
           exceptionHandler))
     else if (unknown.nonEmpty)
-      Failure(
+      Throw(
         BatchExecutionError(
           s"Query contains undefined fragments: ${unknown.mkString(", ")}.",
           exceptionHandler))
     else if (currentExports.nonEmpty || currentVariables.nonEmpty)
-      Success(
+      Return(
         exportOperation.copy(
           exports = exportOperation.exports ++ currentExports.toVector,
           variableUsages = exportOperation.variableUsages ++ currentVariables.toVector))
     else
-      Success(exportOperation)
+      Return(exportOperation)
   }
 
   private def findUsages(schema: Schema[_, _], queryAst: ast.Document)

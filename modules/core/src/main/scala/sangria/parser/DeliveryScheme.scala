@@ -1,6 +1,6 @@
 package sangria.parser
 
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Throw => TryThrow, Return, Try}
 
 trait DeliveryScheme[T] {
   type Result
@@ -14,8 +14,8 @@ object DeliveryScheme extends AlternativeDeliverySchemes {
     new DeliveryScheme[T] {
       type Result = Try[T]
 
-      def success(result: T) = Success(result)
-      def failure(error: Throwable) = Failure(error)
+      def success(result: T) = Return(result)
+      def failure(error: Throwable) = TryThrow(error)
     }
 }
 

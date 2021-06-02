@@ -29,7 +29,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     def deep: Option[DeepTestSubject] = Some(new DeepTestSubject)
     def deepColor(c: String): DeepTestSubject = new DeepTestSubject(c)
     def pic(size: Option[Int]) = "Pic of size: " + (size.getOrElse(50))
-    def future: Future[Option[TestSubject]] = Future.successful(Some(new TestSubject))
+    def future: Future[Option[TestSubject]] = Future.value(Some(new TestSubject))
   }
 
   class DeepTestSubject(val color: String = "none") {
@@ -48,16 +48,16 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   class LightColorResolver extends DeferredResolver[Any] {
     def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
         ec: ExecutionContext) = deferred.map {
-      case LightColor(v, c) => Future.successful(v.deepColor("light" + c))
-      case FailColor(v, c) => Future.failed(new IllegalStateException("error in resolver"))
+      case LightColor(v, c) => Future.value(v.deepColor("light" + c))
+      case FailColor(v, c) => Future.exception(new IllegalStateException("error in resolver"))
     }
   }
 
   class BrokenLightColorResolver extends DeferredResolver[Any] {
     def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
         ec: ExecutionContext) = (deferred ++ deferred).map {
-      case LightColor(v, c) => Future.successful(v.deepColor("light" + c))
-      case FailColor(v, c) => Future.failed(new IllegalStateException("error in resolver"))
+      case LightColor(v, c) => Future.value(v.deepColor("light" + c))
+      case FailColor(v, c) => Future.exception(new IllegalStateException("error in resolver"))
     }
   }
 
@@ -93,7 +93,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           "ctxUpdatingFut",
           DeepDataType,
           resolve = ctx =>
-            UpdateCtx(Future.successful(ctx.value.deepColor("orange")))(v =>
+            UpdateCtx(Future.value(ctx.value.deepColor("orange")))(v =>
               ctx.ctx.copy(color = v.color))),
         Field(
           "ctxUpdatingDef",
@@ -104,14 +104,14 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           "ctxUpdatingDefFut",
           DeepDataType,
           resolve = ctx =>
-            UpdateCtx(DeferredFutureValue(Future.successful(LightColor(ctx.value, "red"))))(v =>
+            UpdateCtx(DeferredFutureValue(Future.value(LightColor(ctx.value, "red"))))(v =>
               ctx.ctx.copy(color = v.color))
         ),
         Field("def", DeepDataType, resolve = ctx => LightColor(ctx.value, "magenta")),
         Field(
           "defFut",
           DeepDataType,
-          resolve = ctx => DeferredFutureValue(Future.successful(LightColor(ctx.value, "red")))),
+          resolve = ctx => DeferredFutureValue(Future.value(LightColor(ctx.value, "red")))),
         Field(
           "defFail",
           OptionType(DeepDataType),
@@ -119,7 +119,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         Field(
           "defFutFail",
           OptionType(DeepDataType),
-          resolve = ctx => DeferredFutureValue(Future.successful(FailColor(ctx.value, "red")))),
+          resolve = ctx => DeferredFutureValue(Future.value(FailColor(ctx.value, "red")))),
         Field(
           "pic",
           OptionType(StringType),
@@ -533,9 +533,9 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       class Data {
         def sync = "sync"
         def syncError = throw new IllegalStateException("Error getting syncError")
-        def async = Future.successful("async")
+        def async = Future.value("async")
         def asyncReject: Future[String] =
-          Future.failed(new IllegalStateException("Error getting asyncReject"))
+          Future.exception(new IllegalStateException("Error getting asyncReject"))
         def asyncError: Future[String] = Future {
           throw new IllegalStateException("Error getting asyncError")
         }
@@ -560,7 +560,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
               OptionType(StringType),
               resolve = _ =>
                 DeferredFutureValue(
-                  Future.failed(throw new IllegalStateException("Error getting asyncDeferError")))
+                  Future.exception(throw new IllegalStateException("Error getting asyncDeferError")))
             )
           )
         ))
@@ -1033,7 +1033,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             ListType(StringType),
             resolve = _ =>
               PartialFutureValue(
-                Future.successful(
+                Future.value(
                   PartialValue[Unit, List[String]](
                     List("d", "f"),
                     Vector(MyListError("error 3"), MyListError("error 4")))))
@@ -1252,7 +1252,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       val error = new IllegalStateException("foo")
 
       val fetcher =
-        Fetcher[Unit, Int, Int]((_, ids) => Future.successful(ids.map(_ + 100)))(HasId(_ - 100))
+        Fetcher[Unit, Int, Int]((_, ids) => Future.value(ids.map(_ + 100)))(HasId(_ - 100))
 
       lazy val QueryType = ObjectType(
         "Query",

@@ -199,7 +199,7 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
       val resolver = new DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
             ec: ExecutionContext) = deferred.map { case ArticleDeferred(id) =>
-          Future.successful(article(id.toInt))
+          Future.value(article(id.toInt))
         }
       }
 
@@ -246,7 +246,7 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
       val resolver = new DeferredResolver[Any] {
         def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
             ec: ExecutionContext) = deferred.map { case ArticleDeferred(id) =>
-          Future.successful(article(id.toInt))
+          Future.value(article(id.toInt))
         }
       }
 

@@ -3,7 +3,7 @@ package sangria.macros.derive
 import sangria.execution.deferred.Deferred
 import sangria.schema.{Action, Context}
 
-import scala.concurrent.Future
+import com.twitter.util.Future
 import scala.reflect.macros.blackbox
 
 class DeriveObjectTypeMacro(context: blackbox.Context) extends {
@@ -169,7 +169,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context) extends {
   private def findActualFieldType(fieldType: Type) =
     if (isSupertype[Future[_]](fieldType) && fieldType.typeArgs.nonEmpty)
       fieldType.typeArgs.head
-    else if (isSupertype[scala.util.Try[_]](fieldType) && fieldType.typeArgs.nonEmpty)
+    else if (isSupertype[com.twitter.util.Try[_]](fieldType) && fieldType.typeArgs.nonEmpty)
       fieldType.typeArgs.head
     else if (isSupertype[Deferred[_]](fieldType) && fieldType
         .baseType(typeOf[Deferred[_]].typeSymbol)

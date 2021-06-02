@@ -68,9 +68,10 @@ lazy val core = project
       // Marshalling
       "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.5",
       // Streaming
-      "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.2",
+      //"org.sangria-graphql" %% "sangria-streaming-api" % "1.0.2",
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.twitter" %% "util-core" % "21.5.0",
       // Testing
       "co.fs2" %% "fs2-core" % "2.5.6" % Test,
       "org.scalatest" %% "scalatest" % "3.2.9" % Test,

@@ -5,9 +5,9 @@ import sangria.marshalling.{InputUnmarshaller, ScalaInput}
 import sangria.schema._
 import sangria.util.tag.@@
 import sangria.validation.QueryValidator
-import scala.concurrent.{ExecutionContext, Future}
+import com.twitter.util.Future
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import com.twitter.util.{Throw, Return}
 
 object QueryReducerExecutor {
   def reduceQueryWithoutVariables[Ctx, Root](
@@ -20,11 +20,11 @@ object QueryReducerExecutor {
       exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
       deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
       middleware: List[Middleware[Ctx]] = Nil
-  )(implicit executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] = {
+  ): Future[(Ctx, TimeMeasurement)] = {
     val violations = queryValidator.validateQuery(schema, queryAst)
 
     if (violations.nonEmpty)
-      Future.failed(ValidationError(violations, exceptionHandler))
+      Future.exception(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
       val valueCollector = new ValueCollector[Ctx, _ @@ ScalaInput](
@@ -64,8 +64,8 @@ object QueryReducerExecutor {
         userContext)
 
       executionResult match {
-        case Success(future) => future
-        case Failure(error) => Future.failed(error)
+        case Return(future) => future
+        case Throw(error) => Future.exception(error)
       }
     }
   }
@@ -80,8 +80,7 @@ object QueryReducerExecutor {
       variables: Map[String, VariableValue],
       rootTpe: ObjectType[Ctx, Root],
       fields: CollectedFields,
-      userContext: Ctx)(implicit
-      executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] =
+      userContext: Ctx): Future[(Ctx, TimeMeasurement)] =
     if (queryReducers.nonEmpty) {
       val sw = StopWatch.start()
       reduceQueryUnsafe(
@@ -94,8 +93,8 @@ object QueryReducerExecutor {
         queryReducers.toVector,
         userContext)
         .map(_ -> sw.stop)
-        .recover { case error: Throwable => throw QueryReducingError(error, exceptionHandler) }
-    } else Future.successful(userContext -> TimeMeasurement.empty)
+        .handle { case error: Throwable => throw QueryReducingError(error, exceptionHandler) }
+    } else Future.value(userContext -> TimeMeasurement.empty)
 
   private def reduceQueryUnsafe[Ctx, Val](
       schema: Schema[Ctx, _],
@@ -105,7 +104,7 @@ object QueryReducerExecutor {
       rootTpe: ObjectType[Ctx, _],
       fields: CollectedFields,
       reducers: Vector[QueryReducer[Ctx, _]],
-      userContext: Ctx)(implicit executionContext: ExecutionContext): Future[Ctx] = {
+      userContext: Ctx): Future[Ctx] = {
     val argumentValuesFn: QueryReducer.ArgumentValuesFn =
       (path: ExecutionPath, argumentDefs: List[Argument[_]], argumentAsts: Vector[ast.Argument]) =>
         valueCollector.getFieldArgumentValues(path, None, argumentDefs, argumentAsts, variables)
@@ -118,11 +117,11 @@ object QueryReducerExecutor {
         case ListType(ofType) => loop(path, ofType, astFields)
         case objTpe: ObjectType[Ctx @unchecked, _] =>
           fieldCollector.collectFields(path, objTpe, astFields) match {
-            case Success(ff) =>
+            case Return(ff) =>
               // Using mutability here locally in order to reduce footprint
               ff.fields
                 .foldLeft(Array(initialValues: _*)) {
-                  case (acc, CollectedField(_, _, Success(fields)))
+                  case (acc, CollectedField(_, _, Return(fields)))
                       if objTpe.getField(schema, fields.head.name).nonEmpty =>
                     val astField = fields.head
                     val field = objTpe.getField(schema, astField.name).head
@@ -148,7 +147,7 @@ object QueryReducerExecutor {
                   case (acc, _) => acc
                 }
                 .toIndexedSeq
-            case Failure(_) => initialValues
+            case Throw(_) => initialValues
           }
         case abst: AbstractType =>
           schema.possibleTypes
@@ -167,7 +166,7 @@ object QueryReducerExecutor {
       }
 
     val reduced = fields.fields.foldLeft(Array(initialValues: _*)) {
-      case (acc, CollectedField(_, _, Success(astFields)))
+      case (acc, CollectedField(_, _, Return(astFields)))
           if rootTpe.getField(schema, astFields.head.name).nonEmpty =>
         val astField = astFields.head
         val field = rootTpe.getField(schema, astField.name).head
@@ -201,8 +200,8 @@ object QueryReducerExecutor {
           acc.flatMap(a =>
             reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], a) match {
               case FutureValue(future) => future
-              case Value(value) => Future.successful(value)
-              case TryValue(value) => Future.fromTry(value)
+              case Value(value) => Future.value(value)
+              case TryValue(value) => Future.const(value)
             })
 
         case (acc: Ctx @unchecked, (reducer, idx)) =>
@@ -213,14 +212,14 @@ object QueryReducerExecutor {
           }
 
         case (acc, _) =>
-          Future.failed(new IllegalStateException(s"Invalid shape of the user context! $acc"))
+          Future.exception(new IllegalStateException(s"Invalid shape of the user context! $acc"))
       } catch {
-        case NonFatal(error) => Future.failed(error)
+        case NonFatal(error) => Future.exception(error)
       }
 
     newContext match {
       case fut: Future[Ctx @unchecked] => fut
-      case ctx => Future.successful(ctx.asInstanceOf[Ctx])
+      case ctx => Future.value(ctx.asInstanceOf[Ctx])
     }
   }
 
