@@ -12,8 +12,7 @@ import spray.json._
 import sangria.marshalling.sprayJson._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Future, Throw, Return, Try}
 import JsonAndYamlHelpers._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -400,7 +399,7 @@ object CatsAssertions extends Matchers {
 
     case (ExecutionResult(res), ExceptionContain(message)) =>
       res match {
-        case Failure(error) =>
+        case Throw(error) =>
           message match {
             case Left(text) => error.getMessage should include(text)
             case Right(pattern) =>
@@ -408,7 +407,7 @@ object CatsAssertions extends Matchers {
                 pattern.matcher(error.getMessage).matches should be("true")
               }
           }
-        case Success(res) =>
+        case Return(res) =>
           fail("Execution was successful: " + res)
       }
 
@@ -438,7 +437,7 @@ object CatsAssertions extends Matchers {
 
     case (ExecutionResult(actual), Data(expected)) =>
       withClue("Result: " + actual) {
-        actual.get("data") should be(expected)
+        actual.get.get("data") should be(expected)
       }
 
     case a => throw new IllegalStateException(s"Not yet supported assertion: $a")

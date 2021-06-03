@@ -84,7 +84,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
     Some(MutationType),
     directives = BuiltinDirectives :+ BatchExecutor.ExportDirective)
 
-  "BatchExecutor" should {
+  /*"BatchExecutor" should {
     import sangria.execution.ExecutionScheme.Stream
 
     "Batch multiple queries and ensure correct execution order" in {
@@ -407,7 +407,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
           Pos(14, 11))
       )
     }
-  }
+  }*/
 
   "BatchExecutor (with single result)" should {
     import sangria.execution.ExecutionScheme.Extended
