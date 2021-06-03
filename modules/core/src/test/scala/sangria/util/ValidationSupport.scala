@@ -5,7 +5,7 @@ import sangria.schema._
 import sangria.validation._
 import sangria.util.SimpleGraphQlSupport._
 
-import scala.util.Success
+import com.twitter.util.Return
 import org.scalatest.matchers.should.Matchers
 
 trait ValidationSupport extends Matchers {
@@ -328,7 +328,7 @@ trait ValidationSupport extends Matchers {
       rules: List[ValidationRule],
       query: String,
       expectedErrors: Seq[(String, Seq[Pos])]) = {
-    val Success(doc) = QueryParser.parse(query)
+    val Return(doc) = QueryParser.parse(query)
 
     assertViolations(validator(rules).validateQuery(s, doc), expectedErrors: _*)
   }
@@ -339,13 +339,13 @@ trait ValidationSupport extends Matchers {
       query: String,
       expectedErrors: List[(String, List[Pos])],
       typeName: String) = {
-    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
+    val Return(doc) = QueryParser.parseInputDocumentWithVariables(query)
 
     assertViolations(validator(rules).validateInputDocument(s, doc, typeName), expectedErrors: _*)
   }
 
   def expectValid(s: Schema[_, _], rules: List[ValidationRule], query: String) = {
-    val Success(doc) = QueryParser.parse(query)
+    val Return(doc) = QueryParser.parse(query)
     val errors = validator(rules).validateQuery(s, doc)
 
     withClue(renderViolations(errors)) {
@@ -358,7 +358,7 @@ trait ValidationSupport extends Matchers {
       rules: List[ValidationRule],
       query: String,
       typeName: String) = {
-    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
+    val Return(doc) = QueryParser.parseInputDocumentWithVariables(query)
 
     withClue("Should validate") {
       validator(rules).validateInputDocument(s, doc, typeName) should have size 0

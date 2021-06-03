@@ -13,7 +13,7 @@ import sangria.marshalling.ScalaInput.scalaInput
 import sangria.validation.ValueCoercionViolation
 import sangria.util.SimpleGraphQlSupport._
 
-import scala.concurrent.ExecutionContext.Implicits.global
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

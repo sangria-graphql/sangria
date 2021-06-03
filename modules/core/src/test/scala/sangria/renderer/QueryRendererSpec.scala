@@ -7,7 +7,7 @@ import sangria.ast
 import sangria.macros._
 import sangria.visitor.VisitorCommand
 
-import scala.util.Success
+import com.twitter.util.Return
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -17,13 +17,13 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
   "QueryRenderer" when {
     "rendering queries" should {
       "render kitchen sink" in {
-        val Success(ast) = QueryParser.parse(FileUtil.loadQuery("kitchen-sink.graphql"))
+        val Return(ast) = QueryParser.parse(FileUtil.loadQuery("kitchen-sink.graphql"))
 
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
 
-        val Success(prettyParsed) = QueryParser.parse(prettyRendered)
-        val Success(compactParsed) = QueryParser.parse(compactRendered)
+        val Return(prettyParsed) = QueryParser.parse(prettyRendered)
+        val Return(compactParsed) = QueryParser.parse(compactRendered)
 
         AstNode.withoutAstLocations(ast) should be(AstNode.withoutAstLocations(prettyParsed))
         AstNode.withoutAstLocations(ast, stripComments = true) should be(
@@ -559,7 +559,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
       }
 
       "render queries with block strings (erase block meta-info)" in {
-        val Success(origAst) = QueryParser.parse(FileUtil.loadQuery("block-string.graphql"))
+        val Return(origAst) = QueryParser.parse(FileUtil.loadQuery("block-string.graphql"))
 
         val ast = origAst.visit(AstVisitor { case s: StringValue =>
           VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
@@ -568,8 +568,8 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
 
-        val Success(prettyParsed) = QueryParser.parse(prettyRendered)
-        val Success(compactParsed) = QueryParser.parse(compactRendered)
+        val Return(prettyParsed) = QueryParser.parse(prettyRendered)
+        val Return(compactParsed) = QueryParser.parse(compactRendered)
 
         AstNode.withoutAstLocations(ast) should be(AstNode.withoutAstLocations(prettyParsed))
         AstNode.withoutAstLocations(ast, stripComments = true) should be(
@@ -593,7 +593,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
       }
 
       "render queries with block strings " in {
-        val Success(ast) = QueryParser.parse(FileUtil.loadQuery("block-string.graphql"))
+        val Return(ast) = QueryParser.parse(FileUtil.loadQuery("block-string.graphql"))
 
         def withoutRaw(withRaw: Document, block: Boolean = true) = AstVisitor.visit(
           withRaw,
@@ -605,8 +605,8 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
 
-        val Success(prettyParsed) = QueryParser.parse(prettyRendered)
-        val Success(compactParsed) = QueryParser.parse(compactRendered)
+        val Return(prettyParsed) = QueryParser.parse(prettyRendered)
+        val Return(compactParsed) = QueryParser.parse(compactRendered)
 
         AstNode.withoutAstLocations(withoutRaw(ast)) should be(
           AstNode.withoutAstLocations(withoutRaw(prettyParsed)))
@@ -632,9 +632,9 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
             }
           """
 
-        QueryParser.parse(query).isFailure should be(true)
+        QueryParser.parse(query).isThrow should be(true)
 
-        val Success(ast) =
+        val Return(ast) =
           QueryParser.parse(query, ParserConfig.default.withExperimentalFragmentVariables)
 
         ast.renderPretty should equal(
@@ -649,7 +649,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
             query ($foo: TestType = {a: 123} @testDirective(if: true) @test) { id }
           """
 
-        val Success(ast) = QueryParser.parse(query)
+        val Return(ast) = QueryParser.parse(query)
 
         ast.renderPretty should equal(
           """query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
@@ -684,7 +684,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
       }
 
       "render kitchen sink" in {
-        val Success(ast) = QueryParser.parse(FileUtil.loadQuery("schema-kitchen-sink.graphql"))
+        val Return(ast) = QueryParser.parse(FileUtil.loadQuery("schema-kitchen-sink.graphql"))
 
         def noBlock(a: AstNode) = AstVisitor.visit(
           a,
@@ -695,8 +695,8 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
 
-        val Success(prettyParsed) = QueryParser.parse(prettyRendered)
-        val Success(compactParsed) = QueryParser.parse(compactRendered)
+        val Return(prettyParsed) = QueryParser.parse(prettyRendered)
+        val Return(compactParsed) = QueryParser.parse(compactRendered)
 
         AstNode.withoutAstLocations(ast, stripComments = true) should be(
           AstNode.withoutAstLocations(prettyParsed, stripComments = true))
@@ -840,8 +840,8 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
 
-        val Success(prettyParsed) = QueryParser.parse(prettyRendered)
-        val Success(compactParsed) = QueryParser.parse(compactRendered)
+        val Return(prettyParsed) = QueryParser.parse(prettyRendered)
+        val Return(compactParsed) = QueryParser.parse(compactRendered)
 
         AstNode.withoutAstLocations(ast, stripComments = true) should be(
           AstNode.withoutAstLocations(prettyParsed, stripComments = true))

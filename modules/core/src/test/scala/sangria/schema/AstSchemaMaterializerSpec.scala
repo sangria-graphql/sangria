@@ -13,7 +13,7 @@ import sangria.validation.{IntCoercionViolation, UnknownDirectiveViolation}
 import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._
 
-import scala.concurrent.ExecutionContext.Implicits.global
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -445,7 +445,7 @@ class AstSchemaMaterializerSpec
       }
     }
 
-    "Failures" should {
+    "Throws" should {
       "Requires a schema definition" in {
         val ast =
           graphql"""

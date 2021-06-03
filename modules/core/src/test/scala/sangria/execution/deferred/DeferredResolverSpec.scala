@@ -10,12 +10,12 @@ import sangria.schema._
 import sangria.util.{FutureResultSupport, Pos}
 import sangria.util.SimpleGraphQlSupport._
 
-import scala.concurrent.{ExecutionContext, Future}
+import com.twitter.util.Future
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSupport {
-  def deferredResolver(implicit ec: ExecutionContext) = {
+  def deferredResolver = {
     case class LoadCategories(ids: Seq[String]) extends Deferred[Seq[String]]
 
     lazy val CategoryType: ObjectType[Unit, String] = ObjectType(
@@ -110,8 +110,7 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
         Vector(expensive, cheap)
       }
 
-      def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-          ec: ExecutionContext) = {
+      def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = {
         callsCount.getAndIncrement()
         valueCount.addAndGet(deferred.size)
 
@@ -304,11 +303,11 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
 
   "DeferredResolver" when {
     "using standard execution context" should {
-      behave.like(deferredResolver(ExecutionContext.Implicits.global))
+      behave.like(deferredResolver)
     }
 
     "using sync execution context" should {
-      behave.like(deferredResolver(sync.executionContext))
+      behave.like(deferredResolver)
     }
   }
 }

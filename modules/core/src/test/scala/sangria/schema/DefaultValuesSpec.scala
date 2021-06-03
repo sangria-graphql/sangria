@@ -7,7 +7,6 @@ import sangria.macros._
 import sangria.util.FutureResultSupport
 import ScalaInput.scalaInput
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

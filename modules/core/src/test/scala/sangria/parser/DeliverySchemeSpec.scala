@@ -6,10 +6,10 @@ import org.scalatest.wordspec.AnyWordSpec
 class DeliverySchemeSpec extends AnyWordSpec with Matchers {
   "DeliveryScheme" should {
     "by default support `Try`" in {
-      import scala.util.{Failure, Success}
+      import com.twitter.util.{Throw, Return}
 
-      QueryParser.parse("{ field }") shouldBe a[Success[_]]
-      QueryParser.parse("}") shouldBe a[Failure[_]]
+      QueryParser.parse("{ field }") shouldBe a[Return[_]]
+      QueryParser.parse("}") shouldBe a[Throw[_]]
     }
 
     "support `Either`" in {

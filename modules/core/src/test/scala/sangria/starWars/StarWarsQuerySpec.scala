@@ -10,7 +10,6 @@ import sangria.util.FutureResultSupport
 import InputUnmarshaller.mapVars
 import sangria.validation.QueryValidator
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

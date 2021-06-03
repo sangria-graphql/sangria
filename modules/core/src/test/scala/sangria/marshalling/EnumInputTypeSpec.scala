@@ -15,9 +15,8 @@ import sangria.schema.{
 }
 import spray.json.{JsObject, JsString, JsValue, JsonReader}
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
-import scala.util.Success
+
+import com.twitter.util.{Await, Return}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -71,14 +70,8 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
 
   val schema = new sangria.schema.Schema(queryType)
 
-  implicit val synchronousExecutionContext: ExecutionContext =
-    ExecutionContext.fromExecutor(new Executor {
-      override def execute(command: Runnable): Unit =
-        command.run()
-    })
-
   private def runQuery(query: String) = {
-    val Success(queryAst) = QueryParser.parse(query)
+    val Return(queryAst) = QueryParser.parse(query)
 
     val fut = sangria.execution.Executor
       .execute(
@@ -88,7 +81,7 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
         root = JsObject.empty
       )
 
-    Await.result(fut, 2.seconds)
+    Await.result(fut)
   }
 
   // Ignored for the moment being. Related discussion: https://github.com/sangria-graphql/sangria/issues/300

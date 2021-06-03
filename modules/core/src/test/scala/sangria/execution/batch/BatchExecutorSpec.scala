@@ -1,6 +1,5 @@
 package sangria.execution.batch
 
-import scala.concurrent.ExecutionContext
 import cats.effect.{ContextShift, IO}
 import sangria.macros._
 import sangria.marshalling._
@@ -14,9 +13,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
-  implicit val ec: ExecutionContext = ExecutionContext.global
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-
   val IdsArg = Argument("ids", ListInputType(IntType))
   val IdArg = Argument("id", IntType)
   val NameArg = Argument("name", StringType)

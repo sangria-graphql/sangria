@@ -4,8 +4,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{FutureResultSupport, OutputMatchers}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
+
+import com.twitter.util.Return
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -49,7 +49,7 @@ class DeprecationTrackerSpec
       )
 
       val schema = Schema(testType)
-      val Success(query) = QueryParser.parse("{ nonDeprecated }")
+      val Return(query) = QueryParser.parse("{ nonDeprecated }")
       val deprecationTracker = new RecordingDeprecationTracker
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
@@ -72,7 +72,7 @@ class DeprecationTrackerSpec
       )
 
       val schema = Schema(testType)
-      val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
+      val Return(query) = QueryParser.parse("{ nonDeprecated deprecated}")
       val deprecationTracker = new RecordingDeprecationTracker
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
@@ -98,7 +98,7 @@ class DeprecationTrackerSpec
       )
 
       val schema = Schema(testType)
-      val Success(query) = QueryParser.parse("{ nested { aa: nested { bb: deprecated }}}")
+      val Return(query) = QueryParser.parse("{ nested { aa: nested { bb: deprecated }}}")
       val deprecationTracker = new RecordingDeprecationTracker
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
@@ -129,7 +129,7 @@ class DeprecationTrackerSpec
         ))
 
       val schema = Schema(testType)
-      val Success(query) = QueryParser.parse("{ foo }")
+      val Return(query) = QueryParser.parse("{ foo }")
       val deprecationTracker = new RecordingDeprecationTracker
 
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
@@ -161,7 +161,7 @@ class DeprecationTrackerSpec
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           {
             a: testEnum(foo: NONDEPRECATED)
             b: testEnum(foo: DEPRECATED)
@@ -198,7 +198,7 @@ class DeprecationTrackerSpec
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           {
             a: testEnum(foo: NONDEPRECATED)
             b: testEnum(foo: ALSONONDEPRECATED)
@@ -230,7 +230,7 @@ class DeprecationTrackerSpec
       )
 
       val schema = Schema(testType)
-      val Success(query) = QueryParser.parse("{ nonDeprecated }")
+      val Return(query) = QueryParser.parse("{ nonDeprecated }")
 
       Executor.execute(schema, query, deprecationTracker = DeprecationTracker.empty).await
     }
@@ -258,7 +258,7 @@ class DeprecationTrackerSpec
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           {
             a: testEnum(foo: NONDEPRECATED)
             b: testEnum(foo: DEPRECATED)
@@ -287,7 +287,7 @@ class DeprecationTrackerSpec
       )
 
       val schema = Schema(testType)
-      val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
+      val Return(query) = QueryParser.parse("{ nonDeprecated deprecated}")
 
       val sb = new StringBuilder()
       val tracker = new LoggingDeprecationTracker(sb.append(_))

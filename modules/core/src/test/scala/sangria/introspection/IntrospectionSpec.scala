@@ -6,8 +6,8 @@ import sangria.schema._
 import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
+
+import com.twitter.util.Return
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -767,7 +767,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         """
           {
             __schema {
@@ -911,7 +911,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         """
           {
             __type(name: "TestType") {
@@ -946,7 +946,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         """
           {
             __type(name: "TestType") {
@@ -998,7 +998,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         """
           {
             __type(name: "TestType") {
@@ -1062,7 +1062,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         """
           {
             __type(name: "TestEnum") {
@@ -1121,7 +1121,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         """
           {
             __type(name: "TestEnum") {
@@ -1186,7 +1186,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val schema = Schema(testType)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         """
           {
             __type {
@@ -1212,7 +1212,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
       val schema =
         Schema(ObjectType("QueryRoot", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
 
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           {
             schemaType: __type(name: "__Schema") {
               name,
@@ -1255,7 +1255,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
         ObjectType("QueryRoot", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))),
         description = Some("test schema"))
 
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           {
             __schema {
               description
@@ -1271,7 +1271,7 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
       val schema =
         Schema(ObjectType("QueryRoot", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
 
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           {
             typeKindType: __type(name: "__TypeKind") {
               name,

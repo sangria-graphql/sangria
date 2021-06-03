@@ -9,7 +9,7 @@ import sangria.schema._
 import sangria.util.{FutureResultSupport, Pos}
 import sangria.util.SimpleGraphQlSupport._
 
-import scala.concurrent.{ExecutionContext, Future}
+import com.twitter.util.Future
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -57,28 +57,26 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       Product(6, "Golden ring", Vector("6"))
     )
 
-    def loadCategories(ids: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Category]] =
+    def loadCategories(ids: Seq[String]): Future[Seq[Category]] =
       Future(ids.flatMap(id => categories.find(_.id == id)))
 
-    def loadProducts(ids: Seq[Int])(implicit ec: ExecutionContext): Future[Seq[Product]] =
+    def loadProducts(ids: Seq[Int]): Future[Seq[Product]] =
       Future(ids.flatMap(id => products.find(_.id == id)))
 
-    def loadProductsByCategory(categoryIds: Seq[String])(implicit
-        ec: ExecutionContext): Future[Seq[Product]] =
+    def loadProductsByCategory(categoryIds: Seq[String]): Future[Seq[Product]] =
       Future(products.filter(p => categoryIds.exists(p.inCategories contains _)))
 
-    def loadCategoriesByProduct(productIds: Seq[Int])(implicit
-        ec: ExecutionContext): Future[Seq[Category]] =
+    def loadCategoriesByProduct(productIds: Seq[Int]): Future[Seq[Category]] =
       Future(categories.filter(c => productIds.exists(c.products contains _)))
 
-    def getCategory(id: String)(implicit ec: ExecutionContext) =
+    def getCategory(id: String) =
       Future(categories.find(_.id == id))
 
-    def getProduct(id: Int)(implicit ec: ExecutionContext) =
+    def getProduct(id: Int) =
       Future(products.find(_.id == id))
   }
 
-  def properFetcher(implicit ec: ExecutionContext) = {
+  def properFetcher = {
     val defaultCatFetcher = Fetcher.relCaching[Repo, Category, Category, String](
       (repo, ids) => repo.loadCategories(ids),
       (repo, ids) => repo.loadCategoriesByProduct(ids(catProd)))
@@ -573,8 +571,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             : Option[(Field[_, _], Vector[ast.Field], Args, Double) => Boolean] =
           Some((_, _, _, _) => false)
 
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-            ec: ExecutionContext) = {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = {
           callsCount.getAndIncrement()
           valueCount.addAndGet(deferred.size)
 
@@ -1011,11 +1008,11 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   "Fetcher" when {
     "using standard execution context" should {
-      behave.like(properFetcher(ExecutionContext.Implicits.global))
+      behave.like(properFetcher)
     }
 
     "using sync execution context" should {
-      behave.like(properFetcher(sync.executionContext))
+      behave.like(properFetcher)
     }
   }
 }

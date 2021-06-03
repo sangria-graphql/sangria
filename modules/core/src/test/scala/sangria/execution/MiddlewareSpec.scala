@@ -10,9 +10,8 @@ import sangria.schema._
 import sangria.util.{Cache, FutureResultSupport}
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+
+import com.twitter.util.{Future, Throw, Return}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -193,8 +192,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
   case object Fail extends Deferred[String]
 
   class BrokenResolver extends DeferredResolver[Any] {
-    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-        ec: ExecutionContext) = deferred.map { case Fail =>
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = deferred.map { case Fail =>
       Future.exception(new IllegalStateException("error in resolver"))
     }
   }
@@ -264,8 +262,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
       case object SD extends Deferred[Option[String]]
 
       class Resolver extends DeferredResolver[Any] {
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-            ec: ExecutionContext) = deferred.map {
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = deferred.map {
           case ED => Future.exception(error("deferred error"))
           case SD => Future.value(Some("deferred success"))
         }
@@ -279,7 +276,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
             Field(
               "e2",
               OptionType(StringType),
-              resolve = _ => TryValue(Failure(error("e2 error")))),
+              resolve = _ => TryValue(Throw(error("e2 error")))),
             Field(
               "e3",
               OptionType(StringType),
@@ -316,7 +313,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
             Field(
               "s2",
               OptionType(StringType),
-              resolve = _ => TryValue(Success(Some("s2 success")))),
+              resolve = _ => TryValue(Return(Some("s2 success")))),
             Field(
               "s3",
               OptionType(StringType),

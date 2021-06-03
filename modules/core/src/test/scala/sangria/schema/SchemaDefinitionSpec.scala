@@ -8,7 +8,7 @@ import sangria.util.FutureResultSupport
 import sangria.marshalling.queryAst._
 import sangria.parser.DeliveryScheme.Throw
 
-import scala.concurrent.ExecutionContext.Implicits.global
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -4,9 +4,9 @@ import sangria.util.FutureResultSupport
 import sangria.parser.QueryParser
 import sangria.schema._
 
-import scala.concurrent.Future
-import scala.util.Success
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.Future
+import com.twitter.util.Return
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -27,7 +27,7 @@ class ListsSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
     val schema = Schema(Type)
 
-    val Success(doc) = QueryParser.parse("{ nest { test } }")
+    val Return(doc) = QueryParser.parse("{ nest { test } }")
 
     val exceptionHandler = ExceptionHandler { case (m, e: IllegalStateException) =>
       HandledException(e.getMessage)

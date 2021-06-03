@@ -11,8 +11,7 @@ import sangria.marshalling.queryAst._
 import sangria.macros._
 import sangria.util.FutureResultSupport
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
+import com.twitter.util.Return
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -40,7 +39,7 @@ class QueryAstMarshallingSupportSpec
       )))
 
     "marshal and unmarshal" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query FetchSomeIDQuery($someId: String!) {
           human(id: $someId) {
             name

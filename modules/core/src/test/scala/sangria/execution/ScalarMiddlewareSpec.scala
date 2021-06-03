@@ -6,7 +6,6 @@ import sangria.schema._
 import sangria.util.FutureResultSupport
 import sangria.validation.{ValueCoercionViolation, Violation}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -10,8 +10,8 @@ import InputUnmarshaller.mapVars
 
 import spray.json._
 
-import scala.util.Success
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.Return
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -385,7 +385,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       }
 
       "using variables" when {
-        val Success(testQuery) =
+        val Return(testQuery) =
           QueryParser.parse("""
             query q($input: TestInputObject) {
               fieldWithObjectInput(input: $input)
@@ -526,7 +526,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       "allows nullable inputs to be set to null in a variable" in {
         val args = mapVars("value" -> null)
 
-        val Success(query) = QueryParser.parse("""
+        val Return(query) = QueryParser.parse("""
             query SetsNullable($value: String) {
               fieldWithNullableStringInput(input: $value)
             }
@@ -542,7 +542,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       "allows nullable inputs to be set to a value in a variable" in {
         val args = mapVars("value" -> "a")
 
-        val Success(query) = QueryParser.parse("""
+        val Return(query) = QueryParser.parse("""
             query SetsNullable($value: String) {
               fieldWithNullableStringInput(input: $value)
             }

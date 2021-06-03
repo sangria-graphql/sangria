@@ -8,9 +8,8 @@ import sangria.macros._
 import sangria.util.FutureResultSupport
 import spray.json._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Success, Try}
+import com.twitter.util.Future
+import com.twitter.util.{Return, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -469,7 +468,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         def futureVal: Future[List[Int]] = Future.value(List(11, 22))
 
         @GraphQLField
-        def tryVal: Try[Option[List[Int]]] = Success(Some(List(33, 44)))
+        def tryVal: Try[Option[List[Int]]] = Return(Some(List(33, 44)))
 
         @GraphQLField
         def actionVal = DeferredFutureValue(Future.value(TestDefer(1)))

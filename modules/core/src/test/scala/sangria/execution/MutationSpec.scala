@@ -7,20 +7,18 @@ import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.schema._
 import sangria.util.{GraphQlSupport, SimpleGraphQlSupport}
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
+import com.twitter.util.{Return, Future}
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
-  case class SuccessfulDefer(num: NumberHolder) extends Deferred[NumberHolder]
+  case class ReturnfulDefer(num: NumberHolder) extends Deferred[NumberHolder]
   case class FailedDefer(num: NumberHolder) extends Deferred[NumberHolder]
 
   class Resolver extends DeferredResolver[Any] {
-    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-        ec: ExecutionContext) = deferred.map {
-      case SuccessfulDefer(n) => Future.value(n)
+    def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = deferred.map {
+      case ReturnfulDefer(n) => Future.value(n)
       case FailedDefer(_) => Future.exception(new IllegalStateException("error in resolver"))
     }
   }
@@ -95,7 +93,7 @@ class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             arguments = NewNumberArg :: Nil,
             resolve = ctx =>
               UpdateCtx(
-                SuccessfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))(v =>
+                ReturnfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))(v =>
                 ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))
           ),
           Field(
@@ -112,7 +110,7 @@ class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             arguments = NewNumberArg :: Nil,
             resolve = ctx =>
               UpdateCtx(DeferredFutureValue(Future.value(
-                SuccessfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v =>
+                ReturnfulDefer(ctx.value.immediatelyChangeTheNumber(ctx.arg(NewNumberArg))))))(v =>
                 ctx.ctx.copy(num = ctx.ctx.num + v.theNumber.get()))
           ),
           Field(
@@ -307,7 +305,7 @@ class MutationSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             child,
             arguments = AddArg :: Nil,
             resolve = c =>
-              UpdateCtx(Success(c.ctx + " " + c.arg(AddArg)))(v => v + " ctx ").map(v =>
+              UpdateCtx(Return(c.ctx + " " + c.arg(AddArg)))(v => v + " ctx ").map(v =>
                 v + " map"))
         )
       )

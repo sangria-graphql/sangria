@@ -7,7 +7,7 @@ import sangria.ast._
 import sangria.util.{FileUtil, StringMatchers}
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success}
+import com.twitter.util.{Throw, Return}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -214,7 +214,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         )
 
-      parseQuery(query) should be(Success(expectedAst))
+      parseQuery(query) should be(Return(expectedAst))
     }
 
     "parse kitchen sink" in {
@@ -664,7 +664,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         )
 
-      parseQuery(query) should be(Success(expectedAst))
+      parseQuery(query) should be(Return(expectedAst))
     }
 
     "parse kitchen sink without comments and locations" in {
@@ -1095,7 +1095,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         )
 
-      QueryParser.parse(query, config) should be(Success(expectedAst))
+      QueryParser.parse(query, config) should be(Return(expectedAst))
     }
 
     "parse anonymous query" in {
@@ -1153,7 +1153,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         )
 
-      parseQuery(stripCarriageReturns(query)) should be(Success(expectedAst))
+      parseQuery(stripCarriageReturns(query)) should be(Return(expectedAst))
     }
 
     "parse inline fragments without type condition" in {
@@ -1243,7 +1243,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         )
 
-      parseQuery(stripCarriageReturns(query)) should be(Success(expectedAst))
+      parseQuery(stripCarriageReturns(query)) should be(Return(expectedAst))
     }
 
     "parse anonymous mutation" in {
@@ -1301,11 +1301,11 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         )
 
-      parseQuery(stripCarriageReturns(query)) should be(Success(expectedAst))
+      parseQuery(stripCarriageReturns(query)) should be(Return(expectedAst))
     }
 
     "provide useful error message (fragment `on`)" in {
-      val Failure(error: SyntaxError) = parseQuery("""
+      val Throw(error: SyntaxError) = parseQuery("""
           { ...MissingOn }
           fragment MissingOn Type
         """)
@@ -1317,7 +1317,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "provide useful error message (braces)" in {
-      val Failure(error: SyntaxError) = parseQuery("{ field: {} }")
+      val Throw(error: SyntaxError) = parseQuery("{ field: {} }")
 
       error.formattedError should equal(
         """Invalid input "{ field: {", expected ExecutableDefinition or TypeSystemDefinition (line 1, column 1):
@@ -1326,7 +1326,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "provide useful error message (operation def)" in {
-      val Failure(error: SyntaxError) = parseQuery("notanoperation Foo { field }")
+      val Throw(error: SyntaxError) = parseQuery("notanoperation Foo { field }")
 
       error.formattedError should equal(
         """Invalid input 'n', expected ExecutableDefinition or TypeSystemDefinition (line 1, column 1):
@@ -1335,7 +1335,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "provide useful error message (ellipsis)" in {
-      val Failure(error: SyntaxError) = parseQuery("...")
+      val Throw(error: SyntaxError) = parseQuery("...")
 
       error.formattedError should equal(
         """Invalid input '.', expected ExecutableDefinition or TypeSystemDefinition (line 1, column 1):
@@ -1344,15 +1344,15 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "parses constant default values" in {
-      parseQuery("{ field(complex: { a: { b: [ $var ] } }) }").isSuccess should be(true)
+      parseQuery("{ field(complex: { a: { b: [ $var ] } }) }").isReturn should be(true)
     }
 
     "parses variable definition directives" in {
-      parseQuery("query Foo($x: Boolean = false @bar) { field }").isSuccess should be(true)
+      parseQuery("query Foo($x: Boolean = false @bar) { field }").isReturn should be(true)
     }
 
     "parses variable inline values" in {
-      val Failure(error: SyntaxError) =
+      val Throw(error: SyntaxError) =
         parseQuery("query Foo($x: Complex = { a: { b: [ $var ] } }) { field }")
 
       error.getMessage should equal(
@@ -1363,7 +1363,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.`" in {
-      val Failure(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.) { field }")
+      val Throw(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.) { field }")
 
       error.formattedError should equal(
         """Invalid input "1.)", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
@@ -1372,7 +1372,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `.123`" in {
-      val Failure(error: SyntaxError) = parseQuery("query Foo($x: Complex = .123) { field }")
+      val Throw(error: SyntaxError) = parseQuery("query Foo($x: Complex = .123) { field }")
 
       error.formattedError should equal(
         """Invalid input '.', expected NumberValue, StringValue, BooleanValue, NullValue, EnumValue, ListValueConst or ObjectValueConst (line 1, column 25):
@@ -1381,7 +1381,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.0e`" in {
-      val Failure(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.0e) { field }")
+      val Throw(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.0e) { field }")
 
       error.formattedError should equal(
         """Invalid input "1.0e)", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
@@ -1390,7 +1390,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.A`" in {
-      val Failure(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.A) { field }")
+      val Throw(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.A) { field }")
 
       error.formattedError should equal(
         """Invalid input "1.A", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
@@ -1399,7 +1399,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `+1`" in {
-      val Failure(error: SyntaxError) = parseQuery("query Foo($x: Complex = +1) { field }")
+      val Throw(error: SyntaxError) = parseQuery("query Foo($x: Complex = +1) { field }")
 
       error.formattedError should equal(
         """Invalid input '+', expected NumberValue, StringValue, BooleanValue, NullValue, EnumValue, ListValueConst or ObjectValueConst (line 1, column 25):
@@ -1408,7 +1408,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "produce parse error for `1.0eA`" in {
-      val Failure(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.0eA) { field }")
+      val Throw(error: SyntaxError) = parseQuery("query Foo($x: Complex = 1.0eA) { field }")
 
       error.formattedError should equal(
         """Invalid input "1.0eA", expected ValueConst, DirectivesConst or VariableDefinition (line 1, column 25):
@@ -1417,33 +1417,33 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "disallows uncommon control characters" in {
-      parseQuery("{ field\u0007 }").isSuccess should be(false)
-      parseQuery("{ field } \u0007").isSuccess should be(false)
+      parseQuery("{ field\u0007 }").isReturn should be(false)
+      parseQuery("{ field } \u0007").isReturn should be(false)
     }
 
     "accepts BOM header" in {
-      parseQuery("\uFEFF{ field }").isSuccess should be(true)
+      parseQuery("\uFEFF{ field }").isReturn should be(true)
     }
 
     "accepts new lines header" in {
-      parseQuery("{ field \n another }").isSuccess should be(true)
-      parseQuery("{ field \r\n another }").isSuccess should be(true)
+      parseQuery("{ field \n another }").isReturn should be(true)
+      parseQuery("{ field \r\n another }").isReturn should be(true)
     }
 
     "accepts escape sequences" in {
-      parseQuery("{ field(id: \"\\u000A\") }").isSuccess should be(true)
-      parseQuery("{ field(id: \"\\uXXXX\") }").isSuccess should be(false)
-      parseQuery("{ field(id: \"\\x\") }").isSuccess should be(false)
+      parseQuery("{ field(id: \"\\u000A\") }").isReturn should be(true)
+      parseQuery("{ field(id: \"\\uXXXX\") }").isReturn should be(false)
+      parseQuery("{ field(id: \"\\x\") }").isReturn should be(false)
     }
 
     "allow `null` to be the prefix of an enum value" in {
-      parseQuery("query Foo($x: Complex = null111) { field }").isSuccess should be(true)
-      parseQuery("query Foo($x: Complex = null_foo) { field }").isSuccess should be(true)
-      parseQuery("query Foo($x: Complex = nullFoo) { field }").isSuccess should be(true)
+      parseQuery("query Foo($x: Complex = null111) { field }").isReturn should be(true)
+      parseQuery("query Foo($x: Complex = null_foo) { field }").isReturn should be(true)
+      parseQuery("query Foo($x: Complex = nullFoo) { field }").isReturn should be(true)
     }
 
     "parse leading vertical bar in union types" in {
-      val Success(ast) = parseQuery("union Hello = | Wo | Rld")
+      val Return(ast) = parseQuery("union Hello = | Wo | Rld")
 
       ast.withoutSourceMapper should be(
         Document(
@@ -1464,15 +1464,15 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "not parse invalid usage of vertical bar on union types" in {
-      parseQuery("union Hello = |").isSuccess should be(false)
-      parseQuery("union Hello = Wo | Rld |").isSuccess should be(false)
-      parseQuery("union Hello = || Wo | Rld").isSuccess should be(false)
-      parseQuery("union Hello = Wo || Rld").isSuccess should be(false)
-      parseQuery("union Hello = | Wo | Rld ||").isSuccess should be(false)
+      parseQuery("union Hello = |").isReturn should be(false)
+      parseQuery("union Hello = Wo | Rld |").isReturn should be(false)
+      parseQuery("union Hello = || Wo | Rld").isReturn should be(false)
+      parseQuery("union Hello = Wo || Rld").isReturn should be(false)
+      parseQuery("union Hello = | Wo | Rld ||").isReturn should be(false)
     }
 
     "parse leading vertical bar in directive definitions" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
         directive @include2(if: Boolean!) on
           | FIELD
           | FRAGMENT_SPREAD
@@ -1571,7 +1571,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
         """
 
       QueryParser.parseInput(stripCarriageReturns(stringValue)) should be(
-        Success(
+        Return(
           StringValue(
             "hello,\n  world",
             true,
@@ -1667,7 +1667,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
       expectedTable.foreach { expected =>
         withClue(s"Parsing ${expected._1}.") {
           QueryParser.parseInput(stripCarriageReturns(expected._1)) should equal(
-            Success(expected._2))
+            Return(expected._2))
         }
       }
     }
@@ -2130,7 +2130,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
 
       QueryParser.parse(
         query,
-        ParserConfig.default.withEmptySourceId.withoutSourceMapper) should be(Success(expected))
+        ParserConfig.default.withEmptySourceId.withoutSourceMapper) should be(Return(expected))
     }
 
     "parse document with block strings" in {
@@ -2246,15 +2246,15 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
         None
       )
 
-      parseQuery(query) should be(Success(expected))
+      parseQuery(query) should be(Return(expected))
     }
 
     "Experimental: allows parsing fragment defined variables" in {
       val queryStr = "fragment a($v: Boolean = false) on t { f(v: $v) }"
 
-      parseQuery(queryStr).isFailure should be(true)
+      parseQuery(queryStr).isThrow should be(true)
 
-      val Success(query) = QueryParser.parse(
+      val Return(query) = QueryParser.parse(
         queryStr,
         ParserConfig.default.withEmptySourceId.withoutSourceMapper.withExperimentalFragmentVariables)
 

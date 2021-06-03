@@ -5,9 +5,8 @@ import sangria.parser.QueryParser
 import sangria.schema.{Args, _}
 import sangria.util.FutureResultSupport
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
+
+import com.twitter.util.{Return, Try, Future}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import sangria.marshalling.InputUnmarshaller.mapVars
@@ -148,9 +147,8 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   }
 
   class ProductResolver extends DeferredResolver[WithProducts] {
-    override def resolve(deferred: Vector[Deferred[Any]], ctx: WithProducts, queryState: Any)(
-        implicit ec: ExecutionContext) = deferred.map { case ProductDefer(ids) =>
-      Future.fromTry(Try(ids.map(id => Right(ctx.products.find(_.id == id).get))))
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: WithProducts, queryState: Any) = deferred.map { case ProductDefer(ids) =>
+      Future.const(Try(ids.map(id => Right(ctx.products.find(_.id == id).get))))
     }
   }
 
@@ -163,7 +161,7 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   "Projector" should {
     "project all fields except explicitly marked with `NoProjection`" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           {
             projectAll {
               id
@@ -273,7 +271,7 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "handle multiple projected names" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
           query someQuery($withVariable: String!) {
             projectAll {
               id

@@ -3,7 +3,7 @@ package sangria.execution
 import sangria.schema._
 import sangria.macros._
 import sangria.util.{FutureResultSupport, GraphQlSupport}
-import scala.concurrent.ExecutionContext.Implicits.global
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

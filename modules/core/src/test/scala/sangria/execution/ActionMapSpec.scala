@@ -5,9 +5,8 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.Future
+import com.twitter.util.Return
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -17,8 +16,7 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class ColorDefer(num: Int) extends Deferred[String]
 
   class ColorResolver extends DeferredResolver[Any] {
-    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-        ec: ExecutionContext) = deferred.map { case ColorDefer(num) =>
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = deferred.map { case ColorDefer(num) =>
       Future.value("[" + (num + 45) + "]")
     }
   }
@@ -115,7 +113,7 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   "Actions when mapped" should {
     "transform values correctly" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         {
           value
           doubleMap
@@ -146,7 +144,7 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "produce partial errors" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         {
           deferredPartialError
           futureDeferredPartialError

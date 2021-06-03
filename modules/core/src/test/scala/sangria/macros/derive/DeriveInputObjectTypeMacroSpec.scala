@@ -8,7 +8,6 @@ import sangria.macros._
 import sangria.util.FutureResultSupport
 import spray.json._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

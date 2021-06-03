@@ -9,8 +9,8 @@ import sangria.schema.Schema
 import sangria.validation.{AstNodeLocation, AstNodeViolation, QueryValidator, Violation}
 import spray.json.{JsObject, JsValue}
 
-import scala.util.Success
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.Return
+
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 import org.scalatest.matchers.should.Matchers
 
@@ -23,7 +23,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       userContext: Any = (),
       resolver: DeferredResolver[Any] = DeferredResolver.empty,
       validateQuery: Boolean = true) = {
-    val Success(doc) = QueryParser.parse(query)
+    val Return(doc) = QueryParser.parse(query)
 
     val exceptionHandler = ExceptionHandler { case (m, e) =>
       HandledException(e.getMessage)

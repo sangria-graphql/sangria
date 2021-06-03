@@ -6,15 +6,15 @@ import sangria.starWars.TestSchema.StarWarsSchema
 import sangria.starWars.TestData.{CharacterRepo, FriendsResolver}
 import sangria.util.FutureResultSupport
 
-import scala.util.Success
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.Return
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Basic Introspection" should {
     "Allows querying the schema for types" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionTypeQuery {
           __schema {
             types {
@@ -53,7 +53,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for query type" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionQueryTypeQuery {
           __schema {
             queryType {
@@ -78,7 +78,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for a specific type" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionDroidTypeQuery {
           __type(name: "Droid") {
             name
@@ -99,7 +99,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for an object kind" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionDroidKindQuery {
           __type(name: "Droid") {
             name
@@ -122,7 +122,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for an interface kind" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionCharacterKindQuery {
           __type(name: "Character") {
             name
@@ -145,7 +145,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for object fields" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionDroidFieldsQuery {
           __type(name: "Droid") {
             name
@@ -217,7 +217,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for nested object fields" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionDroidNestedFieldsQuery {
           __type(name: "Droid") {
             name
@@ -308,7 +308,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for field args" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionQueryTypeQuery {
           __schema {
             queryType {
@@ -402,7 +402,7 @@ class StarWarsIntrospectionSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "Allows querying the schema for documentation" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query IntrospectionDroidDescriptionQuery {
           __type(name: "Droid") {
             name

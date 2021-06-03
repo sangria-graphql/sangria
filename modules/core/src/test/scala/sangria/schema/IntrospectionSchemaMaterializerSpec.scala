@@ -4,8 +4,6 @@ import sangria.ast
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.validation.IntCoercionViolation
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 import sangria.execution.Executor
 import sangria.util.{FutureResultSupport, Pos}
 import sangria.introspection.{

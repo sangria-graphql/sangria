@@ -8,7 +8,7 @@ import sangria.util.Pos
 import sangria.util.SimpleGraphQlSupport._
 import sangria.validation.ValueCoercionViolation
 
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Throw, Return, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -20,8 +20,8 @@ class CustomScalarSpec extends AnyWordSpec with Matchers {
       case object DateCoercionViolation extends ValueCoercionViolation("Date value expected")
 
       def parseDate(s: String) = Try(dateFormat.parse(s)) match {
-        case Success(d) => Right(d)
-        case Failure(error) => Left(DateCoercionViolation)
+        case Return(d) => Right(d)
+        case Throw(error) => Left(DateCoercionViolation)
       }
 
       val DateType = ScalarType[Date](

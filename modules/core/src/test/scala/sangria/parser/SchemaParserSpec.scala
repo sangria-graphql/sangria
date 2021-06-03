@@ -5,7 +5,7 @@ import sangria.ast
 import sangria.ast._
 import sangria.util.{FileUtil, StringMatchers}
 
-import scala.util.Success
+import com.twitter.util.Return
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -644,11 +644,11 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         )
 
-      parseQuery(query) should be(Success(expectedAst))
+      parseQuery(query) should be(Return(expectedAst))
     }
 
     "Simple type" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           # my type
           # comment
           type Hello {
@@ -686,7 +686,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple extension" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           # my type
           # comment
           extend type Hello {
@@ -722,7 +722,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple non-null type" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           type Hello {
             world: String!
           }
@@ -757,7 +757,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple type inheriting interface" in {
-      val Success(ast) = parseQuery("type Hello implements World { foo: Bar }")
+      val Return(ast) = parseQuery("type Hello implements World { foo: Bar }")
 
       ast.withoutSourceMapper should be(
         Document(
@@ -786,7 +786,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple type inheriting multiple interfaces" in {
-      val Success(ast) = parseQuery("type Hello implements Wo & rld { foo: Bar }")
+      val Return(ast) = parseQuery("type Hello implements Wo & rld { foo: Bar }")
 
       ast.withoutSourceMapper should be(
         Document(
@@ -817,7 +817,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple type inheriting multiple interfaces (allow separator at the beginning)" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           type Hello implements
             & Foo
             & Baz
@@ -854,7 +854,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple type inheriting multiple interfaces (legacy syntax)" in {
-      val Success(ast) = QueryParser.parse(
+      val Return(ast) = QueryParser.parse(
         "type Hello implements Wo, rld { foo: Bar }",
         ParserConfig.default.withEmptySourceId.withoutSourceMapper.withLegacyImplementsInterface)
 
@@ -887,7 +887,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Double value enum" in {
-      val Success(ast) = parseQuery("enum Hello { WO, RLD }")
+      val Return(ast) = parseQuery("enum Hello { WO, RLD }")
 
       ast.withoutSourceMapper should be(
         Document(
@@ -920,7 +920,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple interface" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           #foo
           interface Hello {
             world: String
@@ -953,7 +953,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple field with arg" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           #c1
           type Hello {
             #c2
@@ -1002,7 +1002,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple field with arg with default value" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           type Hello {
             world(flag: Boolean =
               # value comment
@@ -1048,7 +1048,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple field with list arg" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           type Hello {
             world(things: [String]): String
           }
@@ -1091,7 +1091,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple field with two args" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           type Hello {
             world(argOne: Boolean, argTwo: Int): String
           }
@@ -1141,7 +1141,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple union" in {
-      val Success(ast) = parseQuery("union Hello = World")
+      val Return(ast) = parseQuery("union Hello = World")
 
       ast.withoutSourceMapper should be(
         Document(
@@ -1161,7 +1161,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Union with two types" in {
-      val Success(ast) = parseQuery("union Hello = Wo | Rld")
+      val Return(ast) = parseQuery("union Hello = Wo | Rld")
 
       ast.withoutSourceMapper should be(
         Document(
@@ -1182,7 +1182,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Scalar" in {
-      val Success(ast) = parseQuery("scalar Hello")
+      val Return(ast) = parseQuery("scalar Hello")
 
       ast.withoutSourceMapper should be(
         Document(
@@ -1201,7 +1201,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple input object" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           input Hello {
             world: String
           }
@@ -1243,7 +1243,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Allow legacy empty fields syntax" in {
-      val Success(ast) = QueryParser.parse(
+      val Return(ast) = QueryParser.parse(
         """
           type Foo @hello {}
           interface Bar {}
@@ -1297,7 +1297,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Allow empty fields and values" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           type Foo @hello
           interface Bar
           input Baz
@@ -1373,7 +1373,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Allow extensions on various types" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           extend type Foo implements Hello & World @hello(ids: [1, 2]) {
            f1: Int
           }
@@ -1605,7 +1605,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Allow schema with description" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           "the best schema ever"
           schema @dir1 {
             query: Query
@@ -1646,7 +1646,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Allow extensions on the schema" in {
-      val Success(ast) = parseQuery("""
+      val Return(ast) = parseQuery("""
           extend schema @dir4
 
           schema @dir1 {
@@ -1733,7 +1733,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
 
     "properly handle new lines in the block-string" in {
       val q = "\"\"\""
-      val Success(ast) = parseQuery(s"""type Hello {
+      val Return(ast) = parseQuery(s"""type Hello {
            |  $q
            |  some description
            |  $q

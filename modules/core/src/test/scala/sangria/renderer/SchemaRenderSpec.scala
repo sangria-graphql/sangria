@@ -9,7 +9,6 @@ import sangria.util.{FutureResultSupport, StringMatchers}
 import sangria.introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.parser.QueryParser

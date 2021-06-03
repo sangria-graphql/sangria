@@ -13,8 +13,7 @@ import sangria.util.{FutureResultSupport, Pos}
 import sangria.validation.BaseViolation
 import spray.json._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Throw, Return, Try}
 import sangria.util.SimpleGraphQlSupport._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -23,8 +22,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
   case object UUIDViolation extends BaseViolation("Invalid UUID")
 
   def parseUuid(s: String) = Try(UUID.fromString(s)) match {
-    case Success(s) => Right(s)
-    case Failure(e) => Left(UUIDViolation)
+    case Return(s) => Right(s)
+    case Throw(e) => Left(UUIDViolation)
   }
 
   val UUIDType =

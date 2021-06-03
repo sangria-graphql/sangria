@@ -4,7 +4,7 @@ import sangria.schema._
 import sangria.util.{FutureResultSupport, GraphQlSupport, SimpleGraphQlSupport}
 import spray.json.{JsNull, JsObject, JsString}
 
-import scala.concurrent.Future
+import com.twitter.util.Future
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -11,8 +11,8 @@ import sangria.util.FutureResultSupport
 import sangria.validation.ValueCoercionViolation
 import software.amazon.ion.system.IonSystemBuilder
 
-import scala.util.{Failure, Success, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.{Throw, Return, Try}
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -29,8 +29,8 @@ class IonSupportSpec extends AnyWordSpec with Matchers with FutureResultSupport 
       extends ValueCoercionViolation("Binary data is not supported as input")
 
   def parseDate(s: String) = Try(dateFormat.parse(s)) match {
-    case Success(d) => Right(d)
-    case Failure(error) => Left(DateCoercionViolation)
+    case Return(d) => Right(d)
+    case Throw(error) => Left(DateCoercionViolation)
   }
 
   val DateType = ScalarType[Date](

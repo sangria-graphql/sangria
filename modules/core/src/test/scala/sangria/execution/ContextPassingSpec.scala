@@ -4,9 +4,8 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport
 
-import scala.util.Success
+import com.twitter.util.Return
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -56,7 +55,7 @@ class ContextPassingSpec extends AnyWordSpec with Matchers with FutureResultSupp
 
   "Context" should {
     "should respect inheritance" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         {
           color {name, colorName}
           person {

@@ -6,8 +6,6 @@ import sangria.macros._
 import sangria.util.FutureResultSupport
 import spray.json.JsValue
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 import spray.json._
 import sangria.marshalling.sprayJson._
 import org.scalatest.matchers.should.Matchers

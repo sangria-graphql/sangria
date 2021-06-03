@@ -12,7 +12,7 @@ import sangria.macros.derive.{
 }
 import sangria.util.Pos
 
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Throw, Return, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -912,8 +912,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
   def invalidSchema(schema: => Schema[_, _], expected: (String, Seq[Pos])*): Unit =
     (Try(schema): @unchecked) match {
-      case Success(_) => fail("Schema was built successfully")
-      case Failure(e: WithViolations) =>
+      case Return(_) => fail("Schema was built successfully")
+      case Throw(e: WithViolations) =>
         val violationsStr =
           "Actual violations:\n\n" + e.violations.zipWithIndex
             .map { case (v, idx) =>

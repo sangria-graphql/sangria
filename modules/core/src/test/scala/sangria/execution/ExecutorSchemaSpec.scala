@@ -7,9 +7,8 @@ import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
 import sangria.macros._
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.{Return, Future}
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -123,7 +122,7 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
 
   "Execute: Handles execution with a complex schema" should {
     "execute using a query type" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         {
           feed {
             id,
@@ -197,8 +196,7 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
       )
 
       val resolver = new DeferredResolver[Any] {
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-            ec: ExecutionContext) = deferred.map { case ArticleDeferred(id) =>
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = deferred.map { case ArticleDeferred(id) =>
           Future.value(article(id.toInt))
         }
       }
@@ -244,8 +242,7 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
       """
 
       val resolver = new DeferredResolver[Any] {
-        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-            ec: ExecutionContext) = deferred.map { case ArticleDeferred(id) =>
+        def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = deferred.map { case ArticleDeferred(id) =>
           Future.value(article(id.toInt))
         }
       }

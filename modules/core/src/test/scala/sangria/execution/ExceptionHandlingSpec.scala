@@ -12,9 +12,8 @@ import sangria.validation.{
 }
 import sangria.marshalling.MarshallingUtil._
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.twitter.util.{Future, Throw, Return}
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -45,11 +44,11 @@ class ExceptionHandlingSpec
         OptionType(StringType),
         arguments = Argument("email", errorScalar) :: Nil,
         resolve = _ => "Yay"),
-      Field("trySuccess", OptionType(StringType), resolve = _ => Success("try!")),
+      Field("tryReturn", OptionType(StringType), resolve = _ => Return("try!")),
       Field(
         "tryError",
         OptionType(StringType),
-        resolve = _ => Failure(new IllegalStateException("try boom!"))),
+        resolve = _ => Throw(new IllegalStateException("try boom!"))),
       Field(
         "error",
         OptionType(StringType),
@@ -66,11 +65,11 @@ class ExceptionHandlingSpec
   "Exception handling" should {
     "obfuscate unexpected exceptions" in {
       val out = captureStdErr {
-        val Success(doc) = QueryParser.parse("""
+        val Return(doc) = QueryParser.parse("""
         {
           success
           tryError
-          trySuccess
+          tryReturn
           error
           futureError
         }
@@ -80,7 +79,7 @@ class ExceptionHandlingSpec
           Map(
             "data" -> Map(
               "success" -> "Yay",
-              "trySuccess" -> "try!",
+              "tryReturn" -> "try!",
               "tryError" -> null,
               "error" -> null,
               "futureError" -> null),
@@ -105,7 +104,7 @@ class ExceptionHandlingSpec
     }
 
     "provide user-defined exception handling mechanism" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         {
           error
           futureError
@@ -133,7 +132,7 @@ class ExceptionHandlingSpec
     }
 
     "provide user-defined exception handling mechanism which allows to provide additional fields" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         {
           error
           futureError
@@ -166,7 +165,7 @@ class ExceptionHandlingSpec
     }
 
     "handle violation-based errors" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         {
           nonExistingField
           success(num: "One")
@@ -188,7 +187,7 @@ class ExceptionHandlingSpec
       })
 
       val res =
-        Executor.execute(schema, doc, exceptionHandler = exceptionHandler).recover {
+        Executor.execute(schema, doc, exceptionHandler = exceptionHandler).handle {
           case analysis: QueryAnalysisError => analysis.resolveError
         }
 
@@ -212,7 +211,7 @@ class ExceptionHandlingSpec
     }
 
     "handle user-facing errors errors" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         query Foo {
           success(num: 1)
         }
@@ -228,7 +227,7 @@ class ExceptionHandlingSpec
       val res =
         Executor
           .execute(schema, doc, operationName = Some("Bar"), exceptionHandler = exceptionHandler)
-          .recover { case analysis: QueryAnalysisError =>
+          .handle { case analysis: QueryAnalysisError =>
             analysis.resolveError
           }
 
@@ -239,7 +238,7 @@ class ExceptionHandlingSpec
     }
 
     "allow multiple handled errors with ast positions" in {
-      val Success(doc) = QueryParser.parse("""
+      val Return(doc) = QueryParser.parse("""
         query Foo {
           error
         }

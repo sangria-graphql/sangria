@@ -10,9 +10,7 @@ import sangria.schema._
 import sangria.util.FutureResultSupport
 import sangria.validation.StringCoercionViolation
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import com.twitter.util.{Future, Throw, Return}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -122,7 +120,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
   "MeasureComplexity" should {
     "perform basic calculation with overridden `complexity` function" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           scalar
           nestList(size: 3) {
@@ -214,7 +212,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "not include excluded fields and fragments" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           scalarArgs(foo: "bar")
           baz: scalarArgs(foo: "baz") @skip(if: false)
@@ -265,7 +263,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "when variables unknown, reduce even fields that may be excluded when variables are known" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         query Test($shouldSkipOrInclude: Boolean!){
           scalarArgs(foo: "bar")
           baz: scalarArgs(foo: "baz") @skip(if: $shouldSkipOrInclude)
@@ -311,7 +309,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "estimate interface type complexity based on the most complex possible type" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           n1: named(size: 10) {
             name
@@ -367,7 +365,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "estimate union type complexity based on the most complex possible type" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           p1: pets(size: 10) {
             ... on Named {
@@ -424,7 +422,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "ensure that all possible fields are considered in the calculation" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           pets(size: 10) {
             ... on Named {
@@ -462,7 +460,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "ability to reject too complex queries" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           scalar
           cs1: complexScalar
@@ -490,7 +488,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
   "TagCollector" should {
     "collect mapped tag values and update a user context using `Value`" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           info
           a
@@ -529,7 +527,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "collect mapped tag values and update a user context using `FutureValue`" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           info
           a
@@ -558,7 +556,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "collect mapped tag values and update a user context using `TryValue`" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           info
           a
@@ -572,7 +570,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val tagColl =
         QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
-          Success(ctx.copy(nums = nums)))
+          Return(ctx.copy(nums = nums)))
 
       Executor
         .execute(schema, query, userContext = Info(Nil), queryReducers = tagColl :: Nil)
@@ -587,7 +585,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "handle thrown exceptions correctly" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           info
           a
@@ -615,7 +613,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "handle `TryValue` exceptions correctly" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           info
           a
@@ -629,7 +627,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       val tagColl =
         QueryReducer.collectTags[Info, Int] { case ATag(num) => num + 123 }((nums, ctx) =>
-          Failure(new IllegalArgumentException("boom!")))
+          Throw(new IllegalArgumentException("boom!")))
 
       Executor
         .execute(
@@ -643,7 +641,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "handle `FutureValue` exceptions correctly" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           info
           a
@@ -671,7 +669,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "collect all mapped tag values and update a user context" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
         {
           info
           a
@@ -713,7 +711,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
   "MeasureQueryDepth" should {
     def calcDepth(queryStr: String): Int = {
-      val Success(query) = QueryParser.parse(queryStr)
+      val Return(query) = QueryParser.parse(queryStr)
 
       val depth = new AtomicInteger(0)
       val reducer = QueryReducer.measureDepth[Any] { (d, ctx) =>
@@ -802,7 +800,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
     }
 
     "reject max query depth" in {
-      val Success(query) = QueryParser.parse("""
+      val Return(query) = QueryParser.parse("""
        {
          nest {
            nest {
@@ -973,7 +971,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           argumentValuesFn: ArgumentValuesFn
       ): Acc = {
         val args = argumentValuesFn(path, field.arguments, astFields.head.arguments)
-        assert(args == Success(Args.empty))
+        assert(args == Return(Args.empty))
         fieldAcc ++ childrenAcc :+ 1
       }
 

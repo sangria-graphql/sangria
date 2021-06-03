@@ -4,7 +4,7 @@ import sangria.execution.UserFacingError
 import sangria.schema._
 import sangria.starWars.TestData._
 
-import scala.concurrent.Future
+import com.twitter.util.Future
 
 object TestSchema {
   case class PrivacyError(message: String) extends Exception(message) with UserFacingError

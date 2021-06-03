@@ -2,8 +2,7 @@ package sangria.starWars
 
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import com.twitter.util.{Try, Future}
 
 object TestData {
   object Episode extends Enumeration {
@@ -84,9 +83,8 @@ object TestData {
   )
 
   class FriendsResolver extends DeferredResolver[Any] {
-    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-        ec: ExecutionContext) = deferred.map { case DeferFriends(friendIds) =>
-      Future.fromTry(Try(friendIds.map(id => characters.find(_.id == id))))
+    override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any) = deferred.map { case DeferFriends(friendIds) =>
+      Future.const(Try(friendIds.map(id => characters.find(_.id == id))))
     }
   }
 
