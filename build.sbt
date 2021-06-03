@@ -65,10 +65,6 @@ lazy val core = project
       "org.parboiled" %% "parboiled" % "2.3.0",
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.3",
-      // Marshalling
-      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.5",
-      // Streaming
-      //"org.sangria-graphql" %% "sangria-streaming-api" % "1.0.2",
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "com.twitter" %% "util-core" % "21.5.0",
