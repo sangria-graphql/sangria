@@ -568,16 +568,15 @@ class ValueCoercionHelper[Ctx](
   }
 
   private def valuePosition[T](forNode: Option[ast.AstNode], value: T*): List[AstLocation] = {
-    val values = value.view.collect {
-      case node: ast.AstNode if node.location.isDefined => node.location.toList
+    val firstValue = value.collectFirst {
+      case node: ast.AstNode if node.location.isDefined => node.location.get
     }
 
-    val nodeLocations: List[AstLocation] = forNode match {
-      case Some(n) if n.location.isDefined => List(n.location.get)
-      case _ => Nil
+    val nodeLocation: Option[AstLocation] = forNode.collect {
+      case n if n.location.isDefined => n.location.get
     }
 
-    values.headOption.fold(nodeLocations)(nodeLocations ++ _)
+    nodeLocation.toList ++ firstValue.toList
   }
 
   def isValidValue[In](tpe: InputType[_], input: Option[In])(implicit
