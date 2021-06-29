@@ -58,7 +58,7 @@ lazy val core = project
   .settings(
     name := "sangria",
     description := "Scala GraphQL implementation",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.0"),
+    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.3"),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Parser
