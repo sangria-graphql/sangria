@@ -37,7 +37,7 @@ Sangria is a spec compliant GraphQL implementation, so it works out of the box w
 In this example we will use [circe](https://github.com/circe/circe) JSON marshalling, so we also need to include following dependency:
 
 ```scala
-libraryDependencies += "org.sangria-graphql" %% "sangria-circe" % "1.3.1"
+libraryDependencies += "org.sangria-graphql" %% "sangria-circe" % "1.3.2"
 ```
 
 The most simple Hello World application might look like this:
@@ -84,8 +84,8 @@ If you are facing an issue and not sure what would be the best way to describe i
 
 ## StackOverflow
 
-In case you need some help or support, then you can use [StackOverflow](http://stackoverflow.com/questions/tagged/sangria) for this.
-When you are [asking a question](http://stackoverflow.com/questions/ask?tags=scala,graphql,sangria),
+In case you need some help or support, then you can use [StackOverflow](https://stackoverflow.com/questions/tagged/sangria) for this.
+When you are [asking a question](https://stackoverflow.com/questions/ask?tags=scala,graphql,sangria),
 be sure to add `scala`, `graphql` and `sangria` tags, so that other people can easily find them.
 
 ## Gitter & Mailing List 
@@ -100,7 +100,7 @@ You can spread the word and tweet about the project or even better - create a sm
 I'm pretty sure it would be interesting for many people.
 
 Also you can contribute to [the documentation](https://github.com/sangria-graphql/sangria-website) or help others by answering questions on
-[StackOverflow](http://stackoverflow.com/questions/tagged/sangria) or joining discussions at [the mailing list](https://groups.google.com/forum/#!forum/sangria-graphql) and [gitter chat](https://gitter.im/sangria-graphql/sangria).
+[StackOverflow](https://stackoverflow.com/questions/tagged/sangria) or joining discussions at [the mailing list](https://groups.google.com/forum/#!forum/sangria-graphql) and [gitter chat](https://gitter.im/sangria-graphql/sangria).
 It would be very helpful!
 
 Not to mention the code itself. There is nothing more exciting than hacking some stuff together :)
@@ -108,4 +108,4 @@ So please feel free to materialize your ideas in form of code and send pull requ
 
 ## License
 
-**Sangria** is licensed under [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
+**Sangria** is licensed under [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

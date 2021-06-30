@@ -1185,7 +1185,7 @@ class Resolver[Ctx](
           dctx.init()
         } else {
           toResolve.foreach(_.promise.failure(new IllegalStateException(
-            s"Deferred resolver returned ${resolved.size} elements, but it got ${toResolve.size} deferred values. This violates the contract. You can find more information in the documentation: http://sangria-graphql.org/learn/#deferred-values-and-resolver")))
+            s"Deferred resolver returned ${resolved.size} elements, but it got ${toResolve.size} deferred values. This violates the contract. You can find more information in the documentation: https://sangria-graphql.github.io/learn/#deferred-values-and-resolver")))
         }
       } catch {
         case NonFatal(error) => toResolve.foreach(_.promise.failure(error))

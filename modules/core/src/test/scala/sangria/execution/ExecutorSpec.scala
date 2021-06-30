@@ -950,7 +950,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
       res("data") should be(null: Any)
       res("errors").asInstanceOf[Seq[Map[String, Any]]](0)("message") should be(
-        "Deferred resolver returned 2 elements, but it got 1 deferred values. This violates the contract. You can find more information in the documentation: http://sangria-graphql.org/learn/#deferred-values-and-resolver")
+        "Deferred resolver returned 2 elements, but it got 1 deferred values. This violates the contract. You can find more information in the documentation: https://sangria-graphql.github.io/learn/#deferred-values-and-resolver")
     }
 
     "resolve deferred values correctly in presence of errors" in {

@@ -10,7 +10,7 @@ import sbt.Keys.{
 import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
@@ -58,7 +58,7 @@ lazy val core = project
   .settings(
     name := "sangria",
     description := "Scala GraphQL implementation",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.0"),
+    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.3"),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Parser
@@ -66,23 +66,23 @@ lazy val core = project
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.3",
       // Marshalling
-      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.5",
+      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.6",
       // Streaming
-      "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.2",
+      "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
-      "co.fs2" %% "fs2-core" % "3.0.4" % Test,
+      "co.fs2" %% "fs2-core" % "2.5.7" % Test,
       "org.scalatest" %% "scalatest" % "3.2.9" % Test,
-      "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.3" % Test,
+      "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
-      "org.sangria-graphql" %% "sangria-argonaut" % "1.0.1" % Test,
-      "org.sangria-graphql" %% "sangria-ion" % "2.0.0" % Test,
-      "org.sangria-graphql" %% "sangria-monix" % "2.0.0" % Test,
-      "eu.timepit" %% "refined" % "0.9.25" % Test,
+      "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
+      "org.sangria-graphql" %% "sangria-ion" % "2.0.1" % Test,
+      "org.sangria-graphql" %% "sangria-monix" % "2.0.1" % Test,
+      "eu.timepit" %% "refined" % "0.9.26" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.105" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.108" % Test
     )
   )
 

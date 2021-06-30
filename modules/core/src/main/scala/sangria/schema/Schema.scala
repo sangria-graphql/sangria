@@ -1235,7 +1235,7 @@ case class Schema[Ctx, Val](
             s"A `null` value was provided instead of type for $parentInfo.\n" +
               "This can happen if you have recursive type definition or circular references within your type graph.\n" +
               "Please use no-arg function to provide fields for such types.\n" +
-              "You can find more info in the docs: http://sangria-graphql.org/learn/#circular-references-and-recursive-types")
+              "You can find more info in the docs: https://sangria-graphql.github.io/learn/#circular-references-and-recursive-types")
         case t: Named if result contains t.name =>
           result.get(t.name) match {
             case Some(found) if !sameType(found._2, t) =>

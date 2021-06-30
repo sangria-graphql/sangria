@@ -1,5 +1,21 @@
 see [releases](https://github.com/sangria-graphql/sangria/releases)
 
+## v2.1.3 (2021-04-18)
+
+https://github.com/sangria-graphql/sangria/releases/tag/v2.1.3
+
+## v2.1.2 (2021-04-17)
+
+https://github.com/sangria-graphql/sangria/releases/tag/v2.1.2
+
+## v2.1.1 (2021-04-17)
+
+https://github.com/sangria-graphql/sangria/releases/tag/v2.1.1
+
+## v2.1.0 (2021-01-01)
+
+https://github.com/sangria-graphql/sangria/releases/tag/v2.1.0
+
 ## v2.0.1 (2020-10-06)
 
 https://github.com/sangria-graphql/sangria/releases/tag/v2.0.1
