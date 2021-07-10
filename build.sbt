@@ -72,7 +72,7 @@ lazy val core = project
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
-      "co.fs2" %% "fs2-core" % "3.0.6" % Test,
+      "co.fs2" %% "fs2-core" % "2.5.9" % Test,
       "org.scalatest" %% "scalatest" % "3.2.9" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
@@ -82,7 +82,7 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.26" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.109" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.110" % Test
     )
   )
 
