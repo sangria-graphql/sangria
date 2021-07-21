@@ -69,6 +69,7 @@ trait AstSchemaBuilder[Ctx] {
       definition: ast.InterfaceTypeDefinition,
       extensions: List[ast.InterfaceTypeExtensionDefinition],
       fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]): Option[InterfaceType[Ctx, Any]]
 
   def extendInterfaceType(
@@ -443,6 +444,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       definition: ast.InterfaceTypeDefinition,
       extensions: List[ast.InterfaceTypeExtensionDefinition],
       fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]) = {
     val directives = definition.directives ++ extensions.flatMap(_.directives)
 

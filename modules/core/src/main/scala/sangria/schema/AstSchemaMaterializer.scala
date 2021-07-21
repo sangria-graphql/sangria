@@ -642,7 +642,7 @@ class AstSchemaMaterializer[Ctx] private (
       tpe,
       extensions.toList,
       () => buildFields(origin, tpe, tpe.fields, extensions).toList,
-      buildInterfaces(origin, tpe, tpe.interfaces, extensions).toList,
+      buildInterfaces(origin, tpe.interfaces, extensions).toList,
       this
     )
   }
@@ -667,6 +667,7 @@ class AstSchemaMaterializer[Ctx] private (
       tpe,
       extensions.toList,
       () => buildFields(origin, tpe, tpe.fields, extensions).toList,
+      buildInterfaces(origin, tpe.interfaces, extensions).toList,
       this)
   }
 
@@ -712,9 +713,8 @@ class AstSchemaMaterializer[Ctx] private (
 
   def buildInterfaces(
       origin: MatOrigin,
-      tpe: ast.ObjectTypeDefinition,
       interfaces: Vector[ast.NamedType],
-      extensions: Vector[ast.ObjectTypeExtensionDefinition]) = {
+      extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]) = {
     val extraInts = extensions.flatMap(_.interfaces)
     val allInts = interfaces ++ extraInts
 

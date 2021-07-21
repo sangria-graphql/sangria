@@ -977,6 +977,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             ),
             InterfaceTypeDefinition(
               "Bar",
+              Vector.empty,
               Vector(
                 FieldDefinition(
                   "one",
@@ -1012,6 +1013,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
             ),
             InterfaceTypeDefinition(
               "AnnotatedInterface",
+              Vector.empty,
               Vector(FieldDefinition(
                 "annotatedField",
                 NamedType("Type", None),

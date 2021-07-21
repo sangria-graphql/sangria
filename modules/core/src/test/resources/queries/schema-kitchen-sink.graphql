@@ -38,7 +38,9 @@ interface Bar {
   four(argument: String = "string"): String
 }
 
-interface AnnotatedInterface @onInterface {
+interface AnnotatedInterface implements Bar @onInterface {
+  one: Type
+  four(argument: String = "string"): String
   annotatedField(arg: Type @onArg): Type @onField
 }
 

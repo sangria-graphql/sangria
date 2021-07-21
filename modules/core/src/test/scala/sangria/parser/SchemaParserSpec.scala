@@ -276,6 +276,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             ),
             InterfaceTypeDefinition(
               "Bar",
+              Vector.empty,
               Vector(
                 FieldDefinition(
                   "one",
@@ -323,7 +324,39 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             ),
             InterfaceTypeDefinition(
               "AnnotatedInterface",
+              Vector.empty,
               Vector(
+                FieldDefinition(
+                  "one",
+                  NamedType("Type", Some(AstLocation(875, 37, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(870, 37, 3))),
+                FieldDefinition(
+                  "four",
+                  NamedType("String", Some(AstLocation(917, 38, 38))),
+                  Vector(InputValueDefinition(
+                    "argument",
+                    NamedType("String", Some(AstLocation(897, 38, 18))),
+                    Some(
+                      StringValue(
+                        "string",
+                        false,
+                        None,
+                        Vector.empty,
+                        Some(AstLocation(906, 38, 27)))),
+                    Vector.empty,
+                    None,
+                    Vector.empty,
+                    Some(AstLocation(887, 38, 8))
+                  )),
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(882, 38, 3))
+                ),
                 FieldDefinition(
                   "annotatedField",
                   NamedType("Type", Some(AstLocation(1007, 42, 37))),
@@ -931,6 +964,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
         Document(
           Vector(InterfaceTypeDefinition(
             "Hello",
+            Vector.empty,
             Vector(
               FieldDefinition(
                 "world",
@@ -1275,6 +1309,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
               "Bar",
               Vector.empty,
               Vector.empty,
+              Vector.empty,
               None,
               Vector.empty,
               Vector.empty,
@@ -1326,6 +1361,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             ),
             InterfaceTypeDefinition(
               "Bar",
+              Vector.empty,
               Vector.empty,
               Vector.empty,
               None,
@@ -1440,6 +1476,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             ),
             InterfaceTypeExtensionDefinition(
               "Bar",
+              Vector.empty,
               Vector(FieldDefinition(
                 "f2",
                 ListType(
@@ -1544,6 +1581,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             ),
             InterfaceTypeExtensionDefinition(
               "EmptyBar",
+              Vector.empty,
               Vector.empty,
               Vector(
                 Directive(

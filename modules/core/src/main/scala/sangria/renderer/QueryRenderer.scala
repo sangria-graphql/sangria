@@ -659,12 +659,14 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, frontSep = true) +
           renderInputFieldDefinitions(fields, itd, indent, config, frontSep = true)
 
-      case itd @ InterfaceTypeDefinition(name, fields, dirs, description, _, _, _) =>
+      case itd @ InterfaceTypeDefinition(name, interfaces, fields, dirs, description, _, _, _) =>
         renderDescription(itd, prev, indent, config) +
           renderComment(itd, description.orElse(prev), indent, config) +
           indent.str + "interface" + config.mandatorySeparator + name +
-          renderDirs(dirs, config, indent, frontSep = true) +
-          renderFieldDefinitions(fields, itd, indent, config, frontSep = true)
+          config.mandatorySeparator +
+          renderInterfaces(interfaces, config, indent) +
+          renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
+          renderFieldDefinitions(fields, itd, indent, config)
 
       case utd @ UnionTypeDefinition(name, types, dirs, description, _, _) =>
         val typesString =
@@ -719,11 +721,13 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
           renderFieldDefinitions(fields, ted, indent, config)
 
-      case ext @ InterfaceTypeExtensionDefinition(name, fields, dirs, _, _, _) =>
+      case ext @ InterfaceTypeExtensionDefinition(name, interfaces, fields, dirs, _, _, _) =>
         renderComment(ext, prev, indent, config) +
           indent.str + "extend" + config.mandatorySeparator + "interface" + config.mandatorySeparator + name +
-          renderDirs(dirs, config, indent, frontSep = true) +
-          renderFieldDefinitions(fields, ext, indent, config, frontSep = true)
+          config.mandatorySeparator +
+          renderInterfaces(interfaces, config, indent) +
+          renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
+          renderFieldDefinitions(fields, ext, indent, config)
 
       case ext @ UnionTypeExtensionDefinition(name, types, dirs, _, _) =>
         val typesString =
