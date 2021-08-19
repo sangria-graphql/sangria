@@ -1741,7 +1741,10 @@ class Resolver[Ctx](
                 marshaller.nullNode,
                 optional = false))
           else
-            for { myVal <- value; otherVal <- other.value } yield marshaller.addMapNodeElem(
+            for {
+              myVal <- value
+              otherVal <- other.value
+            } yield marshaller.addMapNodeElem(
               myVal.asInstanceOf[marshaller.MapBuilder],
               key,
               otherVal.asInstanceOf[marshaller.Node],

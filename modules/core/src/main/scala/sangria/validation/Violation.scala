@@ -88,7 +88,7 @@ case class FieldCoercionViolation(
   }
 
   lazy val simpleErrorMessage =
-    s"${errorPrefix}${if (isArgument) "Argument" else "Field"} '${fieldPath.mkString(".")}' has wrong value: $violationMessage."
+    s"$errorPrefix${if (isArgument) "Argument" else "Field"} '${fieldPath.mkString(".")}' has wrong value: $violationMessage."
 }
 
 case class VarTypeMismatchViolation(

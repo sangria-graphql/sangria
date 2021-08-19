@@ -9,8 +9,8 @@ import sangria.validation._
 
 /** Known directives
   *
-  * A GraphQL document is only valid if all `@directives` are known by the
-  * schema and legally positioned.
+  * A GraphQL document is only valid if all `@directives` are known by the schema and legally
+  * positioned.
   */
 class KnownDirectives extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

@@ -6,8 +6,8 @@ import sangria.validation._
 
 /** Executable definitions
   *
-  * A GraphQL document is only valid for execution if all definitions are either
-  * operation or fragment definitions.
+  * A GraphQL document is only valid for execution if all definitions are either operation or
+  * fragment definitions.
   */
 class ExecutableDefinitions extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

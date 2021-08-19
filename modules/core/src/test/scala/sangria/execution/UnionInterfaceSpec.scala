@@ -370,12 +370,11 @@ class UnionInterfaceSpec
             "quz",
             OptionType(ListType(OptionType(QuzType))),
             arguments = Argument("id", OptionInputType(ListInputType(StringType))) :: Nil,
-            resolve = c => {
+            resolve = c =>
               c.argOpt[Seq[String]]("id")
                 .map(queried => c.value.quz.filter(quz => queried.contains(quz.id)))
                 .getOrElse(c.value.quz)
                 .map(Some(_))
-            }
           ))
       )
 

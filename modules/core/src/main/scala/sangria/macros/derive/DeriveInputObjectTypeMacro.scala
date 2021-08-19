@@ -2,9 +2,11 @@ package sangria.macros.derive
 
 import scala.reflect.macros.blackbox
 
-class DeriveInputObjectTypeMacro(context: blackbox.Context) extends {
-  val c = context
-} with DeriveMacroSupport {
+class DeriveInputObjectTypeMacro(context: blackbox.Context)
+    extends {
+      val c = context
+    }
+    with DeriveMacroSupport {
   import c.universe._
 
   def deriveInputObjectType[T: WeakTypeTag](config: Tree*) = {

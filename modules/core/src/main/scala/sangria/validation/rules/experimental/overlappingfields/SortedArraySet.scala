@@ -4,7 +4,8 @@ import java.util
 import java.util.Comparator
 import java.util.function.Consumer
 
-/** A set representation that is well suited to hash and equality comparisons and fast iteration over members
+/** A set representation that is well suited to hash and equality comparisons and fast iteration
+  * over members
   */
 class SortedArraySet[T](private val sortedMembers: util.ArrayList[T])
     extends java.lang.Iterable[T] {

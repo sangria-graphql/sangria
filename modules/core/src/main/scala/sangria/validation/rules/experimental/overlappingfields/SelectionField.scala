@@ -30,8 +30,8 @@ object SelectionField {
   def children(fields: SortedArraySet[SelectionField]): SortedArraySet[SelectionField] =
     SelectionContainer.children(fields)
 
-  /** This gives us a stable order of fields in sets.
-    * It is determined by the order of traversal of the query.
+  /** This gives us a stable order of fields in sets. It is determined by the order of traversal of
+    * the query.
     */
   implicit object OrderById extends Ordering[SelectionField] {
     override def compare(x: SelectionField, y: SelectionField): Int =

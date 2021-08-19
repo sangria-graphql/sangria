@@ -8,8 +8,7 @@ import scala.collection.mutable.{Map => MutableMap}
 
 /** Unique directive names per location
   *
-  * A GraphQL document is only valid if all directives at a given location
-  * are uniquely named.
+  * A GraphQL document is only valid if all directives at a given location are uniquely named.
   */
 class UniqueDirectivesPerLocation extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

@@ -12,8 +12,8 @@ object TypeAbstractness {
       case _ => Abstract
     }
 
-  /** For the purpose of grouping types for the validation,
-    * we consider abstract types to constitute one group
+  /** For the purpose of grouping types for the validation, we consider abstract types to constitute
+    * one group
     */
   case object Abstract extends TypeAbstractness
 

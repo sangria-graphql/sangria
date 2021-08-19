@@ -7,10 +7,9 @@ import java.util.function.Consumer
 import sangria.ast
 import sangria.schema.{CompositeType, OutputType}
 
-/** For the validation we need another representation of the query that
-  * already contains the effective selection sets for each field and
-  * certain properties of the fields. As we don't want to adapt the sangria
-  * representation, we build our own here during traversal of the query.
+/** For the validation we need another representation of the query that already contains the
+  * effective selection sets for each field and certain properties of the fields. As we don't want
+  * to adapt the sangria representation, we build our own here during traversal of the query.
   */
 class SelectionBuilder {
 
@@ -54,7 +53,8 @@ class SelectionBuilder {
   def leaveSelectionContainer(): Unit =
     stack.pop()
 
-  /** @return A list of roots of the document
+  /** @return
+    *   A list of roots of the document
     */
   def build(): util.ArrayList[SelectionContainer] = {
     roots.forEach {

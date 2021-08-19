@@ -63,11 +63,10 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       def intValidationAlias(min: Option[Int], max: Option[Int]) = ScalarAlias[Int, Int](
         IntType,
         toScalar = identity,
-        fromScalar = v => {
+        fromScalar = v =>
           if (min.isDefined && v < min.get) Left(CustomIntViolation(v, min, max))
           else if (max.isDefined && v > max.get) Left(CustomIntViolation(v, min, max))
           else Right(v)
-        }
       )
 
       val NVArg = Argument("v", IntType)

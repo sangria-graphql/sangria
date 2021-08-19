@@ -189,27 +189,29 @@ object IntrospectionSchemaMaterializer {
 
   /** Build a `Schema` for use by client tools.
     *
-    * Given the result of a client running the introspection query, creates and
-    * returns a `Schema` instance which can be then used with all sangria
-    * tools, but cannot be used to execute a query, as introspection does not
-    * represent the "resolver", "parse" or "serialize" functions or any other
-    * server-internal mechanisms.
+    * Given the result of a client running the introspection query, creates and returns a `Schema`
+    * instance which can be then used with all sangria tools, but cannot be used to execute a query,
+    * as introspection does not represent the "resolver", "parse" or "serialize" functions or any
+    * other server-internal mechanisms.
     *
-    * @param introspectionResult the result of introspection query
+    * @param introspectionResult
+    *   the result of introspection query
     */
   def buildSchema[T: InputUnmarshaller](introspectionResult: T): Schema[Any, Any] =
     buildSchema[Any, T](introspectionResult, IntrospectionSchemaBuilder.default)
 
   /** Build a `Schema` for use by client tools.
     *
-    * Given the result of a client running the introspection query, creates and
-    * returns a `Schema` instance which can be then used with all sangria
-    * tools, but cannot be used to execute a query, as introspection does not
-    * represent the "resolver", "parse" or "serialize" functions or any other
-    * server-internal mechanisms.
+    * Given the result of a client running the introspection query, creates and returns a `Schema`
+    * instance which can be then used with all sangria tools, but cannot be used to execute a query,
+    * as introspection does not represent the "resolver", "parse" or "serialize" functions or any
+    * other server-internal mechanisms.
     *
-    * @param introspectionResult the result of introspection query
-    * @param builder custom schema construction logic. By default `MaterializedSchemaException` would be thrown from a `resolve` function.
+    * @param introspectionResult
+    *   the result of introspection query
+    * @param builder
+    *   custom schema construction logic. By default `MaterializedSchemaException` would be thrown
+    *   from a `resolve` function.
     */
   def buildSchema[Ctx, T: InputUnmarshaller](
       introspectionResult: T,

@@ -9,17 +9,16 @@ import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema._
 import sangria.validation._
 import scala.collection.mutable.{
+  LinkedHashSet,
   ListBuffer,
-  Set => MutableSet,
   ListMap => MutableMap,
-  LinkedHashSet
+  Set => MutableSet
 }
 
 /** Overlapping fields can be merged
   *
-  * A selection set is only valid if all fields (including spreading any
-  * fragments) either correspond to distinct response names or can be merged
-  * without ambiguity.
+  * A selection set is only valid if all fields (including spreading any fragments) either
+  * correspond to distinct response names or can be merged without ambiguity.
   */
 class OverlappingFieldsCanBeMerged extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
@@ -37,55 +36,51 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
     /** Algorithm:
       *
-      * Conflicts occur when two fields exist in a query which will produce the same
-      * response name, but represent differing values, thus creating a conflict.
-      * The algorithm below finds all conflicts via making a series of comparisons
-      * between fields. In order to compare as few fields as possible, this makes
-      * a series of comparisons "within" sets of fields and "between" sets of fields.
+      * Conflicts occur when two fields exist in a query which will produce the same response name,
+      * but represent differing values, thus creating a conflict. The algorithm below finds all
+      * conflicts via making a series of comparisons between fields. In order to compare as few
+      * fields as possible, this makes a series of comparisons "within" sets of fields and "between"
+      * sets of fields.
       *
-      * Given any selection set, a collection produces both a set of fields by
-      * also including all inline fragments, as well as a list of fragments
-      * referenced by fragment spreads.
+      * Given any selection set, a collection produces both a set of fields by also including all
+      * inline fragments, as well as a list of fragments referenced by fragment spreads.
       *
-      * A) Each selection set represented in the document first compares "within" its
-      * collected set of fields, finding any conflicts between every pair of
-      * overlapping fields.
-      * Note: This is the *only time* that a the fields "within" a set are compared
-      * to each other. After this only fields "between" sets are compared.
+      * A) Each selection set represented in the document first compares "within" its collected set
+      * of fields, finding any conflicts between every pair of overlapping fields. Note: This is the
+      * *only time* that a the fields "within" a set are compared to each other. After this only
+      * fields "between" sets are compared.
       *
-      * B) Also, if any fragment is referenced in a selection set, then a
-      * comparison is made "between" the original set of fields and the
+      * B) Also, if any fragment is referenced in a selection set, then a comparison is made
+      * "between" the original set of fields and the referenced fragment.
+      *
+      * C) Also, if multiple fragments are referenced, then comparisons are made "between" each
       * referenced fragment.
       *
-      * C) Also, if multiple fragments are referenced, then comparisons
-      * are made "between" each referenced fragment.
+      * D) When comparing "between" a set of fields and a referenced fragment, first a comparison is
+      * made between each field in the original set of fields and each field in the the referenced
+      * set of fields.
       *
-      * D) When comparing "between" a set of fields and a referenced fragment, first
-      * a comparison is made between each field in the original set of fields and
-      * each field in the the referenced set of fields.
+      * E) Also, if any fragment is referenced in the referenced selection set, then a comparison is
+      * made "between" the original set of fields and the referenced fragment (recursively referring
+      * to step D).
       *
-      * E) Also, if any fragment is referenced in the referenced selection set,
-      * then a comparison is made "between" the original set of fields and the
-      * referenced fragment (recursively referring to step D).
+      * F) When comparing "between" two fragments, first a comparison is made between each field in
+      * the first referenced set of fields and each field in the the second referenced set of
+      * fields.
       *
-      * F) When comparing "between" two fragments, first a comparison is made between
-      * each field in the first referenced set of fields and each field in the the
-      * second referenced set of fields.
+      * G) Also, any fragments referenced by the first must be compared to the second, and any
+      * fragments referenced by the second must be compared to the first (recursively referring to
+      * step F).
       *
-      * G) Also, any fragments referenced by the first must be compared to the
-      * second, and any fragments referenced by the second must be compared to the
-      * first (recursively referring to step F).
+      * H) When comparing two fields, if both have selection sets, then a comparison is made
+      * "between" both selection sets, first comparing the set of fields in the first selection set
+      * with the set of fields in the second.
       *
-      * H) When comparing two fields, if both have selection sets, then a comparison
-      * is made "between" both selection sets, first comparing the set of fields in
-      * the first selection set with the set of fields in the second.
+      * I) Also, if any fragment is referenced in either selection set, then a comparison is made
+      * "between" the other set of fields and the referenced fragment.
       *
-      * I) Also, if any fragment is referenced in either selection set, then a
-      * comparison is made "between" the other set of fields and the
-      * referenced fragment.
-      *
-      * J) Also, if two fragments are referenced in both selection sets, then a
-      * comparison is made "between" the two fragments.
+      * J) Also, if two fragments are referenced in both selection sets, then a comparison is made
+      * "between" the two fragments.
       */
     override val onEnter: ValidationVisit = {
       case selCont: ast.SelectionContainer if selCont.selections.nonEmpty =>
@@ -563,8 +558,8 @@ case class Conflict(reason: ConflictReason, fields1: List[ast.Field], fields2: L
 case class ConflictReason(fieldName: String, reason: Either[String, Vector[ConflictReason]])
 case class AstAndDef(astField: ast.Field, tpe: Option[OutputType[_]], field: Option[Field[_, _]])
 
-/** A way to keep track of pairs of things when the ordering of the pair does
-  * not matter. We do this by maintaining a sort of double adjacency sets.
+/** A way to keep track of pairs of things when the ordering of the pair does not matter. We do this
+  * by maintaining a sort of double adjacency sets.
   */
 private class PairSet[T] {
   private val data = MutableMap[(T, T), Boolean]()

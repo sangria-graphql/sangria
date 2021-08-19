@@ -4,9 +4,11 @@ import sangria.parser.{QueryParser, SyntaxError}
 
 import scala.reflect.macros.blackbox
 
-class ParseMacro(context: blackbox.Context) extends {
-  val c = context
-} with MacroAstLiftable {
+class ParseMacro(context: blackbox.Context)
+    extends {
+      val c = context
+    }
+    with MacroAstLiftable {
 
   import c.universe._
 

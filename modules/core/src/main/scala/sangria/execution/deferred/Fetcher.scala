@@ -1,6 +1,6 @@
 package sangria.execution.deferred
 
-import scala.collection.mutable.{Set => MutableSet, Map => MutableMap}
+import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
 import scala.concurrent.Future
 
 class Fetcher[Ctx, Res, RelRes, Id](

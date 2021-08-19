@@ -7,7 +7,8 @@ import sangria.validation._
 
 /** Provided required arguments
   *
-  * A field or directive is only valid if all required (non-null without a default value) field arguments have been provided.
+  * A field or directive is only valid if all required (non-null without a default value) field
+  * arguments have been provided.
   */
 class ProvidedRequiredArguments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

@@ -4,12 +4,12 @@ import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
 
-import scala.collection.mutable.{Set => MutableSet, ListBuffer}
+import scala.collection.mutable.{ListBuffer, Set => MutableSet}
 
 /** No unused fragments
   *
-  * A GraphQL document is only valid if all fragment definitions are spread
-  * within operations, or spread within other fragments spread within operations.
+  * A GraphQL document is only valid if all fragment definitions are spread within operations, or
+  * spread within other fragments spread within operations.
   */
 class NoUnusedFragments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

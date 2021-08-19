@@ -6,11 +6,10 @@ import java.util.{Comparator, Objects}
 import sangria.ast
 import sangria.renderer.QueryRenderer
 
-/** A hashable representation of field name and arguments,
-  * used to check uniqueness of them in a set of fields
+/** A hashable representation of field name and arguments, used to check uniqueness of them in a set
+  * of fields
   *
-  * Two fields also have the same name and arguments when
-  * the order of arguments differs.
+  * Two fields also have the same name and arguments when the order of arguments differs.
   */
 final class FieldNameAndArguments(private val field: ast.Field) {
 
