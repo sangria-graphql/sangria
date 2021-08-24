@@ -7,8 +7,8 @@ import scala.collection.mutable.{Set => MutableSet}
 
 /** No undefined variables
   *
-  * A GraphQL operation is only valid if all variables encountered, both directly
-  * and via fragment spreads, are defined by that operation.
+  * A GraphQL operation is only valid if all variables encountered, both directly and via fragment
+  * spreads, are defined by that operation.
   */
 class NoUndefinedVariables extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

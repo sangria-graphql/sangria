@@ -10,14 +10,13 @@ import sangria.validation.rules.experimental.overlappingfields._
 
 /** Overlapping fields can be merged
   *
-  * A selection set is only valid if all fields (including spreading any
-  * fragments) either correspond to distinct response names or can be merged
-  * without ambiguity.
+  * A selection set is only valid if all fields (including spreading any fragments) either
+  * correspond to distinct response names or can be merged without ambiguity.
   *
   * The algorithm is described in [[CachedCheck]].
   *
-  * The validation rule implements the same validation as OverlappingFieldsCanBeMerged
-  * and could eventually replace it. It is an alternative, more performant implementation.
+  * The validation rule implements the same validation as OverlappingFieldsCanBeMerged and could
+  * eventually replace it. It is an alternative, more performant implementation.
   */
 @ApiMayChange
 class OverlappingFieldsCanBeMerged extends ValidationRule {

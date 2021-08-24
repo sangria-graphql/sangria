@@ -111,7 +111,8 @@ object Named {
   *   - Double
   *   - scala.BigInt
   *   - scala.BigDecimal
-  *   - sangria.ast.Value (it would be converted to raw scala value before given to a marshalling API)
+  *   - sangria.ast.Value (it would be converted to raw scala value before given to a marshalling
+  *     API)
   *
   * It may also return other values as well as long as underlying marshalling library supports them.
   *
@@ -507,7 +508,8 @@ case class UnionType[Ctx](
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 
-  /** Creates a type-safe version of union type which might be useful in cases where the value is wrapped in a type like `Either`.
+  /** Creates a type-safe version of union type which might be useful in cases where the value is
+    * wrapped in a type like `Either`.
     */
   def mapValue[T](func: T => Any): OutputType[T] =
     new UnionType[Ctx](name, description, typesFn, astDirectives, astNodes)
@@ -1418,26 +1420,26 @@ object Schema {
 
   /** Build a `Schema` for use by client tools.
     *
-    * Given the result of a client running the introspection query, creates and
-    * returns a `Schema` instance which can be then used with all sangria
-    * tools, but cannot be used to execute a query, as introspection does not
-    * represent the "resolver", "parse" or "serialize" functions or any other
-    * server-internal mechanisms.
+    * Given the result of a client running the introspection query, creates and returns a `Schema`
+    * instance which can be then used with all sangria tools, but cannot be used to execute a query,
+    * as introspection does not represent the "resolver", "parse" or "serialize" functions or any
+    * other server-internal mechanisms.
     *
-    * @param introspectionResult the result of introspection query
+    * @param introspectionResult
+    *   the result of introspection query
     */
   def buildFromIntrospection[T: InputUnmarshaller](introspectionResult: T) =
     IntrospectionSchemaMaterializer.buildSchema[T](introspectionResult)
 
   /** Build a `Schema` for use by client tools.
     *
-    * Given the result of a client running the introspection query, creates and
-    * returns a `Schema` instance which can be then used with all sangria
-    * tools, but cannot be used to execute a query, as introspection does not
-    * represent the "resolver", "parse" or "serialize" functions or any other
-    * server-internal mechanisms.
+    * Given the result of a client running the introspection query, creates and returns a `Schema`
+    * instance which can be then used with all sangria tools, but cannot be used to execute a query,
+    * as introspection does not represent the "resolver", "parse" or "serialize" functions or any
+    * other server-internal mechanisms.
     *
-    * @param introspectionResult the result of introspection query
+    * @param introspectionResult
+    *   the result of introspection query
     */
   def buildFromIntrospection[Ctx, T: InputUnmarshaller](
       introspectionResult: T,

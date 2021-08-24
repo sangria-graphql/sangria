@@ -6,9 +6,11 @@ import sangria.schema.{Action, Context}
 import scala.concurrent.Future
 import scala.reflect.macros.blackbox
 
-class DeriveObjectTypeMacro(context: blackbox.Context) extends {
-  val c = context
-} with DeriveMacroSupport {
+class DeriveObjectTypeMacro(context: blackbox.Context)
+    extends {
+      val c = context
+    }
+    with DeriveMacroSupport {
   import c.universe._
 
   def deriveContextObjectType[Ctx: WeakTypeTag, CtxVal: WeakTypeTag, Val: WeakTypeTag](

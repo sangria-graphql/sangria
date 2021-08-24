@@ -8,7 +8,9 @@ class InputDocumentNonConflictingVariableInferenceSpec extends AnyWordSpec with 
   override val defaultRule = Some(new InputDocumentNonConflictingVariableInference)
 
   "InputDocumentNonConflictingVariableInference" should {
-    "variable used multiple times in the right position" in expectInputPasses("ComplexInput", """
+    "variable used multiple times in the right position" in expectInputPasses(
+      "ComplexInput",
+      """
         {
           requiredField: true
           stringField: $foo

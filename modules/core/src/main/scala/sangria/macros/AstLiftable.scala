@@ -5,8 +5,7 @@ import sangria.ast._
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox
 
-/** Implements the Liftable type class for AstNode, so we can use them in
-  * quasiquotes.
+/** Implements the Liftable type class for AstNode, so we can use them in quasiquotes.
   */
 trait AstLiftable {
   val universe: Universe

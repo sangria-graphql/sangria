@@ -10,8 +10,8 @@ import sangria.util.StringUtil
 
 /** Value literals of correct type
   *
-  * A GraphQL document is only valid if all value literals are of the type
-  * expected at their position.
+  * A GraphQL document is only valid if all value literals are of the type expected at their
+  * position.
   */
 class ValuesOfCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

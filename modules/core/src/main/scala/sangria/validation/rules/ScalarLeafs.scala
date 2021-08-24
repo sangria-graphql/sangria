@@ -8,8 +8,8 @@ import sangria.validation._
 
 /** Scalar leafs
   *
-  * A GraphQL document is valid only if all leaf fields (fields without
-  * sub selections) are of scalar or enum types.
+  * A GraphQL document is valid only if all leaf fields (fields without sub selections) are of
+  * scalar or enum types.
   */
 class ScalarLeafs extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

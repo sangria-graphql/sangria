@@ -8,8 +8,8 @@ import sangria.validation.rules.KnownTypeNames.SuggestionFunction
 
 /** Known type names
   *
-  * A GraphQL document is only valid if referenced types (specifically
-  * variable definitions and fragment conditions) are defined by the type schema.
+  * A GraphQL document is only valid if referenced types (specifically variable definitions and
+  * fragment conditions) are defined by the type schema.
   */
 class KnownTypeNames(suggestion: SuggestionFunction = SuggestionFunction.Default)
     extends ValidationRule {

@@ -9,8 +9,8 @@ import sangria.validation._
 
 /** Fields on correct type
   *
-  * A GraphQL document is only valid if all fields selected are defined by the
-  * parent type, or are an allowed meta field such as __typenamme
+  * A GraphQL document is only valid if all fields selected are defined by the parent type, or are
+  * an allowed meta field such as __typenamme
   */
 class FieldsOnCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
@@ -43,10 +43,9 @@ class FieldsOnCorrectType extends ValidationRule {
         case _ => Vector.empty
       }
 
-    /** Go through all of the implementations of type, as well as the interfaces
-      * that they implement. If any of those types include the provided field,
-      * suggest them, sorted by how often the type is referenced,  starting
-      * with Interfaces.
+    /** Go through all of the implementations of type, as well as the interfaces that they
+      * implement. If any of those types include the provided field, suggest them, sorted by how
+      * often the type is referenced, starting with Interfaces.
       */
     private def collectSuggestedTypes(tpe: CompositeType[_], fieldName: String) =
       tpe match {
@@ -57,10 +56,9 @@ class FieldsOnCorrectType extends ValidationRule {
         case _ => Vector.empty
       }
 
-    /** Go through all of the implementations of type, and find other interfaces
-      * that they implement. If those interfaces include `field` as a valid field,
-      * return them, sorted by how often the implementations include the other
-      * interface.
+    /** Go through all of the implementations of type, and find other interfaces that they
+      * implement. If those interfaces include `field` as a valid field, return them, sorted by how
+      * often the implementations include the other interface.
       */
     private def siblingInterfacesIncludingField(tpe: AbstractType, fieldName: String) =
       ctx.schema

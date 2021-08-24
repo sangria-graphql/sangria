@@ -8,8 +8,8 @@ import scala.collection.mutable.ListBuffer
 
 /** No unused variables
   *
-  * A GraphQL operation is only valid if all variables defined by an operation
-  * are used, either directly or within a spread fragment.
+  * A GraphQL operation is only valid if all variables defined by an operation are used, either
+  * directly or within a spread fragment.
   */
 class NoUnusedVariables extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

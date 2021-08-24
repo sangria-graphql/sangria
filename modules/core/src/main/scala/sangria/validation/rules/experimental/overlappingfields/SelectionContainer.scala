@@ -13,9 +13,8 @@ class SelectionContainer {
 
   private val directFields: util.ArrayList[SelectionField] = new util.ArrayList()
 
-  /** This selection set and all directly or indirectly included spreads.
-    * Indirectly included spreads come from spreads in directly included
-    * spreads, etc.
+  /** This selection set and all directly or indirectly included spreads. Indirectly included
+    * spreads come from spreads in directly included spreads, etc.
     */
   private val effectiveSelections: util.LinkedHashSet[SelectionContainer] = {
     val l = new util.LinkedHashSet[SelectionContainer]()

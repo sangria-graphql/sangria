@@ -6,8 +6,8 @@ import sangria.validation._
 
 /** Known fragment names
   *
-  * A GraphQL document is only valid if all `...Fragment` fragment spreads refer
-  * to fragments defined in the same document.
+  * A GraphQL document is only valid if all `...Fragment` fragment spreads refer to fragments
+  * defined in the same document.
   */
 class KnownFragmentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

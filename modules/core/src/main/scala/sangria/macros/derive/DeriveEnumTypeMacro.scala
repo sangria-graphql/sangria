@@ -2,9 +2,11 @@ package sangria.macros.derive
 
 import scala.reflect.macros.blackbox
 
-class DeriveEnumTypeMacro(context: blackbox.Context) extends {
-  val c = context
-} with DeriveMacroSupport {
+class DeriveEnumTypeMacro(context: blackbox.Context)
+    extends {
+      val c = context
+    }
+    with DeriveMacroSupport {
   import c.universe._
 
   def deriveEnumType[T: WeakTypeTag](config: Tree*) = {

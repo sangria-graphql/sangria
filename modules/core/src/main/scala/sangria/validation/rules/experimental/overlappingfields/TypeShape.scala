@@ -6,8 +6,7 @@ import sangria.schema.OutputType
 
 /** A representation of the output shape of a field
   *
-  * Used to check uniqueness of the output shape in
-  * an overlapping set of fields
+  * Used to check uniqueness of the output shape in an overlapping set of fields
   */
 sealed trait TypeShape
 
@@ -65,8 +64,8 @@ object TypeShape {
 
     case class LeafShape(name: String) extends Shape
 
-    /** Composite types do not need to match, as we require that the individual selected
-      * fields match recursively.
+    /** Composite types do not need to match, as we require that the individual selected fields
+      * match recursively.
       */
     case object CompositeShape extends Shape
 

@@ -39,8 +39,8 @@ trait PositionTracking { this: Parser =>
     go(arr.length - 1)
   }
 
-  /** Returns the first item that is less than or equal to the given item
-    * along with the number of elements that come before it.
+  /** Returns the first item that is less than or equal to the given item along with the number of
+    * elements that come before it.
     *
     * Assumes that the array is sorted in ascending order.
     */

@@ -8,8 +8,7 @@ import sangria.validation._
 
 /** Known argument names
   *
-  * A GraphQL field is only valid if all supplied arguments are defined by
-  * that field.
+  * A GraphQL field is only valid if all supplied arguments are defined by that field.
   */
 class KnownArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {

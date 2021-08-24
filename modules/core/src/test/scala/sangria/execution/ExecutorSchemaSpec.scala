@@ -54,7 +54,8 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
             OptionInputType(IntType)) :: Nil,
           resolve = ctx =>
             for {
-              w <- ctx.argOpt[Int]("width"); h <- ctx.argOpt[Int]("height");
+              w <- ctx.argOpt[Int]("width")
+              h <- ctx.argOpt[Int]("height")
               pic <- ctx.value.pic(w, h)
             } yield pic
         ),

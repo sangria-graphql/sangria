@@ -144,7 +144,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
     for (i <- 1 to size) {
       if (overlapping) {
         b.append(s"""
-                    |fragment mergeIdenticalFields${i} on Query {
+                    |fragment mergeIdenticalFields$i on Query {
                     |   viewer {
                     |     xingId {
                     |       firstName
@@ -155,11 +155,11 @@ class OverlappingFieldsCanBeMergedBenchmark {
         """.stripMargin)
       } else {
         b.append(s"""
-                    |fragment mergeIdenticalFields${i} on Query {
-                    |   viewer${i} {
-                    |     xingId${i} {
-                    |       firstName${i}
-                    |       lastName${i}
+                    |fragment mergeIdenticalFields$i on Query {
+                    |   viewer$i {
+                    |     xingId$i {
+                    |       firstName$i
+                    |       lastName$i
                     |     }
                     |   }
                     |}
@@ -195,8 +195,8 @@ class OverlappingFieldsCanBeMergedBenchmark {
       } else {
         b.append(s"""
                     | viewer${1} {
-                    |   xingId${i} {
-                    |     firstName${i}
+                    |   xingId$i {
+                    |     firstName$i
                     |   }
                     | }
         """.stripMargin)

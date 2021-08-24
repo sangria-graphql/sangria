@@ -22,10 +22,10 @@ import org.scalatest.wordspec.AnyWordSpec
   *
   * In general, testing consists of following stages:
   *
-  * 1. Load scenario data from the YAML file
-  * 2. Generate an executable schema based on the SDL provided in the scenario ("given" part of the scenario)
-  * 3. Execute a test query against the generated schema ("when" part of the scenario)
-  * 4. Assert results of the execution ("then" part of the scenario)
+  *   1. Load scenario data from the YAML file 2. Generate an executable schema based on the SDL
+  *      provided in the scenario ("given" part of the scenario) 3. Execute a test query against the
+  *      generated schema ("when" part of the scenario) 4. Assert results of the execution ("then"
+  *      part of the scenario)
   */
 trait CatsSupport { this: AnyWordSpec with Matchers =>
   import CatsScenarioData._
@@ -445,7 +445,8 @@ object CatsAssertions extends Matchers {
   }
 }
 
-/** Transforms YAML content from scenario file data into a set of case classes (simple value classes)
+/** Transforms YAML content from scenario file data into a set of case classes (simple value
+  * classes)
   */
 object CatsScenarioData {
   // Some simple data-structures to represent the scenario file data
