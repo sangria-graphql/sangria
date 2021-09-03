@@ -6,30 +6,45 @@ import sangria.parser.{AggregateSourceMapper, DeliveryScheme, SourceMapper}
 import sangria.renderer.QueryRenderer
 import sangria.validation.DocumentAnalyzer
 import sangria.schema.{InputType, Schema}
-import sangria.validation.{TypeInfo, Violation}
+import sangria.validation.TypeInfo
 import sangria.visitor._
 
 import scala.util.control.Breaks._
 import scala.collection.immutable.ListMap
 
+/** A complete GraphQL request operated on by a GraphQL service.
+  *
+  * @param definitions The definitions, which primarily constitute the document.
+  * @param sourceMapper
+  *
+  * @see [[https://spec.graphql.org/June2018/#Document]]
+  */
 case class Document(
     definitions: Vector[Definition],
-    trailingComments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None,
+    override val trailingComments: Vector[Comment] = Vector.empty,
+    override val location: Option[AstLocation] = None,
     sourceMapper: Option[SourceMapper] = None)
     extends AstNode
     with WithTrailingComments {
-  lazy val operations = Map(definitions.collect { case op: OperationDefinition =>
+  /** Map of operation name to its definition. */
+  lazy val operations: Map[Option[String], OperationDefinition] = Map(definitions.collect { case op: OperationDefinition =>
     op.name -> op
   }: _*)
-  lazy val fragments = Map(definitions.collect { case fragment: FragmentDefinition =>
+
+  /** Map of fragment name to its definition. */
+  lazy val fragments: Map[String, FragmentDefinition] = Map(definitions.collect { case fragment: FragmentDefinition =>
     fragment.name -> fragment
   }: _*)
+
   lazy val source: Option[String] = sourceMapper.map(_.source)
 
   def operationType(operationName: Option[String] = None): Option[OperationType] =
     operation(operationName).map(_.operationType)
 
+  /** Return the operation for the given name.
+    *
+    * @return `None`, if no operations are defined or if the given name is ambiguous
+    */
   def operation(operationName: Option[String] = None): Option[OperationDefinition] =
     if (operationName.isEmpty && operations.size != 1)
       None
@@ -38,36 +53,35 @@ case class Document(
     else
       operationName
         .flatMap(opName => operations.get(Some(opName)))
-        .orElse(operations.values.headOption)
+        .orElse(operations.values.headOption)  //FIXME This appears to return the first operation if the named one doesn't exist?
 
-  def withoutSourceMapper = copy(sourceMapper = None)
+  def withoutSourceMapper: Document = copy(sourceMapper = None)
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[Document]
 
-  /** Merges two documents. The `sourceMapper` is lost along the way.
-    */
-  def merge(other: Document) = Document.merge(Vector(this, other))
+  /** Merges two documents. The `sourceMapper`s are combined. */
+  def merge(other: Document): Document = Document.merge(Vector(this, other))
 
   /** An alias for `merge`
     */
-  def +(other: Document) = merge(other)
+  def +(other: Document): Document = merge(other)
 
-  lazy val analyzer = DocumentAnalyzer(this)
+  lazy val analyzer: DocumentAnalyzer = DocumentAnalyzer(this)
 
   lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
 
-  def separateOperation(definition: OperationDefinition) = analyzer.separateOperation(definition)
-  def separateOperation(operationName: Option[String]) = analyzer.separateOperation(operationName)
+  def separateOperation(definition: OperationDefinition): Document = analyzer.separateOperation(definition)
+  def separateOperation(operationName: Option[String]): Option[Document] = analyzer.separateOperation(operationName)
 
   override def equals(other: Any): Boolean = other match {
     case that: Document =>
-      (that.canEqual(this)) &&
+      that.canEqual(this) &&
         definitions == that.definitions &&
         location == that.location
     case _ => false
   }
 
-  private lazy val hash =
+  private[this] lazy val hash =
     Seq(definitions, location).map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
 
   override def hashCode(): Int = hash
@@ -112,11 +126,11 @@ case class InputDocument(
 
   /** Merges two documents. The `sourceMapper` is lost along the way.
     */
-  def merge(other: InputDocument) = InputDocument.merge(Vector(this, other))
+  def merge(other: InputDocument): InputDocument = InputDocument.merge(Vector(this, other))
 
   /** An alias for `merge`
     */
-  def +(other: InputDocument) = merge(other)
+  def +(other: InputDocument): InputDocument = merge(other)
 
   def to[T](
       schema: Schema[_, _],
@@ -186,17 +200,41 @@ sealed trait SelectionContainer extends AstNode with WithComments with WithTrail
   def location: Option[AstLocation]
 }
 
+/** A definition in a [[Document GraphQL document]].
+  *
+  * A GraphQL document consists primarily of definitions,
+  * which are either executable or representative of a GraphQL type system.
+  * The executable definitions are [[OperationDefinition operation]] and [[FragmentDefinition fragment definitions]];
+  * those that represent a type system fall into [[TypeSystemDefinition definition]]
+  * or [[TypeSystemExtensionDefinition extension]] categories.
+  *
+  * @see [[https://spec.graphql.org/June2018/#Definition]]
+  */
 sealed trait Definition extends AstNode
 
+/** A definition of a GraphQL operation.
+  *
+  * Every GraphQL request invokes a specific operation,
+  * possibly with values to substitute into the operation's variables.
+  *
+  * @param name
+  *   The name of the operation. Optional only if there is only one operation in the [[Document document]].
+  *   Used for selecting the specific operation to invoke in a GraphQL request.
+  * @param variables
+  *   The variables that must be substituted into the operation.
+  *   Values for these must be provided either by their defaults or with the GraphQL request.
+  *
+  * @see [[https://spec.graphql.org/June2018/#OperationDefinition]]
+  */
 case class OperationDefinition(
     operationType: OperationType = OperationType.Query,
     name: Option[String] = None,
     variables: Vector[VariableDefinition] = Vector.empty,
-    directives: Vector[Directive] = Vector.empty,
-    selections: Vector[Selection],
-    comments: Vector[Comment] = Vector.empty,
-    trailingComments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None)
+    override val directives: Vector[Directive] = Vector.empty,
+    override val selections: Vector[Selection],
+    override val comments: Vector[Comment] = Vector.empty,
+    override val trailingComments: Vector[Comment] = Vector.empty,
+    override val location: Option[AstLocation] = None)
     extends Definition
     with WithDirectives
     with SelectionContainer
@@ -214,24 +252,24 @@ case class FragmentDefinition(
     with ConditionalFragment
     with WithDirectives
     with SelectionContainer {
-  lazy val typeConditionOpt = Some(typeCondition)
+  lazy val typeConditionOpt: Option[NamedType] = Some(typeCondition)
 }
 
-sealed trait OperationType
-
-object OperationType {
-  case object Query extends OperationType
-  case object Mutation extends OperationType
-  case object Subscription extends OperationType
-}
-
+/** A definition of a variable to an [[OperationDefinition operation]].
+  *
+  * @param name Name of the variable being defined.
+  * @param defaultValue
+  *   Value that the variable should assume in an operation if none was provided with the GraphQL request.
+  *
+  * @see [[https://spec.graphql.org/June2018/#VariableDefinition]]
+  */
 case class VariableDefinition(
     name: String,
     tpe: Type,
     defaultValue: Option[Value],
-    directives: Vector[Directive] = Vector.empty,
-    comments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None)
+    override val directives: Vector[Directive] = Vector.empty,
+    override val comments: Vector[Comment] = Vector.empty,
+    override val location: Option[AstLocation] = None)
     extends AstNode
     with WithComments
     with WithDirectives
@@ -271,7 +309,7 @@ case class Field(
     extends Selection
     with SelectionContainer
     with WithArguments {
-  lazy val outputName = alias.getOrElse(name)
+  lazy val outputName: String = alias.getOrElse(name)
 }
 
 case class FragmentSpread(
@@ -291,7 +329,7 @@ case class InlineFragment(
     extends Selection
     with ConditionalFragment
     with SelectionContainer {
-  def typeConditionOpt = typeCondition
+  def typeConditionOpt: Option[NamedType] = typeCondition
 }
 
 sealed trait NameValue extends AstNode with WithComments {
@@ -317,6 +355,14 @@ case class Argument(
     location: Option[AstLocation] = None)
     extends NameValue
 
+/** A value that can be substituted into a GraphQL operation [[VariableDefinition variable]].
+  *
+  * Called "input values" in the GraphQL spec.
+  * Input values can be [[ScalarValue scalars]], [[EnumValue enumeration values]], [[ListValue lists]],
+  * [[ObjectValue objects]], or [[NullValue null values]].
+  *
+  * @see [[https://spec.graphql.org/June2018/#Value]]
+  */
 sealed trait Value extends AstNode with WithComments {
   override def renderPretty: String = QueryRenderer.render(this, QueryRenderer.PrettyInput)
 }
@@ -377,7 +423,7 @@ case class ObjectValue(
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends Value {
-  lazy val fieldsByName =
+  lazy val fieldsByName: Map[String, Value] =
     fields.foldLeft(ListMap.empty[String, Value]) { case (acc, field) =>
       acc + (field.name -> field.value)
     }
@@ -407,7 +453,7 @@ case class ScalarTypeDefinition(
     location: Option[AstLocation] = None)
     extends TypeDefinition
     with WithDescription {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): ScalarTypeDefinition = copy(name = newName)
 }
 
 case class FieldDefinition(
@@ -446,7 +492,7 @@ case class ObjectTypeDefinition(
     extends TypeDefinition
     with WithTrailingComments
     with WithDescription {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): ObjectTypeDefinition = copy(name = newName)
 }
 
 case class InterfaceTypeDefinition(
@@ -460,7 +506,7 @@ case class InterfaceTypeDefinition(
     extends TypeDefinition
     with WithTrailingComments
     with WithDescription {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): InterfaceTypeDefinition = copy(name = newName)
 }
 
 case class UnionTypeDefinition(
@@ -472,7 +518,7 @@ case class UnionTypeDefinition(
     location: Option[AstLocation] = None)
     extends TypeDefinition
     with WithDescription {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): UnionTypeDefinition = copy(name = newName)
 }
 
 case class EnumTypeDefinition(
@@ -486,7 +532,7 @@ case class EnumTypeDefinition(
     extends TypeDefinition
     with WithTrailingComments
     with WithDescription {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): EnumTypeDefinition = copy(name = newName)
 }
 
 case class EnumValueDefinition(
@@ -510,7 +556,7 @@ case class InputObjectTypeDefinition(
     extends TypeDefinition
     with WithTrailingComments
     with WithDescription {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): InputObjectTypeDefinition = copy(name = newName)
 }
 
 case class ObjectTypeExtensionDefinition(
@@ -523,7 +569,7 @@ case class ObjectTypeExtensionDefinition(
     location: Option[AstLocation] = None)
     extends ObjectLikeTypeExtensionDefinition
     with WithTrailingComments {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): ObjectTypeExtensionDefinition = copy(name = newName)
 }
 
 case class InterfaceTypeExtensionDefinition(
@@ -535,7 +581,7 @@ case class InterfaceTypeExtensionDefinition(
     location: Option[AstLocation] = None)
     extends ObjectLikeTypeExtensionDefinition
     with WithTrailingComments {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): InterfaceTypeExtensionDefinition = copy(name = newName)
 }
 
 case class InputObjectTypeExtensionDefinition(
@@ -547,7 +593,7 @@ case class InputObjectTypeExtensionDefinition(
     location: Option[AstLocation] = None)
     extends TypeExtensionDefinition
     with WithTrailingComments {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): InputObjectTypeExtensionDefinition = copy(name = newName)
 }
 
 case class EnumTypeExtensionDefinition(
@@ -559,7 +605,7 @@ case class EnumTypeExtensionDefinition(
     location: Option[AstLocation] = None)
     extends TypeExtensionDefinition
     with WithTrailingComments {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): EnumTypeExtensionDefinition = copy(name = newName)
 }
 
 case class UnionTypeExtensionDefinition(
@@ -569,7 +615,7 @@ case class UnionTypeExtensionDefinition(
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends TypeExtensionDefinition {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): UnionTypeExtensionDefinition = copy(name = newName)
 }
 
 case class ScalarTypeExtensionDefinition(
@@ -578,7 +624,7 @@ case class ScalarTypeExtensionDefinition(
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends TypeExtensionDefinition {
-  def rename(newName: String) = copy(name = newName)
+  def rename(newName: String): ScalarTypeExtensionDefinition = copy(name = newName)
 }
 
 case class SchemaExtensionDefinition(
@@ -626,14 +672,9 @@ case class OperationTypeDefinition(
     location: Option[AstLocation] = None)
     extends SchemaAstNode
 
-case class AstLocation(sourceId: String, index: Int, line: Int, column: Int)
-
-object AstLocation {
-  def apply(index: Int, line: Int, column: Int): AstLocation =
-    AstLocation("", index, line, column)
-}
-
+/** A node in the AST of a parsed GraphQL request document. */
 sealed trait AstNode {
+  /** Location at which this node lexically begins in the GraphQL request source code. */
   def location: Option[AstLocation]
   def cacheKeyHash: Int = System.identityHashCode(this)
 
@@ -690,27 +731,18 @@ trait AstVisitor {
   def onLeave: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue }
 }
 
-case class DefaultAstVisitor(
-    override val onEnter: PartialFunction[AstNode, VisitorCommand] = { case _ =>
-      VisitorCommand.Continue
-    },
-    override val onLeave: PartialFunction[AstNode, VisitorCommand] = { case _ =>
-      VisitorCommand.Continue
-    }
-) extends AstVisitor
-
 object AstVisitor {
   import AstVisitorCommand._
 
   def apply(
       onEnter: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue },
       onLeave: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue }
-  ) = DefaultAstVisitor(onEnter, onLeave)
+  ): DefaultAstVisitor = DefaultAstVisitor(onEnter, onLeave)
 
   def simple(
       onEnter: PartialFunction[AstNode, Unit] = { case _ => () },
       onLeave: PartialFunction[AstNode, Unit] = { case _ => () }
-  ) = DefaultAstVisitor(
+  ): DefaultAstVisitor = DefaultAstVisitor(
     {
       case node if onEnter.isDefinedAt(node) =>
         onEnter(node)
@@ -1134,12 +1166,4 @@ object AstVisitor {
       loop(doc)
     }
   }
-}
-
-object AstVisitorCommand extends Enumeration {
-  val Skip, Continue, Break = Value
-
-  val RightContinue: Either[Vector[Violation], AstVisitorCommand.Value] = Right(Continue)
-  val RightSkip: Either[Vector[Violation], AstVisitorCommand.Value] = Right(Skip)
-  val RightBreak: Either[Vector[Violation], AstVisitorCommand.Value] = Right(Break)
 }

@@ -6,7 +6,8 @@ import sangria.ast.AstLocation
 import scala.annotation.tailrec
 
 trait PositionTracking { this: Parser =>
-  private var lineIdx = Array(0)
+  /** The indices (offsets into the source code) of the first characters of each line. */
+  private[this] var lineIdx = Array(0)
 
   def parseLocations: Boolean
   def sourceId: String
@@ -19,9 +20,9 @@ trait PositionTracking { this: Parser =>
 
   def trackPos: Rule1[Option[AstLocation]] = rule {
     test(parseLocations) ~ push {
-      val (size, lastCursor) = findLastItem(lineIdx, cursor)
+      val (line, lastCursor) = findLastItem(lineIdx, cursor)
 
-      Some(AstLocation(sourceId, cursor, size, cursor - lastCursor + 1))
+      Some(AstLocation(sourceId, cursor, line, cursor - lastCursor + 1))
     } | push(None)
   }
 

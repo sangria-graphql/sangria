@@ -105,7 +105,9 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
   def Keyword(s: String) = rule(atomic(Ignored.* ~ s ~ !NameChar ~ IgnoredNoComment.*))
 }
 
+/** Mix-in that defines GraphQL grammar productions that are typically ignored (whitespace, comments, etc.). */
 trait Ignored extends PositionTracking { this: Parser =>
+  /** Whether comments should be parsed into the resulting AST. */
   def parseComments: Boolean
 
   val WhiteSpace = CharPredicate("\u0009\u0020")
@@ -788,7 +790,7 @@ class QueryParser private (
     val legacyEmptyFields: Boolean = false,
     val experimentalFragmentVariables: Boolean = false,
     val parseLocations: Boolean = true,
-    val parseComments: Boolean = true
+    override val parseComments: Boolean = true
 ) extends Parser
     with Tokens
     with Ignored
@@ -896,45 +898,4 @@ object QueryParser {
       case Failure(e) => scheme.failure(e)
     }
   }
-}
-
-case class ParserConfig(
-    legacyImplementsInterface: Boolean = false,
-    legacyEmptyFields: Boolean = false,
-    experimentalFragmentVariables: Boolean = false,
-    sourceIdFn: ParserInput => String = ParserConfig.defaultSourceIdFn,
-    sourceMapperFn: (String, ParserInput) => Option[SourceMapper] =
-      ParserConfig.defaultSourceMapperFn,
-    parseLocations: Boolean = true,
-    parseComments: Boolean = true
-) {
-  @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
-  def withLegacyImplementsInterface: ParserConfig = copy(legacyImplementsInterface = true)
-
-  @deprecated("Use new syntax: `type Foo` instead of legacy `type Foo {}`", "1.4.0")
-  def withLegacyEmptyFields: ParserConfig = copy(legacyEmptyFields = true)
-
-  def withExperimentalFragmentVariables: ParserConfig = copy(experimentalFragmentVariables = true)
-
-  def withEmptySourceId: ParserConfig = copy(sourceIdFn = ParserConfig.emptySourceIdFn)
-
-  def withSourceMapper(fn: (String, ParserInput) => Option[SourceMapper]): ParserConfig =
-    copy(sourceMapperFn = fn)
-
-  def withoutSourceMapper: ParserConfig = copy(sourceMapperFn = ParserConfig.emptySourceMapperFn)
-
-  def withoutLocations: ParserConfig = copy(parseLocations = false)
-
-  def withoutComments: ParserConfig = copy(parseComments = false)
-}
-
-object ParserConfig {
-  lazy val default: ParserConfig = ParserConfig()
-
-  lazy val emptySourceIdFn: ParserInput => String = _ => ""
-  lazy val defaultSourceIdFn: ParserInput => String = _ => UUID.randomUUID().toString
-
-  lazy val emptySourceMapperFn: (String, ParserInput) => Option[SourceMapper] = (_, _) => None
-  lazy val defaultSourceMapperFn: (String, ParserInput) => Option[SourceMapper] =
-    (id, input) => Some(new DefaultSourceMapper(id, input))
 }
