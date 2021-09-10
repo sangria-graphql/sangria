@@ -15,13 +15,13 @@ object AstVisitor {
   import AstVisitorCommand._
 
   def apply(
-    onEnter: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue },
-    onLeave: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue }
+      onEnter: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue },
+      onLeave: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue }
   ): DefaultAstVisitor = DefaultAstVisitor(onEnter, onLeave)
 
   def simple(
-    onEnter: PartialFunction[AstNode, Unit] = { case _ => () },
-    onLeave: PartialFunction[AstNode, Unit] = { case _ => () }
+      onEnter: PartialFunction[AstNode, Unit] = { case _ => () },
+      onLeave: PartialFunction[AstNode, Unit] = { case _ => () }
   ): DefaultAstVisitor = DefaultAstVisitor(
     {
       case node if onEnter.isDefinedAt(node) =>
@@ -45,7 +45,7 @@ object AstVisitor {
     )
 
   def visitAstWithTypeInfo[T <: AstNode](schema: Schema[_, _], root: T)(
-    visitorFn: TypeInfo => AstVisitor): T = {
+      visitorFn: TypeInfo => AstVisitor): T = {
     val typeInfo = new TypeInfo(schema)
     val visitor = visitorFn(typeInfo)
 
@@ -63,7 +63,7 @@ object AstVisitor {
   }
 
   def visitAstWithState[S](schema: Schema[_, _], root: AstNode, state: S)(
-    visitorFn: (TypeInfo, S) => AstVisitor): S = {
+      visitorFn: (TypeInfo, S) => AstVisitor): S = {
     val typeInfo = new TypeInfo(schema)
     val visitor = visitorFn(typeInfo, state)
 
@@ -83,15 +83,15 @@ object AstVisitor {
   }
 
   def visit[T <: AstNode](
-    root: T,
-    onEnter: AstNode => VisitorCommand,
-    onLeave: AstNode => VisitorCommand): T =
+      root: T,
+      onEnter: AstNode => VisitorCommand,
+      onLeave: AstNode => VisitorCommand): T =
     sangria.visitor.visit[AstNode](root, Visit[AstNode](onEnter, onLeave)).asInstanceOf[T]
 
   private[sangria] def visitAstRecursive(
-    doc: AstNode,
-    onEnter: AstNode => AstVisitorCommand.Value = _ => Continue,
-    onLeave: AstNode => AstVisitorCommand.Value = _ => Continue): Unit = {
+      doc: AstNode,
+      onEnter: AstNode => AstVisitorCommand.Value = _ => Continue,
+      onLeave: AstNode => AstVisitorCommand.Value = _ => Continue): Unit = {
 
     def breakOrSkip(cmd: AstVisitorCommand.Value) = cmd match {
       case Break => break()
@@ -286,14 +286,14 @@ object AstVisitor {
             breakOrSkip(onLeave(n))
           }
         case n @ ObjectTypeDefinition(
-        _,
-        interfaces,
-        fields,
-        dirs,
-        description,
-        comment,
-        trailingComments,
-        _) =>
+              _,
+              interfaces,
+              fields,
+              dirs,
+              description,
+              comment,
+              trailingComments,
+              _) =>
           if (breakOrSkip(onEnter(n))) {
             interfaces.foreach(d => loop(d))
             fields.foreach(d => loop(d))
@@ -304,13 +304,13 @@ object AstVisitor {
             breakOrSkip(onLeave(n))
           }
         case n @ InterfaceTypeDefinition(
-        _,
-        fields,
-        dirs,
-        description,
-        comment,
-        trailingComments,
-        _) =>
+              _,
+              fields,
+              dirs,
+              description,
+              comment,
+              trailingComments,
+              _) =>
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d => loop(d))
             dirs.foreach(d => loop(d))
@@ -344,13 +344,13 @@ object AstVisitor {
             breakOrSkip(onLeave(n))
           }
         case n @ InputObjectTypeDefinition(
-        _,
-        fields,
-        dirs,
-        description,
-        comment,
-        trailingComments,
-        _) =>
+              _,
+              fields,
+              dirs,
+              description,
+              comment,
+              trailingComments,
+              _) =>
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d => loop(d))
             dirs.foreach(d => loop(d))
