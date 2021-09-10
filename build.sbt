@@ -34,6 +34,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[Problem]("sangria.execution.deferred.FetcherConfig*"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.FragmentDefinition.typeConditionOpt"),
   ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.ObjectValue.fieldsByName"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.marshalling.QueryAstInputUnmarshaller.getMapKeys"),
 )
 
 lazy val root = project
