@@ -40,7 +40,7 @@ class QueryAstInputUnmarshaller extends InputUnmarshaller[ast.Value] {
   def isMapNode(node: ast.Value) = node.isInstanceOf[ast.ObjectValue]
   def getMapValue(node: ast.Value, key: String) =
     node.asInstanceOf[ast.ObjectValue].fieldsByName.get(key)
-  def getMapKeys(node: ast.Value) = node.asInstanceOf[ast.ObjectValue].fieldsByName.keys
+  def getMapKeys(node: ast.Value): Iterable[String] = node.asInstanceOf[ast.ObjectValue].fieldsByName.keys
 
   def isListNode(node: ast.Value) = node.isInstanceOf[ast.ListValue]
   def getListValue(node: ast.Value) = node.asInstanceOf[ast.ListValue].values
