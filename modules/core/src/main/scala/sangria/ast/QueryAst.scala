@@ -362,33 +362,56 @@ case class Argument(
   * [[ObjectValue objects]], or [[NullValue null values]].
   *
   * @see [[https://spec.graphql.org/June2018/#Value]]
+  * @group value
   */
 sealed trait Value extends AstNode with WithComments {
   override def renderPretty: String = QueryRenderer.render(this, QueryRenderer.PrettyInput)
 }
 
+/**
+  * @group scalar
+  */
 sealed trait ScalarValue extends Value
 
+/**
+  * @group scalar
+  */
 case class IntValue(
     value: Int,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends ScalarValue
+
+/**
+  * @group scalar
+  */
 case class BigIntValue(
     value: BigInt,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends ScalarValue
+
+/**
+  * @group scalar
+  */
 case class FloatValue(
     value: Double,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends ScalarValue
+
+/**
+  * @group scalar
+  */
 case class BigDecimalValue(
     value: BigDecimal,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends ScalarValue
+
+/**
+  * @group scalar
+  */
 case class StringValue(
     value: String,
     block: Boolean = false,
@@ -396,28 +419,52 @@ case class StringValue(
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends ScalarValue
+
+/**
+  * @group scalar
+  */
 case class BooleanValue(
     value: Boolean,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends ScalarValue
+
+/**
+  * @group value
+  */
 case class EnumValue(
     value: String,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends Value
+
+/**
+  * @group value
+  */
 case class ListValue(
     values: Vector[Value],
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends Value
+
+/**
+  * @group value
+  */
 case class VariableValue(
     name: String,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends Value
+
+/**
+  * @group value
+  */
 case class NullValue(comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None)
     extends Value
+
+/**
+  * @group value
+  */
 case class ObjectValue(
     fields: Vector[ObjectField],
     comments: Vector[Comment] = Vector.empty,
@@ -429,6 +476,9 @@ case class ObjectValue(
     }
 }
 
+/**
+  * @group value
+  */
 object ObjectValue {
   def apply(fields: (String, Value)*): ObjectValue = ObjectValue(
     fields.toVector.map(f => ObjectField(f._1, f._2)))

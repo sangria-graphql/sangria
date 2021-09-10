@@ -1,7 +1,5 @@
 package sangria.parser
 
-import java.util.UUID
-
 import org.parboiled2._
 import CharPredicate.{Digit19, HexDigit}
 import sangria.ast
