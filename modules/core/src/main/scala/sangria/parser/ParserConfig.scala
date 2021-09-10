@@ -5,13 +5,14 @@ import org.parboiled2.ParserInput
 import java.util.UUID
 
 case class ParserConfig(
-  legacyImplementsInterface: Boolean = false,
-  legacyEmptyFields: Boolean = false,
-  experimentalFragmentVariables: Boolean = false,
-  sourceIdFn: ParserInput => String = ParserConfig.defaultSourceIdFn,
-  sourceMapperFn: (String, ParserInput) => Option[SourceMapper] = ParserConfig.defaultSourceMapperFn,
-  parseLocations: Boolean = true,
-  parseComments: Boolean = true
+    legacyImplementsInterface: Boolean = false,
+    legacyEmptyFields: Boolean = false,
+    experimentalFragmentVariables: Boolean = false,
+    sourceIdFn: ParserInput => String = ParserConfig.defaultSourceIdFn,
+    sourceMapperFn: (String, ParserInput) => Option[SourceMapper] =
+      ParserConfig.defaultSourceMapperFn,
+    parseLocations: Boolean = true,
+    parseComments: Boolean = true
 ) {
   @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
   def withLegacyImplementsInterface: ParserConfig = copy(legacyImplementsInterface = true)
@@ -21,13 +22,17 @@ case class ParserConfig(
 
   def withExperimentalFragmentVariables: ParserConfig = copy(experimentalFragmentVariables = true)
 
-  /** Return a new configuration that uses [[ParserConfig#emptySourceIdFn the empty source ID generator]]. */
+  /** Return a new configuration that uses
+    * [[ParserConfig#emptySourceIdFn the empty source ID generator]].
+    */
   def withEmptySourceId: ParserConfig = copy(sourceIdFn = ParserConfig.emptySourceIdFn)
 
   def withSourceMapper(fn: (String, ParserInput) => Option[SourceMapper]): ParserConfig =
     copy(sourceMapperFn = fn)
 
-  /** Return a new configuration that uses [[ParserConfig#emptySourceMapperFn the empty source mapper]]. */
+  /** Return a new configuration that uses
+    * [[ParserConfig#emptySourceMapperFn the empty source mapper]].
+    */
   def withoutSourceMapper: ParserConfig = copy(sourceMapperFn = ParserConfig.emptySourceMapperFn)
 
   def withoutLocations: ParserConfig = copy(parseLocations = false)

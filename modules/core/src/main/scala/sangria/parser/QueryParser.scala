@@ -103,8 +103,11 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
   def Keyword(s: String) = rule(atomic(Ignored.* ~ s ~ !NameChar ~ IgnoredNoComment.*))
 }
 
-/** Mix-in that defines GraphQL grammar productions that are typically ignored (whitespace, comments, etc.). */
+/** Mix-in that defines GraphQL grammar productions that are typically ignored (whitespace,
+  * comments, etc.).
+  */
 trait Ignored extends PositionTracking { this: Parser =>
+
   /** Whether comments should be parsed into the resulting AST. */
   def parseComments: Boolean
 

@@ -6,6 +6,7 @@ import sangria.ast.AstLocation
 import scala.annotation.tailrec
 
 trait PositionTracking { this: Parser =>
+
   /** The indices (offsets into the source code) of the first characters of each line. */
   private[this] var lineIdx = Array(0)
 

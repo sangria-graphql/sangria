@@ -3,12 +3,14 @@ package sangria.parser
 import org.parboiled2.ParserInput
 import sangria.ast.AstLocation
 
-/** Set of functions that convert a [[AstLocation GraphQL source code location]] to human-readable strings.
+/** Set of functions that convert a [[AstLocation GraphQL source code location]] to human-readable
+  * strings.
   *
-  * When rendering the results of a GraphQL document parse, it's helpful to describe where parsing failed.
-  * This is the interface to that facility.
+  * When rendering the results of a GraphQL document parse, it's helpful to describe where parsing
+  * failed. This is the interface to that facility.
   */
 trait SourceMapper {
+
   /** Identifier for the GraphQL document being parsed. Should be unique. */
   def id: String
 
@@ -22,7 +24,8 @@ trait SourceMapper {
     *
     * Useful for pointing to the location of a parsing error.
     *
-    * @param prefix prefix to attach to the returned string
+    * @param prefix
+    *   prefix to attach to the returned string
     */
   def renderLinePosition(location: AstLocation, prefix: String = ""): String
 }
@@ -42,11 +45,13 @@ class DefaultSourceMapper(val id: String, val parserInput: ParserInput) extends 
 
 /** [[SourceMapper]] for potentially multiple GraphQL documents.
   *
-  * Sometimes it's necessary to compose a GraphQL document from multiple component documents;
-  * this class provides the corresponding `SourceMapper` to support that.
+  * Sometimes it's necessary to compose a GraphQL document from multiple component documents; this
+  * class provides the corresponding `SourceMapper` to support that.
   *
-  * @param id Identifier for the combined document.
-  * @param delegates The component documents.
+  * @param id
+  *   Identifier for the combined document.
+  * @param delegates
+  *   The component documents.
   */
 class AggregateSourceMapper(val id: String, val delegates: Vector[SourceMapper])
     extends SourceMapper {

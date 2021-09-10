@@ -14,10 +14,12 @@ import scala.collection.immutable.ListMap
 
 /** A complete GraphQL request operated on by a GraphQL service.
   *
-  * @param definitions The definitions, which primarily constitute the document.
+  * @param definitions
+  *   The definitions, which primarily constitute the document.
   * @param sourceMapper
   *
-  * @see [[https://spec.graphql.org/June2018/#Document]]
+  * @see
+  *   [[https://spec.graphql.org/June2018/#Document]]
   */
 case class Document(
     definitions: Vector[Definition],
@@ -26,14 +28,17 @@ case class Document(
     sourceMapper: Option[SourceMapper] = None)
     extends AstNode
     with WithTrailingComments {
+
   /** Map of operation name to its definition. */
-  lazy val operations: Map[Option[String], OperationDefinition] = Map(definitions.collect { case op: OperationDefinition =>
-    op.name -> op
+  lazy val operations: Map[Option[String], OperationDefinition] = Map(definitions.collect {
+    case op: OperationDefinition =>
+      op.name -> op
   }: _*)
 
   /** Map of fragment name to its definition. */
-  lazy val fragments: Map[String, FragmentDefinition] = Map(definitions.collect { case fragment: FragmentDefinition =>
-    fragment.name -> fragment
+  lazy val fragments: Map[String, FragmentDefinition] = Map(definitions.collect {
+    case fragment: FragmentDefinition =>
+      fragment.name -> fragment
   }: _*)
 
   lazy val source: Option[String] = sourceMapper.map(_.source)
@@ -43,7 +48,8 @@ case class Document(
 
   /** Return the operation for the given name.
     *
-    * @return `None`, if no operations are defined or if the given name is ambiguous
+    * @return
+    *   `None`, if no operations are defined or if the given name is ambiguous
     */
   def operation(operationName: Option[String] = None): Option[OperationDefinition] =
     if (operationName.isEmpty && operations.size != 1)
@@ -53,7 +59,9 @@ case class Document(
     else
       operationName
         .flatMap(opName => operations.get(Some(opName)))
-        .orElse(operations.values.headOption)  //FIXME This appears to return the first operation if the named one doesn't exist?
+        .orElse(
+          operations.values.headOption
+        ) //FIXME This appears to return the first operation if the named one doesn't exist?
 
   def withoutSourceMapper: Document = copy(sourceMapper = None)
 
@@ -70,8 +78,10 @@ case class Document(
 
   lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
 
-  def separateOperation(definition: OperationDefinition): Document = analyzer.separateOperation(definition)
-  def separateOperation(operationName: Option[String]): Option[Document] = analyzer.separateOperation(operationName)
+  def separateOperation(definition: OperationDefinition): Document =
+    analyzer.separateOperation(definition)
+  def separateOperation(operationName: Option[String]): Option[Document] =
+    analyzer.separateOperation(operationName)
 
   override def equals(other: Any): Boolean = other match {
     case that: Document =>
@@ -202,29 +212,32 @@ sealed trait SelectionContainer extends AstNode with WithComments with WithTrail
 
 /** A definition in a [[Document GraphQL document]].
   *
-  * A GraphQL document consists primarily of definitions,
-  * which are either executable or representative of a GraphQL type system.
-  * The executable definitions are [[OperationDefinition operation]] and [[FragmentDefinition fragment definitions]];
-  * those that represent a type system fall into [[TypeSystemDefinition definition]]
-  * or [[TypeSystemExtensionDefinition extension]] categories.
+  * A GraphQL document consists primarily of definitions, which are either executable or
+  * representative of a GraphQL type system. The executable definitions are
+  * [[OperationDefinition operation]] and [[FragmentDefinition fragment definitions]]; those that
+  * represent a type system fall into [[TypeSystemDefinition definition]] or
+  * [[TypeSystemExtensionDefinition extension]] categories.
   *
-  * @see [[https://spec.graphql.org/June2018/#Definition]]
+  * @see
+  *   [[https://spec.graphql.org/June2018/#Definition]]
   */
 sealed trait Definition extends AstNode
 
 /** A definition of a GraphQL operation.
   *
-  * Every GraphQL request invokes a specific operation,
-  * possibly with values to substitute into the operation's variables.
+  * Every GraphQL request invokes a specific operation, possibly with values to substitute into the
+  * operation's variables.
   *
   * @param name
-  *   The name of the operation. Optional only if there is only one operation in the [[Document document]].
-  *   Used for selecting the specific operation to invoke in a GraphQL request.
+  *   The name of the operation. Optional only if there is only one operation in the
+  *   [[Document document]]. Used for selecting the specific operation to invoke in a GraphQL
+  *   request.
   * @param variables
-  *   The variables that must be substituted into the operation.
-  *   Values for these must be provided either by their defaults or with the GraphQL request.
+  *   The variables that must be substituted into the operation. Values for these must be provided
+  *   either by their defaults or with the GraphQL request.
   *
-  * @see [[https://spec.graphql.org/June2018/#OperationDefinition]]
+  * @see
+  *   [[https://spec.graphql.org/June2018/#OperationDefinition]]
   */
 case class OperationDefinition(
     operationType: OperationType = OperationType.Query,
@@ -257,11 +270,14 @@ case class FragmentDefinition(
 
 /** A definition of a variable to an [[OperationDefinition operation]].
   *
-  * @param name Name of the variable being defined.
+  * @param name
+  *   Name of the variable being defined.
   * @param defaultValue
-  *   Value that the variable should assume in an operation if none was provided with the GraphQL request.
+  *   Value that the variable should assume in an operation if none was provided with the GraphQL
+  *   request.
   *
-  * @see [[https://spec.graphql.org/June2018/#VariableDefinition]]
+  * @see
+  *   [[https://spec.graphql.org/June2018/#VariableDefinition]]
   */
 case class VariableDefinition(
     name: String,
@@ -357,24 +373,23 @@ case class Argument(
 
 /** A value that can be substituted into a GraphQL operation [[VariableDefinition variable]].
   *
-  * Called "input values" in the GraphQL spec.
-  * Input values can be [[ScalarValue scalars]], [[EnumValue enumeration values]], [[ListValue lists]],
-  * [[ObjectValue objects]], or [[NullValue null values]].
+  * Called "input values" in the GraphQL spec. Input values can be [[ScalarValue scalars]],
+  * [[EnumValue enumeration values]], [[ListValue lists]], [[ObjectValue objects]], or
+  * [[NullValue null values]].
   *
-  * @see [[https://spec.graphql.org/June2018/#Value]]
+  * @see
+  *   [[https://spec.graphql.org/June2018/#Value]]
   * @group value
   */
 sealed trait Value extends AstNode with WithComments {
   override def renderPretty: String = QueryRenderer.render(this, QueryRenderer.PrettyInput)
 }
 
-/**
-  * @group scalar
+/** @group scalar
   */
 sealed trait ScalarValue extends Value
 
-/**
-  * @group scalar
+/** @group scalar
   */
 case class IntValue(
     value: Int,
@@ -382,8 +397,7 @@ case class IntValue(
     location: Option[AstLocation] = None)
     extends ScalarValue
 
-/**
-  * @group scalar
+/** @group scalar
   */
 case class BigIntValue(
     value: BigInt,
@@ -391,8 +405,7 @@ case class BigIntValue(
     location: Option[AstLocation] = None)
     extends ScalarValue
 
-/**
-  * @group scalar
+/** @group scalar
   */
 case class FloatValue(
     value: Double,
@@ -400,8 +413,7 @@ case class FloatValue(
     location: Option[AstLocation] = None)
     extends ScalarValue
 
-/**
-  * @group scalar
+/** @group scalar
   */
 case class BigDecimalValue(
     value: BigDecimal,
@@ -409,8 +421,7 @@ case class BigDecimalValue(
     location: Option[AstLocation] = None)
     extends ScalarValue
 
-/**
-  * @group scalar
+/** @group scalar
   */
 case class StringValue(
     value: String,
@@ -420,8 +431,7 @@ case class StringValue(
     location: Option[AstLocation] = None)
     extends ScalarValue
 
-/**
-  * @group scalar
+/** @group scalar
   */
 case class BooleanValue(
     value: Boolean,
@@ -429,8 +439,7 @@ case class BooleanValue(
     location: Option[AstLocation] = None)
     extends ScalarValue
 
-/**
-  * @group value
+/** @group value
   */
 case class EnumValue(
     value: String,
@@ -438,8 +447,7 @@ case class EnumValue(
     location: Option[AstLocation] = None)
     extends Value
 
-/**
-  * @group value
+/** @group value
   */
 case class ListValue(
     values: Vector[Value],
@@ -447,8 +455,7 @@ case class ListValue(
     location: Option[AstLocation] = None)
     extends Value
 
-/**
-  * @group value
+/** @group value
   */
 case class VariableValue(
     name: String,
@@ -456,14 +463,12 @@ case class VariableValue(
     location: Option[AstLocation] = None)
     extends Value
 
-/**
-  * @group value
+/** @group value
   */
 case class NullValue(comments: Vector[Comment] = Vector.empty, location: Option[AstLocation] = None)
     extends Value
 
-/**
-  * @group value
+/** @group value
   */
 case class ObjectValue(
     fields: Vector[ObjectField],
@@ -476,8 +481,7 @@ case class ObjectValue(
     }
 }
 
-/**
-  * @group value
+/** @group value
   */
 object ObjectValue {
   def apply(fields: (String, Value)*): ObjectValue = ObjectValue(
@@ -724,6 +728,7 @@ case class OperationTypeDefinition(
 
 /** A node in the AST of a parsed GraphQL request document. */
 sealed trait AstNode {
+
   /** Location at which this node lexically begins in the GraphQL request source code. */
   def location: Option[AstLocation]
   def cacheKeyHash: Int = System.identityHashCode(this)
