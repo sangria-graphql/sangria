@@ -1,13 +1,6 @@
 import sbt.Developer
-import sbt.Keys.{
-  crossScalaVersions,
-  developers,
-  organizationHomepage,
-  scalacOptions,
-  scmInfo,
-  startYear
-}
-import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
+import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOptions, scmInfo, startYear}
+import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, IncompatibleResultTypeProblem, Problem, ProblemFilters}
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
@@ -38,7 +31,10 @@ ThisBuild / githubWorkflowPublish := Seq(
 ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[Problem]("sangria.schema.ProjectedName*"),
   ProblemFilters.exclude[Problem]("sangria.schema.Args*"),
-  ProblemFilters.exclude[Problem]("sangria.execution.deferred.FetcherConfig*")
+  ProblemFilters.exclude[Problem]("sangria.execution.deferred.FetcherConfig*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.FragmentDefinition.typeConditionOpt"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.ObjectValue.fieldsByName"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.marshalling.QueryAstInputUnmarshaller.getMapKeys"),
 )
 
 lazy val root = project
@@ -127,6 +123,9 @@ lazy val scalacSettings = Seq(
     if (scalaVersion.value.startsWith("2.12")) Seq("-language:higherKinds") else List.empty[String]
   },
   scalacOptions += "-target:jvm-1.8",
+  Compile / doc / scalacOptions ++= Seq(  // scaladoc options
+    "-groups"
+  ),
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
 
