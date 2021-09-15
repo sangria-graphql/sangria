@@ -197,12 +197,15 @@ package object schema {
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
     BuiltinScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
+      .toMap  // required for 2.12
 
   val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
     BuiltinGraphQLScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
+      .toMap  // required for 2.12
 
   val BuiltinSangriaScalarsByName: Map[String, ScalarType[_]] =
     BuiltinSangriaScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
+      .toMap  // required for 2.12
 
   val IfArg: Argument[Boolean] = Argument("if", BooleanType, "Included when true.")
 
