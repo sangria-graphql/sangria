@@ -955,8 +955,7 @@ case class InputObjectType[T](
 
   //noinspection RedundantCollectionConversion
   lazy val fieldsByName: Map[String, InputField[_]] =
-    fields.groupBy(_.name).map { case (k, v) => (k, v.head) }
-      .toMap  // required for 2.12
+    fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap // required for 2.12
 
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)

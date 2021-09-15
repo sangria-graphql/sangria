@@ -197,8 +197,7 @@ package object schema {
     BuiltinGraphQLScalars ++ BuiltinSangriaScalars
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
-      .toMap // required for 2.12
+    BuiltinScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap // required for 2.12
 
   val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
     BuiltinGraphQLScalars
