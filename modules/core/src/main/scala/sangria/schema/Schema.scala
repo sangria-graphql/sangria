@@ -170,7 +170,7 @@ sealed trait ObjectLikeType[Ctx, Val]
   def interfaces: List[InterfaceType[Ctx, _]]
   def fieldsFn: () => List[Field[Ctx, Val]]
 
-  lazy val ownFields: Seq[Field[Ctx, Val]] = fieldsFn().toVector
+  lazy val ownFields: Vector[Field[Ctx, Val]] = fieldsFn().toVector
 
   private def removeDuplicates[T, E](list: Vector[T], valueFn: T => E) =
     list
@@ -186,7 +186,7 @@ sealed trait ObjectLikeType[Ctx, Val]
       (i: InterfaceType[Ctx, _]) => i.name)
 
   lazy val fields: Vector[Field[Ctx, _]] =
-    ownFields ++ interfaces.flatMap(i => i.fields.asInstanceOf[Vector[Field[Ctx, _]]])
+    ownFields ++ interfaces.flatMap(i => i.fields)
 
   lazy val uniqueFields: Vector[Field[Ctx, _]] =
     removeDuplicates(fields, (e: Field[Ctx, _]) => e.name)
@@ -948,7 +948,7 @@ case class InputObjectType[T](
     with UnmodifiedType
     with Named
     with HasAstInfo {
-  lazy val fields: Seq[InputField[_]] = fieldsFn()
+  lazy val fields: List[InputField[_]] = fieldsFn()
   lazy val fieldsByName: Map[String, InputField[_]] =
     fields.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
