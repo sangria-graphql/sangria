@@ -153,7 +153,8 @@ case class ScalarAlias[T, ST](
     with Named {
   def name: String = aliasFor.name
   def description: Option[String] = aliasFor.description
-  def rename(newName: String): this.type = copy(aliasFor = aliasFor.rename(newName)).asInstanceOf[this.type]
+  def rename(newName: String): this.type =
+    copy(aliasFor = aliasFor.rename(newName)).asInstanceOf[this.type]
 
   override def astDirectives: Vector[ast.Directive] = aliasFor.astDirectives
   override def astNodes: Vector[AstNode] = aliasFor.astNodes
@@ -218,7 +219,8 @@ case class ObjectType[Ctx, Val: ClassTag](
 ) extends ObjectLikeType[Ctx, Val] {
   lazy val valClass: Class[_] = implicitly[ClassTag[Val]].runtimeClass
 
-  def withInstanceCheck(fn: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean): ObjectType[Ctx, Val] =
+  def withInstanceCheck(
+      fn: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean): ObjectType[Ctx, Val] =
     copy(instanceCheck = fn)
 
   def isInstanceOf(value: Any): Boolean = instanceCheck(value, valClass, this)
@@ -636,7 +638,8 @@ object ValidOutType {
 
   implicit def validSubclass[Res, Out](implicit ev: Res <:< Out): ValidOutType[Res, Out] =
     valid.asInstanceOf[ValidOutType[Res, Out]]
-  implicit def validNothing[Out]: ValidOutType[Nothing, Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
+  implicit def validNothing[Out]: ValidOutType[Nothing, Out] =
+    valid.asInstanceOf[ValidOutType[Nothing, Out]]
   implicit def validOption[Res, Out](implicit ev: Res <:< Out): ValidOutType[Res, Option[Out]] =
     valid.asInstanceOf[ValidOutType[Res, Option[Out]]]
 }
@@ -1399,7 +1402,8 @@ case class Schema[Ctx, Val](
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]): Boolean =
     possibleTypes.get(baseTypeName).exists(_.exists(_.name == tpe.name))
 
-  def analyzer(query: Document): SchemaBasedDocumentAnalyzer = SchemaBasedDocumentAnalyzer(this, query)
+  def analyzer(query: Document): SchemaBasedDocumentAnalyzer =
+    SchemaBasedDocumentAnalyzer(this, query)
 
   SchemaValidationRule.validateWithException(this, validationRules)
 }
@@ -1460,7 +1464,9 @@ object Schema {
   def buildStubFromAst(document: ast.Document): Schema[Any, Any] =
     AstSchemaMaterializer.buildSchema(Document.emptyStub + document)
 
-  def buildStubFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
+  def buildStubFromAst[Ctx](
+      document: ast.Document,
+      builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
 
   def buildDefinitions(document: ast.Document): Vector[Named] =

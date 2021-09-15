@@ -5,7 +5,8 @@ import sangria.validation._
 
 /** Types that describe a GraphQL schema.
   *
-  * In order to serve GraphQL, one needs to define a [[Schema GraphQL schema]] built upon these types.
+  * In order to serve GraphQL, one needs to define a [[Schema GraphQL schema]] built upon these
+  * types.
   */
 package object schema {
   def valueOutput[T](value: T, capabilities: Set[MarshallerCapability]): T = value
@@ -197,15 +198,19 @@ package object schema {
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
     BuiltinScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
-      .toMap  // required for 2.12
+      .toMap // required for 2.12
 
   val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinGraphQLScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
-      .toMap  // required for 2.12
+    BuiltinGraphQLScalars
+      .groupBy(_.name)
+      .map { case (k, v) => (k, v.head) }
+      .toMap // required for 2.12
 
   val BuiltinSangriaScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinSangriaScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
-      .toMap  // required for 2.12
+    BuiltinSangriaScalars
+      .groupBy(_.name)
+      .map { case (k, v) => (k, v.head) }
+      .toMap // required for 2.12
 
   val IfArg: Argument[Boolean] = Argument("if", BooleanType, "Included when true.")
 
@@ -258,7 +263,8 @@ package object schema {
     shouldInclude = ctx => !ctx.arg(IfArg)
   )
 
-  val BuiltinDirectives: List[Directive] = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
+  val BuiltinDirectives: List[Directive] =
+    IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
 
   val BuiltinDirectivesByName: Map[String, Directive] =
     BuiltinDirectives.groupBy(_.name).map { case (k, v) => (k, v.head) }
