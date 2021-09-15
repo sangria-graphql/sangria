@@ -949,6 +949,8 @@ case class InputObjectType[T](
     with Named
     with HasAstInfo {
   lazy val fields: List[InputField[_]] = fieldsFn()
+
+  //noinspection RedundantCollectionConversion
   lazy val fieldsByName: Map[String, InputField[_]] =
     fields.groupBy(_.name).map { case (k, v) => (k, v.head) }
       .toMap  // required for 2.12
@@ -1202,11 +1204,11 @@ case class Schema[Ctx, Val](
 
     def typeConflict(name: String, t1: Type, t2: Type, parentInfo: String) =
       (t1, t2) match {
-        case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) =>
+        case (_: ObjectType[_, _], _: ObjectType[_, _]) =>
           throw SchemaValidationException(
             Vector(ConflictingObjectTypeCaseClassViolation(name, parentInfo)))
 
-        case (ot1: InputObjectType[_], ot2: InputObjectType[_]) =>
+        case (_: InputObjectType[_], _: InputObjectType[_]) =>
           throw SchemaValidationException(
             Vector(ConflictingInputObjectTypeCaseClassViolation(name, parentInfo)))
 
@@ -1461,9 +1463,9 @@ object Schema {
   def buildStubFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
 
-  def buildDefinitions(document: ast.Document): Seq[Named] =
+  def buildDefinitions(document: ast.Document): Vector[Named] =
     AstSchemaMaterializer.definitions(document)
 
-  def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Seq[Named] =
+  def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Vector[Named] =
     AstSchemaMaterializer.definitions[Ctx](document, builder)
 }
