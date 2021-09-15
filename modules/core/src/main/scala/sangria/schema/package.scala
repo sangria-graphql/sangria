@@ -3,10 +3,14 @@ package sangria
 import sangria.marshalling.MarshallerCapability
 import sangria.validation._
 
+/** Types that describe a GraphQL schema.
+  *
+  * In order to serve GraphQL, one needs to define a [[Schema GraphQL schema]] built upon these types.
+  */
 package object schema {
   def valueOutput[T](value: T, capabilities: Set[MarshallerCapability]): T = value
 
-  implicit val IntType = ScalarType[Int](
+  implicit val IntType: ScalarType[Int] = ScalarType[Int](
     "Int",
     description = Some(
       "The `Int` scalar type represents non-fractional signed whole numeric values. " +
@@ -29,7 +33,7 @@ package object schema {
     }
   )
 
-  implicit val LongType = ScalarType[Long](
+  implicit val LongType: ScalarType[Long] = ScalarType[Long](
     "Long",
     description = Some(
       "The `Long` scalar type represents non-fractional signed whole numeric values. " +
@@ -52,7 +56,7 @@ package object schema {
     }
   )
 
-  implicit val BigIntType = ScalarType[BigInt](
+  implicit val BigIntType: ScalarType[BigInt] = ScalarType[BigInt](
     "BigInt",
     description = Some(
       "The `BigInt` scalar type represents non-fractional signed whole numeric values. " +
@@ -73,7 +77,7 @@ package object schema {
     }
   )
 
-  implicit val FloatType = ScalarType[Double](
+  implicit val FloatType: ScalarType[Double] = ScalarType[Double](
     "Float",
     description = Some(
       "The `Float` scalar type represents signed double-precision fractional " +
@@ -105,7 +109,7 @@ package object schema {
     }
   )
 
-  implicit val BigDecimalType = ScalarType[BigDecimal](
+  implicit val BigDecimalType: ScalarType[BigDecimal] = ScalarType[BigDecimal](
     "BigDecimal",
     description = Some(
       "The `BigDecimal` scalar type represents signed fractional values with arbitrary precision."),
@@ -127,7 +131,7 @@ package object schema {
     }
   )
 
-  implicit val BooleanType = ScalarType[Boolean](
+  implicit val BooleanType: ScalarType[Boolean] = ScalarType[Boolean](
     "Boolean",
     description = Some("The `Boolean` scalar type represents `true` or `false`."),
     coerceOutput = valueOutput,
@@ -141,7 +145,7 @@ package object schema {
     }
   )
 
-  implicit val StringType = ScalarType[String](
+  implicit val StringType: ScalarType[String] = ScalarType[String](
     "String",
     description = Some(
       "The `String` scalar type represents textual data, represented as UTF-8 " +
@@ -158,7 +162,7 @@ package object schema {
     }
   )
 
-  val IDType = ScalarType[String](
+  val IDType: ScalarType[String] = ScalarType[String](
     "ID",
     description = Some(
       "The `ID` scalar type represents a unique identifier, often used to " +
@@ -192,17 +196,17 @@ package object schema {
     BuiltinGraphQLScalars ++ BuiltinSangriaScalars
 
   val BuiltinScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
+    BuiltinScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
   val BuiltinGraphQLScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinGraphQLScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
+    BuiltinGraphQLScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
   val BuiltinSangriaScalarsByName: Map[String, ScalarType[_]] =
-    BuiltinSangriaScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
+    BuiltinSangriaScalars.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
-  val IfArg = Argument("if", BooleanType, "Included when true.")
+  val IfArg: Argument[Boolean] = Argument("if", BooleanType, "Included when true.")
 
-  val IncludeDirective = Directive(
+  val IncludeDirective: Directive = Directive(
     "include",
     description = Some(
       "Directs the executor to include this field or fragment only when the `if` argument is true."),
@@ -217,7 +221,7 @@ package object schema {
     shouldInclude = ctx => ctx.args.argOpt(IfArg).getOrElse(true)
   )
 
-  val SkipDirective = Directive(
+  val SkipDirective: Directive = Directive(
     "skip",
     description =
       Some("Directs the executor to skip this field or fragment when the `if` argument is true."),
@@ -234,7 +238,7 @@ package object schema {
 
   val DefaultDeprecationReason = "No longer supported"
 
-  val ReasonArg = Argument(
+  val ReasonArg: Argument[String] = Argument(
     "reason",
     OptionInputType(StringType),
     description = "Explains why this element was deprecated, usually also including a " +
@@ -243,7 +247,7 @@ package object schema {
     defaultValue = DefaultDeprecationReason
   )
 
-  val DeprecatedDirective = Directive(
+  val DeprecatedDirective: Directive = Directive(
     "deprecated",
     description = Some("Marks an element of a GraphQL schema as no longer supported."),
     arguments = ReasonArg :: Nil,
@@ -251,10 +255,10 @@ package object schema {
     shouldInclude = ctx => !ctx.arg(IfArg)
   )
 
-  val BuiltinDirectives = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
+  val BuiltinDirectives: List[Directive] = IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
 
   val BuiltinDirectivesByName: Map[String, Directive] =
-    BuiltinDirectives.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
+    BuiltinDirectives.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
   def fields[Ctx, Val](fields: Field[Ctx, Val]*): List[Field[Ctx, Val]] = fields.toList
 

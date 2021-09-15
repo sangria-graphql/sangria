@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.ast.Document
+import sangria.ast.{AstNode, Document}
 
 import language.implicitConversions
 import sangria.execution.{FieldTag, SubscriptionField}
@@ -13,12 +13,15 @@ import sangria.renderer.{SchemaFilter, SchemaRenderer}
 import sangria.schema.InputObjectType.DefaultInput
 import sangria.streaming.SubscriptionStreamLike
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.reflect.ClassTag
 import sangria.util.tag._
 
+import scala.util.matching.Regex
+
 sealed trait Type {
   def namedType: Type with Named = {
+    @tailrec
     def getNamedType(tpe: Type): Type with Named =
       tpe match {
         case OptionInputType(ofType) => getNamedType(ofType)
@@ -34,19 +37,19 @@ sealed trait Type {
 }
 
 sealed trait InputType[+T] extends Type {
-  lazy val isOptional = this match {
+  lazy val isOptional: Boolean = this match {
     case _: OptionInputType[_] => true
     case _ => false
   }
 
-  lazy val isList = this match {
+  lazy val isList: Boolean = this match {
     case _: ListInputType[_] => true
     case _ => false
   }
 
-  lazy val isNamed = !(isOptional && isList)
+  lazy val isNamed: Boolean = !(isOptional && isList)
 
-  lazy val nonOptionalType = this match {
+  lazy val nonOptionalType: InputType[_] = this match {
     case tpe: OptionInputType[_] => tpe.ofType
     case tpe => tpe
   }
@@ -94,7 +97,7 @@ sealed trait HasAstInfo {
 }
 
 object Named {
-  val NameRegexp = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
+  val NameRegexp: Regex = """^[_a-zA-Z][_a-zA-Z0-9]*$""".r
 
   def isValidName(name: String): Boolean = NameRegexp.pattern.matcher(name).matches()
 }
@@ -134,7 +137,7 @@ case class ScalarType[T](
     with NullableType
     with UnmodifiedType
     with Named {
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -148,12 +151,12 @@ case class ScalarAlias[T, ST](
     with NullableType
     with UnmodifiedType
     with Named {
-  def name = aliasFor.name
-  def description = aliasFor.description
-  def rename(newName: String) = copy(aliasFor = aliasFor.rename(newName)).asInstanceOf[this.type]
+  def name: String = aliasFor.name
+  def description: Option[String] = aliasFor.description
+  def rename(newName: String): this.type = copy(aliasFor = aliasFor.rename(newName)).asInstanceOf[this.type]
 
-  def astDirectives = aliasFor.astDirectives
-  def astNodes = aliasFor.astNodes
+  override def astDirectives: Vector[ast.Directive] = aliasFor.astDirectives
+  override def astNodes: Vector[AstNode] = aliasFor.astNodes
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -167,7 +170,7 @@ sealed trait ObjectLikeType[Ctx, Val]
   def interfaces: List[InterfaceType[Ctx, _]]
   def fieldsFn: () => List[Field[Ctx, Val]]
 
-  lazy val ownFields = fieldsFn().toVector
+  lazy val ownFields: Seq[Field[Ctx, Val]] = fieldsFn().toVector
 
   private def removeDuplicates[T, E](list: Vector[T], valueFn: T => E) =
     list
@@ -213,14 +216,14 @@ case class ObjectType[Ctx, Val: ClassTag](
     astDirectives: Vector[ast.Directive],
     astNodes: Vector[ast.AstNode]
 ) extends ObjectLikeType[Ctx, Val] {
-  lazy val valClass = implicitly[ClassTag[Val]].runtimeClass
+  lazy val valClass: Class[_] = implicitly[ClassTag[Val]].runtimeClass
 
-  def withInstanceCheck(fn: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean) =
+  def withInstanceCheck(fn: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean): ObjectType[Ctx, Val] =
     copy(instanceCheck = fn)
 
-  def isInstanceOf(value: Any) = instanceCheck(value, valClass, this)
+  def isInstanceOf(value: Any): Boolean = instanceCheck(value, valClass, this)
 
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
 }
 
 object ObjectType {
@@ -351,11 +354,11 @@ case class InterfaceType[Ctx, Val](
     astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends ObjectLikeType[Ctx, Val]
     with AbstractType {
-  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) =
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*): InterfaceType[Ctx, Val] =
     copy(manualPossibleTypes = () => possible.toList.map(_.objectType))
-  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) =
+  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]): InterfaceType[Ctx, Val] =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
 }
 
 object InterfaceType {
@@ -485,7 +488,7 @@ trait PossibleType[AbstrType, ConcreteType]
 object PossibleType {
   private object SingletonPossibleType extends PossibleType[AnyRef, AnyRef]
 
-  def create[AbstrType, ConcreteType] =
+  def create[AbstrType, ConcreteType]: PossibleType[AbstrType, ConcreteType] =
     SingletonPossibleType.asInstanceOf[PossibleType[AbstrType, ConcreteType]]
 
   implicit def InheritanceBasedPossibleType[Abstract, Concrete](implicit
@@ -505,7 +508,7 @@ case class UnionType[Ctx](
     with NullableType
     with UnmodifiedType
     with HasAstInfo {
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 
   /** Creates a type-safe version of union type which might be useful in cases where the value is
@@ -517,7 +520,7 @@ case class UnionType[Ctx](
       override def contraMap(value: T): Any = func(value)
     }.asInstanceOf[OutputType[T]]
 
-  lazy val types = typesFn()
+  lazy val types: List[ObjectType[Ctx, _]] = typesFn()
 }
 
 object UnionType {
@@ -562,11 +565,11 @@ case class Field[Ctx, Val](
     with HasArguments
     with HasDeprecation
     with HasAstInfo {
-  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*) =
+  def withPossibleTypes(possible: PossibleObject[Ctx, Val]*): Field[Ctx, Val] =
     copy(manualPossibleTypes = () => possible.toList.map(_.objectType))
-  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) =
+  def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]): Field[Ctx, Val] =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.FieldDefinition = SchemaRenderer.renderField(this)
 }
 
@@ -631,10 +634,10 @@ trait ValidOutType[-Res, +Out]
 object ValidOutType {
   private val valid = new ValidOutType[Any, Any] {}
 
-  implicit def validSubclass[Res, Out](implicit ev: Res <:< Out) =
+  implicit def validSubclass[Res, Out](implicit ev: Res <:< Out): ValidOutType[Res, Out] =
     valid.asInstanceOf[ValidOutType[Res, Out]]
-  implicit def validNothing[Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
-  implicit def validOption[Res, Out](implicit ev: Res <:< Out) =
+  implicit def validNothing[Out]: ValidOutType[Nothing, Out] = valid.asInstanceOf[ValidOutType[Nothing, Out]]
+  implicit def validOption[Res, Out](implicit ev: Res <:< Out): ValidOutType[Res, Option[Out]] =
     valid.asInstanceOf[ValidOutType[Res, Option[Out]]]
 }
 
@@ -656,8 +659,8 @@ case class Argument[T](
     extends InputValue[T]
     with Named
     with HasAstInfo {
-  def inputValueType = argumentType
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  override def inputValueType: InputType[_] = argumentType
+  override def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderArg(this)
 }
 
@@ -890,9 +893,9 @@ case class EnumType[T](
     with Named
     with HasAstInfo {
   lazy val byName: Map[String, EnumValue[T]] =
-    values.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
+    values.groupBy(_.name).map { case (k, v) => (k, v.head) }
   lazy val byValue: Map[T, EnumValue[T]] =
-    values.groupBy(_.value).map { case (k, v) => (k, v.head) }.toMap
+    values.groupBy(_.value).map { case (k, v) => (k, v.head) }
 
   def coerceUserInput(value: Any): Either[Violation, (T, Boolean)] = value match {
     case valueName: String =>
@@ -916,7 +919,7 @@ case class EnumType[T](
 
   def coerceOutput(value: T): String = byValue(value).name
 
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -930,7 +933,7 @@ case class EnumValue[+T](
     extends Named
     with HasDeprecation
     with HasAstInfo {
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.EnumValueDefinition = SchemaRenderer.renderEnumValue(this)
 }
 
@@ -945,11 +948,11 @@ case class InputObjectType[T](
     with UnmodifiedType
     with Named
     with HasAstInfo {
-  lazy val fields = fieldsFn()
+  lazy val fields: Seq[InputField[_]] = fieldsFn()
   lazy val fieldsByName: Map[String, InputField[_]] =
-    fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
+    fields.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -973,7 +976,7 @@ object InputObjectType {
   def createFromMacro[T](
       name: String,
       description: Option[String] = None,
-      fieldsFn: () => List[InputField[_]]) =
+      fieldsFn: () => List[InputField[_]]): InputObjectType[T] =
     InputObjectType[T](name, description, fieldsFn, Vector.empty, Vector.empty)
 }
 
@@ -1075,25 +1078,25 @@ sealed trait HasArguments {
 }
 
 object DirectiveLocation extends Enumeration {
-  val ArgumentDefinition = Value
-  val Enum = Value
-  val EnumValue = Value
-  val Field = Value
-  val FieldDefinition = Value
-  val FragmentDefinition = Value
-  val FragmentSpread = Value
-  val InlineFragment = Value
-  val InputFieldDefinition = Value
-  val InputObject = Value
-  val Interface = Value
-  val Mutation = Value
-  val Object = Value
-  val Query = Value
-  val Scalar = Value
-  val Schema = Value
-  val Subscription = Value
-  val Union = Value
-  val VariableDefinition = Value
+  val ArgumentDefinition: Value = Value
+  val Enum: Value = Value
+  val EnumValue: Value = Value
+  val Field: Value = Value
+  val FieldDefinition: Value = Value
+  val FragmentDefinition: Value = Value
+  val FragmentSpread: Value = Value
+  val InlineFragment: Value = Value
+  val InputFieldDefinition: Value = Value
+  val InputObject: Value = Value
+  val Interface: Value = Value
+  val Mutation: Value = Value
+  val Object: Value = Value
+  val Query: Value = Value
+  val Scalar: Value = Value
+  val Schema: Value = Value
+  val Subscription: Value = Value
+  val Union: Value = Value
+  val VariableDefinition: Value = Value
 
   def fromString(location: String): DirectiveLocation.Value = location match {
     case "QUERY" => Query
@@ -1150,7 +1153,7 @@ case class Directive(
     shouldInclude: DirectiveContext => Boolean = _ => true)
     extends HasArguments
     with Named {
-  def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+  def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.DirectiveDefinition = SchemaRenderer.renderDirective(this)
 }
 
@@ -1374,7 +1377,6 @@ case class Schema[Ctx, Val](
       .flatMap(objectLike => objectLike.interfaces.map(_.name -> objectLike))
       .groupBy(_._1)
       .map { case (k, v) => (k, v.map(_._2)) }
-      .toMap
 
   lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = {
     def findConcreteTypes(tpe: ObjectLikeType[_, _]): Vector[ObjectType[_, _]] = tpe match {
@@ -1391,28 +1393,28 @@ case class Schema[Ctx, Val](
   lazy val possibleTypes: Map[String, Vector[ObjectType[_, _]]] =
     implementations ++ unionTypes.values.map(ut => ut.name -> ut.types.toVector)
 
-  def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
+  def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]): Boolean =
     possibleTypes.get(baseTypeName).exists(_.exists(_.name == tpe.name))
 
-  def analyzer(query: Document) = SchemaBasedDocumentAnalyzer(this, query)
+  def analyzer(query: Document): SchemaBasedDocumentAnalyzer = SchemaBasedDocumentAnalyzer(this, query)
 
   SchemaValidationRule.validateWithException(this, validationRules)
 }
 
 object Schema {
-  def isBuiltInType(typeName: String) =
+  def isBuiltInType(typeName: String): Boolean =
     BuiltinScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
 
-  def isBuiltInGraphQLType(typeName: String) =
+  def isBuiltInGraphQLType(typeName: String): Boolean =
     BuiltinGraphQLScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
 
-  def isBuiltInSangriaType(typeName: String) =
+  def isBuiltInSangriaType(typeName: String): Boolean =
     BuiltinSangriaScalarsByName.contains(typeName) || IntrospectionTypesByName.contains(typeName)
 
-  def isBuiltInDirective(directiveName: String) =
+  def isBuiltInDirective(directiveName: String): Boolean =
     BuiltinDirectivesByName.contains(directiveName)
 
-  def isIntrospectionType(typeName: String) =
+  def isIntrospectionType(typeName: String): Boolean =
     IntrospectionTypesByName.contains(typeName)
 
   def getBuiltInType(typeName: String): Option[Type with Named] =
@@ -1428,7 +1430,7 @@ object Schema {
     * @param introspectionResult
     *   the result of introspection query
     */
-  def buildFromIntrospection[T: InputUnmarshaller](introspectionResult: T) =
+  def buildFromIntrospection[T: InputUnmarshaller](introspectionResult: T): Schema[Any, Any] =
     IntrospectionSchemaMaterializer.buildSchema[T](introspectionResult)
 
   /** Build a `Schema` for use by client tools.
@@ -1443,24 +1445,24 @@ object Schema {
     */
   def buildFromIntrospection[Ctx, T: InputUnmarshaller](
       introspectionResult: T,
-      builder: IntrospectionSchemaBuilder[Ctx]) =
+      builder: IntrospectionSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, builder)
 
-  def buildFromAst(document: ast.Document) =
+  def buildFromAst(document: ast.Document): Schema[Any, Any] =
     AstSchemaMaterializer.buildSchema(document)
 
-  def buildFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
+  def buildFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     AstSchemaMaterializer.buildSchema[Ctx](document, builder)
 
-  def buildStubFromAst(document: ast.Document) =
+  def buildStubFromAst(document: ast.Document): Schema[Any, Any] =
     AstSchemaMaterializer.buildSchema(Document.emptyStub + document)
 
-  def buildStubFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
+  def buildStubFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
 
-  def buildDefinitions(document: ast.Document) =
+  def buildDefinitions(document: ast.Document): Seq[Named] =
     AstSchemaMaterializer.definitions(document)
 
-  def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
+  def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Seq[Named] =
     AstSchemaMaterializer.definitions[Ctx](document, builder)
 }
