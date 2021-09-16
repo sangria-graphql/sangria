@@ -3,7 +3,7 @@ import sbt.Keys.{crossScalaVersions, developers, organizationHomepage, scalacOpt
 import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, IncompatibleResultTypeProblem, Problem, ProblemFilters}
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.6")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
