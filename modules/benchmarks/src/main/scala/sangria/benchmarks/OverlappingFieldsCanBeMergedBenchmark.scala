@@ -171,7 +171,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
 
     b.append("query testQuery {")
     for (i <- 1 to size)
-      b.append(s"...mergeIdenticalFields${i}\n")
+      b.append(s"...mergeIdenticalFields$i\n")
     b.append("}")
 
     QueryParser.parse(b.result()).get
