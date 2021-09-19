@@ -1162,16 +1162,32 @@ case class Directive(
   def toAst: ast.DirectiveDefinition = SchemaRenderer.renderDirective(this)
 }
 
+/** GraphQL schema description.
+  *
+  * Describes the schema that is presented by a Sangria server. An instance of this type needs to be
+  * presented to Sangria's execution method, so that it knows what to execute in response to a
+  * GraphQL request that conforms to this schema.
+  *
+  * The [[ObjectType types]] contained in the schema have associated [[Action actions]] that
+  * Sangria's execution uses to convert a parsed GraphQL request to its data store operations.
+  *
+  * @param query
+  * @tparam Ctx
+  *   Type of a context object that will be passed to each Sangria execution of a GraphQL query
+  *   against this schema.
+  * @see
+  *   [[ast.SchemaDefinition]]
+  */
 case class Schema[Ctx, Val](
     query: ObjectType[Ctx, Val],
     mutation: Option[ObjectType[Ctx, Val]] = None,
     subscription: Option[ObjectType[Ctx, Val]] = None,
     additionalTypes: List[Type with Named] = Nil,
-    description: Option[String] = None,
+    override val description: Option[String] = None,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default,
-    astDirectives: Vector[ast.Directive] = Vector.empty,
-    astNodes: Vector[ast.AstNode] = Vector.empty)
+    override val astDirectives: Vector[ast.Directive] = Vector.empty,
+    override val astNodes: Vector[ast.AstNode] = Vector.empty)
     extends HasAstInfo
     with HasDescription {
   def extend(

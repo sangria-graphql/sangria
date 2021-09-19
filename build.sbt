@@ -52,6 +52,20 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.ObjectValue.fieldsByName"),
   ProblemFilters.exclude[IncompatibleResultTypeProblem](
     "sangria.marshalling.QueryAstInputUnmarshaller.getMapKeys"),
+
+  // changed `Some` return to `Option`:
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildObjectType"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildInputObjectType"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildInterfaceType"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildUnionType"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildScalarType"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildEnumType"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildEnumValue"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildField"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildInputField"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildArgument"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.buildDirective"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ResolverBasedAstSchemaBuilder.buildScalarType"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef$"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict"),

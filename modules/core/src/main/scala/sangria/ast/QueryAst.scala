@@ -498,6 +498,8 @@ case class Comment(text: String, location: Option[AstLocation] = None) extends A
 
 // Schema Definition
 
+/** @group typesystem
+  */
 case class ScalarTypeDefinition(
     name: String,
     directives: Vector[Directive] = Vector.empty,
@@ -509,6 +511,8 @@ case class ScalarTypeDefinition(
   def rename(newName: String): ScalarTypeDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class FieldDefinition(
     name: String,
     fieldType: Type,
@@ -521,6 +525,8 @@ case class FieldDefinition(
     with WithDirectives
     with WithDescription
 
+/** @group typesystem
+  */
 case class InputValueDefinition(
     name: String,
     valueType: Type,
@@ -533,6 +539,8 @@ case class InputValueDefinition(
     with WithDirectives
     with WithDescription
 
+/** @group typesystem
+  */
 case class ObjectTypeDefinition(
     name: String,
     interfaces: Vector[NamedType],
@@ -548,6 +556,8 @@ case class ObjectTypeDefinition(
   def rename(newName: String): ObjectTypeDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class InterfaceTypeDefinition(
     name: String,
     fields: Vector[FieldDefinition],
@@ -562,6 +572,8 @@ case class InterfaceTypeDefinition(
   def rename(newName: String): InterfaceTypeDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class UnionTypeDefinition(
     name: String,
     types: Vector[NamedType],
@@ -574,6 +586,8 @@ case class UnionTypeDefinition(
   def rename(newName: String): UnionTypeDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class EnumTypeDefinition(
     name: String,
     values: Vector[EnumValueDefinition],
@@ -588,6 +602,8 @@ case class EnumTypeDefinition(
   def rename(newName: String): EnumTypeDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class EnumValueDefinition(
     name: String,
     directives: Vector[Directive] = Vector.empty,
@@ -598,6 +614,8 @@ case class EnumValueDefinition(
     with WithDirectives
     with WithDescription
 
+/** @group typesystem
+  */
 case class InputObjectTypeDefinition(
     name: String,
     fields: Vector[InputValueDefinition],
@@ -612,6 +630,8 @@ case class InputObjectTypeDefinition(
   def rename(newName: String): InputObjectTypeDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class ObjectTypeExtensionDefinition(
     name: String,
     interfaces: Vector[NamedType],
@@ -625,6 +645,8 @@ case class ObjectTypeExtensionDefinition(
   def rename(newName: String): ObjectTypeExtensionDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class InterfaceTypeExtensionDefinition(
     name: String,
     fields: Vector[FieldDefinition],
@@ -637,6 +659,8 @@ case class InterfaceTypeExtensionDefinition(
   def rename(newName: String): InterfaceTypeExtensionDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class InputObjectTypeExtensionDefinition(
     name: String,
     fields: Vector[InputValueDefinition],
@@ -649,6 +673,8 @@ case class InputObjectTypeExtensionDefinition(
   def rename(newName: String): InputObjectTypeExtensionDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class EnumTypeExtensionDefinition(
     name: String,
     values: Vector[EnumValueDefinition],
@@ -661,6 +687,8 @@ case class EnumTypeExtensionDefinition(
   def rename(newName: String): EnumTypeExtensionDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class UnionTypeExtensionDefinition(
     name: String,
     types: Vector[NamedType],
@@ -671,6 +699,8 @@ case class UnionTypeExtensionDefinition(
   def rename(newName: String): UnionTypeExtensionDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class ScalarTypeExtensionDefinition(
     name: String,
     directives: Vector[Directive] = Vector.empty,
@@ -680,6 +710,8 @@ case class ScalarTypeExtensionDefinition(
   def rename(newName: String): ScalarTypeExtensionDefinition = copy(name = newName)
 }
 
+/** @group typesystem
+  */
 case class SchemaExtensionDefinition(
     operationTypes: Vector[OperationTypeDefinition],
     directives: Vector[Directive] = Vector.empty,
@@ -690,6 +722,8 @@ case class SchemaExtensionDefinition(
     with WithDirectives
     with WithTrailingComments
 
+/** @group typesystem
+  */
 case class DirectiveDefinition(
     name: String,
     arguments: Vector[InputValueDefinition],
@@ -700,29 +734,42 @@ case class DirectiveDefinition(
     extends TypeSystemDefinition
     with WithDescription
 
+/** @group typesystem
+  */
 case class DirectiveLocation(
     name: String,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends SchemaAstNode
 
+/** A definition of a GraphQL schema.
+  *
+  * @param operationTypes
+  *   The [[https://spec.graphql.org/June2018/#RootOperationTypeDefinition root operations]]
+  *   available in this schema.
+  * @see
+  *   [[https://spec.graphql.org/June2018/#sec-Schema]]
+  * @group typesystem
+  */
 case class SchemaDefinition(
     operationTypes: Vector[OperationTypeDefinition],
-    directives: Vector[Directive] = Vector.empty,
-    description: Option[StringValue] = None,
-    comments: Vector[Comment] = Vector.empty,
-    trailingComments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None)
+    override val directives: Vector[Directive] = Vector.empty,
+    override val description: Option[StringValue] = None,
+    override val comments: Vector[Comment] = Vector.empty,
+    override val trailingComments: Vector[Comment] = Vector.empty,
+    override val location: Option[AstLocation] = None)
     extends TypeSystemDefinition
     with WithDescription
     with WithTrailingComments
     with WithDirectives
 
+/** @group typesystem
+  */
 case class OperationTypeDefinition(
     operation: OperationType,
     tpe: NamedType,
-    comments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None)
+    override val comments: Vector[Comment] = Vector.empty,
+    override val location: Option[AstLocation] = None)
     extends SchemaAstNode
 
 /** A node in the AST of a parsed GraphQL request document. */
@@ -749,20 +796,34 @@ sealed trait AstNode {
     AstVisitor.visitAstWithState(schema, this, state)(visitorFn)
 }
 
+/** @group typesystem
+  */
 sealed trait SchemaAstNode extends AstNode with WithComments
+
+/** @group typesystem
+  */
 sealed trait TypeSystemDefinition extends SchemaAstNode with Definition
+
+/** @group typesystem
+  */
 sealed trait TypeSystemExtensionDefinition extends SchemaAstNode with Definition
 
+/** @group typesystem
+  */
 sealed trait TypeDefinition extends TypeSystemDefinition with WithDirectives with WithDescription {
   def name: String
   def rename(newName: String): TypeDefinition
 }
 
+/** @group typesystem
+  */
 sealed trait TypeExtensionDefinition extends TypeSystemExtensionDefinition with WithDirectives {
   def name: String
   def rename(newName: String): TypeExtensionDefinition
 }
 
+/** @group typesystem
+  */
 sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
   def fields: Vector[FieldDefinition]
 }
