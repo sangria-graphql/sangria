@@ -78,6 +78,9 @@ sealed trait NullableType
 sealed trait UnmodifiedType
 
 sealed trait HasDescription {
+
+  /** A description of this schema element that can be presented to clients of the GraphQL service.
+    */
   def description: Option[String]
 }
 
@@ -120,6 +123,9 @@ object Named {
   * It may also return other values as well as long as underlying marshalling library supports them.
   *
   * You can provide additional meta-information to marshalling API with `scalarInfo`.
+  *
+  * @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
   */
 case class ScalarType[T](
     name: String,
@@ -141,6 +147,9 @@ case class ScalarType[T](
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class ScalarAlias[T, ST](
     aliasFor: ScalarType[ST],
     toScalar: T => ST,
@@ -208,6 +217,21 @@ sealed trait ObjectLikeType[Ctx, Val]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
+/** GraphQL schema object description.
+  *
+  * Describes a type of object in a GraphQL schema that is presented by a Sangria server. Objects of
+  * the type contain [[fieldsFn fields]] and can be viewed as simply a container of fields—internal
+  * nodes in the tree of data that a GraphQL request returns. The data store operations take place
+  * at the level of the [[Field fields]] that are leaf nodes in that tree.
+  *
+  * Constructing the internal nodes of a [[Schema schema]] consists mostly of constructing instances
+  * of this class.
+  *
+  * @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  * @see
+  *   [[sangria.ast.ObjectTypeDefinition]]
+  */
 case class ObjectType[Ctx, Val: ClassTag](
     name: String,
     description: Option[String],
@@ -346,6 +370,9 @@ object ObjectType {
     (value, valClass, tpe) => valClass.isAssignableFrom(value.getClass)
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class InterfaceType[Ctx, Val](
     name: String,
     description: Option[String] = None,
@@ -498,6 +525,9 @@ object PossibleType {
     create[Abstract, Concrete]
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class UnionType[Ctx](
     name: String,
     description: Option[String] = None,
@@ -551,6 +581,12 @@ object UnionType {
     UnionType[Ctx](name, description, () => types, astDirectives, astNodes)
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  * @param resolve
+  *   A function that maps the context of this field definition to an action that retrieves the
+  *   field's data.
+  */
 case class Field[Ctx, Val](
     name: String,
     fieldType: OutputType[_],
@@ -651,6 +687,9 @@ trait InputValue[T] {
   def defaultValue: Option[(_, ToInput[_, _])]
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class Argument[T](
     name: String,
     argumentType: InputType[_],
@@ -882,6 +921,9 @@ trait ArgumentTypeLowestPrio {
   }
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class EnumType[T](
     name: String,
     description: Option[String] = None,
@@ -926,6 +968,9 @@ case class EnumType[T](
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class EnumValue[+T](
     name: String,
     description: Option[String] = None,
@@ -940,6 +985,9 @@ case class EnumValue[+T](
   def toAst: ast.EnumValueDefinition = SchemaRenderer.renderEnumValue(this)
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class InputObjectType[T](
     name: String,
     description: Option[String] = None,
@@ -953,7 +1001,7 @@ case class InputObjectType[T](
     with HasAstInfo {
   lazy val fields: List[InputField[_]] = fieldsFn()
 
-  //noinspection RedundantCollectionConversion
+  // noinspection RedundantCollectionConversion
   lazy val fieldsByName: Map[String, InputField[_]] =
     fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap // required for 2.12
 
@@ -1003,6 +1051,9 @@ trait InputObjectDefaultResultLowPrio {
     }
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class InputField[T](
     name: String,
     fieldType: InputType[T],
@@ -1087,6 +1138,9 @@ object DirectiveLocation extends Enumeration {
   val Enum: Value = Value
   val EnumValue: Value = Value
   val Field: Value = Value
+
+  /** Indicates that a directive can be used on a [[sangria.ast.FieldDefinition field definition]].
+    */
   val FieldDefinition: Value = Value
   val FragmentDefinition: Value = Value
   val FragmentSpread: Value = Value
@@ -1150,6 +1204,9 @@ object DirectiveLocation extends Enumeration {
   }
 }
 
+/** @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
+  */
 case class Directive(
     name: String,
     description: Option[String] = None,
@@ -1172,6 +1229,9 @@ case class Directive(
   * Sangria's execution uses to convert a parsed GraphQL request to its data store operations.
   *
   * @param query
+  *   The query
+  * @param description
+  *   A description of this schema element that can be presented to clients of the GraphQL service.
   * @tparam Ctx
   *   Type of a context object that will be passed to each Sangria execution of a GraphQL query
   *   against this schema.

@@ -204,7 +204,13 @@ sealed trait WithTrailingComments {
   def trailingComments: Vector[Comment]
 }
 
+/** A GraphQL AST node that contains [[Selection selections]].
+  *
+  * Most typically, this is a [[Field field]] that is of a composite type.
+  */
 sealed trait SelectionContainer extends AstNode with WithComments with WithTrailingComments {
+
+  /** The selection set contained within this node, if any. */
   def selections: Vector[Selection]
   def location: Option[AstLocation]
 }
@@ -310,14 +316,24 @@ sealed trait WithArguments extends AstNode {
   def arguments: Vector[Argument]
 }
 
+/** A component of information to be queried and returned.
+  *
+  * Most typically a selection is a [[Field field]].
+  *
+  * @see
+  *   [[https://spec.graphql.org/June2018/#Selection]]
+  */
 sealed trait Selection extends AstNode with WithDirectives with WithComments
 
+/** @see
+  *   [[https://spec.graphql.org/June2018/#sec-Language.Fields]]
+  */
 case class Field(
     alias: Option[String],
     name: String,
     arguments: Vector[Argument],
     directives: Vector[Directive],
-    selections: Vector[Selection],
+    override val selections: Vector[Selection],
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
@@ -511,7 +527,9 @@ case class ScalarTypeDefinition(
   def rename(newName: String): ScalarTypeDefinition = copy(name = newName)
 }
 
-/** @group typesystem
+/** @see
+  *   [[https://spec.graphql.org/June2018/#FieldDefinition]]
+  * @group typesystem
   */
 case class FieldDefinition(
     name: String,
@@ -539,7 +557,9 @@ case class InputValueDefinition(
     with WithDirectives
     with WithDescription
 
-/** @group typesystem
+/** @see
+  *   [[https://spec.graphql.org/June2018/#sec-Objects]]
+  * @group typesystem
   */
 case class ObjectTypeDefinition(
     name: String,

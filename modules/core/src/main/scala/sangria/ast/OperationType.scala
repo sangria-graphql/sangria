@@ -11,6 +11,7 @@ package sangria.ast
 sealed trait OperationType
 
 object OperationType {
+
   /** A read-only fetch. */
   case object Query extends OperationType
 

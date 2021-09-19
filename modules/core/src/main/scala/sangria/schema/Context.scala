@@ -35,7 +35,7 @@ object Action extends LowPrioActions {
   def sequence[Ctx, Val](actions: Seq[LeafAction[Ctx, Val]]): SequenceLeafAction[Ctx, Val] =
     SequenceLeafAction[Ctx, Val](actions)
 
-  def apply[Ctx, Val](a: Action[Ctx, Val]) = a
+  def apply[Ctx, Val](a: Action[Ctx, Val]): Action[Ctx, Val] = a
 
   implicit def deferredAction[Ctx, Val](value: Deferred[Val]): LeafAction[Ctx, Val] = DeferredValue(
     value)
@@ -56,7 +56,7 @@ object LeafAction {
   def sequence[Ctx, Val](actions: Seq[LeafAction[Ctx, Val]]): SequenceLeafAction[Ctx, Val] =
     SequenceLeafAction[Ctx, Val](actions)
 
-  def apply[Ctx, Val](a: LeafAction[Ctx, Val]) = a
+  def apply[Ctx, Val](a: LeafAction[Ctx, Val]): LeafAction[Ctx, Val] = a
 }
 
 case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
@@ -184,7 +184,8 @@ trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
 object Projector {
   def apply[Ctx, Val, Res](fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
-      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
+      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res] =
+        fn(ctx, projected)
       override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException(
         "Default apply should not be called on projector!")
     }
@@ -193,8 +194,9 @@ object Projector {
       levels: Int,
       fn: (Context[Ctx, Val], Vector[ProjectedName]) => Action[Ctx, Res]) =
     new Projector[Ctx, Val, Res] {
-      override val maxLevel = levels
-      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]) = fn(ctx, projected)
+      override val maxLevel: Int = levels
+      def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res] =
+        fn(ctx, projected)
       override def apply(ctx: Context[Ctx, Val]) = throw new IllegalStateException(
         "Default apply should not be called on projector!")
     }
@@ -204,7 +206,7 @@ case class ProjectedName(
     name: String,
     children: Vector[ProjectedName] = Vector.empty,
     args: Args = Args.empty) {
-  lazy val asVector = {
+  lazy val asVector: Vector[Vector[String]] = {
     def loop(name: ProjectedName): Vector[Vector[String]] =
       Vector(name.name) +: (name.children.flatMap(loop).map(name.name +: _))
 
@@ -273,7 +275,12 @@ trait WithArguments {
     args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)(fn)
 }
 
+/** @tparam Ctx
+  *   Type of the context object that was passed to Sangria's execution method.
+  */
 trait WithInputTypeRendering[Ctx] {
+
+  /** The context object that was passed to Sangria's execution method. */
   def ctx: Ctx
   def sourceMapper: Option[SourceMapper]
   def deprecationTracker: DeprecationTracker
@@ -292,12 +299,15 @@ case class DefaultValueParser[T](
     toInput: ToInput[T, _])
 
 object DefaultValueParser {
-  def forType[T](schema: Schema[_, _])(implicit parser: InputParser[T], toInput: ToInput[T, _]) =
+  def forType[T](schema: Schema[_, _])(implicit
+      parser: InputParser[T],
+      toInput: ToInput[T, _]): DefaultValueParser[T] =
     DefaultValueParser[T](schema, parser, toInput)
 }
 
 object DefaultValueRenderer {
-  implicit val marshaller = sangria.marshalling.queryAst.queryAstResultMarshaller
+  implicit val marshaller: QueryAstResultMarshaller =
+    sangria.marshalling.queryAst.queryAstResultMarshaller
 
   def renderInputValueCompact[T, Ctx](
       value: (_, ToInput[_, _]),
@@ -380,6 +390,21 @@ object DefaultValueRenderer {
   }
 }
 
+/** The context of a field during schema resolution.
+  *
+  * When a GraphQL request is executed by a Sangria server, each [[Field field]] in the request is
+  * resolved to determine the data that should be returned. An instance of this class provides the
+  * context for a particular field's resolution.
+  *
+  * @param value
+  *   The object to which the field belongs.
+  * @param ctx
+  *   The context object that was passed to Sangria's execution method.
+  * @tparam Ctx
+  *   Type of the context object that was passed to Sangria's execution method.
+  * @tparam Val
+  *   Type of the object to which the field belongs.
+  */
 case class Context[Ctx, Val](
     value: Val,
     ctx: Ctx,
