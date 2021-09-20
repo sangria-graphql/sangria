@@ -7,10 +7,15 @@ import sbt.Keys.{
   scmInfo,
   startYear
 }
-import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
+import com.typesafe.tools.mima.core.{
+  DirectMissingMethodProblem,
+  IncompatibleResultTypeProblem,
+  Problem,
+  ProblemFilters
+}
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.6")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
@@ -38,7 +43,12 @@ ThisBuild / githubWorkflowPublish := Seq(
 ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[Problem]("sangria.schema.ProjectedName*"),
   ProblemFilters.exclude[Problem]("sangria.schema.Args*"),
-  ProblemFilters.exclude[Problem]("sangria.execution.deferred.FetcherConfig*")
+  ProblemFilters.exclude[Problem]("sangria.execution.deferred.FetcherConfig*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.ast.FragmentDefinition.typeConditionOpt"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.ObjectValue.fieldsByName"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.marshalling.QueryAstInputUnmarshaller.getMapKeys")
 )
 
 lazy val root = project
@@ -72,8 +82,8 @@ lazy val core = project
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
-      "co.fs2" %% "fs2-core" % "3.1.2" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.9" % Test,
+      "co.fs2" %% "fs2-core" % "2.5.9" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.10" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
@@ -127,6 +137,8 @@ lazy val scalacSettings = Seq(
     if (scalaVersion.value.startsWith("2.12")) Seq("-language:higherKinds") else List.empty[String]
   },
   scalacOptions += "-target:jvm-1.8",
+  Compile / doc / scalacOptions ++= Seq( // scaladoc options
+    "-groups"),
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
 
