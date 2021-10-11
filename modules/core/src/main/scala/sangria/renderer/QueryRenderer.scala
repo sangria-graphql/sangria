@@ -47,8 +47,7 @@ object QueryRenderer {
       indent: Indent,
       config: QueryRendererConfig) =
     if (sels.nonEmpty) {
-      val rendered = sels.iterator
-        .zipWithIndex
+      val rendered = sels.iterator.zipWithIndex
         .map { case (sel, idx) =>
           val prev = if (idx == 0) None else Some(sels(idx - 1))
           val next = if (idx == sels.size - 1) None else Some(sels(idx + 1))
@@ -92,8 +91,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       frontSep: Boolean = false) =
     if (fields.nonEmpty) {
-      val rendered = fields.iterator
-        .zipWithIndex
+      val rendered = fields.iterator.zipWithIndex
         .map { case (field, idx) =>
           val prev = if (idx == 0) None else Some(fields(idx - 1))
           val next = if (idx == fields.size - 1) None else Some(fields(idx + 1))
@@ -157,8 +155,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       frontSep: Boolean = false) =
     if (values.nonEmpty) {
-      val renderedValues = values.iterator
-        .zipWithIndex
+      val renderedValues = values.iterator.zipWithIndex
         .map { case (value, idx) =>
           val prev = if (idx == 0) None else Some(values(idx - 1))
           val next = if (idx == values.size - 1) None else Some(values(idx + 1))
@@ -205,8 +202,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       frontSep: Boolean = false) =
     if (ops.nonEmpty) {
-      val renderedOps = ops.iterator
-        .zipWithIndex
+      val renderedOps = ops.iterator.zipWithIndex
         .map { case (op, idx) =>
           (if (idx != 0 && shouldRenderComment(op, None, config)) config.lineBreak else "") +
             renderNode(op, config, indent.inc)
@@ -238,8 +234,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       withSep: Boolean = true) =
     if (args.nonEmpty) {
-      val argsRendered = args.iterator
-        .zipWithIndex
+      val argsRendered = args.iterator.zipWithIndex
         .map { case (a, idx) =>
           (if (idx != 0 && shouldRenderComment(a, None, config)) config.lineBreak else "") +
             (if (shouldRenderComment(a, None, config)) config.mandatoryLineBreak
@@ -260,8 +255,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       withSep: Boolean = true) =
     if (args.nonEmpty) {
-      val argsRendered = args.iterator
-        .zipWithIndex
+      val argsRendered = args.iterator.zipWithIndex
         .map { case (a, idx) =>
           (if (idx != 0 && (shouldRenderComment(a, None, config) || shouldRenderDescription(a)))
              config.lineBreak
@@ -286,8 +280,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       withSep: Boolean = true) =
     if (vars.nonEmpty) {
-      val varsRendered = vars.iterator
-        .zipWithIndex
+      val varsRendered = vars.iterator.zipWithIndex
         .map { case (v, idx) =>
           (if (idx != 0 && shouldRenderComment(v, None, config)) config.lineBreak else "") +
             (if (shouldRenderComment(v, None, config)) config.mandatoryLineBreak
@@ -307,8 +300,7 @@ object QueryRenderer {
       tc: WithTrailingComments,
       indent: Indent,
       config: QueryRendererConfig) = {
-    val fieldsRendered = fields.iterator
-      .zipWithIndex
+    val fieldsRendered = fields.iterator.zipWithIndex
       .map { case (f, idx) =>
         val prev = if (idx == 0) None else Some(fields(idx - 1))
         val next = if (idx == fields.size - 1) None else Some(fields(idx + 1))
@@ -349,8 +341,7 @@ object QueryRenderer {
     if (interfaces.nonEmpty)
       (if (frontSep) config.mandatorySeparator else "") +
         "implements" + config.mandatorySeparator +
-        interfaces
-          .iterator
+        interfaces.iterator
           .map(renderNode(_, config, indent.zero))
           .mkString(if (config.legacyImplementsInterface) "," + config.separator
           else config.separator + "&" + config.separator) +
@@ -377,10 +368,7 @@ object QueryRenderer {
     }
   }
 
-  def shouldRenderComment(
-      node: WithComments,
-      prev: Option[AstNode],
-      config: QueryRendererConfig) =
+  def shouldRenderComment(node: WithComments, prev: Option[AstNode], config: QueryRendererConfig) =
     config.renderComments && actualComments(node, prev).nonEmpty
 
   def shouldRenderDescription(node: WithDescription) =
@@ -624,15 +612,13 @@ object QueryRenderer {
             (if (idx != 0) config.separator else "") + renderNode(v, config, indent)
 
         renderInputComment(v, indent, config) +
-          "[" + value.iterator
-            .zipWithIndex
+          "[" + value.iterator.zipWithIndex
             .map { case (v, idx) => renderValue(v, idx) }
             .mkString(config.inputListSeparator) + "]"
       case v @ ObjectValue(value, _, _) =>
         renderInputComment(v, indent, config) +
           "{" + inputLineBreak(config) +
-          value.iterator
-            .zipWithIndex
+          value.iterator.zipWithIndex
             .map { case (v, idx) =>
               (if (idx != 0 && config.formatInputValues && shouldRenderComment(v, None, config))
                  config.lineBreak
@@ -686,8 +672,7 @@ object QueryRenderer {
         val typesString =
           if (types.nonEmpty)
             config.separator + "=" + config.separator +
-              types
-                .iterator
+              types.iterator
                 .map(renderNode(_, config, indent.zero))
                 .mkString(config.separator + "|" + config.separator)
           else
@@ -746,8 +731,7 @@ object QueryRenderer {
         val typesString =
           if (types.nonEmpty)
             config.separator + "=" + config.separator +
-              types
-                .iterator
+              types.iterator
                 .map(renderNode(_, config, indent.zero))
                 .mkString(config.separator + "|" + config.separator)
           else
@@ -782,8 +766,7 @@ object QueryRenderer {
           renderOperationTypeDefinitions(ops, ext, indent, config, frontSep = true)
 
       case dd @ DirectiveDefinition(name, args, locations, description, _, _) =>
-        val locsRendered = locations.iterator
-          .zipWithIndex
+        val locsRendered = locations.iterator.zipWithIndex
           .map { case (l, idx) =>
             (if (idx != 0 && shouldRenderComment(l, None, config)) config.lineBreak else "") +
               (if (shouldRenderComment(l, None, config)) config.lineBreak
