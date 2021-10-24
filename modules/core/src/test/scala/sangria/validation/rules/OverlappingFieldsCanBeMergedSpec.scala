@@ -1,8 +1,9 @@
 package sangria.validation.rules
 
+import org.scalatest.wordspec.AnyWordSpec
 import sangria.schema._
 import sangria.util.{Pos, ValidationSupport}
-import org.scalatest.wordspec.AnyWordSpec
+import sangria.validation.rules.experimental.OverlappingFieldsCanBeMerged
 
 class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSupport {
 
@@ -13,6 +14,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         fragment uniqueFields on Dog {
           name
           nickname
+        }
+        {
+          ...uniqueFields
         }
       """)
 
@@ -36,12 +40,18 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             nickname
           }
         }
+        {
+          ...uniqueFields
+        }
       """)
 
     "identical fields" in expectPasses("""
         fragment mergeIdenticalFields on Dog {
           name
           name
+        }
+        {
+          ...mergeIdenticalFields
         }
       """)
 
@@ -50,6 +60,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           doesKnowCommand(dogCommand: SIT)
           doesKnowCommand(dogCommand: SIT)
         }
+        {
+          ...mergeIdenticalFieldsWithIdenticalArgs
+        }
       """)
 
     "identical fields with identical directives" in expectPasses("""
@@ -57,12 +70,18 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           name @include(if: true)
           name @include(if: true)
         }
+        {
+          ...mergeSameFieldsWithSameDirectives
+        }
       """)
 
     "different args with different aliases" in expectPasses("""
         fragment differentArgsWithDifferentAliases on Dog {
           knowsSit: doesKnowCommand(dogCommand: SIT)
           knowsDown: doesKnowCommand(dogCommand: DOWN)
+        }
+        {
+          ...differentArgsWithDifferentAliases
         }
       """)
 
@@ -74,12 +93,18 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           name @include(if: true)
           name @include(if: false)
         }
+        {
+          ...differentDirectivesWithDifferentAliases
+        }
       """)
 
     "different directives with different aliases" in expectPasses("""
         fragment differentDirectivesWithDifferentAliases on Dog {
           nameIfTrue: name @include(if: true)
           nameIfFalse: name @include(if: false)
+        }
+        {
+          ...differentDirectivesWithDifferentAliases
         }
       """)
 
@@ -89,9 +114,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           fido: name
           fido: nickname
         }
+        {
+          ...sameAliasesWithDifferentFieldTargets
+        }
       """,
       List(
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields." -> List(
+        "Conflict at 'fido' because 'name' and 'nickname' are different fields." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -106,6 +134,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
             name: nickname
           }
         }
+        {
+          ...sameAliasesWithDifferentFieldTargets
+        }
       """)
 
     "Alias masking direct field access" in expectFailsPosList(
@@ -114,9 +145,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           name: nickname
           name
         }
+        {
+          ...aliasMaskingDirectFieldAccess
+        }
       """,
       List(
-        "Field 'name' conflict because 'nickname' and 'name' are different fields." -> List(
+        "Conflict at 'name' because 'nickname' and 'name' are different fields." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -128,9 +162,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           doesKnowCommand
           doesKnowCommand(dogCommand: HEEL)
         }
+        {
+          ...conflictingArgs
+        }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(
+        "Conflict at 'doesKnowCommand' because of differing arguments." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -142,9 +179,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           doesKnowCommand(dogCommand: SIT)
           doesKnowCommand
         }
+        {
+          ...conflictingArgs
+        }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(
+        "Conflict at 'doesKnowCommand' because of differing arguments." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -156,9 +196,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           doesKnowCommand(dogCommand: SIT)
           doesKnowCommand(dogCommand: HEEL)
         }
+        {
+          ...conflictingArgs
+        }
       """,
       List(
-        "Field 'doesKnowCommand' conflict because they have differing arguments." -> List(
+        "Conflict at 'doesKnowCommand' because of differing arguments." -> List(
           Pos(3, 11),
           Pos(4, 11))
       )
@@ -172,6 +215,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           ... on Cat {
             name
           }
+        }
+        {
+          ...conflictingArgs
         }
       """)
 
@@ -189,13 +235,11 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(
-          Pos(7, 11),
-          Pos(10, 11))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(Pos(7, 11), Pos(10, 11))
       )
     )
 
-    "reports each conflict once" in expectFailsPosList(
+    "reports conflicts for each output path" in expectFailsPosList(
       """
         {
           f1 {
@@ -220,14 +264,17 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'x' conflict because 'a' and 'b' are different fields." -> List(
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(
           Pos(18, 11),
           Pos(21, 11)),
-        "Field 'x' conflict because 'c' and 'a' are different fields." -> List(
+        "Conflict at 'x' because 'c' and 'a' are different fields." -> List(
           Pos(14, 13),
           Pos(18, 11)),
-        "Field 'x' conflict because 'c' and 'b' are different fields." -> List(
+        "Conflict at 'x' because 'c' and 'b' are different fields." -> List(
           Pos(14, 13),
+          Pos(21, 11)),
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(
+          Pos(18, 11),
           Pos(21, 11))
       )
     )
@@ -244,11 +291,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." -> List(
-          Pos(3, 11),
-          Pos(4, 13),
-          Pos(6, 11),
-          Pos(7, 13))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(Pos(4, 13), Pos(7, 13))
       )
     )
 
@@ -266,8 +309,8 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'y' conflict because 'c' and 'd' are different fields and subfields 'x' conflict because 'a' and 'b' are different fields." ->
-          List(Pos(3, 11), Pos(5, 13), Pos(4, 13), Pos(7, 11), Pos(9, 13), Pos(8, 13))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(Pos(4, 13), Pos(8, 13)),
+        "Conflict at 'y' because 'c' and 'd' are different fields." -> List(Pos(5, 13), Pos(9, 13))
       )
     )
 
@@ -287,12 +330,11 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
-          List(Pos(3, 11), Pos(4, 13), Pos(5, 15), Pos(8, 11), Pos(9, 13), Pos(10, 15))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(Pos(5, 15), Pos(10, 15))
       )
     )
 
-    "reports deep conflict to nearest common ancestor" in expectFailsPosList(
+    "reports deep conflict and ignores non-conflicting part" in expectFailsPosList(
       """
         {
           field {
@@ -311,12 +353,11 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'deepField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
-          List(Pos(4, 13), Pos(5, 15), Pos(7, 13), Pos(8, 15))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(Pos(5, 15), Pos(8, 15))
       )
     )
 
-    "reports deep conflict to nearest common ancestor in fragments" in expectFailsPosList(
+    "reports deep conflict in fragments" in expectFailsPosList(
       """
         {
           field {
@@ -343,8 +384,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'deeperField' conflict because subfields 'x' conflict because 'a' and 'b' are different fields." ->
-          List(Pos(12, 13), Pos(13, 15), Pos(15, 13), Pos(16, 15))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(
+          Pos(13, 15),
+          Pos(16, 15))
       )
     )
 
@@ -374,8 +416,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         }
       """,
       List(
-        "Field 'field' conflict because subfields 'x' conflict because 'a' and 'b' are different fields and subfields 'y' conflict because 'c' and 'd' are different fields." ->
-          List(Pos(3, 11), Pos(11, 11), Pos(15, 11), Pos(6, 11), Pos(22, 11), Pos(18, 11))
+        "Conflict at 'x' because 'a' and 'b' are different fields." -> List(
+          Pos(11, 11),
+          Pos(22, 11)),
+        "Conflict at 'y' because 'c' and 'd' are different fields." -> List(
+          Pos(15, 11),
+          Pos(18, 11))
       )
     )
 
@@ -389,6 +435,22 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         fragment Known on T {
           field
           ...OtherUnknown
+        }
+      """)
+
+    "ignores unused fragments" in expectPasses("""
+        {
+          field
+          ...Used
+        }
+
+        fragment Used on T {
+          field
+        }
+
+        fragment Unused on Dog {
+          doesKnowCommand
+          doesKnowCommand(dogCommand: HEEL)
         }
       """)
 
@@ -529,8 +591,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'scalar' conflict because they return conflicting types 'Int' and 'String!'." ->
-            List(Pos(5, 17), Pos(8, 17))
+          "Conflict at 'scalar' because they return conflicting types 'Int' and 'String!'." -> List(
+            Pos(5, 17),
+            Pos(8, 17))
         )
       )
 
@@ -592,8 +655,12 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'edges' conflict because subfields 'node' conflict because subfields 'id' conflict because 'name' and 'id' are different fields." ->
-            List(Pos(5, 15), Pos(6, 17), Pos(7, 19), Pos(14, 13), Pos(15, 15), Pos(16, 17))
+          "Conflict at 'id' because they return conflicting types 'String' and 'ID'." -> List(
+            Pos(7, 19),
+            Pos(16, 17)),
+          "Conflict at 'id' because 'name' and 'id' are different fields." -> List(
+            Pos(7, 19),
+            Pos(16, 17))
         )
       )
 
@@ -654,7 +721,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'scalar' conflict because they return conflicting types 'Int' and 'String'" -> List(
+          "Conflict at 'scalar' because they return conflicting types 'Int' and 'String'." -> List(
             Pos(5, 17),
             Pos(8, 17)))
       )
@@ -707,8 +774,9 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'other' conflict because subfields 'scalar' conflict because 'scalar' and 'unrelatedField' are different fields." ->
-            List(Pos(31, 13), Pos(39, 13), Pos(34, 13), Pos(42, 13)))
+          "Conflict at 'scalar' because 'scalar' and 'unrelatedField' are different fields." -> List(
+            Pos(39, 13),
+            Pos(42, 13)))
       )
 
       "disallows differing return type nullability despite no overlap" in expectInvalid(
@@ -727,7 +795,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'scalar' conflict because they return conflicting types 'String!' and 'String'" -> List(
+          "Conflict at 'scalar' because they return conflicting types 'String!' and 'String'." -> List(
             Pos(5, 17),
             Pos(8, 17)))
       )
@@ -752,7 +820,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'box' conflict because they return conflicting types '[StringBox]' and 'StringBox'" -> List(
+          "Conflict at 'box' because they return conflicting types '[StringBox]' and 'StringBox'." -> List(
             Pos(5, 17),
             Pos(10, 17)))
       )
@@ -777,7 +845,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'box' conflict because they return conflicting types 'StringBox' and '[StringBox]'" -> List(
+          "Conflict at 'box' because they return conflicting types 'StringBox' and '[StringBox]'." -> List(
             Pos(5, 17),
             Pos(10, 17)))
       )
@@ -803,7 +871,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'val' conflict because 'scalar' and 'unrelatedField' are different fields." -> List(
+          "Conflict at 'val' because 'scalar' and 'unrelatedField' are different fields." -> List(
             Pos(6, 19),
             Pos(7, 19)))
       )
@@ -828,35 +896,35 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
           }
         """,
         List(
-          "Field 'box' conflict because subfields 'scalar' conflict because they return conflicting types 'String' and 'Int'" ->
-            List(Pos(5, 17), Pos(6, 19), Pos(10, 17), Pos(11, 19)))
+          "Conflict at 'scalar' because they return conflicting types 'String' and 'Int'." -> List(
+            Pos(6, 19),
+            Pos(11, 19)))
       )
     }
 
     "does not infinite loop on recursive fragment" in expectPasses("""
         fragment fragA on Human {name relatives { name ...fragA } }
+        {
+          ...fragA
+        }
       """)
 
     "does not infinite loop on immediately spread fragment" in expectPasses("""
         fragment fragA on Human {name ...fragA }
+        {
+          ...fragA
+        }
       """)
 
     "does not infinite loop on a larger cycle" in expectPasses("""
         fragment fragA on Human {name ...fragB }
         fragment fragB on Human {name ...fragA }
+        {
+          ...fragA
+          ...fragB
+        }
       """)
 
-    // You would not expect this to have three error messages, and you would be
-    // right. The trickiness here is that we don't detect the immediate spread
-    // on first spreading, because it's in the context of the selection set. So
-    // by the time we detect and eliminate it, we've already spread it in once,
-    // and hence we get multiple error messages. We could change the algorithm
-    // to track that we're in an immediate fragment spread, but that would add
-    // complexity that only is needed in this error case.
-    //
-    // Because this is an invalid query by another rule (NoFragmentCycles), I'm
-    // not too worried about this case... and since we used to infinite loop,
-    // this is strictly better.
     "finds invalid case even with immediately spread fragment" in expectInvalid(
       schema,
       new OverlappingFieldsCanBeMerged :: Nil,
@@ -865,19 +933,15 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
          ...sameAliasesWithDifferentFieldTargets
          fido: name
          fido: nickname
-       }
+        }
+        {
+          ...sameAliasesWithDifferentFieldTargets
+        }
       """,
       List(
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(
+        "Conflict at 'fido' because 'name' and 'nickname' are different fields." -> List(
           Pos(4, 10),
-          Pos(5, 10)),
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(
-          Pos(4, 10),
-          Pos(5, 10)),
-        "Field 'fido' conflict because 'name' and 'nickname' are different fields" -> List(
-          Pos(4, 10),
-          Pos(5, 10))
-      )
+          Pos(5, 10)))
     )
   }
 }
