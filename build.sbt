@@ -56,6 +56,11 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict$"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.PairSet"),
   ProblemFilters.exclude[Problem]("sangria.validation.rules.experimental.*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.AstSchemaBuilder.defaultWithLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.useLegacyCommentDescriptions"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.schema.LegacyCommentDescriptionsResolver"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.schema.LegacyCommentDescriptionsResolver$"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ResolverBasedAstSchemaBuilder.useLegacyCommentDescriptions")
 )
 
 lazy val root = project

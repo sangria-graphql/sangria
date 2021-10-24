@@ -1121,48 +1121,6 @@ class AstSchemaMaterializerSpec
         query.fields(1).description should be(Some("the second field!"))
       }
 
-      "Support legacy comment-based SDL descriptions" in {
-        val schemaDef =
-          """# fooo bar
-            |# baz
-            |enum MyEnum {
-            |  # value1
-            |  VALUE
-            |
-            |  # value 2
-            |  # line 2
-            |  OLD_VALUE @deprecated
-            |
-            |  # value 3
-            |  OTHER_VALUE @deprecated(reason: "Terrible reasons")
-            |}
-            |
-            |# My super query!
-            |type Query {
-            |  field1: String @deprecated
-            |
-            |  # the second field!
-            |  field2: Int @deprecated(reason: "Because I said so")
-            |  enum: MyEnum
-            |}""".stripMargin
-
-        val schema = Schema.buildFromAst(
-          QueryParser.parse(schemaDef),
-          AstSchemaBuilder.defaultWithLegacyCommentDescriptions)
-
-        val myEnum = schema.inputTypes("MyEnum").asInstanceOf[EnumType[_]]
-
-        myEnum.description should be(Some("fooo bar\nbaz"))
-        myEnum.values(0).description should be(Some("value1"))
-        myEnum.values(1).description should be(Some("value 2\nline 2"))
-        myEnum.values(2).description should be(Some("value 3"))
-
-        val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
-
-        query.description should be(Some("My super query!"))
-        query.fields(1).description should be(Some("the second field!"))
-      }
-
       "Use comments for descriptions on arguments" in {
         val schemaDef =
           s"""schema {
