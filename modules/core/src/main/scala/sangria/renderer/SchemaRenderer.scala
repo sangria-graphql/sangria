@@ -1,14 +1,11 @@
 package sangria.renderer
 
+import sangria.ast
 import sangria.execution.ValueCoercionHelper
 import sangria.introspection._
 import sangria.marshalling.{InputUnmarshaller, ToInput}
-import sangria.schema._
-import sangria.ast
-import sangria.ast.{AstNode, AstVisitor}
-import sangria.introspection.__DirectiveLocation
 import sangria.parser.QueryParser
-import sangria.visitor.VisitorCommand
+import sangria.schema._
 
 object SchemaRenderer {
   def renderTypeName(tpe: Type, topLevel: Boolean = false) = {
@@ -374,51 +371,8 @@ object SchemaRenderer {
       .sortBy(_.name)
       .map(renderDirective)
 
-    val document = ast.Document(schemaDef.toVector ++ types ++ directives)
-
-    if (filter.legacyCommentDescriptions) transformLegacyCommentDescriptions(document)
-    else document
+    ast.Document(schemaDef.toVector ++ types ++ directives)
   }
-
-  def transformLegacyCommentDescriptions[T <: AstNode](node: T): T =
-    AstVisitor.visit(
-      node,
-      AstVisitor {
-        case n: ast.DirectiveDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.InterfaceTypeDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.EnumTypeDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.EnumValueDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.FieldDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.InputObjectTypeDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.InputValueDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.ObjectTypeDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.ScalarTypeDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-        case n: ast.UnionTypeDefinition if n.description.isDefined =>
-          VisitorCommand.Transform(
-            n.copy(description = None, comments = n.comments ++ commentDescription(n)))
-      }
-    )
-
-  private def commentDescription(node: ast.WithDescription) =
-    node.description.toVector.flatMap(sv => sv.value.split("\\r?\\n").toVector.map(ast.Comment(_)))
 
   def renderSchema(schema: Schema[_, _]): String =
     schemaAst(schema, SchemaFilter.default).renderPretty
@@ -430,11 +384,7 @@ object SchemaRenderer {
 case class SchemaFilter(
     filterTypes: String => Boolean,
     filterDirectives: String => Boolean,
-    renderSchema: Boolean = true,
-    legacyCommentDescriptions: Boolean = false) {
-  @deprecated("Please migrate to new string-based description format", "1.4.0")
-  def withLegacyCommentDescriptions = copy(legacyCommentDescriptions = true)
-}
+    renderSchema: Boolean = true)
 
 object SchemaFilter {
   val withoutSangriaBuiltIn: SchemaFilter = SchemaFilter(
