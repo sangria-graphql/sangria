@@ -1206,9 +1206,9 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       expectedData = null,
       expectedErrorStrings = List(
         "Cannot spread fragment 'c' within itself." -> List(Pos(15, 13)),
-        "Field 'pic' conflict because they have differing arguments." -> List(
-          Pos(11, 13),
-          Pos(7, 13))
+        "Conflict at 'pic' because of differing arguments. Use different aliases on the fields to fetch both if this was intentional." -> List(
+          Pos(7, 13),
+          Pos(11, 13))
       )
     )
 
@@ -1242,9 +1242,9 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       expectedData = null,
       expectedErrorStrings = List(
         "Cannot spread fragment 'c' within itself via 'd'." -> List(Pos(15, 13), Pos(19, 13)),
-        "Field 'pic' conflict because they have differing arguments." -> List(
-          Pos(11, 13),
-          Pos(7, 13))
+        "Conflict at 'pic' because of differing arguments. Use different aliases on the fields to fetch both if this was intentional." -> List(
+          Pos(7, 13),
+          Pos(11, 13))
       )
     )
 

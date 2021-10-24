@@ -10,6 +10,7 @@ import sbt.Keys.{
 import com.typesafe.tools.mima.core.{
   DirectMissingMethodProblem,
   IncompatibleResultTypeProblem,
+  MissingClassProblem,
   Problem,
   ProblemFilters
 }
@@ -48,7 +49,13 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
     "sangria.ast.FragmentDefinition.typeConditionOpt"),
   ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.ObjectValue.fieldsByName"),
   ProblemFilters.exclude[IncompatibleResultTypeProblem](
-    "sangria.marshalling.QueryAstInputUnmarshaller.getMapKeys")
+    "sangria.marshalling.QueryAstInputUnmarshaller.getMapKeys"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.PairSet"),
+  ProblemFilters.exclude[Problem]("sangria.validation.rules.experimental.*"),
 )
 
 lazy val root = project

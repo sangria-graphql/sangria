@@ -1,8 +1,8 @@
-package sangria.validation.rules.experimental.overlappingfields
+package sangria.validation.rules.overlappingfields
 
 import java.util.function.Consumer
-
 import org.scalatest.funsuite.AnyFunSuite
+import sangria.validation.rules.overlappingfields.SortedArraySet
 
 class SortedArraySetSpec extends AnyFunSuite {
 

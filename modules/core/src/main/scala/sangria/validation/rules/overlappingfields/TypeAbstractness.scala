@@ -1,4 +1,4 @@
-package sangria.validation.rules.experimental.overlappingfields
+package sangria.validation.rules.overlappingfields
 
 import sangria.schema.{CompositeType, ObjectType}
 

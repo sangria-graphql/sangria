@@ -1,12 +1,16 @@
 package sangria.validation.rules.experimental
 
 import java.util.function.Consumer
-
 import sangria.annotations.ApiMayChange
 import sangria.ast
 import sangria.ast.AstVisitorCommand
 import sangria.validation._
-import sangria.validation.rules.experimental.overlappingfields._
+import sangria.validation.rules.overlappingfields.{
+  CachedCheck,
+  SelectionBuilder,
+  SelectionConflictViolationsBuilder,
+  SelectionContainer
+}
 
 /** Overlapping fields can be merged
   *
