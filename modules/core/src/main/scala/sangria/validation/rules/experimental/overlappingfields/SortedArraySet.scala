@@ -51,13 +51,11 @@ object SortedArraySet {
       private val members: util.ArrayList[T],
       private val comparator: Comparator[T]) {
 
-    def this(sizeHint: Int, ordering: Ordering[T]) = {
+    def this(sizeHint: Int, ordering: Ordering[T]) =
       this(new util.ArrayList[T](sizeHint), ordering)
-    }
 
-    def this(ordering: Ordering[T]) = {
+    def this(ordering: Ordering[T]) =
       this(new util.ArrayList[T](), ordering)
-    }
 
     def add(value: T): this.type = {
       members.add(value)
