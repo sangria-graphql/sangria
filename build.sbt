@@ -60,7 +60,16 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.useLegacyCommentDescriptions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.schema.LegacyCommentDescriptionsResolver"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.schema.LegacyCommentDescriptionsResolver$"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ResolverBasedAstSchemaBuilder.useLegacyCommentDescriptions")
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ResolverBasedAstSchemaBuilder.useLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.<init>$default$4"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.apply$default$4"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.apply"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.legacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.withLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.copy"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.copy$default$4"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.this"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaRenderer.transformLegacyCommentDescriptions"),
 )
 
 lazy val root = project
