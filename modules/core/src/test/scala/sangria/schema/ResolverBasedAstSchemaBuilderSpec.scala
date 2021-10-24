@@ -107,7 +107,6 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
         FieldResolver { case (TypeName("Query"), FieldName("id")) =>
           _ => UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")
         },
-        LegacyCommentDescriptionsResolver(),
         AnyFieldResolver.defaultInput[Any, JsValue]
       )
 
