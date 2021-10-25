@@ -107,7 +107,12 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.renderer.QueryRendererConfig.copy$default$*"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.QueryRendererConfig.this"),
-  ProblemFilters.exclude[MissingTypesProblem]("sangria.renderer.QueryRendererConfig$")
+  ProblemFilters.exclude[MissingTypesProblem]("sangria.renderer.QueryRendererConfig$"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.ParserConfig.legacyEmptyFields"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.ParserConfig.withLegacyEmptyFields"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.legacyEmptyFields")
 )
 
 lazy val root = project
