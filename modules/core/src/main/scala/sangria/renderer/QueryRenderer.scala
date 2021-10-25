@@ -16,15 +16,11 @@ object QueryRenderer {
     inputListSeparator = ",",
     formatInputValues = false,
     renderComments = true,
-    formatBlockStrings = true,
-    legacyImplementsInterface = false
+    formatBlockStrings = true
   )
 
-  val PrettyInput = Pretty.copy(
-    inputFieldSeparator = "\n",
-    formatInputValues = true,
-    renderComments = true,
-    legacyImplementsInterface = false)
+  val PrettyInput =
+    Pretty.copy(inputFieldSeparator = "\n", formatInputValues = true, renderComments = true)
 
   val Compact = QueryRendererConfig(
     indentLevel = "",
@@ -37,8 +33,7 @@ object QueryRenderer {
     inputListSeparator = ",",
     formatInputValues = false,
     renderComments = false,
-    formatBlockStrings = false,
-    legacyImplementsInterface = false
+    formatBlockStrings = false
   )
 
   def renderSelections(
@@ -343,8 +338,7 @@ object QueryRenderer {
         "implements" + config.mandatorySeparator +
         interfaces.iterator
           .map(renderNode(_, config, indent.zero))
-          .mkString(if (config.legacyImplementsInterface) "," + config.separator
-          else config.separator + "&" + config.separator) +
+          .mkString(config.separator + "&" + config.separator) +
         (if (withSep) config.separator else "")
     else ""
 
@@ -855,5 +849,4 @@ case class QueryRendererConfig(
     inputListSeparator: String,
     formatInputValues: Boolean,
     formatBlockStrings: Boolean,
-    renderComments: Boolean,
-    legacyImplementsInterface: Boolean)
+    renderComments: Boolean)

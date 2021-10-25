@@ -853,39 +853,6 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
         ))
     }
 
-    "Simple type inheriting multiple interfaces (legacy syntax)" in {
-      val Success(ast) = QueryParser.parse(
-        "type Hello implements Wo, rld { foo: Bar }",
-        ParserConfig.default.withEmptySourceId.withoutSourceMapper.withLegacyImplementsInterface)
-
-      ast.withoutSourceMapper should be(
-        Document(
-          Vector(ObjectTypeDefinition(
-            "Hello",
-            Vector(
-              NamedType("Wo", Some(AstLocation(22, 1, 23))),
-              NamedType("rld", Some(AstLocation(26, 1, 27)))),
-            Vector(
-              FieldDefinition(
-                "foo",
-                NamedType("Bar", Some(AstLocation(37, 1, 38))),
-                Vector.empty,
-                Vector.empty,
-                None,
-                Vector.empty,
-                Some(AstLocation(32, 1, 33)))),
-            Vector.empty,
-            None,
-            Vector.empty,
-            Vector.empty,
-            Some(AstLocation(0, 1, 1))
-          )),
-          Vector.empty,
-          Some(AstLocation(0, 1, 1)),
-          None
-        ))
-    }
-
     "Double value enum" in {
       val Success(ast) = parseQuery("enum Hello { WO, RLD }")
 
