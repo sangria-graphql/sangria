@@ -1209,60 +1209,6 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
         """)
     }
 
-    "Allow legacy empty fields syntax" in {
-      val Success(ast) = QueryParser.parse(
-        """
-          type Foo @hello {}
-          interface Bar {}
-          input Baz {}
-        """,
-        ParserConfig.default.withEmptySourceId.withoutSourceMapper.withLegacyEmptyFields
-      )
-
-      ast should be(
-        Document(
-          Vector(
-            ObjectTypeDefinition(
-              "Foo",
-              Vector.empty,
-              Vector.empty,
-              Vector(
-                Directive(
-                  "hello",
-                  Vector.empty,
-                  Vector.empty,
-                  Some(AstLocation(20, 2, 20))
-                )),
-              None,
-              Vector.empty,
-              Vector.empty,
-              Some(AstLocation(11, 2, 11))
-            ),
-            InterfaceTypeDefinition(
-              "Bar",
-              Vector.empty,
-              Vector.empty,
-              None,
-              Vector.empty,
-              Vector.empty,
-              Some(AstLocation(40, 3, 11))
-            ),
-            InputObjectTypeDefinition(
-              "Baz",
-              Vector.empty,
-              Vector.empty,
-              None,
-              Vector.empty,
-              Vector.empty,
-              Some(AstLocation(67, 4, 11))
-            )
-          ),
-          Vector.empty,
-          Some(AstLocation(11, 2, 11)),
-          None
-        ))
-    }
-
     "Allow empty fields and values" in {
       val Success(ast) = parseQuery("""
           type Foo @hello

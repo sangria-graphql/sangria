@@ -5,7 +5,6 @@ import org.parboiled2.ParserInput
 import java.util.UUID
 
 case class ParserConfig(
-    legacyEmptyFields: Boolean = false,
     experimentalFragmentVariables: Boolean = false,
     sourceIdFn: ParserInput => String = ParserConfig.defaultSourceIdFn,
     sourceMapperFn: (String, ParserInput) => Option[SourceMapper] =
@@ -13,9 +12,6 @@ case class ParserConfig(
     parseLocations: Boolean = true,
     parseComments: Boolean = true
 ) {
-  @deprecated("Use new syntax: `type Foo` instead of legacy `type Foo {}`", "1.4.0")
-  def withLegacyEmptyFields: ParserConfig = copy(legacyEmptyFields = true)
-
   def withExperimentalFragmentVariables: ParserConfig = copy(experimentalFragmentVariables = true)
 
   /** Return a new configuration that uses

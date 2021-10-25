@@ -200,7 +200,6 @@ trait TypeSystemDefinitions {
     with Operations
     with Values
     with Fragments =>
-  def legacyEmptyFields: Boolean
 
   def scalar = rule(Keyword("scalar"))
   def `type` = rule(Keyword("type"))
@@ -390,9 +389,7 @@ trait TypeSystemDefinitions {
   }
 
   def FieldsDefinition = rule {
-    wsNoComment('{') ~ (test(
-      legacyEmptyFields) ~ FieldDefinition.* | FieldDefinition.+) ~ Comments ~ wsNoComment(
-      '}') ~> (_ -> _)
+    wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
   def FieldDefinition = rule {
@@ -475,9 +472,7 @@ trait TypeSystemDefinitions {
   }
 
   def InputFieldsDefinition = rule {
-    wsNoComment('{') ~ (test(
-      legacyEmptyFields) ~ InputValueDefinition.* | InputValueDefinition.+) ~ Comments ~ wsNoComment(
-      '}') ~> (_ -> _)
+    wsNoComment('{') ~ InputValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
   def DirectiveDefinition = rule {
@@ -785,7 +780,6 @@ trait Types { this: Parser with Tokens with Ignored =>
 class QueryParser private (
     val input: ParserInput,
     val sourceId: String,
-    val legacyEmptyFields: Boolean = false,
     val experimentalFragmentVariables: Boolean = false,
     val parseLocations: Boolean = true,
     override val parseComments: Boolean = true
@@ -811,7 +805,6 @@ object QueryParser {
     val parser = new QueryParser(
       input,
       id,
-      config.legacyEmptyFields,
       config.experimentalFragmentVariables,
       config.parseLocations,
       config.parseComments)
@@ -849,7 +842,6 @@ object QueryParser {
     val parser = new QueryParser(
       input,
       id,
-      config.legacyEmptyFields,
       config.experimentalFragmentVariables,
       config.parseLocations,
       config.parseComments)
