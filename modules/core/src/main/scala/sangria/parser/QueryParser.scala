@@ -200,7 +200,6 @@ trait TypeSystemDefinitions {
     with Operations
     with Values
     with Fragments =>
-  def legacyImplementsInterface: Boolean
   def legacyEmptyFields: Boolean
 
   def scalar = rule(Keyword("scalar"))
@@ -387,8 +386,7 @@ trait TypeSystemDefinitions {
   }
 
   def ImplementsInterfaces = rule {
-    test(legacyImplementsInterface) ~ implements ~ NamedType.+ ~> (_.toVector) |
-      implements ~ ws('&').? ~ NamedType.+(ws('&')) ~> (_.toVector)
+    implements ~ ws('&').? ~ NamedType.+(ws('&')) ~> (_.toVector)
   }
 
   def FieldsDefinition = rule {
@@ -787,7 +785,6 @@ trait Types { this: Parser with Tokens with Ignored =>
 class QueryParser private (
     val input: ParserInput,
     val sourceId: String,
-    val legacyImplementsInterface: Boolean = false,
     val legacyEmptyFields: Boolean = false,
     val experimentalFragmentVariables: Boolean = false,
     val parseLocations: Boolean = true,
@@ -814,7 +811,6 @@ object QueryParser {
     val parser = new QueryParser(
       input,
       id,
-      config.legacyImplementsInterface,
       config.legacyEmptyFields,
       config.experimentalFragmentVariables,
       config.parseLocations,
@@ -853,7 +849,6 @@ object QueryParser {
     val parser = new QueryParser(
       input,
       id,
-      config.legacyImplementsInterface,
       config.legacyEmptyFields,
       config.experimentalFragmentVariables,
       config.parseLocations,

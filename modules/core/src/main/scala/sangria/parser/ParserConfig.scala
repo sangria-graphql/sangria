@@ -5,7 +5,6 @@ import org.parboiled2.ParserInput
 import java.util.UUID
 
 case class ParserConfig(
-    legacyImplementsInterface: Boolean = false,
     legacyEmptyFields: Boolean = false,
     experimentalFragmentVariables: Boolean = false,
     sourceIdFn: ParserInput => String = ParserConfig.defaultSourceIdFn,
@@ -14,9 +13,6 @@ case class ParserConfig(
     parseLocations: Boolean = true,
     parseComments: Boolean = true
 ) {
-  @deprecated("Use new syntax: `type Foo implements Bar & Baz`", "1.4.0")
-  def withLegacyImplementsInterface: ParserConfig = copy(legacyImplementsInterface = true)
-
   @deprecated("Use new syntax: `type Foo` instead of legacy `type Foo {}`", "1.4.0")
   def withLegacyEmptyFields: ParserConfig = copy(legacyEmptyFields = true)
 

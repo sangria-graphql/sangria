@@ -11,6 +11,7 @@ import com.typesafe.tools.mima.core.{
   DirectMissingMethodProblem,
   IncompatibleResultTypeProblem,
   MissingClassProblem,
+  MissingTypesProblem,
   Problem,
   ProblemFilters
 }
@@ -56,20 +57,57 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict$"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.PairSet"),
   ProblemFilters.exclude[Problem]("sangria.validation.rules.experimental.*"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.AstSchemaBuilder.defaultWithLegacyCommentDescriptions"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.DefaultAstSchemaBuilder.useLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.schema.AstSchemaBuilder.defaultWithLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.schema.DefaultAstSchemaBuilder.useLegacyCommentDescriptions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.schema.LegacyCommentDescriptionsResolver"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.schema.LegacyCommentDescriptionsResolver$"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ResolverBasedAstSchemaBuilder.useLegacyCommentDescriptions"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.<init>$default$4"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.apply$default$4"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.schema.ResolverBasedAstSchemaBuilder.useLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.SchemaFilter.<init>$default$4"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.SchemaFilter.apply$default$4"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.apply"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.legacyCommentDescriptions"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.withLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.SchemaFilter.legacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.SchemaFilter.withLegacyCommentDescriptions"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.copy"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.copy$default$4"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.SchemaFilter.copy$default$4"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaFilter.this"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.SchemaRenderer.transformLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.SchemaRenderer.transformLegacyCommentDescriptions"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.ParserConfig.apply$default$*"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.parser.ParserConfig.apply$default$*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.ParserConfig.<init>$default$*"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.parser.ParserConfig.<init>$default$*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.ParserConfig.apply"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.ParserConfig.legacyImplementsInterface"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.ParserConfig.withLegacyImplementsInterface"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.ParserConfig.copy"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.parser.ParserConfig.copy$default$*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.ParserConfig.copy$default$*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.ParserConfig.this"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.legacyImplementsInterface"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.this"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.QueryRendererConfig.apply"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.QueryRendererConfig.legacyImplementsInterface"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.QueryRendererConfig.copy"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.renderer.QueryRendererConfig.copy$default$*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.renderer.QueryRendererConfig.this"),
+  ProblemFilters.exclude[MissingTypesProblem]("sangria.renderer.QueryRendererConfig$")
 )
 
 lazy val root = project
