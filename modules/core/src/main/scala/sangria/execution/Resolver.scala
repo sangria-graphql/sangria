@@ -493,8 +493,12 @@ class Resolver[Ctx](
                 Result(ErrorRegistry(fieldPath, resolveError(e), fields.head.location), None)
               }
 
-            val deferred = values.collect { case SeqRes(_, d, _) if d != null => d }.toVector
-            val deferredFut = values.collect { case SeqRes(_, _, d) if d != null => d }.toVector
+            val deferred = values.iterator.collect {
+              case SeqRes(_, d, _) if d != null => d
+            }.toVector
+            val deferredFut = values.iterator.collect {
+              case SeqRes(_, _, d) if d != null => d
+            }.toVector
 
             immediatelyResolveDeferred(
               uc,
@@ -826,7 +830,7 @@ class Resolver[Ctx](
 
             val resolved = future
               .flatMap { vs =>
-                val errors = vs.flatMap(_.errors).toVector
+                val errors = vs.iterator.flatMap(_.errors).toVector
                 val successfulValues = vs.collect { case SeqFutRes(v, _, _) if v != null => v }
                 val dctx = vs.collect { case SeqFutRes(_, _, d) if d != null => d }
 
@@ -869,8 +873,12 @@ class Resolver[Ctx](
                   None)
               }
 
-            val deferred = values.collect { case SeqRes(_, d, _) if d != null => d }.toVector
-            val deferredFut = values.collect { case SeqRes(_, _, d) if d != null => d }.toVector
+            val deferred = values.iterator.collect {
+              case SeqRes(_, d, _) if d != null => d
+            }.toVector
+            val deferredFut = values.iterator.collect {
+              case SeqRes(_, _, d) if d != null => d
+            }.toVector
 
             astFields.head -> DeferredResult(Future.successful(deferred) +: deferredFut, resolved)
 
@@ -1101,19 +1109,19 @@ class Resolver[Ctx](
 
         }
 
-        val simpleRes = resolvedValues.collect { case (af, r: Result) => af -> r }
-
         val resSoFar =
-          simpleRes.foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
-            case (res, (astField, other)) =>
-              res.addToMap(
-                other,
-                astField.outputName,
-                isOptional(tpe, astField.name),
-                path.add(astField, tpe),
-                astField.location,
-                res.errors)
-          }
+          resolvedValues.iterator
+            .collect { case (af, r: Result) => af -> r }
+            .foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
+              case (res, (astField, other)) =>
+                res.addToMap(
+                  other,
+                  astField.outputName,
+                  isOptional(tpe, astField.name),
+                  path.add(astField, tpe),
+                  astField.location,
+                  res.errors)
+            }
 
         val complexRes = resolvedValues.collect { case (af, r: DeferredResult) => af -> r }
 
@@ -1438,7 +1446,7 @@ class Resolver[Ctx](
               val beforeAction = mBefore.collect {
                 case (BeforeFieldResult(_, Some(action), _), _, _) => action
               }.lastOption
-              val beforeAttachments = mBefore.collect {
+              val beforeAttachments = mBefore.iterator.collect {
                 case (BeforeFieldResult(_, _, Some(att)), _, _) => att
               }.toVector
               val updatedCtx =
@@ -1463,7 +1471,7 @@ class Resolver[Ctx](
                 }
 
               def doErrorMiddleware(error: Throwable): Unit =
-                mError.collect {
+                mError.foreach {
                   case (BeforeFieldResult(cv, _, _), mv, m: MiddlewareErrorField[Ctx]) =>
                     m.fieldError(
                       mv.asInstanceOf[m.QueryVal],
@@ -1471,6 +1479,7 @@ class Resolver[Ctx](
                       error,
                       middlewareCtx,
                       updatedCtx)
+                  case _ => ()
                 }
 
               def doAfterMiddlewareWithMap[Val, NewVal](fn: Val => NewVal)(v: Val): NewVal =
@@ -1646,10 +1655,12 @@ class Resolver[Ctx](
                         .contains(ProjectionExclude) =>
                     val astField = fields.head
                     val field = objTpe.getField(schema, astField.name).head
-                    val projectionNames = field.tags.collect { case ProjectionName(name) => name }
+                    val projectionNames = field.tags.iterator.collect { case ProjectionName(name) =>
+                      name
+                    }.toVector
 
                     val projectedName =
-                      if (projectionNames.nonEmpty) projectionNames.toVector
+                      if (projectionNames.nonEmpty) projectionNames
                       else Vector(field.name)
 
                     projectedName.map(name =>
