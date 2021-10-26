@@ -788,7 +788,7 @@ class Resolver[Ctx](
       newUc.map(_.ctxFn(v)).getOrElse(userCtx)
 
     def resolveError(newUc: Option[MappedCtxUpdate[Ctx, Any, Any]], e: Throwable) = {
-      try newUc.map(_.onError(e))
+      try newUc.foreach(_.onError(e))
       catch {
         case NonFatal(ee) => ee.printStackTrace()
       }
