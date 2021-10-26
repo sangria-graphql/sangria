@@ -310,7 +310,7 @@ class TypeFieldConstraintsSpec extends AnyWordSpec with Matchers {
       val error =
         intercept[SchemaValidationException](Schema(QueryType, additionalTypes = AppleType :: Nil))
 
-      error.violations.head.errorMessage should include(
+      error.violations.last.errorMessage should include(
         "Fruit.slice expects argument 'parts', but Apple.slice does not provide it.")
     }
 

@@ -17,9 +17,9 @@ class ProvidedRequiredArguments extends ValidationRule {
         ctx.typeInfo.fieldDef match {
           case None => AstVisitorCommand.RightContinue
           case Some(fieldDef) =>
-            val astArgs = args.map(_.name).toSet
+            val astArgs = args.iterator.map(_.name).toSet
 
-            val errors = fieldDef.arguments.toVector.collect {
+            val errors = fieldDef.arguments.iterator.collect {
               case argDef
                   if !astArgs.contains(
                     argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty =>
@@ -29,7 +29,7 @@ class ProvidedRequiredArguments extends ValidationRule {
                   SchemaRenderer.renderTypeName(argDef.argumentType),
                   ctx.sourceMapper,
                   pos.toList)
-            }
+            }.toVector
 
             if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
         }
@@ -38,9 +38,9 @@ class ProvidedRequiredArguments extends ValidationRule {
         ctx.typeInfo.directive match {
           case None => AstVisitorCommand.RightContinue
           case Some(dirDef) =>
-            val astArgs = args.map(_.name).toSet
+            val astArgs = args.iterator.map(_.name).toSet
 
-            val errors = dirDef.arguments.toVector.collect {
+            val errors = dirDef.arguments.iterator.collect {
               case argDef
                   if !astArgs.contains(
                     argDef.name) && !argDef.argumentType.isOptional && argDef.defaultValue.isEmpty =>
@@ -50,7 +50,7 @@ class ProvidedRequiredArguments extends ValidationRule {
                   SchemaRenderer.renderTypeName(argDef.argumentType),
                   ctx.sourceMapper,
                   pos.toList)
-            }
+            }.toVector
 
             if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
         }

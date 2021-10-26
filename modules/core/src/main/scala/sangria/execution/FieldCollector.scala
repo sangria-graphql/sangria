@@ -176,13 +176,15 @@ class FieldCollector[Ctx, Val](
           .map(dir -> _)
       })
 
-    possibleDirs.collect { case Failure(error) => error }.headOption.map(Failure(_)).getOrElse {
-      val validDirs = possibleDirs.collect { case Success(v) => v }
-      val should = validDirs.forall { case (dir, args) =>
-        dir.shouldInclude(DirectiveContext(selection, dir, args))
-      }
+    possibleDirs.collectFirst { case Failure(error) => error } match {
+      case Some(f) => Failure(f)
+      case None =>
+        val validDirs = possibleDirs.collect { case Success(v) => v }
+        val should = validDirs.forall { case (dir, args) =>
+          dir.shouldInclude(DirectiveContext(selection, dir, args))
+        }
 
-      Success(should)
+        Success(should)
     }
   }
 
@@ -255,9 +257,9 @@ class CollectedFieldsBuilder {
   }
 
   def build = {
-    val builtFields = firstFields.toVector.zipWithIndex.map { case (f, idx) =>
+    val builtFields = firstFields.iterator.zipWithIndex.map { case (f, idx) =>
       CollectedField(names(idx), f, fields(idx).map(_.toVector))
-    }
+    }.toVector
 
     CollectedFields(names.toVector, builtFields)
   }

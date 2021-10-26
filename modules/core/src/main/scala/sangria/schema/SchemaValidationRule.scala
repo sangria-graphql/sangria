@@ -57,11 +57,11 @@ object SchemaValidationRule {
 }
 
 object DefaultValuesValidationRule extends SchemaValidationRule {
-  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation] = {
     val coercionHelper = ValueCoercionHelper.default
 
     def validate(prefix: => String, path: List[String], tpe: InputType[_])(
-        defaultValue: (_, ToInput[_, _])) = {
+        defaultValue: (_, ToInput[_, _])): Vector[Violation] = {
       val (default, toInput) = defaultValue.asInstanceOf[(Any, ToInput[Any, Any])]
       val (inputValue, iu) = toInput.toInput(default)
 
@@ -76,11 +76,11 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
         false,
         prefix)(iu) match {
         case Left(violations) => violations
-        case Right(violations) => Nil
+        case Right(violations) => Vector.empty
       }
     }
 
-    val inputTypeViolations = schema.inputTypes.values.toList.flatMap {
+    val inputTypeViolations = schema.inputTypes.values.flatMap {
       case it: InputObjectType[_] =>
         it.fields.flatMap(f =>
           f.defaultValue
@@ -93,7 +93,7 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
       case _ => Nil
     }
 
-    val outputTypeViolations = schema.outputTypes.values.toList.flatMap {
+    val outputTypeViolations = schema.outputTypes.values.flatMap {
       case ot: ObjectLikeType[_, _] =>
         ot.fields.flatMap(f =>
           f.arguments.flatMap(a =>
@@ -107,7 +107,7 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
       case _ => Nil
     }
 
-    inputTypeViolations ++ outputTypeViolations
+    inputTypeViolations.toList ++ outputTypeViolations
   }
 }
 
@@ -118,17 +118,17 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
       intTpe: InterfaceType[_, _]): Vector[Violation] = {
     val objFields: Map[String, Vector[Field[_, _]]] = objTpe.ownFields.groupBy(_.name)
 
-    intTpe.ownFields.flatMap { intField =>
-      objFields.get(intField.name) match {
-        case None =>
-          // we allow object type to inherit fields from the interfaces
-          // without explicitly defining them, but only when it is not
-          // defined though SDL.
-          Vector.empty
+    val violations: List[Violation] = intTpe.ownFields.foldLeft(List.empty[Violation]) {
+      case (acc, intField) =>
+        objFields.get(intField.name) match {
+          case None =>
+            // we allow object type to inherit fields from the interfaces
+            // without explicitly defining them, but only when it is not
+            // defined though SDL.
+            acc
 
-        case Some(objField)
-            if !TypeComparators.isSubType(schema, objField.head.fieldType, intField.fieldType) =>
-          Vector(
+          case Some(objField)
+              if !TypeComparators.isSubType(schema, objField.head.fieldType, intField.fieldType) =>
             InvalidImplementationFieldTypeViolation(
               intTpe.name,
               objTpe.name,
@@ -138,13 +138,12 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
               SchemaElementValidator.sourceMapper(schema),
               SchemaElementValidator.location(objField.head) ++ SchemaElementValidator.location(
                 intField)
-            ))
+            ) :: acc
 
-        case Some(objField) =>
-          val intArgViolations = intField.arguments.flatMap { iarg =>
-            objField.head.arguments.find(_.name == iarg.name) match {
-              case None =>
-                Vector(
+          case Some(objField) =>
+            val violationsWithIntArg = intField.arguments.foldLeft(acc) { case (acc, iarg) =>
+              objField.head.arguments.find(_.name == iarg.name) match {
+                case None =>
                   MissingImplementationFieldArgumentViolation(
                     intTpe.name,
                     objTpe.name,
@@ -153,11 +152,10 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
                     SchemaElementValidator.sourceMapper(schema),
                     SchemaElementValidator.location(iarg) ++ SchemaElementValidator.location(
                       objField.head)
-                  ))
+                  ) :: acc
 
-              case Some(oarg)
-                  if !TypeComparators.isEqualType(iarg.argumentType, oarg.argumentType) =>
-                Vector(
+                case Some(oarg)
+                    if !TypeComparators.isEqualType(iarg.argumentType, oarg.argumentType) =>
                   InvalidImplementationFieldArgumentTypeViolation(
                     intTpe.name,
                     objTpe.name,
@@ -167,17 +165,18 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
                     SchemaRenderer.renderTypeName(oarg.argumentType),
                     SchemaElementValidator.sourceMapper(schema),
                     SchemaElementValidator.location(iarg) ++ SchemaElementValidator.location(oarg)
-                  ))
+                  ) :: acc
 
-              case _ => Nil
+                case _ => acc
+              }
             }
-          }
 
-          val objArgViolations = objField.head.arguments
-            .filterNot(oa => intField.arguments.exists(_.name == oa.name))
-            .flatMap {
-              case oarg if !oarg.argumentType.isInstanceOf[OptionInputType[_]] =>
-                Vector(
+            objField.head.arguments.iterator
+              .filterNot(oa => intField.arguments.exists(_.name == oa.name))
+              .foldLeft(violationsWithIntArg) { case (acc, oarg) =>
+                if (oarg.argumentType.isInstanceOf[OptionInputType[_]])
+                  acc
+                else
                   ImplementationExtraFieldArgumentNotOptionalViolation(
                     intTpe.name,
                     objTpe.name,
@@ -187,16 +186,14 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
                     SchemaElementValidator.sourceMapper(schema),
                     SchemaElementValidator.location(oarg) ++ SchemaElementValidator.location(
                       intField)
-                  ))
-              case _ => Nil
-            }
-
-          intArgViolations ++ objArgViolations
-      }
+                  ) :: acc
+              }
+        }
     }
+    violations.toVector
   }
 
-  def validate[Ctx, Val](schema: Schema[Ctx, Val]) =
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation] =
     schema.possibleTypes.toList.flatMap { case (intName, objTypes) =>
       schema.outputTypes(intName) match {
         case intTpe: InterfaceType[_, _] => objTypes.flatMap(validateObjectType(schema, _, intTpe))
@@ -206,7 +203,7 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
 }
 
 object SubscriptionFieldsValidationRule extends SchemaValidationRule {
-  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation] = {
     val subsName = schema.subscription.map(_.name)
 
     def subscriptionTag(tag: FieldTag) = tag match {
@@ -216,7 +213,7 @@ object SubscriptionFieldsValidationRule extends SchemaValidationRule {
 
     val otherViolations = schema.typeList.flatMap {
       case obj: ObjectLikeType[_, _] if subsName.isDefined && subsName.get != obj.name =>
-        obj.uniqueFields
+        obj.uniqueFields.iterator
           .filter(_.tags.exists(subscriptionTag))
           .map(f => InvalidSubscriptionFieldViolation(obj.name, f.name))
 
@@ -462,14 +459,14 @@ object ValidNamesValidator extends SchemaElementValidator {
 }
 
 object ContainerMembersValidator extends SchemaElementValidator {
-  override def validateUnionType(schema: Schema[_, _], tpe: UnionType[_]) = {
+  override def validateUnionType(schema: Schema[_, _], tpe: UnionType[_]): Vector[Violation] = {
     val emptyErrors =
       if (tpe.types.isEmpty)
         Vector(EmptyUnionMembersViolation(tpe.name, sourceMapper(schema), location(tpe)))
       else Vector.empty
 
     val nonUnique =
-      tpe.types.groupBy(_.name).toVector.collect {
+      tpe.types.groupBy(_.name).iterator.collect {
         case (memberName, dup) if dup.size > 1 =>
           val astMembers = tpe.astNodes.collect {
             case astUnion: UnionTypeDefinition => astUnion.types
@@ -483,14 +480,14 @@ object ContainerMembersValidator extends SchemaElementValidator {
     emptyErrors ++ nonUnique
   }
 
-  override def validateEnumType(schema: Schema[_, _], tpe: EnumType[_]) = {
+  override def validateEnumType(schema: Schema[_, _], tpe: EnumType[_]): Vector[Violation] = {
     val emptyErrors =
       if (tpe.values.isEmpty)
         Vector(EmptyEnumValuesMembersViolation(tpe.name, sourceMapper(schema), location(tpe)))
       else Vector.empty
 
     val nonUnique =
-      tpe.values.groupBy(_.name).toVector.collect {
+      tpe.values.groupBy(_.name).iterator.collect {
         case (valueName, dup) if dup.size > 1 =>
           NonUniqueEnumValuesViolation(
             tpe.name,
@@ -502,14 +499,16 @@ object ContainerMembersValidator extends SchemaElementValidator {
     emptyErrors ++ nonUnique
   }
 
-  override def validateInputObjectType(schema: Schema[_, _], tpe: InputObjectType[_]) = {
+  override def validateInputObjectType(
+      schema: Schema[_, _],
+      tpe: InputObjectType[_]): Vector[Violation] = {
     val emptyErrors =
       if (tpe.fields.isEmpty)
         Vector(EmptyInputFieldsViolation(tpe.name, sourceMapper(schema), location(tpe)))
       else Vector.empty
 
     val nonUnique =
-      tpe.fields.groupBy(_.name).toVector.collect {
+      tpe.fields.groupBy(_.name).iterator.collect {
         case (fieldName, dup) if dup.size > 1 =>
           NonUniqueInputFieldsViolation(
             tpe.name,
@@ -521,11 +520,13 @@ object ContainerMembersValidator extends SchemaElementValidator {
     emptyErrors ++ nonUnique
   }
 
-  override def validateObjectType(schema: Schema[_, _], tpe: ObjectType[_, _]) = {
+  override def validateObjectType(
+      schema: Schema[_, _],
+      tpe: ObjectType[_, _]): Vector[Violation] = {
     val generalErrors = validateObjectLikeType(schema, tpe, "Object")
 
     val nonUnique =
-      tpe.interfaces.groupBy(_.name).toVector.collect {
+      tpe.interfaces.groupBy(_.name).iterator.collect {
         case (intName, dup) if dup.size > 1 =>
           val astMembers = tpe.astNodes.collect {
             case astUnion: ObjectTypeDefinition => astUnion.interfaces
@@ -539,7 +540,9 @@ object ContainerMembersValidator extends SchemaElementValidator {
     generalErrors ++ nonUnique
   }
 
-  override def validateInterfaceType(schema: Schema[_, _], tpe: InterfaceType[_, _]) =
+  override def validateInterfaceType(
+      schema: Schema[_, _],
+      tpe: InterfaceType[_, _]): Vector[Violation] =
     validateObjectLikeType(schema, tpe, "Interface")
 
   def validateObjectLikeType(
@@ -552,7 +555,7 @@ object ContainerMembersValidator extends SchemaElementValidator {
       else Vector.empty
 
     val nonUnique =
-      tpe.ownFields.groupBy(_.name).toVector.collect {
+      tpe.ownFields.groupBy(_.name).iterator.collect {
         case (fieldName, dup) if dup.size > 1 =>
           NonUniqueFieldsViolation(
             kind,
@@ -565,32 +568,46 @@ object ContainerMembersValidator extends SchemaElementValidator {
     emptyErrors ++ nonUnique
   }
 
-  override def validateField(schema: Schema[_, _], tpe: ObjectLikeType[_, _], field: Field[_, _]) =
-    field.arguments.groupBy(_.name).toVector.collect {
-      case (argName, dup) if dup.size > 1 =>
-        NonUniqueFieldArgumentsViolation(
-          tpe.name,
-          field.name,
-          argName,
-          sourceMapper(schema),
-          dup.flatMap(location))
-    }
+  override def validateField(
+      schema: Schema[_, _],
+      tpe: ObjectLikeType[_, _],
+      field: Field[_, _]): Vector[Violation] =
+    field.arguments
+      .groupBy(_.name)
+      .iterator
+      .collect {
+        case (argName, dup) if dup.size > 1 =>
+          NonUniqueFieldArgumentsViolation(
+            tpe.name,
+            field.name,
+            argName,
+            sourceMapper(schema),
+            dup.flatMap(location))
+      }
+      .toVector
 
-  override def validateDirective(schema: Schema[_, _], tpe: Directive) =
-    tpe.arguments.groupBy(_.name).toVector.collect {
-      case (argName, dup) if dup.size > 1 =>
-        NonUniqueDirectiveArgumentsViolation(
-          tpe.name,
-          argName,
-          sourceMapper(schema),
-          dup.flatMap(location))
-    }
+  override def validateDirective(schema: Schema[_, _], tpe: Directive): Vector[Violation] =
+    tpe.arguments
+      .groupBy(_.name)
+      .iterator
+      .collect {
+        case (argName, dup) if dup.size > 1 =>
+          NonUniqueDirectiveArgumentsViolation(
+            tpe.name,
+            argName,
+            sourceMapper(schema),
+            dup.flatMap(location))
+      }
+      .toVector
 }
 
 object EnumValueReservedNameValidator extends SchemaElementValidator {
   private val reservedNames = Set("true", "false", "null")
 
-  override def validateEnumValue(schema: Schema[_, _], tpe: EnumType[_], value: EnumValue[_]) =
+  override def validateEnumValue(
+      schema: Schema[_, _],
+      tpe: EnumType[_],
+      value: EnumValue[_]): Vector[Violation] =
     if (reservedNames.contains(value.name))
       Vector(
         ReservedEnumValueNameViolation(tpe.name, value.name, sourceMapper(schema), location(value)))
@@ -611,8 +628,8 @@ object InputObjectTypeRecursionValidator extends SchemaElementValidator {
     val recursiveFields = tpe.fields.filter(childField =>
       childField.fieldType.namedType.name == rootTypeName && !childField.fieldType.isOptional && !childField.fieldType.isList)
     if (recursiveFields.nonEmpty) {
-      recursiveFields
-        .flatMap(field => Vector(InputObjectTypeRecursion(tpe.name, field.name, path, None, Nil)))
+      recursiveFields.iterator
+        .map(field => InputObjectTypeRecursion(tpe.name, field.name, path, None, Nil))
         .toVector
     } else {
       val childTypesToCheck = tpe.fields.filter(field =>
@@ -685,7 +702,7 @@ class FullSchemaTraversalValidationRule(validators: SchemaElementValidator*)
     extends SchemaValidationRule {
   private val reservedNames = Set("true", "false", "null")
 
-  def validate[Ctx, Val](schema: Schema[Ctx, Val]) = {
+  def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation] = {
     val violations = new VectorBuilder[Violation]
 
     def add(vs: Vector[Violation]): Unit =
