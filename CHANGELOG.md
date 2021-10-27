@@ -1052,7 +1052,7 @@ I collected all of them in the change list below. They were necessary in order t
   * `Projector` now gets all of the fields, not only fields marked with `Projection`
   * `Projection` now allows to customize the name
   * `NoProjection` allows to remove field from projections list
-  * `Projectior` allows to specify how deep it should look (the level arg)
+  * `Projector` allows to specify how deep it should look (the level arg)
 
 ## v0.1.0 (2015-07-26)
 
