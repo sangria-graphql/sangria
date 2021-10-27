@@ -1139,7 +1139,7 @@ class AstSchemaMaterializerSpec
              |    # be part of the description
              |
              |    $quotes
-             |    secnd arg
+             |    second arg
              |    line 2
              |    $quotes
              |    arg2: String!
@@ -1156,7 +1156,7 @@ class AstSchemaMaterializerSpec
 
         field.description should be(None)
         field.arguments(0).description should be(Some("first arg"))
-        field.arguments(1).description should be(Some("secnd arg\nline 2"))
+        field.arguments(1).description should be(Some("second arg\nline 2"))
       }
 
       "support type extensions" in {
