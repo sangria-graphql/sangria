@@ -987,7 +987,7 @@ I collected all of them in the change list below. They were necessary in order t
 * #58 - Implement CirceJsonSupport in order to be able to integrate with Circe
 * #53 - Add `map` in `Action`
 * #53 - Ensure Ctx proper inheritance behavior
-*	#33 - `grapql` string context macro to create parsed document and verify query at compile time (big thanks to @dlreeves for implementing this feature). Here is an example how you can use it:
+*	#33 - `graphql` string context macro to create parsed document and verify query at compile time (big thanks to @dlreeves for implementing this feature). Here is an example how you can use it:
   ```scala
   import sangria.macros._
 
