@@ -1,7 +1,7 @@
 package sangria.execution.batch
 
+import cats.effect.unsafe.implicits.global
 import scala.concurrent.ExecutionContext
-import cats.effect.{ContextShift, IO}
 import sangria.macros._
 import sangria.marshalling._
 import sangria.schema._
@@ -15,7 +15,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   implicit val ec: ExecutionContext = ExecutionContext.global
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   val IdsArg = Argument("ids", ListInputType(IntType))
   val IdArg = Argument("id", IntType)
@@ -294,7 +293,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val res = BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2"))
 
-      res.compile.toVector.unsafeRunSync.toSet should be(
+      res.compile.toVector.unsafeRunSync().toSet should be(
         Set(
           """
           {

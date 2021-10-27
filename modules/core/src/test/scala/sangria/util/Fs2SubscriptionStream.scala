@@ -1,14 +1,16 @@
 package sangria.util
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import fs2.Stream
 import sangria.streaming.SubscriptionStream
+
 import scala.concurrent.Future
 
 object Fs2Support {
   type IOS[A] = Stream[IO, A]
 
-  class Fs2SubscriptionStream(implicit CS: ContextShift[IO]) extends SubscriptionStream[IOS] {
+  class Fs2SubscriptionStream(implicit runtime: IORuntime) extends SubscriptionStream[IOS] {
     def supported[T[_]](other: SubscriptionStream[T]) = other.isInstanceOf[Fs2SubscriptionStream]
 
     def map[A, B](source: IOS[A])(fn: A => B) = source.map(fn)
@@ -42,7 +44,6 @@ object Fs2Support {
       stream.handleErrorWith { case e => Stream.emit(fn(e)) }
   }
 
-  implicit def observableSubscriptionStream(implicit
-      CS: ContextShift[IO]): SubscriptionStream[IOS] =
+  implicit def observableSubscriptionStream(implicit runtime: IORuntime): SubscriptionStream[IOS] =
     new Fs2SubscriptionStream
 }
