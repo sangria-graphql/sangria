@@ -373,7 +373,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
                 Vector(
                   None,
                   Some(Comment("anonymous", None)),
-                  Some(Comment("anonymous", Some("commnet3"))))))).toString,
+                  Some(Comment("anonymous", Some("comment3"))))))).toString,
           "ol4" -> Some(
             Vector(
               Article("bar", None, None, Vector(None)),
@@ -388,7 +388,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
             "comments": [
               null,
               {},
-              {"text": "commnet3"}
+              {"text": "comment3"}
             ]
           },
           "var2": [
@@ -448,7 +448,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
                   Vector(
                     None,
                     Some(Comment("anonymous", None)),
-                    Some(Comment("anonymous", Some("commnet3")))))),
+                    Some(Comment("anonymous", Some("comment3")))))),
               None)).toString,
           "olo4" -> Some(
             Vector(
@@ -465,7 +465,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
             "comments": [
               null,
               {},
-              {"text": "commnet3"}
+              {"text": "comment3"}
             ]
           },
           "var2": [
@@ -499,7 +499,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
             None,
             Some("""{"title":"second","comments":[null,null]}""")).toString,
           "olo3" -> Vector(
-            Some("""{"title":"foo","text":"bar","tags":["a","b"],"comments":[null,{"author":"anonymous"},{"author":"anonymous","text":"commnet3"}]}"""),
+            Some("""{"title":"foo","text":"bar","tags":["a","b"],"comments":[null,{"author":"anonymous"},{"author":"anonymous","text":"comment3"}]}"""),
             None).toString,
           "olo4" -> Vector(
             Some("""{"title":"bar","text":null,"tags":null,"comments":[null]}"""),
@@ -515,7 +515,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
             "comments": [
               null,
               {},
-              {"text": "commnet3"}
+              {"text": "comment3"}
             ]
           },
           "var2": [
@@ -583,7 +583,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
                 Vector(
                   None,
                   Some(Comment("anonymous", None)),
-                  Some(Comment("anonymous", Some("commnet3")))))),
+                  Some(Comment("anonymous", Some("comment3")))))),
             None).toString,
           "olo4" -> Vector(
             Some(Article("bar", None, None, Vector(None))),
@@ -599,7 +599,7 @@ class FromInputSpec extends AnyWordSpec with Matchers {
             "comments": [
               null,
               {},
-              {"text": "commnet3"}
+              {"text": "comment3"}
             ]
           },
           "var2": [
