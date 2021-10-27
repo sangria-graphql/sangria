@@ -492,7 +492,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       resRelsOnly should be(resRelsOnlyCached)
     }
 
-    "hansle complex relations" in {
+    "handle complex relations" in {
       val query =
         graphql"""
           {
