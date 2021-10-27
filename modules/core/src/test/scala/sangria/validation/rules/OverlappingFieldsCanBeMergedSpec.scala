@@ -3,7 +3,6 @@ package sangria.validation.rules
 import org.scalatest.wordspec.AnyWordSpec
 import sangria.schema._
 import sangria.util.{Pos, ValidationSupport}
-import sangria.validation.rules.experimental.OverlappingFieldsCanBeMerged
 
 class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSupport {
 

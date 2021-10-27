@@ -11,10 +11,8 @@ import sangria.validation.{QueryValidator, RuleBasedQueryValidator, Violation}
 @State(Scope.Thread)
 class OverlappingFieldsCanBeMergedBenchmark {
 
-  @Param(Array("Old", "New"))
-  var validatorType: String = _
-
-  var validator: QueryValidator = _
+  val validator: QueryValidator = new RuleBasedQueryValidator(
+    List(new rules.OverlappingFieldsCanBeMerged))
 
   val schema: Schema[_, _] =
     Schema.buildFromAst(
@@ -67,11 +65,6 @@ class OverlappingFieldsCanBeMergedBenchmark {
 
   @Setup
   def setup(): Unit = {
-    validator = validatorType match {
-      case "Old" => new RuleBasedQueryValidator(List(new rules.OverlappingFieldsCanBeMerged))
-      case "New" =>
-        new RuleBasedQueryValidator(List(new rules.experimental.OverlappingFieldsCanBeMerged))
-    }
     overlapFrag = makeQuery(size, overlapping = true, fragments = true)
     overlapNoFrag = makeQuery(size, overlapping = true, fragments = false)
     noOverlapFrag = makeQuery(size, overlapping = false, fragments = true)
