@@ -550,7 +550,7 @@ A minor maintenance release to keep up with the spec changes.
   
   `recover` function will make sure that all of the errors, that were previously handled internally in `Executor`, are now properly handled. **Code above will produce exactly the same result as before.** `resolveError` produces a valid GraphQL response JSON and will use custom exception handler, if you have provided one.
       
-  This new approach to error handling gives you much more flexibility. For example in most cases it makes a lot of sense to return 400 HTTP status code if query validation failed. It was not really possible to do this before. Now you able to do something like this (using playframefork in this particular example):
+  This new approach to error handling gives you much more flexibility. For example in most cases it makes a lot of sense to return 400 HTTP status code if query validation failed. It was not really possible to do this before. Now you able to do something like this (using playframework in this particular example):
       
   ```scala
   executor.execute(query, ...)
