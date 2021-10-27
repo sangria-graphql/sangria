@@ -23,7 +23,7 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
 
   sealed abstract class ExoticFruit(val score: Int) extends Fruit
 
-  case object Guave extends ExoticFruit(123)
+  case object Guava extends ExoticFruit(123)
 
   @GraphQLName("MyFruit")
   @GraphQLDescription("Very tasty fruit")
@@ -105,9 +105,9 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       val enum = deriveEnumType[Color.Value]()
 
       singletonEnum.values.map(_.name).sorted should be(
-        List("Guave", "MegaOrange", "RedApple", "SuperBanana"))
+        List("Guava", "MegaOrange", "RedApple", "SuperBanana"))
       singletonEnum.values.map(_.value).sortBy(_.toString) should be(
-        List(Guave, MegaOrange, RedApple, SuperBanana))
+        List(Guava, MegaOrange, RedApple, SuperBanana))
 
       enum.values.map(_.name).sorted should be(List("DarkBlue", "LightGreen", "Red"))
       enum.values.map(_.value).sortBy(_.toString) should be(
@@ -123,7 +123,7 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       """deriveEnumType[Fruit](DeprecateValue("Test", "Fooo"))""" shouldNot compile
       """deriveEnumType[Fruit](RenameValue("Test", "Fooo"))""" shouldNot compile
       """deriveEnumType[Fruit](UppercaseValues, RenameValue("RedApple", "Fooo"))""" shouldNot compile
-      """deriveEnumType[Fruit](ExcludeValues("RedApple", "SuperBanana", "MegaOrange", "Guave"))""" shouldNot compile
+      """deriveEnumType[Fruit](ExcludeValues("RedApple", "SuperBanana", "MegaOrange", "Guava"))""" shouldNot compile
     }
 
     "respect whitelist and blacklist provided via config" in {
@@ -178,8 +178,8 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       val singletonEnum = deriveEnumType[Fruit](
         DocumentValue("RedApple", "apple!", deprecationReason = Some("foo")),
         RenameValue("SuperBanana", "JustBanana"),
-        RenameValue("Guave", "Yay"),
-        DocumentValue("Guave", "my color"),
+        RenameValue("Guava", "Yay"),
+        DocumentValue("Guava", "my color"),
         DeprecateValue("MegaOrange", "not cool")
       )
 
@@ -195,7 +195,7 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
           EnumValue("JustBanana", None, SuperBanana, None),
           EnumValue("MegaOrange", None, MegaOrange, Some("not cool")),
           EnumValue("RedApple", Some("apple!"), RedApple, Some("foo")),
-          EnumValue("Yay", Some("my color"), Guave, None)
+          EnumValue("Yay", Some("my color"), Guava, None)
         ))
 
       enum.values.sortBy(_.name) should be(
