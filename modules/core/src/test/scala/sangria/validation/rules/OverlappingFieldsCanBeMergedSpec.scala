@@ -614,7 +614,7 @@ class OverlappingFieldsCanBeMergedSpec extends AnyWordSpec with ValidationSuppor
         """
       )
 
-      "allows non-conflicting overlaping types" in expectValid(
+      "allows non-conflicting overlapping types" in expectValid(
         schema,
         new OverlappingFieldsCanBeMerged :: Nil,
         """
