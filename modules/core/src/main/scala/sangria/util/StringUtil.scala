@@ -35,7 +35,7 @@ object StringUtil {
     val inputThreshold = math.max(inputLength / 2, 1)
 
     options.iterator
-      // filter out options where the lenght is too different to avoid computing the lexical distance
+      // filter out options where the length is too different to avoid computing the lexical distance
       .filter { opt =>
         val length = opt.length
         length >= inputLength - inputThreshold && length <= inputLength + inputThreshold
