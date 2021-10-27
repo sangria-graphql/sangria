@@ -511,7 +511,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
         ))
     }
 
-    "allow attachments to communicate values with resolve cuntions" in {
+    "allow attachments to communicate values with resolve functions" in {
       case class CurrentUser(userName: String) extends MiddlewareAttachment
 
       class QueryMiddleware(name: Option[String])
