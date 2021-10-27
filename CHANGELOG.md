@@ -359,7 +359,7 @@ If you are facing unexpected issues with migration to the new Sangria version, p
 * Disallow creation of object types with empty list of fields (#200)
 * SimpleFetcherCache does not cache Relation (#194)
 * Fetching Relation Typing (#193)
-* Helper method `sangroia.schema.action` is replaced with `Action.apply` and `LeafAction.apply`
+* Helper method `sangria.schema.action` is replaced with `Action.apply` and `LeafAction.apply`
 
 ## v1.0.0-RC5 (2016-11-28)
 
