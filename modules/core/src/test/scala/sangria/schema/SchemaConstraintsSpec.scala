@@ -22,7 +22,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
       val inputType =
         InputObjectType("Point", List(InputField("x", FloatType), InputField("y", FloatType)))
 
-      val ouputType = ObjectType(
+      val outputType = ObjectType(
         "Point",
         fields[Unit, Unit](
           Field("x", FloatType, resolve = _ => 1.234),
@@ -34,7 +34,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         fields[Unit, Unit](
           Field(
             "foo",
-            OptionType(ouputType),
+            OptionType(outputType),
             arguments = Argument("points", ListInputType(inputType)) :: Nil,
             resolve = _ => None)))
 

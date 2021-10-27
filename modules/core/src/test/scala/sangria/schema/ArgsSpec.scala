@@ -107,7 +107,7 @@ class ArgsSpec extends AnyWordSpec with Matchers {
         args.arg(defaultArgument) should be(10)
       }
 
-      "build with overriden default values" in {
+      "build with overridden default values" in {
         val args = Args(List(defaultArgument), Map(DefaultArgumentName -> 9001))
         args.raw should be(Map(DefaultArgumentName -> Some(9001)))
         args.argsWithDefault should be(Set(DefaultArgumentName))
@@ -161,7 +161,7 @@ class ArgsSpec extends AnyWordSpec with Matchers {
         args.arg(optionalArgument) should be(None)
       }
 
-      "build with overriden default values" in {
+      "build with overridden default values" in {
         val json = JsObject(DefaultArgumentName -> JsNumber(9001))
         val args = Args(List(defaultArgument), json)
         args.raw should be(Map(DefaultArgumentName -> Some(9001)))

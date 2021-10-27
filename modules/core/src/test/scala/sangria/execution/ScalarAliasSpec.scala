@@ -135,7 +135,7 @@ class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport
         )))
     }
 
-    "represent correct transforms UUID values coming from variables (also after AST-based schema extention)" in {
+    "represent correct transforms UUID values coming from variables (also after AST-based schema extension)" in {
       val TestInp =
         InputObjectType("TestInp", List(InputField("id", UUIDType), InputField("id1", UUIDType)))
 

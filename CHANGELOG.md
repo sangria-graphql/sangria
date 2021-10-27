@@ -359,7 +359,7 @@ If you are facing unexpected issues with migration to the new Sangria version, p
 * Disallow creation of object types with empty list of fields (#200)
 * SimpleFetcherCache does not cache Relation (#194)
 * Fetching Relation Typing (#193)
-* Helper method `sangroia.schema.action` is replaced with `Action.apply` and `LeafAction.apply`
+* Helper method `sangria.schema.action` is replaced with `Action.apply` and `LeafAction.apply`
 
 ## v1.0.0-RC5 (2016-11-28)
 
@@ -550,7 +550,7 @@ A minor maintenance release to keep up with the spec changes.
   
   `recover` function will make sure that all of the errors, that were previously handled internally in `Executor`, are now properly handled. **Code above will produce exactly the same result as before.** `resolveError` produces a valid GraphQL response JSON and will use custom exception handler, if you have provided one.
       
-  This new approach to error handling gives you much more flexibility. For example in most cases it makes a lot of sense to return 400 HTTP status code if query validation failed. It was not really possible to do this before. Now you able to do something like this (using playframefork in this particular example):
+  This new approach to error handling gives you much more flexibility. For example in most cases it makes a lot of sense to return 400 HTTP status code if query validation failed. It was not really possible to do this before. Now you able to do something like this (using playframework in this particular example):
       
   ```scala
   executor.execute(query, ...)
@@ -987,7 +987,7 @@ I collected all of them in the change list below. They were necessary in order t
 * #58 - Implement CirceJsonSupport in order to be able to integrate with Circe
 * #53 - Add `map` in `Action`
 * #53 - Ensure Ctx proper inheritance behavior
-*	#33 - `grapql` string context macro to create parsed document and verify query at compile time (big thanks to @dlreeves for implementing this feature). Here is an example how you can use it:
+*	#33 - `graphql` string context macro to create parsed document and verify query at compile time (big thanks to @dlreeves for implementing this feature). Here is an example how you can use it:
   ```scala
   import sangria.macros._
 
@@ -1052,7 +1052,7 @@ I collected all of them in the change list below. They were necessary in order t
   * `Projector` now gets all of the fields, not only fields marked with `Projection`
   * `Projection` now allows to customize the name
   * `NoProjection` allows to remove field from projections list
-  * `Projectior` allows to specify how deep it should look (the level arg)
+  * `Projector` allows to specify how deep it should look (the level arg)
 
 ## v0.1.0 (2015-07-26)
 

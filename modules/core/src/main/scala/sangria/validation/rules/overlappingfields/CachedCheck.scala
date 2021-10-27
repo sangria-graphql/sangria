@@ -217,7 +217,7 @@ class CachedCheck {
     private def groupByCommonParentTypes(): util.ArrayList[FieldSetCache] =
       if (cacheGroupByCommonParentTypes == null) {
         val fieldsWithAbstractParentTypes = new util.ArrayList[SelectionField]()
-        val fieldsWithConreteParents =
+        val fieldsWithConcreteParents =
           new util.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder]()
         fields.forEach {
           new Consumer[SelectionField] {
@@ -226,7 +226,7 @@ class CachedCheck {
                 case TypeAbstractness.Abstract =>
                   fieldsWithAbstractParentTypes.add(field)
                 case concrete: TypeAbstractness.Concrete =>
-                  fieldsWithConreteParents
+                  fieldsWithConcreteParents
                     .computeIfAbsent(
                       concrete,
                       new function.Function[TypeAbstractness.Concrete, FieldSetBuilder] {
@@ -240,7 +240,7 @@ class CachedCheck {
         }
         val result = combineAbstractAndConcreteParentTypes(
           fieldsWithAbstractParentTypes,
-          fieldsWithConreteParents)
+          fieldsWithConcreteParents)
         cacheGroupByCommonParentTypes = result
         cacheGroupByCommonParentTypes
       } else {
@@ -249,9 +249,9 @@ class CachedCheck {
 
     private def combineAbstractAndConcreteParentTypes(
         fieldsWithAbstractParentTypes: util.ArrayList[SelectionField],
-        fieldsWithConreteParents: util.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder])
+        fieldsWithConcreteParents: util.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder])
         : util.ArrayList[FieldSetCache] =
-      if (fieldsWithConreteParents.isEmpty) {
+      if (fieldsWithConcreteParents.isEmpty) {
         if (fieldsWithAbstractParentTypes.isEmpty) {
           new util.ArrayList[FieldSetCache](0)
         } else {
@@ -263,16 +263,16 @@ class CachedCheck {
           list
         }
       } else {
-        val list = new util.ArrayList[FieldSetCache](fieldsWithConreteParents.size())
+        val list = new util.ArrayList[FieldSetCache](fieldsWithConcreteParents.size())
         if (fieldsWithAbstractParentTypes.isEmpty) {
-          fieldsWithConreteParents.values().forEach {
+          fieldsWithConcreteParents.values().forEach {
             new Consumer[FieldSetBuilder] {
               override def accept(builder: FieldSetBuilder): Unit =
                 list.add(getCacheLine(builder.build()))
             }
           }
         } else {
-          fieldsWithConreteParents.values().forEach {
+          fieldsWithConcreteParents.values().forEach {
             new Consumer[FieldSetBuilder] {
               override def accept(builder: FieldSetBuilder): Unit = {
                 val set = builder.addAll(fieldsWithAbstractParentTypes).build()

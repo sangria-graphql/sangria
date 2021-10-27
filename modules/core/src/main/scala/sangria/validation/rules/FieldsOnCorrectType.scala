@@ -10,7 +10,7 @@ import sangria.validation._
 /** Fields on correct type
   *
   * A GraphQL document is only valid if all fields selected are defined by the parent type, or are
-  * an allowed meta field such as __typenamme
+  * an allowed meta field such as __typename
   */
 class FieldsOnCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
