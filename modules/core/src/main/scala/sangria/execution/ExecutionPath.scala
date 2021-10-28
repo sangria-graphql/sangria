@@ -25,14 +25,14 @@ class ExecutionPath private (_path: List[Any], cacheKeyPath: ExecutionPath.PathC
     */
   def size = cacheKeyPath.size / 2
 
-  def marshal(m: ResultMarshaller): m.Node = m.arrayNode(_path.reverse.iterator.map {
+  def marshal(m: ResultMarshaller): m.Node = m.arrayNode(_path.reverseIterator.map {
     case s: String => m.scalarNode(s, "String", Set.empty)
     case i: Int => m.scalarNode(i, "Int", Set.empty)
   }.toVector)
 
   def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath
 
-  override def toString = _path.reverse
+  override def toString = _path.reverseIterator
     .foldLeft(new StringBuilder) {
       case (builder, str: String) =>
         if (builder.isEmpty) builder.append(str) else builder.append(".").append(str)
