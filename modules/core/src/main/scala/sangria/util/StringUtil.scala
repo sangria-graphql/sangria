@@ -82,25 +82,29 @@ object StringUtil {
 
   def escapeBlockString(str: String) = str.replaceAll("\"\"\"", "\\\\\"\"\"")
 
-  def escapeString(str: String) =
-    str.flatMap {
-      case ch if ch > 0xfff => "\\u" + charHex(ch)
-      case ch if ch > 0xff => "\\u0" + charHex(ch)
-      case ch if ch > 0x7f => "\\u00" + charHex(ch)
-      case ch if ch < 32 =>
-        ch match {
-          case '\b' => "\\b"
-          case '\n' => "\\n"
-          case '\t' => "\\t"
-          case '\f' => "\\f"
-          case '\r' => "\\r"
-          case ch if ch > 0xf => "\\u00" + charHex(ch)
-          case ch => "\\u000" + charHex(ch)
+  def escapeString(str: String): String =
+    str
+      .foldLeft(new StringBuilder) { (builder, e) =>
+        e match {
+          case ch if ch > 0xfff => builder.append("\\u").append(charHex(ch))
+          case ch if ch > 0xff => builder.append("\\u0").append(charHex(ch))
+          case ch if ch > 0x7f => builder.append("\\u00").append(charHex(ch))
+          case ch if ch < 32 =>
+            ch match {
+              case '\b' => builder.append("\\b")
+              case '\n' => builder.append("\\n")
+              case '\t' => builder.append("\\t")
+              case '\f' => builder.append("\\f")
+              case '\r' => builder.append("\\r")
+              case ch if ch > 0xf => builder.append("\\u00").append(charHex(ch))
+              case ch => builder.append("\\u000").append(charHex(ch))
+            }
+          case '"' => builder.append("\\\"")
+          case '\\' => builder.append("\\\\")
+          case ch => builder.append(ch.toString)
         }
-      case '"' => "\\\""
-      case '\\' => "\\\\"
-      case ch => ch.toString
-    }
+      }
+      .result()
 
   def charHex(ch: Char): String =
     Integer.toHexString(ch).toUpperCase(Locale.ENGLISH)
