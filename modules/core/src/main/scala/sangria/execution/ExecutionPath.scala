@@ -32,14 +32,17 @@ class ExecutionPath private (_path: List[Any], cacheKeyPath: ExecutionPath.PathC
 
   def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath
 
-  override def toString = _path.reverse.foldLeft("") {
-    case ("", str: String) => str
-    case (acc, str: String) => acc + "." + str
-    case (acc, idx: Int) => acc + "[" + idx + "]"
+  override def toString = _path.reverse
+    .foldLeft(new StringBuilder) {
+      case (builder, str: String) =>
+        if (builder.isEmpty) builder.append(str) else builder.append(".").append(str)
+      case (builder, idx: Int) => builder.append("[").append(idx).append("]")
 
-    case ("", other) => other.toString
-    case (acc, other) => acc + "." + other.toString
-  }
+      case (builder, other) =>
+        if (builder.isEmpty) builder.append(other.toString())
+        else builder.append(".").append(other.toString)
+    }
+    .result()
 }
 
 object ExecutionPath {
