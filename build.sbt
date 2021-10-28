@@ -9,6 +9,7 @@ import sbt.Keys.{
 }
 import com.typesafe.tools.mima.core.{
   DirectMissingMethodProblem,
+  IncompatibleMethTypeProblem,
   IncompatibleResultTypeProblem,
   MissingClassProblem,
   MissingTypesProblem,
@@ -112,7 +113,33 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
     "sangria.parser.ParserConfig.legacyEmptyFields"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.parser.ParserConfig.withLegacyEmptyFields"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.legacyEmptyFields")
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.legacyEmptyFields"),
+  ProblemFilters.exclude[MissingTypesProblem]("sangria.execution.ExecutionPath"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.unapply"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.apply"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.productElementNames"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.execution.ExecutionPath.path"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.cacheKeyPath"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.execution.ExecutionPath.cacheKey"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.copy"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.copy$default$*"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.productPrefix"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.productArity"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.productElement"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.productIterator"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.canEqual"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.ExecutionPath.productElementName"),
+  ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.execution.ExecutionPath.this"),
+  ProblemFilters.exclude[MissingTypesProblem]("sangria.execution.ExecutionPath$")
 )
 
 lazy val root = project
