@@ -4,13 +4,19 @@ import sangria.marshalling.ResultMarshaller
 import sangria.ast
 import sangria.schema.ObjectType
 
-class ExecutionPath private (_path: List[Any], cacheKeyPath: ExecutionPath.PathCacheKey) {
+class ExecutionPath private (
+    _path: List[Any],
+    cacheKeyPath: ExecutionPath.PathCacheKey,
+    pathSizeWithoutIndexes: Int) {
   lazy val path: List[Any] = _path.reverse
 
   def add(field: ast.Field, parentType: ObjectType[_, _]) =
-    new ExecutionPath(field.outputName :: _path, parentType.name :: field.outputName :: cacheKey)
+    new ExecutionPath(
+      field.outputName :: _path,
+      parentType.name :: field.outputName :: cacheKey,
+      pathSizeWithoutIndexes = pathSizeWithoutIndexes + 1)
 
-  def withIndex(idx: Int) = new ExecutionPath(idx :: _path, cacheKey)
+  def withIndex(idx: Int) = new ExecutionPath(idx :: _path, cacheKey, pathSizeWithoutIndexes)
 
   def isEmpty = _path.isEmpty
   def nonEmpty = _path.nonEmpty
@@ -23,7 +29,7 @@ class ExecutionPath private (_path: List[Any], cacheKeyPath: ExecutionPath.PathC
   /** @return
     *   the size of the path excluding the indexes
     */
-  def size = cacheKeyPath.size / 2
+  def size = pathSizeWithoutIndexes
 
   def marshal(m: ResultMarshaller): m.Node = m.arrayNode(_path.reverseIterator.map {
     case s: String => m.scalarNode(s, "String", Set.empty)
@@ -48,5 +54,5 @@ class ExecutionPath private (_path: List[Any], cacheKeyPath: ExecutionPath.PathC
 object ExecutionPath {
   type PathCacheKey = List[String]
 
-  val empty = new ExecutionPath(List.empty, List.empty)
+  val empty = new ExecutionPath(List.empty, List.empty, pathSizeWithoutIndexes = 0)
 }

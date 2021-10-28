@@ -139,6 +139,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.execution.ExecutionPath.productElementName"),
   ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.execution.ExecutionPath.this"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.this"),
   ProblemFilters.exclude[MissingTypesProblem]("sangria.execution.ExecutionPath$")
 )
 
