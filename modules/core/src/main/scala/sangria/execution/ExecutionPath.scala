@@ -6,20 +6,21 @@ import sangria.schema.ObjectType
 
 class ExecutionPath private (
     _path: List[Any],
-    cacheKeyPath: ExecutionPath.PathCacheKey,
+    cacheKeyPath: List[String],
     pathSizeWithoutIndexes: Int) {
-  lazy val path: List[Any] = _path.reverse
+  lazy val path: Vector[Any] = _path.reverseIterator.toVector
 
-  def add(field: ast.Field, parentType: ObjectType[_, _]) =
+  def add(field: ast.Field, parentType: ObjectType[_, _]): ExecutionPath =
     new ExecutionPath(
       field.outputName :: _path,
-      parentType.name :: field.outputName :: cacheKey,
+      parentType.name :: field.outputName :: cacheKeyPath,
       pathSizeWithoutIndexes = pathSizeWithoutIndexes + 1)
 
-  def withIndex(idx: Int) = new ExecutionPath(idx :: _path, cacheKey, pathSizeWithoutIndexes)
+  def withIndex(idx: Int): ExecutionPath =
+    new ExecutionPath(idx :: _path, cacheKeyPath, pathSizeWithoutIndexes)
 
-  def isEmpty = _path.isEmpty
-  def nonEmpty = _path.nonEmpty
+  def isEmpty: Boolean = _path.isEmpty
+  def nonEmpty: Boolean = _path.nonEmpty
 
   /** @return
     *   last index in the path, if available
@@ -29,30 +30,30 @@ class ExecutionPath private (
   /** @return
     *   the size of the path excluding the indexes
     */
-  def size = pathSizeWithoutIndexes
+  def size: Int = pathSizeWithoutIndexes
 
   def marshal(m: ResultMarshaller): m.Node = m.arrayNode(_path.reverseIterator.map {
     case s: String => m.scalarNode(s, "String", Set.empty)
     case i: Int => m.scalarNode(i, "Int", Set.empty)
   }.toVector)
 
-  def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath
+  def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath.reverseIterator.toVector
 
-  override def toString = _path.reverseIterator
+  override def toString: String = _path.reverseIterator
     .foldLeft(new StringBuilder) {
       case (builder, str: String) =>
         if (builder.isEmpty) builder.append(str) else builder.append(".").append(str)
       case (builder, idx: Int) => builder.append("[").append(idx).append("]")
 
       case (builder, other) =>
-        if (builder.isEmpty) builder.append(other.toString())
+        if (builder.isEmpty) builder.append(other.toString)
         else builder.append(".").append(other.toString)
     }
     .result()
 }
 
 object ExecutionPath {
-  type PathCacheKey = List[String]
+  type PathCacheKey = Vector[String]
 
   val empty = new ExecutionPath(List.empty, List.empty, pathSizeWithoutIndexes = 0)
 }

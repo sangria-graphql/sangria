@@ -120,10 +120,8 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.apply"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.execution.ExecutionPath.productElementNames"),
-  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.execution.ExecutionPath.path"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.execution.ExecutionPath.cacheKeyPath"),
-  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.execution.ExecutionPath.cacheKey"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.copy"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.execution.ExecutionPath.copy$default$*"),
