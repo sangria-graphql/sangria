@@ -38,6 +38,7 @@ class ExecutionPath private (
   }.toVector)
 
   def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath.reverseIterator.toVector
+  def cacheKeyReversed: ExecutionPath.PathCacheKeyReversed = cacheKeyPath
 
   override def toString: String = _path.reverseIterator
     .foldLeft(new StringBuilder) {
@@ -54,6 +55,7 @@ class ExecutionPath private (
 
 object ExecutionPath {
   type PathCacheKey = Vector[String]
+  type PathCacheKeyReversed = List[String]
 
   val empty = new ExecutionPath(List.empty, List.empty, pathSizeWithoutIndexes = 0)
 }

@@ -24,7 +24,7 @@ class ValueCollector[Ctx, Input](
     new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   private val argumentCache =
-    Cache.empty[(ExecutionPath.PathCacheKey, Vector[ast.Argument]), Try[Args]]
+    Cache.empty[(ExecutionPath.PathCacheKeyReversed, Vector[ast.Argument]), Try[Args]]
 
   def getVariableValues(
       definitions: Vector[ast.VariableDefinition],
@@ -83,7 +83,7 @@ class ValueCollector[Ctx, Input](
       ValueCollector.emptyArgs
     else
       argumentCache.getOrElseUpdate(
-        path.cacheKey -> argumentAsts,
+        path.cacheKeyReversed -> argumentAsts,
         getArgumentValues(forAstNode, argumentDefs, argumentAsts, variables))
 
   def getArgumentValues(
