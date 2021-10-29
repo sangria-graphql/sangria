@@ -17,14 +17,15 @@ class FieldCollector[Ctx, Val](
     valueCollector: ValueCollector[Ctx, _],
     exceptionHandler: ExceptionHandler) {
 
-  private val resultCache = Cache.empty[(ExecutionPath.PathCacheKey, String), Try[CollectedFields]]
+  private val resultCache =
+    Cache.empty[(ExecutionPath.PathCacheKeyReversed, String), Try[CollectedFields]]
 
   def collectFields(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
     resultCache.getOrElseUpdate(
-      path.cacheKey -> tpe.name, {
+      path.cacheKeyReversed -> tpe.name, {
         val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
 
         selections.foldLeft(builder) { case (acc, s) =>
