@@ -52,7 +52,7 @@ class SelectionContainer {
               }
             } else {
               spread.computeEffectiveSelections()
-              //effective selections of spread are also done after spread.computeEffectiveSelections()
+              // effective selections of spread are also done after spread.computeEffectiveSelections()
               effectiveSelections.addAll(spread.effectiveSelections)
             }
           }

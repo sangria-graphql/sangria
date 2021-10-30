@@ -60,7 +60,7 @@ case class Document(
         .flatMap(opName => operations.get(Some(opName)))
         .orElse(
           operations.values.headOption
-        ) //FIXME This appears to return the first operation if the named one doesn't exist?
+        ) // FIXME This appears to return the first operation if the named one doesn't exist?
 
   def withoutSourceMapper: Document = copy(sourceMapper = None)
 
