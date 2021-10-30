@@ -10,11 +10,11 @@ import java.util.function.Consumer
 class SortedArraySet[T](private val sortedMembers: util.ArrayList[T])
     extends java.lang.Iterable[T] {
 
-  //cache the hashCode for faster handling
+  // cache the hashCode for faster handling
   override val hashCode: Int =
     sortedMembers.hashCode()
 
-  //equals and hash code delegate to the members
+  // equals and hash code delegate to the members
   override def equals(obj: Any): Boolean =
     obj match {
       case other: SortedArraySet[_] =>
@@ -44,9 +44,9 @@ object SortedArraySet {
   def newBuilder[T: Ordering](): Builder[T] =
     new Builder[T](implicitly[Ordering[T]])
 
-  //Beware:
-  //The comparator wont be used in the final set for equality or removing duplicates, it's only here for sorting.
-  //As such it has to be compatible with the standard equality and hashCode implementations.
+  // Beware:
+  // The comparator wont be used in the final set for equality or removing duplicates, it's only here for sorting.
+  // As such it has to be compatible with the standard equality and hashCode implementations.
   class Builder[T] private (
       private val members: util.ArrayList[T],
       private val comparator: Comparator[T]) {
