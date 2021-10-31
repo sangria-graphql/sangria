@@ -2,10 +2,22 @@ package sangria.schema
 
 import language.{existentials, postfixOps}
 import sangria.ast
-import sangria.ast.{AstLocation, OperationType, TypeDefinition}
+import sangria.ast.{
+  AstLocation,
+  EnumTypeExtensionDefinition,
+  InputObjectTypeExtensionDefinition,
+  InterfaceTypeExtensionDefinition,
+  ObjectTypeExtensionDefinition,
+  OperationType,
+  ScalarTypeExtensionDefinition,
+  TypeDefinition,
+  UnionTypeExtensionDefinition
+}
 import sangria.execution.MaterializedSchemaValidationError
+import sangria.marshalling.ToInput
 import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
+import sangria.schema.InputObjectType.DefaultInput
 import sangria.util.Cache
 import sangria.validation._
 
@@ -101,11 +113,12 @@ class AstSchemaMaterializer[Ctx] private (
       val queryType = getTypeFromDef(existingOrigin, schema.query)
 
       AstSchemaMaterializer.findOperationsTypes(
-        schemaExtensionDefs.flatMap(_.operationTypes),
-        document.sourceMapper,
-        true,
-        schema.mutation.isDefined,
-        schema.subscription.isDefined) match {
+        allOperationTypes = schemaExtensionDefs.flatMap(_.operationTypes),
+        sourceMapper = document.sourceMapper,
+        queryAlreadyExists = true,
+        mutationAlreadyExists = schema.mutation.isDefined,
+        subscriptionAlreadyExists = schema.subscription.isDefined
+      ) match {
         case Left(errors) => throw MaterializedSchemaValidationError(errors)
         case Right((_, mutationExt, subscriptionExt)) =>
           val mutationType =
@@ -142,7 +155,9 @@ class AstSchemaMaterializer[Ctx] private (
 
     extractSchemaInfo(document, typeDefs, schemaExtensionDefs) match {
       case Left(schemaErrors) => throw MaterializedSchemaValidationError(schemaErrors ++ defErrors)
+
       case _ if defErrors.nonEmpty => throw MaterializedSchemaValidationError(defErrors)
+
       case Right(schemaInfo) =>
         val queryType = getObjectType(sdlOrigin, schemaInfo.query)
         val mutationType = schemaInfo.mutation.map(getObjectType(sdlOrigin, _))
@@ -152,14 +167,14 @@ class AstSchemaMaterializer[Ctx] private (
           .flatMap(buildDirective(sdlOrigin, _))
 
         builder.buildSchema(
-          schemaInfo.definition,
-          schemaExtensionDefs.toList,
-          queryType,
-          mutationType,
-          subscriptionType,
-          findUnusedTypes()._2.toList,
-          BuiltinDirectives ++ directives,
-          this
+          definition = schemaInfo.definition,
+          extensions = schemaExtensionDefs.toList,
+          queryType = queryType,
+          mutationType = mutationType,
+          subscriptionType = subscriptionType,
+          additionalTypes = findUnusedTypes()._2.toList,
+          directives = BuiltinDirectives ++ directives,
+          mat = this
         )
     }
   }
@@ -413,15 +428,16 @@ class AstSchemaMaterializer[Ctx] private (
         getNamedType(origin, tpe.name, None).asInstanceOf[T]
     }
 
-  def buildDirective(origin: MatOrigin, directive: ast.DirectiveDefinition) =
+  def buildDirective(origin: MatOrigin, directive: ast.DirectiveDefinition): Option[Directive] =
     BuiltinDirectives
       .find(_.name == directive.name)
       .orElse(builder.buildDirective(
-        origin,
-        directive,
-        directive.arguments.flatMap(buildArgument(origin, Left(directive), None, _)) toList,
-        directive.locations.map(buildDirectiveLocation) toSet,
-        this
+        origin = origin,
+        definition = directive,
+        arguments =
+          directive.arguments.flatMap(buildArgument(origin, Left(directive), None, _)) toList,
+        locations = directive.locations.map(buildDirectiveLocation) toSet,
+        mat = this
       ))
 
   def getObjectType(origin: MatOrigin, tpe: ast.NamedType): ObjectType[Ctx, Any] =
@@ -470,10 +486,12 @@ class AstSchemaMaterializer[Ctx] private (
       optional: Boolean = true): InputType[_] =
     tpe match {
       case ast.ListType(ofType, _) if optional =>
-        OptionInputType(ListInputType(getInputType(origin, ofType, replacementNamedType, true)))
+        OptionInputType(
+          ListInputType(getInputType(origin, ofType, replacementNamedType, optional = true)))
       case ast.ListType(ofType, _) =>
-        ListInputType(getInputType(origin, ofType, replacementNamedType, true))
-      case ast.NotNullType(ofType, _) => getInputType(origin, ofType, replacementNamedType, false)
+        ListInputType(getInputType(origin, ofType, replacementNamedType, optional = true))
+      case ast.NotNullType(ofType, _) =>
+        getInputType(origin, ofType, replacementNamedType, optional = false)
       case ast.NamedType(name, _) =>
         replacementNamedType.getOrElse(getNamedType(origin, name, tpe.location)) match {
           case input: InputType[_] if optional => OptionInputType(input)
@@ -496,10 +514,11 @@ class AstSchemaMaterializer[Ctx] private (
       optional: Boolean = true): OutputType[_] =
     tpe match {
       case ast.ListType(ofType, _) if optional =>
-        OptionType(ListType(getOutputType(origin, ofType, replacementNamedType, true)))
+        OptionType(ListType(getOutputType(origin, ofType, replacementNamedType, optional = true)))
       case ast.ListType(ofType, _) =>
-        ListType(getOutputType(origin, ofType, replacementNamedType, true))
-      case ast.NotNullType(ofType, _) => getOutputType(origin, ofType, replacementNamedType, false)
+        ListType(getOutputType(origin, ofType, replacementNamedType, optional = true))
+      case ast.NotNullType(ofType, _) =>
+        getOutputType(origin, ofType, replacementNamedType, optional = false)
       case ast.NamedType(name, _) =>
         replacementNamedType.getOrElse(getNamedType(origin, name, tpe.location)) match {
           case out: OutputType[_] if optional => OptionType(out)
@@ -556,7 +575,7 @@ class AstSchemaMaterializer[Ctx] private (
 
   def getNamedType(origin: MatOrigin, tpe: MaterializedType): Option[Type with Named] =
     tpe match {
-      case BuiltMaterializedTypeInst(o, t) => Some(t)
+      case BuiltMaterializedTypeInst(_, t) => Some(t)
       case MaterializedTypeInst(o, t) => Some(extendType(o, t))
       case MaterializedTypeAst(o, t) => buildType(o, t)
     }
@@ -574,7 +593,7 @@ class AstSchemaMaterializer[Ctx] private (
   def extendType(origin: MatOrigin, existingType: Type with Named): Type with Named =
     existingType match {
       case tpe: ScalarType[_] =>
-        builder.transformScalarType(origin, findScalarExtensions(tpe.name), tpe, this)
+        builder.transformScalarType(origin, findScalarExtensions(tpe.name), tpe, mat = this)
       case tpe: ScalarAlias[_, _] =>
         extendScalarAlias(origin, tpe.asInstanceOf[ScalarAlias[Any, Any]])
       case tpe: EnumType[_] => extendEnumType(origin, tpe)
@@ -588,14 +607,17 @@ class AstSchemaMaterializer[Ctx] private (
       origin: MatOrigin,
       typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
       extensions: Vector[ast.ObjectLikeTypeExtensionDefinition],
-      field: ast.FieldDefinition) = {
+      field: ast.FieldDefinition): Option[Field[Ctx, Any]] = {
     val args = field.arguments.flatMap(buildArgument(origin, typeDefinition, Some(field), _)) toList
     val fieldType = builder.buildFieldType(origin, typeDefinition, extensions, field, args, this)
 
     builder.buildField(origin, typeDefinition, extensions, field, fieldType, args, this)
   }
 
-  def extendField(origin: MatOrigin, tpe: Option[ObjectLikeType[Ctx, _]], field: Field[Ctx, _]) = {
+  def extendField(
+      origin: MatOrigin,
+      tpe: Option[ObjectLikeType[Ctx, _]],
+      field: Field[Ctx, _]): Field[Ctx, Any] = {
     val f = field.asInstanceOf[Field[Ctx, Any]]
 
     builder.extendField(
@@ -611,7 +633,7 @@ class AstSchemaMaterializer[Ctx] private (
       origin: MatOrigin,
       tpe: Option[ObjectLikeType[Ctx, _]],
       field: Field[Ctx, Any],
-      argument: Argument[_]) = {
+      argument: Argument[_]): Argument[Any] = {
     val a = argument.asInstanceOf[Argument[Any]]
 
     builder.extendArgument(
@@ -623,7 +645,10 @@ class AstSchemaMaterializer[Ctx] private (
       this)
   }
 
-  def extendInputField(origin: MatOrigin, tpe: InputObjectType[_], field: InputField[_]) = {
+  def extendInputField(
+      origin: MatOrigin,
+      tpe: InputObjectType[_],
+      field: InputField[_]): InputField[Any] = {
     val f = field.asInstanceOf[InputField[Any]]
 
     builder.extendInputField(
@@ -634,7 +659,9 @@ class AstSchemaMaterializer[Ctx] private (
       this)
   }
 
-  def buildObjectDef(origin: MatOrigin, tpe: ast.ObjectTypeDefinition) = {
+  def buildObjectDef(
+      origin: MatOrigin,
+      tpe: ast.ObjectTypeDefinition): Option[ObjectType[Ctx, Any]] = {
     val extensions = findObjectExtensions(tpe.name)
 
     builder.buildObjectType(
@@ -647,7 +674,7 @@ class AstSchemaMaterializer[Ctx] private (
     )
   }
 
-  def extendObjectType(origin: MatOrigin, tpe: ObjectType[Ctx, _]) = {
+  def extendObjectType(origin: MatOrigin, tpe: ObjectType[Ctx, _]): ObjectType[Ctx, Any] = {
     val extensions = findObjectExtensions(tpe.name)
 
     builder.extendObjectType(
@@ -659,7 +686,9 @@ class AstSchemaMaterializer[Ctx] private (
       this)
   }
 
-  def buildInterfaceDef(origin: MatOrigin, tpe: ast.InterfaceTypeDefinition) = {
+  def buildInterfaceDef(
+      origin: MatOrigin,
+      tpe: ast.InterfaceTypeDefinition): Option[InterfaceType[Ctx, Any]] = {
     val extensions = findInterfaceExtensions(tpe.name)
 
     builder.buildInterfaceType(
@@ -682,7 +711,7 @@ class AstSchemaMaterializer[Ctx] private (
         tpe.copy(values = tpe.values ++ ev, astDirectives = tpe.astDirectives ++ extraDirs)
       else tpe
 
-    builder.transformEnumType(origin, extensions, extendedType, this)
+    builder.transformEnumType(origin, extensions, extendedType, mat = this)
   }
 
   def extendInputObjectType(origin: MatOrigin, tpe: InputObjectType[_]) = {
@@ -699,7 +728,9 @@ class AstSchemaMaterializer[Ctx] private (
     builder.transformInputObjectType(origin, extensions, tpe, fieldsFn, this)
   }
 
-  def extendInterfaceType(origin: MatOrigin, tpe: InterfaceType[Ctx, _]) = {
+  def extendInterfaceType(
+      origin: MatOrigin,
+      tpe: InterfaceType[Ctx, _]): InterfaceType[Ctx, Any] = {
     val extensions = findInterfaceExtensions(tpe.name)
 
     builder.extendInterfaceType(
@@ -714,7 +745,7 @@ class AstSchemaMaterializer[Ctx] private (
       origin: MatOrigin,
       tpe: ast.ObjectTypeDefinition,
       interfaces: Vector[ast.NamedType],
-      extensions: Vector[ast.ObjectTypeExtensionDefinition]) = {
+      extensions: Vector[ast.ObjectTypeExtensionDefinition]): Vector[InterfaceType[Ctx, Any]] = {
     val extraInts = extensions.flatMap(_.interfaces)
     val allInts = interfaces ++ extraInts
 
@@ -724,7 +755,7 @@ class AstSchemaMaterializer[Ctx] private (
   def extendInterfaces(
       origin: MatOrigin,
       tpe: ObjectType[Ctx, _],
-      extensions: Vector[ast.ObjectTypeExtensionDefinition]) = {
+      extensions: Vector[ast.ObjectTypeExtensionDefinition]): List[InterfaceType[Ctx, Any]] = {
     val extraInts = extensions.flatMap(_.interfaces)
 
     val ei = extraInts.map(getInterfaceType(origin, _))
@@ -737,7 +768,7 @@ class AstSchemaMaterializer[Ctx] private (
       origin: MatOrigin,
       tpe: TypeDefinition,
       fieldDefs: Vector[ast.FieldDefinition],
-      extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]) = {
+      extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]): Vector[Field[Ctx, Any]] = {
     val extraFields = extensions.flatMap(_.fields)
 
     val withExtensions = fieldDefs ++ extraFields
@@ -753,7 +784,7 @@ class AstSchemaMaterializer[Ctx] private (
   def extendFields(
       origin: MatOrigin,
       tpe: ObjectLikeType[Ctx, _],
-      extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]) = {
+      extensions: Vector[ast.ObjectLikeTypeExtensionDefinition]): List[Field[Ctx, Any]] = {
     val extraFields = extensions.flatMap(e => e.fields.map(e -> _))
 
     val ef = extraFields.flatMap(f => buildField(origin, Right(tpe), extensions, f._2))
@@ -762,25 +793,25 @@ class AstSchemaMaterializer[Ctx] private (
     of ++ ef
   }
 
-  def findObjectExtensions(typeName: String) =
+  def findObjectExtensions(typeName: String): Vector[ObjectTypeExtensionDefinition] =
     objectTypeExtensionDefs.filter(_.name == typeName)
 
-  def findInterfaceExtensions(typeName: String) =
+  def findInterfaceExtensions(typeName: String): Vector[InterfaceTypeExtensionDefinition] =
     interfaceTypeExtensionDefs.filter(_.name == typeName)
 
-  def findScalarExtensions(typeName: String) =
+  def findScalarExtensions(typeName: String): Vector[ScalarTypeExtensionDefinition] =
     scalarTypeExtensionDefs.filter(_.name == typeName)
 
-  def findInputObjectExtensions(typeName: String) =
+  def findInputObjectExtensions(typeName: String): Vector[InputObjectTypeExtensionDefinition] =
     inputObjectTypeExtensionDefs.filter(_.name == typeName)
 
-  def findUnionExtensions(typeName: String) =
+  def findUnionExtensions(typeName: String): Vector[UnionTypeExtensionDefinition] =
     unionTypeExtensionDefs.filter(_.name == typeName)
 
-  def findEnumExtensions(typeName: String) =
+  def findEnumExtensions(typeName: String): Vector[EnumTypeExtensionDefinition] =
     enumTypeExtensionDefs.filter(_.name == typeName)
 
-  def buildUnionDef(origin: MatOrigin, tpe: ast.UnionTypeDefinition) = {
+  def buildUnionDef(origin: MatOrigin, tpe: ast.UnionTypeDefinition): Option[UnionType[Ctx]] = {
     val extensions = findUnionExtensions(tpe.name)
     val extraTypes = extensions.flatMap(_.types)
     val withExtensions = tpe.types ++ extraTypes
@@ -793,7 +824,7 @@ class AstSchemaMaterializer[Ctx] private (
       this)
   }
 
-  def extendUnionType(origin: MatOrigin, tpe: UnionType[Ctx]) = {
+  def extendUnionType(origin: MatOrigin, tpe: UnionType[Ctx]): UnionType[Ctx] = {
     val extensions = findUnionExtensions(tpe.name)
     val extraTypes = extensions.flatMap(_.types)
 
@@ -803,7 +834,7 @@ class AstSchemaMaterializer[Ctx] private (
     builder.extendUnionType(origin, extensions, tpe, t ++ et, this)
   }
 
-  def extendScalarAlias(origin: MatOrigin, alias: ScalarAlias[Any, Any]) = {
+  def extendScalarAlias(origin: MatOrigin, alias: ScalarAlias[Any, Any]): ScalarAlias[Any, Any] = {
     val extensions = findScalarExtensions(alias.aliasFor.name)
 
     builder.extendScalarAlias(
@@ -814,7 +845,9 @@ class AstSchemaMaterializer[Ctx] private (
       this)
   }
 
-  def buildInputObjectDef(origin: MatOrigin, tpe: ast.InputObjectTypeDefinition) = {
+  def buildInputObjectDef(
+      origin: MatOrigin,
+      tpe: ast.InputObjectTypeDefinition): Option[InputObjectType[DefaultInput]] = {
     val extensions = findInputObjectExtensions(tpe.name)
     val extraFields = extensions.flatMap(_.fields)
     val withExtensions = tpe.fields ++ extraFields
@@ -827,7 +860,7 @@ class AstSchemaMaterializer[Ctx] private (
       this)
   }
 
-  def buildScalarDef(origin: MatOrigin, tpe: ast.ScalarTypeDefinition) = {
+  def buildScalarDef(origin: MatOrigin, tpe: ast.ScalarTypeDefinition): Option[ScalarType[Any]] = {
     val extensions = findScalarExtensions(tpe.name)
 
     builder.buildScalarType(origin, extensions, tpe, this)
@@ -853,14 +886,15 @@ class AstSchemaMaterializer[Ctx] private (
       extensions: Vector[ast.EnumTypeExtensionDefinition]) =
     builder.buildEnumValue(origin, extensions, typeDef, value, this)
 
-  def buildDefault(defaultValue: Option[ast.Value]) =
+  def buildDefault(
+      defaultValue: Option[ast.Value]): Option[(ast.Value, ToInput[Nothing, ast.Value])] =
     defaultValue.map(dv => dv -> sangria.marshalling.queryAst.queryAstToInput)
 
   def buildArgument(
       origin: MatOrigin,
       typeDefinition: Either[ast.TypeSystemDefinition, ObjectLikeType[Ctx, _]],
       fieldDef: Option[ast.FieldDefinition],
-      value: ast.InputValueDefinition) = {
+      value: ast.InputValueDefinition): Option[Argument[Any]] = {
     val default = buildDefault(value.defaultValue)
     val tpe = builder.buildArgumentType(origin, typeDefinition, fieldDef, value, default, this)
 
@@ -871,17 +905,17 @@ class AstSchemaMaterializer[Ctx] private (
       origin: MatOrigin,
       typeDef: Either[ast.InputObjectTypeDefinition, InputObjectType[_]],
       value: ast.InputValueDefinition,
-      extensions: Vector[ast.InputObjectTypeExtensionDefinition]) = {
+      extensions: Vector[ast.InputObjectTypeExtensionDefinition]): Option[InputField[Any]] = {
     val default = buildDefault(value.defaultValue)
     val tpe = builder.buildInputFieldType(origin, extensions, typeDef, value, default, this)
 
     builder.buildInputField(origin, extensions, typeDef, value, tpe, default, this)
   }
 
-  def buildDirectiveLocation(loc: ast.DirectiveLocation) =
+  def buildDirectiveLocation(loc: ast.DirectiveLocation): DirectiveLocation.Value =
     try DirectiveLocation.fromString(loc.name)
     catch {
-      case e: MatchError =>
+      case _: MatchError =>
         throw SchemaMaterializationException(s"Unknown directive location '${loc.name}'.")
     }
 }
@@ -912,10 +946,15 @@ object AstSchemaMaterializer {
         schemas.map { schema =>
           val allOperationTypes = schema.operationTypes ++ extensions.flatMap(_.operationTypes)
 
-          findOperationsTypes(allOperationTypes, document.sourceMapper, false, false, false)
-            .map { case (query, mutation, subscription) =>
-              SchemaInfo(query.get, mutation, subscription, Some(schema))
-            }
+          findOperationsTypes(
+            allOperationTypes,
+            document.sourceMapper,
+            queryAlreadyExists = false,
+            mutationAlreadyExists = false,
+            subscriptionAlreadyExists = false
+          ).map { case (query, mutation, subscription) =>
+            SchemaInfo(query.get, mutation, subscription, Some(schema))
+          }
         }
 
       val typeErrors = validatedInfo.collect { case Left(errors) => errors }.flatten
@@ -936,11 +975,12 @@ object AstSchemaMaterializer {
           val subscription = typeDefs.find(_.name == "Subscription").map(t => ast.NamedType(t.name))
 
           findOperationsTypes(
-            extensions.flatMap(_.operationTypes),
-            document.sourceMapper,
-            true,
-            mutation.isDefined,
-            subscription.isDefined).map { case (_, mutationExt, subscriptionExt) =>
+            allOperationTypes = extensions.flatMap(_.operationTypes),
+            sourceMapper = document.sourceMapper,
+            queryAlreadyExists = true,
+            mutationAlreadyExists = mutation.isDefined,
+            subscriptionAlreadyExists = subscription.isDefined
+          ).map { case (_, mutationExt, subscriptionExt) =>
             SchemaInfo(
               ast.NamedType(query.name),
               mutationExt.orElse(mutation),

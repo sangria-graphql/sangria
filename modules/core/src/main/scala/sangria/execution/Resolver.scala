@@ -1420,19 +1420,19 @@ class Resolver[Ctx](
           variables) match {
           case Success(args) =>
             val ctx = Context[Ctx, Any](
-              value,
-              userCtx,
-              args,
-              schema.asInstanceOf[Schema[Ctx, Any]],
-              field,
-              tpe.asInstanceOf[ObjectType[Ctx, Any]],
-              marshaller,
-              queryAst,
-              sourceMapper,
-              deprecationTracker,
-              astFields,
-              path,
-              deferredResolverState
+              value = value,
+              ctx = userCtx,
+              args = args,
+              schema = schema.asInstanceOf[Schema[Ctx, Any]],
+              field = field,
+              parentType = tpe.asInstanceOf[ObjectType[Ctx, Any]],
+              marshaller = marshaller,
+              query = queryAst,
+              sourceMapper = sourceMapper,
+              deprecationTracker = deprecationTracker,
+              astFields = astFields,
+              path = path,
+              deferredResolverState = deferredResolverState
             )
 
             if (allFields.exists(_.deprecationReason.isDefined))
