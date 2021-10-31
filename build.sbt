@@ -178,9 +178,18 @@ lazy val root = project
   )
   .disablePlugins(MimaPlugin)
 
+lazy val ast = project.in(file("modules/ast"))
+  .withId("sangria-ast")
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-ast",
+    description := "Scala GraphQL AST representation",
+  )
+
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
+  .dependsOn(ast)
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria",

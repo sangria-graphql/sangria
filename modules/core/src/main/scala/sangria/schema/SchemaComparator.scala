@@ -1,7 +1,7 @@
 package sangria.schema
 
 import sangria.execution.ValueCoercionHelper
-import sangria.renderer.SchemaRenderer
+import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.ast
 import sangria.ast.AstNode
 
@@ -440,8 +440,8 @@ object SchemaComparator {
       added: (ast.Directive) => SchemaChange,
       removed: (ast.Directive) => SchemaChange
   ): Vector[SchemaChange] = {
-    val oldD = oldDirectives.map(AstNode.withoutAstLocations(_)).toSet
-    val newD = newDirectives.map(AstNode.withoutAstLocations(_)).toSet
+    val oldD = oldDirectives.map(AstNodeTransformer.withoutAstLocations(_)).toSet
+    val newD = newDirectives.map(AstNodeTransformer.withoutAstLocations(_)).toSet
 
     val remove = oldD.diff(newD).toVector.map(removed)
     val add = newD.diff(oldD).toVector.map(added)
@@ -460,11 +460,11 @@ object SchemaComparator {
     val oldDefault = oldArg.defaultValue.flatMap(dv =>
       DefaultValueRenderer
         .renderInputValue(dv, oldArg.argumentType, coercionHelper)
-        .map(v => AstNode.withoutAstLocations(v)))
+        .map(v => AstNodeTransformer.withoutAstLocations(v)))
     val newDefault = newArg.defaultValue.flatMap(dv =>
       DefaultValueRenderer
         .renderInputValue(dv, newArg.argumentType, coercionHelper)
-        .map(v => AstNode.withoutAstLocations(v)))
+        .map(v => AstNodeTransformer.withoutAstLocations(v)))
 
     val withDefault =
       if (oldDefault != newDefault)
@@ -501,11 +501,11 @@ object SchemaComparator {
     val oldDefault = oldField.defaultValue.flatMap(dv =>
       DefaultValueRenderer
         .renderInputValue(dv, oldField.fieldType, coercionHelper)
-        .map(v => AstNode.withoutAstLocations(v)))
+        .map(v => AstNodeTransformer.withoutAstLocations(v)))
     val newDefault = newField.defaultValue.flatMap(dv =>
       DefaultValueRenderer
         .renderInputValue(dv, newField.fieldType, coercionHelper)
-        .map(v => AstNode.withoutAstLocations(v)))
+        .map(v => AstNodeTransformer.withoutAstLocations(v)))
 
     val withDefault =
       if (oldDefault != newDefault)
@@ -789,8 +789,9 @@ object SchemaChange {
       newDefault: Option[ast.Value])
       extends AbstractChange(
         s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d =>
-          "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d => "`" + d.renderCompact + "`")}",
-        false)
+          s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d =>
+          s"`${QueryRenderer.renderCompact(d)}`")}",
+        breakingChange = false)
       with TypeChange
 
   case class ObjectTypeArgumentDefaultChanged(
@@ -801,10 +802,10 @@ object SchemaChange {
       newDefault: Option[ast.Value])
       extends AbstractChange(
         s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault
-          .fold("none")(d => "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d =>
-          "`" + d.renderCompact + "`")}",
-        false,
-        true)
+          .fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(
+          d => s"`${QueryRenderer.renderCompact(d)}`")}",
+        breakingChange = false,
+        dangerousChange = true)
       with TypeChange
 
   case class DirectiveArgumentDefaultChanged(
@@ -813,10 +814,11 @@ object SchemaChange {
       oldDefault: Option[ast.Value],
       newDefault: Option[ast.Value])
       extends AbstractChange(
-        s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(
-          d => "`" + d.renderCompact + "`")} to ${newDefault.fold("none")(d => "`" + d.renderCompact + "`")}",
-        false,
-        true)
+        s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold(
+          "none")(d => "`" + QueryRenderer.renderCompact(d) + "`")} to ${newDefault.fold("none")(
+          d => "`" + QueryRenderer.renderCompact(d) + "`")}",
+        breakingChange = false,
+        dangerousChange = true)
 
   case class ObjectTypeInterfaceAdded(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
       extends AbstractChange(
@@ -865,7 +867,7 @@ object SchemaChange {
       field: Field[_, _],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on a field `${tpe.name}.${field.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on a field `${tpe.name}.${field.name}`",
         DirectiveLocation.FieldDefinition)
 
   case class FieldAstDirectiveRemoved(
@@ -873,7 +875,7 @@ object SchemaChange {
       field: Field[_, _],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a field `${tpe.name}.${field.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a field `${tpe.name}.${field.name}`",
         DirectiveLocation.FieldDefinition)
 
   case class EnumValueAstDirectiveAdded(
@@ -881,7 +883,8 @@ object SchemaChange {
       value: EnumValue[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on an enum value `${tpe.name}.${value.name}`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` added on an enum value `${tpe.name}.${value.name}`",
         DirectiveLocation.EnumValue)
 
   case class EnumValueAstDirectiveRemoved(
@@ -889,7 +892,8 @@ object SchemaChange {
       value: EnumValue[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a enum value `${tpe.name}.${value.name}`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` removed from a enum value `${tpe.name}.${value.name}`",
         DirectiveLocation.EnumValue)
 
   case class InputFieldAstDirectiveAdded(
@@ -897,7 +901,8 @@ object SchemaChange {
       field: InputField[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on an input field `${tpe.name}.${field.name}`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` added on an input field `${tpe.name}.${field.name}`",
         DirectiveLocation.InputFieldDefinition)
 
   case class InputFieldAstDirectiveRemoved(
@@ -905,7 +910,8 @@ object SchemaChange {
       field: InputField[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a input field `${tpe.name}.${field.name}`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` removed from a input field `${tpe.name}.${field.name}`",
         DirectiveLocation.InputFieldDefinition)
 
   case class DirectiveArgumentAstDirectiveAdded(
@@ -913,7 +919,8 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on a directive argument `${dir.name}.${argument.name}`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` added on a directive argument `${dir.name}.${argument.name}`",
         DirectiveLocation.ArgumentDefinition)
 
   case class DirectiveArgumentAstDirectiveRemoved(
@@ -921,7 +928,8 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a directive argument `${dir.name}.${argument.name}`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` removed from a directive argument `${dir.name}.${argument.name}`",
         DirectiveLocation.ArgumentDefinition)
 
   case class FieldArgumentAstDirectiveAdded(
@@ -930,7 +938,8 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on a field argument `${tpe.name}.${field.name}[${argument.name}]`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` added on a field argument `${tpe.name}.${field.name}[${argument.name}]`",
         DirectiveLocation.ArgumentDefinition)
 
   case class FieldArgumentAstDirectiveRemoved(
@@ -939,77 +948,78 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a field argument `${tpe.name}.${field.name}[${argument.name}]`",
+        s"Directive `${QueryRenderer.renderCompact(
+          directive)}` removed from a field argument `${tpe.name}.${field.name}[${argument.name}]`",
         DirectiveLocation.ArgumentDefinition)
 
   case class ObjectTypeAstDirectiveAdded(tpe: ObjectType[_, _], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on an object type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on an object type `${tpe.name}`",
         DirectiveLocation.Object)
 
   case class ObjectTypeAstDirectiveRemoved(tpe: ObjectType[_, _], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from an object type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from an object type `${tpe.name}`",
         DirectiveLocation.Object)
 
   case class InterfaceTypeAstDirectiveAdded(tpe: InterfaceType[_, _], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on an interface type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on an interface type `${tpe.name}`",
         DirectiveLocation.Interface)
 
   case class InterfaceTypeAstDirectiveRemoved(tpe: InterfaceType[_, _], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from an interface type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from an interface type `${tpe.name}`",
         DirectiveLocation.Interface)
 
   case class UnionTypeAstDirectiveAdded(tpe: UnionType[_], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on a union type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on a union type `${tpe.name}`",
         DirectiveLocation.Union)
 
   case class UnionTypeAstDirectiveRemoved(tpe: UnionType[_], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a union type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a union type `${tpe.name}`",
         DirectiveLocation.Union)
 
   case class EnumTypeAstDirectiveAdded(tpe: EnumType[_], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on an enum type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on an enum type `${tpe.name}`",
         DirectiveLocation.Enum)
 
   case class EnumTypeAstDirectiveRemoved(tpe: EnumType[_], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from an enum type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from an enum type `${tpe.name}`",
         DirectiveLocation.Enum)
 
   case class ScalarTypeAstDirectiveAdded(tpe: ScalarType[_], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on a scalar type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on a scalar type `${tpe.name}`",
         DirectiveLocation.Scalar)
 
   case class ScalarTypeAstDirectiveRemoved(tpe: ScalarType[_], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a scalar type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a scalar type `${tpe.name}`",
         DirectiveLocation.Scalar)
 
   case class InputObjectTypeAstDirectiveAdded(tpe: InputObjectType[_], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on an input type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on an input type `${tpe.name}`",
         DirectiveLocation.InputObject)
 
   case class InputObjectTypeAstDirectiveRemoved(tpe: InputObjectType[_], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from an input type `${tpe.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from an input type `${tpe.name}`",
         DirectiveLocation.InputObject)
 
   case class SchemaAstDirectiveAdded(schema: Schema[_, _], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${directive.renderCompact}` added on a schema",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on a schema",
         DirectiveLocation.Schema)
 
   case class SchemaAstDirectiveRemoved(schema: Schema[_, _], directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${directive.renderCompact}` removed from a schema",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a schema",
         DirectiveLocation.Schema)
 
   // May be a breaking change

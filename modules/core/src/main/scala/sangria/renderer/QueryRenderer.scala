@@ -5,7 +5,7 @@ import sangria.util.StringUtil.{escapeBlockString, escapeString}
 import sangria.ast._
 
 object QueryRenderer {
-  val Pretty = QueryRendererConfig(
+  val Pretty: QueryRendererConfig = QueryRendererConfig(
     indentLevel = "  ",
     lineBreak = "\n",
     separator = " ",
@@ -19,10 +19,10 @@ object QueryRenderer {
     formatBlockStrings = true
   )
 
-  val PrettyInput =
+  val PrettyInput: QueryRendererConfig =
     Pretty.copy(inputFieldSeparator = "\n", formatInputValues = true, renderComments = true)
 
-  val Compact = QueryRendererConfig(
+  val Compact: QueryRendererConfig = QueryRendererConfig(
     indentLevel = "",
     lineBreak = "",
     separator = "",
@@ -40,7 +40,7 @@ object QueryRenderer {
       sels: Vector[Selection],
       tc: WithTrailingComments,
       indent: Indent,
-      config: QueryRendererConfig) =
+      config: QueryRendererConfig): String =
     if (sels.nonEmpty) {
       val rendered = sels.iterator.zipWithIndex
         .map { case (sel, idx) =>
@@ -84,7 +84,7 @@ object QueryRenderer {
       tc: WithTrailingComments,
       indent: Indent,
       config: QueryRendererConfig,
-      frontSep: Boolean = false) =
+      frontSep: Boolean = false): String =
     if (fields.nonEmpty) {
       val rendered = fields.iterator.zipWithIndex
         .map { case (field, idx) =>
@@ -131,7 +131,7 @@ object QueryRenderer {
       tc: WithTrailingComments,
       indent: Indent,
       config: QueryRendererConfig,
-      frontSep: Boolean = false) =
+      frontSep: Boolean = false): String =
     if (fields.nonEmpty) {
       (if (frontSep) config.separator else "") +
         "{" +
@@ -148,7 +148,7 @@ object QueryRenderer {
       tc: WithTrailingComments,
       indent: Indent,
       config: QueryRendererConfig,
-      frontSep: Boolean = false) =
+      frontSep: Boolean = false): String =
     if (values.nonEmpty) {
       val renderedValues = values.iterator.zipWithIndex
         .map { case (value, idx) =>
@@ -195,7 +195,7 @@ object QueryRenderer {
       tc: WithTrailingComments,
       indent: Indent,
       config: QueryRendererConfig,
-      frontSep: Boolean = false) =
+      frontSep: Boolean = false): String =
     if (ops.nonEmpty) {
       val renderedOps = ops.iterator.zipWithIndex
         .map { case (op, idx) =>
@@ -218,7 +218,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       indent: Indent,
       frontSep: Boolean = false,
-      withSep: Boolean = true) =
+      withSep: Boolean = true): String =
     (if (dirs.nonEmpty && frontSep && withSep) config.separator else "") +
       dirs.iterator.map(renderNode(_, config, indent.zero)).mkString(config.separator) +
       (if (dirs.nonEmpty && !frontSep && withSep) config.separator else "")
@@ -227,7 +227,7 @@ object QueryRenderer {
       args: Vector[Argument],
       indent: Indent,
       config: QueryRendererConfig,
-      withSep: Boolean = true) =
+      withSep: Boolean = true): String =
     if (args.nonEmpty) {
       val argsRendered = args.iterator.zipWithIndex
         .map { case (a, idx) =>
@@ -248,7 +248,7 @@ object QueryRenderer {
       args: Vector[InputValueDefinition],
       indent: Indent,
       config: QueryRendererConfig,
-      withSep: Boolean = true) =
+      withSep: Boolean = true): String =
     if (args.nonEmpty) {
       val argsRendered = args.iterator.zipWithIndex
         .map { case (a, idx) =>
@@ -273,7 +273,7 @@ object QueryRenderer {
       vars: Vector[VariableDefinition],
       indent: Indent,
       config: QueryRendererConfig,
-      withSep: Boolean = true) =
+      withSep: Boolean = true): String =
     if (vars.nonEmpty) {
       val varsRendered = vars.iterator.zipWithIndex
         .map { case (v, idx) =>
@@ -294,7 +294,7 @@ object QueryRenderer {
       fields: Vector[InputValueDefinition],
       tc: WithTrailingComments,
       indent: Indent,
-      config: QueryRendererConfig) = {
+      config: QueryRendererConfig): String = {
     val fieldsRendered = fields.iterator.zipWithIndex
       .map { case (f, idx) =>
         val prev = if (idx == 0) None else Some(fields(idx - 1))
@@ -332,7 +332,7 @@ object QueryRenderer {
       config: QueryRendererConfig,
       indent: Indent,
       frontSep: Boolean = false,
-      withSep: Boolean = true) =
+      withSep: Boolean = true): String =
     if (interfaces.nonEmpty)
       (if (frontSep) config.mandatorySeparator else "") +
         "implements" + config.mandatorySeparator +
@@ -342,13 +342,13 @@ object QueryRenderer {
         (if (withSep) config.separator else "")
     else ""
 
-  def renderOpType(operationType: OperationType) = operationType match {
+  def renderOpType(operationType: OperationType): String = operationType match {
     case OperationType.Query => "query"
     case OperationType.Mutation => "mutation"
     case OperationType.Subscription => "subscription"
   }
 
-  def actualComments(node: WithComments, prev: Option[AstNode]) = {
+  def actualComments(node: WithComments, prev: Option[AstNode]): Vector[Comment] = {
     val ignoreFirst = for {
       ls <- prev
       p <- ls.location
@@ -362,16 +362,19 @@ object QueryRenderer {
     }
   }
 
-  def shouldRenderComment(node: WithComments, prev: Option[AstNode], config: QueryRendererConfig) =
+  def shouldRenderComment(
+      node: WithComments,
+      prev: Option[AstNode],
+      config: QueryRendererConfig): Boolean =
     config.renderComments && actualComments(node, prev).nonEmpty
 
-  def shouldRenderDescription(node: WithDescription) =
+  def shouldRenderDescription(node: WithDescription): Boolean =
     node.description.fold(false)(_.value.trim.nonEmpty)
 
-  def shouldRenderComment(node: WithTrailingComments, config: QueryRendererConfig) =
+  def shouldRenderComment(node: WithTrailingComments, config: QueryRendererConfig): Boolean =
     config.renderComments && node.trailingComments.nonEmpty
 
-  def shouldRenderComment(comments: Vector[Comment], config: QueryRendererConfig) =
+  def shouldRenderComment(comments: Vector[Comment], config: QueryRendererConfig): Boolean =
     config.renderComments && comments.nonEmpty
 
   private def startsWithWhitespace(text: String) =
@@ -412,7 +415,7 @@ object QueryRenderer {
       comments: Vector[Comment],
       nodePos: Option[AstLocation],
       indent: Indent,
-      config: QueryRendererConfig) = {
+      config: QueryRendererConfig): Seq[String] = {
     val nodeLine =
       nodePos.map(_.line).orElse(comments.last.location.map(_.line + 1)).fold(1)(identity)
 
@@ -450,7 +453,7 @@ object QueryRenderer {
     } else ""
   }
 
-  def renderInputComment(node: WithComments, indent: Indent, config: QueryRendererConfig) =
+  def renderInputComment(node: WithComments, indent: Indent, config: QueryRendererConfig): String =
     if (config.formatInputValues && shouldRenderComment(node, None, config))
       renderComment(node, None, indent, config) + indent.str
     else ""
@@ -459,7 +462,7 @@ object QueryRenderer {
       node: StringValue,
       indent: Indent,
       config: QueryRendererConfig,
-      extraIndent: Boolean = true) =
+      extraIndent: Boolean = true): String =
     if (node.block && config.formatBlockStrings)
       renderBlockString(node, indent, config, extraIndent)
     else renderNonBlockString(node, indent, config)
@@ -471,7 +474,7 @@ object QueryRenderer {
       node: StringValue,
       indent: Indent,
       config: QueryRendererConfig,
-      extraIndent: Boolean = true) =
+      extraIndent: Boolean = true): String =
     if (node.value.trim.nonEmpty) {
       val ind = if (extraIndent) indent.incForce.str else indent.strForce
       val lines = escapeBlockString(node.value).split("\n").iterator.map(ind + _)
@@ -484,6 +487,13 @@ object QueryRenderer {
 
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0): String =
     renderNode(node, config, Indent(config, indentLevel, indentLevel))
+
+  def renderPretty(node: AstNode): String = node match {
+    case _: Value => render(node, PrettyInput)
+    case _ => render(node, Pretty)
+  }
+
+  def renderCompact(node: AstNode): String = render(node, Compact)
 
   def renderNode(
       node: AstNode,
@@ -536,10 +546,10 @@ object QueryRenderer {
         renderComment(vd, prev, indent, config) +
           indent.str + "$" + name + ":" + config.separator +
           renderNode(tpe, config, indent.zero) +
-          (defaultValue
+          defaultValue
             .map(v =>
               config.separator + "=" + config.separator + renderNode(v, config, indent.zero))
-            .getOrElse("")) +
+            .getOrElse("") +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case NotNullType(ofType, _) =>
@@ -553,7 +563,7 @@ object QueryRenderer {
 
       case f @ Field(alias, name, args, dirs, sels, _, _, _) =>
         renderComment(f, prev, indent, config) +
-          indent.str + (alias.map(_ + ":" + config.separator).getOrElse("")) + name +
+          indent.str + alias.map(_ + ":" + config.separator).getOrElse("") + name +
           renderArgs(args, indent, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config, indent, withSep = sels.nonEmpty) +
@@ -802,39 +812,39 @@ object QueryRenderer {
   private def trailingLineBreak(tc: WithTrailingComments, config: QueryRendererConfig) =
     if (shouldRenderComment(tc, config)) config.mandatoryLineBreak else config.lineBreak
 
-  def inputLineBreak(config: QueryRendererConfig) =
+  def inputLineBreak(config: QueryRendererConfig): String =
     if (config.formatInputValues) config.lineBreak
     else ""
 
-  def inputFieldIndent(config: QueryRendererConfig, indent: Indent) =
+  def inputFieldIndent(config: QueryRendererConfig, indent: Indent): Indent =
     if (config.formatInputValues) indent.inc
     else indent.zero
 
-  def inputIndent(config: QueryRendererConfig, indent: Indent) =
+  def inputIndent(config: QueryRendererConfig, indent: Indent): String =
     if (config.formatInputValues) indent.str
     else ""
 }
 
 case class Indent(config: QueryRendererConfig, level: Int, prevLevel: Int) {
-  lazy val str = config.indentLevel * level
-  lazy val strPrev = config.indentLevel * prevLevel
+  lazy val str: String = config.indentLevel * level
+  lazy val strPrev: String = config.indentLevel * prevLevel
 
-  def strForce = if (level > 0) str else strPrev
+  def strForce: String = if (level > 0) str else strPrev
 
-  lazy val zero = copy(level = 0, prevLevel = if (level == 0) prevLevel else level)
+  lazy val zero: Indent = copy(level = 0, prevLevel = if (level == 0) prevLevel else level)
 
-  def +(l: Int) = copy(level = level + l, prevLevel = level)
-  def -(l: Int) = {
+  def +(l: Int): Indent = copy(level = level + l, prevLevel = level)
+  def -(l: Int): Indent = {
     val newLevel = level - l
 
     if (newLevel >= 0) this
     else copy(level = level + l, prevLevel = level)
   }
 
-  def inc = this + 1
-  def dec = this - 1
+  def inc: Indent = this + 1
+  def dec: Indent = this - 1
 
-  def incForce =
+  def incForce: Indent =
     if (level > 0) this + 1 else copy(level = prevLevel + 1, prevLevel = prevLevel)
 }
 

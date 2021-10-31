@@ -1,9 +1,9 @@
 # folders
-.bsp
-.idea
-target
-lib
-classes
+.bsp/
+.idea/
+target/
+lib/
+classes/
 
 # files
 *.iml
