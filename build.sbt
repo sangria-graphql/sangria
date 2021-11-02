@@ -18,7 +18,7 @@ import com.typesafe.tools.mima.core.{
 }
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.7")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
@@ -78,7 +78,6 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
     "sangria.schema.DefaultAstSchemaBuilder.buildDirective"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.schema.ResolverBasedAstSchemaBuilder.buildScalarType"),
-
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef$"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict"),
