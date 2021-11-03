@@ -29,6 +29,8 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
   })
 
   def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath
+  def cacheKeyReversed: ExecutionPath.PathCacheKeyReversed = cacheKeyPath.reverseIterator.toList
+  def cacheKeyReversedIterator: Iterator[String] = cacheKeyPath.reverseIterator
 
   override def toString = path.foldLeft("") {
     case ("", str: String) => str
@@ -42,6 +44,7 @@ case class ExecutionPath private (path: Vector[Any], cacheKeyPath: ExecutionPath
 
 object ExecutionPath {
   type PathCacheKey = Vector[String]
+  type PathCacheKeyReversed = List[String]
 
   val empty = new ExecutionPath(Vector.empty, Vector.empty)
 }
