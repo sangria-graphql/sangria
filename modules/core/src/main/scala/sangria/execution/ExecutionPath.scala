@@ -39,6 +39,7 @@ class ExecutionPath private (
 
   def cacheKey: ExecutionPath.PathCacheKey = cacheKeyPath.reverseIterator.toVector
   def cacheKeyReversed: ExecutionPath.PathCacheKeyReversed = cacheKeyPath
+  def cacheKeyReversedIterator: Iterator[String] = cacheKeyPath.iterator
 
   override def toString: String = _path.reverseIterator
     .foldLeft(new StringBuilder) {
