@@ -8,8 +8,8 @@ import sangria.ast.{
   InterfaceTypeExtensionDefinition,
   ObjectTypeExtensionDefinition,
   OperationType,
-  SourceMapper,
   ScalarTypeExtensionDefinition,
+  SourceMapper,
   TypeDefinition,
   UnionTypeExtensionDefinition
 }

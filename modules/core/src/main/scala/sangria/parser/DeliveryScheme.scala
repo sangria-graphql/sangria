@@ -9,7 +9,8 @@ import scala.util.{Failure, Success, Try}
   */
 trait DeliveryScheme[T] {
 
-  /** Type that encapsulates a successful output of type [[T]] or a failure of type [[Throwable]]. */
+  /** Type that encapsulates a successful output of type [[T]] or a failure of type [[Throwable]].
+    */
   type Result
 
   /** Return a result that encapsulates the given success output. */

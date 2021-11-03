@@ -646,9 +646,9 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
     (implicitly[ClassTag[T]].runtimeClass, description, false)
 
   private[this] def checkChanges(
-    oldDoc: Document,
-    newDoc: Document,
-    expectedChanges: (Class[_], String, Boolean)*): Unit = {
+      oldDoc: Document,
+      newDoc: Document,
+      expectedChanges: (Class[_], String, Boolean)*): Unit = {
     val queryType =
       graphql"""
         type Query {

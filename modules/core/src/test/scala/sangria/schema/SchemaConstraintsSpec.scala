@@ -234,7 +234,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     }
 
     "Allow ObjectTypes based on different case classes but with different names" in {
-      implicit val fooBazType: ObjectType[Unit, test.foo.Baz] = deriveObjectType[Unit, test.foo.Baz]()
+      implicit val fooBazType: ObjectType[Unit, test.foo.Baz] =
+        deriveObjectType[Unit, test.foo.Baz]()
       implicit val barBazType: ObjectType[Unit, test.bar.Baz] =
         deriveObjectType[Unit, test.bar.Baz](ObjectTypeName("BazWithNewName"))
 
