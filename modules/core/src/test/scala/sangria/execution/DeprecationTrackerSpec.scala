@@ -105,6 +105,12 @@ class DeprecationTrackerSpec
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("nested", "aa", "bb"))
+      deprecationTracker.ctx.get.path.cacheKey should be(
+        Vector("nested", "TestType", "aa", "TestType", "bb", "TestType"))
+      deprecationTracker.ctx.get.path.cacheKeyReversed should be(
+        List("TestType", "bb", "TestType", "aa", "TestType", "nested"))
+      deprecationTracker.ctx.get.path.cacheKeyReversedIterator.toList should be(
+        List("TestType", "bb", "TestType", "aa", "TestType", "nested"))
       deprecationTracker.ctx.get.field.name should be("deprecated")
       deprecationTracker.ctx.get.parentType.name should be("TestType")
     }
