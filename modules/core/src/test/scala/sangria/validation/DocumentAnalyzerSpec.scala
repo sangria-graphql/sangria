@@ -164,8 +164,7 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |  something
           |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      QueryRenderer.renderPretty(operations(Some("Two"))) should equal(
-        """fragment A on T {
+      QueryRenderer.renderPretty(operations(Some("Two"))) should equal("""fragment A on T {
           |  field
           |  ...B
           |}
@@ -220,8 +219,7 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |  ...A
           |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      QueryRenderer.renderPretty(operations(Some("Two"))) should equal(
-        """fragment A on T {
+      QueryRenderer.renderPretty(operations(Some("Two"))) should equal("""fragment A on T {
           |  ...B
           |}
           |
