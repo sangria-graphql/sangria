@@ -12,9 +12,9 @@ import scala.collection.mutable.{ListBuffer, Set => MutableSet}
   * spread within other fragments spread within operations.
   */
 class NoUnusedFragments extends ValidationRule {
-  override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    val fragmentDefs = ListBuffer[ast.FragmentDefinition]()
-    val operationDefs = ListBuffer[ast.OperationDefinition]()
+  override def visitor(ctx: ValidationContext): AstValidatingVisitor = new AstValidatingVisitor {
+    val fragmentDefs: ListBuffer[ast.FragmentDefinition] = ListBuffer[ast.FragmentDefinition]()
+    val operationDefs: ListBuffer[ast.OperationDefinition] = ListBuffer[ast.OperationDefinition]()
 
     override val onEnter: ValidationVisit = {
       case od: ast.OperationDefinition =>
@@ -26,7 +26,7 @@ class NoUnusedFragments extends ValidationRule {
         AstVisitorCommand.RightSkip
     }
 
-    override def onLeave: ValidationVisit = { case ast.Document(_, _, _, _) =>
+    override def onLeave: ValidationVisit = { case _: ast.Document =>
       val fragmentNameUsed = MutableSet[String]()
 
       operationDefs.foreach(operation =>

@@ -1,7 +1,7 @@
 package sangria.schema
 
 import sangria.ast.{AstLocation, AstNode, Comment}
-import sangria.visitor.{Visit, VisitAnyField, VisitorCommand, visit}
+import sangria.visitor._
 
 object AstNodeTransformer {
   def withoutAstLocations[T <: AstNode](node: T, stripComments: Boolean = false): T = {

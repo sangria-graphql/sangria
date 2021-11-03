@@ -2,7 +2,7 @@ package sangria.execution
 
 import sangria.ast
 import sangria.marshalling._
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema._
 import sangria.util.Cache

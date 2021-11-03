@@ -3,7 +3,6 @@ package sangria.schema
 import sangria.execution.ValueCoercionHelper
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.ast
-import sangria.ast.AstNode
 
 object SchemaComparator {
   def compare(oldSchema: Schema[_, _], newSchema: Schema[_, _]): Vector[SchemaChange] =

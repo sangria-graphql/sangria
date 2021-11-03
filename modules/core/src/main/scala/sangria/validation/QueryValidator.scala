@@ -1,9 +1,8 @@
 package sangria.validation
 
 import sangria.ast
-import sangria.ast.{AstVisitor, AstVisitorCommand}
 import sangria.ast.AstVisitorCommand._
-import sangria.parser.SourceMapper
+import sangria.ast.{AstVisitor, AstVisitorCommand, SourceMapper}
 import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.validation.rules._
@@ -223,7 +222,7 @@ object ValidationContext {
     case (io: InputObjectType[_], v) =>
       Vector(
         InputObjectIsOfWrongTypeMissingViolation(
-          SchemaRenderer.renderTypeName(io, true),
+          SchemaRenderer.renderTypeName(io, topLevel = true),
           sourceMapper,
           v.location.toList))
     case (s: ScalarType[_], v) =>

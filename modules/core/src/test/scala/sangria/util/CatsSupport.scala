@@ -32,7 +32,7 @@ trait CatsSupport { this: AnyWordSpec with Matchers =>
   import CatsAssertions._
   import CatsScenarioExecutor._
 
-  def generateTests(path: String) =
+  def generateTests(path: String): Unit =
     FileUtil.loadScenarios(path).foreach { file =>
       val scenario: YamlValue = file.scenario
 
@@ -525,7 +525,7 @@ object CatsScenarioData {
             .getOrElse(throw new IllegalStateException(s"Can't find the validation rule: $name")))))
       .orElse {
         when.get("execute").map { e =>
-          val validate = e.get("validate-query").map(_.booleanValue).getOrElse(true)
+          val validate = e.get("validate-query").forall(_.booleanValue)
           val value = e.get("test-value").map(name => testData(name.stringValue)).getOrElse(JsNull)
           val variables = e.get("variables").map(convertToJson).getOrElse(JsObject.empty)
           val operationName = e.get("operation-name").map(_.stringValue)

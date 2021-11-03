@@ -4,7 +4,7 @@ import sangria.ast.AstLocation
 import sangria.ast
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.marshalling.{ResultMarshaller, ScalarValueInfo}
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.schema._
 import sangria.streaming.SubscriptionStream
 

@@ -5,6 +5,7 @@ import sangria.macros._
 import sangria.util.StringMatchers
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sangria.renderer.QueryRenderer
 
 class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers {
   val NumberType = EnumType(
@@ -81,11 +82,11 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           }
         """
 
-      schema.analyzer(query).introspectionUsages.map(_.errorMessage) should (contain(
-        "Introspection field '__Schema.queryType' is used.")
-        .and(contain("Introspection field 'Query.__type' is used."))
-        .and(contain("Introspection field 'Query.__schema' is used."))
-        .and(contain("Introspection field '__Type.name' is used.")))
+      schema.analyzer(query).introspectionUsages.map(_.errorMessage) should
+        contain("Introspection field '__Schema.queryType' is used.")
+          .and(contain("Introspection field 'Query.__type' is used."))
+          .and(contain("Introspection field 'Query.__schema' is used."))
+          .and(contain("Introspection field '__Type.name' is used."))
     }
 
     "separates one AST into multiple, maintaining document order" in {
@@ -127,9 +128,10 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           }
         """
 
-      query.separateOperations.keySet should be(Set(None, Some("One"), Some("Two")))
+      val operations = DocumentAnalyzer(query).separateOperations
+      operations.keySet should be(Set(None, Some("One"), Some("Two")))
 
-      query.separateOperations(None).renderPretty should equal("""{
+      QueryRenderer.renderPretty(operations(None)) should equal("""{
           |  ...Y
           |  ...X
           |}
@@ -142,7 +144,7 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |  fieldY
           |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      query.separateOperations(Some("One")).renderPretty should equal("""query One {
+      QueryRenderer.renderPretty(operations(Some("One"))) should equal("""query One {
           |  foo
           |  bar
           |  ...A
@@ -162,7 +164,8 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |  something
           |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      query.separateOperations(Some("Two")).renderPretty should equal("""fragment A on T {
+      QueryRenderer.renderPretty(operations(Some("Two"))) should equal(
+        """fragment A on T {
           |  field
           |  ...B
           |}
@@ -202,9 +205,10 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           }
         """
 
-      query.separateOperations.keySet should be(Set(Some("One"), Some("Two")))
+      val operations = DocumentAnalyzer(query).separateOperations
+      operations.keySet should be(Set(Some("One"), Some("Two")))
 
-      query.separateOperations(Some("One")).renderPretty should equal("""query One {
+      QueryRenderer.renderPretty(operations(Some("One"))) should equal("""query One {
           |  ...A
           |}
           |
@@ -216,7 +220,8 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           |  ...A
           |}""".stripMargin)(after.being(strippedOfCarriageReturns))
 
-      query.separateOperations(Some("Two")).renderPretty should equal("""fragment A on T {
+      QueryRenderer.renderPretty(operations(Some("Two"))) should equal(
+        """fragment A on T {
           |  ...B
           |}
           |

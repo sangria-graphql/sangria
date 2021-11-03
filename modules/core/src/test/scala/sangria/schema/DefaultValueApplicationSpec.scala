@@ -169,24 +169,24 @@ class DefaultValueApplicationSpec extends AnyWordSpec with Matchers with FutureR
     var args: Option[Args] = None
   }
 
-  val TestInputJsonType = InputObjectType[JsValue](
+  private[this] val TestInputJsonType = InputObjectType[JsValue](
     "TestInput",
     fields = List(
       InputField("f", OptionInputType(StringType), defaultValue = "default"),
       InputField("fo", OptionInputType(StringType))))
 
-  val TestInputType = InputObjectType(
+  private[this] val TestInputType = InputObjectType(
     "TestInput",
     fields = List(
       InputField("f", OptionInputType(StringType), defaultValue = "default"),
       InputField("fo", OptionInputType(StringType))))
 
-  val AArg = Argument("a", OptionInputType(StringType), defaultValue = "default")
-  val InpArg = Argument("inp", TestInputType)
-  val InpJsonArg = Argument("inpJson", TestInputJsonType)
-  val SizeArg = Argument("size", OptionInputType(IntType), 42)
+  private[this] val AArg = Argument("a", OptionInputType(StringType), defaultValue = "default")
+  private[this] val InpArg = Argument("inp", TestInputType)
+  private[this] val InpJsonArg = Argument("inpJson", TestInputJsonType)
+  private[this] val SizeArg = Argument("size", OptionInputType(IntType), 42)
 
-  val QueryType = ObjectType(
+  private[this] val QueryType = ObjectType(
     "Query",
     fields[Ctx, Unit](
       Field(
@@ -208,9 +208,9 @@ class DefaultValueApplicationSpec extends AnyWordSpec with Matchers with FutureR
     )
   )
 
-  val schema = Schema(QueryType)
+  private[this] val schema = Schema(QueryType)
 
-  def check[T](query: Document, vars: String, assertions: Args => T): T = {
+  private[this] def check[T](query: Document, vars: String, assertions: Args => T): T = {
     val ctx = new Ctx
 
     Executor.execute(schema, query, ctx, variables = vars.parseJson).await

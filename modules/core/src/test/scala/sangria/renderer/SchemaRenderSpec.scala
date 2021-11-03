@@ -21,12 +21,14 @@ class SchemaRenderSpec
     with Matchers
     with FutureResultSupport
     with StringMatchers {
-  def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) =
+  private[this] def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) =
     "\n" + SchemaRenderer.renderSchema(res) + "\n"
-  def renderForTest(schema: Schema[Unit, Unit]) = "\n" + SchemaRenderer.renderSchema(schema) + "\n"
 
-  def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(implicit
-      render: Schema[Unit, Unit] => String) = {
+  private[this] def renderForTest(schema: Schema[Unit, Unit]) =
+    "\n" + SchemaRenderer.renderSchema(schema) + "\n"
+
+  private[this] def renderSingleFieldSchema(tpe: OutputType[_], args: List[Argument[_]] = Nil)(
+      implicit render: Schema[Unit, Unit] => String) = {
     val root = ObjectType(
       "Root",
       fields[Unit, Unit](
@@ -877,11 +879,11 @@ class SchemaRenderSpec
     def cycleRender(document: ast.Document) = {
       import sangria.parser.DeliveryScheme.Throw
 
-      val pretty = document.renderPretty
-      val compact = document.renderCompact
+      val pretty = QueryRenderer.renderPretty(document)
+      val compact = QueryRenderer.renderCompact(document)
 
-      QueryParser.parse(pretty).renderPretty should be(pretty)
-      QueryParser.parse(compact).renderCompact should be(compact)
+      QueryRenderer.renderPretty(QueryParser.parse(pretty)) should be(pretty)
+      QueryRenderer.renderCompact(QueryParser.parse(compact)) should be(compact)
 
       "\n" + pretty + "\n"
     }

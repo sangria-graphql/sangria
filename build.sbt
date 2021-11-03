@@ -184,6 +184,11 @@ lazy val ast = project.in(file("modules/ast"))
   .settings(
     name := "sangria-ast",
     description := "Scala GraphQL AST representation",
+
+    //FIXME This really shouldn't depend on any other libraries.
+    libraryDependencies ++= Seq(
+      "org.parboiled" %% "parboiled" % "2.3.0",
+    )
   )
 
 lazy val core = project

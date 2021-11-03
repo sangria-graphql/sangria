@@ -12,7 +12,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
-  def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
+  private[this] def parseQuery(query: String)(implicit
+      scheme: DeliveryScheme[ast.Document]): scheme.Result =
     QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
 
   "QueryParser" should {

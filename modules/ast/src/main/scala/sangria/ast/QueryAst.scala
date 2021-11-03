@@ -1,15 +1,11 @@
 package sangria.ast
 
-import sangria.parser.{AggregateSourceMapper, SourceMapper}
-import sangria.validation.DocumentAnalyzer
-
 import scala.collection.immutable.ListMap
 
 /** A complete GraphQL request operated on by a GraphQL service.
   *
   * @param definitions
   *   The definitions, which primarily constitute the document.
-  * @param sourceMapper
   *
   * @see
   *   [[https://spec.graphql.org/June2018/#Document]]
@@ -66,15 +62,6 @@ case class Document(
   /** An alias for `merge`
     */
   def +(other: Document): Document = merge(other)
-
-  lazy val analyzer: DocumentAnalyzer = DocumentAnalyzer(this)
-
-  lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
-
-  def separateOperation(definition: OperationDefinition): Document =
-    analyzer.separateOperation(definition)
-  def separateOperation(operationName: Option[String]): Option[Document] =
-    analyzer.separateOperation(operationName)
 
   override def equals(other: Any): Boolean = other match {
     case that: Document =>
@@ -137,7 +124,7 @@ case class InputDocument(
 
   override def equals(other: Any): Boolean = other match {
     case that: InputDocument =>
-      (that.canEqual(this)) &&
+      that.canEqual(this) &&
         values == that.values &&
         location == that.location
     case _ => false
@@ -148,7 +135,7 @@ case class InputDocument(
 }
 
 object InputDocument {
-  def merge(documents: Traversable[InputDocument]): InputDocument =
+  def merge(documents: Iterable[InputDocument]): InputDocument =
     InputDocument(documents.toVector.flatMap(_.values))
 }
 

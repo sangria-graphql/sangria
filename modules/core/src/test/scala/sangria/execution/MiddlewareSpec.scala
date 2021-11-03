@@ -600,7 +600,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
       """))
   }
 
-  def properFieldLevelMiddleware(query: Document) =
+  private[this] def properFieldLevelMiddleware(query: Document): Unit =
     "should support before and after at field level " in {
       val ctx = new Count
 

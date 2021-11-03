@@ -3,7 +3,7 @@ package sangria.execution
 import sangria.ast.AstLocation
 import sangria.ast
 import sangria.marshalling.{InputUnmarshaller, RawResultMarshaller, ResultMarshaller, ToInput}
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema._
 import sangria.util.Cache

@@ -19,7 +19,8 @@ case class InputDocumentMaterializer[Vars](
     variables: Vars = InputUnmarshaller.emptyMapVars)(implicit iu: InputUnmarshaller[Vars]) {
   def to[T](document: InputDocument, inputType: InputType[T])(implicit
       fromInput: FromInput[T],
-      scheme: DeliveryScheme[Vector[T]]): scheme.Result = {
+      scheme: DeliveryScheme[Vector[T]]
+  ): scheme.Result = {
     val collector = new ValueCollector[Unit, Vars](
       schema,
       variables,
@@ -131,5 +132,4 @@ object InputDocumentMaterializer {
             StringType,
             arguments = Argument("stub", inputType) :: Nil,
             resolve = _ => "stub"))))
-
 }

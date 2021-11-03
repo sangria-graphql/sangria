@@ -1,13 +1,14 @@
 package sangria.parser
 
 import org.parboiled2.ParserInput
+import sangria.ast.{DefaultSourceMapper, SourceMapper}
 
 import java.util.UUID
 
 case class ParserConfig(
     experimentalFragmentVariables: Boolean = false,
     sourceIdFn: ParserInput => String = ParserConfig.defaultSourceIdFn,
-    sourceMapperFn: (String, ParserInput) => Option[SourceMapper] =
+    sourceMapperFn: ParserConfig.CodeSourceToSourceMapperFunction =
       ParserConfig.defaultSourceMapperFn,
     parseLocations: Boolean = true,
     parseComments: Boolean = true
@@ -33,6 +34,20 @@ case class ParserConfig(
 }
 
 object ParserConfig {
+
+  /** Mapping from a GraphQL code source to a `SourceMapper`.
+    *
+    * A [[SourceMapper]] provides methods for displaying GraphQL source code. This type is the type
+    * of a function that returns a `SourceMapper`, given an identifier for the source code, and a
+    * Parboiled2 `ParserInput` from which the source code will be extracted.
+    *
+    * In practice, the identifiers are typically randomly-generated, the input source is from a
+    * string, and the chosen `SourceMapper` doesn't depend on either. In most cases, the
+    * [[DefaultSourceMapper default]] is returned. This function type is mostly used to allow
+    * Sangria users to replace the default with their own custom `SourceMapper`.
+    */
+  type CodeSourceToSourceMapperFunction = (String, ParserInput) => Option[SourceMapper]
+
   lazy val default: ParserConfig = ParserConfig()
 
   /** Function that always generates an empty identifier. */
@@ -41,7 +56,10 @@ object ParserConfig {
   /** Function that generates a random identifier for each input. */
   lazy val defaultSourceIdFn: ParserInput => String = _ => UUID.randomUUID().toString
 
-  lazy val emptySourceMapperFn: (String, ParserInput) => Option[SourceMapper] = (_, _) => None
-  lazy val defaultSourceMapperFn: (String, ParserInput) => Option[SourceMapper] =
+  /** Function that returns no `SourceMapper`. */
+  lazy val emptySourceMapperFn: CodeSourceToSourceMapperFunction = (_, _) => None
+
+  /** Function that returns the [[DefaultSourceMapper default `SourceMapper`]]. */
+  lazy val defaultSourceMapperFn: CodeSourceToSourceMapperFunction =
     (id, input) => Some(new DefaultSourceMapper(id, input))
 }

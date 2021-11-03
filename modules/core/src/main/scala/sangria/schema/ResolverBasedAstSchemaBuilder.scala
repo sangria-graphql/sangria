@@ -645,7 +645,7 @@ object ResolverBasedAstSchemaBuilder {
                     case GenericDirectiveResolver(directive, _, resolve) =>
                       resolve(GenericDirectiveContext(astDir, node, Args(directive, astDir)))
                     case gd @ GenericDynamicDirectiveResolver(_, _, resolve) =>
-                      implicit val marshaller = gd.marshaller
+                      implicit val marshaller: ResultMarshallerForType[T] = gd.marshaller
 
                       resolve(
                         GenericDynamicDirectiveContext(astDir, node, createDynamicArgs(astDir)))

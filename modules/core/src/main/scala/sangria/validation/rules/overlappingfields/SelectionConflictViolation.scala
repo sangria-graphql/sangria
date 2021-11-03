@@ -1,7 +1,7 @@
 package sangria.validation.rules.overlappingfields
 
 import sangria.ast.AstLocation
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.validation.AstNodeViolation
 
 case class SelectionConflictViolation(

@@ -1,4 +1,4 @@
-package sangria.parser
+package sangria.ast
 
 import org.parboiled2.ParserInput
 import sangria.ast.AstLocation

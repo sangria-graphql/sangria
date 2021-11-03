@@ -1,7 +1,7 @@
 package sangria.execution
 
 import sangria.ast.OperationType
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.schema._
 import sangria.ast
 import sangria.util.Cache

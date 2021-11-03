@@ -563,9 +563,12 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
       "render queries with block strings (erase block meta-info)" in {
         val Success(origAst) = QueryParser.parse(FileUtil.loadQuery("block-string.graphql"))
 
-        val ast = origAst.visit(AstVisitor { case s: StringValue =>
-          VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
-        })
+        val ast = AstVisitor.visit(
+          origAst,
+          AstVisitor { case s: StringValue =>
+            VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
+          }
+        )
 
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
@@ -642,7 +645,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val Success(ast) =
           QueryParser.parse(query, ParserConfig.default.withExperimentalFragmentVariables)
 
-        ast.renderPretty should equal(
+        QueryRenderer.renderPretty(ast) should equal(
           """fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
             |  id
             |}""".stripMargin)(after.being(strippedOfCarriageReturns))
@@ -656,7 +659,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
 
         val Success(ast) = QueryParser.parse(query)
 
-        ast.renderPretty should equal(
+        QueryRenderer.renderPretty(ast) should equal(
           """query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
             |  id
             |}""".stripMargin)(after.being(strippedOfCarriageReturns))

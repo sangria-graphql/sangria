@@ -10,7 +10,7 @@ import sangria.validation._
   * fragment definitions.
   */
 class ExecutableDefinitions extends ValidationRule {
-  override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+  override def visitor(ctx: ValidationContext): AstValidatingVisitor = new AstValidatingVisitor {
     override val onEnter: ValidationVisit = { case ast.Document(definitions, _, _, _) =>
       val errors =
         definitions.collect {
@@ -34,8 +34,8 @@ class ExecutableDefinitions extends ValidationRule {
     case d: ast.OperationDefinition => d.name.getOrElse("unnamed operation")
     case d: ast.TypeDefinition => d.name
     case d: ast.DirectiveDefinition => d.name
-    case d: ast.SchemaDefinition => "schema"
+    case _: ast.SchemaDefinition => "schema"
     case d: ast.TypeExtensionDefinition => d.name
-    case d: ast.SchemaExtensionDefinition => "schema"
+    case _: ast.SchemaExtensionDefinition => "schema"
   }
 }

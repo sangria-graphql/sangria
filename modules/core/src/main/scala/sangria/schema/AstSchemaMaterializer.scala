@@ -1,6 +1,5 @@
 package sangria.schema
 
-import language.{existentials, postfixOps}
 import sangria.ast
 import sangria.ast.{
   AstLocation,
@@ -9,20 +8,21 @@ import sangria.ast.{
   InterfaceTypeExtensionDefinition,
   ObjectTypeExtensionDefinition,
   OperationType,
+  SourceMapper,
   ScalarTypeExtensionDefinition,
   TypeDefinition,
   UnionTypeExtensionDefinition
 }
 import sangria.execution.MaterializedSchemaValidationError
 import sangria.marshalling.ToInput
-import sangria.parser.SourceMapper
 import sangria.renderer.QueryRenderer
 import sangria.schema.InputObjectType.DefaultInput
 import sangria.util.Cache
 import sangria.validation._
 
-import scala.reflect.ClassTag
 import scala.collection.Set
+import scala.language.{existentials, postfixOps}
+import scala.reflect.ClassTag
 
 class AstSchemaMaterializer[Ctx] private (
     val document: ast.Document,

@@ -639,16 +639,16 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
     )
   }
 
-  def breakingChange[T: ClassTag](description: String) =
+  private[this] def breakingChange[T: ClassTag](description: String) =
     (implicitly[ClassTag[T]].runtimeClass, description, true)
 
-  def nonBreakingChange[T: ClassTag](description: String) =
+  private[this] def nonBreakingChange[T: ClassTag](description: String) =
     (implicitly[ClassTag[T]].runtimeClass, description, false)
 
-  def checkChanges(
-      oldDoc: Document,
-      newDoc: Document,
-      expectedChanges: (Class[_], String, Boolean)*) = {
+  private[this] def checkChanges(
+    oldDoc: Document,
+    newDoc: Document,
+    expectedChanges: (Class[_], String, Boolean)*): Unit = {
     val queryType =
       graphql"""
         type Query {
@@ -662,19 +662,19 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
     assertChanges(newSchema.compare(oldSchema), expectedChanges: _*)
   }
 
-  def checkChangesWithoutQueryType(
+  private[this] def checkChangesWithoutQueryType(
       oldDoc: Document,
       newDoc: Document,
-      expectedChanges: (Class[_], String, Boolean)*) = {
+      expectedChanges: (Class[_], String, Boolean)*): Unit = {
     val oldSchema = Schema.buildFromAst(oldDoc)
     val newSchema = Schema.buildFromAst(newDoc)
 
     assertChanges(newSchema.compare(oldSchema), expectedChanges: _*)
   }
 
-  def assertChanges(
+  private[this] def assertChanges(
       actualChanges: Vector[SchemaChange],
-      expectedChanges: (Class[_], String, Boolean)*) = {
+      expectedChanges: (Class[_], String, Boolean)*): Unit = {
     val actualRendered = actualChanges
       .map(c =>
         s"  * ${c.getClass.getSimpleName}: ${c.description}${if (c.breakingChange) " (breaking)"
