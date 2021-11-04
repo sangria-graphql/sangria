@@ -301,7 +301,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(core, benchmarks)
+  .aggregate(ast, core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -320,6 +320,7 @@ lazy val ast = project.in(file("modules/ast"))
       "org.parboiled" %% "parboiled" % "2.3.0",
     )
   )
+  .disablePlugins(MimaPlugin)
 
 lazy val core = project
   .in(file("modules/core"))
