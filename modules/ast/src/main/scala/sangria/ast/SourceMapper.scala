@@ -27,6 +27,25 @@ trait SourceMapper {
   def renderLinePosition(location: AstLocation, prefix: String = ""): String
 }
 
+trait SourceMapperInput {
+  def source: String
+  def getLine(line: Int): String
+}
+
+/** [[sangria.ast.SourceMapper]] for a single GraphQL document. */
+class DefaultSourceMapper(val id: String, val sourceMapperInput: SourceMapperInput)
+    extends sangria.ast.SourceMapper {
+  override lazy val source: String = sourceMapperInput.source
+
+  override def renderLocation(location: AstLocation) =
+    s"(line ${location.line}, column ${location.column})"
+
+  override def renderLinePosition(location: AstLocation, prefix: String = ""): String =
+    sourceMapperInput
+      .getLine(location.line)
+      .replace("\r", "") + "\n" + prefix + (" " * (location.column - 1)) + "^"
+}
+
 /** [[SourceMapper]] for potentially multiple GraphQL documents.
   *
   * Sometimes it's necessary to compose a GraphQL document from multiple component documents; this

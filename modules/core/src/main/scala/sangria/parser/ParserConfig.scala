@@ -1,7 +1,7 @@
 package sangria.parser
 
 import org.parboiled2.ParserInput
-import sangria.ast.SourceMapper
+import sangria.ast.{DefaultSourceMapper, SourceMapperInput}
 
 import java.util.UUID
 
@@ -61,5 +61,12 @@ object ParserConfig {
 
   /** Function that returns the [[DefaultSourceMapper default `SourceMapper`]]. */
   lazy val defaultSourceMapperFn: CodeSourceToSourceMapperFunction =
-    (id, input) => Some(new DefaultSourceMapper(id, input))
+    (id, input) =>
+      Some(
+        new DefaultSourceMapper(
+          id,
+          new SourceMapperInput {
+            override def source: String = input.sliceString(0, input.length)
+            override def getLine(line: Int): String = input.getLine(line)
+          }))
 }
