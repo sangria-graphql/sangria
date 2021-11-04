@@ -289,7 +289,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.ast.WithTrailingComments"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.AggregateSourceMapper"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.AggregateSourceMapper$"),
-  ProblemFilters.exclude[MissingTypesProblem]("sangria.parser.DefaultSourceMapper"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.DefaultSourceMapper"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.SourceMapper"),
 
   // added type annotation
