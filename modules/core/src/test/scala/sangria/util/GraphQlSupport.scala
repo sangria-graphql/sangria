@@ -1,10 +1,10 @@
 package sangria.util
 
-import sangria.ast.{AstLocation, SourceMapper}
+import sangria.ast.AstLocation
 import sangria.execution.deferred.DeferredResolver
 import sangria.execution.{ExceptionHandler, Executor, HandledException, WithViolations}
 import sangria.marshalling.InputUnmarshaller
-import sangria.parser.QueryParser
+import sangria.parser.{QueryParser, SourceMapper}
 import sangria.schema.Schema
 import sangria.validation.{AstNodeLocation, AstNodeViolation, QueryValidator, Violation}
 import spray.json.{JsObject, JsValue}

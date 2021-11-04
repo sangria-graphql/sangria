@@ -290,7 +290,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.ast.WithTrailingComments"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.AggregateSourceMapper"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.AggregateSourceMapper$"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.DefaultSourceMapper"),
+  ProblemFilters.exclude[MissingTypesProblem]("sangria.parser.DefaultSourceMapper"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.SourceMapper"),
 
   // added type annotation
@@ -313,12 +313,7 @@ lazy val ast = project.in(file("modules/ast"))
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria-ast",
-    description := "Scala GraphQL AST representation",
-
-    //FIXME This really shouldn't depend on any other libraries.
-    libraryDependencies ++= Seq(
-      "org.parboiled" %% "parboiled" % "2.3.0",
-    )
+    description := "Scala GraphQL AST representation"
   )
   .disablePlugins(MimaPlugin)
 

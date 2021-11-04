@@ -1,7 +1,5 @@
 package sangria.ast
 
-import org.parboiled2.ParserInput
-
 /** Set of functions that convert a [[AstLocation GraphQL source code location]] to human-readable
   * strings.
   *
@@ -27,19 +25,6 @@ trait SourceMapper {
     *   prefix to attach to the returned string
     */
   def renderLinePosition(location: AstLocation, prefix: String = ""): String
-}
-
-/** [[SourceMapper]] for a single GraphQL document. */
-class DefaultSourceMapper(val id: String, val parserInput: ParserInput) extends SourceMapper {
-  override lazy val source: String = parserInput.sliceString(0, parserInput.length)
-
-  override def renderLocation(location: AstLocation) =
-    s"(line ${location.line}, column ${location.column})"
-
-  override def renderLinePosition(location: AstLocation, prefix: String = ""): String =
-    parserInput
-      .getLine(location.line)
-      .replace("\r", "") + "\n" + prefix + (" " * (location.column - 1)) + "^"
 }
 
 /** [[SourceMapper]] for potentially multiple GraphQL documents.

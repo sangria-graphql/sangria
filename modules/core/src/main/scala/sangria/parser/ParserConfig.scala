@@ -1,7 +1,7 @@
 package sangria.parser
 
 import org.parboiled2.ParserInput
-import sangria.ast.{DefaultSourceMapper, SourceMapper}
+import sangria.ast.SourceMapper
 
 import java.util.UUID
 
