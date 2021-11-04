@@ -78,7 +78,6 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
     "sangria.schema.DefaultAstSchemaBuilder.buildDirective"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.schema.ResolverBasedAstSchemaBuilder.buildScalarType"),
-
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef$"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict"),
@@ -294,8 +293,10 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.SourceMapper"),
 
   // added type annotation
-  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.renderer.QueryRenderer.renderCommentLines"),
-  ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.renderer.QueryRenderer.renderCommentLines"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.renderer.QueryRenderer.renderCommentLines"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.renderer.QueryRenderer.renderCommentLines")
 )
 
 lazy val root = project
@@ -308,7 +309,8 @@ lazy val root = project
   )
   .disablePlugins(MimaPlugin)
 
-lazy val ast = project.in(file("modules/ast"))
+lazy val ast = project
+  .in(file("modules/ast"))
   .withId("sangria-ast")
   .settings(scalacSettings ++ shellSettings)
   .settings(
