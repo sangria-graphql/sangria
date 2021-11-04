@@ -320,6 +320,7 @@ lazy val ast = project.in(file("modules/ast"))
       "org.parboiled" %% "parboiled" % "2.3.0",
     )
   )
+  .disablePlugins(MimaPlugin)
 
 lazy val core = project
   .in(file("modules/core"))

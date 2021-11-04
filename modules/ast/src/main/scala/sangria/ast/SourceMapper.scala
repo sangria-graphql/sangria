@@ -1,7 +1,6 @@
 package sangria.ast
 
 import org.parboiled2.ParserInput
-import sangria.ast.AstLocation
 
 /** Set of functions that convert a [[AstLocation GraphQL source code location]] to human-readable
   * strings.
