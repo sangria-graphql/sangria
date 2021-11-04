@@ -49,6 +49,15 @@ object ParserConfig {
     */
   type CodeSourceToSourceMapperFunction = (String, ParserInput) => Option[sangria.ast.SourceMapper]
 
+  /** Return the given Parboiled2 parser input, wrapped with our [[SourceMapperInput]].
+    *
+    * This utility method makes it easier to write quasiquotes.
+    */
+  def parboiledToSourceMapper(input: ParserInput): SourceMapperInput = new SourceMapperInput {
+    override def source: String = input.sliceString(0, input.length)
+    override def getLine(line: Int): String = input.getLine(line)
+  }
+
   lazy val default: ParserConfig = ParserConfig()
 
   /** Function that always generates an empty identifier. */
@@ -62,12 +71,5 @@ object ParserConfig {
 
   /** Function that returns the [[DefaultSourceMapper default `SourceMapper`]]. */
   lazy val defaultSourceMapperFn: CodeSourceToSourceMapperFunction =
-    (id, input) =>
-      Some(
-        new DefaultSourceMapper(
-          id,
-          new SourceMapperInput {
-            override def source: String = input.sliceString(0, input.length)
-            override def getLine(line: Int): String = input.getLine(line)
-          }))
+    (id, input) => Some(new DefaultSourceMapper(id, parboiledToSourceMapper(input)))
 }
