@@ -78,6 +78,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
     "sangria.schema.DefaultAstSchemaBuilder.buildDirective"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.schema.ResolverBasedAstSchemaBuilder.buildScalarType"),
+
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.AstAndDef$"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.validation.rules.Conflict"),
