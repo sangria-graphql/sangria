@@ -20,7 +20,8 @@ case class ParserConfig(
     */
   def withEmptySourceId: ParserConfig = copy(sourceIdFn = ParserConfig.emptySourceIdFn)
 
-  def withSourceMapper(fn: (String, ParserInput) => Option[SourceMapper]): ParserConfig =
+  def withSourceMapper(
+      fn: (String, ParserInput) => Option[sangria.ast.SourceMapper]): ParserConfig =
     copy(sourceMapperFn = fn)
 
   /** Return a new configuration that uses
@@ -46,7 +47,7 @@ object ParserConfig {
     * [[DefaultSourceMapper default]] is returned. This function type is mostly used to allow
     * Sangria users to replace the default with their own custom `SourceMapper`.
     */
-  type CodeSourceToSourceMapperFunction = (String, ParserInput) => Option[SourceMapper]
+  type CodeSourceToSourceMapperFunction = (String, ParserInput) => Option[sangria.ast.SourceMapper]
 
   lazy val default: ParserConfig = ParserConfig()
 
