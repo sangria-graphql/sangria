@@ -491,6 +491,13 @@ object QueryRenderer {
   def render(node: AstNode, config: QueryRendererConfig = Pretty, indentLevel: Int = 0): String =
     renderNode(node, config, Indent(config, indentLevel, indentLevel))
 
+  def renderPretty(node: AstNode): String = node match {
+    case _: Value => render(node, PrettyInput)
+    case _ => render(node, Pretty)
+  }
+
+  def renderCompact(node: AstNode): String = render(node, Compact)
+
   def renderNode(
       node: AstNode,
       config: QueryRendererConfig,
