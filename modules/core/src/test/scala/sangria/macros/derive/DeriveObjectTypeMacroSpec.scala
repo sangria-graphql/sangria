@@ -391,10 +391,12 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       import sangria.marshalling.queryAst._
 
-      val intro = IntrospectionParser.parse(
-        Executor
-          .execute(schema, sangria.introspection.introspectionQuery, root = testArticle)
-          .await).get
+      val intro = IntrospectionParser
+        .parse(
+          Executor
+            .execute(schema, sangria.introspection.introspectionQuery, root = testArticle)
+            .await)
+        .get
 
       intro.queryType.name should be("Article")
 
@@ -556,8 +558,9 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
           "paramType" -> JsString("id = 345, defaultId = 47589")
         )))
 
-      val intro = IntrospectionParser.parse(
-        Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await).get
+      val intro = IntrospectionParser
+        .parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
+        .get
       val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
 
       introType.fields should have size 3
@@ -672,8 +675,9 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       val schema = Schema(tpe)
 
-      val intro = IntrospectionParser.parse(
-        Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await).get
+      val intro = IntrospectionParser
+        .parse(Executor.execute(schema, introspectionQuery, Ctx(987, new FooBar)).await)
+        .get
       val introType = intro.types.find(_.name == "FooBar").get.asInstanceOf[IntrospectionObjectType]
 
       introType.fields should have size 2
@@ -752,8 +756,12 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       val QueryType = deriveObjectType[Unit, Query]()
       val schema = Schema(QueryType)
-      val intro = IntrospectionParser.parse(
-        Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await).get
+      val intro = IntrospectionParser
+        .parse(
+          Executor
+            .execute(schema, sangria.introspection.introspectionQuery, root = new Query)
+            .await)
+        .get
 
       intro
         .typesByName("Query")

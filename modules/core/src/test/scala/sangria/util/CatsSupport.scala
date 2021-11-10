@@ -215,7 +215,8 @@ object CatsScenarioExecutor extends FutureResultSupport {
 
   def executeAction(given: Given[Any, Any], action: Action) = action match {
     case Parse =>
-      ParsingResult(QueryParser.parse(given.query).toEither.left.map(_.asInstanceOf[SangriaSyntaxError]))
+      ParsingResult(
+        QueryParser.parse(given.query).toEither.left.map(_.asInstanceOf[SangriaSyntaxError]))
 
     case Validate(rules) =>
       ValidationResult(
@@ -491,7 +492,8 @@ object CatsScenarioData {
     value
       .get("schema")
       .map(v => QueryParser.parse(v.stringValue).get)
-      .orElse(value.get("schema-file").map(f => FileUtil.loadSchema(path + "/" + f.stringValue).get))
+      .orElse(
+        value.get("schema-file").map(f => FileUtil.loadSchema(path + "/" + f.stringValue).get))
 
   def getTestData(value: Option[YamlValue], path: String) =
     value

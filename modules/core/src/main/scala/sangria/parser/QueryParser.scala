@@ -822,13 +822,16 @@ object QueryParser {
     parser.InputDocument.run() match {
       case Success(res) if res.values.nonEmpty => Success(res.values.head)
       case Success(_) =>
-        Failure(new IllegalArgumentException("Input document does not contain any value definitions."))
+        Failure(
+          new IllegalArgumentException("Input document does not contain any value definitions."))
       case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
       case Failure(e) => Failure(e)
     }
   }
 
-  def parseInputDocument(input: String, config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
+  def parseInputDocument(
+      input: String,
+      config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
     parseInputDocument(ParserInput(input), config)
 
   def parseInputDocument(input: ParserInput, config: ParserConfig): Try[ast.InputDocument] = {
@@ -856,16 +859,21 @@ object QueryParser {
     parser.InputDocumentWithVariables.run() match {
       case Success(res) if res.values.nonEmpty => Success(res.values.head)
       case Success(_) =>
-        Failure(new IllegalArgumentException("Input document does not contain any value definitions."))
+        Failure(
+          new IllegalArgumentException("Input document does not contain any value definitions."))
       case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
       case Failure(e) => Failure(e)
     }
   }
 
-  def parseInputDocumentWithVariables(input: String, config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
+  def parseInputDocumentWithVariables(
+      input: String,
+      config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
     parseInputDocumentWithVariables(ParserInput(input), config)
 
-  def parseInputDocumentWithVariables(input: ParserInput, config: ParserConfig): Try[ast.InputDocument] = {
+  def parseInputDocumentWithVariables(
+      input: ParserInput,
+      config: ParserConfig): Try[ast.InputDocument] = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(input, id)
 

@@ -174,7 +174,8 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
     }
 
     "support `to` with `FromInput` type class" in {
-      val document = QueryParser.parseInputDocumentWithVariables("""
+      val document = QueryParser
+        .parseInputDocumentWithVariables("""
           {
             title: "foo",
             tags: null,
@@ -190,7 +191,8 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
               text: $comm
             }]
           }
-        """).get
+        """)
+        .get
 
       val vars = scalaInput(
         Map(

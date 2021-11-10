@@ -188,7 +188,9 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
 
   private[this] def coerceInputValue[T](tpe: InputType[T], value: String, vars: (String, String))(
       implicit fromInput: FromInput[T]) = {
-    val testSchema = Schema.buildFromAst(QueryParser.parse(s"""
+    val testSchema = Schema.buildFromAst(
+      QueryParser
+        .parse(s"""
       input TestInput {
         int: Int = 42
         bool: Boolean
@@ -215,7 +217,8 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
     val variables = valueCollector
       .getVariableValues(
         QueryParser
-          .parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}").get
+          .parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}")
+          .get
           .operations(Some("Foo"))
           .variables,
         None)
