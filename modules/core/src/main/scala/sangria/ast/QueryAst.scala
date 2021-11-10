@@ -1,12 +1,12 @@
 package sangria.ast
 
 import sangria.execution.InputDocumentMaterializer
+import sangria.since2_1_6
 import sangria.marshalling.{FromInput, InputUnmarshaller}
 import sangria.parser.{AggregateSourceMapper, DeliveryScheme, SourceMapper}
 import sangria.renderer.QueryRenderer
-import sangria.validation.DocumentAnalyzer
 import sangria.schema.{InputType, Schema}
-import sangria.validation.TypeInfo
+import sangria.validation.{DocumentAnalyzer, TypeInfo}
 import sangria.visitor._
 
 import scala.collection.immutable.ListMap
@@ -73,12 +73,29 @@ case class Document(
     */
   def +(other: Document): Document = merge(other)
 
+  @deprecated(
+    "Removed in 3.0. Use DocumentAnalyzer(•) instead.",
+    since2_1_6
+  )
   lazy val analyzer: DocumentAnalyzer = DocumentAnalyzer(this)
 
+  @deprecated(
+    "Removed in 3.0. Use DocumentAnalyzer(•).separateOperations instead.",
+    since2_1_6
+  )
   lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
 
+  @deprecated(
+    "Removed in 3.0. Use DocumentAnalyzer(•).separateOperation(definition) instead.",
+    since2_1_6
+  )
   def separateOperation(definition: OperationDefinition): Document =
     analyzer.separateOperation(definition)
+
+  @deprecated(
+    "Removed in 3.0. Use DocumentAnalyzer(•).separateOperation(operationName) instead.",
+    since2_1_6
+  )
   def separateOperation(operationName: Option[String]): Option[Document] =
     analyzer.separateOperation(operationName)
 
@@ -141,12 +158,20 @@ case class InputDocument(
     */
   def +(other: InputDocument): InputDocument = merge(other)
 
+  @deprecated(
+    "Removed in 3.0. Use InputDocumentMaterializer.to(schema, •, inputType) instead.",
+    since2_1_6
+  )
   def to[T](
       schema: Schema[_, _],
       inputType: InputType[T]
   )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer.to(schema, this, inputType)
 
+  @deprecated(
+    "Removed in 3.0. Use InputDocumentMaterializer.to(schema, •, inputType, variables) instead.",
+    since2_1_6
+  )
   def to[T, Vars](
       schema: Schema[_, _],
       inputType: InputType[T],
@@ -157,11 +182,19 @@ case class InputDocument(
       scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer.to(schema, this, inputType, variables)
 
+  @deprecated(
+    "Removed in 3.0. Use InputDocumentMaterializer.to(•, inputType) instead.",
+    since2_1_6
+  )
   def to[T](inputType: InputType[T])(implicit
       fromInput: FromInput[T],
       scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer.to(this, inputType)
 
+  @deprecated(
+    "Removed in 3.0. Use InputDocumentMaterializer.to(•, inputType, variables) instead.",
+    since2_1_6
+  )
   def to[T, Vars](
       inputType: InputType[T],
       variables: Vars = InputUnmarshaller.emptyMapVars
@@ -381,6 +414,10 @@ case class Argument(
   * @group value
   */
 sealed trait Value extends AstNode with WithComments {
+  @deprecated(
+    "Removed in 3.0. Use QueryRenderer.renderPretty(•) instead.",
+    since2_1_6
+  )
   override def renderPretty: String = QueryRenderer.render(this, QueryRenderer.PrettyInput)
 }
 
@@ -732,18 +769,43 @@ sealed trait AstNode {
   def location: Option[AstLocation]
   def cacheKeyHash: Int = System.identityHashCode(this)
 
+  @deprecated(
+    "Removed in 3.0. Use QueryRenderer.renderPretty(•) instead.",
+    since2_1_6
+  )
   def renderPretty: String = QueryRenderer.render(this, QueryRenderer.Pretty)
+
+  @deprecated(
+    "Removed in 3.0. Use QueryRenderer.renderCompact(•) instead.",
+    since2_1_6
+  )
   def renderCompact: String = QueryRenderer.render(this, QueryRenderer.Compact)
 
+  @deprecated(
+    "Removed in 3.0. Use AstVisitor.visit(•, visitor) instead.",
+    since2_1_6
+  )
   def visit(visitor: AstVisitor): this.type =
     AstVisitor.visit(this, visitor)
 
+  @deprecated(
+    "Removed in 3.0. Use AstVisitor.visit(•, onEnter, visitor) instead.",
+    since2_1_6
+  )
   def visit(onEnter: AstNode => VisitorCommand, onLeave: AstNode => VisitorCommand): this.type =
     AstVisitor.visit(this, onEnter, onLeave)
 
+  @deprecated(
+    "Removed in 3.0. Use AstVisitor.visitAstWithTypeInfo(schema, •)(visitorFn) instead.",
+    since2_1_6
+  )
   def visitAstWithTypeInfo(schema: Schema[_, _])(visitorFn: TypeInfo => AstVisitor): this.type =
     AstVisitor.visitAstWithTypeInfo[this.type](schema, this)(visitorFn)
 
+  @deprecated(
+    "Removed in 3.0. Use AstVisitor.visitAstWithState(schema, •, state)(visitorFn) instead.",
+    since2_1_6
+  )
   def visitAstWithState[S](schema: Schema[_, _], state: S)(
       visitorFn: (TypeInfo, S) => AstVisitor): S =
     AstVisitor.visitAstWithState(schema, this, state)(visitorFn)
@@ -767,7 +829,15 @@ sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
   def fields: Vector[FieldDefinition]
 }
 
+@deprecated(
+  "Removed in 3.0. Use sangria.schema.AstNodeTransformer instead.",
+  since2_1_6
+)
 object AstNode {
+  @deprecated(
+    "Removed in 3.0. Use AstNodeTransformer.withoutAstLocations() instead.",
+    since2_1_6
+  )
   def withoutAstLocations[T <: AstNode](node: T, stripComments: Boolean = false): T = {
     val enterComment = (_: Comment) =>
       if (stripComments) VisitorCommand.Delete else VisitorCommand.Continue
