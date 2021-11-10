@@ -74,26 +74,26 @@ case class Document(
   def +(other: Document): Document = merge(other)
 
   @deprecated(
-    "Removed in 3.0. Create a DocumentAnalyzer manually.",
+    "Removed in 3.0. Use DocumentAnalyzer(•) instead.",
     since2_1_6
   )
   lazy val analyzer: DocumentAnalyzer = DocumentAnalyzer(this)
 
   @deprecated(
-    "Removed in 3.0. Create a DocumentAnalyzer manually.",
+    "Removed in 3.0. Use DocumentAnalyzer(•).separateOperations instead.",
     since2_1_6
   )
   lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
 
   @deprecated(
-    "Removed in 3.0. Create a DocumentAnalyzer manually.",
+    "Removed in 3.0. Use DocumentAnalyzer(•).separateOperation(definition) instead.",
     since2_1_6
   )
   def separateOperation(definition: OperationDefinition): Document =
     analyzer.separateOperation(definition)
 
   @deprecated(
-    "Removed in 3.0. Create a DocumentAnalyzer manually.",
+    "Removed in 3.0. Use DocumentAnalyzer(•).separateOperation(operationName) instead.",
     since2_1_6
   )
   def separateOperation(operationName: Option[String]): Option[Document] =
@@ -830,7 +830,7 @@ sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
 }
 
 @deprecated(
-  "Renamed to sangria.schema.AstNodeTransformer in 3.0.",
+  "Removed in 3.0. Use sangria.schema.AstNodeTransformer instead.",
   since2_1_6
 )
 object AstNode {
