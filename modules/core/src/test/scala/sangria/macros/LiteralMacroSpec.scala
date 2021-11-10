@@ -4,6 +4,7 @@ import sangria.ast.AstLocation
 import sangria.ast._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sangria.schema.AstNodeTransformer
 
 class LiteralMacroSpec extends AnyWordSpec with Matchers {
   "literal graphql macro" should {
@@ -39,7 +40,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
 
       ast.sourceMapper should not be Symbol("empty")
 
-      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
+      AstNodeTransformer.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
           Vector(
             OperationDefinition(
@@ -289,7 +290,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
 
       ast.sourceMapper should not be Symbol("empty")
 
-      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
+      AstNodeTransformer.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
           Vector(
             OperationDefinition(
@@ -761,7 +762,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
 
       ast.sourceMapper should not be Symbol("empty")
 
-      AstNode.withoutAstLocations(ast.withoutSourceMapper) should be(
+      AstNodeTransformer.withoutAstLocations(ast.withoutSourceMapper) should be(
         Document(
           Vector(
             SchemaDefinition(

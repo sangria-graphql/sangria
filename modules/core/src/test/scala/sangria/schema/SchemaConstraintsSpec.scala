@@ -234,8 +234,9 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     }
 
     "Allow ObjectTypes based on different case classes but with different names" in {
-      implicit val fooBazType = deriveObjectType[Unit, test.foo.Baz]()
-      implicit val barBazType =
+      implicit val fooBazType: ObjectType[Unit, test.foo.Baz] =
+        deriveObjectType[Unit, test.foo.Baz]()
+      implicit val barBazType: ObjectType[Unit, test.bar.Baz] =
         deriveObjectType[Unit, test.bar.Baz](ObjectTypeName("BazWithNewName"))
 
       val queryType = ObjectType(
@@ -902,15 +903,17 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     )
   }
 
-  def buildSchema(document: ast.Document) =
+  private[this] def buildSchema(document: ast.Document) =
     Schema.buildFromAst(document)
 
-  def validSchema(document: ast.Document) = buildSchema(document)
+  private[this] def validSchema(document: ast.Document) = buildSchema(document)
 
-  def invalidSchema(document: ast.Document, expected: (String, Seq[Pos])*): Unit =
-    invalidSchema(buildSchema(document), expected: _*)
+  private[this] def invalidSchema(
+      document: ast.Document,
+      expected: (String, Seq[Pos])*
+  ): Unit = invalidSchema(buildSchema(document), expected: _*)
 
-  def invalidSchema(schema: => Schema[_, _], expected: (String, Seq[Pos])*): Unit =
+  private[this] def invalidSchema(schema: => Schema[_, _], expected: (String, Seq[Pos])*): Unit =
     (Try(schema): @unchecked) match {
       case Success(_) => fail("Schema was built successfully")
       case Failure(e: WithViolations) =>

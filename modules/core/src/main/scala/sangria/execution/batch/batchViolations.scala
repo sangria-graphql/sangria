@@ -2,7 +2,7 @@ package sangria.execution.batch
 
 import sangria.ast.AstLocation
 import sangria.execution.{ExecutionError, Executor, QueryAnalysisError, WithViolations}
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.validation.{AstNodeViolation, Violation}
 
 case class BatchExecutionError(message: String, eh: Executor.ExceptionHandler)

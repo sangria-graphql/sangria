@@ -4,7 +4,7 @@ import java.util
 import java.util.function.Consumer
 
 import sangria.ast
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 
 class SelectionConflictViolationsBuilder(sourceMapper: Option[SourceMapper]) {
 

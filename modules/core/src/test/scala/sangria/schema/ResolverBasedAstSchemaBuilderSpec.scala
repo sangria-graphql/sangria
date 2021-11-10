@@ -2,7 +2,6 @@ package sangria.schema
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
 import sangria.ast
 import sangria.execution.{Executor, QueryReducer, UserFacingError}
 import sangria.macros._
@@ -10,7 +9,7 @@ import sangria.marshalling.InputUnmarshaller
 import sangria.schema.AstSchemaBuilder.{FieldName, TypeName, resolverBased}
 import sangria.schema.{DirectiveLocation => DL}
 import sangria.util.{FutureResultSupport, Pos}
-import sangria.validation.BaseViolation
+import sangria.validation.{BaseViolation, DocumentAnalyzer}
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -22,12 +21,12 @@ import org.scalatest.wordspec.AnyWordSpec
 class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case object UUIDViolation extends BaseViolation("Invalid UUID")
 
-  def parseUuid(s: String) = Try(UUID.fromString(s)) match {
+  private[this] def parseUuid(s: String) = Try(UUID.fromString(s)) match {
     case Success(s) => Right(s)
-    case Failure(e) => Left(UUIDViolation)
+    case Failure(_) => Left(UUIDViolation)
   }
 
-  val UUIDType =
+  private[this] val UUIDType =
     ScalarType[UUID](
       "UUID",
       coerceOutput = (v, _) => v.toString,
@@ -135,7 +134,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val collectedValue = schemaAst.analyzer
+      val collectedValue = DocumentAnalyzer(schemaAst)
         .resolveDirectives(GenericDirectiveResolver(NumDir, resolve = c => Some(c.arg(NVArg))))
         .sum
 
@@ -472,7 +471,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
         FieldResolver.map("Query" -> Map("a" -> (_ => "a value"), "b" -> (_ => "b value"))),
         ExistingFieldResolver {
           case (_, _, field) if field.name.startsWith("existing") =>
-            c => "replacement"
+            _ => "replacement"
         },
         ExistingFieldResolver.map("Query" -> Map("c" -> (_ => "c value")))
       )

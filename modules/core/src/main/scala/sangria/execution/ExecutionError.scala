@@ -2,7 +2,7 @@ package sangria.execution
 
 import sangria.ast.AstLocation
 import sangria.marshalling.ResultMarshaller
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.schema.{AbstractType, InterfaceType, ObjectType, UnionType}
 import sangria.validation.{AstNodeLocation, Violation}
 

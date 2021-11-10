@@ -1,19 +1,14 @@
 package sangria.execution
 
-import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import sangria.ast
+import sangria.marshalling.FromInput
 import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
 import sangria.schema._
-import sangria.ast
-
-import scala.reflect.ClassTag
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
-  val helper = ValueCoercionHelper.default
-  val marshaller = CoercedScalaResultMarshaller.default
-
   "ValueCoercionHelper" should {
     "converts according to input coercion rules" in {
       check(opt(BooleanType), "true", Some(Some(true)))
@@ -192,8 +187,8 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  def coerceInputValue[T](tpe: InputType[T], value: String, vars: (String, String))(implicit
-      fromInput: FromInput[T]) = {
+  private[this] def coerceInputValue[T](tpe: InputType[T], value: String, vars: (String, String))(
+      implicit fromInput: FromInput[T]) = {
     val testSchema = Schema.buildFromAst(QueryParser.parse(s"""
       input TestInput {
         int: Int = 42
@@ -239,11 +234,12 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
     args.raw.get("a")
   }
 
-  def check[T](tpe: InputType[T], value: String, result: Any, vars: (String, String) = "" -> "")(
-      implicit fromInput: FromInput[T]) =
-    coerceInputValue(tpe, value, vars) should be(result)
+  private[this] def check[T](
+      tpe: InputType[T],
+      value: String,
+      result: Any,
+      vars: (String, String) = "" -> ""
+  )(implicit fromInput: FromInput[T]) = coerceInputValue(tpe, value, vars) should be(result)
 
-  def cls[T: ClassTag] = implicitly[ClassTag[T]].runtimeClass
-
-  def opt[T](tpe: InputType[T]): InputType[Option[T]] = OptionInputType(tpe)
+  private[this] def opt[T](tpe: InputType[T]): InputType[Option[T]] = OptionInputType(tpe)
 }

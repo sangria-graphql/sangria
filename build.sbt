@@ -164,22 +164,165 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
     "sangria.execution.ExecutionPath.productElementName"),
   ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.execution.ExecutionPath.this"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.ExecutionPath.this"),
-  ProblemFilters.exclude[MissingTypesProblem]("sangria.execution.ExecutionPath$")
+  ProblemFilters.exclude[MissingTypesProblem]("sangria.execution.ExecutionPath$"),
+
+  // removed the `ast` package to its own library
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Argument"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Argument$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.AstLocation"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.AstLocation$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.AstNode"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.AstNode$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.BigDecimalValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.BigDecimalValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.BigIntValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.BigIntValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.BooleanValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.BooleanValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Comment"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Comment$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ConditionalFragment"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Definition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Directive"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Directive$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.DirectiveDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.DirectiveDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.DirectiveLocation"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.DirectiveLocation$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Document"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Document$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumTypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumTypeDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumTypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumTypeExtensionDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumValueDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.EnumValueDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Field"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Field$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FieldDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FieldDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FloatValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FloatValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FragmentDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FragmentDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FragmentSpread"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.FragmentSpread$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InlineFragment"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InlineFragment$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputDocument"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputDocument$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputObjectTypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputObjectTypeDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputObjectTypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputObjectTypeExtensionDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputValueDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InputValueDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.IntValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.IntValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InterfaceTypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InterfaceTypeDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InterfaceTypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.InterfaceTypeExtensionDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ListType"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ListType$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ListValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ListValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.NameValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.NamedType"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.NamedType$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.NotNullType"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.NotNullType$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.NullValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.NullValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectField"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectField$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectLikeTypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectTypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectTypeDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectTypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectTypeExtensionDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ObjectValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationType"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationType$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationType$Mutation$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationType$Query$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationType$Subscription$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationTypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.OperationTypeDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ScalarTypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ScalarTypeDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ScalarTypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ScalarTypeExtensionDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.ScalarValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.SchemaAstNode"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.SchemaDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.SchemaDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.SchemaExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.SchemaExtensionDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Selection"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.SelectionContainer"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.StringValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.StringValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Type"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.TypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.TypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.TypeSystemDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.TypeSystemExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.UnionTypeDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.UnionTypeDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.UnionTypeExtensionDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.UnionTypeExtensionDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.Value"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.VariableDefinition"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.VariableDefinition$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.VariableValue"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.VariableValue$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.WithArguments"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.WithComments"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.WithDescription"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.WithDirectives"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.ast.WithTrailingComments"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.AggregateSourceMapper"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.AggregateSourceMapper$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.DefaultSourceMapper"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.SourceMapper"),
+
+  // added type annotation
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.renderer.QueryRenderer.renderCommentLines"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem](
+    "sangria.renderer.QueryRenderer.renderCommentLines")
 )
 
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(core, benchmarks)
+  .aggregate(ast, core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
   )
   .disablePlugins(MimaPlugin)
 
+lazy val ast = project
+  .in(file("modules/ast"))
+  .withId("sangria-ast")
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-ast",
+    description := "Scala GraphQL AST representation"
+  )
+  .disablePlugins(MimaPlugin)
+
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
+  .dependsOn(ast)
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria",

@@ -3,7 +3,7 @@ package sangria.schema
 import language.{higherKinds, implicitConversions}
 import sangria.execution._
 import sangria.marshalling._
-import sangria.parser.SourceMapper
+import sangria.ast.SourceMapper
 import sangria.{ast, introspection}
 import sangria.execution.deferred.Deferred
 import sangria.streaming.SubscriptionStream

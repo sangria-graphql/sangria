@@ -7,6 +7,7 @@ import sangria.ast.{
   NotNullType,
   ObjectTypeDefinition,
   ObjectTypeExtensionDefinition,
+  SourceMapper,
   UnionTypeDefinition,
   UnionTypeExtensionDefinition
 }
@@ -14,7 +15,6 @@ import sangria.ast.{
 import sangria.execution._
 import sangria.introspection
 import sangria.marshalling.{CoercedScalaResultMarshaller, ToInput}
-import sangria.parser.SourceMapper
 import sangria.renderer.SchemaRenderer
 import sangria.streaming.SubscriptionStream
 import sangria.validation._
@@ -73,10 +73,10 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
         None,
         CoercedScalaResultMarshaller.default,
         CoercedScalaResultMarshaller.default,
-        false,
-        prefix)(iu) match {
+        isArgument = false,
+        errorPrefix = prefix)(iu) match {
         case Left(violations) => violations
-        case Right(violations) => Vector.empty
+        case Right(_) => Vector.empty
       }
     }
 
@@ -708,7 +708,7 @@ class FullSchemaTraversalValidationRule(validators: SchemaElementValidator*)
     def add(vs: Vector[Violation]): Unit =
       if (vs.nonEmpty) violations ++= vs
 
-    def validate(fn: SchemaElementValidator => Vector[Violation]) =
+    def validate(fn: SchemaElementValidator => Vector[Violation]): Unit =
       validators.foreach(v => add(fn(v)))
 
     schema.typeList.foreach {

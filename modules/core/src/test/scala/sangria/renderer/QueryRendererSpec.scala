@@ -10,6 +10,7 @@ import sangria.visitor.VisitorCommand
 import scala.util.Success
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sangria.schema.AstNodeTransformer
 
 class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
   val quotes = "\"\"\""
@@ -25,9 +26,10 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutAstLocations(ast) should be(AstNode.withoutAstLocations(prettyParsed))
-        AstNode.withoutAstLocations(ast, stripComments = true) should be(
-          AstNode.withoutAstLocations(compactParsed, stripComments = true))
+        AstNodeTransformer.withoutAstLocations(ast) should be(
+          AstNodeTransformer.withoutAstLocations(prettyParsed))
+        AstNodeTransformer.withoutAstLocations(ast, stripComments = true) should be(
+          AstNodeTransformer.withoutAstLocations(compactParsed, stripComments = true))
 
         compactRendered should be(
           "query queryName($foo:ComplexType,$site:Site=MOBILE){whoever123is:node(id:[123,456]){" +
@@ -561,9 +563,12 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
       "render queries with block strings (erase block meta-info)" in {
         val Success(origAst) = QueryParser.parse(FileUtil.loadQuery("block-string.graphql"))
 
-        val ast = origAst.visit(AstVisitor { case s: StringValue =>
-          VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
-        })
+        val ast = AstVisitor.visit(
+          origAst,
+          AstVisitor { case s: StringValue =>
+            VisitorCommand.Transform(s.copy(block = false, blockRawValue = None))
+          }
+        )
 
         val prettyRendered = QueryRenderer.render(ast, QueryRenderer.Pretty)
         val compactRendered = QueryRenderer.render(ast, QueryRenderer.Compact)
@@ -571,9 +576,10 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutAstLocations(ast) should be(AstNode.withoutAstLocations(prettyParsed))
-        AstNode.withoutAstLocations(ast, stripComments = true) should be(
-          AstNode.withoutAstLocations(compactParsed, stripComments = true))
+        AstNodeTransformer.withoutAstLocations(ast) should be(
+          AstNodeTransformer.withoutAstLocations(prettyParsed))
+        AstNodeTransformer.withoutAstLocations(ast, stripComments = true) should be(
+          AstNodeTransformer.withoutAstLocations(compactParsed, stripComments = true))
 
         compactRendered should be(
           "query FetchLukeAndLeiaAliased($someVar:String=\"hello \\\\\\n  world\"" +
@@ -608,10 +614,12 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutAstLocations(withoutRaw(ast)) should be(
-          AstNode.withoutAstLocations(withoutRaw(prettyParsed)))
-        AstNode.withoutAstLocations(withoutRaw(ast, block = false), stripComments = true) should be(
-          AstNode
+        AstNodeTransformer.withoutAstLocations(withoutRaw(ast)) should be(
+          AstNodeTransformer.withoutAstLocations(withoutRaw(prettyParsed)))
+        AstNodeTransformer.withoutAstLocations(
+          withoutRaw(ast, block = false),
+          stripComments = true) should be(
+          AstNodeTransformer
             .withoutAstLocations(withoutRaw(compactParsed, block = false), stripComments = true))
 
         compactRendered should be(
@@ -637,7 +645,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val Success(ast) =
           QueryParser.parse(query, ParserConfig.default.withExperimentalFragmentVariables)
 
-        ast.renderPretty should equal(
+        QueryRenderer.renderPretty(ast) should equal(
           """fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
             |  id
             |}""".stripMargin)(after.being(strippedOfCarriageReturns))
@@ -651,7 +659,7 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
 
         val Success(ast) = QueryParser.parse(query)
 
-        ast.renderPretty should equal(
+        QueryRenderer.renderPretty(ast) should equal(
           """query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
             |  id
             |}""".stripMargin)(after.being(strippedOfCarriageReturns))
@@ -698,11 +706,11 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutAstLocations(ast, stripComments = true) should be(
-          AstNode.withoutAstLocations(prettyParsed, stripComments = true))
+        AstNodeTransformer.withoutAstLocations(ast, stripComments = true) should be(
+          AstNodeTransformer.withoutAstLocations(prettyParsed, stripComments = true))
 
-        AstNode.withoutAstLocations(noBlock(ast), stripComments = true) should be(
-          AstNode.withoutAstLocations(noBlock(compactParsed), stripComments = true))
+        AstNodeTransformer.withoutAstLocations(noBlock(ast), stripComments = true) should be(
+          AstNodeTransformer.withoutAstLocations(noBlock(compactParsed), stripComments = true))
 
         compactRendered should equal("""schema{query:QueryType mutation:MutationType}
             |"type description!" type Foo implements Bar{one:Type two(argument:InputType!):Type three(argument:InputType,other:String):Int four(argument:String="string"):String five(argument:[String]=["string","string"]):String "More \"\"\" descriptions \\" six(argument:InputType={key:"value"}):Type}
@@ -843,11 +851,11 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
         val Success(prettyParsed) = QueryParser.parse(prettyRendered)
         val Success(compactParsed) = QueryParser.parse(compactRendered)
 
-        AstNode.withoutAstLocations(ast, stripComments = true) should be(
-          AstNode.withoutAstLocations(prettyParsed, stripComments = true))
+        AstNodeTransformer.withoutAstLocations(ast, stripComments = true) should be(
+          AstNodeTransformer.withoutAstLocations(prettyParsed, stripComments = true))
 
-        AstNode.withoutAstLocations(ast, stripComments = true) should be(
-          AstNode.withoutAstLocations(compactParsed, stripComments = true))
+        AstNodeTransformer.withoutAstLocations(ast, stripComments = true) should be(
+          AstNodeTransformer.withoutAstLocations(compactParsed, stripComments = true))
 
         compactRendered should equal(
           """type Foo implements Bar@dfdsfsdf(aaa:1)@qqq(aaa:[1,2]){one:Type two(argument:InputType!):Type three(argument:InputType@aaa(c:b),other:String@ddd(aa:1)@xxx(ttt:"sdfdsf")):Int four(argument:String="string"):String five(argument:[String]=["string","string"]):String@aaaa(if:true) six(argument:InputType={key:"value"}):Type another(argument:InputType={key:"value"},mylist:[String]=["string","string"]):Type}

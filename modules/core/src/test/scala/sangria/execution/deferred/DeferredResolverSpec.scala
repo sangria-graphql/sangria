@@ -1,9 +1,7 @@
 package sangria.execution.deferred
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import sangria.ast
-import sangria.ast.Document
 import sangria.execution.{DeferredWithInfo, Executor}
 import sangria.macros._
 import sangria.schema._
@@ -15,7 +13,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSupport {
-  def deferredResolver(implicit ec: ExecutionContext) = {
+  private[this] def deferredResolver(implicit ec: ExecutionContext): Unit = {
     case class LoadCategories(ids: Seq[String]) extends Deferred[Seq[String]]
 
     lazy val CategoryType: ObjectType[Unit, String] = ObjectType(
@@ -105,13 +103,13 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
           : Option[(Field[_, _], Vector[ast.Field], Args, Double) => Boolean] =
         Some((_, _, _, complexity) => complexity < 100)
 
-      override def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]) = {
+      override def groupDeferred[T <: DeferredWithInfo](deferred: Vector[T]): Vector[Vector[T]] = {
         val (expensive, cheap) = deferred.partition(_.complexity > 100)
         Vector(expensive, cheap)
       }
 
-      def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
-          ec: ExecutionContext) = {
+      override def resolve(deferred: Vector[Deferred[Any]], ctx: Any, queryState: Any)(implicit
+          ec: ExecutionContext): Vector[Future[Seq[String]]] = {
         callsCount.getAndIncrement()
         valueCount.addAndGet(deferred.size)
 
@@ -125,7 +123,7 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
 
     val schema = Schema(QueryType, Some(MutationType))
 
-    def exec(query: Document) = {
+    def exec(query: ast.Document) = {
       val resolver = new MyDeferredResolver
       val result = Executor.execute(schema, query, deferredResolver = resolver).await
 

@@ -1,21 +1,11 @@
 package sangria.ast
 
-import sangria.execution.InputDocumentMaterializer
-import sangria.marshalling.{FromInput, InputUnmarshaller}
-import sangria.parser.{AggregateSourceMapper, DeliveryScheme, SourceMapper}
-import sangria.renderer.QueryRenderer
-import sangria.validation.DocumentAnalyzer
-import sangria.schema.{InputType, Schema}
-import sangria.validation.TypeInfo
-import sangria.visitor._
-
 import scala.collection.immutable.ListMap
 
 /** A complete GraphQL request operated on by a GraphQL service.
   *
   * @param definitions
   *   The definitions, which primarily constitute the document.
-  * @param sourceMapper
   *
   * @see
   *   [[https://spec.graphql.org/June2018/#Document]]
@@ -72,15 +62,6 @@ case class Document(
   /** An alias for `merge`
     */
   def +(other: Document): Document = merge(other)
-
-  lazy val analyzer: DocumentAnalyzer = DocumentAnalyzer(this)
-
-  lazy val separateOperations: Map[Option[String], Document] = analyzer.separateOperations
-
-  def separateOperation(definition: OperationDefinition): Document =
-    analyzer.separateOperation(definition)
-  def separateOperation(operationName: Option[String]): Option[Document] =
-    analyzer.separateOperation(operationName)
 
   override def equals(other: Any): Boolean = other match {
     case that: Document =>
@@ -141,39 +122,9 @@ case class InputDocument(
     */
   def +(other: InputDocument): InputDocument = merge(other)
 
-  def to[T](
-      schema: Schema[_, _],
-      inputType: InputType[T]
-  )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
-    InputDocumentMaterializer.to(schema, this, inputType)
-
-  def to[T, Vars](
-      schema: Schema[_, _],
-      inputType: InputType[T],
-      variables: Vars
-  )(implicit
-      iu: InputUnmarshaller[Vars],
-      fromInput: FromInput[T],
-      scheme: DeliveryScheme[Vector[T]]): scheme.Result =
-    InputDocumentMaterializer.to(schema, this, inputType, variables)
-
-  def to[T](inputType: InputType[T])(implicit
-      fromInput: FromInput[T],
-      scheme: DeliveryScheme[Vector[T]]): scheme.Result =
-    InputDocumentMaterializer.to(this, inputType)
-
-  def to[T, Vars](
-      inputType: InputType[T],
-      variables: Vars = InputUnmarshaller.emptyMapVars
-  )(implicit
-      iu: InputUnmarshaller[Vars],
-      fromInput: FromInput[T],
-      scheme: DeliveryScheme[Vector[T]]): scheme.Result =
-    InputDocumentMaterializer.to(this, inputType, variables)
-
   override def equals(other: Any): Boolean = other match {
     case that: InputDocument =>
-      (that.canEqual(this)) &&
+      that.canEqual(this) &&
         values == that.values &&
         location == that.location
     case _ => false
@@ -184,7 +135,7 @@ case class InputDocument(
 }
 
 object InputDocument {
-  def merge(documents: Traversable[InputDocument]): InputDocument =
+  def merge(documents: Iterable[InputDocument]): InputDocument =
     InputDocument(documents.toVector.flatMap(_.values))
 }
 
@@ -396,9 +347,7 @@ case class Argument(
   *   [[https://spec.graphql.org/June2018/#Value]]
   * @group value
   */
-sealed trait Value extends AstNode with WithComments {
-  override def renderPretty: String = QueryRenderer.render(this, QueryRenderer.PrettyInput)
-}
+sealed trait Value extends AstNode with WithComments
 
 /** @group scalar
   */
@@ -798,22 +747,6 @@ sealed trait AstNode {
   /** Location at which this node lexically begins in the GraphQL request source code. */
   def location: Option[AstLocation]
   def cacheKeyHash: Int = System.identityHashCode(this)
-
-  def renderPretty: String = QueryRenderer.render(this, QueryRenderer.Pretty)
-  def renderCompact: String = QueryRenderer.render(this, QueryRenderer.Compact)
-
-  def visit(visitor: AstVisitor): this.type =
-    AstVisitor.visit(this, visitor)
-
-  def visit(onEnter: AstNode => VisitorCommand, onLeave: AstNode => VisitorCommand): this.type =
-    AstVisitor.visit(this, onEnter, onLeave)
-
-  def visitAstWithTypeInfo(schema: Schema[_, _])(visitorFn: TypeInfo => AstVisitor): this.type =
-    AstVisitor.visitAstWithTypeInfo[this.type](schema, this)(visitorFn)
-
-  def visitAstWithState[S](schema: Schema[_, _], state: S)(
-      visitorFn: (TypeInfo, S) => AstVisitor): S =
-    AstVisitor.visitAstWithState(schema, this, state)(visitorFn)
 }
 
 /** @group typesystem
@@ -846,17 +779,4 @@ sealed trait TypeExtensionDefinition extends TypeSystemExtensionDefinition with 
   */
 sealed trait ObjectLikeTypeExtensionDefinition extends TypeExtensionDefinition {
   def fields: Vector[FieldDefinition]
-}
-
-object AstNode {
-  def withoutAstLocations[T <: AstNode](node: T, stripComments: Boolean = false): T = {
-    val enterComment = (_: Comment) =>
-      if (stripComments) VisitorCommand.Delete else VisitorCommand.Continue
-
-    visit[AstNode](
-      node,
-      Visit[Comment](enterComment),
-      VisitAnyField[AstNode, Option[AstLocation]]((_, _) => VisitorCommand.Transform(None)))
-      .asInstanceOf[T]
-  }
 }

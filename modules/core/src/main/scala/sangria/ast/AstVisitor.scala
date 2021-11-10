@@ -343,14 +343,7 @@ object AstVisitor {
             comment.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InputObjectTypeDefinition(
-              _,
-              fields,
-              dirs,
-              description,
-              comment,
-              trailingComments,
-              _) =>
+        case n @ InputObjectTypeDefinition(_, fields, dirs, _, comment, trailingComments, _) =>
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d => loop(d))
             dirs.foreach(d => loop(d))

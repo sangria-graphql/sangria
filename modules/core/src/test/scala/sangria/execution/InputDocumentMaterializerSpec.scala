@@ -198,7 +198,7 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
           "comm" -> "from variable"
         ))
 
-      document.to(ArticleType, vars) should be(
+      InputDocumentMaterializer.to(document, ArticleType, vars) should be(
         Vector(
           Article("foo", Some("Hello World!"), None, Vector.empty),
           Article(
@@ -213,7 +213,7 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
       val document =
         QueryParser.parseInputDocumentWithVariables("""{hosts: ["localhost", "127.0.0.1"]}""")
 
-      val res = document to ConfigType
+      val res = InputDocumentMaterializer.to(document, ConfigType)
 
       res should have size 1
 

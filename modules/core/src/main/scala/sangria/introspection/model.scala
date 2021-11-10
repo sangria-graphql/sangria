@@ -1,7 +1,8 @@
 package sangria.introspection
 
 import sangria.ast.Document
-import sangria.renderer.{SchemaFilter, SchemaRenderer}
+import sangria.introspection
+import sangria.renderer.{QueryRenderer, SchemaFilter, SchemaRenderer}
 import sangria.schema.DirectiveLocation
 
 case class IntrospectionSchema(
@@ -12,17 +13,18 @@ case class IntrospectionSchema(
     directives: Seq[IntrospectionDirective],
     description: Option[String]
 ) {
-  def toAst = SchemaRenderer.schemaAstFromIntrospection(this)
+  def toAst: Document = SchemaRenderer.schemaAstFromIntrospection(this)
   def toAst(filter: SchemaFilter): Document =
     SchemaRenderer.schemaAstFromIntrospection(this, filter)
 
-  def renderPretty: String = toAst.renderPretty
-  def renderPretty(filter: SchemaFilter): String = toAst(filter).renderPretty
+  def renderPretty: String = QueryRenderer.renderPretty(toAst)
+  def renderPretty(filter: SchemaFilter): String = QueryRenderer.renderPretty(toAst(filter))
 
-  def renderCompact: String = toAst.renderCompact
-  def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
+  def renderCompact: String = QueryRenderer.renderCompact(toAst)
+  def renderCompact(filter: SchemaFilter): String = QueryRenderer.renderCompact(toAst(filter))
 
-  lazy val typesByName = types.groupBy(_.name).map { case (k, v) => (k, v.head) }
+  lazy val typesByName: Map[String, IntrospectionType] =
+    types.groupBy(_.name).map { case (k, v) => (k, v.head) }
 }
 
 sealed trait IntrospectionType {
@@ -33,7 +35,7 @@ sealed trait IntrospectionType {
 
 case class IntrospectionScalarType(name: String, description: Option[String])
     extends IntrospectionType {
-  val kind = TypeKind.Scalar
+  val kind: introspection.TypeKind.Value = TypeKind.Scalar
 }
 
 case class IntrospectionObjectType(

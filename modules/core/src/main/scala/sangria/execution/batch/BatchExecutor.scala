@@ -11,7 +11,7 @@ import sangria.marshalling.{
   SimpleResultMarshallerForType,
   SymmetricMarshaller
 }
-import sangria.renderer.SchemaRenderer
+import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.schema.{
   Argument,
   Directive,
@@ -531,12 +531,12 @@ object BatchExecutor {
 
                 if (firstAstType != currAstType)
                   violations += VariableDefinitionInferenceViolation(
-                    exportOperation.operationName,
-                    ud,
-                    firstAstType.renderPretty,
-                    currAstType.renderPretty,
-                    queryAst.sourceMapper,
-                    first.node.location.toList ++ curr.node.location.toList
+                    operationName = exportOperation.operationName,
+                    variableName = ud,
+                    type1 = QueryRenderer.renderPretty(firstAstType),
+                    type2 = QueryRenderer.renderPretty(currAstType),
+                    sourceMapper = queryAst.sourceMapper,
+                    locations = first.node.location.toList ++ curr.node.location.toList
                   )
               }
 

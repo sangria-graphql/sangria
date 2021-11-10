@@ -103,14 +103,11 @@ class OverlappingFieldsCanBeMergedBenchmark {
     result
   }
 
-  private def makeQuery(size: Int, overlapping: Boolean, fragments: Boolean): Document =
-    if (fragments) {
-      makeQueryWithFragments(size, overlapping)
-    } else {
-      makeQueryWithoutFragments(size, overlapping)
-    }
+  private def makeQuery(size: Int, overlapping: Boolean, fragments: Boolean) =
+    if (fragments) makeQueryWithFragments(size, overlapping)
+    else makeQueryWithoutFragments(size, overlapping)
 
-  private def makeRepeatedFieldsQuery(size: Int): Document = {
+  private def makeRepeatedFieldsQuery(size: Int) = {
     val b = new StringBuilder
 
     b.append("""
@@ -119,7 +116,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
                |     xingId {
              """.stripMargin)
 
-    for (i <- 1 to size)
+    for (_ <- 1 to size)
       b.append("firstName\n")
 
     b.append("""
@@ -131,7 +128,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
     QueryParser.parse(b.result()).get
   }
 
-  private def makeQueryWithFragments(size: Int, overlapping: Boolean): Document = {
+  private def makeQueryWithFragments(size: Int, overlapping: Boolean) = {
     val b = new StringBuilder
 
     for (i <- 1 to size) {
@@ -170,7 +167,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
     QueryParser.parse(b.result()).get
   }
 
-  private def makeQueryWithoutFragments(size: Int, overlapping: Boolean): Document = {
+  private def makeQueryWithoutFragments(size: Int, overlapping: Boolean) = {
     val b = new StringBuilder
 
     b.append("query testQuery {")
@@ -203,7 +200,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
     QueryParser.parse(b.result()).get
   }
 
-  private def makeDeepAbstractConcreteQuery(depth: Int): Document = {
+  private def makeDeepAbstractConcreteQuery(depth: Int) = {
     val q = new StringBuilder
 
     q.append("""
