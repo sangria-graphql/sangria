@@ -1204,7 +1204,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           input Hello {
             world(foo: Int): String
           }
-        """)
+        """).get
     }
 
     "Allow empty fields and values" in {

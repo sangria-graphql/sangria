@@ -199,7 +199,7 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
           "comm" -> "from variable"
         ))
 
-      InputDocumentMaterializer.to(document, ArticleType, vars) should be(
+      InputDocumentMaterializer.to(document, ArticleType, vars).get should be(
         Vector(
           Article("foo", Some("Hello World!"), None, Vector.empty),
           Article(
