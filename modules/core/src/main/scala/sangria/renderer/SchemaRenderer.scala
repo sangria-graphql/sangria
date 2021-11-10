@@ -346,24 +346,18 @@ object SchemaRenderer {
     QueryRenderer.renderPretty(
       schemaAstFromIntrospection(introspectionSchema, SchemaFilter.default))
 
-  def renderSchema[T: InputUnmarshaller](introspectionResult: T): String = {
-    import sangria.parser.DeliveryScheme.Throw
-
+  def renderSchema[T: InputUnmarshaller](introspectionResult: T): String =
     QueryRenderer.renderPretty(
       schemaAstFromIntrospection(
-        IntrospectionParser.parse(introspectionResult),
+        IntrospectionParser.parse(introspectionResult).get,
         SchemaFilter.default))
-  }
 
   def renderSchema(introspectionSchema: IntrospectionSchema, filter: SchemaFilter): String =
     QueryRenderer.renderPretty(schemaAstFromIntrospection(introspectionSchema, filter))
 
-  def renderSchema[T: InputUnmarshaller](introspectionResult: T, filter: SchemaFilter): String = {
-    import sangria.parser.DeliveryScheme.Throw
-
+  def renderSchema[T: InputUnmarshaller](introspectionResult: T, filter: SchemaFilter): String =
     QueryRenderer.renderPretty(
-      schemaAstFromIntrospection(IntrospectionParser.parse(introspectionResult), filter))
-  }
+      schemaAstFromIntrospection(IntrospectionParser.parse(introspectionResult).get, filter))
 
   def schemaAst(schema: Schema[_, _], filter: SchemaFilter = SchemaFilter.default): ast.Document = {
     val schemaDef = if (filter.renderSchema) renderSchemaDefinition(schema) else None

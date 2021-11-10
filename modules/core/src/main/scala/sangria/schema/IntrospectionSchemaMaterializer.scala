@@ -2,7 +2,6 @@ package sangria.schema
 
 import sangria.introspection._
 import sangria.marshalling._
-import sangria.parser.DeliveryScheme.Throw
 import sangria.renderer.SchemaRenderer
 import sangria.util.Cache
 
@@ -13,7 +12,7 @@ class IntrospectionSchemaMaterializer[Ctx, T: InputUnmarshaller](
     builder: IntrospectionSchemaBuilder[Ctx]) {
   private val typeDefCache = Cache.empty[String, Type with Named]
 
-  private lazy val schemaDef = IntrospectionParser.parse(introspectionResult)
+  private lazy val schemaDef = IntrospectionParser.parse(introspectionResult).get
 
   lazy val build: Schema[Ctx, Any] = {
     val queryType = getObjectType(schemaDef.queryType)

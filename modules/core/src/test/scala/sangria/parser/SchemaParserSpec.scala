@@ -5,13 +5,13 @@ import sangria.ast
 import sangria.ast._
 import sangria.util.{FileUtil, StringMatchers}
 
-import scala.util.Success
+import scala.util.{Success, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
-  def parseQuery(query: String)(implicit scheme: DeliveryScheme[ast.Document]): scheme.Result =
-    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
+  private[this] def parseQuery(query: String) =
+    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)
 
   "QueryParser" should {
     "parse schema kitchen sink" in {
@@ -1200,8 +1200,6 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
     }
 
     "Simple input object with args should fail" in {
-      import sangria.parser.DeliveryScheme.Throw
-
       an[SyntaxError] should be thrownBy parseQuery("""
           input Hello {
             world(foo: Int): String

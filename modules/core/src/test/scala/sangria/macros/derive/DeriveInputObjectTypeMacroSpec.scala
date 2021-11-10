@@ -274,7 +274,6 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
 
       import MyJsonProtocol._
       import sangria.marshalling.sprayJson._
-      import sangria.parser.DeliveryScheme.Throw
 
       implicit lazy val TestDeeperType = deriveInputObjectType[TestDeeper]()
       implicit lazy val TestNestedType = deriveInputObjectType[TestNested]()
@@ -300,8 +299,12 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
           JsString(
             "TestDefaults(fgh,None,324,TestNested(TestDeeper(foo,123),List(3, 4, 5),Some(List(TestDeeper(aa,1)))),Some(List(TestNested(TestDeeper(ee,1),List(1),Some(List(TestDeeper(aa,1)))), TestNested(TestDeeper(ff,1),List(1),Some(List(TestDeeper(aa,1)))))))"))))
 
-      val intro = IntrospectionParser.parse(
-        Executor.execute(schema, sangria.introspection.introspectionQuery, root = new Query).await)
+      val intro = IntrospectionParser
+        .parse(
+          Executor
+            .execute(schema, sangria.introspection.introspectionQuery, root = new Query)
+            .await)
+        .get
 
       intro
         .typesByName("TestDefaults")

@@ -4,7 +4,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import sangria.ast
 import sangria.marshalling.FromInput
-import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
 import sangria.schema._
 
@@ -199,7 +198,7 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
       type Query {
         foo: String
       }
-    """))
+    """).get)
 
     import spray.json._
     import sangria.marshalling.sprayJson._
@@ -216,13 +215,13 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
     val variables = valueCollector
       .getVariableValues(
         QueryParser
-          .parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}")
+          .parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}").get
           .operations(Some("Foo"))
           .variables,
         None)
       .get
 
-    val parsed = QueryParser.parseInputWithVariables(value)
+    val parsed = QueryParser.parseInputWithVariables(value).get
     val args = valueCollector
       .getArgumentValues(
         None,

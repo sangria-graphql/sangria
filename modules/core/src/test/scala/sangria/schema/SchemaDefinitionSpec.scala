@@ -6,7 +6,6 @@ import sangria.validation.StringCoercionViolation
 import sangria.introspection.{IntrospectionParser, introspectionQuery}
 import sangria.util.FutureResultSupport
 import sangria.marshalling.queryAst._
-import sangria.parser.DeliveryScheme.Throw
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
@@ -51,7 +50,7 @@ class SchemaDefinitionSpec extends AnyWordSpec with Matchers with FutureResultSu
       val schema = Schema(queryType, additionalTypes = DogType :: CatType :: Nil)
 
       val introspection =
-        IntrospectionParser.parse(Executor.execute(schema, introspectionQuery).await)
+        IntrospectionParser.parse(Executor.execute(schema, introspectionQuery).await).get
 
       val fromIntro = introspection.types.map(_.name).toSet
 
