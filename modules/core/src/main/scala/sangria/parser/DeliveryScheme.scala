@@ -1,7 +1,10 @@
 package sangria.parser
 
+import sangria.since2_1_7
+
 import scala.util.{Failure, Success, Try}
 
+@deprecated("Removed in 3.0. Expect a Try result instead.", since2_1_7)
 trait DeliveryScheme[T] {
   type Result
 
@@ -9,7 +12,9 @@ trait DeliveryScheme[T] {
   def failure(error: Throwable): Result
 }
 
+@deprecated("Removed in 3.0. See the member deprecations for advice.", since2_1_7)
 object DeliveryScheme extends AlternativeDeliverySchemes {
+  @deprecated("Removed in 3.0. A Try result will be returned by default.", since2_1_7)
   implicit def Try[T]: DeliveryScheme[T] { type Result = Try[T] } =
     new DeliveryScheme[T] {
       type Result = Try[T]
@@ -19,7 +24,12 @@ object DeliveryScheme extends AlternativeDeliverySchemes {
     }
 }
 
+@deprecated("Removed in 3.0. See the member deprecations for advice.", since2_1_7)
 trait AlternativeDeliverySchemes {
+  @deprecated(
+    "Removed in 3.0. Use the default Try scheme instead and convert with Try.toEither.",
+    since2_1_7
+  )
   implicit def Either[T]: DeliveryScheme[T] { type Result = Either[Throwable, T] } =
     new DeliveryScheme[T] {
       type Result = Either[Throwable, T]
@@ -28,6 +38,10 @@ trait AlternativeDeliverySchemes {
       def failure(error: Throwable) = Left(error)
     }
 
+  @deprecated(
+    "Removed in 3.0. Use the default Try scheme instead and convert with Try.get.",
+    since2_1_7
+  )
   implicit def Throw[T]: DeliveryScheme[T] { type Result = T } =
     new DeliveryScheme[T] {
       type Result = T
