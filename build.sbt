@@ -1,12 +1,5 @@
 import sbt.Developer
-import sbt.Keys.{
-  crossScalaVersions,
-  developers,
-  organizationHomepage,
-  scalacOptions,
-  scmInfo,
-  startYear
-}
+import sbt.Keys._
 import com.typesafe.tools.mima.core.{
   DirectMissingMethodProblem,
   IncompatibleMethTypeProblem,
@@ -374,10 +367,25 @@ lazy val ast = project
   )
   .disablePlugins(MimaPlugin)
 
+lazy val parser = project
+  .in(file("modules/parser"))
+  .withId("sangria-parser")
+  .dependsOn(ast)
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-parser",
+    description := "Scala GraphQL parser",
+    libraryDependencies ++= Seq(
+      // AST Parser
+      "org.parboiled" %% "parboiled" % "2.3.0",
+    )
+  )
+  .disablePlugins(MimaPlugin)
+
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
-  .dependsOn(ast)
+  .dependsOn(parser)
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria",
@@ -385,8 +393,6 @@ lazy val core = project
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.3"),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
-      // AST Parser
-      "org.parboiled" %% "parboiled" % "2.3.0",
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.3",
       // Marshalling
