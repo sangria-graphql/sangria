@@ -7,7 +7,7 @@ import shapeless.{::, HNil}
 
 import scala.util.{Failure, Success, Try}
 
-trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
+sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
 
   private[this] def leadingWhitespace(str: String) = {
     var i = 0
@@ -133,7 +133,7 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 /** Mix-in that defines GraphQL grammar productions that are typically ignored (whitespace,
   * comments, etc.).
   */
-trait Ignored extends PositionTracking { this: Parser =>
+sealed trait Ignored extends PositionTracking { this: Parser =>
 
   /** Whether comments should be parsed into the resulting AST. */
   protected[this] def parseComments: Boolean
@@ -180,7 +180,7 @@ trait Ignored extends PositionTracking { this: Parser =>
     quiet(Ignored.* ~ capture(str(s)) ~ IgnoredNoComment.*))
 }
 
-trait Document {
+sealed trait Document {
   this: Parser
     with Operations
     with Ignored
@@ -216,7 +216,7 @@ trait Document {
   }
 }
 
-trait TypeSystemDefinitions {
+sealed trait TypeSystemDefinitions {
   this: Parser
     with Tokens
     with Ignored
@@ -561,7 +561,7 @@ trait TypeSystemDefinitions {
   private[this] def Description = rule(StringValue.?)
 }
 
-trait Operations extends PositionTracking {
+sealed trait Operations extends PositionTracking {
   this: Parser with Tokens with Ignored with Fragments with Values with Types with Directives =>
 
   protected[this] def OperationDefinition = rule {
@@ -642,7 +642,7 @@ trait Operations extends PositionTracking {
   }
 }
 
-trait Fragments {
+sealed trait Fragments {
   this: Parser with Tokens with Ignored with Directives with Types with Operations =>
 
   protected[this] def experimentalFragmentVariables: Boolean
@@ -686,7 +686,7 @@ trait Fragments {
   private[this] def TypeCondition = rule(on ~ NamedType)
 }
 
-trait Values { this: Parser with Tokens with Ignored with Operations =>
+sealed trait Values { this: Parser with Tokens with Ignored with Operations =>
   protected[this] def ValueConst: Rule1[ast.Value] = rule {
     NumberValue | StringValue | BooleanValue | NullValue | EnumValue | ListValueConst | ObjectValueConst
   }
@@ -756,7 +756,7 @@ trait Values { this: Parser with Tokens with Ignored with Operations =>
   }
 }
 
-trait Directives { this: Parser with Tokens with Operations with Ignored =>
+sealed trait Directives { this: Parser with Tokens with Operations with Ignored =>
   protected[this] def Directives = rule(Directive.+ ~> (_.toVector))
   protected[this] def DirectivesConst = rule(DirectiveConst.+ ~> (_.toVector))
 
@@ -771,7 +771,7 @@ trait Directives { this: Parser with Tokens with Operations with Ignored =>
   }
 }
 
-trait Types { this: Parser with Tokens with Ignored =>
+sealed trait Types { this: Parser with Tokens with Ignored =>
   protected[this] def Type: Rule1[ast.Type] = rule(NonNullType | ListType | NamedType)
 
   private[this] def TypeName = rule(Name)
