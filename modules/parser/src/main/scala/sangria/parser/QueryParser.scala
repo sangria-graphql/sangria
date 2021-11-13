@@ -1,31 +1,55 @@
 package sangria.parser
 
+import org.parboiled2.CharPredicate.{Digit19, HexDigit}
 import org.parboiled2._
-import CharPredicate.{Digit19, HexDigit}
 import sangria.ast
-import sangria.util.StringUtil
+import shapeless.{::, HNil}
 
 import scala.util.{Failure, Success, Try}
 
 trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
 
-  def Token = rule(Punctuator | Name | NumberValue | StringValue)
+  private[this] def leadingWhitespace(str: String) = {
+    var i = 0
+    while (i < str.length && (str.charAt(i) == ' ' || str.charAt(i) == '\t')) i += 1
+    i
+  }
 
-  val PunctuatorChar = CharPredicate("!$():=@[]{|}")
+  private[this] def isBlank(str: String) = leadingWhitespace(str) == str.length
 
-  def Punctuator = rule(PunctuatorChar | Ellipsis)
+  /** Produces the value of a block string from its parsed raw value, similar to Coffeescript's
+    * block string, Python's docstring trim or Ruby's strip_heredoc.
+    *
+    * This implements the GraphQL spec's BlockStringValue() static algorithm.
+    */
+  private[this] def blockStringValue(rawString: String): String = {
+    val lines = rawString.split("""\r\n|[\n\r]""")
+    val lineSizes = lines.map(l => l -> leadingWhitespace(l))
+    val commonIndentLines =
+      lineSizes.drop(1).collect { case (line, size) if size != line.length => size }
+    val strippedLines =
+      if (commonIndentLines.nonEmpty) {
+        val commonIndent = commonIndentLines.min
 
-  def Ellipsis = rule(quiet(str("...") ~ IgnoredNoComment.*))
+        lines.take(1) ++ lines.drop(1).map(_.drop(commonIndent))
+      } else lines
+    val trimmedLines = strippedLines.reverse.dropWhile(isBlank).reverse.dropWhile(isBlank)
 
-  val NameFirstChar = CharPredicate.Alpha ++ '_'
+    trimmedLines.mkString("\n")
+  }
 
-  val NameChar = NameFirstChar ++ CharPredicate.Digit
+  protected[this] def Ellipsis: Rule[HNil, HNil] = rule(quiet(str("...") ~ IgnoredNoComment.*))
 
-  def NameStrict = rule(capture(NameFirstChar ~ NameChar.*) ~ IgnoredNoComment.*)
+  private[this] val NameFirstChar = CharPredicate.Alpha ++ '_'
 
-  def Name = rule(Ignored.* ~ NameStrict)
+  private[this] val NameChar = NameFirstChar ++ CharPredicate.Digit
 
-  def NumberValue = rule {
+  protected[this] def NameStrict: Rule[HNil, String :: HNil] = rule(
+    capture(NameFirstChar ~ NameChar.*) ~ IgnoredNoComment.*)
+
+  protected[this] def Name: Rule[HNil, String :: HNil] = rule(Ignored.* ~ NameStrict)
+
+  protected[this] def NumberValue = rule {
     atomic(Comments ~ trackPos ~ IntegerValuePart ~ FloatValuePart.? ~ IgnoredNoComment.*) ~>
       ((comment, location, intPart, floatPart) =>
         floatPart
@@ -33,62 +57,64 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
           .getOrElse(ast.BigIntValue(BigInt(intPart), comment, location)))
   }
 
-  def FloatValuePart = rule(atomic(capture(FractionalPart ~ ExponentPart.? | ExponentPart)))
+  private[this] def FloatValuePart = rule(
+    atomic(capture(FractionalPart ~ ExponentPart.? | ExponentPart)))
 
-  def FractionalPart = rule('.' ~ Digit.+)
+  private[this] def FractionalPart = rule('.' ~ Digit.+)
 
-  def IntegerValuePart = rule(capture(NegativeSign.? ~ IntegerPart))
+  private[this] def IntegerValuePart = rule(capture(NegativeSign.? ~ IntegerPart))
 
-  def IntegerPart = rule(ch('0') | NonZeroDigit ~ Digit.*)
+  private[this] def IntegerPart = rule(ch('0') | NonZeroDigit ~ Digit.*)
 
-  def ExponentPart = rule(ExponentIndicator ~ Sign.? ~ Digit.+)
+  private[this] def ExponentPart = rule(ExponentIndicator ~ Sign.? ~ Digit.+)
 
-  def ExponentIndicator = rule(ch('e') | ch('E'))
+  private[this] def ExponentIndicator = rule(ch('e') | ch('E'))
 
-  def Sign = rule(ch('-') | '+')
+  private[this] def Sign = rule(ch('-') | '+')
 
-  val NegativeSign = '-'
+  private[this] val NegativeSign = '-'
 
-  val NonZeroDigit = Digit19
+  private[this] val NonZeroDigit = Digit19
 
-  def Digit = rule(ch('0') | NonZeroDigit)
+  private[this] def Digit = rule(ch('0') | NonZeroDigit)
 
-  def StringValue = rule(BlockStringValue | NonBlockStringValue)
+  protected[this] def StringValue: Rule[HNil, ast.StringValue :: HNil] = rule(
+    BlockStringValue | NonBlockStringValue)
 
-  def BlockStringValue = rule {
+  private[this] def BlockStringValue = rule {
     Comments ~ trackPos ~ BlockString ~ clearSB() ~ BlockStringCharacters ~ BlockString ~ push(
       sb.toString) ~ IgnoredNoComment.* ~>
       ((comment, location, s) =>
-        ast.StringValue(StringUtil.blockStringValue(s), true, Some(s), comment, location))
+        ast.StringValue(blockStringValue(s), true, Some(s), comment, location))
   }
 
-  def BlockStringCharacters = rule((BlockStringCharacter | BlockStringEscapedChar).*)
+  private[this] def BlockStringCharacters = rule((BlockStringCharacter | BlockStringEscapedChar).*)
 
-  def BlockString = rule(str("\"\"\""))
+  private[this] def BlockString = rule(str("\"\"\""))
 
-  def QuotedBlockString = rule(str("\\\"\"\""))
+  private[this] def QuotedBlockString = rule(str("\\\"\"\""))
 
-  def BlockStringCharacter = rule {
+  private[this] def BlockStringCharacter = rule {
     !(QuotedBlockString | BlockString) ~ ((CRLF | LineTerminator) ~ trackNewLine | ANY) ~ appendSB()
   }
 
-  def BlockStringEscapedChar = rule {
+  private[this] def BlockStringEscapedChar = rule {
     QuotedBlockString ~ appendSB("\"\"\"")
   }
 
-  def NormalCharacter = rule(!(QuoteBackslash | LineTerminator) ~ ANY ~ appendSB())
+  private[this] def NormalCharacter = rule(!(QuoteBackslash | LineTerminator) ~ ANY ~ appendSB())
 
-  def NonBlockStringValue = rule {
+  private[this] def NonBlockStringValue = rule {
     Comments ~ trackPos ~ '"' ~ clearSB() ~ Characters ~ '"' ~ push(
       sb.toString) ~ IgnoredNoComment.* ~>
       ((comment, location, s) => ast.StringValue(s, false, None, comment, location))
   }
 
-  def Characters = rule((NormalCharacter | '\\' ~ EscapedChar).*)
+  private[this] def Characters = rule((NormalCharacter | '\\' ~ EscapedChar).*)
 
-  val QuoteBackslash = CharPredicate("\"\\")
+  private[this] val QuoteBackslash = CharPredicate("\"\\")
 
-  def EscapedChar = rule {
+  private[this] def EscapedChar = rule {
     QuoteBackslash ~ appendSB() |
       'b' ~ appendSB('\b') |
       'f' ~ appendSB('\f') |
@@ -98,9 +124,10 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
       Unicode ~> { code => sb.append(code.asInstanceOf[Char]); () }
   }
 
-  def Unicode = rule('u' ~ capture(4.times(HexDigit)) ~> (Integer.parseInt(_, 16)))
+  private[this] def Unicode = rule('u' ~ capture(4.times(HexDigit)) ~> (Integer.parseInt(_, 16)))
 
-  def Keyword(s: String) = rule(atomic(Ignored.* ~ s ~ !NameChar ~ IgnoredNoComment.*))
+  protected[this] def Keyword(s: String): Rule[HNil, HNil] = rule(
+    atomic(Ignored.* ~ s ~ !NameChar ~ IgnoredNoComment.*))
 }
 
 /** Mix-in that defines GraphQL grammar productions that are typically ignored (whitespace,
@@ -109,49 +136,48 @@ trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ig
 trait Ignored extends PositionTracking { this: Parser =>
 
   /** Whether comments should be parsed into the resulting AST. */
-  def parseComments: Boolean
+  protected[this] def parseComments: Boolean
 
-  val WhiteSpace = CharPredicate("\u0009\u0020")
+  private[this] val WhiteSpace = CharPredicate("\u0009\u0020")
 
-  def CRLF = rule('\u000D' ~ '\u000A')
+  protected[this] def CRLF: Rule[HNil, HNil] = rule('\u000D' ~ '\u000A')
 
-  val LineTerminator = CharPredicate("\u000A")
+  protected[this] val LineTerminator: CharPredicate = CharPredicate("\u000A")
 
-  val UnicodeBOM = CharPredicate('\uFEFF')
+  private[this] val UnicodeBOM = CharPredicate('\uFEFF')
 
-  def Ignored = rule {
+  protected[this] def Ignored: Rule[HNil, HNil] = rule {
     quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',')
   }
 
-  def IgnoredNoComment = rule {
+  protected[this] def IgnoredNoComment: Rule[HNil, HNil] = rule {
     quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | ',')
   }
 
-  def Comments = rule {
+  protected[this] def Comments: Rule[HNil, Vector[ast.Comment] :: HNil] = rule {
     test(
       parseComments) ~ CommentCap.* ~ Ignored.* ~> (_.toVector) | CommentNoCap.* ~ Ignored.* ~ push(
       Vector.empty)
   }
 
-  def CommentCap = rule {
+  private[this] def CommentCap = rule {
     trackPos ~ "#" ~ capture(CommentChar.*) ~ IgnoredNoComment.* ~> ((location, comment) =>
       ast.Comment(comment, location))
   }
 
-  def CommentNoCap: Rule0 = rule("#" ~ CommentChar.* ~ IgnoredNoComment.*)
+  private[this] def CommentNoCap: Rule0 = rule("#" ~ CommentChar.* ~ IgnoredNoComment.*)
 
-  def Comment = rule("#" ~ CommentChar.*)
+  private[this] def Comment = rule("#" ~ CommentChar.*)
 
-  def CommentChar = rule(!(CRLF | LineTerminator) ~ ANY)
+  private[this] def CommentChar = rule(!(CRLF | LineTerminator) ~ ANY)
 
-  def ws(char: Char): Rule0 = rule(quiet(Ignored.* ~ ch(char) ~ Ignored.*))
+  protected[this] def ws(char: Char): Rule0 = rule(quiet(Ignored.* ~ ch(char) ~ Ignored.*))
 
-  def wsNoComment(char: Char): Rule0 = rule(quiet(Ignored.* ~ ch(char) ~ IgnoredNoComment.*))
+  protected[this] def wsNoComment(char: Char): Rule0 = rule(
+    quiet(Ignored.* ~ ch(char) ~ IgnoredNoComment.*))
 
-  def ws(s: String): Rule0 = rule(quiet(Ignored.* ~ str(s) ~ Ignored.*))
-
-  def wsCapture(s: String) = rule(quiet(Ignored.* ~ capture(str(s)) ~ IgnoredNoComment.*))
-
+  protected[this] def wsCapture(s: String): Rule[HNil, String :: HNil] = rule(
+    quiet(Ignored.* ~ capture(str(s)) ~ IgnoredNoComment.*))
 }
 
 trait Document {
@@ -163,32 +189,31 @@ trait Document {
     with Values
     with TypeSystemDefinitions =>
 
-  def Document = rule {
+  protected def Document = rule {
     IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
       ((location, d, comments) => ast.Document(d.toVector, comments, location))
   }
 
-  def InputDocument = rule {
+  protected def InputDocument = rule {
     IgnoredNoComment.* ~ trackPos ~ ValueConst.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
       ((location, vs, comments) => ast.InputDocument(vs.toVector, comments, location))
   }
 
-  def InputDocumentWithVariables = rule {
+  protected def InputDocumentWithVariables = rule {
     IgnoredNoComment.* ~ trackPos ~ Value.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
       ((location, vs, comments) => ast.InputDocument(vs.toVector, comments, location))
   }
 
-  def Definition = rule {
+  private[this] def Definition = rule {
     ExecutableDefinition |
       TypeSystemDefinition |
       TypeSystemExtension
   }
 
-  def ExecutableDefinition = rule {
+  private[this] def ExecutableDefinition = rule {
     OperationDefinition |
       FragmentDefinition
   }
-
 }
 
 trait TypeSystemDefinitions {
@@ -201,24 +226,24 @@ trait TypeSystemDefinitions {
     with Values
     with Fragments =>
 
-  def scalar = rule(Keyword("scalar"))
-  def `type` = rule(Keyword("type"))
-  def interface = rule(Keyword("interface"))
-  def union = rule(Keyword("union"))
-  def enum = rule(Keyword("enum"))
-  def inputType = rule(Keyword("input"))
-  def implements = rule(Keyword("implements"))
-  def extend = rule(Keyword("extend"))
-  def directive = rule(Keyword("directive"))
-  def schema = rule(Keyword("schema"))
+  private[this] def scalar = rule(Keyword("scalar"))
+  private[this] def `type` = rule(Keyword("type"))
+  private[this] def interface = rule(Keyword("interface"))
+  private[this] def union = rule(Keyword("union"))
+  private[this] def `enum` = rule(Keyword("enum"))
+  private[this] def inputType = rule(Keyword("input"))
+  private[this] def implements = rule(Keyword("implements"))
+  private[this] def extend = rule(Keyword("extend"))
+  private[this] def directive = rule(Keyword("directive"))
+  private[this] def schema = rule(Keyword("schema"))
 
-  def TypeSystemDefinition = rule {
+  protected[this] def TypeSystemDefinition = rule {
     SchemaDefinition |
       TypeDefinition |
       DirectiveDefinition
   }
 
-  def TypeDefinition = rule {
+  private[this] def TypeDefinition = rule {
     ScalarTypeDefinition |
       ObjectTypeDefinition |
       InterfaceTypeDefinition |
@@ -227,13 +252,13 @@ trait TypeSystemDefinitions {
       InputObjectTypeDefinition
   }
 
-  def ScalarTypeDefinition = rule {
+  private[this] def ScalarTypeDefinition = rule {
     Description ~ Comments ~ trackPos ~ scalar ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~> ((descr, comment, location, name, dirs) =>
       ast.ScalarTypeDefinition(name, dirs, descr, comment, location))
   }
 
-  def ObjectTypeDefinition = rule {
+  private[this] def ObjectTypeDefinition = rule {
     Description ~ Comments ~ trackPos ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
       Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition.? ~> (
       (descr, comment, location, name, interfaces, dirs, fields) =>
@@ -249,12 +274,12 @@ trait TypeSystemDefinitions {
         ))
   }
 
-  def TypeSystemExtension = rule {
+  protected[this] def TypeSystemExtension = rule {
     SchemaExtension |
       TypeExtension
   }
 
-  def TypeExtension = rule {
+  private[this] def TypeExtension = rule {
     ScalarTypeExtensionDefinition |
       ObjectTypeExtensionDefinition |
       InterfaceTypeExtensionDefinition |
@@ -263,7 +288,7 @@ trait TypeSystemDefinitions {
       InputObjectTypeExtensionDefinition
   }
 
-  def SchemaExtension = rule {
+  private[this] def SchemaExtension = rule {
     (Comments ~ trackPos ~ extend ~ schema ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment(
       '}') ~> ((comment, location, dirs, ops, tc) =>
@@ -272,7 +297,7 @@ trait TypeSystemDefinitions {
         ast.SchemaExtensionDefinition(Vector.empty, dirs, comment, Vector.empty, location)))
   }
 
-  def ObjectTypeExtensionDefinition = rule {
+  private[this] def ObjectTypeExtensionDefinition = rule {
     (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
       Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition ~> (
       (comment, location, name, interfaces, dirs, fields) =>
@@ -306,7 +331,7 @@ trait TypeSystemDefinitions {
             location)))
   }
 
-  def InterfaceTypeExtensionDefinition = rule {
+  private[this] def InterfaceTypeExtensionDefinition = rule {
     (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ FieldsDefinition ~> ((comment, location, name, dirs, fields) =>
       ast.InterfaceTypeExtensionDefinition(
@@ -327,7 +352,7 @@ trait TypeSystemDefinitions {
             location)))
   }
 
-  def UnionTypeExtensionDefinition = rule {
+  private[this] def UnionTypeExtensionDefinition = rule {
     (Comments ~ trackPos ~ extend ~ union ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ UnionMemberTypes ~> ((comment, location, name, dirs, types) =>
       ast.UnionTypeExtensionDefinition(name, types, dirs, comment, location))) |
@@ -336,7 +361,7 @@ trait TypeSystemDefinitions {
           ast.UnionTypeExtensionDefinition(name, Vector.empty, dirs, comment, location)))
   }
 
-  def EnumTypeExtensionDefinition = rule {
+  private[this] def EnumTypeExtensionDefinition = rule {
     (Comments ~ trackPos ~ extend ~ enum ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ EnumValuesDefinition ~> ((comment, location, name, dirs, values) =>
       ast.EnumTypeExtensionDefinition(
@@ -357,7 +382,7 @@ trait TypeSystemDefinitions {
             location)))
   }
 
-  def InputObjectTypeExtensionDefinition = rule {
+  private[this] def InputObjectTypeExtensionDefinition = rule {
     (Comments ~ trackPos ~ extend ~ inputType ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ InputFieldsDefinition ~> ((comment, location, name, dirs, fields) =>
       ast.InputObjectTypeExtensionDefinition(
@@ -378,39 +403,39 @@ trait TypeSystemDefinitions {
             location)))
   }
 
-  def ScalarTypeExtensionDefinition = rule {
+  private[this] def ScalarTypeExtensionDefinition = rule {
     (Comments ~ trackPos ~ extend ~ scalar ~ Name ~ DirectivesConst ~> (
       (comment, location, name, dirs) =>
         ast.ScalarTypeExtensionDefinition(name, dirs, comment, location)))
   }
 
-  def ImplementsInterfaces = rule {
+  private[this] def ImplementsInterfaces = rule {
     implements ~ ws('&').? ~ NamedType.+(ws('&')) ~> (_.toVector)
   }
 
-  def FieldsDefinition = rule {
+  private[this] def FieldsDefinition = rule {
     wsNoComment('{') ~ FieldDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
-  def FieldDefinition = rule {
+  private[this] def FieldDefinition = rule {
     Description ~ Comments ~ trackPos ~ Name ~ (ArgumentsDefinition.? ~> (_.getOrElse(
       Vector.empty))) ~ ws(':') ~ Type ~ (Directives.? ~> (_.getOrElse(Vector.empty))) ~> (
       (descr, comment, location, name, args, fieldType, dirs) =>
         ast.FieldDefinition(name, fieldType, args, dirs, descr, comment, location))
   }
 
-  def ArgumentsDefinition = rule {
+  private[this] def ArgumentsDefinition = rule {
     wsNoComment('(') ~ InputValueDefinition.+ ~ wsNoComment(')') ~> (_.toVector)
   }
 
-  def InputValueDefinition = rule {
+  private[this] def InputValueDefinition = rule {
     Description ~ Comments ~ trackPos ~ Name ~ ws(
       ':') ~ Type ~ DefaultValue.? ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~> (
       (descr, comment, location, name, valueType, default, dirs) =>
         ast.InputValueDefinition(name, valueType, default, dirs, descr, comment, location))
   }
 
-  def InterfaceTypeDefinition = rule {
+  private[this] def InterfaceTypeDefinition = rule {
     Description ~ Comments ~ trackPos ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ FieldsDefinition.? ~> ((descr, comment, location, name, dirs, fields) =>
       ast.InterfaceTypeDefinition(
@@ -423,18 +448,18 @@ trait TypeSystemDefinitions {
         location))
   }
 
-  def UnionTypeDefinition = rule {
+  private[this] def UnionTypeDefinition = rule {
     Description ~ Comments ~ trackPos ~ union ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ (UnionMemberTypes.? ~> (_.getOrElse(Vector.empty))) ~> (
       (descr, comment, location, name, dirs, members) =>
         ast.UnionTypeDefinition(name, members, dirs, descr, comment, location))
   }
 
-  def UnionMemberTypes = rule(wsNoComment('=') ~ UnionMembers)
+  private[this] def UnionMemberTypes = rule(wsNoComment('=') ~ UnionMembers)
 
-  def UnionMembers = rule(ws('|').? ~ NamedType.+(ws('|')) ~> (_.toVector))
+  private[this] def UnionMembers = rule(ws('|').? ~ NamedType.+(ws('|')) ~> (_.toVector))
 
-  def EnumTypeDefinition = rule {
+  private[this] def EnumTypeDefinition = rule {
     Description ~ Comments ~ trackPos ~ enum ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ EnumValuesDefinition.? ~> ((descr, comment, location, name, dirs, values) =>
       ast.EnumTypeDefinition(
@@ -447,17 +472,17 @@ trait TypeSystemDefinitions {
         location))
   }
 
-  def EnumValuesDefinition = rule {
+  private[this] def EnumValuesDefinition = rule {
     wsNoComment('{') ~ EnumValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
-  def EnumValueDefinition = rule {
+  private[this] def EnumValueDefinition = rule {
     Description ~ Comments ~ trackPos ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~> ((descr, comments, location, name, dirs) =>
       ast.EnumValueDefinition(name, dirs, descr, comments, location))
   }
 
-  def InputObjectTypeDefinition = rule {
+  private[this] def InputObjectTypeDefinition = rule {
     Description ~ Comments ~ trackPos ~ inputType ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ InputFieldsDefinition.? ~> (
       (descr, comment, location, name, dirs, fields) =>
@@ -471,31 +496,31 @@ trait TypeSystemDefinitions {
           location))
   }
 
-  def InputFieldsDefinition = rule {
+  private[this] def InputFieldsDefinition = rule {
     wsNoComment('{') ~ InputValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
-  def DirectiveDefinition = rule {
+  private[this] def DirectiveDefinition = rule {
     Description ~ Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_.getOrElse(
       Vector.empty))) ~ on ~ DirectiveLocations ~> (
       (descr, comment, location, name, args, locations) =>
         ast.DirectiveDefinition(name, args, locations, descr, comment, location))
   }
 
-  def DirectiveLocations = rule {
+  private[this] def DirectiveLocations = rule {
     ws('|').? ~ DirectiveLocation.+(wsNoComment('|')) ~> (_.toVector)
   }
 
-  def DirectiveLocation = rule {
+  private[this] def DirectiveLocation = rule {
     Comments ~ trackPos ~ DirectiveLocationName ~> ((comment, location, name) =>
       ast.DirectiveLocation(name, comment, location))
   }
 
-  def DirectiveLocationName = rule {
+  private[this] def DirectiveLocationName = rule {
     TypeSystemDirectiveLocation | ExecutableDirectiveLocation
   }
 
-  def ExecutableDirectiveLocation = rule {
+  private[this] def ExecutableDirectiveLocation = rule {
     wsCapture("QUERY") |
       wsCapture("MUTATION") |
       wsCapture("SUBSCRIPTION") |
@@ -505,7 +530,7 @@ trait TypeSystemDefinitions {
       wsCapture("INLINE_FRAGMENT")
   }
 
-  def TypeSystemDirectiveLocation = rule {
+  private[this] def TypeSystemDirectiveLocation = rule {
     wsCapture("SCHEMA") |
       wsCapture("SCALAR") |
       wsCapture("OBJECT") |
@@ -520,27 +545,26 @@ trait TypeSystemDefinitions {
       wsCapture("VARIABLE_DEFINITION")
   }
 
-  def SchemaDefinition = rule {
+  private[this] def SchemaDefinition = rule {
     Description ~ Comments ~ trackPos ~ schema ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment(
       '}') ~> ((descr, comment, location, dirs, ops, tc) =>
       ast.SchemaDefinition(ops.toVector, dirs, descr, comment, tc, location))
   }
 
-  def OperationTypeDefinition = rule {
+  private[this] def OperationTypeDefinition = rule {
     Comments ~ trackPos ~ OperationType ~ ws(':') ~ NamedType ~> (
       (comment, location, opType, tpe) =>
         ast.OperationTypeDefinition(opType, tpe, comment, location))
   }
 
-  def Description = rule(StringValue.?)
-
+  private[this] def Description = rule(StringValue.?)
 }
 
 trait Operations extends PositionTracking {
   this: Parser with Tokens with Ignored with Fragments with Values with Types with Directives =>
 
-  def OperationDefinition = rule {
+  protected[this] def OperationDefinition = rule {
     Comments ~ trackPos ~ SelectionSet ~> ((comment, location, s) =>
       ast.OperationDefinition(
         selections = s._1,
@@ -553,43 +577,42 @@ trait Operations extends PositionTracking {
         ast.OperationDefinition(opType, name, vars, dirs, sels._1, comment, sels._2, location))
   }
 
-  def OperationName = rule(Name)
+  private[this] def OperationName = rule(Name)
 
-  def OperationType = rule {
+  protected[this] def OperationType = rule {
     Query ~ push(ast.OperationType.Query) |
       Mutation ~ push(ast.OperationType.Mutation) |
       Subscription ~ push(ast.OperationType.Subscription)
   }
 
-  def Query = rule(Keyword("query"))
+  private[this] def Query = rule(Keyword("query"))
+  private[this] def Mutation = rule(Keyword("mutation"))
+  private[this] def Subscription = rule(Keyword("subscription"))
 
-  def Mutation = rule(Keyword("mutation"))
-
-  def Subscription = rule(Keyword("subscription"))
-
-  def VariableDefinitions = rule {
+  protected[this] def VariableDefinitions = rule {
     wsNoComment('(') ~ VariableDefinition.+ ~ wsNoComment(')') ~> (_.toVector)
   }
 
-  def VariableDefinition = rule {
+  private[this] def VariableDefinition = rule {
     Comments ~ trackPos ~ Variable ~ ws(
       ':') ~ Type ~ DefaultValue.? ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~>
       ((comment, location, name, tpe, defaultValue, dirs) =>
         ast.VariableDefinition(name, tpe, defaultValue, dirs, comment, location))
   }
 
-  def Variable = rule(Ignored.* ~ '$' ~ NameStrict)
+  protected[this] def Variable: Rule[HNil, String :: HNil] = rule(Ignored.* ~ '$' ~ NameStrict)
 
-  def DefaultValue = rule(wsNoComment('=') ~ ValueConst)
+  protected[this] def DefaultValue: Rule[HNil, ast.Value :: HNil] =
+    rule(wsNoComment('=') ~ ValueConst)
 
-  def SelectionSet: Rule1[(Vector[ast.Selection], Vector[ast.Comment])] = rule {
+  protected[this] def SelectionSet: Rule1[(Vector[ast.Selection], Vector[ast.Comment])] = rule {
     wsNoComment('{') ~ Selection.+ ~ Comments ~ wsNoComment('}') ~>
       ((x: Seq[ast.Selection], comments: Vector[ast.Comment]) => x.toVector -> comments)
   }
 
-  def Selection = rule(Field | FragmentSpread | InlineFragment)
+  private[this] def Selection = rule(Field | FragmentSpread | InlineFragment)
 
-  def Field = rule {
+  private[this] def Field = rule {
     Comments ~ trackPos ~ Alias.? ~ Name ~
       (Arguments.? ~> (_.getOrElse(Vector.empty))) ~
       (Directives.? ~> (_.getOrElse(Vector.empty))) ~
@@ -598,50 +621,48 @@ trait Operations extends PositionTracking {
         ast.Field(alias, name, args, dirs, sels._1, comment, sels._2, location))
   }
 
-  def Alias = rule(Name ~ ws(':'))
+  private[this] def Alias = rule(Name ~ ws(':'))
 
-  def Arguments = rule {
+  protected[this] def Arguments = rule {
     Ignored.* ~ wsNoComment('(') ~ Argument.+ ~ wsNoComment(')') ~> (_.toVector)
   }
 
-  def ArgumentsConst = rule {
+  protected[this] def ArgumentsConst = rule {
     Ignored.* ~ wsNoComment('(') ~ ArgumentConst.+ ~ wsNoComment(')') ~> (_.toVector)
   }
 
-  def Argument = rule {
+  private[this] def Argument = rule {
     Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ Value ~> ((comment, location, name, value) =>
       ast.Argument(name, value, comment, location))
   }
 
-  def ArgumentConst = rule {
+  private[this] def ArgumentConst = rule {
     Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ ValueConst ~> (
       (comment, location, name, value) => ast.Argument(name, value, comment, location))
   }
-
 }
 
 trait Fragments {
   this: Parser with Tokens with Ignored with Directives with Types with Operations =>
 
-  def experimentalFragmentVariables: Boolean
+  protected[this] def experimentalFragmentVariables: Boolean
 
-  def FragmentSpread = rule {
+  protected[this] def FragmentSpread: Rule[HNil, ast.FragmentSpread :: HNil] = rule {
     Comments ~ trackPos ~ Ellipsis ~ FragmentName ~ (Directives.? ~> (_.getOrElse(Vector.empty))) ~>
       ((comment, location, name, dirs) => ast.FragmentSpread(name, dirs, comment, location))
   }
 
-  def InlineFragment = rule {
+  protected[this] def InlineFragment = rule {
     Comments ~ trackPos ~ Ellipsis ~ TypeCondition.? ~ (Directives.? ~> (_.getOrElse(
       Vector.empty))) ~ SelectionSet ~>
       ((comment, location, typeCondition, dirs, sels) =>
         ast.InlineFragment(typeCondition, dirs, sels._1, comment, sels._2, location))
   }
 
-  def on = rule(Keyword("on"))
+  protected[this] def on: Rule[HNil, HNil] = rule(Keyword("on"))
+  private[this] def Fragment = rule(Keyword("fragment"))
 
-  def Fragment = rule(Keyword("fragment"))
-
-  def FragmentDefinition = rule {
+  protected[this] def FragmentDefinition = rule {
     Comments ~ trackPos ~ Fragment ~ FragmentName ~ ExperimentalFragmentVariables ~ TypeCondition ~ (Directives.? ~> (_.getOrElse(
       Vector.empty))) ~ SelectionSet ~>
       ((comment, location, name, vars, typeCondition, dirs, sels) =>
@@ -656,24 +677,21 @@ trait Fragments {
           location))
   }
 
-  def ExperimentalFragmentVariables = rule {
+  private[this] def ExperimentalFragmentVariables = rule {
     test(experimentalFragmentVariables) ~ VariableDefinitions.? ~> (_.getOrElse(
       Vector.empty)) | push(Vector.empty)
   }
 
-  def FragmentName = rule(!on ~ Name)
-
-  def TypeCondition = rule(on ~ NamedType)
-
+  private[this] def FragmentName = rule(!on ~ Name)
+  private[this] def TypeCondition = rule(on ~ NamedType)
 }
 
 trait Values { this: Parser with Tokens with Ignored with Operations =>
-
-  def ValueConst: Rule1[ast.Value] = rule {
+  protected[this] def ValueConst: Rule1[ast.Value] = rule {
     NumberValue | StringValue | BooleanValue | NullValue | EnumValue | ListValueConst | ObjectValueConst
   }
 
-  def Value: Rule1[ast.Value] = rule {
+  protected[this] def Value: Rule1[ast.Value] = rule {
     Comments ~ trackPos ~ Variable ~> ((comment, location, name) =>
       ast.VariableValue(name, comment, location)) |
       NumberValue |
@@ -685,92 +703,88 @@ trait Values { this: Parser with Tokens with Ignored with Operations =>
       ObjectValue
   }
 
-  def BooleanValue = rule {
+  private[this] def BooleanValue = rule {
     Comments ~ trackPos ~ True ~> ((comment, location) =>
       ast.BooleanValue(true, comment, location)) |
       Comments ~ trackPos ~ False ~> ((comment, location) =>
         ast.BooleanValue(false, comment, location))
   }
 
-  def True = rule(Keyword("true"))
+  private[this] def True = rule(Keyword("true"))
 
-  def False = rule(Keyword("false"))
+  private[this] def False = rule(Keyword("false"))
 
-  def Null = rule(Keyword("null"))
+  private[this] def Null = rule(Keyword("null"))
 
-  def NullValue = rule {
+  private[this] def NullValue = rule {
     Comments ~ trackPos ~ Null ~> ((comment, location) => ast.NullValue(comment, location))
   }
 
-  def EnumValue = rule {
+  private[this] def EnumValue = rule {
     Comments ~ !(True | False) ~ trackPos ~ Name ~> ((comment, location, name) =>
       ast.EnumValue(name, comment, location))
   }
 
-  def ListValueConst = rule {
+  private[this] def ListValueConst = rule {
     Comments ~ trackPos ~ wsNoComment('[') ~ ValueConst.* ~ wsNoComment(']') ~> (
       (comment, location, v) => ast.ListValue(v.toVector, comment, location))
   }
 
-  def ListValue = rule {
+  private[this] def ListValue = rule {
     Comments ~ trackPos ~ wsNoComment('[') ~ Value.* ~ wsNoComment(']') ~> (
       (comment, location, v) => ast.ListValue(v.toVector, comment, location))
   }
 
-  def ObjectValueConst = rule {
+  private[this] def ObjectValueConst = rule {
     Comments ~ trackPos ~ wsNoComment('{') ~ ObjectFieldConst.* ~ wsNoComment('}') ~> (
       (comment, location, f) => ast.ObjectValue(f.toVector, comment, location))
   }
 
-  def ObjectValue = rule {
+  private[this] def ObjectValue = rule {
     Comments ~ trackPos ~ wsNoComment('{') ~ ObjectField.* ~ wsNoComment('}') ~> (
       (comment, location, f) => ast.ObjectValue(f.toVector, comment, location))
   }
 
-  def ObjectFieldConst = rule {
+  private[this] def ObjectFieldConst = rule {
     Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ ValueConst ~> (
       (comment, location, name, value) => ast.ObjectField(name, value, comment, location))
   }
 
-  def ObjectField = rule {
+  private[this] def ObjectField = rule {
     Comments ~ trackPos ~ Name ~ wsNoComment(':') ~ Value ~> ((comment, location, name, value) =>
       ast.ObjectField(name, value, comment, location))
   }
-
 }
 
 trait Directives { this: Parser with Tokens with Operations with Ignored =>
+  protected[this] def Directives = rule(Directive.+ ~> (_.toVector))
+  protected[this] def DirectivesConst = rule(DirectiveConst.+ ~> (_.toVector))
 
-  def Directives = rule(Directive.+ ~> (_.toVector))
-
-  def DirectivesConst = rule(DirectiveConst.+ ~> (_.toVector))
-
-  def Directive = rule {
+  private[this] def Directive = rule {
     Comments ~ trackPos ~ '@' ~ NameStrict ~ (Arguments.? ~> (_.getOrElse(Vector.empty))) ~>
       ((comment, location, name, args) => ast.Directive(name, args, comment, location))
   }
 
-  def DirectiveConst = rule {
+  private[this] def DirectiveConst = rule {
     Comments ~ trackPos ~ '@' ~ NameStrict ~ (ArgumentsConst.? ~> (_.getOrElse(Vector.empty))) ~>
       ((comment, location, name, args) => ast.Directive(name, args, comment, location))
   }
-
 }
 
 trait Types { this: Parser with Tokens with Ignored =>
-  def Type: Rule1[ast.Type] = rule(NonNullType | ListType | NamedType)
+  protected[this] def Type: Rule1[ast.Type] = rule(NonNullType | ListType | NamedType)
 
-  def TypeName = rule(Name)
+  private[this] def TypeName = rule(Name)
 
-  def NamedType = rule {
+  protected[this] def NamedType: Rule[HNil, ast.NamedType :: HNil] = rule {
     Ignored.* ~ trackPos ~ TypeName ~> ((location, name) => ast.NamedType(name, location))
   }
 
-  def ListType = rule {
+  private[this] def ListType = rule {
     trackPos ~ ws('[') ~ Type ~ wsNoComment(']') ~> ((location, tpe) => ast.ListType(tpe, location))
   }
 
-  def NonNullType = rule {
+  private[this] def NonNullType = rule {
     trackPos ~ TypeName ~ wsNoComment('!') ~> ((location, name) =>
       ast.NotNullType(ast.NamedType(name, location), location)) |
       trackPos ~ ListType ~ wsNoComment('!') ~> ((location, tpe) => ast.NotNullType(tpe, location))

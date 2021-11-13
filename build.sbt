@@ -350,7 +350,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, core, benchmarks)
+  .aggregate(ast, parser, core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -378,7 +378,7 @@ lazy val parser = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.3.0",
-    )
+    ),
   )
   .disablePlugins(MimaPlugin)
 
