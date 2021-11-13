@@ -227,17 +227,19 @@ object CatsScenarioExecutor extends FutureResultSupport {
       val validator = if (validate) QueryValidator.default else QueryValidator.empty
 
       ExecutionResult(
-        Try(
-          Executor
-            .execute(
-              given.schema,
-              QueryParser.parse(given.query).get,
-              root = value,
-              queryValidator = validator,
-              variables = vars,
-              operationName = op,
-              exceptionHandler = exceptionHandler)
-            .await))
+        QueryParser
+          .parse(given.query)
+          .map(queryAst =>
+            Executor
+              .execute(
+                given.schema,
+                queryAst,
+                root = value,
+                queryValidator = validator,
+                variables = vars,
+                operationName = op,
+                exceptionHandler = exceptionHandler)
+              .await))
     case a =>
       throw new IllegalStateException(s"Not yet supported action: $a")
   }
