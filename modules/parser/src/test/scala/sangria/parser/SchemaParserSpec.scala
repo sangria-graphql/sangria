@@ -1,13 +1,11 @@
 package sangria.parser
 
-import sangria.ast.AstLocation
-import sangria.ast
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import sangria.ast._
 import sangria.util.{FileUtil, StringMatchers}
 
-import scala.util.{Success, Try}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import scala.util.Success
 
 class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
   private[this] def parseQuery(query: String) =

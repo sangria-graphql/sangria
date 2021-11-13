@@ -390,6 +390,8 @@ lazy val parser = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.3.0",
+
+      "org.scalatest" %% "scalatest" % "3.2.10" % Test,
     ),
   )
   .disablePlugins(MimaPlugin)
