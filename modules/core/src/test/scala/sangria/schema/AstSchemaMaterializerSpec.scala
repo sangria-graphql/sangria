@@ -6,7 +6,6 @@ import sangria.execution.{Executor, MaterializedSchemaValidationError}
 import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
 import sangria.util.{FutureResultSupport, Pos, StringMatchers}
-import sangria.parser.DeliveryScheme.Throw
 import sangria.macros._
 import sangria.macros.derive._
 import sangria.validation.{IntCoercionViolation, UnknownDirectiveViolation}
@@ -29,7 +28,7 @@ class AstSchemaMaterializerSpec
   // into an in-memory GraphQL Schema, and then finally
   // printing that GraphQL into the DSL
   def cycleOutput(schemaDefinition: String): String = {
-    val ast = QueryParser.parse(schemaDefinition)
+    val ast = QueryParser.parse(schemaDefinition).get
     val schema = Schema.buildFromAst(ast)
 
     SchemaRenderer.renderSchema(schema)
@@ -720,7 +719,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef).get)
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
@@ -1104,7 +1103,7 @@ class AstSchemaMaterializerSpec
 
         cycleOutput(schemaDef) should equal(schemaDef)(after.being(strippedOfCarriageReturns))
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef).get)
 
         schema.description should be(Some("test schema\ndescr"))
 
@@ -1146,7 +1145,7 @@ class AstSchemaMaterializerSpec
              |  ): String
              |}""".stripMargin
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef))
+        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef).get)
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 

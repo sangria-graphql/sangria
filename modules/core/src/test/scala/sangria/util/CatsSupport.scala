@@ -215,32 +215,31 @@ object CatsScenarioExecutor extends FutureResultSupport {
 
   def executeAction(given: Given[Any, Any], action: Action) = action match {
     case Parse =>
-      import sangria.parser.DeliveryScheme.Either
+      ParsingResult(
+        QueryParser.parse(given.query).toEither.left.map(_.asInstanceOf[SangriaSyntaxError]))
 
-      ParsingResult(QueryParser.parse(given.query).left.map(_.asInstanceOf[SangriaSyntaxError]))
     case Validate(rules) =>
-      import sangria.parser.DeliveryScheme.Throw
-
       ValidationResult(
         new RuleBasedQueryValidator(rules.toList)
-          .validateQuery(given.schema, QueryParser.parse(given.query)))
-    case Execute(validate, value, vars, op) =>
-      import sangria.parser.DeliveryScheme.Throw
+          .validateQuery(given.schema, QueryParser.parse(given.query).get))
 
+    case Execute(validate, value, vars, op) =>
       val validator = if (validate) QueryValidator.default else QueryValidator.empty
 
       ExecutionResult(
-        Try(
-          Executor
-            .execute(
-              given.schema,
-              QueryParser.parse(given.query),
-              root = value,
-              queryValidator = validator,
-              variables = vars,
-              operationName = op,
-              exceptionHandler = exceptionHandler)
-            .await))
+        QueryParser
+          .parse(given.query)
+          .map(queryAst =>
+            Executor
+              .execute(
+                given.schema,
+                queryAst,
+                root = value,
+                queryValidator = validator,
+                variables = vars,
+                operationName = op,
+                exceptionHandler = exceptionHandler)
+              .await))
     case a =>
       throw new IllegalStateException(s"Not yet supported action: $a")
   }
@@ -494,12 +493,9 @@ object CatsScenarioData {
   def getSchema(value: YamlValue, path: String): Option[ast.Document] =
     value
       .get("schema")
-      .map { v =>
-        import sangria.parser.DeliveryScheme.Throw
-
-        QueryParser.parse(v.stringValue)
-      }
-      .orElse(value.get("schema-file").map(f => FileUtil.loadSchema(path + "/" + f.stringValue)))
+      .map(v => QueryParser.parse(v.stringValue).get)
+      .orElse(
+        value.get("schema-file").map(f => FileUtil.loadSchema(path + "/" + f.stringValue).get))
 
   def getTestData(value: Option[YamlValue], path: String) =
     value

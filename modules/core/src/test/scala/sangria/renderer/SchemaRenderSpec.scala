@@ -877,13 +877,11 @@ class SchemaRenderSpec
 
   "Rendering extensions" should {
     def cycleRender(document: ast.Document) = {
-      import sangria.parser.DeliveryScheme.Throw
-
       val pretty = QueryRenderer.renderPretty(document)
       val compact = QueryRenderer.renderCompact(document)
 
-      QueryRenderer.renderPretty(QueryParser.parse(pretty)) should be(pretty)
-      QueryRenderer.renderCompact(QueryParser.parse(compact)) should be(compact)
+      QueryRenderer.renderPretty(QueryParser.parse(pretty).get) should be(pretty)
+      QueryRenderer.renderCompact(QueryParser.parse(compact).get) should be(compact)
 
       "\n" + pretty + "\n"
     }

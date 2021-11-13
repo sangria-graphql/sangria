@@ -7,14 +7,13 @@ import sangria.ast._
 import sangria.util.{FileUtil, StringMatchers}
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
-  private[this] def parseQuery(query: String)(implicit
-      scheme: DeliveryScheme[ast.Document]): scheme.Result =
-    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)(scheme)
+  private[this] def parseQuery(query: String): Try[ast.Document] =
+    QueryParser.parse(query, ParserConfig.default.withEmptySourceId.withoutSourceMapper)
 
   "QueryParser" should {
     "parse complex query" in {

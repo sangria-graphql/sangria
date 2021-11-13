@@ -5,7 +5,7 @@ import CharPredicate.{Digit19, HexDigit}
 import sangria.ast
 import sangria.util.StringUtil
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
 
@@ -795,12 +795,10 @@ class QueryParser private (
     with TypeSystemDefinitions
 
 object QueryParser {
-  def parse(input: String, config: ParserConfig = ParserConfig.default)(implicit
-      scheme: DeliveryScheme[ast.Document]): scheme.Result =
-    parse(ParserInput(input), config)(scheme)
+  def parse(input: String, config: ParserConfig = ParserConfig.default): Try[ast.Document] =
+    parse(ParserInput(input), config)
 
-  def parse(input: ParserInput, config: ParserConfig)(implicit
-      scheme: DeliveryScheme[ast.Document]): scheme.Result = {
+  def parse(input: ParserInput, config: ParserConfig): Try[ast.Document] = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(
       input,
@@ -810,34 +808,33 @@ object QueryParser {
       config.parseComments)
 
     parser.Document.run() match {
-      case Success(res) => scheme.success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
-      case Failure(e: ParseError) => scheme.failure(SyntaxError(parser, input, e))
-      case Failure(e) => scheme.failure(e)
+      case Success(res) => Success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
+      case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
+      case f @ Failure(_) => f
     }
   }
 
-  def parseInput(input: String)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result =
-    parseInput(ParserInput(input))(scheme)
+  def parseInput(input: String): Try[ast.Value] = parseInput(ParserInput(input))
 
-  def parseInput(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result = {
+  def parseInput(input: ParserInput): Try[ast.Value] = {
     val parser = new QueryParser(input, "")
 
     parser.InputDocument.run() match {
-      case Success(res) if res.values.nonEmpty => scheme.success(res.values.head)
-      case Success(res) =>
-        scheme.failure(
+      case Success(res) if res.values.nonEmpty => Success(res.values.head)
+      case Success(_) =>
+        Failure(
           new IllegalArgumentException("Input document does not contain any value definitions."))
-      case Failure(e: ParseError) => scheme.failure(SyntaxError(parser, input, e))
-      case Failure(e) => scheme.failure(e)
+      case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
+      case Failure(e) => Failure(e)
     }
   }
 
-  def parseInputDocument(input: String, config: ParserConfig = ParserConfig.default)(implicit
-      scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
-    parseInputDocument(ParserInput(input), config)(scheme)
+  def parseInputDocument(
+      input: String,
+      config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
+    parseInputDocument(ParserInput(input), config)
 
-  def parseInputDocument(input: ParserInput, config: ParserConfig)(implicit
-      scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
+  def parseInputDocument(input: ParserInput, config: ParserConfig): Try[ast.InputDocument] = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(
       input,
@@ -847,43 +844,43 @@ object QueryParser {
       config.parseComments)
 
     parser.InputDocument.run() match {
-      case Success(res) => scheme.success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
-      case Failure(e: ParseError) => scheme.failure(SyntaxError(parser, input, e))
-      case Failure(e) => scheme.failure(e)
+      case Success(res) => Success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
+      case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
+      case f @ Failure(_) => f
     }
   }
 
-  def parseInputWithVariables(input: String)(implicit
-      scheme: DeliveryScheme[ast.Value]): scheme.Result =
-    parseInputWithVariables(ParserInput(input))(scheme)
+  def parseInputWithVariables(input: String): Try[ast.Value] =
+    parseInputWithVariables(ParserInput(input))
 
-  def parseInputWithVariables(input: ParserInput)(implicit
-      scheme: DeliveryScheme[ast.Value]): scheme.Result = {
+  def parseInputWithVariables(input: ParserInput): Try[ast.Value] = {
     val parser = new QueryParser(input, "")
 
     parser.InputDocumentWithVariables.run() match {
-      case Success(res) if res.values.nonEmpty => scheme.success(res.values.head)
-      case Success(res) =>
-        scheme.failure(
+      case Success(res) if res.values.nonEmpty => Success(res.values.head)
+      case Success(_) =>
+        Failure(
           new IllegalArgumentException("Input document does not contain any value definitions."))
-      case Failure(e: ParseError) => scheme.failure(SyntaxError(parser, input, e))
-      case Failure(e) => scheme.failure(e)
+      case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
+      case Failure(e) => Failure(e)
     }
   }
 
-  def parseInputDocumentWithVariables(input: String, config: ParserConfig = ParserConfig.default)(
-      implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
-    parseInputDocumentWithVariables(ParserInput(input), config)(scheme)
+  def parseInputDocumentWithVariables(
+      input: String,
+      config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
+    parseInputDocumentWithVariables(ParserInput(input), config)
 
-  def parseInputDocumentWithVariables(input: ParserInput, config: ParserConfig)(implicit
-      scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
+  def parseInputDocumentWithVariables(
+      input: ParserInput,
+      config: ParserConfig): Try[ast.InputDocument] = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(input, id)
 
     parser.InputDocumentWithVariables.run() match {
-      case Success(res) => scheme.success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
-      case Failure(e: ParseError) => scheme.failure(SyntaxError(parser, input, e))
-      case Failure(e) => scheme.failure(e)
+      case Success(res) => Success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
+      case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
+      case f @ Failure(_) => f
     }
   }
 }

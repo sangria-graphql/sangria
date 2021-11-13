@@ -2,7 +2,6 @@ package sangria.util
 
 import io.github.classgraph.ClassGraph
 import sangria.parser.QueryParser
-import sangria.parser.DeliveryScheme.Throw
 import spray.json._
 
 import scala.io.Source

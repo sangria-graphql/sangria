@@ -4,7 +4,6 @@ import sangria.macros._
 import sangria.ast
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.marshalling.sprayJson._
-import sangria.parser.DeliveryScheme.Throw
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.{Pos, StringMatchers}
@@ -175,7 +174,8 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
     }
 
     "support `to` with `FromInput` type class" in {
-      val document = QueryParser.parseInputDocumentWithVariables("""
+      val document = QueryParser
+        .parseInputDocumentWithVariables("""
           {
             title: "foo",
             tags: null,
@@ -192,13 +192,14 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
             }]
           }
         """)
+        .get
 
       val vars = scalaInput(
         Map(
           "comm" -> "from variable"
         ))
 
-      InputDocumentMaterializer.to(document, ArticleType, vars) should be(
+      InputDocumentMaterializer.to(document, ArticleType, vars).get should be(
         Vector(
           Article("foo", Some("Hello World!"), None, Vector.empty),
           Article(
@@ -211,9 +212,9 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
 
     "support `to` with `FromInput` type class (raw json value)" in {
       val document =
-        QueryParser.parseInputDocumentWithVariables("""{hosts: ["localhost", "127.0.0.1"]}""")
+        QueryParser.parseInputDocumentWithVariables("""{hosts: ["localhost", "127.0.0.1"]}""").get
 
-      val res = InputDocumentMaterializer.to(document, ConfigType)
+      val res = InputDocumentMaterializer.to(document, ConfigType).get
 
       res should have size 1
 

@@ -1,7 +1,6 @@
 package sangria
 
 import sangria.parser.QueryParser
-import sangria.parser.DeliveryScheme.Throw
 import sangria.schema._
 
 package object introspection {
@@ -446,7 +445,7 @@ package object introspection {
   def introspectionQuery: ast.Document = introspectionQuery()
 
   def introspectionQuery(schemaDescription: Boolean = true): ast.Document =
-    QueryParser.parse(introspectionQueryString(schemaDescription))
+    QueryParser.parse(introspectionQueryString(schemaDescription)).get
 
   def introspectionQueryString(schemaDescription: Boolean = true): String =
     s"""query IntrospectionQuery {
