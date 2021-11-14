@@ -12,9 +12,7 @@ trait DeliveryScheme[T] {
   def failure(error: Throwable): Result
 }
 
-@deprecated("Removed in 3.0. See the member deprecations for advice.", since2_1_7)
 object DeliveryScheme extends AlternativeDeliverySchemes {
-  @deprecated("Removed in 3.0. A Try result will be returned by default.", since2_1_7)
   implicit def Try[T]: DeliveryScheme[T] { type Result = Try[T] } =
     new DeliveryScheme[T] {
       type Result = Try[T]
