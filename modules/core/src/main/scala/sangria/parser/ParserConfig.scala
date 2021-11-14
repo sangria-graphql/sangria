@@ -53,7 +53,7 @@ object ParserConfig {
     *
     * This utility method makes it easier to write quasiquotes.
     */
-  private[sangria] def parboiledToSourceMapper(input: ParserInput): SourceMapperInput =
+  def parboiledToSourceMapper(input: ParserInput): SourceMapperInput =
     new SourceMapperInput {
       override def source: String = input.sliceString(0, input.length)
       override def getLine(line: Int): String = input.getLine(line)
