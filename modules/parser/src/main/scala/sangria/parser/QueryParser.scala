@@ -3,7 +3,6 @@ package sangria.parser
 import org.parboiled2.CharPredicate.{Digit19, HexDigit}
 import org.parboiled2._
 import sangria.ast
-import shapeless.{::, HNil}
 
 import scala.util.{Failure, Success, Try}
 
@@ -38,16 +37,16 @@ sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser 
     trimmedLines.mkString("\n")
   }
 
-  protected[this] def Ellipsis: Rule[HNil, HNil] = rule(quiet(str("...") ~ IgnoredNoComment.*))
+  protected[this] def Ellipsis: Rule0 = rule(quiet(str("...") ~ IgnoredNoComment.*))
 
   private[this] val NameFirstChar = CharPredicate.Alpha ++ '_'
 
   private[this] val NameChar = NameFirstChar ++ CharPredicate.Digit
 
-  protected[this] def NameStrict: Rule[HNil, String :: HNil] = rule(
+  protected[this] def NameStrict: Rule1[String] = rule(
     capture(NameFirstChar ~ NameChar.*) ~ IgnoredNoComment.*)
 
-  protected[this] def Name: Rule[HNil, String :: HNil] = rule(Ignored.* ~ NameStrict)
+  protected[this] def Name: Rule1[String] = rule(Ignored.* ~ NameStrict)
 
   protected[this] def NumberValue = rule {
     atomic(Comments ~ trackPos ~ IntegerValuePart ~ FloatValuePart.? ~ IgnoredNoComment.*) ~>
@@ -78,7 +77,7 @@ sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser 
 
   private[this] def Digit = rule(ch('0') | NonZeroDigit)
 
-  protected[this] def StringValue: Rule[HNil, ast.StringValue :: HNil] = rule(
+  protected[this] def StringValue: Rule1[ast.StringValue] = rule(
     BlockStringValue | NonBlockStringValue)
 
   private[this] def BlockStringValue = rule {
@@ -126,7 +125,7 @@ sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser 
 
   private[this] def Unicode = rule('u' ~ capture(4.times(HexDigit)) ~> (Integer.parseInt(_, 16)))
 
-  protected[this] def Keyword(s: String): Rule[HNil, HNil] = rule(
+  protected[this] def Keyword(s: String): Rule0 = rule(
     atomic(Ignored.* ~ s ~ !NameChar ~ IgnoredNoComment.*))
 }
 
@@ -140,21 +139,21 @@ sealed trait Ignored extends PositionTracking { this: Parser =>
 
   private[this] val WhiteSpace = CharPredicate("\u0009\u0020")
 
-  protected[this] def CRLF: Rule[HNil, HNil] = rule('\u000D' ~ '\u000A')
+  protected[this] def CRLF: Rule0 = rule('\u000D' ~ '\u000A')
 
   protected[this] val LineTerminator: CharPredicate = CharPredicate("\u000A")
 
   private[this] val UnicodeBOM = CharPredicate('\uFEFF')
 
-  protected[this] def Ignored: Rule[HNil, HNil] = rule {
+  protected[this] def Ignored: Rule0 = rule {
     quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',')
   }
 
-  protected[this] def IgnoredNoComment: Rule[HNil, HNil] = rule {
+  protected[this] def IgnoredNoComment: Rule0 = rule {
     quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | ',')
   }
 
-  protected[this] def Comments: Rule[HNil, Vector[ast.Comment] :: HNil] = rule {
+  protected[this] def Comments: Rule1[Vector[ast.Comment]] = rule {
     test(
       parseComments) ~ CommentCap.* ~ Ignored.* ~> (_.toVector) | CommentNoCap.* ~ Ignored.* ~ push(
       Vector.empty)
@@ -176,7 +175,7 @@ sealed trait Ignored extends PositionTracking { this: Parser =>
   protected[this] def wsNoComment(char: Char): Rule0 = rule(
     quiet(Ignored.* ~ ch(char) ~ IgnoredNoComment.*))
 
-  protected[this] def wsCapture(s: String): Rule[HNil, String :: HNil] = rule(
+  protected[this] def wsCapture(s: String): Rule1[String] = rule(
     quiet(Ignored.* ~ capture(str(s)) ~ IgnoredNoComment.*))
 }
 
@@ -600,9 +599,9 @@ sealed trait Operations extends PositionTracking {
         ast.VariableDefinition(name, tpe, defaultValue, dirs, comment, location))
   }
 
-  protected[this] def Variable: Rule[HNil, String :: HNil] = rule(Ignored.* ~ '$' ~ NameStrict)
+  protected[this] def Variable: Rule1[String] = rule(Ignored.* ~ '$' ~ NameStrict)
 
-  protected[this] def DefaultValue: Rule[HNil, ast.Value :: HNil] =
+  protected[this] def DefaultValue: Rule1[ast.Value] =
     rule(wsNoComment('=') ~ ValueConst)
 
   protected[this] def SelectionSet: Rule1[(Vector[ast.Selection], Vector[ast.Comment])] = rule {
@@ -647,7 +646,7 @@ sealed trait Fragments {
 
   protected[this] def experimentalFragmentVariables: Boolean
 
-  protected[this] def FragmentSpread: Rule[HNil, ast.FragmentSpread :: HNil] = rule {
+  protected[this] def FragmentSpread: Rule1[ast.FragmentSpread] = rule {
     Comments ~ trackPos ~ Ellipsis ~ FragmentName ~ (Directives.? ~> (_.getOrElse(Vector.empty))) ~>
       ((comment, location, name, dirs) => ast.FragmentSpread(name, dirs, comment, location))
   }
@@ -659,7 +658,7 @@ sealed trait Fragments {
         ast.InlineFragment(typeCondition, dirs, sels._1, comment, sels._2, location))
   }
 
-  protected[this] def on: Rule[HNil, HNil] = rule(Keyword("on"))
+  protected[this] def on: Rule0 = rule(Keyword("on"))
   private[this] def Fragment = rule(Keyword("fragment"))
 
   protected[this] def FragmentDefinition = rule {
@@ -776,7 +775,7 @@ sealed trait Types { this: Parser with Tokens with Ignored =>
 
   private[this] def TypeName = rule(Name)
 
-  protected[this] def NamedType: Rule[HNil, ast.NamedType :: HNil] = rule {
+  protected[this] def NamedType: Rule1[ast.NamedType] = rule {
     Ignored.* ~ trackPos ~ TypeName ~> ((location, name) => ast.NamedType(name, location))
   }
 
