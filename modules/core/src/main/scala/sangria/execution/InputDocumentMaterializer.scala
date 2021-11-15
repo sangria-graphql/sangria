@@ -1,7 +1,7 @@
 package sangria.execution
 
 import sangria.ast.{AstVisitor, InputDocument, VariableDefinition}
-import sangria.ast
+import sangria.{ast, since2_1_7}
 import sangria.marshalling.{FromInput, InputUnmarshaller}
 import sangria.parser.DeliveryScheme
 import sangria.renderer.SchemaRenderer
@@ -19,6 +19,10 @@ case class InputDocumentMaterializer[Vars](
     variables: Vars = InputUnmarshaller.emptyMapVars)(implicit iu: InputUnmarshaller[Vars]) {
   def to[T](document: InputDocument, inputType: InputType[T])(implicit
       fromInput: FromInput[T],
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[Vector[T]]): scheme.Result = {
     val collector = new ValueCollector[Unit, Vars](
       schema,
@@ -91,7 +95,13 @@ object InputDocumentMaterializer {
       schema: Schema[_, _],
       document: InputDocument,
       inputType: InputType[T]
-  )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
+  )(implicit
+      fromInput: FromInput[T],
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
+      scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer(schema, InputUnmarshaller.emptyMapVars).to(document, inputType)
 
   def to[T, Vars](
@@ -102,13 +112,23 @@ object InputDocumentMaterializer {
   )(implicit
       iu: InputUnmarshaller[Vars],
       fromInput: FromInput[T],
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     InputDocumentMaterializer(schema, variables).to(document, inputType)
 
   def to[T](
       document: InputDocument,
       inputType: InputType[T]
-  )(implicit fromInput: FromInput[T], scheme: DeliveryScheme[Vector[T]]): scheme.Result =
+  )(implicit
+      fromInput: FromInput[T],
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
+      scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     to(emptyStubSchema(inputType), document, inputType, InputUnmarshaller.emptyMapVars)
 
   def to[T, Vars](
@@ -118,6 +138,10 @@ object InputDocumentMaterializer {
   )(implicit
       iu: InputUnmarshaller[Vars],
       fromInput: FromInput[T],
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[Vector[T]]): scheme.Result =
     to(emptyStubSchema(inputType), document, inputType, variables)
 

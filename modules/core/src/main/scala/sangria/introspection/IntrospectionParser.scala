@@ -3,10 +3,15 @@ package sangria.introspection
 import sangria.marshalling.InputUnmarshaller
 import sangria.parser.DeliveryScheme
 import sangria.schema.DirectiveLocation
+import sangria.since2_1_7
 
 object IntrospectionParser {
   def parse[In](introspectionResult: In)(implicit
       iu: InputUnmarshaller[In],
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[IntrospectionSchema]): scheme.Result =
     try {
       checkErrors(introspectionResult)

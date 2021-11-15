@@ -2,7 +2,7 @@ package sangria.parser
 
 import org.parboiled2._
 import CharPredicate.{Digit19, HexDigit}
-import sangria.ast
+import sangria.{ast, since2_1_7}
 import sangria.util.StringUtil
 
 import scala.util.{Failure, Success}
@@ -805,10 +805,18 @@ class QueryParser private (
 
 object QueryParser {
   def parse(input: String, config: ParserConfig = ParserConfig.default)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[ast.Document]): scheme.Result =
     parse(ParserInput(input), config)(scheme)
 
   def parse(input: ParserInput, config: ParserConfig)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[ast.Document]): scheme.Result = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(
@@ -827,10 +835,20 @@ object QueryParser {
     }
   }
 
-  def parseInput(input: String)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result =
+  def parseInput(input: String)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
+      scheme: DeliveryScheme[ast.Value]): scheme.Result =
     parseInput(ParserInput(input))(scheme)
 
-  def parseInput(input: ParserInput)(implicit scheme: DeliveryScheme[ast.Value]): scheme.Result = {
+  def parseInput(input: ParserInput)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
+      scheme: DeliveryScheme[ast.Value]): scheme.Result = {
     val parser = new QueryParser(input, "")
 
     parser.InputDocument.run() match {
@@ -844,10 +862,18 @@ object QueryParser {
   }
 
   def parseInputDocument(input: String, config: ParserConfig = ParserConfig.default)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
     parseInputDocument(ParserInput(input), config)(scheme)
 
   def parseInputDocument(input: ParserInput, config: ParserConfig)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(
@@ -867,10 +893,18 @@ object QueryParser {
   }
 
   def parseInputWithVariables(input: String)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[ast.Value]): scheme.Result =
     parseInputWithVariables(ParserInput(input))(scheme)
 
   def parseInputWithVariables(input: ParserInput)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[ast.Value]): scheme.Result = {
     val parser = new QueryParser(input, "")
 
@@ -884,11 +918,21 @@ object QueryParser {
     }
   }
 
-  def parseInputDocumentWithVariables(input: String, config: ParserConfig = ParserConfig.default)(
-      implicit scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
+  def parseInputDocumentWithVariables(
+      input: String,
+      config: ParserConfig = ParserConfig.default)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
+      scheme: DeliveryScheme[ast.InputDocument]): scheme.Result =
     parseInputDocumentWithVariables(ParserInput(input), config)(scheme)
 
   def parseInputDocumentWithVariables(input: ParserInput, config: ParserConfig)(implicit
+      @deprecated(
+        "Removed in 3.0. Use the default implicit DeliveryScheme instead and convert the resulting Try as needed.",
+        since2_1_7
+      )
       scheme: DeliveryScheme[ast.InputDocument]): scheme.Result = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(input, id)
