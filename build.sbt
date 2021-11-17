@@ -299,24 +299,39 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
     "sangria.renderer.QueryRenderer.renderCommentLines"),
 
   // remove DeliveryScheme
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.InputDocumentMaterializer.to$default$3"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.InputDocumentMaterializer.to"),
-  ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.execution.InputDocumentMaterializer.to"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.InputDocumentMaterializer.to"),
-  ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.execution.InputDocumentMaterializer.to"),
-  ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.execution.InputDocumentMaterializer.to"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.InputDocumentMaterializer.to$default$3"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionParser.parse"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionParser.parse"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.InputDocumentMaterializer.to$default$3"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.InputDocumentMaterializer.to"),
+  ProblemFilters.exclude[IncompatibleMethTypeProblem](
+    "sangria.execution.InputDocumentMaterializer.to"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.InputDocumentMaterializer.to"),
+  ProblemFilters.exclude[IncompatibleMethTypeProblem](
+    "sangria.execution.InputDocumentMaterializer.to"),
+  ProblemFilters.exclude[IncompatibleMethTypeProblem](
+    "sangria.execution.InputDocumentMaterializer.to"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.execution.InputDocumentMaterializer.to$default$3"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.introspection.IntrospectionParser.parse"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.introspection.IntrospectionParser.parse"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.AlternativeDeliverySchemes"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.DeliveryScheme"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.DeliveryScheme$"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocumentWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocumentWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocument"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocument"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocumentWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocumentWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocument"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocument"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInput"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInput"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parse"),
@@ -325,12 +340,18 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parse"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInput"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInput"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocument"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocument"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocumentWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocumentWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocument"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocument"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocumentWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocumentWithVariables")
 )
 
 lazy val root = project
@@ -385,7 +406,7 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.27" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.132" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.133" % Test
     )
   )
 
