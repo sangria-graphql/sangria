@@ -478,7 +478,9 @@ lazy val scalacSettings = Seq(
   },
   scalacOptions += "-target:jvm-1.8",
   Compile / doc / scalacOptions ++= Seq( // scaladoc options
-    "-groups"),
+    "-groups",
+    "-doc-title", "Sangria",
+  ),
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
 
