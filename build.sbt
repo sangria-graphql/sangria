@@ -333,12 +333,18 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parse"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInput"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInput"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocument"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocument"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocumentWithVariables"),
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.parser.QueryParser.parseInputDocumentWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocument"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocument"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocumentWithVariables"),
+  ProblemFilters.exclude[DirectMissingMethodProblem](
+    "sangria.parser.QueryParser.parseInputDocumentWithVariables"),
 
   // move parser into module
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Directives"),
@@ -426,7 +432,7 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.27" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.132" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.133" % Test
     )
   )
 
