@@ -8,35 +8,6 @@ import scala.util.{Failure, Success, Try}
 
 sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
 
-  private[this] def leadingWhitespace(str: String) = {
-    var i = 0
-    while (i < str.length && (str.charAt(i) == ' ' || str.charAt(i) == '\t')) i += 1
-    i
-  }
-
-  private[this] def isBlank(str: String) = leadingWhitespace(str) == str.length
-
-  /** Produces the value of a block string from its parsed raw value, similar to Coffeescript's
-    * block string, Python's docstring trim or Ruby's strip_heredoc.
-    *
-    * This implements the GraphQL spec's BlockStringValue() static algorithm.
-    */
-  private[this] def blockStringValue(rawString: String): String = {
-    val lines = rawString.split("""\r\n|[\n\r]""")
-    val lineSizes = lines.map(l => l -> leadingWhitespace(l))
-    val commonIndentLines =
-      lineSizes.drop(1).collect { case (line, size) if size != line.length => size }
-    val strippedLines =
-      if (commonIndentLines.nonEmpty) {
-        val commonIndent = commonIndentLines.min
-
-        lines.take(1) ++ lines.drop(1).map(_.drop(commonIndent))
-      } else lines
-    val trimmedLines = strippedLines.reverse.dropWhile(isBlank).reverse.dropWhile(isBlank)
-
-    trimmedLines.mkString("\n")
-  }
-
   protected[this] def Ellipsis: Rule0 = rule(quiet(str("...") ~ IgnoredNoComment.*))
 
   private[this] val NameFirstChar = CharPredicate.Alpha ++ '_'
@@ -84,7 +55,7 @@ sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser 
     Comments ~ trackPos ~ BlockString ~ clearSB() ~ BlockStringCharacters ~ BlockString ~ push(
       sb.toString) ~ IgnoredNoComment.* ~>
       ((comment, location, s) =>
-        ast.StringValue(blockStringValue(s), true, Some(s), comment, location))
+        ast.StringValue(Lexical.blockStringValue(s), true, Some(s), comment, location))
   }
 
   private[this] def BlockStringCharacters = rule((BlockStringCharacter | BlockStringEscapedChar).*)
