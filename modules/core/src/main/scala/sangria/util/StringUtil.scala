@@ -1,16 +1,17 @@
 package sangria.util
 
-import java.util.Locale
+import sangria.since3_0_0
 
+import java.util.Locale
 import scala.collection.mutable.ListBuffer
 
 object StringUtil {
   private val camelToUpper = "_*([A-Z][a-z\\d]+)".r
 
-  def camelCaseToUnderscore(name: String) =
+  def camelCaseToUnderscore(name: String): String =
     camelToUpper.findAllMatchIn(name).map(_.group(1).toLowerCase).mkString("_")
 
-  def orList(items: Seq[String], limit: Int = 5) =
+  def orList(items: Seq[String], limit: Int = 5): String =
     if (items.isEmpty)
       throw new IllegalArgumentException("List is empty")
     else {
@@ -80,7 +81,7 @@ object StringUtil {
     d(a.length)(b.length)
   }
 
-  def escapeBlockString(str: String) = str.replaceAll("\"\"\"", "\\\\\"\"\"")
+  def escapeBlockString(str: String): String = str.replaceAll("\"\"\"", "\\\\\"\"\"")
 
   def escapeString(str: String): String =
     str
@@ -114,6 +115,7 @@ object StringUtil {
     *
     * This implements the GraphQL spec's BlockStringValue() static algorithm.
     */
+  @deprecated("This method will be removed.", since3_0_0)
   def blockStringValue(rawString: String): String = {
     val lines = rawString.split("""\r\n|[\n\r]""")
     val lineSizes = lines.map(l => l -> leadingWhitespace(l))

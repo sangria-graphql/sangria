@@ -11,4 +11,8 @@
   * @see
   *   [[https://sangria-graphql.github.io/ the Sangria home page]]
   */
-package object sangria {}
+package object sangria {
+
+  /** "Since" field for 3.0.0 deprecations. */
+  private[sangria] final val since3_0_0 = "Sangria 3.0.0"
+}

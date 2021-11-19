@@ -1,12 +1,5 @@
 import sbt.Developer
-import sbt.Keys.{
-  crossScalaVersions,
-  developers,
-  organizationHomepage,
-  scalacOptions,
-  scmInfo,
-  startYear
-}
+import sbt.Keys._
 import com.typesafe.tools.mima.core.{
   DirectMissingMethodProblem,
   IncompatibleMethTypeProblem,
@@ -351,13 +344,31 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[DirectMissingMethodProblem](
     "sangria.parser.QueryParser.parseInputDocumentWithVariables"),
   ProblemFilters.exclude[DirectMissingMethodProblem](
-    "sangria.parser.QueryParser.parseInputDocumentWithVariables")
+    "sangria.parser.QueryParser.parseInputDocumentWithVariables"),
+
+  // move parser into module
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Directives"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Document"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Fragments"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Ignored"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Operations"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.ParserConfig"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.ParserConfig$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.PositionTracking"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.QueryParser"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.QueryParser$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.SyntaxError"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.SyntaxError$"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
 )
 
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, core, benchmarks)
+  .aggregate(ast, parser, core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -374,10 +385,27 @@ lazy val ast = project
   )
   .disablePlugins(MimaPlugin)
 
+lazy val parser = project
+  .in(file("modules/parser"))
+  .withId("sangria-parser")
+  .dependsOn(ast)
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-parser",
+    description := "Scala GraphQL parser",
+    libraryDependencies ++= Seq(
+      // AST Parser
+      "org.parboiled" %% "parboiled" % "2.3.0",
+
+      "org.scalatest" %% "scalatest" % "3.2.10" % Test,
+    ),
+  )
+  .disablePlugins(MimaPlugin)
+
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
-  .dependsOn(ast)
+  .dependsOn(parser)
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria",
@@ -385,8 +413,6 @@ lazy val core = project
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.3"),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
-      // AST Parser
-      "org.parboiled" %% "parboiled" % "2.3.0",
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.3",
       // Marshalling
@@ -452,7 +478,9 @@ lazy val scalacSettings = Seq(
   },
   scalacOptions += "-target:jvm-1.8",
   Compile / doc / scalacOptions ++= Seq( // scaladoc options
-    "-groups"),
+    "-groups",
+    "-doc-title", "Sangria",
+  ),
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
 
