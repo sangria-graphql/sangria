@@ -362,7 +362,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values")
 )
 
 lazy val root = project
@@ -396,9 +396,8 @@ lazy val parser = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.3.0",
-
-      "org.scalatest" %% "scalatest" % "3.2.10" % Test,
-    ),
+      "org.scalatest" %% "scalatest" % "3.2.10" % Test
+    )
   )
   .disablePlugins(MimaPlugin)
 
@@ -432,7 +431,7 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.27" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.133" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.134" % Test
     )
   )
 
@@ -479,8 +478,8 @@ lazy val scalacSettings = Seq(
   scalacOptions += "-target:jvm-1.8",
   Compile / doc / scalacOptions ++= Seq( // scaladoc options
     "-groups",
-    "-doc-title", "Sangria",
-  ),
+    "-doc-title",
+    "Sangria"),
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
 
