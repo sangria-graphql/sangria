@@ -6,7 +6,8 @@ import sangria.ast
 
 import scala.util.{Failure, Success, Try}
 
-sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser with Ignored =>
+private[parser] sealed trait Tokens extends StringBuilding with PositionTracking {
+  this: Parser with Ignored =>
 
   protected[this] def Ellipsis: Rule0 = rule(quiet(str("...") ~ IgnoredNoComment.*))
 
@@ -103,7 +104,7 @@ sealed trait Tokens extends StringBuilding with PositionTracking { this: Parser 
 /** Mix-in that defines GraphQL grammar productions that are typically ignored (whitespace,
   * comments, etc.).
   */
-sealed trait Ignored extends PositionTracking { this: Parser =>
+private[parser] sealed trait Ignored extends PositionTracking { this: Parser =>
 
   /** Whether comments should be parsed into the resulting AST. */
   protected[this] def parseComments: Boolean
@@ -150,7 +151,7 @@ sealed trait Ignored extends PositionTracking { this: Parser =>
     quiet(Ignored.* ~ capture(str(s)) ~ IgnoredNoComment.*))
 }
 
-sealed trait Document {
+private[parser] sealed trait Document {
   this: Parser
     with Operations
     with Ignored
@@ -186,7 +187,7 @@ sealed trait Document {
   }
 }
 
-sealed trait TypeSystemDefinitions {
+private[parser] sealed trait TypeSystemDefinitions {
   this: Parser
     with Tokens
     with Ignored
@@ -531,7 +532,7 @@ sealed trait TypeSystemDefinitions {
   private[this] def Description = rule(StringValue.?)
 }
 
-sealed trait Operations extends PositionTracking {
+private[parser] sealed trait Operations extends PositionTracking {
   this: Parser with Tokens with Ignored with Fragments with Values with Types with Directives =>
 
   protected[this] def OperationDefinition = rule {
@@ -612,7 +613,7 @@ sealed trait Operations extends PositionTracking {
   }
 }
 
-sealed trait Fragments {
+private[parser] sealed trait Fragments {
   this: Parser with Tokens with Ignored with Directives with Types with Operations =>
 
   protected[this] def experimentalFragmentVariables: Boolean
@@ -656,7 +657,7 @@ sealed trait Fragments {
   private[this] def TypeCondition = rule(on ~ NamedType)
 }
 
-sealed trait Values { this: Parser with Tokens with Ignored with Operations =>
+private[parser] sealed trait Values { this: Parser with Tokens with Ignored with Operations =>
   protected[this] def ValueConst: Rule1[ast.Value] = rule {
     NumberValue | StringValue | BooleanValue | NullValue | EnumValue | ListValueConst | ObjectValueConst
   }
@@ -726,7 +727,7 @@ sealed trait Values { this: Parser with Tokens with Ignored with Operations =>
   }
 }
 
-sealed trait Directives { this: Parser with Tokens with Operations with Ignored =>
+private[parser] sealed trait Directives { this: Parser with Tokens with Operations with Ignored =>
   protected[this] def Directives = rule(Directive.+ ~> (_.toVector))
   protected[this] def DirectivesConst = rule(DirectiveConst.+ ~> (_.toVector))
 
@@ -741,7 +742,7 @@ sealed trait Directives { this: Parser with Tokens with Operations with Ignored 
   }
 }
 
-sealed trait Types { this: Parser with Tokens with Ignored =>
+private[parser] sealed trait Types { this: Parser with Tokens with Ignored =>
   protected[this] def Type: Rule1[ast.Type] = rule(NonNullType | ListType | NamedType)
 
   private[this] def TypeName = rule(Name)
@@ -778,10 +779,18 @@ class QueryParser private (
     with Types
     with TypeSystemDefinitions
 
+/** GraphQL parsing methods.
+  *
+  * The parser is written with [[https://github.com/sirthias/parboiled2 Parboiled2]]. Each of the
+  * method types takes either a string, or a Parboiled2 `ParserInput` for more generality.
+  */
 object QueryParser {
+
+  /** Parse the given string as a GraphQL ''Document''. */
   def parse(input: String, config: ParserConfig = ParserConfig.default): Try[ast.Document] =
     parse(ParserInput(input), config)
 
+  /** Parse the given input as a GraphQL ''Document''. */
   def parse(input: ParserInput, config: ParserConfig): Try[ast.Document] = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(
@@ -798,8 +807,10 @@ object QueryParser {
     }
   }
 
+  /** Parse the given string as a GraphQL ''InputDocument'' and return its first ''Value''. */
   def parseInput(input: String): Try[ast.Value] = parseInput(ParserInput(input))
 
+  /** Parse the given input as a GraphQL ''InputDocument'' and return its first ''Value''. */
   def parseInput(input: ParserInput): Try[ast.Value] = {
     val parser = new QueryParser(input, "")
 
@@ -807,17 +818,20 @@ object QueryParser {
       case Success(res) if res.values.nonEmpty => Success(res.values.head)
       case Success(_) =>
         Failure(
-          new IllegalArgumentException("Input document does not contain any value definitions."))
+          new IllegalArgumentException("Input document does not contain any value definitions.")
+        )
       case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
       case Failure(e) => Failure(e)
     }
   }
 
+  /** Parse the given string as a GraphQL ''InputDocument''. */
   def parseInputDocument(
       input: String,
       config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
     parseInputDocument(ParserInput(input), config)
 
+  /** Parse the given input as a GraphQL ''InputDocument''. */
   def parseInputDocument(input: ParserInput, config: ParserConfig): Try[ast.InputDocument] = {
     val id = config.sourceIdFn(input)
     val parser = new QueryParser(
@@ -834,9 +848,15 @@ object QueryParser {
     }
   }
 
+  /** Parse the given string as a GraphQL ''InputDocumentWithVariables'' and return its first
+    * ''Value''.
+    */
   def parseInputWithVariables(input: String): Try[ast.Value] =
     parseInputWithVariables(ParserInput(input))
 
+  /** Parse the given input as a GraphQL ''InputDocumentWithVariables'' and return its first
+    * ''Value''.
+    */
   def parseInputWithVariables(input: ParserInput): Try[ast.Value] = {
     val parser = new QueryParser(input, "")
 
@@ -844,17 +864,20 @@ object QueryParser {
       case Success(res) if res.values.nonEmpty => Success(res.values.head)
       case Success(_) =>
         Failure(
-          new IllegalArgumentException("Input document does not contain any value definitions."))
+          new IllegalArgumentException("Input document does not contain any value definitions.")
+        )
       case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
       case Failure(e) => Failure(e)
     }
   }
 
+  /** Parse the given string as a GraphQL ''InputDocumentWithVariables''. */
   def parseInputDocumentWithVariables(
       input: String,
       config: ParserConfig = ParserConfig.default): Try[ast.InputDocument] =
     parseInputDocumentWithVariables(ParserInput(input), config)
 
+  /** Parse the given input as a GraphQL ''InputDocumentWithVariables''. */
   def parseInputDocumentWithVariables(
       input: ParserInput,
       config: ParserConfig): Try[ast.InputDocument] = {
