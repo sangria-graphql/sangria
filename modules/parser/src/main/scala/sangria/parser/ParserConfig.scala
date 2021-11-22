@@ -44,12 +44,12 @@ object ParserConfig {
     *
     * In practice, the identifiers are typically randomly-generated, the input source is from a
     * string, and the chosen `SourceMapper` doesn't depend on either. In most cases, the
-    * [[DefaultSourceMapper default]] is returned. This function type is mostly used to allow
-    * Sangria users to replace the default with their own custom `SourceMapper`.
+    * [[sangria.ast.DefaultSourceMapper default]] is returned. This function type is mostly used to
+    * allow Sangria users to replace the default with their own custom `SourceMapper`.
     */
   type CodeSourceToSourceMapperFunction = (String, ParserInput) => Option[sangria.ast.SourceMapper]
 
-  /** Return the given Parboiled2 parser input, wrapped with our [[SourceMapperInput]].
+  /** Return the given Parboiled2 parser input, wrapped with our [[sangria.ast.SourceMapperInput]].
     *
     * This utility method makes it easier to write quasiquotes.
     */
@@ -70,7 +70,7 @@ object ParserConfig {
   /** Function that returns no `SourceMapper`. */
   lazy val emptySourceMapperFn: CodeSourceToSourceMapperFunction = (_, _) => None
 
-  /** Function that returns the [[DefaultSourceMapper default `SourceMapper`]]. */
+  /** Function that returns the [[sangria.ast.DefaultSourceMapper default `SourceMapper`]]. */
   lazy val defaultSourceMapperFn: CodeSourceToSourceMapperFunction =
     (id, input) => Some(new DefaultSourceMapper(id, parboiledToSourceMapper(input)))
 }

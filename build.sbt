@@ -362,7 +362,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values")
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
 )
 
 lazy val root = project
@@ -381,7 +381,11 @@ lazy val ast = project
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria-ast",
-    description := "Scala GraphQL AST representation"
+    description := "Scala GraphQL AST representation",
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-ast_$ver/latest/"))
+    },
   )
   .disablePlugins(MimaPlugin)
 
@@ -396,8 +400,13 @@ lazy val parser = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.3.0",
-      "org.scalatest" %% "scalatest" % "3.2.10" % Test
-    )
+
+      "org.scalatest" %% "scalatest" % "3.2.10" % Test,
+    ),
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-parser_$ver/latest/"))
+    },
   )
   .disablePlugins(MimaPlugin)
 
@@ -432,7 +441,11 @@ lazy val core = project
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
       "io.github.classgraph" % "classgraph" % "4.8.134" % Test
-    )
+    ),
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria_$ver/latest/"))
+    },
   )
 
 lazy val benchmarks = project
@@ -476,10 +489,12 @@ lazy val scalacSettings = Seq(
     if (scalaVersion.value.startsWith("2.12")) Seq("-language:higherKinds") else List.empty[String]
   },
   scalacOptions += "-target:jvm-1.8",
-  Compile / doc / scalacOptions ++= Seq( // scaladoc options
-    "-groups",
-    "-doc-title",
-    "Sangria"),
+  autoAPIMappings := true,
+  Compile / doc / scalacOptions ++=  // scaladoc options
+    Opts.doc.title("Sangria") ++ Seq(
+      "-groups",
+      "-diagrams",
+    ),
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
 
