@@ -362,7 +362,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values")
 )
 
 lazy val root = project
@@ -385,7 +385,7 @@ lazy val ast = project
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-ast_$ver/latest/"))
-    },
+    }
   )
   .disablePlugins(MimaPlugin)
 
@@ -400,13 +400,12 @@ lazy val parser = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.3.0",
-
-      "org.scalatest" %% "scalatest" % "3.2.10" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.10" % Test
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-parser_$ver/latest/"))
-    },
+    }
   )
   .disablePlugins(MimaPlugin)
 
@@ -440,12 +439,12 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.27" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.134" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.135" % Test
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria_$ver/latest/"))
-    },
+    }
   )
 
 lazy val benchmarks = project
@@ -490,10 +489,10 @@ lazy val scalacSettings = Seq(
   },
   scalacOptions += "-target:jvm-1.8",
   autoAPIMappings := true,
-  Compile / doc / scalacOptions ++=  // scaladoc options
+  Compile / doc / scalacOptions ++= // scaladoc options
     Opts.doc.title("Sangria") ++ Seq(
       "-groups",
-      "-diagrams",
+      "-diagrams"
     ),
   javacOptions ++= Seq("-source", "8", "-target", "8")
 )
