@@ -3,6 +3,8 @@ package sangria
 import sangria.parser.QueryParser
 import sangria.schema._
 
+import scala.annotation.tailrec
+
 package object introspection {
   object TypeKind extends Enumeration {
     val Scalar, Object, Interface, Union, Enum, InputObject, List, NonNull = Value
@@ -19,7 +21,7 @@ package object introspection {
     }
   }
 
-  val __TypeKind = EnumType(
+  private[this] val __TypeKind = EnumType(
     "__TypeKind",
     Some("An enum describing what kind of type a given `__Type` is."),
     List(
@@ -72,7 +74,7 @@ package object introspection {
     )
   )
 
-  val __DirectiveLocation = EnumType(
+  val __DirectiveLocation: EnumType[DirectiveLocation.Value] = EnumType(
     "__DirectiveLocation",
     Some(
       "A Directive can be adjacent to many parts of the GraphQL language, a " +
@@ -157,7 +159,7 @@ package object introspection {
     )
   )
 
-  val __Field = ObjectType(
+  private[this] val __Field = ObjectType(
     name = "__Field",
     description = "Object and Interface types are described by a list of Fields, each of " +
       "which has a name, potentially a list of arguments, and a return type.",
@@ -172,12 +174,14 @@ package object introspection {
       )
   )
 
-  val includeDeprecated = Argument("includeDeprecated", OptionInputType(BooleanType), false)
+  private[this] val includeDeprecated =
+    Argument("includeDeprecated", OptionInputType(BooleanType), false)
 
-  private def getKind(value: (Boolean, Type)) = {
+  private[this] def getKind(value: (Boolean, Type)) = {
+    @tailrec
     def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {
-      case OptionType(ofType) => identifyKind(ofType, true)
-      case OptionInputType(ofType) => identifyKind(ofType, true)
+      case OptionType(ofType) => identifyKind(ofType, optional = true)
+      case OptionInputType(ofType) => identifyKind(ofType, optional = true)
       case _ if !optional => TypeKind.NonNull
       case _: ScalarType[_] => TypeKind.Scalar
       case _: ScalarAlias[_, _] => TypeKind.Scalar
@@ -194,7 +198,8 @@ package object introspection {
     identifyKind(tpe, fromTypeList)
   }
 
-  private def findNamed(tpe: Type): Option[Type with Named] = tpe match {
+  @tailrec
+  private[this] def findNamed(tpe: Type): Option[Type with Named] = tpe match {
     case o: OptionType[_] => findNamed(o.ofType)
     case o: OptionInputType[_] => findNamed(o.ofType)
     case l: ListType[_] => findNamed(l.ofType)
@@ -203,7 +208,8 @@ package object introspection {
     case _ => None
   }
 
-  private def findListType(tpe: Type): Option[Type] = tpe match {
+  @tailrec
+  private[this] def findListType(tpe: Type): Option[Type] = tpe match {
     case o: OptionType[_] => findListType(o.ofType)
     case o: OptionInputType[_] => findListType(o.ofType)
     case l: ListType[_] => Some(l.ofType)
@@ -211,7 +217,7 @@ package object introspection {
     case _ => None
   }
 
-  val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType(
+  private[this] val __Type: ObjectType[Unit, (Boolean, Type)] = ObjectType(
     name = "__Type",
     description = "The fundamental unit of any GraphQL Schema is the type. There are " +
       "many kinds of types in GraphQL as represented by the `__TypeKind` enum." +
@@ -251,13 +257,9 @@ package object introspection {
             val (_, tpe) = ctx.value
 
             tpe match {
-              case t: ObjectLikeType[_, _] if incDep =>
-                Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]])
+              case t: ObjectLikeType[_, _] if incDep => Some(t.uniqueFields)
               case t: ObjectLikeType[_, _] =>
-                Some(
-                  t.uniqueFields
-                    .asInstanceOf[Vector[Field[_, _]]]
-                    .filter(_.deprecationReason.isEmpty))
+                Some(t.uniqueFields.filter(_.deprecationReason.isEmpty))
               case _ => None
             }
           }
@@ -320,7 +322,7 @@ package object introspection {
       )
   )
 
-  val __InputValue: ObjectType[Unit, InputValue[_]] = ObjectType(
+  private[this] val __InputValue: ObjectType[Unit, InputValue[_]] = ObjectType(
     name = "__InputValue",
     description = "Arguments provided to Fields or Directives and the input fields of an " +
       "InputObject are represented as Input Values which describe their type " +
@@ -340,7 +342,7 @@ package object introspection {
     )
   )
 
-  val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(
+  private[this] val __EnumValue: ObjectType[Unit, EnumValue[_]] = ObjectType(
     name = "__EnumValue",
     description = "One possible value for a given Enum. Enum values are unique values, not " +
       "a placeholder for a string or numeric value. However an Enum value is " +
@@ -353,7 +355,7 @@ package object introspection {
     )
   )
 
-  val __Directive = ObjectType(
+  private[this] val __Directive = ObjectType(
     name = "__Directive",
     description = "A Directive provides a way to describe alternate runtime execution and " +
       "type validation behavior in a GraphQL document." +
@@ -372,7 +374,7 @@ package object introspection {
     )
   )
 
-  val __Schema = ObjectType(
+  val __Schema: ObjectType[Unit, Schema[_, _]] = ObjectType(
     name = "__Schema",
     description = "A GraphQL Schema defines the capabilities of a GraphQL " +
       "server. It exposes all available types and directives on " +
@@ -436,7 +438,7 @@ package object introspection {
   def isIntrospection(tpe: CompositeType[_], field: Field[_, _]): Boolean =
     Schema.isIntrospectionType(tpe.name) || MetaFieldNames.contains(field.name)
 
-  val IntrospectionTypes: List[Type with Named] =
+  private[this] val IntrospectionTypes: List[Type with Named] =
     __Schema :: __TypeKind :: __DirectiveLocation :: __Type :: __Field :: __InputValue :: __EnumValue :: __Directive :: Nil
 
   val IntrospectionTypesByName: Map[String, Type with Named] =
@@ -444,10 +446,10 @@ package object introspection {
 
   def introspectionQuery: ast.Document = introspectionQuery()
 
-  def introspectionQuery(schemaDescription: Boolean = true): ast.Document =
+  private[this] def introspectionQuery(schemaDescription: Boolean = true): ast.Document =
     QueryParser.parse(introspectionQueryString(schemaDescription)).get
 
-  def introspectionQueryString(schemaDescription: Boolean = true): String =
+  private[this] def introspectionQueryString(schemaDescription: Boolean = true): String =
     s"""query IntrospectionQuery {
        |  __schema {
        |    queryType { name }
