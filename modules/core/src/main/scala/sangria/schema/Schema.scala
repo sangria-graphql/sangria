@@ -135,6 +135,8 @@ case class ScalarType[T](
     with UnmodifiedType
     with Named {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderType(•) instead.", since2_1_7)
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -154,6 +156,8 @@ case class ScalarAlias[T, ST](
 
   def astDirectives = aliasFor.astDirectives
   def astNodes = aliasFor.astNodes
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderType(•) instead.", since2_1_7)
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -201,6 +205,7 @@ sealed trait ObjectLikeType[Ctx, Val]
       else Vector.empty
     else fieldsByName.getOrElse(fieldName, Vector.empty)
 
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderType(•) instead.", since2_1_7)
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -506,6 +511,8 @@ case class UnionType[Ctx](
     with UnmodifiedType
     with HasAstInfo {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderType(•) instead.", since2_1_7)
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 
   /** Creates a type-safe version of union type which might be useful in cases where the value is
@@ -567,6 +574,8 @@ case class Field[Ctx, Val](
   def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]) =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderField(•) instead.", since2_1_7)
   def toAst: ast.FieldDefinition = SchemaRenderer.renderField(this)
 }
 
@@ -658,6 +667,8 @@ case class Argument[T](
     with HasAstInfo {
   def inputValueType = argumentType
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderArg(•) instead.", since2_1_7)
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderArg(this)
 }
 
@@ -917,6 +928,8 @@ case class EnumType[T](
   def coerceOutput(value: T): String = byValue(value).name
 
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderType(•) instead.", since2_1_7)
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -931,6 +944,8 @@ case class EnumValue[+T](
     with HasDeprecation
     with HasAstInfo {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderEnumValue(•) instead.", since2_1_7)
   def toAst: ast.EnumValueDefinition = SchemaRenderer.renderEnumValue(this)
 }
 
@@ -950,6 +965,8 @@ case class InputObjectType[T](
     fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap
 
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderType(•) instead.", since2_1_7)
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
@@ -1007,6 +1024,8 @@ case class InputField[T](
     with HasAstInfo {
   def inputValueType: InputType[T] = fieldType
   def rename(newName: String): InputField.this.type = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderInputField(•) instead.", since2_1_7)
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderInputField(this)
 }
 
@@ -1151,6 +1170,8 @@ case class Directive(
     extends HasArguments
     with Named {
   def rename(newName: String) = copy(name = newName).asInstanceOf[this.type]
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderDirective(•) instead.", since2_1_7)
   def toAst: ast.DirectiveDefinition = SchemaRenderer.renderDirective(this)
 }
 
@@ -1174,13 +1195,22 @@ case class Schema[Ctx, Val](
   def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
     SchemaComparator.compare(oldSchema, this)
 
+  @deprecated("Removed in 3.0. Use SchemaRenderer.schemaAst(•) instead.", since2_1_7)
   lazy val toAst: Document = SchemaRenderer.schemaAst(this)
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.schemaAst(•, filter) instead.", since2_1_7)
   def toAst(filter: SchemaFilter): Document = SchemaRenderer.schemaAst(this, filter)
 
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderSchema(•) instead.", since2_1_7)
   def renderPretty: String = toAst.renderPretty
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderSchema(•, filter) instead.", since2_1_7)
   def renderPretty(filter: SchemaFilter): String = toAst(filter).renderPretty
 
+  @deprecated("Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAst(•)) instead.", since2_1_7)
   def renderCompact: String = toAst.renderCompact
+
+  @deprecated("Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAst(•, filter)) instead.", since2_1_7)
   def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
 
   lazy val types: Map[String, (Int, Type with Named)] = {

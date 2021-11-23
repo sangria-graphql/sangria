@@ -1,5 +1,6 @@
 package sangria.introspection
 
+import sangria.since2_1_7
 import sangria.ast.Document
 import sangria.renderer.{SchemaFilter, SchemaRenderer}
 import sangria.schema.DirectiveLocation
@@ -12,14 +13,23 @@ case class IntrospectionSchema(
     directives: Seq[IntrospectionDirective],
     description: Option[String]
 ) {
+  @deprecated("Removed in 3.0. Use SchemaRenderer.schemaAstFromIntrospection(•) instead.", since2_1_7)
   def toAst = SchemaRenderer.schemaAstFromIntrospection(this)
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.schemaAstFromIntrospection(•, filter) instead.", since2_1_7)
   def toAst(filter: SchemaFilter): Document =
     SchemaRenderer.schemaAstFromIntrospection(this, filter)
 
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderSchema(•) instead.", since2_1_7)
   def renderPretty: String = toAst.renderPretty
+
+  @deprecated("Removed in 3.0. Use SchemaRenderer.renderSchema(•, filter) instead.", since2_1_7)
   def renderPretty(filter: SchemaFilter): String = toAst(filter).renderPretty
 
+  @deprecated("Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAstFromIntrospection(•)) instead.", since2_1_7)
   def renderCompact: String = toAst.renderCompact
+
+  @deprecated("Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAstFromIntrospection(•, filter)) instead.", since2_1_7)
   def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
 
   lazy val typesByName = types.groupBy(_.name).map { case (k, v) => (k, v.head) }
