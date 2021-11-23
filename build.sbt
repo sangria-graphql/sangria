@@ -395,7 +395,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, parser, core, benchmarks)
+  .aggregate(ast, parser, schema, core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -436,10 +436,31 @@ lazy val parser = project
   )
   .disablePlugins(MimaPlugin)
 
+lazy val schema = project
+  .in(file("modules/schema"))
+  .withId("sangria-schema")
+  .dependsOn(ast)
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-schema",
+    description := "Scala GraphQL schema representation",
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-schema_$ver/latest/"))
+    },
+    libraryDependencies ++= Seq(
+      // Marshalling
+      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.7",
+      // Streaming
+      "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
+    ),
+  )
+  .disablePlugins(MimaPlugin)
+
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
-  .dependsOn(parser)
+  .dependsOn(parser, schema)
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria",
