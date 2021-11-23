@@ -1,22 +1,20 @@
 package sangria.schema
 
 import sangria.ast.{AstNode, Document}
-
-import language.implicitConversions
 import sangria.execution.{FieldTag, SubscriptionField}
+import sangria.introspection._
 import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.marshalling._
-import sangria.{ast, introspection}
-import sangria.validation._
-import sangria.introspection._
-import sangria.renderer.{QueryRenderer, SchemaFilter, SchemaRenderer}
 import sangria.schema.InputObjectType.DefaultInput
 import sangria.streaming.SubscriptionStreamLike
+import sangria.util.tag._
+import sangria.validation._
+import sangria.{ast, introspection}
 
 import scala.annotation.{implicitNotFound, tailrec}
+import scala.collection.immutable
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import sangria.util.tag._
-
 import scala.util.matching.Regex
 
 sealed trait Type {
@@ -144,7 +142,6 @@ case class ScalarType[T](
     with UnmodifiedType
     with Named {
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 case class ScalarAlias[T, ST](
@@ -164,7 +161,6 @@ case class ScalarAlias[T, ST](
 
   override def astDirectives: Vector[ast.Directive] = aliasFor.astDirectives
   override def astNodes: Vector[AstNode] = aliasFor.astNodes
-  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 sealed trait ObjectLikeType[Ctx, Val]
@@ -210,8 +206,6 @@ sealed trait ObjectLikeType[Ctx, Val]
         Vector(TypeNameMetaField.asInstanceOf[Field[Ctx, _]])
       else Vector.empty
     else fieldsByName.getOrElse(fieldName, Vector.empty)
-
-  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 /** GraphQL schema object description.
@@ -538,7 +532,6 @@ case class UnionType[Ctx](
     with UnmodifiedType
     with HasAstInfo {
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 
   /** Creates a type-safe version of union type which might be useful in cases where the value is
     * wrapped in a type like `Either`.
@@ -605,7 +598,6 @@ case class Field[Ctx, Val](
   def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]): Field[Ctx, Val] =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.FieldDefinition = SchemaRenderer.renderField(this)
 }
 
 object Field {
@@ -700,7 +692,6 @@ case class Argument[T](
     with HasAstInfo {
   override def inputValueType: InputType[_] = argumentType
   override def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.InputValueDefinition = SchemaRenderer.renderArg(this)
 }
 
 object Argument {
@@ -962,7 +953,6 @@ case class EnumType[T](
   def coerceOutput(value: T): String = byValue(value).name
 
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 /** @param description
@@ -979,7 +969,6 @@ case class EnumValue[+T](
     with HasDeprecation
     with HasAstInfo {
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.EnumValueDefinition = SchemaRenderer.renderEnumValue(this)
 }
 
 /** @param description
@@ -1003,7 +992,6 @@ case class InputObjectType[T](
     fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap // required for 2.12
 
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
 object InputObjectType {
@@ -1063,7 +1051,6 @@ case class InputField[T](
     with HasAstInfo {
   def inputValueType: InputType[T] = fieldType
   def rename(newName: String): InputField.this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.InputValueDefinition = SchemaRenderer.renderInputField(this)
 }
 
 object InputField {
@@ -1213,7 +1200,6 @@ case class Directive(
     extends HasArguments
     with Named {
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
-  def toAst: ast.DirectiveDefinition = SchemaRenderer.renderDirective(this)
 }
 
 /** GraphQL schema description.
@@ -1254,15 +1240,6 @@ case class Schema[Ctx, Val](
 
   def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
     SchemaComparator.compare(oldSchema, this)
-
-  lazy val toAst: Document = SchemaRenderer.schemaAst(this)
-  def toAst(filter: SchemaFilter): Document = SchemaRenderer.schemaAst(this, filter)
-
-  def renderPretty: String = QueryRenderer.renderPretty(toAst)
-  def renderPretty(filter: SchemaFilter): String = QueryRenderer.renderPretty(toAst(filter))
-
-  def renderCompact: String = QueryRenderer.renderCompact(toAst)
-  def renderCompact(filter: SchemaFilter): String = QueryRenderer.renderCompact(toAst(filter))
 
   lazy val types: Map[String, (Int, Type with Named)] = {
     def sameType(t1: Type, t2: Type): Boolean = {
