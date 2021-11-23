@@ -362,7 +362,34 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values")
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
+
+  // remove renderer methods from schema/introspection classes
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.renderPretty"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.renderPretty"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.renderCompact"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.renderCompact"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Argument.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.EnumType.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.EnumValue.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.InputField.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.InputObjectType.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.InterfaceType.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ObjectLikeType.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ObjectType.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ScalarAlias.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.ScalarType.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.toAst"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.renderPretty"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.renderPretty"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.renderCompact"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.renderCompact"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.UnionType.toAst"),
 )
 
 lazy val root = project

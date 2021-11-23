@@ -4,7 +4,7 @@ import sangria.ast
 import sangria.ast.ObjectTypeDefinition
 import sangria.execution.{Executor, MaterializedSchemaValidationError}
 import sangria.parser.QueryParser
-import sangria.renderer.SchemaRenderer
+import sangria.renderer.{QueryRenderer, SchemaRenderer}
 import sangria.util.{FutureResultSupport, Pos, StringMatchers}
 import sangria.macros._
 import sangria.macros.derive._
@@ -1234,7 +1234,8 @@ class AstSchemaMaterializerSpec
 
         val schema = Schema.buildFromAst(schemaDef)
 
-        ("\n" + schema.renderPretty + "\n") should equal("""
+        ("\n" + QueryRenderer.renderPretty(SchemaRenderer.schemaAst(schema)) + "\n") should equal(
+          """
           |type Cat {
           |  cute: Boolean
           |  size: PositiveInt!
