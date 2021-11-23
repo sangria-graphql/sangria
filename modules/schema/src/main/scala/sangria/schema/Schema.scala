@@ -12,6 +12,7 @@ import sangria.validation._
 import sangria.{ast, introspection}
 
 import scala.annotation.{implicitNotFound, tailrec}
+import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
