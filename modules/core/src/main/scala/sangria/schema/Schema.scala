@@ -1207,10 +1207,16 @@ case class Schema[Ctx, Val](
   @deprecated("Removed in 3.0. Use SchemaRenderer.renderSchema(•, filter) instead.", since2_1_7)
   def renderPretty(filter: SchemaFilter): String = toAst(filter).renderPretty
 
-  @deprecated("Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAst(•)) instead.", since2_1_7)
+  @deprecated(
+    "Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAst(•)) instead.",
+    since2_1_7
+  )
   def renderCompact: String = toAst.renderCompact
 
-  @deprecated("Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAst(•, filter)) instead.", since2_1_7)
+  @deprecated(
+    "Removed in 3.0. Use QueryRenderer.renderCompact(SchemaRenderer.schemaAst(•, filter)) instead.",
+    since2_1_7
+  )
   def renderCompact(filter: SchemaFilter): String = toAst(filter).renderCompact
 
   lazy val types: Map[String, (Int, Type with Named)] = {
