@@ -1474,9 +1474,6 @@ case class Schema[Ctx, Val](
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]): Boolean =
     possibleTypes.get(baseTypeName).exists(_.exists(_.name == tpe.name))
 
-  def analyzer(query: Document): SchemaBasedDocumentAnalyzer =
-    SchemaBasedDocumentAnalyzer(this, query)
-
   SchemaValidationRule.validateWithException(this, validationRules)
 }
 

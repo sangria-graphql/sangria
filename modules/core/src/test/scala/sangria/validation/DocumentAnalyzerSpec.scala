@@ -8,13 +8,13 @@ import org.scalatest.wordspec.AnyWordSpec
 import sangria.renderer.QueryRenderer
 
 class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers {
-  val NumberType = EnumType(
+  private val NumberType = EnumType(
     "Number",
     values = List(
       EnumValue("ONE", value = 1),
       EnumValue("TWO", value = 2, deprecationReason = Some("Some enum reason."))))
 
-  val QueryType = ObjectType(
+  private val QueryType = ObjectType(
     "Query",
     fields[Unit, Unit](
       Field(
@@ -30,33 +30,33 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
     )
   )
 
-  val schema = Schema(QueryType)
+  private val schema = Schema(QueryType)
 
   "DocumentAnalyzer" should {
     "report empty set for no deprecated usages" in {
-      schema.analyzer(gql"""{ normalField(enumArg: ONE) }""").deprecatedUsages should have size 0
+      SchemaBasedDocumentAnalyzer(
+        schema,
+        gql"""{ normalField(enumArg: ONE) }""").deprecatedUsages should have size 0
     }
 
     "report usage of deprecated fields" in {
-      schema
-        .analyzer(gql"""{ normalField, deprecatedField }""")
-        .deprecatedUsages
+      SchemaBasedDocumentAnalyzer(
+        schema,
+        gql"""{ normalField, deprecatedField }""").deprecatedUsages
         .map(_.errorMessage) should
         contain("The field 'Query.deprecatedField' is deprecated. Some field reason.")
     }
 
     "report usage of deprecated enums" in {
-      schema
-        .analyzer(gql"""{ normalField(enumArg: TWO) }""")
-        .deprecatedUsages
+      SchemaBasedDocumentAnalyzer(schema, gql"""{ normalField(enumArg: TWO) }""").deprecatedUsages
         .map(_.errorMessage) should
         contain("The enum value 'Number.TWO' is deprecated. Some enum reason.")
     }
 
     "report usage of deprecated enums in variables" in {
-      schema
-        .analyzer(gql"""query Foo($$x: Number = TWO) { normalField }""")
-        .deprecatedUsages
+      SchemaBasedDocumentAnalyzer(
+        schema,
+        gql"""query Foo($$x: Number = TWO) { normalField }""").deprecatedUsages
         .map(_.errorMessage) should
         contain("The enum value 'Number.TWO' is deprecated. Some enum reason.")
     }
@@ -82,7 +82,7 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
           }
         """
 
-      schema.analyzer(query).introspectionUsages.map(_.errorMessage) should
+      SchemaBasedDocumentAnalyzer(schema, query).introspectionUsages.map(_.errorMessage) should
         contain("Introspection field '__Schema.queryType' is used.")
           .and(contain("Introspection field 'Query.__type' is used."))
           .and(contain("Introspection field 'Query.__schema' is used."))

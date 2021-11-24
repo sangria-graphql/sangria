@@ -362,7 +362,9 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values")
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
+
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.analyzer"),
 )
 
 lazy val root = project
