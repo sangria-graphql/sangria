@@ -6,7 +6,7 @@ import language.implicitConversions
 import sangria.execution.{FieldTag, SubscriptionField}
 import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.marshalling._
-import sangria.{ast, introspection}
+import sangria.{ast, introspection, since2_1_7}
 import sangria.validation._
 import sangria.introspection._
 import sangria.renderer.{SchemaFilter, SchemaRenderer}
@@ -1394,6 +1394,7 @@ case class Schema[Ctx, Val](
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]) =
     possibleTypes.get(baseTypeName).exists(_.exists(_.name == tpe.name))
 
+  @deprecated("Removed in 3.0. Use SchemaBasedDocumentAnalyzer(•, query) instead.", since2_1_7)
   def analyzer(query: Document) = SchemaBasedDocumentAnalyzer(this, query)
 
   SchemaValidationRule.validateWithException(this, validationRules)
