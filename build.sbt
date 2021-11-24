@@ -364,6 +364,8 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
 
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Schema.analyzer"),
+
   // remove renderer methods from schema/introspection classes
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.toAst"),
   ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.introspection.IntrospectionSchema.toAst"),
