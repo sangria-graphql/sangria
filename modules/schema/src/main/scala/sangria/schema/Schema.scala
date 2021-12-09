@@ -8,11 +8,10 @@ import sangria.marshalling._
 import sangria.schema.InputObjectType.DefaultInput
 import sangria.streaming.SubscriptionStreamLike
 import sangria.util.tag._
-import sangria.validation._
+import sangria.validation.{ConflictingInputObjectTypeCaseClassViolation, ConflictingObjectTypeCaseClassViolation, ConflictingTypeDefinitionViolation, EnumCoercionViolation, EnumValueCoercionViolation, Violation}
 import sangria.{ast, introspection}
 
 import scala.annotation.{implicitNotFound, tailrec}
-import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
@@ -1472,52 +1471,4 @@ object Schema {
 
   def getBuiltInType(typeName: String): Option[Type with Named] =
     BuiltinScalarsByName.get(typeName).orElse(IntrospectionTypesByName.get(typeName))
-
-  /** Build a `Schema` for use by client tools.
-    *
-    * Given the result of a client running the introspection query, creates and returns a `Schema`
-    * instance which can be then used with all sangria tools, but cannot be used to execute a query,
-    * as introspection does not represent the "resolver", "parse" or "serialize" functions or any
-    * other server-internal mechanisms.
-    *
-    * @param introspectionResult
-    *   the result of introspection query
-    */
-  def buildFromIntrospection[T: InputUnmarshaller](introspectionResult: T): Schema[Any, Any] =
-    IntrospectionSchemaMaterializer.buildSchema[T](introspectionResult)
-
-  /** Build a `Schema` for use by client tools.
-    *
-    * Given the result of a client running the introspection query, creates and returns a `Schema`
-    * instance which can be then used with all sangria tools, but cannot be used to execute a query,
-    * as introspection does not represent the "resolver", "parse" or "serialize" functions or any
-    * other server-internal mechanisms.
-    *
-    * @param introspectionResult
-    *   the result of introspection query
-    */
-  def buildFromIntrospection[Ctx, T: InputUnmarshaller](
-      introspectionResult: T,
-      builder: IntrospectionSchemaBuilder[Ctx]): Schema[Ctx, Any] =
-    IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, builder)
-
-  def buildFromAst(document: ast.Document): Schema[Any, Any] =
-    AstSchemaMaterializer.buildSchema(document)
-
-  def buildFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
-    AstSchemaMaterializer.buildSchema[Ctx](document, builder)
-
-  def buildStubFromAst(document: ast.Document): Schema[Any, Any] =
-    AstSchemaMaterializer.buildSchema(Document.emptyStub + document)
-
-  def buildStubFromAst[Ctx](
-      document: ast.Document,
-      builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
-    AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
-
-  def buildDefinitions(document: ast.Document): Vector[Named] =
-    AstSchemaMaterializer.definitions(document)
-
-  def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]): Vector[Named] =
-    AstSchemaMaterializer.definitions[Ctx](document, builder)
 }

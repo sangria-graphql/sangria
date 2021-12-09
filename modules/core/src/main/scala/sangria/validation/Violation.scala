@@ -6,10 +6,6 @@ import sangria.schema.DirectiveLocation
 import sangria.util.StringUtil
 import sangria.validation.rules.ConflictReason
 
-trait Violation {
-  def errorMessage: String
-}
-
 object Violation {
   def didYouMean(suggestions: Seq[String], text: String = "Did you mean"): String =
     if (suggestions.nonEmpty)
@@ -22,8 +18,6 @@ trait SpecViolation {
   def code: String
   def args: Map[String, String]
 }
-
-abstract class BaseViolation(val errorMessage: String) extends Violation
 
 trait AstNodeLocation {
   def sourceMapper: Option[SourceMapper]
@@ -41,8 +35,6 @@ trait AstNodeLocation {
 
 trait AstNodeViolation extends Violation with AstNodeLocation
 
-abstract class ValueCoercionViolation(errorMessage: String) extends BaseViolation(errorMessage)
-
 case object IntCoercionViolation extends ValueCoercionViolation("Int value expected")
 case object BigIntCoercionViolation extends ValueCoercionViolation("Value is too big to fit in Int")
 
@@ -57,12 +49,6 @@ case object BigDecimalCoercionViolation
 case object BooleanCoercionViolation extends ValueCoercionViolation("Boolean value expected")
 case object StringCoercionViolation extends ValueCoercionViolation("String value expected")
 case object IDCoercionViolation extends ValueCoercionViolation("String or Int value expected")
-
-case class EnumValueCoercionViolation(name: String, typeName: String, knownValues: Seq[String])
-    extends ValueCoercionViolation(
-      s"Enum value '$name' is undefined in enum type '$typeName'. Known values are: ${knownValues
-        .mkString(", ")}.")
-case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
 case class FieldCoercionViolation(
     fieldPath: List[String],
@@ -834,30 +820,6 @@ case class DuplicateVariableViolation(
     locations: List[AstLocation])
     extends AstNodeViolation {
   lazy val simpleErrorMessage = s"There can be only one variable named '$variableName'."
-}
-
-case class ConflictingTypeDefinitionViolation(
-    typeName: String,
-    conflictingTypes: List[String],
-    parentInfo: String)
-    extends Violation {
-  lazy val errorMessage =
-    s"Type name '$typeName' is used for several conflicting GraphQL type kinds: ${conflictingTypes
-      .mkString(", ")}. Conflict found in $parentInfo."
-}
-
-case class ConflictingObjectTypeCaseClassViolation(typeName: String, parentInfo: String)
-    extends Violation {
-  // Ideally this error message should include the conflicting classes canonical names but due to https://issues.scala-lang.org/browse/SI-2034 that's not possible
-  lazy val errorMessage =
-    s"""Type name '$typeName' is used for several conflicting GraphQL ObjectTypes based on different classes. Conflict found in $parentInfo. One possible fix is to use ObjectTypeName like this: deriveObjectType[Foo, Bar](ObjectTypeName("OtherBar")) to avoid that two ObjectTypes have the same name."""
-}
-
-case class ConflictingInputObjectTypeCaseClassViolation(typeName: String, parentInfo: String)
-    extends Violation {
-  // Ideally this error message should include the conflicting classes canonical names but due to https://issues.scala-lang.org/browse/SI-2034 that's not possible
-  lazy val errorMessage =
-    s"""Type name '$typeName' is used for several conflicting GraphQL InputObjectTypes based on different classes. Conflict found in $parentInfo. One possible fix is to use InputObjectTypeName like this: deriveInputObjectType[Foo, Bar](InputObjectTypeName("OtherBar")) to avoid that two InputObjectTypes have the same name."""
 }
 
 case class ReservedTypeNameViolation(
