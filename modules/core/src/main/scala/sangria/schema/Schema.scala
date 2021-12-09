@@ -1465,6 +1465,7 @@ object Schema {
     * @param introspectionResult
     *   the result of introspection query
     */
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildFromIntrospection instead.", since2_1_7)
   def buildFromIntrospection[T: InputUnmarshaller](introspectionResult: T) =
     IntrospectionSchemaMaterializer.buildSchema[T](introspectionResult)
 
@@ -1478,26 +1479,33 @@ object Schema {
     * @param introspectionResult
     *   the result of introspection query
     */
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildFromIntrospection instead.", since2_1_7)
   def buildFromIntrospection[Ctx, T: InputUnmarshaller](
       introspectionResult: T,
       builder: IntrospectionSchemaBuilder[Ctx]) =
     IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, builder)
 
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildFromAst instead.", since2_1_7)
   def buildFromAst(document: ast.Document) =
     AstSchemaMaterializer.buildSchema(document)
 
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildFromAst instead.", since2_1_7)
   def buildFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
     AstSchemaMaterializer.buildSchema[Ctx](document, builder)
 
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildStubFromAst instead.", since2_1_7)
   def buildStubFromAst(document: ast.Document) =
     AstSchemaMaterializer.buildSchema(Document.emptyStub + document)
 
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildStubFromAst instead.", since2_1_7)
   def buildStubFromAst[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
     AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
 
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildDefinitions instead.", since2_1_7)
   def buildDefinitions(document: ast.Document) =
     AstSchemaMaterializer.definitions(document)
 
+  @deprecated("Moved in 3.0. Use SchemaMaterializer.buildDefinitions instead.", since2_1_7)
   def buildDefinitions[Ctx](document: ast.Document, builder: AstSchemaBuilder[Ctx]) =
     AstSchemaMaterializer.definitions[Ctx](document, builder)
 }
