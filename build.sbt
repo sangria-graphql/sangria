@@ -368,7 +368,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, parser, core, benchmarks)
+  .aggregate(ast, parser, macros, core, benchmarks)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -409,10 +409,31 @@ lazy val parser = project
   )
   .disablePlugins(MimaPlugin)
 
+lazy val macros = project
+  .in(file("modules/macros"))
+  .withId("sangria-macros")
+  .dependsOn(ast, parser)
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-macros",
+    description := "Scala GraphQL macros",
+    libraryDependencies ++= Seq(
+      // Macros
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      // Marshalling
+      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.7",
+    ),
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-macros_$ver/latest/"))
+    }
+  )
+  .disablePlugins(MimaPlugin)
+
 lazy val core = project
   .in(file("modules/core"))
   .withId("sangria-core")
-  .dependsOn(parser)
+  .dependsOn(macros)
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria",
@@ -422,8 +443,6 @@ lazy val core = project
     libraryDependencies ++= Seq(
       // AST Visitor
       "org.sangria-graphql" %% "macro-visit" % "0.1.3",
-      // Marshalling
-      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.7",
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
       // Macros
