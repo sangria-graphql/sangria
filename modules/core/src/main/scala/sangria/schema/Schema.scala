@@ -1187,11 +1187,16 @@ case class Schema[Ctx, Val](
     astNodes: Vector[ast.AstNode] = Vector.empty)
     extends HasAstInfo
     with HasDescription {
+  @deprecated(
+    "Removed in 3.0. Use AstSchemaMaterializer.extendSchema(•, document, builder) instead.",
+    since2_1_7
+  )
   def extend(
       document: ast.Document,
       builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
     AstSchemaMaterializer.extendSchema(this, document, builder)
 
+  @deprecated("Removed in 3.0. Use SchemaComparator.compare(oldSchema, •) instead.", since2_1_7)
   def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
     SchemaComparator.compare(oldSchema, this)
 
