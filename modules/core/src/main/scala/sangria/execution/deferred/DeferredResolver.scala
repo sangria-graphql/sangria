@@ -35,7 +35,5 @@ object DeferredResolver {
     new FetcherBasedDeferredResolver[Ctx](fetchers.toVector, Some(fallback))
 }
 
-trait Deferred[+T]
-
 case class UnsupportedDeferError(deferred: Deferred[Any])
     extends Exception(s"Deferred resolver is not defined for deferred value: $deferred.")

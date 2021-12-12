@@ -1,6 +1,6 @@
 package sangria.schema
 
-import sangria.ast.{AstNode, Document}
+import sangria.ast.AstNode
 import sangria.execution.{FieldTag, SubscriptionField}
 import sangria.introspection._
 import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
@@ -1232,14 +1232,6 @@ case class Schema[Ctx, Val](
     override val astNodes: Vector[ast.AstNode] = Vector.empty)
     extends HasAstInfo
     with HasDescription {
-  def extend(
-      document: ast.Document,
-      builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
-    AstSchemaMaterializer.extendSchema(this, document, builder)
-
-  def compare(oldSchema: Schema[_, _]): Vector[SchemaChange] =
-    SchemaComparator.compare(oldSchema, this)
-
   lazy val types: Map[String, (Int, Type with Named)] = {
     def sameType(t1: Type, t2: Type): Boolean = {
       val sameSangriaType = t1.getClass.getName == t2.getClass.getName
