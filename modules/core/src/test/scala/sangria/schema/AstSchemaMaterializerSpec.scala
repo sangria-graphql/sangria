@@ -453,7 +453,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include(
           "Must provide schema definition with query type or a type named Query.")
@@ -475,7 +476,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one schema definition.")
       }
@@ -492,7 +494,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one query type in schema.")
       }
@@ -514,7 +517,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one query type in schema.")
       }
@@ -537,7 +541,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one mutation type in schema.")
       }
@@ -560,7 +565,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one subscription type in schema.")
       }
@@ -577,7 +583,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Bar'.")
       }
@@ -593,7 +600,8 @@ class AstSchemaMaterializerSpec
             type Hello { testUnion: TestUnion }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Bar'.")
       }
@@ -610,7 +618,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Wat'.")
       }
@@ -628,7 +637,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Wat'.")
       }
@@ -651,7 +661,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Awesome'.")
       }
@@ -666,7 +677,8 @@ class AstSchemaMaterializerSpec
             query Foo { field }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Foo'.")
       }
@@ -681,7 +693,8 @@ class AstSchemaMaterializerSpec
             fragment Foo on Type { field }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Foo'.")
       }
@@ -1028,7 +1041,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Cannot extend type 'Foo' because it does not exist.")
       }
@@ -1055,7 +1069,8 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
+        val error =
+          intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Cannot extend non-object type 'Foo'.")
       }

@@ -7,16 +7,16 @@ object Marshalling {
   val DefaultComplexity = 1.0d
 
   def marshalEnumValue(
-    value: String,
-    marshaller: ResultMarshaller,
-    typeName: String): marshaller.Node =
+      value: String,
+      marshaller: ResultMarshaller,
+      typeName: String): marshaller.Node =
     marshaller.enumNode(value, typeName)
 
   def marshalScalarValue(
-    value: Any,
-    marshaller: ResultMarshaller,
-    typeName: String,
-    scalarInfo: Set[ScalarValueInfo]): marshaller.Node =
+      value: Any,
+      marshaller: ResultMarshaller,
+      typeName: String,
+      scalarInfo: Set[ScalarValueInfo]): marshaller.Node =
     value match {
       case astValue: ast.Value => marshalAstValue(astValue, marshaller, typeName, scalarInfo)
       case null => marshaller.nullNode
@@ -24,10 +24,10 @@ object Marshalling {
     }
 
   def marshalAstValue(
-    value: ast.Value,
-    marshaller: ResultMarshaller,
-    typeName: String,
-    scalarInfo: Set[ScalarValueInfo]): marshaller.Node = value match {
+      value: ast.Value,
+      marshaller: ResultMarshaller,
+      typeName: String,
+      scalarInfo: Set[ScalarValueInfo]): marshaller.Node = value match {
     case ast.StringValue(str, _, _, _, _) => marshaller.scalarNode(str, typeName, scalarInfo)
     case ast.IntValue(i, _, _) => marshaller.scalarNode(i, typeName, scalarInfo)
     case ast.BigIntValue(i, _, _) => marshaller.scalarNode(i, typeName, scalarInfo)

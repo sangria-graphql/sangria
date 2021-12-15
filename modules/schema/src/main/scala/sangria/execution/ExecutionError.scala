@@ -24,11 +24,11 @@ trait ErrorWithResolver {
 }
 
 class ExecutionError(
-  message: String,
-  val exceptionHandler: ExceptionHandler,
-  val sourceMapper: Option[SourceMapper] = None,
-  val locations: List[AstLocation] = Nil)
-  extends Exception(message)
+    message: String,
+    val exceptionHandler: ExceptionHandler,
+    val sourceMapper: Option[SourceMapper] = None,
+    val locations: List[AstLocation] = Nil)
+    extends Exception(message)
     with AstNodeLocation
     with UserFacingError
     with ErrorWithResolver {
@@ -41,19 +41,19 @@ trait QueryAnalysisError extends ErrorWithResolver {
 }
 
 case class VariableCoercionError(violations: Vector[Violation], eh: ExceptionHandler)
-  extends ExecutionError(
-    s"Error during variable coercion. Violations:\n\n${violations.map(_.errorMessage).mkString("\n\n")}",
-    eh)
+    extends ExecutionError(
+      s"Error during variable coercion. Violations:\n\n${violations.map(_.errorMessage).mkString("\n\n")}",
+      eh)
     with WithViolations
     with QueryAnalysisError
 
 case class AttributeCoercionError(violations: Vector[Violation], eh: ExceptionHandler)
-  extends ExecutionError(
-    s"Error during attribute coercion. Violations:\n\n${violations.map(_.errorMessage).mkString("\n\n")}",
-    eh)
+    extends ExecutionError(
+      s"Error during attribute coercion. Violations:\n\n${violations.map(_.errorMessage).mkString("\n\n")}",
+      eh)
     with WithViolations
     with QueryAnalysisError
 
 case class QueryReducingError(cause: Throwable, exceptionHandler: ExceptionHandler)
-  extends Exception(s"Query reducing error: ${cause.getMessage}", cause)
+    extends Exception(s"Query reducing error: ${cause.getMessage}", cause)
     with QueryAnalysisError

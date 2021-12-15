@@ -39,30 +39,30 @@ case object BigIntCoercionViolation extends ValueCoercionViolation("Value is too
 
 case object LongCoercionViolation extends ValueCoercionViolation("Long value expected")
 case object BigLongCoercionViolation
-  extends ValueCoercionViolation("Value is too big to fit in Long")
+    extends ValueCoercionViolation("Value is too big to fit in Long")
 
 case object FloatCoercionViolation extends ValueCoercionViolation("Float or Int value expected")
 case object BigDecimalCoercionViolation
-  extends ValueCoercionViolation("Float or Int value is too big to fit in double")
+    extends ValueCoercionViolation("Float or Int value is too big to fit in double")
 
 case object BooleanCoercionViolation extends ValueCoercionViolation("Boolean value expected")
 case object StringCoercionViolation extends ValueCoercionViolation("String value expected")
 case object IDCoercionViolation extends ValueCoercionViolation("String or Int value expected")
 
 case class EnumValueCoercionViolation(name: String, typeName: String, knownValues: Seq[String])
-  extends ValueCoercionViolation(
-    s"Enum value '$name' is undefined in enum type '$typeName'. Known values are: ${knownValues
-      .mkString(", ")}.")
+    extends ValueCoercionViolation(
+      s"Enum value '$name' is undefined in enum type '$typeName'. Known values are: ${knownValues
+        .mkString(", ")}.")
 case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
 case class FieldCoercionViolation(
-  fieldPath: List[String],
-  valueViolation: Violation,
-  ownSourceMapper: Option[SourceMapper],
-  ownLocations: List[AstLocation],
-  errorPrefix: String,
-  isArgument: Boolean)
-  extends AstNodeViolation {
+    fieldPath: List[String],
+    valueViolation: Violation,
+    ownSourceMapper: Option[SourceMapper],
+    ownLocations: List[AstLocation],
+    errorPrefix: String,
+    isArgument: Boolean)
+    extends AstNodeViolation {
   lazy val sourceMapper = valueViolation match {
     case astv: AstNodeViolation => astv.sourceMapper
     case _ => ownSourceMapper
@@ -83,13 +83,13 @@ case class FieldCoercionViolation(
 }
 
 case class VarTypeMismatchViolation(
-  definitionName: String,
-  expectedType: String,
-  input: Option[String],
-  violation: Violation,
-  ownSourceMapper: Option[SourceMapper],
-  ownLocations: List[AstLocation])
-  extends AstNodeViolation {
+    definitionName: String,
+    expectedType: String,
+    input: Option[String],
+    violation: Violation,
+    ownSourceMapper: Option[SourceMapper],
+    ownLocations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val sourceMapper = violation match {
     case astv: AstNodeViolation => astv.sourceMapper
     case _ => ownSourceMapper
@@ -110,97 +110,97 @@ case class VarTypeMismatchViolation(
 }
 
 case class UnknownVariableTypeViolation(
-  definitionName: String,
-  varType: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    definitionName: String,
+    varType: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Variable '$varType' expected value of type '$$$definitionName' which cannot be used as an input type."
 }
 
 case class NullValueForNotNullTypeViolation(
-  fieldPath: List[String],
-  typeName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    fieldPath: List[String],
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Null value was provided for the NotNull Type '$typeName' at path '${fieldPath.mkString(".")}'."
 }
 
 case class InputObjectTypeMismatchViolation(
-  fieldPath: List[String],
-  typeName: String,
-  value: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    fieldPath: List[String],
+    typeName: String,
+    value: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Value '$value' of wrong type was provided to the field of type '$typeName' at path '${fieldPath
       .mkString(".")}'."
 }
 
 case class InvalidImplementationFieldTypeViolation(
-  interfaceName: String,
-  objectName: String,
-  fieldName: String,
-  interfaceFieldType: String,
-  objectFieldType: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    interfaceName: String,
+    objectName: String,
+    fieldName: String,
+    interfaceFieldType: String,
+    objectFieldType: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"$interfaceName.$fieldName expects type '$interfaceFieldType', but $objectName.$fieldName provides type '$objectFieldType'."
 }
 
 case class MissingImplementationFieldArgumentViolation(
-  interfaceName: String,
-  objectName: String,
-  fieldName: String,
-  argumentName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    interfaceName: String,
+    objectName: String,
+    fieldName: String,
+    argumentName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"$interfaceName.$fieldName expects argument '$argumentName', but $objectName.$fieldName does not provide it."
 }
 
 case class InvalidImplementationFieldArgumentTypeViolation(
-  interfaceName: String,
-  objectName: String,
-  fieldName: String,
-  argumentName: String,
-  interfaceFieldType: String,
-  objectFieldType: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    interfaceName: String,
+    objectName: String,
+    fieldName: String,
+    argumentName: String,
+    interfaceFieldType: String,
+    objectFieldType: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"$interfaceName.$fieldName($argumentName) expects type '$interfaceFieldType', but $objectName.$fieldName($argumentName) provides type '$objectFieldType'."
 }
 
 case class ImplementationExtraFieldArgumentNotOptionalViolation(
-  interfaceName: String,
-  objectName: String,
-  fieldName: String,
-  argumentName: String,
-  objectFieldType: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    interfaceName: String,
+    objectName: String,
+    fieldName: String,
+    argumentName: String,
+    objectFieldType: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"$objectName.$fieldName($argumentName) is of required type '$objectFieldType', but is not also provided by the interface $interfaceName.$fieldName."
 }
 
 case class InvalidSubscriptionFieldViolation(typeName: String, fieldName: String)
-  extends Violation {
+    extends Violation {
   lazy val errorMessage =
     s"Field '$typeName.$fieldName' is defined as a subscription field, but type '$typeName' is not used as a subscription type."
 }
 
 case class NotAllSubscriptionFieldsViolation(typeName: String, fieldNames: Vector[String])
-  extends Violation {
+    extends Violation {
   lazy val errorMessage =
     s"Subscription type '$typeName' may either contain only non-subscription fields or only subscription fields (defined with `Field.subs`). Following fields are non-subscription fields among other subscription fields: ${fieldNames
       .map("'" + _ + "'")
@@ -208,9 +208,9 @@ case class NotAllSubscriptionFieldsViolation(typeName: String, fieldNames: Vecto
 }
 
 case class NotAllSubscriptionFieldsHaveSameStreamViolation(
-  typeName: String,
-  fieldNames: Vector[String])
-  extends Violation {
+    typeName: String,
+    fieldNames: Vector[String])
+    extends Violation {
   lazy val errorMessage =
     s"Some fields of subscription type '$typeName' have incompatible stream implementations: ${fieldNames
       .map("'" + _ + "'")
@@ -223,11 +223,11 @@ trait PathBasedViolation {
 }
 
 case class ListValueViolation(
-  index: Int,
-  violation: Violation,
-  listSourceMapper: Option[SourceMapper],
-  listPosition: List[AstLocation])
-  extends AstNodeViolation
+    index: Int,
+    violation: Violation,
+    listSourceMapper: Option[SourceMapper],
+    listPosition: List[AstLocation])
+    extends AstNodeViolation
     with PathBasedViolation {
   lazy val sourceMapper = violation match {
     case astv: AstNodeViolation => astv.sourceMapper
@@ -254,11 +254,11 @@ case class ListValueViolation(
 }
 
 case class MapValueViolation(
-  fieldName: String,
-  violation: Violation,
-  mapSourceMapper: Option[SourceMapper],
-  mapPosition: List[AstLocation])
-  extends AstNodeViolation
+    fieldName: String,
+    violation: Violation,
+    mapSourceMapper: Option[SourceMapper],
+    mapPosition: List[AstLocation])
+    extends AstNodeViolation
     with PathBasedViolation {
   lazy val sourceMapper = violation match {
     case astv: AstNodeViolation => astv.sourceMapper
@@ -285,11 +285,11 @@ case class MapValueViolation(
 }
 
 case class UnknownInputObjectFieldViolation(
-  typeName: String,
-  fieldName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation
+    typeName: String,
+    fieldName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation
     with PathBasedViolation {
   lazy val pathString = "." + fieldName
 
@@ -300,260 +300,260 @@ case class UnknownInputObjectFieldViolation(
 }
 
 case class NotNullValueIsNullViolation(
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Expected non-null value, found null."
 }
 
 case class InputObjectIsOfWrongTypeMissingViolation(
-  typeName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Expected '$typeName', found not an object."
 }
 
 case class GenericInvalidValueViolation(
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Invalid value"
 }
 
 case class VariableNotAllowedViolation(
-  varName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    varName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Variable '$varName' is used in a place where it is not allowed to be used."
 }
 
 case class InvalidInputValueViolation(
-  argumentName: String,
-  errorText: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    argumentName: String,
+    errorText: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Argument '$argumentName' has invalid value: $errorText"
 }
 
 case class ConflictingTypeDefinitionViolation(
-  typeName: String,
-  conflictingTypes: List[String],
-  parentInfo: String)
-  extends Violation {
+    typeName: String,
+    conflictingTypes: List[String],
+    parentInfo: String)
+    extends Violation {
   lazy val errorMessage =
     s"Type name '$typeName' is used for several conflicting GraphQL type kinds: ${conflictingTypes
       .mkString(", ")}. Conflict found in $parentInfo."
 }
 
 case class ConflictingObjectTypeCaseClassViolation(typeName: String, parentInfo: String)
-  extends Violation {
+    extends Violation {
   // Ideally this error message should include the conflicting classes canonical names but due to https://issues.scala-lang.org/browse/SI-2034 that's not possible
   lazy val errorMessage =
     s"""Type name '$typeName' is used for several conflicting GraphQL ObjectTypes based on different classes. Conflict found in $parentInfo. One possible fix is to use ObjectTypeName like this: deriveObjectType[Foo, Bar](ObjectTypeName("OtherBar")) to avoid that two ObjectTypes have the same name."""
 }
 
 case class ConflictingInputObjectTypeCaseClassViolation(typeName: String, parentInfo: String)
-  extends Violation {
+    extends Violation {
   // Ideally this error message should include the conflicting classes canonical names but due to https://issues.scala-lang.org/browse/SI-2034 that's not possible
   lazy val errorMessage =
     s"""Type name '$typeName' is used for several conflicting GraphQL InputObjectTypes based on different classes. Conflict found in $parentInfo. One possible fix is to use InputObjectTypeName like this: deriveInputObjectType[Foo, Bar](InputObjectTypeName("OtherBar")) to avoid that two InputObjectTypes have the same name."""
 }
 
 case class InvalidTypeNameViolation(
-  kind: String,
-  typeName: String,
-  explanation: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    kind: String,
+    typeName: String,
+    explanation: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"$kind type name '$typeName' is invalid. $explanation"
 }
 
 case class InvalidDirectiveNameViolation(
-  dirName: String,
-  explanation: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    dirName: String,
+    explanation: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Directive name '$dirName' is invalid. $explanation"
 }
 
 case class InvalidEnumValueNameViolation(
-  typeName: String,
-  valueName: String,
-  explanation: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    valueName: String,
+    explanation: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Enum value name '$valueName' defined in enum type '$typeName' is invalid. $explanation"
 }
 
 case class InvalidFieldNameViolation(
-  typeName: String,
-  fieldName: String,
-  explanation: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    fieldName: String,
+    explanation: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Field name '$fieldName' defined in type '$typeName' is invalid. $explanation"
 }
 
 case class InvalidInputFieldNameViolation(
-  typeName: String,
-  fieldName: String,
-  explanation: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    fieldName: String,
+    explanation: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Field name '$fieldName' defined in input type '$typeName' is invalid. $explanation"
 }
 
 case class InvalidFieldArgumentNameViolation(
-  typeName: String,
-  fieldName: String,
-  argName: String,
-  explanation: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    fieldName: String,
+    argName: String,
+    explanation: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Argument name '$argName' defined in '$typeName.$fieldName' is invalid. $explanation"
 }
 
 case class InvalidDirectiveArgumentNameViolation(
-  dirName: String,
-  argName: String,
-  explanation: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    dirName: String,
+    argName: String,
+    explanation: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Argument name '$argName' defined in directive '$dirName' is invalid. $explanation"
 }
 
 case class EmptyUnionMembersViolation(
-  typeName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Union type '$typeName' must define one or more member types."
 }
 
 case class NonUniqueUnionMembersViolation(
-  typeName: String,
-  memberName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    memberName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Union type '$typeName' can only include type '$memberName' once."
 }
 
 case class EmptyEnumValuesMembersViolation(
-  typeName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Enum type '$typeName' must define one or more values."
 }
 
 case class NonUniqueEnumValuesViolation(
-  typeName: String,
-  valueName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    valueName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Enum type '$typeName' can include value '$valueName' only once."
 }
 
 case class EmptyInputFieldsViolation(
-  typeName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Input type '$typeName' must define one or more fields."
 }
 
 case class NonUniqueInputFieldsViolation(
-  typeName: String,
-  fieldName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    fieldName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Input type '$typeName' can include field '$fieldName' only once."
 }
 
 case class EmptyFieldsViolation(
-  kind: String,
-  typeName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    kind: String,
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"$kind type '$typeName' must define one or more fields."
 }
 
 case class NonUniqueFieldsViolation(
-  kind: String,
-  typeName: String,
-  fieldName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    kind: String,
+    typeName: String,
+    fieldName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"$kind type '$typeName' can include field '$fieldName' only once."
 }
 
 case class NonUniqueInterfacesViolation(
-  typeName: String,
-  interfaceName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    interfaceName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Object type '$typeName' can implement interface '$interfaceName' only once."
 }
 
 case class NonUniqueFieldArgumentsViolation(
-  typeName: String,
-  fieldName: String,
-  argName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    fieldName: String,
+    argName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Field '$typeName.$fieldName' can include argument '$argName' only once."
 }
 
 case class NonUniqueDirectiveArgumentsViolation(
-  dirName: String,
-  argName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    dirName: String,
+    argName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Directive '$dirName' can include argument '$argName' only once."
 }
 
 case class ReservedEnumValueNameViolation(
-  typeName: String,
-  valueName: String,
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    typeName: String,
+    valueName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage = s"Name '$typeName.$valueName' can not be used as an Enum value."
 }
 
 case class InputObjectTypeRecursion(
-  name: String,
-  fieldName: String,
-  path: List[String],
-  sourceMapper: Option[SourceMapper],
-  locations: List[AstLocation])
-  extends AstNodeViolation {
+    name: String,
+    fieldName: String,
+    path: List[String],
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
   lazy val simpleErrorMessage: String =
     s"Cannot reference InputObjectType '$name' within itself through a series of non-null fields: '$fieldName${if (path.isEmpty) ""
     else "."}${path.mkString(".")}'."

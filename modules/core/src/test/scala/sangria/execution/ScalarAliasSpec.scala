@@ -203,7 +203,8 @@ class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport
           Seq(null, "4e4548b0-87db-49b6-a764-2d84c2322fb7"))
       )
 
-      val schema1 = AstSchemaMaterializer.extendSchema(schema,
+      val schema1 = AstSchemaMaterializer.extendSchema(
+        schema,
         gql"""
           extend type Query {
             foo: Int

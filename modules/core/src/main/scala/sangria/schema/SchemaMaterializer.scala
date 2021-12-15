@@ -30,8 +30,8 @@ object SchemaMaterializer {
     *   the result of introspection query
     */
   def buildFromIntrospection[Ctx, T: InputUnmarshaller](
-    introspectionResult: T,
-    builder: IntrospectionSchemaBuilder[Ctx]): Schema[Ctx, Any] =
+      introspectionResult: T,
+      builder: IntrospectionSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     IntrospectionSchemaMaterializer.buildSchema[Ctx, T](introspectionResult, builder)
 
   def buildFromAst(document: ast.Document): Schema[Any, Any] =
@@ -44,8 +44,8 @@ object SchemaMaterializer {
     AstSchemaMaterializer.buildSchema(Document.emptyStub + document)
 
   def buildStubFromAst[Ctx](
-    document: ast.Document,
-    builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
+      document: ast.Document,
+      builder: AstSchemaBuilder[Ctx]): Schema[Ctx, Any] =
     AstSchemaMaterializer.buildSchema[Ctx](Document.emptyStub + document, builder)
 
   def buildDefinitions(document: ast.Document): Vector[Named] =

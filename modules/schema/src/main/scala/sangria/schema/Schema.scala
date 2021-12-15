@@ -8,7 +8,14 @@ import sangria.marshalling._
 import sangria.schema.InputObjectType.DefaultInput
 import sangria.streaming.SubscriptionStreamLike
 import sangria.util.tag._
-import sangria.validation.{ConflictingInputObjectTypeCaseClassViolation, ConflictingObjectTypeCaseClassViolation, ConflictingTypeDefinitionViolation, EnumCoercionViolation, EnumValueCoercionViolation, Violation}
+import sangria.validation.{
+  ConflictingInputObjectTypeCaseClassViolation,
+  ConflictingObjectTypeCaseClassViolation,
+  ConflictingTypeDefinitionViolation,
+  EnumCoercionViolation,
+  EnumValueCoercionViolation,
+  Violation
+}
 import sangria.{ast, introspection}
 
 import scala.annotation.{implicitNotFound, tailrec}

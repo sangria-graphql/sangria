@@ -482,8 +482,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     )
 
     "rejects an Object implementing the extended interface due to missing field (via extension)" in invalidSchema(
-      AstSchemaMaterializer.extendSchema(buildSchema(
-        graphql"""
+      AstSchemaMaterializer.extendSchema(
+        buildSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -495,9 +495,11 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         type AnotherObject implements AnotherInterface {
           field: String
         }
-      """),graphql"""
-        extend type AnotherObject implements AnotherInterface
       """),
+        graphql"""
+        extend type AnotherObject implements AnotherInterface
+      """
+      ),
       "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(
         Pos(10, 39),
         Pos(2, 46))
@@ -506,7 +508,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
   "Type System: Interface extensions should be valid" should {
     "rejects an Object implementing the extended interface due to missing field args" in invalidSchema(
-      AstSchemaMaterializer.extendSchema(buildSchema(graphql"""
+      AstSchemaMaterializer.extendSchema(
+        buildSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -518,7 +521,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         type AnotherObject implements AnotherInterface {
           field: String
         }
-      """),graphql"""
+      """),
+        graphql"""
         extend interface AnotherInterface {
           newField(test: Boolean): String
         }
@@ -526,14 +530,16 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         extend type AnotherObject {
           newField: String
         }
-      """),
+      """
+      ),
       "AnotherInterface.newField expects argument 'test', but AnotherObject.newField does not provide it." -> Seq(
         Pos(3, 20),
         Pos(7, 11))
     )
 
     "rejects Objects implementing the extended interface due to mismatching interface type" in invalidSchema(
-      AstSchemaMaterializer.extendSchema(buildSchema(graphql"""
+      AstSchemaMaterializer.extendSchema(
+        buildSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -545,7 +551,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         type AnotherObject implements AnotherInterface {
           field: String
         }
-      """),graphql"""
+      """),
+        graphql"""
         extend interface AnotherInterface {
           newInterfaceField: NewInterface
         }
@@ -561,7 +568,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         extend type AnotherObject {
           newInterfaceField: MismatchingInterface
         }
-      """),
+      """
+      ),
       "AnotherInterface.newInterfaceField expects type 'NewInterface', but AnotherObject.newInterfaceField provides type 'MismatchingInterface'." -> Seq(
         Pos(15, 11),
         Pos(3, 11))

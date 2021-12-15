@@ -531,7 +531,8 @@ class ValueCoercionHelper[Ctx](
 
             val prepared = firstKindMarshaller match {
               case raw: RawResultMarshaller => raw.rawScalarNode(v)
-              case standard => Marshalling.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
+              case standard =>
+                Marshalling.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
             }
 
             Right(defined(prepared.asInstanceOf[marshaller.Node]))

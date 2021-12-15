@@ -23,21 +23,22 @@ import scala.reflect.ClassTag
   *   Type of the object to which the field belongs.
   */
 case class Context[Ctx, Val](
-  value: Val,
-  ctx: Ctx,
-  args: Args,
-  schema: Schema[Ctx, Val],
-  field: Field[Ctx, Val],
-  parentType: ObjectType[Ctx, Any],
-  marshaller: ResultMarshaller,
-  query: ast.Document,
-  sourceMapper: Option[SourceMapper],
-  deprecationTracker: DeprecationTracker,
-  astFields: Vector[ast.Field],
-  path: ExecutionPath,
-  deferredResolverState: Any,
-  middlewareAttachments: Vector[MiddlewareAttachment] = Vector.empty
-) extends WithInputTypeRendering[Ctx] with WithArguments {
+    value: Val,
+    ctx: Ctx,
+    args: Args,
+    schema: Schema[Ctx, Val],
+    field: Field[Ctx, Val],
+    parentType: ObjectType[Ctx, Any],
+    marshaller: ResultMarshaller,
+    query: ast.Document,
+    sourceMapper: Option[SourceMapper],
+    deprecationTracker: DeprecationTracker,
+    astFields: Vector[ast.Field],
+    path: ExecutionPath,
+    deferredResolverState: Any,
+    middlewareAttachments: Vector[MiddlewareAttachment] = Vector.empty
+) extends WithInputTypeRendering[Ctx]
+    with WithArguments {
   def isIntrospection: Boolean = introspection.isIntrospection(parentType, field)
 
   def attachment[T <: MiddlewareAttachment: ClassTag]: Option[T] = {

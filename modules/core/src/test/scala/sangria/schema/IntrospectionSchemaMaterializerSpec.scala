@@ -8,11 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import sangria.execution.Executor
 import sangria.util.{FutureResultSupport, Pos}
-import sangria.introspection.{
-  IntrospectionField,
-  IntrospectionScalarType,
-  IntrospectionType
-}
+import sangria.introspection.{IntrospectionField, IntrospectionScalarType, IntrospectionType}
 import sangria.introspection.Introspection.introspectionQuery
 import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._

@@ -21,45 +21,45 @@ trait WithArguments {
   def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) => R): R =
     args.withArgs(arg1, arg2)(fn)
   def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(
-    fn: (A1, A2, A3) => R): R = args.withArgs(arg1, arg2, arg3)(fn)
+      fn: (A1, A2, A3) => R): R = args.withArgs(arg1, arg2, arg3)(fn)
   def withArgs[A1, A2, A3, A4, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4])(fn: (A1, A2, A3, A4) => R): R = args.withArgs(arg1, arg2, arg3, arg4)(fn)
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4])(fn: (A1, A2, A3, A4) => R): R = args.withArgs(arg1, arg2, arg3, arg4)(fn)
   def withArgs[A1, A2, A3, A4, A5, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) => R): R =
     args.withArgs(arg1, arg2, arg3, arg4, arg5)(fn)
   def withArgs[A1, A2, A3, A4, A5, A6, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5],
-    arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5],
+      arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) => R): R =
     args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6)(fn)
   def withArgs[A1, A2, A3, A4, A5, A6, A7, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5],
-    arg6: Argument[A6],
-    arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5],
+      arg6: Argument[A6],
+      arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) => R): R =
     args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7)(fn)
   def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5],
-    arg6: Argument[A6],
-    arg7: Argument[A7],
-    arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5],
+      arg6: Argument[A6],
+      arg7: Argument[A7],
+      arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) => R): R =
     args.withArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)(fn)
 }
 
@@ -82,4 +82,4 @@ trait WithInputTypeRendering[Ctx] {
 }
 
 case class DirectiveContext(selection: ast.WithDirectives, directive: Directive, args: Args)
-  extends WithArguments
+    extends WithArguments

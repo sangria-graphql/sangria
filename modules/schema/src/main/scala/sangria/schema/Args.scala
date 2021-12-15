@@ -1,16 +1,22 @@
 package sangria.schema
 
 import sangria.ast
-import sangria.execution.{AttributeCoercionError, ExceptionHandler, ValueCoercionHelper, ValueCollector, VariableValue}
+import sangria.execution.{
+  AttributeCoercionError,
+  ExceptionHandler,
+  ValueCoercionHelper,
+  ValueCollector,
+  VariableValue
+}
 import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ScalaInput}
 import sangria.util.Cache
 
 case class Args(
-  raw: Map[String, Any],
-  argsWithDefault: Set[String],
-  optionalArgs: Set[String],
-  undefinedArgs: Set[String],
-  defaultInfo: Cache[String, Any]) {
+    raw: Map[String, Any],
+    argsWithDefault: Set[String],
+    optionalArgs: Set[String],
+    undefinedArgs: Set[String],
+    defaultInfo: Cache[String, Any]) {
   private def getAsOptional[T](name: String): Option[T] =
     raw.get(name).asInstanceOf[Option[Option[T]]].flatten
 
@@ -24,7 +30,7 @@ case class Args(
 
   def arg[T](arg: Argument[T]): T =
     if (optionalArgs.contains(arg.name) && argsWithDefault.contains(arg.name) && defaultInfo
-      .contains(arg.name))
+        .contains(arg.name))
       getAsOptional[T](arg.name).getOrElse(defaultInfo(arg.name).asInstanceOf[T])
     else if (optionalArgs.contains(arg.name) && argsWithDefault.contains(arg.name))
       getAsOptional[T](arg.name).getOrElse(invariantExplicitlyNull(arg.name))
@@ -58,46 +64,46 @@ case class Args(
   def withArgs[A1, A2, R](arg1: Argument[A1], arg2: Argument[A2])(fn: (A1, A2) => R): R =
     fn(arg(arg1), arg(arg2))
   def withArgs[A1, A2, A3, R](arg1: Argument[A1], arg2: Argument[A2], arg3: Argument[A3])(
-    fn: (A1, A2, A3) => R): R = fn(arg(arg1), arg(arg2), arg(arg3))
+      fn: (A1, A2, A3) => R): R = fn(arg(arg1), arg(arg2), arg(arg3))
   def withArgs[A1, A2, A3, A4, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4])(fn: (A1, A2, A3, A4) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4])(fn: (A1, A2, A3, A4) => R): R =
     fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4))
   def withArgs[A1, A2, A3, A4, A5, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5])(fn: (A1, A2, A3, A4, A5) => R): R =
     fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5))
   def withArgs[A1, A2, A3, A4, A5, A6, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5],
-    arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5],
+      arg6: Argument[A6])(fn: (A1, A2, A3, A4, A5, A6) => R): R =
     fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6))
   def withArgs[A1, A2, A3, A4, A5, A6, A7, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5],
-    arg6: Argument[A6],
-    arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5],
+      arg6: Argument[A6],
+      arg7: Argument[A7])(fn: (A1, A2, A3, A4, A5, A6, A7) => R): R =
     fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7))
   def withArgs[A1, A2, A3, A4, A5, A6, A7, A8, R](
-    arg1: Argument[A1],
-    arg2: Argument[A2],
-    arg3: Argument[A3],
-    arg4: Argument[A4],
-    arg5: Argument[A5],
-    arg6: Argument[A6],
-    arg7: Argument[A7],
-    arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) => R): R =
+      arg1: Argument[A1],
+      arg2: Argument[A2],
+      arg3: Argument[A3],
+      arg4: Argument[A4],
+      arg5: Argument[A5],
+      arg6: Argument[A6],
+      arg7: Argument[A7],
+      arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) => R): R =
     fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7), arg(arg8))
 }
 
@@ -111,9 +117,9 @@ object Args {
     apply(definitions, input = ScalaInput.scalaInput(values))
 
   def apply[In: InputUnmarshaller](
-    definitions: List[Argument[_]],
-    input: In,
-    variables: Option[Map[String, VariableValue]] = None): Args = {
+      definitions: List[Argument[_]],
+      input: In,
+      variables: Option[Map[String, VariableValue]] = None): Args = {
     import sangria.marshalling.queryAstCore._
 
     val iu = implicitly[InputUnmarshaller[In]]
@@ -152,9 +158,9 @@ object Args {
   }
 
   def apply(
-    schemaElem: HasArguments,
-    astElem: ast.WithArguments,
-    variables: Map[String, VariableValue]): Args = {
+      schemaElem: HasArguments,
+      astElem: ast.WithArguments,
+      variables: Map[String, VariableValue]): Args = {
     import sangria.marshalling.queryAstCore._
 
     apply(
@@ -166,9 +172,9 @@ object Args {
   }
 
   private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](
-    value: In,
-    tpe: InputType[_],
-    variables: Option[Map[String, VariableValue]] = None): Option[Out] = {
+      value: In,
+      tpe: InputType[_],
+      variables: Option[Map[String, VariableValue]] = None): Option[Out] = {
     val rm = implicitly[ResultMarshallerForType[Out]]
 
     ValueCoercionHelper.default.coerceInputValue(

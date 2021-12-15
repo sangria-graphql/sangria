@@ -40,7 +40,8 @@ trait CatsSupport { this: AnyWordSpec with Matchers =>
         val bgTestData = getTestData(scenario.get("background"), file.folder)
         val bgBuilder = schemaBuilder(bgTestData.getOrElse(JsObject.empty))
         val bgSchema =
-          getSchema(scenario.get("background"), file.folder).map(SchemaMaterializer.buildFromAst(_, bgBuilder))
+          getSchema(scenario.get("background"), file.folder)
+            .map(SchemaMaterializer.buildFromAst(_, bgBuilder))
 
         scenario("tests").arrayValue.foreach { test =>
           val testName = test("name").stringValue
