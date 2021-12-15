@@ -4,7 +4,7 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 import sangria.ast.Document
 import sangria.parser.QueryParser
-import sangria.schema.Schema
+import sangria.schema.{Schema, SchemaMaterializer}
 import sangria.validation.rules
 import sangria.validation.{QueryValidator, RuleBasedQueryValidator, Violation}
 
@@ -15,7 +15,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
     List(new rules.OverlappingFieldsCanBeMerged))
 
   val schema: Schema[_, _] =
-    Schema.buildFromAst(
+    SchemaMaterializer.buildFromAst(
       QueryParser
         .parse("""
         type Query {

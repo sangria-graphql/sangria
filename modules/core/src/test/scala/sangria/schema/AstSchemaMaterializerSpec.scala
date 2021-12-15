@@ -29,7 +29,7 @@ class AstSchemaMaterializerSpec
   // printing that GraphQL into the DSL
   def cycleOutput(schemaDefinition: String): String = {
     val ast = QueryParser.parse(schemaDefinition).get
-    val schema = Schema.buildFromAst(ast)
+    val schema = SchemaMaterializer.buildFromAst(ast)
 
     SchemaRenderer.renderSchema(schema)
   }
@@ -80,7 +80,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val schema = Schema.buildFromAst(ast)
+        val schema = SchemaMaterializer.buildFromAst(ast)
 
         schema.directives should have size 3
 
@@ -105,7 +105,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val schema = Schema.buildFromAst(ast)
+        val schema = SchemaMaterializer.buildFromAst(ast)
 
         schema.directives should have size 3
 
@@ -129,7 +129,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val schema = Schema.buildFromAst(ast)
+        val schema = SchemaMaterializer.buildFromAst(ast)
 
         schema.directives should have size 4
 
@@ -453,7 +453,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include(
           "Must provide schema definition with query type or a type named Query.")
@@ -475,7 +475,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one schema definition.")
       }
@@ -492,7 +492,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one query type in schema.")
       }
@@ -514,7 +514,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one query type in schema.")
       }
@@ -537,7 +537,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one mutation type in schema.")
       }
@@ -560,7 +560,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Must provide only one subscription type in schema.")
       }
@@ -577,7 +577,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Bar'.")
       }
@@ -593,7 +593,7 @@ class AstSchemaMaterializerSpec
             type Hello { testUnion: TestUnion }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Bar'.")
       }
@@ -610,7 +610,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Wat'.")
       }
@@ -628,7 +628,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Wat'.")
       }
@@ -651,7 +651,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Awesome'.")
       }
@@ -666,7 +666,7 @@ class AstSchemaMaterializerSpec
             query Foo { field }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Foo'.")
       }
@@ -681,7 +681,7 @@ class AstSchemaMaterializerSpec
             fragment Foo on Type { field }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Unknown type 'Foo'.")
       }
@@ -719,7 +719,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef).get)
+        val schema = SchemaMaterializer.buildFromAst(QueryParser.parse(schemaDef).get)
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
@@ -802,7 +802,7 @@ class AstSchemaMaterializerSpec
           }
         }
 
-        val schema = staticSchema.extend(extensions, builder)
+        val schema = AstSchemaMaterializer.extendSchema(staticSchema, extensions, builder)
 
         val query =
           gql"""
@@ -866,7 +866,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include(
           "Object type 'Query' can implement interface 'Foo' only once.")
@@ -890,7 +890,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Object type 'Query' can include field 'field1' only once.")
       }
@@ -919,7 +919,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        noException should be thrownBy (Schema.buildFromAst(ast))
+        noException should be thrownBy (SchemaMaterializer.buildFromAst(ast))
       }
 
       "rejects an Input Object with non-breakable circular reference" in {
@@ -938,7 +938,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include(
           "Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'nonNullSelf'.")
@@ -968,7 +968,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include(
           "Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.nextInLoop.closeLoop'.")
@@ -1000,7 +1000,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
+        val error = intercept[SchemaValidationException](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include(
           "Cannot reference InputObjectType 'SomeInputObject' within itself through a series of non-null fields: 'startLoop.closeLoop'.")
@@ -1028,7 +1028,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Cannot extend type 'Foo' because it does not exist.")
       }
@@ -1055,7 +1055,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+        val error = intercept[MaterializedSchemaValidationError](SchemaMaterializer.buildFromAst(ast))
 
         error.getMessage should include("Cannot extend non-object type 'Foo'.")
       }
@@ -1103,7 +1103,7 @@ class AstSchemaMaterializerSpec
 
         cycleOutput(schemaDef) should equal(schemaDef)(after.being(strippedOfCarriageReturns))
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef).get)
+        val schema = SchemaMaterializer.buildFromAst(QueryParser.parse(schemaDef).get)
 
         schema.description should be(Some("test schema\ndescr"))
 
@@ -1145,7 +1145,7 @@ class AstSchemaMaterializerSpec
              |  ): String
              |}""".stripMargin
 
-        val schema = Schema.buildFromAst(QueryParser.parse(schemaDef).get)
+        val schema = SchemaMaterializer.buildFromAst(QueryParser.parse(schemaDef).get)
 
         val query = schema.outputTypes("Query").asInstanceOf[ObjectType[_, _]]
 
@@ -1232,7 +1232,7 @@ class AstSchemaMaterializerSpec
 
         errors.foreach(_.isInstanceOf[UnknownDirectiveViolation] should be(true))
 
-        val schema = Schema.buildFromAst(schemaDef)
+        val schema = SchemaMaterializer.buildFromAst(schemaDef)
 
         ("\n" + QueryRenderer.renderPretty(SchemaRenderer.schemaAst(schema)) + "\n") should equal(
           """
@@ -1380,7 +1380,7 @@ class AstSchemaMaterializerSpec
               }
         }
 
-        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+        val schema = SchemaMaterializer.buildFromAst(schemaAst, customBuilder)
 
         check(
           schema,
@@ -1465,7 +1465,7 @@ class AstSchemaMaterializerSpec
               mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
         }
 
-        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+        val schema = SchemaMaterializer.buildFromAst(schemaAst, customBuilder)
 
         check(
           schema,
@@ -1505,7 +1505,7 @@ class AstSchemaMaterializerSpec
               mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
         }
 
-        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+        val schema = SchemaMaterializer.buildFromAst(schemaAst, customBuilder)
 
         check(
           schema,
@@ -1547,7 +1547,7 @@ class AstSchemaMaterializerSpec
               mat: AstSchemaMaterializer[Unit]) = c => "test " + c.arg[String]("name")
         }
 
-        val schema = existingSchema.extend(schemaAst, customBuilder)
+        val schema = AstSchemaMaterializer.extendSchema(existingSchema, schemaAst, customBuilder)
 
         check(
           schema,
@@ -1614,7 +1614,7 @@ class AstSchemaMaterializerSpec
               _ => Value(None)
         }
 
-        val schema = Schema.buildFromAst(schemaAst, customBuilder)
+        val schema = SchemaMaterializer.buildFromAst(schemaAst, customBuilder)
 
         checkContainsErrors(
           schema,

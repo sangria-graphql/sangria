@@ -1050,6 +1050,6 @@ object AstSchemaMaterializer {
   def extendSchema[Ctx, Val](
       schema: Schema[Ctx, Val],
       document: ast.Document,
-      builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default): Schema[Ctx, Val] =
+      builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
     new AstSchemaMaterializer[Ctx](document, builder).extend(schema)
 }

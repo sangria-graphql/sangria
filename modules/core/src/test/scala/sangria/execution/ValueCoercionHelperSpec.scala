@@ -188,7 +188,7 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
 
   private[this] def coerceInputValue[T](tpe: InputType[T], value: String, vars: (String, String))(
       implicit fromInput: FromInput[T]) = {
-    val testSchema = Schema.buildFromAst(
+    val testSchema = SchemaMaterializer.buildFromAst(
       QueryParser
         .parse(s"""
       input TestInput {

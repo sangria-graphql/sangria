@@ -2,6 +2,7 @@ package sangria.macros.derive
 
 import sangria.execution.Executor
 import sangria.introspection._
+import sangria.introspection.Introspection.introspectionQuery
 import sangria.marshalling.ScalaInput
 import sangria.schema._
 import sangria.macros._
@@ -394,7 +395,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
       val intro = IntrospectionParser
         .parse(
           Executor
-            .execute(schema, sangria.introspection.introspectionQuery, root = testArticle)
+            .execute(schema, introspectionQuery, root = testArticle)
             .await)
         .get
 
@@ -759,7 +760,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
       val intro = IntrospectionParser
         .parse(
           Executor
-            .execute(schema, sangria.introspection.introspectionQuery, root = new Query)
+            .execute(schema, introspectionQuery, root = new Query)
             .await)
         .get
 

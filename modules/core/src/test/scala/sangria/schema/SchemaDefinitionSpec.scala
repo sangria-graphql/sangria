@@ -3,7 +3,8 @@ package sangria.schema
 import sangria.ast
 import sangria.execution.Executor
 import sangria.validation.StringCoercionViolation
-import sangria.introspection.{IntrospectionParser, introspectionQuery}
+import sangria.introspection.IntrospectionParser
+import sangria.introspection.Introspection.introspectionQuery
 import sangria.util.FutureResultSupport
 import sangria.marshalling.queryAst._
 

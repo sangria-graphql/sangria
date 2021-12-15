@@ -100,7 +100,7 @@ class SchemaExtensionSpec
   "Type System: extendSchema" should {
     "returns the original schema when there are no type definitions" in {
       val ast = graphql"{field}"
-      (schema.extend(ast) should be).theSameInstanceAs(schema)
+      (AstSchemaMaterializer.extendSchema(schema, ast) should be).theSameInstanceAs(schema)
     }
 
     "extends without altering original schema" in {
@@ -112,7 +112,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -131,7 +131,7 @@ class SchemaExtensionSpec
       val _ = graphql"{ newField }"
 
       SimpleGraphQlSupport.checkContainsErrors(
-        schema = schema.extend(ast),
+        schema = AstSchemaMaterializer.extendSchema(schema, ast),
         data = (),
         query = "{ newField }",
         expectedData = Map("newField" -> null),
@@ -149,7 +149,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -200,7 +200,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -260,7 +260,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -347,7 +347,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schemaWithPotion)
-      val extendedSchema = schemaWithPotion.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schemaWithPotion, ast)
 
       extendedSchema should not be theSameInstanceAs(schemaWithPotion)
       SchemaRenderer.renderSchema(schemaWithPotion) should be(originalRender)
@@ -402,7 +402,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -454,7 +454,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -532,7 +532,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -613,7 +613,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -682,7 +682,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = schema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -763,7 +763,7 @@ class SchemaExtensionSpec
         """
 
       val originalRender = SchemaRenderer.renderSchema(schema)
-      val extendedSchema = mutationSchema.extend(ast)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(mutationSchema, ast)
 
       extendedSchema should not be theSameInstanceAs(schema)
       SchemaRenderer.renderSchema(schema) should be(originalRender)
@@ -791,7 +791,8 @@ class SchemaExtensionSpec
           }
         """
 
-      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](
+        AstSchemaMaterializer.extendSchema(schema, ast))
 
       error.getMessage should include("Type 'Bar' already exists in the schema.")
     }
@@ -804,7 +805,8 @@ class SchemaExtensionSpec
           }
         """
 
-      val error = intercept[SchemaValidationException](schema.extend(ast))
+      val error =
+        intercept[SchemaValidationException](AstSchemaMaterializer.extendSchema(schema, ast))
 
       error.getMessage should include("Object type 'Bar' can include field 'foo' only once.")
     }
@@ -817,7 +819,8 @@ class SchemaExtensionSpec
           }
         """
 
-      val error = intercept[SchemaValidationException](schema.extend(ast))
+      val error =
+        intercept[SchemaValidationException](AstSchemaMaterializer.extendSchema(schema, ast))
 
       error.getMessage should include(
         "Object type 'Foo' can implement interface 'SomeInterface' only once.")
@@ -831,7 +834,8 @@ class SchemaExtensionSpec
           }
         """
 
-      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](
+        AstSchemaMaterializer.extendSchema(schema, ast))
 
       error.getMessage should include("Unknown type 'Quix'.")
     }
@@ -844,7 +848,8 @@ class SchemaExtensionSpec
           }
         """
 
-      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](
+        AstSchemaMaterializer.extendSchema(schema, ast))
 
       error.getMessage should include("Cannot extend type 'UnknownType' because it does not exist.")
     }
@@ -857,7 +862,8 @@ class SchemaExtensionSpec
           }
         """
 
-      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](
+        AstSchemaMaterializer.extendSchema(schema, ast))
 
       error.getMessage should include("Cannot extend non-object type 'SomeInterface'.")
     }
@@ -870,7 +876,8 @@ class SchemaExtensionSpec
           }
         """
 
-      val error = intercept[MaterializedSchemaValidationError](schema.extend(ast))
+      val error = intercept[MaterializedSchemaValidationError](
+        AstSchemaMaterializer.extendSchema(schema, ast))
 
       error.getMessage should include("Cannot extend non-object type 'String'.")
     }
@@ -981,7 +988,7 @@ class SchemaExtensionSpec
             }
       }
 
-      val extendedSchema = schema.extend(schemaAst, customBuilder)
+      val extendedSchema = AstSchemaMaterializer.extendSchema(schema, schemaAst, customBuilder)
 
       check(
         extendedSchema,

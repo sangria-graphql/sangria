@@ -40,7 +40,7 @@ trait CatsSupport { this: AnyWordSpec with Matchers =>
         val bgTestData = getTestData(scenario.get("background"), file.folder)
         val bgBuilder = schemaBuilder(bgTestData.getOrElse(JsObject.empty))
         val bgSchema =
-          getSchema(scenario.get("background"), file.folder).map(Schema.buildFromAst(_, bgBuilder))
+          getSchema(scenario.get("background"), file.folder).map(SchemaMaterializer.buildFromAst(_, bgBuilder))
 
         scenario("tests").arrayValue.foreach { test =>
           val testName = test("name").stringValue
@@ -50,12 +50,12 @@ trait CatsSupport { this: AnyWordSpec with Matchers =>
             val testBuilder = testTestData.map(schemaBuilder).getOrElse(bgBuilder)
             val testSchema =
               getSchema(test.get("given"), file.folder)
-                .map(Schema.buildFromAst(_, testBuilder))
+                .map(SchemaMaterializer.buildFromAst(_, testBuilder))
                 .orElse {
                   testTestData match {
                     case Some(newTestData) =>
                       getSchema(scenario.get("given"), file.folder)
-                        .map(Schema.buildFromAst(_, testBuilder))
+                        .map(SchemaMaterializer.buildFromAst(_, testBuilder))
                     case None => bgSchema
                   }
                 }

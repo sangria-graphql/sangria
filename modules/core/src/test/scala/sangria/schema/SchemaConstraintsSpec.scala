@@ -482,7 +482,8 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     )
 
     "rejects an Object implementing the extended interface due to missing field (via extension)" in invalidSchema(
-      buildSchema(graphql"""
+      AstSchemaMaterializer.extendSchema(buildSchema(
+        graphql"""
         type Query {
           test: AnotherObject
         }
@@ -494,7 +495,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         type AnotherObject implements AnotherInterface {
           field: String
         }
-      """).extend(graphql"""
+      """),graphql"""
         extend type AnotherObject implements AnotherInterface
       """),
       "Object type 'AnotherObject' can implement interface 'AnotherInterface' only once." -> Seq(
@@ -505,7 +506,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
 
   "Type System: Interface extensions should be valid" should {
     "rejects an Object implementing the extended interface due to missing field args" in invalidSchema(
-      buildSchema(graphql"""
+      AstSchemaMaterializer.extendSchema(buildSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -517,7 +518,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         type AnotherObject implements AnotherInterface {
           field: String
         }
-      """).extend(graphql"""
+      """),graphql"""
         extend interface AnotherInterface {
           newField(test: Boolean): String
         }
@@ -532,7 +533,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     )
 
     "rejects Objects implementing the extended interface due to mismatching interface type" in invalidSchema(
-      buildSchema(graphql"""
+      AstSchemaMaterializer.extendSchema(buildSchema(graphql"""
         type Query {
           test: AnotherObject
         }
@@ -544,7 +545,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         type AnotherObject implements AnotherInterface {
           field: String
         }
-      """).extend(graphql"""
+      """),graphql"""
         extend interface AnotherInterface {
           newInterfaceField: NewInterface
         }
@@ -904,7 +905,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
   }
 
   private[this] def buildSchema(document: ast.Document) =
-    Schema.buildFromAst(document)
+    SchemaMaterializer.buildFromAst(document)
 
   private[this] def validSchema(document: ast.Document) = buildSchema(document)
 

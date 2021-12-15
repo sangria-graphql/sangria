@@ -10,6 +10,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sangria.introspection.Introspection.introspectionQuery
 
 class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Introspection" should {

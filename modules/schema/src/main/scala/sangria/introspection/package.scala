@@ -1,6 +1,5 @@
 package sangria
 
-import sangria.parser.QueryParser
 import sangria.schema._
 
 import scala.annotation.tailrec
@@ -379,7 +378,7 @@ package object introspection {
     description = "A GraphQL Schema defines the capabilities of a GraphQL " +
       "server. It exposes all available types and directives on " +
       "the server, as well as the entry points for query, mutation, and subscription operations.",
-    fields = List[Field[Unit, Schema[Any, Any]]](
+    fields = List[Field[Unit, Schema[_, _]]](
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field(
         "types",
@@ -443,100 +442,4 @@ package object introspection {
 
   val IntrospectionTypesByName: Map[String, Type with Named] =
     IntrospectionTypes.groupBy(_.name).map { case (k, v) => (k, v.head) }
-
-  def introspectionQuery: ast.Document = introspectionQuery()
-
-  private[this] def introspectionQuery(schemaDescription: Boolean = true): ast.Document =
-    QueryParser.parse(introspectionQueryString(schemaDescription)).get
-
-  private[this] def introspectionQueryString(schemaDescription: Boolean = true): String =
-    s"""query IntrospectionQuery {
-       |  __schema {
-       |    queryType { name }
-       |    mutationType { name }
-       |    subscriptionType { name }
-       |    types {
-       |      ...FullType
-       |    }
-       |    directives {
-       |      name
-       |      description
-       |      locations
-       |      args {
-       |        ...InputValue
-       |      }
-       |    }
-       |    ${if (schemaDescription) "description" else ""}
-       |  }
-       |}
-       |fragment FullType on __Type {
-       |  kind
-       |  name
-       |  description
-       |  fields(includeDeprecated: true) {
-       |    name
-       |    description
-       |    args {
-       |      ...InputValue
-       |    }
-       |    type {
-       |      ...TypeRef
-       |    }
-       |    isDeprecated
-       |    deprecationReason
-       |  }
-       |  inputFields {
-       |    ...InputValue
-       |  }
-       |  interfaces {
-       |    ...TypeRef
-       |  }
-       |  enumValues(includeDeprecated: true) {
-       |    name
-       |    description
-       |    isDeprecated
-       |    deprecationReason
-       |  }
-       |  possibleTypes {
-       |    ...TypeRef
-       |  }
-       |}
-       |fragment InputValue on __InputValue {
-       |  name
-       |  description
-       |  type { ...TypeRef }
-       |  defaultValue
-       |}
-       |fragment TypeRef on __Type {
-       |  kind
-       |  name
-       |  ofType {
-       |    kind
-       |    name
-       |    ofType {
-       |      kind
-       |      name
-       |      ofType {
-       |        kind
-       |        name
-       |        ofType {
-       |          kind
-       |          name
-       |          ofType {
-       |            kind
-       |            name
-       |            ofType {
-       |              kind
-       |              name
-       |              ofType {
-       |                kind
-       |                name
-       |              }
-       |            }
-       |          }
-       |        }
-       |      }
-       |    }
-       |  }
-       |}""".stripMargin
 }

@@ -1,5 +1,8 @@
 package sangria.schema
 
+import sangria.ast
+import sangria.execution.{AttributeCoercionError, ExceptionHandler, ValueCoercionHelper, ValueCollector, VariableValue}
+import sangria.marshalling.{InputUnmarshaller, ResultMarshallerForType, ScalaInput}
 import sangria.util.Cache
 
 case class Args(
@@ -96,4 +99,89 @@ case class Args(
     arg7: Argument[A7],
     arg8: Argument[A8])(fn: (A1, A2, A3, A4, A5, A6, A7, A8) => R): R =
     fn(arg(arg1), arg(arg2), arg(arg3), arg(arg4), arg(arg5), arg(arg6), arg(arg7), arg(arg8))
+}
+
+object Args {
+  val empty = new Args(Map.empty, Set.empty, Set.empty, Set.empty, Cache.empty)
+
+  def apply(definitions: List[Argument[_]], values: (String, Any)*): Args =
+    apply(definitions, values.toMap)
+
+  def apply(definitions: List[Argument[_]], values: Map[String, Any]): Args =
+    apply(definitions, input = ScalaInput.scalaInput(values))
+
+  def apply[In: InputUnmarshaller](
+    definitions: List[Argument[_]],
+    input: In,
+    variables: Option[Map[String, VariableValue]] = None): Args = {
+    import sangria.marshalling.queryAstCore._
+
+    val iu = implicitly[InputUnmarshaller[In]]
+
+    if (!iu.isMapNode(input)) {
+      throw new IllegalArgumentException("The input expected to be a map-like data structure")
+    } else {
+      val argsValues =
+        iu.getMapKeys(input).flatMap(key => definitions.find(_.name == key)).map { arg =>
+          val astValue = iu
+            .getRootMapValue(input, arg.name)
+            .flatMap(x => this.convert[In, ast.Value](x, arg.argumentType, variables))
+
+          ast.Argument(name = arg.name, value = astValue.getOrElse(ast.NullValue()))
+        }
+
+      ValueCollector
+        .getArgumentValues(
+          ValueCoercionHelper.default,
+          None,
+          definitions,
+          argsValues.toVector,
+          Map.empty,
+          ExceptionHandler.empty)
+        .get
+    }
+  }
+
+  def apply(schemaElem: HasArguments, astElem: ast.WithArguments): Args = {
+    import sangria.marshalling.queryAstCore._
+
+    apply(
+      schemaElem.arguments,
+      ast.ObjectValue(
+        astElem.arguments.map(arg => ast.ObjectField(arg.name, arg.value))): ast.Value)
+  }
+
+  def apply(
+    schemaElem: HasArguments,
+    astElem: ast.WithArguments,
+    variables: Map[String, VariableValue]): Args = {
+    import sangria.marshalling.queryAstCore._
+
+    apply(
+      schemaElem.arguments,
+      ast.ObjectValue(
+        astElem.arguments.map(arg => ast.ObjectField(arg.name, arg.value))): ast.Value,
+      Some(variables)
+    )
+  }
+
+  private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](
+    value: In,
+    tpe: InputType[_],
+    variables: Option[Map[String, VariableValue]] = None): Option[Out] = {
+    val rm = implicitly[ResultMarshallerForType[Out]]
+
+    ValueCoercionHelper.default.coerceInputValue(
+      tpe,
+      List("stub"),
+      value,
+      None,
+      variables,
+      rm.marshaller,
+      rm.marshaller,
+      isArgument = false) match {
+      case Right(v) => v.toOption.asInstanceOf[Option[Out]]
+      case Left(violations) => throw AttributeCoercionError(violations, ExceptionHandler.empty)
+    }
+  }
 }

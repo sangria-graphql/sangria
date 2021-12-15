@@ -75,7 +75,7 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
 
   "InputDocument materializer and validator" should {
     "validate input document" in {
-      val schema = Schema.buildStubFromAst(gql"""
+      val schema = SchemaMaterializer.buildStubFromAst(gql"""
           enum Color {
             RED
             GREEN
@@ -126,7 +126,7 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
     }
 
     "support `Any` value" in {
-      val schema = Schema.buildStubFromAst(
+      val schema = SchemaMaterializer.buildStubFromAst(
         gql"""
           enum Color {
             RED

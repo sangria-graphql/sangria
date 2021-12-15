@@ -140,7 +140,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
 
       collectedValue should be(145)
 
-      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema =
+        SchemaMaterializer.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""
@@ -310,7 +311,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema =
+        SchemaMaterializer.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""
@@ -369,7 +371,10 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
             fields[Any, Unit](Field("testMut", StringType, resolve = _ => "test"))))
       )
 
-      val schema = existingSchema.extend(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema = AstSchemaMaterializer.extendSchema(
+        existingSchema,
+        schemaAst,
+        builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""
@@ -437,7 +442,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema =
+        SchemaMaterializer.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""
@@ -495,7 +501,10 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val schema = existingSchema.extend(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema = AstSchemaMaterializer.extendSchema(
+        existingSchema,
+        schemaAst,
+        builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""
@@ -573,7 +582,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema =
+        SchemaMaterializer.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""
@@ -662,7 +672,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema =
+        SchemaMaterializer.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""
@@ -744,7 +755,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       val resolverBuilder = builder.validateSchemaWithException(schemaDocument)
 
       val schema: Schema[Any, Any] =
-        Schema.buildFromAst[Any](schemaDocument, resolverBuilder)
+        SchemaMaterializer.buildFromAst[Any](schemaDocument, resolverBuilder)
 
       Executor.execute(schema, query).await should be("""
           {
@@ -828,7 +839,8 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+      val schema =
+        SchemaMaterializer.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
 
       val query =
         gql"""

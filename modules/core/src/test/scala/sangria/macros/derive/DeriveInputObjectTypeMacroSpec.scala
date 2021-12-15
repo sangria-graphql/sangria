@@ -1,7 +1,7 @@
 package sangria.macros.derive
 
 import sangria.execution.Executor
-import sangria.introspection.{IntrospectionInputObjectType, IntrospectionParser}
+import sangria.introspection.{Introspection, IntrospectionInputObjectType, IntrospectionParser}
 import sangria.marshalling.ScalaInput._
 import sangria.schema._
 import sangria.macros._
@@ -302,7 +302,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val intro = IntrospectionParser
         .parse(
           Executor
-            .execute(schema, sangria.introspection.introspectionQuery, root = new Query)
+            .execute(schema, Introspection.introspectionQuery, root = new Query)
             .await)
         .get
 

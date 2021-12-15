@@ -1,12 +1,11 @@
 package sangria.execution
 
-import language.{higherKinds, implicitConversions}
-import sangria.marshalling.InputUnmarshaller
-
 import sangria.ast
+import sangria.marshalling.InputUnmarshaller
 import sangria.schema.{Action, Context, InputType}
-import sangria.streaming.SubscriptionStream
 import sangria.validation.Violation
+
+import scala.language.{higherKinds, implicitConversions}
 
 trait Middleware[-Ctx] {
   type QueryVal
@@ -146,8 +145,6 @@ case class BeforeFieldResult[Ctx, FieldVal](
     actionOverride: Option[Action[Ctx, _]] = None,
     attachment: Option[MiddlewareAttachment] = None)
 
-trait MiddlewareAttachment
-
 object BeforeFieldResult {
   // backwards compatibility
   implicit def fromTuple2[Ctx, FieldVal](
@@ -157,12 +154,3 @@ object BeforeFieldResult {
   def attachment[Ctx](a: MiddlewareAttachment): BeforeFieldResult[Ctx, Unit] =
     BeforeFieldResult[Ctx, Unit]((), attachment = Some(a))
 }
-
-case class StringTag(name: String)
-
-object FieldTag {
-  implicit def stringTag(s: String): StringTag = StringTag(s)
-  implicit def symbolTag(s: Symbol): StringTag = StringTag(s.name)
-}
-
-case class Extension[In](data: In)(implicit val iu: InputUnmarshaller[In])

@@ -6,7 +6,7 @@ import sangria.marshalling.InputUnmarshaller
 import sangria.schema._
 import sangria.macros._
 import sangria.util.{FutureResultSupport, StringMatchers}
-import sangria.introspection.introspectionQuery
+import sangria.introspection.Introspection.introspectionQuery
 import sangria.validation.IntCoercionViolation
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -22,7 +22,7 @@ class SchemaRenderSpec
     with FutureResultSupport
     with StringMatchers {
   private[this] def renderForTest[T: InputUnmarshaller](res: T, schema: Schema[_, _]) =
-    "\n" + SchemaRenderer.renderSchema(res) + "\n"
+    "\n" + SchemaRendererExtras.renderSchema(res) + "\n"
 
   private[this] def renderForTest(schema: Schema[Unit, Unit]) =
     "\n" + SchemaRenderer.renderSchema(schema) + "\n"
@@ -690,7 +690,7 @@ class SchemaRenderSpec
       val schema = Schema(root)
 
       an[IllegalArgumentException] should be thrownBy
-        SchemaRenderer.renderSchema(
+        SchemaRendererExtras.renderSchema(
           Executor.execute(schema, graphql"{someUnknownField}").awaitAndRecoverQueryAnalysis)
     }
   }
@@ -703,7 +703,7 @@ class SchemaRenderSpec
     "Print Introspection Schema" in {
       val schema =
         Schema(ObjectType("Root", fields[Unit, Unit](Field("foo", IntType, resolve = _ => 1))))
-      val rendered = SchemaRenderer.renderSchema(
+      val rendered = SchemaRendererExtras.renderSchema(
         Executor.execute(schema, introspectionQuery).await,
         SchemaFilter.introspection)
 

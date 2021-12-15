@@ -1,7 +1,5 @@
 package sangria.util
 
-import sangria.since3_0_0
-
 import java.util.Locale
 import scala.collection.mutable.ListBuffer
 
@@ -115,7 +113,7 @@ object StringUtil {
     *
     * This implements the GraphQL spec's BlockStringValue() static algorithm.
     */
-  @deprecated("This method will be removed.", since3_0_0)
+  @deprecated("This method will be removed.", "Sangria 3.0.0")
   def blockStringValue(rawString: String): String = {
     val lines = rawString.split("""\r\n|[\n\r]""")
     val lineSizes = lines.map(l => l -> leadingWhitespace(l))

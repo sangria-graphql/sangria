@@ -221,7 +221,7 @@ class ValueCoercionHelper[Ctx](
       val prepared = firstKindMarshaller match {
         case raw: RawResultMarshaller => raw.rawScalarNode(v)
         case standard =>
-          Resolver.marshalScalarValue(
+          Marshalling.marshalScalarValue(
             scalar.coerceOutput(outFn(v), standard.capabilities),
             standard,
             scalar.name,
@@ -531,7 +531,7 @@ class ValueCoercionHelper[Ctx](
 
             val prepared = firstKindMarshaller match {
               case raw: RawResultMarshaller => raw.rawScalarNode(v)
-              case standard => Resolver.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
+              case standard => Marshalling.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
             }
 
             Right(defined(prepared.asInstanceOf[marshaller.Node]))
@@ -685,7 +685,7 @@ class ValueCoercionHelper[Ctx](
       val fieldPath = s"$$${definition.name}" :: Nil
 
       if (input.isEmpty || !um.isDefined(input.get)) {
-        import sangria.marshalling.queryAst.queryAstInputUnmarshaller
+        import sangria.marshalling.queryAstCore.queryAstInputUnmarshaller
 
         definition.defaultValue match {
           case Some(dv) =>

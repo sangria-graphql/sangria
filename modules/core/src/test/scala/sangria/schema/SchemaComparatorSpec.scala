@@ -28,14 +28,14 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
       val newSchema = Schema(QueryType, additionalTypes = type2 :: Nil)
 
       assertChanges(
-        newSchema.compare(oldSchema),
+        SchemaComparator.compare(oldSchema, newSchema),
         breakingChange[TypeRemoved]("`Type1` type was removed"))
 
       assertChanges(
-        oldSchema.compare(newSchema),
+        SchemaComparator.compare(newSchema, oldSchema),
         nonBreakingChange[TypeAdded]("`Type1` type was added"))
 
-      oldSchema.compare(oldSchema) should be(Vector.empty)
+      SchemaComparator.compare(oldSchema, oldSchema) should be(Vector.empty)
     }
 
     "should detect if a type changed its kind" in checkChanges(
@@ -656,20 +656,20 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
         }
       """
 
-    val oldSchema = Schema.buildFromAst(oldDoc.merge(queryType))
-    val newSchema = Schema.buildFromAst(newDoc.merge(queryType))
+    val oldSchema = SchemaMaterializer.buildFromAst(oldDoc.merge(queryType))
+    val newSchema = SchemaMaterializer.buildFromAst(newDoc.merge(queryType))
 
-    assertChanges(newSchema.compare(oldSchema), expectedChanges: _*)
+    assertChanges(SchemaComparator.compare(oldSchema, newSchema), expectedChanges: _*)
   }
 
   private[this] def checkChangesWithoutQueryType(
       oldDoc: Document,
       newDoc: Document,
       expectedChanges: (Class[_], String, Boolean)*): Unit = {
-    val oldSchema = Schema.buildFromAst(oldDoc)
-    val newSchema = Schema.buildFromAst(newDoc)
+    val oldSchema = SchemaMaterializer.buildFromAst(oldDoc)
+    val newSchema = SchemaMaterializer.buildFromAst(newDoc)
 
-    assertChanges(newSchema.compare(oldSchema), expectedChanges: _*)
+    assertChanges(SchemaComparator.compare(oldSchema, newSchema), expectedChanges: _*)
   }
 
   private[this] def assertChanges(

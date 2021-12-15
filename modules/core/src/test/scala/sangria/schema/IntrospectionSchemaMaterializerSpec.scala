@@ -11,9 +11,9 @@ import sangria.util.{FutureResultSupport, Pos}
 import sangria.introspection.{
   IntrospectionField,
   IntrospectionScalarType,
-  IntrospectionType,
-  introspectionQuery
+  IntrospectionType
 }
+import sangria.introspection.Introspection.introspectionQuery
 import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._
 import org.scalatest.matchers.should.Matchers
