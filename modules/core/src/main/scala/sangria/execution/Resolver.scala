@@ -1,7 +1,7 @@
 package sangria.execution
 
 import sangria.ast.AstLocation
-import sangria.ast
+import sangria.{ast, since2_1_7}
 import sangria.execution.deferred.{Deferred, DeferredResolver}
 import sangria.marshalling.{ResultMarshaller, ScalarValueInfo}
 import sangria.parser.SourceMapper
@@ -1831,7 +1831,34 @@ case class MappedCtxUpdate[Ctx, Val, NewVal](
     mapFn: Val => NewVal,
     onError: Throwable => Unit)
 
+@deprecated("Moved in 3.0. Use object Marshalling instead.", since2_1_7)
 object Resolver {
+  val DefaultComplexity = 1.0d
+
+  @deprecated("Moved in 3.0. Use Marshalling.marshalEnumValue instead.", since2_1_7)
+  def marshalEnumValue(
+      value: String,
+      marshaller: ResultMarshaller,
+      typeName: String): marshaller.Node = Marshalling.marshalEnumValue(value, marshaller, typeName)
+
+  @deprecated("Moved in 3.0. Use Marshalling.marshalScalarValue instead.", since2_1_7)
+  def marshalScalarValue(
+      value: Any,
+      marshaller: ResultMarshaller,
+      typeName: String,
+      scalarInfo: Set[ScalarValueInfo]): marshaller.Node =
+    Marshalling.marshalScalarValue(value, marshaller, typeName, scalarInfo)
+
+  @deprecated("Moved in 3.0. Use Marshalling.marshalAstValue() instead.", since2_1_7)
+  def marshalAstValue(
+      value: ast.Value,
+      marshaller: ResultMarshaller,
+      typeName: String,
+      scalarInfo: Set[ScalarValueInfo]): marshaller.Node =
+    Marshalling.marshalAstValue(value, marshaller, typeName, scalarInfo)
+}
+
+object Marshalling {
   val DefaultComplexity = 1.0d
 
   def marshalEnumValue(

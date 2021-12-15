@@ -4,7 +4,7 @@ import sangria.execution.ValueCoercionHelper
 import sangria.introspection._
 import sangria.marshalling.{InputUnmarshaller, ToInput}
 import sangria.schema._
-import sangria.ast
+import sangria.{ast, since2_1_7}
 import sangria.ast.{AstNode, AstVisitor}
 import sangria.introspection.__DirectiveLocation
 import sangria.parser.QueryParser
@@ -58,6 +58,7 @@ object SchemaRenderer {
       case IntrospectionNamedTypeRef(_, name) => ast.NamedType(name)
     }
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderDefault(defaultValue: Option[String]) =
     defaultValue.flatMap(d => QueryParser.parseInput(d).toOption)
 
@@ -67,6 +68,7 @@ object SchemaRenderer {
     DefaultValueRenderer.renderInputValue(value, tpe, coercionHelper)
   }
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderArg(arg: IntrospectionInputValue) =
     ast.InputValueDefinition(
       arg.name,
@@ -95,24 +97,28 @@ object SchemaRenderer {
       case _ => Vector.empty
     }
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderArgsI(args: Seq[IntrospectionInputValue]) =
     args.map(renderArg).toVector
 
   def renderArgs(args: Seq[Argument[_]]) =
     args.map(renderArg).toVector
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderFieldsI(fields: Seq[IntrospectionField]) =
     fields.map(renderField).toVector
 
   def renderFields(fields: Seq[Field[_, _]]) =
     fields.map(renderField).toVector
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderInputFieldsI(fields: Seq[IntrospectionInputValue]) =
     fields.map(renderInputField).toVector
 
   def renderInputFields(fields: Seq[InputField[_]]) =
     fields.map(renderInputField).toVector
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderField(field: IntrospectionField) =
     ast.FieldDefinition(
       field.name,
@@ -133,6 +139,7 @@ object SchemaRenderer {
       renderDescription(field.description)
     )
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderInputField(field: IntrospectionInputValue) =
     ast.InputValueDefinition(
       field.name,
@@ -149,6 +156,7 @@ object SchemaRenderer {
       renderDescription(field.description)
     )
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderObject(tpe: IntrospectionObjectType) =
     ast.ObjectTypeDefinition(
       tpe.name,
@@ -203,6 +211,7 @@ object SchemaRenderer {
   def renderScalar(tpe: ScalarType[_]) =
     ast.ScalarTypeDefinition(tpe.name, tpe.astDirectives, renderDescription(tpe.description))
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderInputObject(tpe: IntrospectionInputObjectType) =
     ast.InputObjectTypeDefinition(
       tpe.name,
@@ -216,6 +225,7 @@ object SchemaRenderer {
       tpe.astDirectives,
       renderDescription(tpe.description))
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderInterface(tpe: IntrospectionInterfaceType) =
     ast.InterfaceTypeDefinition(
       tpe.name,
@@ -242,6 +252,7 @@ object SchemaRenderer {
       tpe.astDirectives,
       renderDescription(tpe.description))
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   private def renderSchemaDefinition(schema: IntrospectionSchema): Option[ast.SchemaDefinition] =
     if (isSchemaOfCommonNames(
         schema.queryType.name,
@@ -289,6 +300,7 @@ object SchemaRenderer {
     query == "Query" && mutation.fold(true)(_ == "Mutation") && subscription.fold(true)(
       _ == "Subscription")
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderType(tpe: IntrospectionType): ast.TypeDefinition =
     tpe match {
       case o: IntrospectionObjectType => renderObject(o)
@@ -322,6 +334,7 @@ object SchemaRenderer {
       dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name),
       renderDescription(dir.description))
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderDirective(dir: IntrospectionDirective) =
     ast.DirectiveDefinition(
       dir.name,
@@ -329,6 +342,7 @@ object SchemaRenderer {
       dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name),
       renderDescription(dir.description))
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def schemaAstFromIntrospection(
       introspectionSchema: IntrospectionSchema,
       filter: SchemaFilter = SchemaFilter.default): ast.Document = {
@@ -345,9 +359,11 @@ object SchemaRenderer {
     ast.Document(schemaDef.toVector ++ types ++ directives)
   }
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderSchema(introspectionSchema: IntrospectionSchema): String =
     schemaAstFromIntrospection(introspectionSchema, SchemaFilter.default).renderPretty
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderSchema[T: InputUnmarshaller](introspectionResult: T): String = {
     import sangria.parser.DeliveryScheme.Throw
 
@@ -356,9 +372,11 @@ object SchemaRenderer {
       SchemaFilter.default).renderPretty
   }
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderSchema(introspectionSchema: IntrospectionSchema, filter: SchemaFilter): String =
     schemaAstFromIntrospection(introspectionSchema, filter).renderPretty
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def renderSchema[T: InputUnmarshaller](introspectionResult: T, filter: SchemaFilter): String = {
     import sangria.parser.DeliveryScheme.Throw
 

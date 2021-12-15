@@ -443,11 +443,14 @@ package object introspection {
   val IntrospectionTypesByName: Map[String, Type with Named] =
     IntrospectionTypes.groupBy(_.name).map { case (k, v) => (k, v.head) }
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def introspectionQuery: ast.Document = introspectionQuery()
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def introspectionQuery(schemaDescription: Boolean = true): ast.Document =
     QueryParser.parse(introspectionQueryString(schemaDescription))
 
+  @deprecated("Removed in 3.0.", since2_1_7)
   def introspectionQueryString(schemaDescription: Boolean = true): String =
     s"""query IntrospectionQuery {
        |  __schema {
