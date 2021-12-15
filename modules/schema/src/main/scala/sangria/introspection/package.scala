@@ -256,9 +256,13 @@ package object introspection {
             val (_, tpe) = ctx.value
 
             tpe match {
-              case t: ObjectLikeType[_, _] if incDep => Some(t.uniqueFields)
+              case t: ObjectLikeType[_, _] if incDep =>
+                Some(t.uniqueFields.asInstanceOf[Vector[Field[_, _]]])
               case t: ObjectLikeType[_, _] =>
-                Some(t.uniqueFields.filter(_.deprecationReason.isEmpty))
+                Some(
+                  t.uniqueFields
+                    .asInstanceOf[Vector[Field[_, _]]]
+                    .filter(_.deprecationReason.isEmpty))
               case _ => None
             }
           }
@@ -373,12 +377,12 @@ package object introspection {
     )
   )
 
-  val __Schema: ObjectType[Unit, Schema[_, _]] = ObjectType(
+  val __Schema = ObjectType(
     name = "__Schema",
     description = "A GraphQL Schema defines the capabilities of a GraphQL " +
       "server. It exposes all available types and directives on " +
       "the server, as well as the entry points for query, mutation, and subscription operations.",
-    fields = List[Field[Unit, Schema[_, _]]](
+    fields = List[Field[Unit, Schema[Any, Any]]](
       Field("description", OptionType(StringType), resolve = _.value.description),
       Field(
         "types",
