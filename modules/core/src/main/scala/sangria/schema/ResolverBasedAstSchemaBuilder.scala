@@ -594,11 +594,12 @@ object ResolverBasedAstSchemaBuilder {
 
   def extractFieldValue[In](parentType: CompositeType[_], field: Field[_, _], value: In)(implicit
       iu: InputUnmarshaller[In]): Any =
-    try if (!iu.isMapNode(value))
-      throw SchemaMaterializationException(
-        s"Can't extract value for a field '${parentType.name}.${field.name}': not a map-like value.")
-    else
-      extractValue(field.fieldType, iu.getMapValue(value, field.name))
+    try
+      if (!iu.isMapNode(value))
+        throw SchemaMaterializationException(
+          s"Can't extract value for a field '${parentType.name}.${field.name}': not a map-like value.")
+      else
+        extractValue(field.fieldType, iu.getMapValue(value, field.name))
     catch {
       case e: SchemaMaterializationException =>
         throw e

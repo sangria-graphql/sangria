@@ -38,20 +38,21 @@ case class InputDocumentMaterializer[Vars](
       collector.getVariableValues(variableDefinitions, None) match {
         case Failure(e) => Failure(e)
         case Success(vars) =>
-          try Success(document.values.flatMap { value =>
-            collector.coercionHelper.coerceInputValue(
-              inputType,
-              Nil,
-              value,
-              None,
-              Some(vars),
-              fromInput.marshaller,
-              fromInput.marshaller,
-              isArgument = false) match {
-              case Left(vs) => throw InputDocumentMaterializationError(vs, ExceptionHandler.empty)
-              case Right(coerced) => coerced.toOption.map(res => fromInput.fromResult(res))
-            }
-          })
+          try
+            Success(document.values.flatMap { value =>
+              collector.coercionHelper.coerceInputValue(
+                inputType,
+                Nil,
+                value,
+                None,
+                Some(vars),
+                fromInput.marshaller,
+                fromInput.marshaller,
+                isArgument = false) match {
+                case Left(vs) => throw InputDocumentMaterializationError(vs, ExceptionHandler.empty)
+                case Right(coerced) => coerced.toOption.map(res => fromInput.fromResult(res))
+              }
+            })
           catch {
             case NonFatal(e) => Failure(e)
           }
