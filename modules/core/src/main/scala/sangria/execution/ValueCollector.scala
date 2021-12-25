@@ -137,34 +137,35 @@ object ValueCollector {
 
           implicit val um = sangria.marshalling.queryAst.queryAstInputUnmarshaller
 
-          try resolveMapValue(
-            argDef.argumentType,
-            argPath,
-            argDef.defaultValue,
-            forAstNode,
-            argDef.name,
-            marshaller,
-            fromInput.marshaller,
-            errors = errors,
-            valueMap = fromInput.fromResult,
-            defaultValueInfo = defaultInfo,
-            undefinedValues = undefinedArgs,
-            isArgument = true,
-            fromScalarMiddleware = fromScalarMiddleware
-          )(
-            acc,
-            astValue.map(
-              coerceInputValue(
-                argDef.argumentType,
-                argPath,
-                _,
-                forAstNode,
-                Some(variables),
-                marshaller,
-                fromInput.marshaller,
-                fromScalarMiddleware = fromScalarMiddleware,
-                isArgument = true))
-          )
+          try
+            resolveMapValue(
+              argDef.argumentType,
+              argPath,
+              argDef.defaultValue,
+              forAstNode,
+              argDef.name,
+              marshaller,
+              fromInput.marshaller,
+              errors = errors,
+              valueMap = fromInput.fromResult,
+              defaultValueInfo = defaultInfo,
+              undefinedValues = undefinedArgs,
+              isArgument = true,
+              fromScalarMiddleware = fromScalarMiddleware
+            )(
+              acc,
+              astValue.map(
+                coerceInputValue(
+                  argDef.argumentType,
+                  argPath,
+                  _,
+                  forAstNode,
+                  Some(variables),
+                  marshaller,
+                  fromInput.marshaller,
+                  fromScalarMiddleware = fromScalarMiddleware,
+                  isArgument = true))
+            )
           catch {
             case InputParsingError(e) =>
               errors ++= e.map(

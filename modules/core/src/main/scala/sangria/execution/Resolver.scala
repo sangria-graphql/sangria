@@ -809,13 +809,14 @@ class Resolver[Ctx](
           case (astFields, Some((field, updateCtx, Value(v)))) =>
             val fieldsPath = path.add(astFields.head, tpe)
 
-            try astFields.head -> resolveValue(
-              fieldsPath,
-              astFields,
-              field.fieldType,
-              field,
-              resolveVal(updateCtx, v),
-              resolveUc(updateCtx, v))
+            try
+              astFields.head -> resolveValue(
+                fieldsPath,
+                astFields,
+                field.fieldType,
+                field,
+                resolveVal(updateCtx, v),
+                resolveUc(updateCtx, v))
             catch {
               case NonFatal(e) =>
                 astFields.head -> Result(
@@ -887,15 +888,16 @@ class Resolver[Ctx](
 
             es.foreach(resolveError(updateCtx, _))
 
-            try astFields.head ->
-              resolveValue(
-                fieldsPath,
-                astFields,
-                field.fieldType,
-                field,
-                resolveVal(updateCtx, v),
-                resolveUc(updateCtx, v))
-                .appendErrors(fieldsPath, es, astFields.head.location)
+            try
+              astFields.head ->
+                resolveValue(
+                  fieldsPath,
+                  astFields,
+                  field.fieldType,
+                  field,
+                  resolveVal(updateCtx, v),
+                  resolveUc(updateCtx, v))
+                  .appendErrors(fieldsPath, es, astFields.head.location)
             catch {
               case NonFatal(e) =>
                 astFields.head -> Result(
@@ -908,13 +910,14 @@ class Resolver[Ctx](
 
             v match {
               case Success(success) =>
-                try astFields.head -> resolveValue(
-                  fieldsPath,
-                  astFields,
-                  field.fieldType,
-                  field,
-                  resolveVal(updateCtx, success),
-                  resolveUc(updateCtx, success))
+                try
+                  astFields.head -> resolveValue(
+                    fieldsPath,
+                    astFields,
+                    field.fieldType,
+                    field,
+                    resolveVal(updateCtx, success),
+                    resolveUc(updateCtx, success))
                 catch {
                   case NonFatal(e) =>
                     astFields.head -> Result(
@@ -1262,31 +1265,32 @@ class Resolver[Ctx](
           }
         }
       case scalar: ScalarType[Any @unchecked] =>
-        try Result(
-          ErrorRegistry.empty,
-          if (isUndefinedValue(value))
-            None
-          else {
-            val coerced = scalar.coerceOutput(value, marshaller.capabilities)
-
-            if (isUndefinedValue(coerced)) {
+        try
+          Result(
+            ErrorRegistry.empty,
+            if (isUndefinedValue(value))
               None
-            } else {
-              val coercedWithMiddleware =
-                toScalarMiddleware match {
-                  case Some(fn) => fn(coerced, actualType.getOrElse(scalar)).getOrElse(coerced)
-                  case None => coerced
-                }
+            else {
+              val coerced = scalar.coerceOutput(value, marshaller.capabilities)
 
-              Some(
-                marshalScalarValue(
-                  coercedWithMiddleware,
-                  marshaller,
-                  scalar.name,
-                  scalar.scalarInfo))
+              if (isUndefinedValue(coerced)) {
+                None
+              } else {
+                val coercedWithMiddleware =
+                  toScalarMiddleware match {
+                    case Some(fn) => fn(coerced, actualType.getOrElse(scalar)).getOrElse(coerced)
+                    case None => coerced
+                  }
+
+                Some(
+                  marshalScalarValue(
+                    coercedWithMiddleware,
+                    marshaller,
+                    scalar.name,
+                    scalar.scalarInfo))
+              }
             }
-          }
-        )
+          )
         catch {
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
@@ -1300,19 +1304,20 @@ class Resolver[Ctx](
           userCtx,
           Some(scalar))
       case enum: EnumType[Any @unchecked] =>
-        try Result(
-          ErrorRegistry.empty,
-          if (isUndefinedValue(value))
-            None
-          else {
-            val coerced = enum.coerceOutput(value)
-
-            if (isUndefinedValue(coerced))
+        try
+          Result(
+            ErrorRegistry.empty,
+            if (isUndefinedValue(value))
               None
-            else
-              Some(marshalEnumValue(coerced, marshaller, enum.name))
-          }
-        )
+            else {
+              val coerced = enum.coerceOutput(value)
+
+              if (isUndefinedValue(coerced))
+                None
+              else
+                Some(marshalEnumValue(coerced, marshaller, enum.name))
+            }
+          )
         catch {
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
