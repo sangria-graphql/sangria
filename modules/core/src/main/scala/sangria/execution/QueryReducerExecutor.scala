@@ -195,26 +195,27 @@ object QueryReducerExecutor {
 
     val newContext =
       try
-      // Unsafe part to avoid additional boxing in order to reduce the footprint
-      reducers.zipWithIndex.foldLeft(userContext: Any) {
-        case (acc: Future[Ctx @unchecked], (reducer, idx)) =>
-          acc.flatMap(a =>
-            reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], a) match {
+        // Unsafe part to avoid additional boxing in order to reduce the footprint
+        reducers.zipWithIndex.foldLeft(userContext: Any) {
+          case (acc: Future[Ctx @unchecked], (reducer, idx)) =>
+            acc.flatMap(a =>
+              reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], a) match {
+                case FutureValue(future) => future
+                case Value(value) => Future.successful(value)
+                case TryValue(value) => Future.fromTry(value)
+              })
+
+          case (acc: Ctx @unchecked, (reducer, idx)) =>
+            reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], acc) match {
               case FutureValue(future) => future
-              case Value(value) => Future.successful(value)
-              case TryValue(value) => Future.fromTry(value)
-            })
+              case Value(value) => value
+              case TryValue(value) => value.get
+            }
 
-        case (acc: Ctx @unchecked, (reducer, idx)) =>
-          reducer.reduceCtx(reduced(idx).asInstanceOf[reducer.Acc], acc) match {
-            case FutureValue(future) => future
-            case Value(value) => value
-            case TryValue(value) => value.get
-          }
-
-        case (acc, _) =>
-          Future.failed(new IllegalStateException(s"Invalid shape of the user context! $acc"))
-      } catch {
+          case (acc, _) =>
+            Future.failed(new IllegalStateException(s"Invalid shape of the user context! $acc"))
+        }
+      catch {
         case NonFatal(error) => Future.failed(error)
       }
 
