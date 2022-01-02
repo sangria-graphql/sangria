@@ -66,8 +66,8 @@ case class Document(
   override def equals(other: Any): Boolean = other match {
     case that: Document =>
       that.canEqual(this) &&
-        definitions == that.definitions &&
-        location == that.location
+      definitions == that.definitions &&
+      location == that.location
     case _ => false
   }
 
@@ -125,8 +125,8 @@ case class InputDocument(
   override def equals(other: Any): Boolean = other match {
     case that: InputDocument =>
       that.canEqual(this) &&
-        values == that.values &&
-        location == that.location
+      values == that.values &&
+      location == that.location
     case _ => false
   }
 
