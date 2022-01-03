@@ -130,7 +130,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
           .lastOption
           .getOrElse(q"None")
 
-        val actualValue = {
+        val actualValue =
           if (value.isModuleClass) {
             if (value.owner.isModuleClass) {
               q"${value.owner.name.toTermName}.${value.name.toTermName}"
@@ -138,7 +138,6 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
               q"${value.name.toTermName}"
             }
           } else q"${t.asInstanceOf[TypeRef].pre.typeSymbol.name.toTermName}.${value.asTerm.getter}"
-        }
 
         q"""
           sangria.schema.EnumValue[$t](
