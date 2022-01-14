@@ -368,7 +368,7 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, parser, core, benchmarks)
+  .aggregate(ast, parser, core, benchmarks, derivation, sangria)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -415,7 +415,7 @@ lazy val core = project
   .dependsOn(parser)
   .settings(scalacSettings ++ shellSettings)
   .settings(
-    name := "sangria",
+    name := "sangria-core",
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.3"),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
@@ -441,6 +441,38 @@ lazy val core = project
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
       "io.github.classgraph" % "classgraph" % "4.8.138" % Test
     ),
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-core_$ver/latest/"))
+    }
+  )
+
+lazy val derivation = project
+  .in(file("modules/derivation"))
+  .withId("sangria-derivation")
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-derivation",
+    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
+    libraryDependencies ++= Seq(
+      // Macros
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    ),
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-derivation_$ver/latest/"))
+    }
+  )
+
+lazy val sangria = project
+  .in(file("modules/sangria"))
+  .withId("sangria")
+  .dependsOn(core, derivation)
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria",
+    description := "Scala GraphQL implementation",
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria_$ver/latest/"))
