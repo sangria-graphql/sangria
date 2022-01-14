@@ -362,7 +362,10 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values")
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
+
+  // move derivation into module
+  ProblemFilters.exclude[MissingClassProblem]("sangria.macros.derive.*")
 )
 
 lazy val root = project
@@ -464,6 +467,7 @@ lazy val derivation = project
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-derivation_$ver/latest/"))
     }
   )
+  .disablePlugins(MimaPlugin)
 
 lazy val sangria = project
   .in(file("modules/sangria"))
@@ -478,6 +482,7 @@ lazy val sangria = project
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria_$ver/latest/"))
     }
   )
+  .disablePlugins(MimaPlugin)
 
 lazy val benchmarks = project
   .in(file("modules/benchmarks"))
