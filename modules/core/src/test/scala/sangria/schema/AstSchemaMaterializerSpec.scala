@@ -7,7 +7,6 @@ import sangria.parser.QueryParser
 import sangria.renderer.SchemaRenderer
 import sangria.util.{FutureResultSupport, Pos, StringMatchers}
 import sangria.macros._
-import sangria.macros.derive._
 import sangria.validation.{IntCoercionViolation, UnknownDirectiveViolation}
 import sangria.util.SimpleGraphQlSupport.{check, checkContainsErrors}
 import spray.json._
@@ -745,7 +744,15 @@ class AstSchemaMaterializerSpec
                   "lastComment" -> JsObject("text" -> JsString("Boring...")))))
         }
 
-        val ArticleType = deriveObjectType[Repo, Article]()
+        val ArticleType = ObjectType(
+          "Article",
+          fields[Repo, Article](
+            Field("id", StringType, resolve = _.value.id),
+            Field("title", StringType, resolve = _.value.title),
+            Field("text", StringType, resolve = _.value.text),
+            Field("author", OptionType(StringType), resolve = _.value.author)
+          )
+        )
 
         val IdArg = Argument("id", StringType)
 
