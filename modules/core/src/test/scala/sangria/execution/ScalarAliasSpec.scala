@@ -8,7 +8,6 @@ import eu.timepit.refined.api.Refined
 import sangria.util.{FutureResultSupport, Pos}
 import sangria.schema._
 import sangria.macros._
-import sangria.macros.derive._
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.validation.ValueCoercionViolation
 import sangria.util.SimpleGraphQlSupport._
@@ -17,9 +16,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-case class UserId(id: String) extends AnyVal
-
 class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport {
+  import ScalarAliasSpec._
+
   case class User(id: UserId, id2: Option[UserId], name: String, num: Int Refined Positive)
 
   case class RefineViolation(error: String) extends ValueCoercionViolation(error)
@@ -42,7 +41,15 @@ class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport
         case _: IllegalArgumentException => Left(IDViolation)
       })
 
-  val UserType = deriveObjectType[Unit, User]()
+  val UserType = ObjectType(
+    "User",
+    fields[Unit, User](
+      Field("id", UserIdType, resolve = _.value.id),
+      Field("id2", OptionType(UserIdType), resolve = _.value.id2),
+      Field("name", StringType, resolve = _.value.name),
+      Field("num", PositiveIntType, resolve = _.value.num)
+    )
+  )
 
   val ComplexInputType = InputObjectType(
     "Complex",
@@ -282,4 +289,8 @@ class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport
       )
     }
   }
+}
+
+object ScalarAliasSpec {
+  case class UserId(id: String) extends AnyVal
 }
