@@ -19,21 +19,21 @@ package sangria
   * seek to provide GraphQL query execution may not need to parse the type system definition nodes.
   *
   * @groupname value
-  *   Value nodes
+  * Value nodes
   * @groupdesc value
   *   Types that represent input value nodes in the GraphQL AST.
   * @groupprio value
-  *   1
+  * 1
   *
   * @groupname scalar
-  *   Scalar value nodes
+  * Scalar value nodes
   * @groupdesc scalar
   *   Types that represent scalar input value nodes in the GraphQL AST.
   * @groupprio scalar
-  *   2
+  * 2
   *
   * @groupname typesystem
-  *   Type system definition nodes
+  * Type system definition nodes
   * @groupdesc typesystem
   *   The GraphQL type system describes the capabilities of a GraphQL server and is used to
   *   determine if a query is valid. The type system also describes the input types of query
@@ -41,6 +41,6 @@ package sangria
   *   Sangria server is defined in terms of these classes, with the [[SchemaDefinition]] being the
   *   most important top-level class.
   * @groupprio typesystem
-  *   3
+  * 3
   */
 package object ast {}
