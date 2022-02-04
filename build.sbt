@@ -11,7 +11,7 @@ import com.typesafe.tools.mima.core.{
 }
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.7")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
@@ -362,13 +362,16 @@ ThisBuild / mimaBinaryIssueFilters ++= Seq(
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Tokens"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.TypeSystemDefinitions"),
   ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Types"),
-  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values")
+  ProblemFilters.exclude[MissingClassProblem]("sangria.parser.Values"),
+
+  // move derivation into module
+  ProblemFilters.exclude[MissingClassProblem]("sangria.macros.derive.*")
 )
 
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, parser, core, benchmarks)
+  .aggregate(ast, parser, core, benchmarks, derivation, sangria)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -400,7 +403,7 @@ lazy val parser = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.3.0",
-      "org.scalatest" %% "scalatest" % "3.2.10" % Test
+      "org.scalatest" %% "scalatest" % "3.2.11" % Test
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -415,7 +418,7 @@ lazy val core = project
   .dependsOn(parser)
   .settings(scalacSettings ++ shellSettings)
   .settings(
-    name := "sangria",
+    name := "sangria-core",
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria" % "2.1.3"),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
@@ -429,8 +432,8 @@ lazy val core = project
       // Macros
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
-      "co.fs2" %% "fs2-core" % "3.2.4" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.10" % Test,
+      "co.fs2" %% "fs2-core" % "2.5.10" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.11" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
@@ -443,9 +446,43 @@ lazy val core = project
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-core_$ver/latest/"))
+    }
+  )
+
+lazy val derivation = project
+  .in(file("modules/derivation"))
+  .withId("sangria-derivation")
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria-derivation",
+    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
+    libraryDependencies ++= Seq(
+      // Macros
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    ),
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
+      Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-derivation_$ver/latest/"))
+    }
+  )
+  .disablePlugins(MimaPlugin)
+
+lazy val sangria = project
+  .in(file("modules/sangria"))
+  .withId("sangria")
+  .dependsOn(core, derivation)
+  .settings(scalacSettings ++ shellSettings)
+  .settings(
+    name := "sangria",
+    description := "Scala GraphQL implementation",
+    apiURL := {
+      val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria_$ver/latest/"))
     }
   )
+  .disablePlugins(MimaPlugin)
 
 lazy val benchmarks = project
   .in(file("modules/benchmarks"))

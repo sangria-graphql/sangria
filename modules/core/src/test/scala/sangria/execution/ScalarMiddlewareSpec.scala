@@ -11,6 +11,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class ScalarMiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport {
+  import ScalarMiddlewareSpec._
+
   case class IDEncodingViolation(error: String) extends ValueCoercionViolation(error)
 
   class Ctx(prefix: String) {
@@ -278,4 +280,8 @@ class ScalarMiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSu
         ))
     }
   }
+}
+
+object ScalarMiddlewareSpec {
+  case class UserId(id: String) extends AnyVal
 }

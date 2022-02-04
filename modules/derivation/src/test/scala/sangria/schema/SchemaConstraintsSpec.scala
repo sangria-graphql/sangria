@@ -275,7 +275,7 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         type Query {
           test: BadUnion
         }
-  
+
         union BadUnion
       """,
       "Union type 'BadUnion' must define one or more member types." -> Seq(Pos(6, 9))
