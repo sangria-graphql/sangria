@@ -56,9 +56,9 @@ case class UndefinedConcreteTypeError(
     locations: List[AstLocation] = Nil)
     extends InternalExecutionError(
       s"Can't find appropriate subtype of ${UndefinedConcreteTypeError.renderAbstractType(
-        abstractType)} type '${abstractType.name}' for value of class '${UndefinedConcreteTypeError
-        .renderValueClass(value)}' at path '$path'. Possible types: ${UndefinedConcreteTypeError
-        .renderPossibleTypes(possibleTypes)}. Got value: $value.")
+          abstractType)} type '${abstractType.name}' for value of class '${UndefinedConcreteTypeError
+          .renderValueClass(value)}' at path '$path'. Possible types: ${UndefinedConcreteTypeError
+          .renderPossibleTypes(possibleTypes)}. Got value: $value.")
 
 object UndefinedConcreteTypeError {
   private def renderAbstractType(abstractType: AbstractType) = abstractType match {

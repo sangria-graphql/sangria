@@ -517,7 +517,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             colors: Seq[Color.Value]
         ) =
           s"id = $id, songs = ${songs.mkString(",")}, cc = ${colors.mkString(
-            ",")}, pet = $pet, ctx = ${ctx.ctx.num}"
+              ",")}, pet = $pet, ctx = ${ctx.ctx.num}"
 
         @GraphQLField
         def opt(str: Option[String], color: Option[Color.Value])(pet: Option[Pet]) =
@@ -655,7 +655,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             id: Int,
             songs: Seq[String])(ctx: Context[Ctx, Unit], pet: Pet, colors: Seq[Color.Value]) =
           s"id = $id, songs = ${songs.mkString(",")}, cc = ${colors.mkString(
-            ",")}, pet = $pet, ctx = ${ctx.ctx.num}"
+              ",")}, pet = $pet, ctx = ${ctx.ctx.num}"
 
         def opt(str: Option[String], color: Option[Color.Value])(pet: Option[Pet]) =
           s"str = $str, color = $color, pet = $pet"

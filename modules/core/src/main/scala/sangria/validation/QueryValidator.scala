@@ -73,7 +73,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
       case None =>
         throw new IllegalStateException(
           s"Can't find input type '$inputTypeName' in the schema. Known input types are: ${schema.inputTypes.keys.toVector.sorted
-            .mkString(", ")}.")
+              .mkString(", ")}.")
     }
 
   def validateInputDocument(
