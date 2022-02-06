@@ -61,7 +61,7 @@ case object IDCoercionViolation extends ValueCoercionViolation("String or Int va
 case class EnumValueCoercionViolation(name: String, typeName: String, knownValues: Seq[String])
     extends ValueCoercionViolation(
       s"Enum value '$name' is undefined in enum type '$typeName'. Known values are: ${knownValues
-        .mkString(", ")}.")
+          .mkString(", ")}.")
 case object EnumCoercionViolation extends ValueCoercionViolation(s"Enum value expected")
 
 case class FieldCoercionViolation(
@@ -147,7 +147,7 @@ case class InputObjectTypeMismatchViolation(
     extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Value '$value' of wrong type was provided to the field of type '$typeName' at path '${fieldPath
-      .mkString(".")}'."
+        .mkString(".")}'."
 }
 
 // validation
@@ -376,8 +376,8 @@ case class CycleErrorViolation(
     extends AstNodeViolation {
   lazy val simpleErrorMessage =
     s"Cannot spread fragment '$fragmentName' within itself${if (spreadNames.nonEmpty)
-      s" via ${spreadNames.map("'" + _ + "'").mkString(", ")}"
-    else ""}."
+        s" via ${spreadNames.map("'" + _ + "'").mkString(", ")}"
+      else ""}."
 }
 
 case class UndefinedVarByOpViolation(
@@ -654,8 +654,8 @@ case class NotAllSubscriptionFieldsViolation(typeName: String, fieldNames: Vecto
     extends Violation {
   lazy val errorMessage =
     s"Subscription type '$typeName' may either contain only non-subscription fields or only subscription fields (defined with `Field.subs`). Following fields are non-subscription fields among other subscription fields: ${fieldNames
-      .map("'" + _ + "'")
-      .mkString(", ")}."
+        .map("'" + _ + "'")
+        .mkString(", ")}."
 }
 
 case class NotAllSubscriptionFieldsHaveSameStreamViolation(
@@ -664,8 +664,8 @@ case class NotAllSubscriptionFieldsHaveSameStreamViolation(
     extends Violation {
   lazy val errorMessage =
     s"Some fields of subscription type '$typeName' have incompatible stream implementations: ${fieldNames
-      .map("'" + _ + "'")
-      .mkString(", ")}."
+        .map("'" + _ + "'")
+        .mkString(", ")}."
 }
 
 trait PathBasedViolation {
@@ -843,7 +843,7 @@ case class ConflictingTypeDefinitionViolation(
     extends Violation {
   lazy val errorMessage =
     s"Type name '$typeName' is used for several conflicting GraphQL type kinds: ${conflictingTypes
-      .mkString(", ")}. Conflict found in $parentInfo."
+        .mkString(", ")}. Conflict found in $parentInfo."
 }
 
 case class ConflictingObjectTypeCaseClassViolation(typeName: String, parentInfo: String)
@@ -1155,5 +1155,5 @@ case class InputObjectTypeRecursion(
     extends AstNodeViolation {
   lazy val simpleErrorMessage: String =
     s"Cannot reference InputObjectType '$name' within itself through a series of non-null fields: '$fieldName${if (path.isEmpty) ""
-    else "."}${path.mkString(".")}'."
+      else "."}${path.mkString(".")}'."
 }

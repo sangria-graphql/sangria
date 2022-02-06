@@ -94,7 +94,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context)
           val (args, resolve) =
             if (field.accessor)
               Nil -> q"(c: sangria.schema.Context[$ctxType, $valType]) => ${if (useFn) q"valFn(c.ctx)"
-              else q"c.value"}.${field.method.name}"
+                else q"c.value"}.${field.method.name}"
             else
               fieldWithArguments(config, field, ctxType, valType, useFn)
 
@@ -204,7 +204,7 @@ class DeriveObjectTypeMacro(context: blackbox.Context)
 
     args.flatten.collect { case na: NormalArg => na.tree } ->
       q"(c: sangria.schema.Context[$ctxType, $valType]) => ${if (useFn) q"valFn(c.ctx)"
-      else q"c.value"}.${member.method.name}(...$argsAst)"
+        else q"c.value"}.${member.method.name}(...$argsAst)"
   }
 
   private def createArg(config: Seq[MacroDeriveObjectSetting], member: KnownMember)(arg: Symbol) =
@@ -344,8 +344,8 @@ class DeriveObjectTypeMacro(context: blackbox.Context)
           .map(Right(_))
           .getOrElse(Left(List(
             pos -> s"Unknown argument '$argName' of method '$method'. Known arguments are: ${knownArguments
-              .map(_.name.decodedName)
-              .mkString(", ")}"
+                .map(_.name.decodedName)
+                .mkString(", ")}"
           )))
       }
 

@@ -165,8 +165,8 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
 
       expectedErrors.foreach { case (expected, pos) =>
         withClue(s"Expected error not found: $expected${pos
-          .map(p => s" (line ${p.line}, column ${p.col})")
-          .mkString("; ")}. ${renderViolations(errors)}") {
+            .map(p => s" (line ${p.line}, column ${p.col})")
+            .mkString("; ")}. ${renderViolations(errors)}") {
           errors.exists { error =>
             error.errorMessage.contains(expected) && {
               val errorPositions = error.asInstanceOf[AstNodeViolation].locations

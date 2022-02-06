@@ -678,7 +678,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
     val actualRendered = actualChanges
       .map(c =>
         s"  * ${c.getClass.getSimpleName}: ${c.description}${if (c.breakingChange) " (breaking)"
-        else ""}")
+          else ""}")
       .mkString("\n")
 
     withClue(s"Actual changes:\n$actualRendered\n") {
