@@ -305,7 +305,7 @@ object CatsAssertions extends Matchers {
 
     withLoc.locations.zipWithIndex.foreach { case (pos, idx) =>
       withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(
-        idx).column}): ${violation.errorMessage}") {
+          idx).column}): ${violation.errorMessage}") {
         ErrorLocation(pos.line, pos.column) should be(locations(idx))
       }
     }
@@ -331,7 +331,7 @@ object CatsAssertions extends Matchers {
 
     actualLocs.zipWithIndex.foreach { case (pos, idx) =>
       withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(
-        idx).column}): ${error("message").stringValue}") {
+          idx).column}): ${error("message").stringValue}") {
         ErrorLocation(pos("line").intValue, pos("column").intValue) should be(locations(idx))
       }
     }
@@ -383,10 +383,10 @@ object CatsAssertions extends Matchers {
 
     case (ValidationResult(violations), ErrorCode(code, args, locations)) =>
       withClue(s"Can't find error code '$code'${if (args.nonEmpty)
-        s" with args: ${args.map { case (k, v) => k + " = " + v }.mkString(", ")}"
-      else ""}${if (locations.nonEmpty)
-        s" ${locations.map(l => s"${l.line}:${l.column}").mkString("(", ", ", ")")}"
-      else ""}.") {
+          s" with args: ${args.map { case (k, v) => k + " = " + v }.mkString(", ")}"
+        else ""}${if (locations.nonEmpty)
+          s" ${locations.map(l => s"${l.line}:${l.column}").mkString("(", ", ", ")")}"
+        else ""}.") {
         val v = violations
           .collect { case v: SpecViolation => v }
           .find(v => v.code == code && v.args == args && sameLocations(v, locations))
