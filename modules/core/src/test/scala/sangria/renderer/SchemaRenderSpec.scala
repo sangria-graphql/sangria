@@ -304,6 +304,85 @@ class SchemaRenderSpec
         |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
+    "Print description with some empty lines" in {
+      val description =
+        """first line followed by empty line
+          |
+          |second line""".stripMargin
+      val foo = InterfaceType(
+        "Foo",
+        description,
+        fields[Unit, Unit](
+          Field(
+            "str",
+            OptionType(StringType),
+            description = Some(description),
+            resolve = _ => "foo")
+        ))
+
+      val bar = ObjectType(
+        "Bar",
+        description,
+        interfaces[Unit, Unit](foo),
+        fields[Unit, Unit](
+          Field(
+            "str",
+            OptionType(StringType),
+            description = Some(description),
+            resolve = _ => "foo")))
+
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("bar", OptionType(bar), description = Some(description), resolve = _ => ())
+        ))
+
+      val schema = Schema(root)
+
+      render(schema) should equal(s"""
+        |schema {
+        |  query: Root
+        |}
+        |
+        |$quotes
+        |first line followed by empty line
+        |
+        |second line
+        |$quotes
+        |type Bar implements Foo {
+        |  $quotes
+        |  first line followed by empty line
+        |
+        |  second line
+        |  $quotes
+        |  str: String
+        |}
+        |
+        |$quotes
+        |first line followed by empty line
+        |
+        |second line
+        |$quotes
+        |interface Foo {
+        |  $quotes
+        |  first line followed by empty line
+        |
+        |  second line
+        |  $quotes
+        |  str: String
+        |}
+        |
+        |type Root {
+        |  $quotes
+        |  first line followed by empty line
+        |
+        |  second line
+        |  $quotes
+        |  bar: Bar
+        |}
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
+    }
+
     "Print Multiple Interface" in {
       val foo = InterfaceType(
         "Foo",
