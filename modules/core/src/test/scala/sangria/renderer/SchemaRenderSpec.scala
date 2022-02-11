@@ -332,7 +332,6 @@ class SchemaRenderSpec
         ))
 
       val schema = Schema(root)
-      val doubleSpaces = "  "
 
       render(schema) should equal(s"""
         |schema {
@@ -351,7 +350,7 @@ class SchemaRenderSpec
         |interface Foo {
         |  $quotes
         |  first line followed by empty line
-        |$doubleSpaces
+        |
         |  second line
         |  $quotes
         |  str: String
