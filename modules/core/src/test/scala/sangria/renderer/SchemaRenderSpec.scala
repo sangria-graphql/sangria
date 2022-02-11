@@ -304,6 +304,65 @@ class SchemaRenderSpec
         |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
+    "Print description with some empty lines" in {
+      val description =
+        """first line followed by empty line
+          |
+          |second line""".stripMargin
+      val foo = InterfaceType(
+        "Foo",
+        description,
+        fields[Unit, Unit](
+          Field(
+            "str",
+            OptionType(StringType),
+            description = Some(description),
+            resolve = _ => "foo")
+        ))
+
+      val bar = ObjectType(
+        "Bar",
+        interfaces[Unit, Unit](foo),
+        fields[Unit, Unit](Field("str", OptionType(StringType), resolve = _ => "foo")))
+
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("bar", OptionType(bar), resolve = _ => ())
+        ))
+
+      val schema = Schema(root)
+      val doubleSpaces = "  "
+
+      render(schema) should equal(s"""
+        |schema {
+        |  query: Root
+        |}
+        |
+        |type Bar implements Foo {
+        |  str: String
+        |}
+        |
+        |$quotes
+        |first line followed by empty line
+        |
+        |second line
+        |$quotes
+        |interface Foo {
+        |  $quotes
+        |  first line followed by empty line
+        |$doubleSpaces
+        |  second line
+        |  $quotes
+        |  str: String
+        |}
+        |
+        |type Root {
+        |  bar: Bar
+        |}
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
+    }
+
     "Print Multiple Interface" in {
       val foo = InterfaceType(
         "Foo",
