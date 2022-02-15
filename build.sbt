@@ -1,14 +1,5 @@
 import sbt.Developer
 import sbt.Keys._
-import com.typesafe.tools.mima.core.{
-  DirectMissingMethodProblem,
-  IncompatibleMethTypeProblem,
-  IncompatibleResultTypeProblem,
-  MissingClassProblem,
-  MissingTypesProblem,
-  Problem,
-  ProblemFilters
-}
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
