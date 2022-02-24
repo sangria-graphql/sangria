@@ -61,7 +61,7 @@ lazy val parser = project
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
     libraryDependencies ++= Seq(
       // AST Parser
-      "org.parboiled" %% "parboiled" % "2.3.0",
+      "org.parboiled" %% "parboiled" % "2.4.0",
       "org.scalatest" %% "scalatest" % "3.2.11" % Test
     ),
     apiURL := {
