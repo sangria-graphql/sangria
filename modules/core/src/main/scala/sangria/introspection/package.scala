@@ -429,6 +429,7 @@ package object introspection {
     name = "__typename",
     fieldType = StringType,
     description = Some("The name of the current Object type at runtime."),
+    complexity = Config.config.introspectionComplexity.map(c => (_: Any, _, _) => c),
     resolve = ctx => ctx.parentType.name)
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)

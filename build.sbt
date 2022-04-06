@@ -100,7 +100,10 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.28" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.143" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.143" % Test,
+      // Config
+      "com.typesafe" % "config" % "1.4.2",
+      "com.iheart" %% "ficus" % "1.5.2"
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -202,3 +205,5 @@ lazy val shellSettings = Seq(
 lazy val noPublishSettings = Seq(
   publish / skip := true
 )
+
+logLevel := Level.Error
