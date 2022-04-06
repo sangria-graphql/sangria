@@ -9,5 +9,5 @@ object Config {
 
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 
-  val config: Config = ConfigFactory.load().as[Config]("sangria")
+  def load(): Config = ConfigFactory.load().as[Config]("sangria")
 }

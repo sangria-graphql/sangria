@@ -425,12 +425,13 @@ package object introspection {
     resolve = ctx => ctx.schema.types.get(ctx.arg[String]("name")).map(true -> _._2)
   )
 
-  val TypeNameMetaField: Field[Unit, Unit] = Field(
+  def TypeNameMetaField: Field[Unit, Unit] = Field(
     name = "__typename",
     fieldType = StringType,
     description = Some("The name of the current Object type at runtime."),
-    complexity = Config.config.introspectionComplexity.map(c => (_: Any, _, _) => c),
-    resolve = ctx => ctx.parentType.name)
+    complexity = Config.load().introspectionComplexity.map(c => (_: Any, _, _) => c),
+    resolve = ctx => ctx.parentType.name
+  )
 
   val MetaFieldNames = Set(SchemaMetaField.name, TypeMetaField.name, TypeNameMetaField.name)
 

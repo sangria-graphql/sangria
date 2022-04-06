@@ -1,7 +1,8 @@
 package sangria.execution
 
 import java.util.concurrent.atomic.AtomicInteger
-import sangria.ast
+
+import sangria.{Config, ast}
 import sangria.execution.QueryReducer.ArgumentValuesFn
 import sangria.macros._
 import sangria.marshalling.InputUnmarshaller.mapVars
@@ -9,10 +10,11 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport
 import sangria.validation.StringCoercionViolation
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -485,6 +487,68 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
 
       error.cause.getMessage should be(
         "Too complex query: max allowed complexity is 14.0, but got 15.0")
+    }
+
+    "ensure introspection complexity defaults to 1" in {
+      val Success(query) = QueryParser.parse("""
+        {
+          __typename
+        }
+      """)
+
+      var complexity = 0.0d
+
+      val complReducer = QueryReducer.measureComplexity[Info] { (c, ctx) =>
+        complexity = c
+        ctx
+      }
+
+      Executor
+        .execute(schema, query, userContext = Info(Nil), queryReducers = complReducer :: Nil)
+        .await
+
+      complexity shouldEqual 1
+    }
+
+    "ensure introspection complexity set in app.conf to be 0 is respected" in {
+      ConfigFactory.invalidateCaches()
+      System.setProperty("config.resource", "app.conf");
+
+      val Success(query1) = QueryParser.parse("""
+        {
+          scalar
+        }
+      """)
+
+      val Success(query2) = QueryParser.parse("""
+        {
+          scalar
+          __typename
+        }
+      """)
+
+      var complexity1 = 0.0d
+      var complexity2 = 0.0d
+
+      val complReducer1 = QueryReducer.measureComplexity[Info] { (c, ctx) =>
+        complexity1 = c
+        ctx
+      }
+
+      val complReducer2 = QueryReducer.measureComplexity[Info] { (c, ctx) =>
+        complexity2 = c
+        ctx
+      }
+
+      Executor
+        .execute(schema, query1, userContext = Info(Nil), queryReducers = complReducer1 :: Nil)
+        .await
+
+      Executor
+        .execute(schema, query2, userContext = Info(Nil), queryReducers = complReducer2 :: Nil)
+        .await
+
+      complexity1 shouldEqual complexity2
     }
   }
 
