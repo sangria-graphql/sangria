@@ -163,7 +163,7 @@ object UpdateCtx {
     new UpdateCtx(action, newCtx)
 }
 
-private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
+case class SubscriptionValue[Ctx, Val, S[_]](
     source: Val,
     stream: SubscriptionStream[S])
     extends LeafAction[Ctx, Val] {
