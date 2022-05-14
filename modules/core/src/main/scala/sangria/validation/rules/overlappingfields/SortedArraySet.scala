@@ -18,8 +18,8 @@ class SortedArraySet[T](private val sortedMembers: util.ArrayList[T])
   override def equals(obj: Any): Boolean =
     obj match {
       case other: SortedArraySet[_] =>
-        eq(other) || (hashCode == other.hashCode && size() == other
-          .size() && sortedMembers == other.sortedMembers)
+        eq(other) || hashCode == other.hashCode && size() == other
+          .size() && sortedMembers == other.sortedMembers
       case _ => false
     }
 
@@ -55,7 +55,7 @@ object SortedArraySet {
       this(new util.ArrayList[T](sizeHint), ordering)
 
     def this(ordering: Ordering[T]) =
-      this(new util.ArrayList[T](), ordering)
+      this(new util.ArrayList[T], ordering)
 
     def add(value: T): this.type = {
       members.add(value)

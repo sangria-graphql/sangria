@@ -155,8 +155,8 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   }
 
   def compareUnorderedProjectedNames(x: ProjectedName, y: ProjectedName): Boolean =
-    (x.name == y.name) &&
-      (x.children.size == y.children.size) &&
+    x.name == y.name &&
+      x.children.size == y.children.size &&
       x.children
         .sortBy(_.name)
         .zip(y.children.sortBy(_.name))

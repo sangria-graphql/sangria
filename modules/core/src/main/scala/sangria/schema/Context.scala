@@ -176,7 +176,7 @@ private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
 case class ProjectionName(name: String) extends FieldTag
 case object ProjectionExclude extends FieldTag
 
-trait Projector[Ctx, Val, Res] extends (Context[Ctx, Val] => Action[Ctx, Res]) {
+trait Projector[Ctx, Val, Res] extends Context[Ctx, Val] => Action[Ctx, Res] {
   val maxLevel: Int = Integer.MAX_VALUE
   def apply(ctx: Context[Ctx, Val], projected: Vector[ProjectedName]): Action[Ctx, Res]
 }
@@ -208,7 +208,7 @@ case class ProjectedName(
     args: Args = Args.empty) {
   lazy val asVector: Vector[Vector[String]] = {
     def loop(name: ProjectedName): Vector[Vector[String]] =
-      Vector(name.name) +: (name.children.flatMap(loop).map(name.name +: _))
+      Vector(name.name) +: name.children.flatMap(loop).map(name.name +: _)
 
     loop(this)
   }

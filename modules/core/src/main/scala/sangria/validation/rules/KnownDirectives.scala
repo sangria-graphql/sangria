@@ -22,7 +22,7 @@ class KnownDirectives extends ValidationRule {
           getCorrectLocation(ctx.typeInfo.ancestors) match {
             case None =>
               Left(Vector(MisplacedDirectiveViolation(name, None, ctx.sourceMapper, pos.toList)))
-            case correct @ Some((correctLocation, _)) if !dir.locations.contains(correctLocation) =>
+            case correct @ Some(correctLocation, _) if !dir.locations.contains(correctLocation) =>
               Left(Vector(MisplacedDirectiveViolation(name, correct, ctx.sourceMapper, pos.toList)))
             case _ => AstVisitorCommand.RightContinue
           }

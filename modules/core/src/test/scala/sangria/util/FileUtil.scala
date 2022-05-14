@@ -17,7 +17,7 @@ object FileUtil extends StringMatchers {
     loadResource(root + "/" + name).parseYaml
 
   def loadScenarios(path: String, root: String = "scenarios") = this.synchronized {
-    val yamlResources = new ClassGraph()
+    val yamlResources = new ClassGraph
       .acceptPackages(root + "." + path)
       .scan()
       .getResourcesWithExtension("yaml")

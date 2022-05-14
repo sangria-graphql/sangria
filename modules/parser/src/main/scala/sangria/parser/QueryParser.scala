@@ -260,16 +260,16 @@ private[parser] sealed trait TypeSystemDefinitions {
   }
 
   private[this] def SchemaExtension = rule {
-    (Comments ~ trackPos ~ extend ~ schema ~ (DirectivesConst.? ~> (_.getOrElse(
+    Comments ~ trackPos ~ extend ~ schema ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ wsNoComment('{') ~ OperationTypeDefinition.+ ~ Comments ~ wsNoComment(
       '}') ~> ((comment, location, dirs, ops, tc) =>
-      ast.SchemaExtensionDefinition(ops.toVector, dirs, comment, tc, location))) |
-      (Comments ~ trackPos ~ extend ~ schema ~ DirectivesConst ~> ((comment, location, dirs) =>
-        ast.SchemaExtensionDefinition(Vector.empty, dirs, comment, Vector.empty, location)))
+      ast.SchemaExtensionDefinition(ops.toVector, dirs, comment, tc, location)) |
+      Comments ~ trackPos ~ extend ~ schema ~ DirectivesConst ~> ((comment, location, dirs) =>
+        ast.SchemaExtensionDefinition(Vector.empty, dirs, comment, Vector.empty, location))
   }
 
   private[this] def ObjectTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
+    Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
       Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition ~> (
       (comment, location, name, interfaces, dirs, fields) =>
         ast.ObjectTypeExtensionDefinition(
@@ -279,8 +279,8 @@ private[parser] sealed trait TypeSystemDefinitions {
           dirs,
           comment,
           fields._2,
-          location))) |
-      (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
+          location)) |
+      Comments ~ trackPos ~ extend ~ `type` ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
         Vector.empty))) ~ DirectivesConst ~> ((comment, location, name, interfaces, dirs) =>
         ast.ObjectTypeExtensionDefinition(
           name,
@@ -289,8 +289,8 @@ private[parser] sealed trait TypeSystemDefinitions {
           dirs,
           comment,
           Vector.empty,
-          location))) |
-      (Comments ~ trackPos ~ extend ~ `type` ~ Name ~ ImplementsInterfaces ~> (
+          location)) |
+      Comments ~ trackPos ~ extend ~ `type` ~ Name ~ ImplementsInterfaces ~> (
         (comment, location, name, interfaces) =>
           ast.ObjectTypeExtensionDefinition(
             name,
@@ -299,11 +299,11 @@ private[parser] sealed trait TypeSystemDefinitions {
             Vector.empty,
             comment,
             Vector.empty,
-            location)))
+            location))
   }
 
   private[this] def InterfaceTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
+    Comments ~ trackPos ~ extend ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ FieldsDefinition ~> ((comment, location, name, dirs, fields) =>
       ast.InterfaceTypeExtensionDefinition(
         name,
@@ -311,8 +311,8 @@ private[parser] sealed trait TypeSystemDefinitions {
         dirs,
         comment,
         fields._2,
-        location))) |
-      (Comments ~ trackPos ~ extend ~ interface ~ Name ~ DirectivesConst ~> (
+        location)) |
+      Comments ~ trackPos ~ extend ~ interface ~ Name ~ DirectivesConst ~> (
         (comment, location, name, dirs) =>
           ast.InterfaceTypeExtensionDefinition(
             name,
@@ -320,20 +320,20 @@ private[parser] sealed trait TypeSystemDefinitions {
             dirs,
             comment,
             Vector.empty,
-            location)))
+            location))
   }
 
   private[this] def UnionTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ union ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
+    Comments ~ trackPos ~ extend ~ union ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ UnionMemberTypes ~> ((comment, location, name, dirs, types) =>
-      ast.UnionTypeExtensionDefinition(name, types, dirs, comment, location))) |
-      (Comments ~ trackPos ~ extend ~ union ~ Name ~ DirectivesConst ~> (
+      ast.UnionTypeExtensionDefinition(name, types, dirs, comment, location)) |
+      Comments ~ trackPos ~ extend ~ union ~ Name ~ DirectivesConst ~> (
         (comment, location, name, dirs) =>
-          ast.UnionTypeExtensionDefinition(name, Vector.empty, dirs, comment, location)))
+          ast.UnionTypeExtensionDefinition(name, Vector.empty, dirs, comment, location))
   }
 
   private[this] def EnumTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ enum ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
+    Comments ~ trackPos ~ extend ~ enum ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ EnumValuesDefinition ~> ((comment, location, name, dirs, values) =>
       ast.EnumTypeExtensionDefinition(
         name,
@@ -341,8 +341,8 @@ private[parser] sealed trait TypeSystemDefinitions {
         dirs,
         comment,
         values._2,
-        location))) |
-      (Comments ~ trackPos ~ extend ~ enum ~ Name ~ DirectivesConst ~> (
+        location)) |
+      Comments ~ trackPos ~ extend ~ enum ~ Name ~ DirectivesConst ~> (
         (comment, location, name, dirs) =>
           ast.EnumTypeExtensionDefinition(
             name,
@@ -350,11 +350,11 @@ private[parser] sealed trait TypeSystemDefinitions {
             dirs,
             comment,
             Vector.empty,
-            location)))
+            location))
   }
 
   private[this] def InputObjectTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ inputType ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
+    Comments ~ trackPos ~ extend ~ inputType ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ InputFieldsDefinition ~> ((comment, location, name, dirs, fields) =>
       ast.InputObjectTypeExtensionDefinition(
         name,
@@ -362,8 +362,8 @@ private[parser] sealed trait TypeSystemDefinitions {
         dirs,
         comment,
         fields._2,
-        location))) |
-      (Comments ~ trackPos ~ extend ~ inputType ~ Name ~ DirectivesConst ~> (
+        location)) |
+      Comments ~ trackPos ~ extend ~ inputType ~ Name ~ DirectivesConst ~> (
         (comment, location, name, dirs) =>
           ast.InputObjectTypeExtensionDefinition(
             name,
@@ -371,7 +371,7 @@ private[parser] sealed trait TypeSystemDefinitions {
             dirs,
             comment,
             Vector.empty,
-            location)))
+            location))
   }
 
   private[this] def ScalarTypeExtensionDefinition = rule {

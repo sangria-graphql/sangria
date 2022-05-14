@@ -211,7 +211,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
     "allow field names transformation" in {
       val tpe = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(_.toUpperCase))
 
-      tpe.fields.map(_.name) should (have(size(2)).and(contain("ID")).and(contain("MYLIST")))
+      tpe.fields.map(_.name) should have(size(2)).and(contain("ID")).and(contain("MYLIST"))
 
       val transformer2 = (s: String) =>
         s.zipWithIndex
@@ -223,7 +223,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       val tpe2 = deriveObjectType[Unit, TestSubjectAnnotated](TransformFieldNames(transformer2))
 
-      tpe2.fields.map(_.name) should (have(size(2)).and(contain("iD")).and(contain("mYlIsT")))
+      tpe2.fields.map(_.name) should have(size(2)).and(contain("iD")).and(contain("mYlIsT"))
     }
 
     "allow to set name, description, deprecationReason and fieldTags with annotations" in {
@@ -339,9 +339,8 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
     "support companion objects for `Enumeration`s" in {
       val enum = test.AnotherEnum.valNameType
 
-      enum.values.map(_.name) should (
+      enum.values.map(_.name) should
         have(size(3)).and(contain("FOO")).and(contain("BAR")).and(contain("BAZ"))
-      )
     }
 
     "be able to find other types via implicit GraphQL types" in {

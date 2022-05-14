@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 
 trait OutputMatchers extends Matchers {
   def captureStdErr(fn: => Unit) = {
-    val output = new ByteArrayOutputStream()
+    val output = new ByteArrayOutputStream
     val printStream = new PrintStream(output)
     val oldErr = System.err
 
@@ -23,7 +23,7 @@ trait OutputMatchers extends Matchers {
   }
 
   def captureConsoleOut(fn: => Unit) = {
-    val output = new ByteArrayOutputStream()
+    val output = new ByteArrayOutputStream
 
     Console.withOut(output) {
       fn

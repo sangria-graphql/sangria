@@ -57,10 +57,10 @@ class SchemaDefinitionSpec extends AnyWordSpec with Matchers with FutureResultSu
       schema.types.keySet should be(fromIntro)
 
       List(schema.types.keySet, fromIntro).foreach { typeNames =>
-        typeNames should (contain("Named")
+        typeNames should contain("Named")
           .and(contain("Dog"))
           .and(contain("Cat"))
-          .and(contain("CustomScalar")))
+          .and(contain("CustomScalar"))
       }
     }
   }

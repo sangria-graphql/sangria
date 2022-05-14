@@ -707,16 +707,15 @@ class Resolver[Ctx](
         acc
       case ((errors, s @ Some(acc)), CollectedField(name, origField, Failure(error))) =>
         errors.add(path.add(origField, tpe), error) -> (if (isOptional(tpe, origField.name))
-                                                          Some(acc :+ (Vector(origField) -> None))
+                                                          Some(acc :+ Vector(origField) -> None)
                                                         else None)
       case ((errors, s @ Some(acc)), CollectedField(name, origField, Success(fields))) =>
         resolveField(userCtx, tpe, path.add(origField, tpe), value, errors, name, fields) match {
           case StandardFieldResolution(updatedErrors, result, updateCtx) =>
             updatedErrors -> Some(
-              acc :+ (fields -> Some(
-                (tpe.getField(schema, origField.name).head, updateCtx, result))))
+              acc :+ fields -> Some((tpe.getField(schema, origField.name).head, updateCtx, result)))
           case ErrorFieldResolution(updatedErrors) if isOptional(tpe, origField.name) =>
-            updatedErrors -> Some(acc :+ (Vector(origField) -> None))
+            updatedErrors -> Some(acc :+ Vector(origField) -> None)
           case ErrorFieldResolution(updatedErrors) => updatedErrors -> None
         }
     }
@@ -806,7 +805,7 @@ class Resolver[Ctx](
       case Some(results) =>
         val resolvedValues = results.map {
           case (astFields, None) => astFields.head -> Result(ErrorRegistry.empty, None)
-          case (astFields, Some((field, updateCtx, Value(v)))) =>
+          case (astFields, Some(field, updateCtx, Value(v))) =>
             val fieldsPath = path.add(astFields.head, tpe)
 
             try
@@ -824,7 +823,7 @@ class Resolver[Ctx](
                   None)
             }
 
-          case (astFields, Some((field, updateCtx, SequenceLeafAction(actions)))) =>
+          case (astFields, Some(field, updateCtx, SequenceLeafAction(actions))) =>
             val fieldsPath = path.add(astFields.head, tpe)
             val values = resolveActionSequenceValues(fieldsPath, astFields, field, actions)
             val future = Future.sequence(values.map(_.value))
@@ -883,7 +882,7 @@ class Resolver[Ctx](
 
             astFields.head -> DeferredResult(Future.successful(deferred) +: deferredFut, resolved)
 
-          case (astFields, Some((field, updateCtx, PartialValue(v, es)))) =>
+          case (astFields, Some(field, updateCtx, PartialValue(v, es))) =>
             val fieldsPath = path.add(astFields.head, tpe)
 
             es.foreach(resolveError(updateCtx, _))
@@ -905,7 +904,7 @@ class Resolver[Ctx](
                     .append(fieldsPath, es, astFields.head.location),
                   None)
             }
-          case (astFields, Some((field, updateCtx, TryValue(v)))) =>
+          case (astFields, Some(field, updateCtx, TryValue(v))) =>
             val fieldsPath = path.add(astFields.head, tpe)
 
             v match {
@@ -932,7 +931,7 @@ class Resolver[Ctx](
                   ErrorRegistry(fieldsPath, resolveError(updateCtx, e), astFields.head.location),
                   None)
             }
-          case (astFields, Some((field, updateCtx, DeferredValue(deferred)))) =>
+          case (astFields, Some(field, updateCtx, DeferredValue(deferred))) =>
             val fieldsPath = path.add(astFields.head, tpe)
             val promise = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
             val (args, complexity) = calcComplexity(fieldsPath, astFields.head, field, userContext)
@@ -963,7 +962,7 @@ class Resolver[Ctx](
                     None)
                 }
             )
-          case (astFields, Some((field, updateCtx, FutureValue(future)))) =>
+          case (astFields, Some(field, updateCtx, FutureValue(future))) =>
             val fieldsPath = path.add(astFields.head, tpe)
 
             val resolved = future
@@ -1017,7 +1016,7 @@ class Resolver[Ctx](
                 process()
             }
 
-          case (astFields, Some((field, updateCtx, PartialFutureValue(future)))) =>
+          case (astFields, Some(field, updateCtx, PartialFutureValue(future))) =>
             val fieldsPath = path.add(astFields.head, tpe)
 
             val resolved = future
@@ -1050,7 +1049,7 @@ class Resolver[Ctx](
 
             astFields.head -> DeferredResult(Vector(deferred), value)
 
-          case (astFields, Some((field, updateCtx, DeferredFutureValue(deferredValue)))) =>
+          case (astFields, Some(field, updateCtx, DeferredFutureValue(deferredValue))) =>
             val fieldsPath = path.add(astFields.head, tpe)
             val promise = Promise[(ChildDeferredContext, Any, Vector[Throwable])]()
 
@@ -1092,7 +1091,7 @@ class Resolver[Ctx](
                     None)
                 }
             )
-          case (astFields, Some((_, updateCtx, SubscriptionValue(_, _)))) =>
+          case (astFields, Some(_, updateCtx, SubscriptionValue(_, _))) =>
             val fieldsPath = path.add(astFields.head, tpe)
             val error = new IllegalStateException(
               "Subscription values are not supported for normal operations")
@@ -1101,7 +1100,7 @@ class Resolver[Ctx](
               ErrorRegistry(fieldsPath, resolveError(updateCtx, error), astFields.head.location),
               None)
 
-          case (astFields, Some((_, updateCtx, _: MappedSequenceLeafAction[_, _, _]))) =>
+          case (astFields, Some(_, updateCtx, _: MappedSequenceLeafAction[_, _, _])) =>
             val fieldsPath = path.add(astFields.head, tpe)
             val error =
               new IllegalStateException("MappedSequenceLeafAction is not supposed to appear here")

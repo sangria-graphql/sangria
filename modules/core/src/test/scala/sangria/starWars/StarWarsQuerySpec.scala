@@ -431,12 +431,12 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (have(size(1)).and(
+      errors should have(size(1)).and(
         contain(
           Map(
             "message" -> "secretBackstory is secret.",
             "path" -> List("hero", "secretBackstory"),
-            "locations" -> Vector(Map("line" -> 5, "column" -> 13))))))
+            "locations" -> Vector(Map("line" -> 5, "column" -> 13)))))
     }
 
     "Correctly reports error on accessing secretBackstory in a list" in {
@@ -471,7 +471,7 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (have(size(3))
+      errors should have(size(3))
         .and(
           contain(
             Map(
@@ -489,7 +489,7 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
             Map(
               "message" -> "secretBackstory is secret.",
               "path" -> Vector("hero", "friends", 2, "secretBackstory"),
-              "locations" -> Vector(Map("line" -> 7, "column" -> 15))))))
+              "locations" -> Vector(Map("line" -> 7, "column" -> 15)))))
     }
 
     "Correctly reports error on accessing through an alias" in {
@@ -511,12 +511,12 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (have(size(1)).and(
+      errors should have(size(1)).and(
         contain(
           Map(
             "message" -> "secretBackstory is secret.",
             "path" -> List("mainHero", "story"),
-            "locations" -> Vector(Map("line" -> 5, "column" -> 13))))))
+            "locations" -> Vector(Map("line" -> 5, "column" -> 13)))))
     }
 
     "Full response path is included when fields are non-nullable" in {
@@ -559,12 +559,12 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val errors = res("errors").asInstanceOf[Seq[Any]]
 
-      errors should (have(size(1)).and(
+      errors should have(size(1)).and(
         contain(
           Map(
             "message" -> "Catch me if you can",
             "path" -> List("nullableA", "nullableA", "nonNullA", "nonNullA", "throws"),
-            "locations" -> List(Map("line" -> 7, "column" -> 19))))))
+            "locations" -> List(Map("line" -> 7, "column" -> 19)))))
     }
   }
 }

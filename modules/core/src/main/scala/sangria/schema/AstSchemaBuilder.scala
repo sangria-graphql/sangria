@@ -279,7 +279,7 @@ object AstSchemaBuilder {
             node.comments.foldRight((nodeLine - 1, Vector.empty[String])) {
               case (c, (expectedLine, acc))
                   if c.location.isDefined && c.location.get.line == expectedLine =>
-                (expectedLine - 1) -> (c.text +: acc)
+                expectedLine - 1 -> (c.text +: acc)
               case (_, acc) => acc
             }
 

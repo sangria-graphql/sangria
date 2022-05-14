@@ -2320,7 +2320,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           }
         """
 
-      (parseQuery(query) == parseQuery(query)) should be(true)
+      parseQuery(query) == parseQuery(query) should be(true)
     }
 
     "not be equal for the same queries with different AST node positions" in {
@@ -2344,7 +2344,7 @@ class QueryParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           }
         """
 
-      (parseQuery(query1) == parseQuery(query2)) should be(false)
+      parseQuery(query1) == parseQuery(query2) should be(false)
     }
   }
 }

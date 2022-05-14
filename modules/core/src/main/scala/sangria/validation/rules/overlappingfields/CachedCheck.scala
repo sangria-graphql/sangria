@@ -17,7 +17,7 @@ class CachedCheck {
   private type FieldSet = SortedArraySet[SelectionField]
   private type FieldSetBuilder = SortedArraySet.Builder[SelectionField]
 
-  private val cache: util.HashMap[FieldSet, FieldSetCache] = new util.HashMap()
+  private val cache: util.HashMap[FieldSet, FieldSetCache] = new util.HashMap
 
   def checkFieldsInSetCanMerge(
       fields: FieldSet,
@@ -108,7 +108,7 @@ class CachedCheck {
     private def groupByKnownResponseShape()
         : util.LinkedHashMap[TypeShape.Known, util.ArrayList[SelectionField]] = {
       val fieldsWithKnownResponseShapes =
-        new util.LinkedHashMap[TypeShape.Known, util.ArrayList[SelectionField]]()
+        new util.LinkedHashMap[TypeShape.Known, util.ArrayList[SelectionField]]
       fields.forEach {
         new Consumer[SelectionField] {
           override def accept(field: SelectionField): Unit =
@@ -120,7 +120,7 @@ class CachedCheck {
                     knownShape,
                     new function.Function[TypeShape.Known, util.ArrayList[SelectionField]] {
                       override def apply(key: TypeShape.Known): util.ArrayList[SelectionField] =
-                        new util.ArrayList()
+                        new util.ArrayList
                     }
                   )
                   .add(field)
@@ -159,7 +159,7 @@ class CachedCheck {
     private def groupByFieldNameAndArguments()
         : util.LinkedHashMap[FieldNameAndArguments, util.ArrayList[SelectionField]] = {
       val fieldsWithSameNameAndArguments =
-        new util.LinkedHashMap[FieldNameAndArguments, util.ArrayList[SelectionField]]()
+        new util.LinkedHashMap[FieldNameAndArguments, util.ArrayList[SelectionField]]
       fields.forEach {
         new Consumer[SelectionField] {
           override def accept(field: SelectionField): Unit =
@@ -168,7 +168,7 @@ class CachedCheck {
                 field.fieldNameAndArguments,
                 new function.Function[FieldNameAndArguments, util.ArrayList[SelectionField]] {
                   override def apply(key: FieldNameAndArguments): util.ArrayList[SelectionField] =
-                    new util.ArrayList()
+                    new util.ArrayList
                 }
               )
               .add(field)
@@ -179,7 +179,7 @@ class CachedCheck {
 
     private def groupByOutputNames(): util.ArrayList[FieldSetCache] =
       if (cacheGroupByOutputNames == null) {
-        val outputNames = new util.LinkedHashMap[OutputName, FieldSetBuilder]()
+        val outputNames = new util.LinkedHashMap[OutputName, FieldSetBuilder]
         fields.forEach {
           new Consumer[SelectionField] {
             override def accept(field: SelectionField): Unit =
@@ -216,9 +216,9 @@ class CachedCheck {
 
     private def groupByCommonParentTypes(): util.ArrayList[FieldSetCache] =
       if (cacheGroupByCommonParentTypes == null) {
-        val fieldsWithAbstractParentTypes = new util.ArrayList[SelectionField]()
+        val fieldsWithAbstractParentTypes = new util.ArrayList[SelectionField]
         val fieldsWithConcreteParents =
-          new util.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder]()
+          new util.LinkedHashMap[TypeAbstractness.Concrete, FieldSetBuilder]
         fields.forEach {
           new Consumer[SelectionField] {
             override def accept(field: SelectionField): Unit =

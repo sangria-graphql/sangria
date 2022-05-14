@@ -134,7 +134,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
         val key = ctx.parentType.name + "." + ctx.field.name
         val list = queryVal.getOrElse(key, Nil)
 
-        queryVal.update(key, list :+ (System.currentTimeMillis() - fieldVal))
+        queryVal.update(key, list :+ System.currentTimeMillis() - fieldVal)
 
         if (value == "nothing special") Some("something very special!") else None
       }
@@ -151,7 +151,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
         val list = queryVal.getOrElse(key, Nil)
         val errors = queryVal.getOrElse("errors", Nil)
 
-        queryVal.update(key, list :+ (System.currentTimeMillis() - fieldVal))
+        queryVal.update(key, list :+ System.currentTimeMillis() - fieldVal)
         queryVal.update("errors", errors :+ 1L)
       }
   }

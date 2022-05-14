@@ -62,8 +62,8 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
       .pre
       .members
       .filter(s =>
-        s.isTerm && !(s.isMethod || s.isModule || s.isClass) && (s.typeSignature.resultType <:< typeOf[
-          Enumeration#Value]))
+        s.isTerm && !(s.isMethod || s.isModule || s.isClass) && s.typeSignature.resultType <:< typeOf[
+          Enumeration#Value])
       .toList
 
   private def collectKnownEnumSubtypes(s: Symbol): Either[(Position, String), List[Symbol]] =
@@ -203,7 +203,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
 
     config.collect { case MacroUppercaseValues(pos) => pos }.lastOption match {
       case Some(pos) if config.exists(_.isInstanceOf[MacroRenameValue]) =>
-        valueValidations :+ (pos -> "`UppercaseValues` is used together with `RenameValue` which is not allowed.")
+        valueValidations :+ pos -> "`UppercaseValues` is used together with `RenameValue` which is not allowed."
       case _ =>
         valueValidations
     }

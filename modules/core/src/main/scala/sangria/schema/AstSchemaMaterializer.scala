@@ -120,7 +120,7 @@ class AstSchemaMaterializer[Ctx] private (
         subscriptionAlreadyExists = schema.subscription.isDefined
       ) match {
         case Left(errors) => throw MaterializedSchemaValidationError(errors)
-        case Right((_, mutationExt, subscriptionExt)) =>
+        case Right(_, mutationExt, subscriptionExt) =>
           val mutationType =
             mutationExt
               .map(getObjectType(sdlOrigin, _).asInstanceOf[ObjectType[Ctx, Val]])
@@ -1010,13 +1010,13 @@ object AstSchemaMaterializer {
     }
 
     val qErrors =
-      if ((!queryAlreadyExists && queries.size != 1) || (queryAlreadyExists && queries.nonEmpty))
+      if (!queryAlreadyExists && queries.size != 1 || queryAlreadyExists && queries.nonEmpty)
         Vector(
           NonUniqueRootTypeViolation("query", sourceMapper, queries.flatMap(_.location).toList))
       else Vector.empty
 
     val mErrors =
-      if ((!mutationAlreadyExists && mutations.size > 1) || (mutationAlreadyExists && mutations.nonEmpty))
+      if (!mutationAlreadyExists && mutations.size > 1 || mutationAlreadyExists && mutations.nonEmpty)
         qErrors :+ NonUniqueRootTypeViolation(
           "mutation",
           sourceMapper,
@@ -1024,7 +1024,7 @@ object AstSchemaMaterializer {
       else qErrors
 
     val sErrors =
-      if ((!subscriptionAlreadyExists && subscriptions.size > 1) || (subscriptionAlreadyExists && subscriptions.nonEmpty))
+      if (!subscriptionAlreadyExists && subscriptions.size > 1 || subscriptionAlreadyExists && subscriptions.nonEmpty)
         mErrors :+ NonUniqueRootTypeViolation(
           "subscription",
           sourceMapper,

@@ -667,7 +667,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "clearId should remove entry from cache" in {
-      val cache = new SimpleFetcherCache() {
+      val cache = new SimpleFetcherCache {
         override def cacheKey(id: Any): Any = id.toString
       }
       cache.update(1, "one")

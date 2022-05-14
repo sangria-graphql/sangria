@@ -68,7 +68,7 @@ class ValueCoercionHelper[Ctx](
       }
 
     def getCoercedDefault = {
-      val Some((defaultValue, toInput)) = default.asInstanceOf[Option[(Any, ToInput[Any, Any])]]
+      val Some(defaultValue, toInput) = default.asInstanceOf[Option[(Any, ToInput[Any, Any])]]
       val (defaultInput, inputUnmarshaller) = toInput.toInput(defaultValue)
 
       coerceInputValue(

@@ -13,13 +13,13 @@ import sangria.schema.{CompositeType, OutputType}
   */
 class SelectionBuilder {
 
-  private val fieldBuilder = new SelectionField.Builder()
+  private val fieldBuilder = new SelectionField.Builder
 
-  private val fragments: util.HashMap[String, SelectionContainer] = new util.HashMap()
+  private val fragments: util.HashMap[String, SelectionContainer] = new util.HashMap
 
-  private val roots: util.ArrayList[SelectionContainer] = new util.ArrayList()
+  private val roots: util.ArrayList[SelectionContainer] = new util.ArrayList
 
-  private val stack: util.ArrayDeque[SelectionContainer] = new util.ArrayDeque[SelectionContainer]()
+  private val stack: util.ArrayDeque[SelectionContainer] = new util.ArrayDeque[SelectionContainer]
 
   def enterField(
       parentType: Option[CompositeType[_]],

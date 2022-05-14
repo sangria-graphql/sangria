@@ -57,9 +57,9 @@ class ValueCollector[Ctx, Input](
                       varDef.location.toList))))
 
             value match {
-              case Right(Some(v)) => acc :+ (varDef.name -> Right(v))
+              case Right(Some(v)) => acc :+ varDef.name -> Right(v)
               case Right(None) => acc
-              case Left(violations) => acc :+ (varDef.name -> Left(violations))
+              case Left(violations) => acc :+ varDef.name -> Left(violations)
             }
         }
 

@@ -57,11 +57,11 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
         val result = stream.toListL.runToFuture.await(timeout)
 
-        result should (have(size(4))
+        result should have(size(4))
           .and(contain("""{"data": {"letters": "a"}}""".parseJson))
           .and(contain("""{"data": {"letters": "b"}}""".parseJson))
           .and(contain("""{"data": {"numbers": 1}}""".parseJson))
-          .and(contain("""{"data": {"numbers": 2}}""".parseJson)))
+          .and(contain("""{"data": {"numbers": 2}}""".parseJson))
       }
 
       "recover stream errors" in {
@@ -104,12 +104,12 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
         val result = stream.toListL.runToFuture.await(timeout)
 
-        result should (contain(
+        result should contain(
           """{"data": {"letters": null}, "errors": [{"message": "foo", "path":["letters"]}]}""".parseJson)
           .and(contain("""{"data": {"numbers": 1}}""".parseJson))
           .and(contain("""{"data": {"numbers": 2}}""".parseJson))
           .and(contain("""{"data": {"numbers": 3}}""".parseJson))
-          .and(contain("""{"data": {"numbers": 4}}""".parseJson)))
+          .and(contain("""{"data": {"numbers": 4}}""".parseJson))
       }
 
       "complex stream scenario" in {
@@ -246,13 +246,13 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
         val result = stream.toListL.runToFuture.await(timeout)
 
-        result should (have(size(3))
+        result should have(size(3))
           .and(
             contain("""{"data": {"fruitEvents": {"name": "banana", "eater": "me"}}}""".parseJson))
           .and(contain(
             """{"data": {"fruitEvents": {"name": "orange", "eater": "someone else"}}}""".parseJson))
           .and(contain(
-            """{"data": {"fruitEvents": {"fruit": {"name": "cherry", "color": "red"}}}}""".parseJson)))
+            """{"data": {"fruitEvents": {"fruit": {"name": "cherry", "color": "red"}}}}""".parseJson))
       }
     }
 
@@ -286,10 +286,10 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
         val result = stream.toListL.runToFuture.await(timeout)
 
-        result.map(_.result) should (have(size(3))
+        result.map(_.result) should have(size(3))
           .and(contain("""{"data": {"letters": "a"}}""".parseJson))
           .and(contain("""{"data": {"letters": "b"}}""".parseJson))
-          .and(contain("""{"data": {"letters": "c"}}""".parseJson)))
+          .and(contain("""{"data": {"letters": "c"}}""".parseJson))
       }
 
       "validate that all fields are subscription fields" in {
@@ -309,8 +309,8 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         val error = intercept[SchemaValidationException](
           Schema(QueryType, subscription = Some(SubscriptionType)))
 
-        error.violations.map(_.errorMessage) should (have(size(1)).and(contain(
-          "Subscription type 'Subscription' may either contain only non-subscription fields or only subscription fields (defined with `Field.subs`). Following fields are non-subscription fields among other subscription fields: 'hello'.")))
+        error.violations.map(_.errorMessage) should have(size(1)).and(contain(
+          "Subscription type 'Subscription' may either contain only non-subscription fields or only subscription fields (defined with `Field.subs`). Following fields are non-subscription fields among other subscription fields: 'hello'."))
       }
 
       "return first result for default execution scheme" in {
@@ -368,8 +368,8 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
         val result = stream.toListL.runToFuture.await(timeout)
 
-        result should (have(size(1)).and(
-          contain("""{"data": {"letters": "a", "numbers": 10}}""".parseJson)))
+        result should have(size(1)).and(
+          contain("""{"data": {"letters": "a", "numbers": 10}}""".parseJson))
       }
     }
   }

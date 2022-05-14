@@ -28,7 +28,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     val f: Option[String] = Some("Fish")
     def deep: Option[DeepTestSubject] = Some(new DeepTestSubject)
     def deepColor(c: String): DeepTestSubject = new DeepTestSubject(c)
-    def pic(size: Option[Int]) = "Pic of size: " + (size.getOrElse(50))
+    def pic(size: Option[Int]) = "Pic of size: " + size.getOrElse(50)
     def future: Future[Option[TestSubject]] = Future.successful(Some(new TestSubject))
   }
 
@@ -599,7 +599,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           "syncDeferError" -> null
         ))
 
-      errors should (have(size(5))
+      errors should have(size(5))
         .and(
           contain(
             Map(
@@ -629,7 +629,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             Map(
               "path" -> List("asyncError"),
               "locations" -> List(Map("line" -> 8, "column" -> 15)),
-              "message" -> "Error getting asyncError"))))
+              "message" -> "Error getting asyncError")))
     }
 
     "use the inline operation if no operation is provided" in {
@@ -1056,7 +1056,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
       val errors = result("errors").asInstanceOf[Seq[Any]]
 
-      errors should (have(size(4))
+      errors should have(size(4))
         .and(
           contain(
             Map(
@@ -1080,7 +1080,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             Map(
               "message" -> "error 4",
               "path" -> List("future"),
-              "locations" -> Vector(Map("line" -> 1, "column" -> 9))))))
+              "locations" -> Vector(Map("line" -> 1, "column" -> 9)))))
     }
 
     "support extended result in queries" in {

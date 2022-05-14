@@ -198,8 +198,8 @@ class FieldCollector[Ctx, Val](
           .get(tc.name)
           .map(condTpe =>
             Success(
-              condTpe.name == tpe.name || (condTpe
-                .isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe))))
+              condTpe.name == tpe.name || condTpe
+                .isInstanceOf[AbstractType] && schema.isPossibleType(condTpe.name, tpe)))
           .getOrElse(
             Failure(
               new ExecutionError(

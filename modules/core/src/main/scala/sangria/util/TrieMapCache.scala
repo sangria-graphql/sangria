@@ -27,7 +27,7 @@ class TrieMapCache[Key, Value] extends Cache[Key, Value] {
   def canEqual(other: Any): Boolean = other.isInstanceOf[TrieMapCache[_, _]]
 
   override def equals(other: Any): Boolean = other match {
-    case that: TrieMapCache[_, _] => (that.canEqual(this)) && cache == that.cache
+    case that: TrieMapCache[_, _] => that.canEqual(this) && cache == that.cache
     case _ => false
   }
 

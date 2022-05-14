@@ -786,7 +786,7 @@ class SchemaRenderSpec
         Executor.execute(schema, introspectionQuery).await,
         SchemaFilter.introspection)
 
-      ("\n" + rendered + "\n") should equal(s"""
+      "\n" + rendered + "\n" should equal(s"""
         |$quotes
         |A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
         |

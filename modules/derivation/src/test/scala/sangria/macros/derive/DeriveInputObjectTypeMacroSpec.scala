@@ -138,7 +138,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val tpe =
         deriveInputObjectType[TestInputObjAnnotated](TransformInputFieldNames(_.toUpperCase))
 
-      tpe.fields.map(_.name) should (have(size(2)).and(contain("ID")).and(contain("MYLIST")))
+      tpe.fields.map(_.name) should have(size(2)).and(contain("ID")).and(contain("MYLIST"))
 
       val transformer2 = (s: String) =>
         s.zipWithIndex
@@ -151,7 +151,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val tpe2 =
         deriveInputObjectType[TestInputObjAnnotated](TransformInputFieldNames(transformer2))
 
-      tpe2.fields.map(_.name) should (have(size(2)).and(contain("iD")).and(contain("mYlIsT")))
+      tpe2.fields.map(_.name) should have(size(2)).and(contain("iD")).and(contain("mYlIsT"))
     }
 
     "allow to set name and description with config" in {

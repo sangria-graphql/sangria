@@ -926,7 +926,7 @@ class AstSchemaMaterializerSpec
             }
           """
 
-        noException should be thrownBy (Schema.buildFromAst(ast))
+        noException should be thrownBy Schema.buildFromAst(ast)
       }
 
       "rejects an Input Object with non-breakable circular reference" in {
@@ -1241,7 +1241,7 @@ class AstSchemaMaterializerSpec
 
         val schema = Schema.buildFromAst(schemaDef)
 
-        ("\n" + schema.renderPretty + "\n") should equal("""
+        "\n" + schema.renderPretty + "\n" should equal("""
           |type Cat {
           |  cute: Boolean
           |  size: PositiveInt!

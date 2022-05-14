@@ -152,7 +152,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
       member: MethodSymbol,
       applyInfo: Option[(Type, MethodSymbol)]): (List[Annotation], Option[(Type, TermName)]) =
     applyInfo match {
-      case Some((companion, apply)) =>
+      case Some(companion, apply) =>
         val annotationsConstructors =
           for {
             c <- tpe.members.filter(_.isConstructor)
@@ -164,7 +164,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
         val defaults =
           apply.paramLists.flatten.zipWithIndex
             .find(_._1.name.decodedName.toString == member.name.decodedName.toString) match {
-            case Some((param: TermSymbol, idx)) if param.isParamWithDefault =>
+            case Some(param: TermSymbol, idx) if param.isParamWithDefault =>
               Some(
                 companion -> defaultMethodArgValue(apply.name.decodedName.toString, idx + 1)
                   .asInstanceOf[TermName])

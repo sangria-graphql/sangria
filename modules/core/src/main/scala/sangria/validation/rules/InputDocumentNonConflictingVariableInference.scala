@@ -25,7 +25,7 @@ class InputDocumentNonConflictingVariableInference extends ValidationRule {
         val parentTypeAst = SchemaRenderer.renderTypeNameAst(parentType)
 
         usedVariables.get(v.name) match {
-          case Some((existing, otherPos)) if existing != parentTypeAst =>
+          case Some(existing, otherPos) if existing != parentTypeAst =>
             Left(
               Vector(
                 VariableInferenceViolation(

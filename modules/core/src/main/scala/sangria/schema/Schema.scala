@@ -1270,9 +1270,9 @@ case class Schema[Ctx, Val](
 
       (t1, t2) match {
         case (ot1: ObjectType[_, _], ot2: ObjectType[_, _]) =>
-          sameSangriaType && (ot1.valClass == ot2.valClass)
+          sameSangriaType && ot1.valClass == ot2.valClass
         case (ot1: InputObjectType[_], ot2: InputObjectType[_]) =>
-          sameSangriaType && (ot1.fieldsByName.keySet == ot2.fieldsByName.keySet)
+          sameSangriaType && ot1.fieldsByName.keySet == ot2.fieldsByName.keySet
         case _ => sameSangriaType
       }
     }

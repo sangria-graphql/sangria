@@ -112,7 +112,7 @@ object BatchExecutor {
 
     validations match {
       case Failure(e) => scheme.failed(e)
-      case Success((updatedDocument, executionPlan)) =>
+      case Success(updatedDocument, executionPlan) =>
         scheme match {
           case ss: ExecutionScheme.StreamBasedExecutionScheme[_] =>
             val childScheme =

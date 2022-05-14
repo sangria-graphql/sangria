@@ -43,7 +43,7 @@ class DefaultSourceMapper(val id: String, val sourceMapperInput: SourceMapperInp
   override def renderLinePosition(location: AstLocation, prefix: String = ""): String =
     sourceMapperInput
       .getLine(location.line)
-      .replace("\r", "") + "\n" + prefix + (" " * (location.column - 1)) + "^"
+      .replace("\r", "") + "\n" + prefix + " " * (location.column - 1) + "^"
 }
 
 /** [[SourceMapper]] for potentially multiple GraphQL documents.

@@ -9,15 +9,15 @@ class SelectionContainer {
   private var inProgress: Boolean = false
   private var done: Boolean = false
 
-  private val directSpreads: util.ArrayList[SelectionContainer] = new util.ArrayList()
+  private val directSpreads: util.ArrayList[SelectionContainer] = new util.ArrayList
 
-  private val directFields: util.ArrayList[SelectionField] = new util.ArrayList()
+  private val directFields: util.ArrayList[SelectionField] = new util.ArrayList
 
   /** This selection set and all directly or indirectly included spreads. Indirectly included
     * spreads come from spreads in directly included spreads, etc.
     */
   private val effectiveSelections: util.LinkedHashSet[SelectionContainer] = {
-    val l = new util.LinkedHashSet[SelectionContainer]()
+    val l = new util.LinkedHashSet[SelectionContainer]
     l.add(this)
     l
   }
@@ -66,7 +66,7 @@ class SelectionContainer {
 object SelectionContainer {
 
   def children(fields: SortedArraySet[SelectionField]): SortedArraySet[SelectionField] = {
-    val childSelections = new util.LinkedHashSet[SelectionContainer]()
+    val childSelections = new util.LinkedHashSet[SelectionContainer]
     fields.forEach {
       new Consumer[SelectionField] {
         override def accept(field: SelectionField): Unit =

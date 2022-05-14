@@ -3,7 +3,7 @@ package sangria.util
 import java.util.concurrent.ConcurrentHashMap
 
 class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
-  private val cache = new ConcurrentHashMap[Key, Value]()
+  private val cache = new ConcurrentHashMap[Key, Value]
 
   def size = cache.size
 
@@ -108,7 +108,7 @@ class ConcurrentHashMapCache[Key, Value] extends Cache[Key, Value] {
   def canEqual(other: Any): Boolean = other.isInstanceOf[ConcurrentHashMapCache[_, _]]
 
   override def equals(other: Any): Boolean = other match {
-    case that: ConcurrentHashMapCache[_, _] => (that.canEqual(this)) && cache == that.cache
+    case that: ConcurrentHashMapCache[_, _] => that.canEqual(this) && cache == that.cache
     case _ => false
   }
 
