@@ -100,7 +100,7 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.9.29" % Test,
       // CATs
       "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.146" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.147" % Test
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
