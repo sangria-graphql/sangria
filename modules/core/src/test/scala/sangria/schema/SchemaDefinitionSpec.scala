@@ -63,5 +63,44 @@ class SchemaDefinitionSpec extends AnyWordSpec with Matchers with FutureResultSu
           .and(contain("CustomScalar")))
       }
     }
+
+    "does not allow defining two object types with the same name and different fields" in {
+      case class Foo(name: Option[String], city: Option[String])
+
+      val FooType: ObjectType[Unit, Foo] = ObjectType(
+        "Foo",
+        interfaces = Nil,
+        () =>
+          fields(
+            Field("name", OptionType(StringType), resolve = _.value.name),
+            Field("city", OptionType(StringType), resolve = _.value.name)
+          )
+      )
+
+      // same name of the existing one, with different fields
+      val FooType1: ObjectType[Unit, Foo] = ObjectType(
+        "Foo",
+        interfaces = Nil,
+        () => fields(Field("name", OptionType(StringType), resolve = _.value.name))
+      )
+
+      val field1 =
+        fields[Unit, Unit](
+          Field("foo", OptionType(FooType), resolve = _ => Some(Foo(Some("foo"), None)))
+        )
+
+      val field2 =
+        fields[Unit, Unit](
+          Field("foo1", OptionType(FooType1), resolve = _ => Some(Foo(Some("foo"), None)))
+        )
+
+      val queryType = ObjectType(
+        name = "Query",
+        interfaces = Nil,
+        fieldsFn = () => field1 ++ field2
+      )
+
+      intercept[SchemaValidationException](Schema(queryType))
+    }
   }
 }
