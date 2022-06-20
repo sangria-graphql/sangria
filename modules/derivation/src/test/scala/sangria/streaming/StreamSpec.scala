@@ -371,6 +371,50 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         result should (have(size(1)).and(
           contain("""{"data": {"letters": "a", "numbers": 10}}""".parseJson)))
       }
+
+      "work with materialized schemas" in {
+        import _root_.monix.reactive.Observable
+        import sangria.streaming.monix._
+
+        val schemaDefinition = gql"""
+            type Subscription {
+              letters: String!
+              numbers: Int!
+            }
+
+            type Query {
+              hello: String
+            }
+            """
+
+        val builder = ResolverBasedAstSchemaBuilder[Unit](
+          FieldResolver.map(
+            "Query" -> Map("hello" -> (_ => "world")),
+            "Subscription" -> Map(
+              "letters" -> (_ => SubscriptionValue(Observable("a", "b").map(Action(_)))),
+              "numbers" -> (_ => SubscriptionValue(Observable(1, 2).map(Action(_)))),
+            )
+          )
+        )
+
+        val schema = Schema.buildFromAst(schemaDefinition, builder)
+
+        import sangria.execution.ExecutionScheme.Stream
+
+        val stream: Observable[JsValue] =
+          Executor.execute(
+            schema,
+            graphql"subscription { letters numbers }",
+            queryValidator = QueryValidator.default.withoutValidation[SingleFieldSubscriptions])
+
+        val result = stream.toListL.runToFuture.await(timeout)
+
+        result should (have(size(4))
+          .and(contain("""{"data": {"letters": "a"}}""".parseJson))
+          .and(contain("""{"data": {"letters": "b"}}""".parseJson))
+          .and(contain("""{"data": {"numbers": 1}}""".parseJson))
+          .and(contain("""{"data": {"numbers": 2}}""".parseJson)))
+      }
     }
   }
 }

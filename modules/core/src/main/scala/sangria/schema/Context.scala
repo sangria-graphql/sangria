@@ -6,7 +6,7 @@ import sangria.marshalling._
 import sangria.ast.SourceMapper
 import sangria.{ast, introspection}
 import sangria.execution.deferred.Deferred
-import sangria.streaming.SubscriptionStream
+import sangria.streaming.{SubscriptionStream, SubscriptionStreamLike}
 import sangria.util.Cache
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -163,7 +163,7 @@ object UpdateCtx {
     new UpdateCtx(action, newCtx)
 }
 
-private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
+case class SubscriptionValue[Ctx, Val, S[_]](
     source: Val,
     stream: SubscriptionStream[S])
     extends LeafAction[Ctx, Val] {
@@ -171,6 +171,13 @@ private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
       ec: ExecutionContext): SubscriptionValue[Ctx, NewVal, S] =
     throw new IllegalStateException(
       "`map` is not supported subscription actions. Action is only intended for internal use.")
+}
+object SubscriptionValue {
+  def apply[Ctx, Val, StreamSource, Res, Out](source: StreamSource)(
+    implicit stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out]): SubscriptionValue[Ctx, StreamSource, stream.StreamSource] = {
+    val s = stream.subscriptionStream
+    SubscriptionValue(source, s)
+  }
 }
 
 case class ProjectionName(name: String) extends FieldTag
