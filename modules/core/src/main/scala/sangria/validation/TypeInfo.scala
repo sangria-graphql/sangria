@@ -131,8 +131,8 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
       case ast.EnumValue(name, _, _) =>
         enumValue = inputType
           .map(_.namedType)
-          .collect { case enum: EnumType[_] =>
-            enum.byName.get(name)
+          .collect { case enumT: EnumType[_] =>
+            enumT.byName.get(name)
           }
           .flatten
       case _ => // ignore

@@ -80,7 +80,10 @@ object SortedArraySet {
         val first_from = members.get(from)
         members.set(into, first_from)
         into += 1
-        do from += 1 while (from < members.size() && members.get(from) == first_from)
+        while({ 
+          from += 1  
+          (from < members.size() && members.get(from) == first_from)
+        }) ()
       }
       members.subList(into, members.size()).clear()
     }

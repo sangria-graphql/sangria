@@ -9,7 +9,6 @@ class ParseMacro(context: blackbox.Context)
       val c = context
     }
     with MacroAstLiftable {
-
   import c.universe._
 
   def impl(args: Expr[Any]*) =

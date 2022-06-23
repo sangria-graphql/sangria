@@ -277,8 +277,8 @@ object BatchExecutor {
           }
         }
 
-      exports.foreach { export =>
-        visitPath(export.exportedName, result, "data" +: export.path)
+      exports.foreach { `export` =>
+        visitPath(`export`.exportedName, result, "data" +: `export`.path)
       }
     }
 

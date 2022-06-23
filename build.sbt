@@ -3,8 +3,12 @@ import sbt.Keys._
 
 import com.typesafe.tools.mima.core._
 
+val isScala3 = Def.setting(
+  CrossVersion.partialVersion(scalaVersion.value).exists(_._1 == 3)
+)
+
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.16", "2.13.8")
+ThisBuild / crossScalaVersions := Seq("2.12.16", "2.13.8", "3.1.3")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
@@ -114,13 +118,12 @@ lazy val core = project
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Visitor
-      "org.sangria-graphql" %% "macro-visit" % "0.1.3",
+      if (isScala3.value) "org.sangria-graphql" %% "macro-visit" % "0.1.0-SNAPSHOT"
+      else "org.sangria-graphql" %% "macro-visit" % "0.1.3", // TODO needs release
       // Marshalling
       "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.8",
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
-      // Macros
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
       "co.fs2" %% "fs2-core" % "2.5.11" % Test,
       "org.scalatest" %% "scalatest" % "3.2.13" % Test,
@@ -131,9 +134,11 @@ lazy val core = project
       "org.sangria-graphql" %% "sangria-monix" % "2.0.1" % Test,
       "eu.timepit" %% "refined" % "0.10.1" % Test,
       // CATs
-      "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
+      ("net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test).cross(CrossVersion.for3Use2_13),
       "io.github.classgraph" % "classgraph" % "4.8.149" % Test
-    ),
+    ) ++ (if (isScala3.value) Seq.empty
+          else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)), // Macros
+
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-core_$ver/latest/"))
@@ -149,10 +154,9 @@ lazy val derivation = project
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
-    libraryDependencies ++= Seq(
-      // Macros
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    ),
+     // Macros
+    libraryDependencies ++= (if (isScala3.value) Seq.empty
+                             else Seq( "org.scala-lang" % "scala-reflect" % scalaVersion.value)),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-derivation_$ver/latest/"))

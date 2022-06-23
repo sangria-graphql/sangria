@@ -1166,7 +1166,7 @@ class Resolver[Ctx](
           value: Future[Any]): Future[(Any, Vector[Throwable])] = deferred match {
         case MappingDeferred(d, fn) =>
           mapAllDeferred(d, value).map { case (v, errors) =>
-            val (mappedV, newErrors) = fn(v)
+            val (mappedV, newErrors) = fn.asInstanceOf[Any => (Any, Seq[Throwable])](v)
             mappedV -> (errors ++ newErrors)
           }
         case _ => value.map(_ -> Vector.empty)
@@ -1303,19 +1303,19 @@ class Resolver[Ctx](
           scalar.toScalar(value),
           userCtx,
           Some(scalar))
-      case enum: EnumType[Any @unchecked] =>
+      case enumT: EnumType[Any @unchecked] =>
         try
           Result(
             ErrorRegistry.empty,
             if (isUndefinedValue(value))
               None
             else {
-              val coerced = enum.coerceOutput(value)
+              val coerced = enumT.coerceOutput(value)
 
               if (isUndefinedValue(coerced))
                 None
               else
-                Some(marshalEnumValue(coerced, marshaller, enum.name))
+                Some(marshalEnumValue(coerced, marshaller, enumT.name))
             }
           )
         catch {
@@ -1507,9 +1507,10 @@ class Resolver[Ctx](
                     case Some(action) => action
                     case None =>
                       field.resolve match {
-                        case pfn: Projector[Ctx, _, _] =>
-                          pfn(updatedCtx, collectProjections(path, field, astFields, pfn.maxLevel))
-                        case fn => fn(updatedCtx)
+                        case pfn: Projector[Ctx, Any, _] =>
+                          pfn(updatedCtx.asInstanceOf[Context[Ctx, Any]], collectProjections(path, field, astFields, pfn.maxLevel))
+                        case fn =>
+                          fn(updatedCtx)
                       }
                   }
 
@@ -1879,7 +1880,7 @@ object Resolver {
     case ast.BigDecimalValue(f, _, _) => marshaller.scalarNode(f, typeName, scalarInfo)
     case ast.BooleanValue(b, _, _) => marshaller.scalarNode(b, typeName, scalarInfo)
     case ast.NullValue(_, _) => marshaller.nullNode
-    case ast.EnumValue(enum, _, _) => marshaller.enumNode(enum, typeName)
+    case ast.EnumValue(enumT, _, _) => marshaller.enumNode(enumT, typeName)
     case ast.ListValue(values, _, _) =>
       marshaller.arrayNode(values.map(marshalAstValue(_, marshaller, typeName, scalarInfo)))
     case ast.ObjectValue(values, _, _) =>

@@ -3,6 +3,9 @@ package sangria
 import sangria.parser.QueryParser
 import sangria.schema._
 
+import sangria.util.tag.@@ // Scala 3 workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 package object introspection {
   object TypeKind extends Enumeration {
     val Scalar, Object, Interface, Union, Enum, InputObject, List, NonNull = Value
@@ -172,7 +175,10 @@ package object introspection {
       )
   )
 
-  val includeDeprecated = Argument("includeDeprecated", OptionInputType(BooleanType), false)
+  val includeDeprecated = Argument[Option[Boolean @@ CoercedScalaResult], Boolean](
+    "includeDeprecated",
+    OptionInputType(BooleanType),
+    false)
 
   private def getKind(value: (Boolean, Type)) = {
     def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {
@@ -294,8 +300,8 @@ package object introspection {
             val incDep = ctx.arg(includeDeprecated)
 
             ctx.value._2 match {
-              case enum: EnumType[_] if incDep => Some(enum.values)
-              case enum: EnumType[_] => Some(enum.values.filter(_.deprecationReason.isEmpty))
+              case enumT: EnumType[_] if incDep => Some(enumT.values)
+              case enumT: EnumType[_] => Some(enumT.values.filter(_.deprecationReason.isEmpty))
               case _ => None
             }
           }

@@ -103,11 +103,13 @@ object FieldResolver {
       config: (String, Map[String, Context[Ctx, _] => Action[Ctx, Any]])*): FieldResolver[Ctx] = {
     val configMap = config.toMap
 
-    FieldResolver {
-      case (TypeName(name), field)
-          if configMap.contains(name) && configMap(name).contains(field.name) =>
-        configMap(name)(field.name)
-    }
+    FieldResolver[Ctx](
+      {
+        case (TypeName(name), field)
+            if configMap.contains(name) && configMap(name).contains(field.name) =>
+          configMap(name)(field.name)
+      },
+      PartialFunction.empty)
   }
 
   def defaultInput[Ctx, In: InputUnmarshaller] =
@@ -223,7 +225,7 @@ case class GenericDynamicDirectiveResolver[T, A](
     directiveName: String,
     locations: Set[DirectiveLocation.Value] = Set.empty,
     resolve: GenericDynamicDirectiveContext[A] => Option[T])(implicit
-    val marshaller: ResultMarshallerForType[T])
+    val marshaller: ResultMarshallerForType[A])
     extends AstSchemaGenericResolver[T]
 
 case class AstDirectiveInputTypeContext[Ctx](

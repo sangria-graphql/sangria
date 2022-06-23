@@ -393,7 +393,7 @@ class AstSchemaMaterializer[Ctx] private (
     var newCount = 0
     var iteration = 0
 
-    do {
+    while ({
       prevCount = typeDefCache.size
       iteration += 1
 
@@ -404,7 +404,8 @@ class AstSchemaMaterializer[Ctx] private (
       }
 
       newCount = typeDefCache.size
-    } while (prevCount != newCount && iteration < 20)
+      (prevCount != newCount && iteration < 20)
+    }) ()
   }
 
   def getTypeFromExistingType(origin: MatOrigin, tpe: OutputType[_]): OutputType[Any] = tpe match {

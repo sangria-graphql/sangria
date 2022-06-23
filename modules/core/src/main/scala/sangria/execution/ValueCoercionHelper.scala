@@ -51,14 +51,14 @@ class ValueCoercionHelper[Ctx](
       isArgument: Boolean,
       fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]],
       allowErrorsOnDefault: Boolean = false,
-      valueMap: Nothing => Any = defaultValueMapFn,
+      valueMap: Any => Any = defaultValueMapFn,
       defaultValueInfo: Option[Cache[String, Any]] = None,
       undefinedValues: Option[VectorBuilder[String]] = None
   )(
       acc: marshaller.MapBuilder,
       value: Option[Either[Vector[Violation], Trinary[marshaller.Node]]]
   ): marshaller.MapBuilder = {
-    val valueMapTyped = valueMap.asInstanceOf[Any => marshaller.Node]
+    val valueMapTyped: Any => marshaller.Node = valueMap.asInstanceOf[Any => marshaller.Node]
 
     def locations =
       inputFor match {
@@ -508,10 +508,10 @@ class ValueCoercionHelper[Ctx](
       case (scalar: ScalarAlias[_, _], value) =>
         nullScalarViolation(scalar.aliasFor, value)
 
-      case (enum: EnumType[_], value) if iu.isEnumNode(value) =>
+      case (enumT: EnumType[_], value) if iu.isEnumNode(value) =>
         val coerced = iu.getScalarValue(value) match {
-          case node: ast.Value => enum.coerceInput(node)
-          case other => enum.coerceUserInput(other)
+          case node: ast.Value => enumT.coerceInput(node)
+          case other => enumT.coerceUserInput(other)
         }
 
         coerced.fold(
@@ -527,18 +527,19 @@ class ValueCoercionHelper[Ctx](
                   isArgument))),
           { case (v, deprecated) =>
             if (deprecated && userContext.isDefined)
-              deprecationTracker.deprecatedEnumValueUsed(enum, v, userContext.get)
+              deprecationTracker.deprecatedEnumValueUsed(enumT, v, userContext.get)
 
             val prepared = firstKindMarshaller match {
               case raw: RawResultMarshaller => raw.rawScalarNode(v)
-              case standard => Resolver.marshalEnumValue(enum.coerceOutput(v), standard, enum.name)
+              case standard =>
+                Resolver.marshalEnumValue(enumT.coerceOutput(v), standard, enumT.name)
             }
 
             Right(defined(prepared.asInstanceOf[marshaller.Node]))
           }
         )
 
-      case (enum: EnumType[_], value) if iu.isDefined(value) =>
+      case (enumT: EnumType[_], value) if iu.isDefined(value) =>
         Left(
           Vector(
             FieldCoercionViolation(
@@ -549,14 +550,14 @@ class ValueCoercionHelper[Ctx](
               errorPrefix,
               isArgument)))
 
-      case (enum: EnumType[_], value) =>
+      case (enumT: EnumType[_], value) =>
         Left(
           Vector(
             FieldCoercionViolation(
               fieldPath,
               NullValueForNotNullTypeViolation(
                 fieldPath,
-                SchemaRenderer.renderTypeName(enum),
+                SchemaRenderer.renderTypeName(enumT),
                 sourceMapper,
                 valuePosition(inputFor, value)),
               sourceMapper,
@@ -655,10 +656,10 @@ class ValueCoercionHelper[Ctx](
           }
       }
 
-    case (enum: EnumType[_], Some(value)) if um.isEnumNode(value) =>
+    case (enumT: EnumType[_], Some(value)) if um.isEnumNode(value) =>
       val coerced = um.getScalarValue(value) match {
-        case node: ast.Value => enum.coerceInput(node)
-        case other => enum.coerceUserInput(other)
+        case node: ast.Value => enumT.coerceInput(node)
+        case other => enumT.coerceUserInput(other)
       }
 
       coerced match {
@@ -666,7 +667,7 @@ class ValueCoercionHelper[Ctx](
         case _ => Vector.empty
       }
 
-    case (enum: EnumType[_], Some(value)) =>
+    case (enumT: EnumType[_], Some(value)) =>
       Vector(EnumCoercionViolation)
 
     case _ =>

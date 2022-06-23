@@ -239,8 +239,8 @@ object ValidationContext {
             case _ => Vector.empty
           }
       }
-    case (enum: EnumType[_], v) =>
-      enum.coerceInput(v) match {
+    case (enumT: EnumType[_], v) =>
+      enumT.coerceInput(v) match {
         case Left(violation) => Vector(violation)
         case _ => Vector.empty
       }
