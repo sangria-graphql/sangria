@@ -70,7 +70,7 @@ sealed trait AbstractType extends Type with Named {
       .flatMap(_.find(_.isInstanceOf(value)).asInstanceOf[Option[ObjectType[Ctx, _]]])
 }
 
-sealed trait MappedAbstractType[T] extends Type with AbstractType{
+sealed trait MappedAbstractType[T] extends Type with AbstractType {
   def contraMap(value: T): Any
 }
 
@@ -652,7 +652,10 @@ object Field {
       fieldType,
       description,
       arguments,
-      ctx => SubscriptionValue[Ctx, StreamSource, stream.StreamSource](resolve(ctx).asInstanceOf[stream.StreamSource[Any]], s),
+      ctx =>
+        SubscriptionValue[Ctx, StreamSource, stream.StreamSource](
+          resolve(ctx).asInstanceOf[stream.StreamSource[Any]],
+          s),
       deprecationReason,
       SubscriptionField[stream.StreamSource](s) +: tags,
       complexity,

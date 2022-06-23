@@ -58,7 +58,7 @@ class ValueCoercionHelper[Ctx](
       acc: marshaller.MapBuilder,
       value: Option[Either[Vector[Violation], Trinary[marshaller.Node]]]
   ): marshaller.MapBuilder = {
-    val valueMapTyped: Any => marshaller.Node = valueMap.asInstanceOf[Any => marshaller.Node]
+    val valueMapTyped = valueMap.asInstanceOf[Any => marshaller.Node]
 
     def locations =
       inputFor match {

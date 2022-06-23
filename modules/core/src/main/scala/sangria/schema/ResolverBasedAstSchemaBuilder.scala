@@ -635,9 +635,11 @@ object ResolverBasedAstSchemaBuilder {
     }
 
   def defaultInputResolver[Ctx, In: InputUnmarshaller] =
-    FieldResolver[Ctx]({ case (_, _) =>
-      extractFieldValue[Ctx, In]
-    }, PartialFunction.empty)
+    FieldResolver[Ctx](
+      { case (_, _) =>
+        extractFieldValue[Ctx, In]
+      },
+      PartialFunction.empty)
 
   def defaultExistingInputResolver[Ctx, In: InputUnmarshaller] =
     ExistingFieldResolver[Ctx] { case (_, _, _) =>
@@ -673,7 +675,10 @@ object ResolverBasedAstSchemaBuilder {
                       implicit val marshaller = gd.marshaller
 
                       resolve(
-                        GenericDynamicDirectiveContext(astDir, node, createDynamicArgs(astDir)(marshaller)))
+                        GenericDynamicDirectiveContext(
+                          astDir,
+                          node,
+                          createDynamicArgs(astDir)(marshaller)))
                   }
               }
 

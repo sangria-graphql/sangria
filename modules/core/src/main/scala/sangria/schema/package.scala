@@ -245,7 +245,7 @@ package object schema {
 
   val DefaultDeprecationReason = "No longer supported"
 
-  val ReasonArg: Argument[Option[String]] = Argument(
+  val ReasonArg: Argument[String] = Argument(
     "reason",
     OptionInputType(StringType),
     description = "Explains why this element was deprecated, usually also including a " +

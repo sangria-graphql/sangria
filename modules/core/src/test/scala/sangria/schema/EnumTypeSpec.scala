@@ -15,8 +15,8 @@ class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
     ))
 
   object Args {
-    val fromEnum = Argument("fromEnum", OptionInputType(ColorType))
-    val fromInt = Argument("fromInt", OptionInputType(IntType))
+    val fromEnum: Argument[Option[Int]] = Argument("fromEnum", OptionInputType(ColorType))
+    val fromInt: Argument[Option[Int]] = Argument("fromInt", OptionInputType(IntType))
   }
 
   val QueryType = ObjectType(
@@ -43,7 +43,7 @@ class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
         "favoriteEnum",
         OptionType(ColorType),
         arguments = Args.fromEnum :: Nil,
-        resolve = _.args.arg(Args.fromEnum))
+        resolve = _.args.arg[Option[Int]](Args.fromEnum))
     ))
 
   val SubscriptionType = ObjectType(
@@ -53,8 +53,9 @@ class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
         "subscribeToEnum",
         OptionType(ColorType),
         arguments = Args.fromEnum :: Nil,
-        resolve = _.args.arg(Args.fromEnum))
-    ))
+        resolve = _.args.arg[Option[Int]](Args.fromEnum))
+    )
+  )
 
   val schema = Schema(QueryType, Some(MutationType), Some(SubscriptionType))
 

@@ -20,7 +20,7 @@ class IonSupportSpec extends AnyWordSpec with Matchers with FutureResultSupport 
 
   import sangria.marshalling.ion._
 
-  implicit val ionSystem = IonSystemBuilder.standard().build()
+  implicit val ionSystem: software.amazon.ion.IonSystem = IonSystemBuilder.standard().build()
 
   val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
 

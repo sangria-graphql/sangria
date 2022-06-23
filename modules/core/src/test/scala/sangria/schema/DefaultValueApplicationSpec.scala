@@ -13,6 +13,9 @@ import sangria.marshalling.sprayJson._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class DefaultValueApplicationSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Default value application" should {
     "use default value if argument is not provided" in {
@@ -181,10 +184,14 @@ class DefaultValueApplicationSpec extends AnyWordSpec with Matchers with FutureR
       InputField("f", OptionInputType(StringType), defaultValue = "default"),
       InputField("fo", OptionInputType(StringType))))
 
-  private[this] val AArg = Argument("a", OptionInputType(StringType), defaultValue = "default")
+  private[this] val AArg = Argument[Option[String @@ CoercedScalaResult], String](
+    "a",
+    OptionInputType(StringType),
+    defaultValue = "default")
   private[this] val InpArg = Argument("inp", TestInputType)
   private[this] val InpJsonArg = Argument("inpJson", TestInputJsonType)
-  private[this] val SizeArg = Argument("size", OptionInputType(IntType), 42)
+  private[this] val SizeArg =
+    Argument[Option[Int @@ CoercedScalaResult], Int]("size", OptionInputType(IntType), 42)
 
   private[this] val QueryType = ObjectType(
     "Query",

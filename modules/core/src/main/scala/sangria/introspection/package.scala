@@ -3,7 +3,7 @@ package sangria
 import sangria.parser.QueryParser
 import sangria.schema._
 
-import sangria.util.tag.@@ // Scala 3 workaround
+import sangria.util.tag.@@ // Scala 3 issue workaround
 import sangria.marshalling.FromInput.CoercedScalaResult
 
 package object introspection {

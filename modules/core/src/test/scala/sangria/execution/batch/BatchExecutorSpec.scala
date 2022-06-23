@@ -13,14 +13,17 @@ import sangria.util.SimpleGraphQlSupport._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   implicit val ec: ExecutionContext = ExecutionContext.global
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  val IdsArg = Argument("ids", ListInputType(IntType))
+  val IdsArg = Argument[Seq[Int @@ CoercedScalaResult]]("ids", ListInputType(IntType))
   val IdArg = Argument("id", IntType)
   val NameArg = Argument("name", StringType)
-  val NamesArg = Argument("names", ListInputType(StringType))
+  val NamesArg = Argument[Seq[String @@ CoercedScalaResult]]("names", ListInputType(StringType))
 
   val DataType = ObjectType(
     "Data",
@@ -294,7 +297,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       val res = BatchExecutor.executeBatch(schema, query, operationNames = List("q1", "q2"))
 
-      res.compile.toVector.unsafeRunSync.toSet should be(
+      res.compile.toVector.unsafeRunSync().toSet should be(
         Set(
           """
           {

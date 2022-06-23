@@ -1508,7 +1508,7 @@ class Resolver[Ctx](
                     case None =>
                       field.resolve match {
                         case pfn: Projector[Ctx, Any, _] =>
-                          pfn(updatedCtx.asInstanceOf[Context[Ctx, Any]], collectProjections(path, field, astFields, pfn.maxLevel))
+                          pfn(updatedCtx, collectProjections(path, field, astFields, pfn.maxLevel))
                         case fn =>
                           fn(updatedCtx)
                       }

@@ -118,8 +118,7 @@ lazy val core = project
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Visitor
-      if (isScala3.value) "org.sangria-graphql" %% "macro-visit" % "0.1.0-SNAPSHOT"
-      else "org.sangria-graphql" %% "macro-visit" % "0.1.3", // TODO needs release
+      "org.sangria-graphql" %% "macro-visit" % "0.2.0-RC1",
       // Marshalling
       "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.8",
       // Streaming
@@ -154,9 +153,9 @@ lazy val derivation = project
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
-     // Macros
+    // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
-                             else Seq( "org.scala-lang" % "scala-reflect" % scalaVersion.value)),
+                             else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-derivation_$ver/latest/"))

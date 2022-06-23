@@ -402,7 +402,7 @@ trait ToExprGivens {
             ${ Expr(p) },
             _root_.scala.Some(
               new _root_.sangria.ast.DefaultSourceMapper(
-                ${ Expr { doc.sourceMapper.get.id } },
+                ${ Expr(doc.sourceMapper.get.id) },
                 _root_.sangria.parser.ParserConfig
                   .parboiledToSourceMapper(_root_.org.parboiled2.ParserInput(${
                     Expr(doc.source.get)

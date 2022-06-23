@@ -404,7 +404,7 @@ class AstSchemaMaterializer[Ctx] private (
       }
 
       newCount = typeDefCache.size
-      (prevCount != newCount && iteration < 20)
+      prevCount != newCount && iteration < 20
     }) ()
   }
 
