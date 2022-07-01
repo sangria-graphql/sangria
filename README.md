@@ -100,7 +100,7 @@ You can spread the word and tweet about the project or even better - create a sm
 I'm pretty sure it would be interesting for many people.
 
 Also you can contribute to [the documentation](https://github.com/sangria-graphql/sangria-website) or help others by answering questions on
-[StackOverflow](https://stackoverflow.com/questions/tagged/sangria) or joining discussions at [the mailing list](https://groups.google.com/forum/#!forum/sangria-graphql) and [gitter chat](https://gitter.im/sangria-graphql/sangria).
+[StackOverflow](https://stackoverflow.com/questions/tagged/sangria) or joining discussions on the [gitter chat](https://gitter.im/sangria-graphql/sangria).
 It would be very helpful!
 
 Not to mention the code itself. There is nothing more exciting than hacking some stuff together :)
