@@ -375,9 +375,9 @@ private[parser] sealed trait TypeSystemDefinitions {
   }
 
   private[this] def ScalarTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ scalar ~ Name ~ DirectivesConst ~> (
+    Comments ~ trackPos ~ extend ~ scalar ~ Name ~ DirectivesConst ~> (
       (comment, location, name, dirs) =>
-        ast.ScalarTypeExtensionDefinition(name, dirs, comment, location)))
+        ast.ScalarTypeExtensionDefinition(name, dirs, comment, location))
   }
 
   private[this] def ImplementsInterfaces = rule {
