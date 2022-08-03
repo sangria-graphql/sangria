@@ -246,7 +246,8 @@ object SchemaComparator {
     val added = newFields.diff(oldFields).toVector.map { name =>
       val field = newType.fieldsByName(name)
 
-      SchemaChange.InputFieldAdded(newType, field, !isOptional(field))
+      val required = !isOptional(field) && field.defaultValue.isEmpty
+      SchemaChange.InputFieldAdded(newType, field, required)
     }
 
     val changed = oldFields.intersect(newFields).flatMap { name =>
