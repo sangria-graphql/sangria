@@ -332,10 +332,12 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
           c: [String]!
           d: Int
           e: Int!
+          f: Boolean! = true
         }
       """,
       nonBreakingChange[TypeAdded]("`Int` type was added"),
       breakingChange[InputFieldAdded]("Input field `e` was added to `Filter` type"),
+      nonBreakingChange[InputFieldAdded]("Input field `f` was added to `Filter` type"),
       nonBreakingChange[InputFieldAdded]("Input field `d` was added to `Filter` type"),
       breakingChange[InputFieldTypeChanged](
         "`Filter.b` input field type changed from `String` to `[String]`"),
@@ -550,7 +552,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
         type Query {
           foo: String
         }
-         
+
         "new description"
         schema {
           query: Query
