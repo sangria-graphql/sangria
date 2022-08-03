@@ -279,6 +279,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
         description = directiveDescription(definition),
         locations = definition.locations,
         arguments = arguments,
+        repeatable = definition.repeatable,
         shouldInclude = directiveShouldInclude(definition)
       ))
 

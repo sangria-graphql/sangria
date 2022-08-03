@@ -368,7 +368,12 @@ package object introspection {
         "locations",
         ListType(__DirectiveLocation),
         resolve = _.value.locations.toVector.sorted),
-      Field("args", ListType(__InputValue), resolve = _.value.arguments)
+      Field("args", ListType(__InputValue), resolve = _.value.arguments),
+      Field(
+        "isRepeatable",
+        BooleanType,
+        Some("Permits using the directive multiple times at the same location."),
+        resolve = _.value.repeatable)
     )
   )
 
@@ -444,10 +449,14 @@ package object introspection {
 
   def introspectionQuery: ast.Document = introspectionQuery()
 
-  def introspectionQuery(schemaDescription: Boolean = true): ast.Document =
-    QueryParser.parse(introspectionQueryString(schemaDescription)).get
+  def introspectionQuery(
+      schemaDescription: Boolean = true,
+      directiveRepeatableFlag: Boolean = true): ast.Document =
+    QueryParser.parse(introspectionQueryString(schemaDescription, directiveRepeatableFlag)).get
 
-  def introspectionQueryString(schemaDescription: Boolean = true): String =
+  def introspectionQueryString(
+      schemaDescription: Boolean = true,
+      directiveRepeatableFlag: Boolean = true): String =
     s"""query IntrospectionQuery {
        |  __schema {
        |    queryType { name }
@@ -463,6 +472,7 @@ package object introspection {
        |      args {
        |        ...InputValue
        |      }
+       |      ${if (directiveRepeatableFlag) "isRepeatable" else ""}
        |    }
        |    ${if (schemaDescription) "description" else ""}
        |  }

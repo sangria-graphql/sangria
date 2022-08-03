@@ -281,6 +281,21 @@ trait ValidationSupport extends Matchers {
         locations = Set(DirectiveLocation.VariableDefinition),
         shouldInclude = alwaysInclude),
       Directive(
+        "genericDirectiveA",
+        locations = Set(DirectiveLocation.FragmentDefinition, DirectiveLocation.Field),
+        shouldInclude = alwaysInclude),
+      Directive(
+        "genericDirectiveB",
+        locations = Set(DirectiveLocation.FragmentDefinition, DirectiveLocation.Field),
+        shouldInclude = alwaysInclude),
+      Directive(
+        "repeatableDirective",
+        repeatable = true,
+        arguments = Argument("id", IntType, "Some generic ID") :: Nil,
+        locations = Set(DirectiveLocation.Object),
+        shouldInclude = alwaysInclude
+      ),
+      Directive(
         "onSchema",
         locations = Set(DirectiveLocation.Schema),
         shouldInclude = alwaysInclude),

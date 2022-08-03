@@ -471,11 +471,13 @@ private[parser] sealed trait TypeSystemDefinitions {
     wsNoComment('{') ~ InputValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
+  private def repeatable = rule(capture(Keyword("repeatable")).? ~> (_.isDefined))
+
   private[this] def DirectiveDefinition = rule {
     Description ~ Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_.getOrElse(
-      Vector.empty))) ~ on ~ DirectiveLocations ~> (
-      (descr, comment, location, name, args, locations) =>
-        ast.DirectiveDefinition(name, args, locations, descr, comment, location))
+      Vector.empty))) ~ repeatable ~ on ~ DirectiveLocations ~> (
+      (descr, comment, location, name, args, rep, locations) =>
+        ast.DirectiveDefinition(name, args, locations, descr, rep, comment, location))
   }
 
   private[this] def DirectiveLocations = rule {

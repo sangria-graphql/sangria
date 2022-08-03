@@ -387,7 +387,15 @@ class IntrospectionSchemaMaterializerSpec
             "customDirective",
             Some("This is a custom directive"),
             shouldInclude = _ => true,
-            locations = Set(DirectiveLocation.Field)))
+            locations = Set(DirectiveLocation.Field)),
+          Directive(
+            "customRepeatableDirective",
+            Some("This is a custom repeatable directive"),
+            shouldInclude = _ => true,
+            repeatable = true,
+            locations = Set(DirectiveLocation.Field)
+          )
+        )
       ))
 
     "builds a schema aware of deprecation" in testSchema(

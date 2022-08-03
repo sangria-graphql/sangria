@@ -121,7 +121,8 @@ object IntrospectionParser {
       args = mapFieldOpt(directive, "args")
         .map(um.getListValue)
         .getOrElse(Vector.empty)
-        .map(arg => parseInputValue(arg, path :+ "args"))
+        .map(arg => parseInputValue(arg, path :+ "args")),
+      repeatable = mapBooleanFieldOpt(directive, "isRepeatable").getOrElse(false)
     )
 
   private def parseType[In: InputUnmarshaller](tpe: In, path: Vector[String]) =
@@ -208,6 +209,12 @@ object IntrospectionParser {
       name: String,
       path: Vector[String]): Boolean =
     booleanValue(mapField(map, name, path), path :+ name)
+
+  private def mapBooleanFieldOpt[In: InputUnmarshaller](
+      map: In,
+      name: String,
+      path: Vector[String] = Vector.empty): Option[Boolean] =
+    mapFieldOpt(map, name).filter(um.isDefined).map(booleanValue(_, path :+ name))
 
   private def mapFieldOpt[In: InputUnmarshaller](map: In, name: String): Option[In] =
     um.getMapValue(map, name).filter(um.isDefined)
