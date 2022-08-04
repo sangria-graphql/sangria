@@ -1209,6 +1209,7 @@ case class Directive(
     description: Option[String] = None,
     arguments: List[Argument[_]] = Nil,
     locations: Set[DirectiveLocation.Value] = Set.empty,
+    repeatable: Boolean = false,
     shouldInclude: DirectiveContext => Boolean = _ => true)
     extends HasArguments
     with Named {

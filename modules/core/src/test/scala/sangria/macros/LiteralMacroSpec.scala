@@ -1270,6 +1270,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                 DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)
               ),
               None,
+              false,
               Vector.empty,
               None
             ),
@@ -1290,6 +1291,7 @@ class LiteralMacroSpec extends AnyWordSpec with Matchers {
                 DirectiveLocation("INLINE_FRAGMENT", Vector.empty, None)
               ),
               None,
+              false,
               Vector.empty,
               None
             )

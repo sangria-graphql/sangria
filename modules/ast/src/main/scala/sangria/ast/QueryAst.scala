@@ -698,6 +698,7 @@ case class DirectiveDefinition(
     arguments: Vector[InputValueDefinition],
     locations: Vector[DirectiveLocation],
     description: Option[StringValue] = None,
+    repeatable: Boolean = false,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends TypeSystemDefinition

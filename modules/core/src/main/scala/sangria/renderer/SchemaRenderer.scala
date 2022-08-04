@@ -317,14 +317,17 @@ object SchemaRenderer {
       dir.name,
       renderArgs(dir.arguments),
       dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name),
-      renderDescription(dir.description))
+      renderDescription(dir.description),
+      dir.repeatable
+    )
 
   def renderDirective(dir: IntrospectionDirective) =
     ast.DirectiveDefinition(
       dir.name,
       renderArgsI(dir.args),
       dir.locations.toVector.map(renderDirectiveLocation).sortBy(_.name),
-      renderDescription(dir.description))
+      renderDescription(dir.description),
+      dir.repeatable)
 
   def schemaAstFromIntrospection(
       introspectionSchema: IntrospectionSchema,

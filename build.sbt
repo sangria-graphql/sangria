@@ -1,6 +1,8 @@
 import sbt.Developer
 import sbt.Keys._
 
+import com.typesafe.tools.mima.core._
+
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.16", "2.13.8")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
@@ -44,6 +46,13 @@ lazy val ast = project
     name := "sangria-ast",
     description := "Scala GraphQL AST representation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.DirectiveDefinition.*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$")
+    ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-ast_$ver/latest/"))
@@ -79,6 +88,29 @@ lazy val core = project
     name := "sangria-core",
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-core" % "3.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.introspection.IntrospectionDirective$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.package.introspectionQueryString"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.package.introspectionQuery"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.schema.Directive.<init>*"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.schema.Directive.apply*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.schema.Directive.copy$default$*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.Directive$")
+    ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Visitor

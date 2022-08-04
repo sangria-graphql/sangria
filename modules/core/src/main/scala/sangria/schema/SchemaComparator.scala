@@ -64,6 +64,17 @@ object SchemaComparator {
   }
 
   private def findInDirective(oldDir: Directive, newDir: Directive): Vector[SchemaChange] = {
+    val repeatableChanged =
+      if (oldDir.repeatable != newDir.repeatable)
+        Vector(
+          SchemaChange.DirectiveRepeatableChanged(
+            newDir,
+            oldDir.repeatable,
+            newDir.repeatable,
+            !newDir.repeatable))
+      else
+        Vector.empty
+
     val locationChanges = findInDirectiveLocations(oldDir, newDir)
     val fieldChanges = findInArgs(
       oldDir.arguments,
@@ -77,7 +88,7 @@ object SchemaComparator {
       dirRemoved = SchemaChange.DirectiveArgumentAstDirectiveRemoved(newDir, _, _)
     )
 
-    locationChanges ++ fieldChanges
+    repeatableChanged ++ locationChanges ++ fieldChanges
   }
 
   private def findInDirectiveLocations(
@@ -1043,6 +1054,16 @@ object SchemaChange {
   case class DirectiveArgumentAdded(directive: Directive, argument: Argument[_], breaking: Boolean)
       extends AbstractChange(
         s"Argument `${argument.name}` was added to `${directive.name}` directive",
+        breaking)
+
+  case class DirectiveRepeatableChanged(
+      directive: Directive,
+      oldRepeatable: Boolean,
+      newRepeatable: Boolean,
+      breaking: Boolean)
+      extends AbstractChange(
+        if (newRepeatable) s"Directive `${directive.name}` was made repeatable per location"
+        else s"Directive `${directive.name}` was made unique per location",
         breaking)
 
   case class InputFieldTypeChanged(

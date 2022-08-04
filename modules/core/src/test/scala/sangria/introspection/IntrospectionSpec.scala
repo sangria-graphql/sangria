@@ -108,6 +108,17 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                   ),
                   "isDeprecated" -> false,
                   "deprecationReason" -> null
+                ),
+                Map(
+                  "name" -> "isRepeatable",
+                  "description" -> "Permits using the directive multiple times at the same location.",
+                  "args" -> Vector.empty,
+                  "type" -> Map(
+                    "kind" -> "NON_NULL",
+                    "name" -> null,
+                    "ofType" -> Map("kind" -> "SCALAR", "name" -> "Boolean", "ofType" -> null)),
+                  "isDeprecated" -> false,
+                  "deprecationReason" -> null
                 )
               ),
               "inputFields" -> null,
@@ -714,7 +725,8 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                   "name" -> null,
                   "ofType" -> Map("kind" -> "SCALAR", "name" -> "Boolean", "ofType" -> null)),
                 "defaultValue" -> null
-              ))
+              )),
+              "isRepeatable" -> false
             ),
             Map(
               "name" -> "skip",
@@ -728,7 +740,8 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                   "name" -> null,
                   "ofType" -> Map("kind" -> "SCALAR", "name" -> "Boolean", "ofType" -> null)),
                 "defaultValue" -> null
-              ))
+              )),
+              "isRepeatable" -> false
             ),
             Map(
               "name" -> "deprecated",
@@ -739,7 +752,8 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                 "description" -> "Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted in [Markdown](https://daringfireball.net/projects/markdown/).",
                 "type" -> Map("kind" -> "SCALAR", "name" -> "String", "ofType" -> null),
                 "defaultValue" -> "\"No longer supported\""
-              ))
+              )),
+              "isRepeatable" -> false
             )
           ),
           "description" -> null
