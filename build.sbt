@@ -9,21 +9,14 @@ val isScala3 = Def.setting(
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.16", "2.13.8", "3.1.3")
-ThisBuild / scalaVersion := crossScalaVersions.value.last
+ThisBuild / scalaVersion := "2.13.8"
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 )
 
-// Workaround for not running derivation tests for Scala 3 yet.
-// Should be deleted and githubWorkflowBuild should be restored to default when
-// derivation is compiling for all versions
-lazy val testAll = taskKey[Unit]("Test all available modules depending on the Scala version")
-testAll := {
-  if (isScala3.value) Def.sequential(parser / Test / test, core / Test / test).value
-  else Def.sequential(parser / Test / test, core / Test / test, derivation / Test / test).value
-}
-ThisBuild / githubWorkflowBuild := Seq(WorkflowStep.Sbt(List("testAll")))
+// For now we set up GH Actions manually for Scala 3
+ThisBuild / githubWorkflowScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("3."))
 
 // Release
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
@@ -63,7 +56,9 @@ lazy val ast = project
   .settings(
     name := "sangria-ast",
     description := "Scala GraphQL AST representation",
-    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.DirectiveDefinition.*"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
@@ -85,8 +80,9 @@ lazy val parser = project
   .settings(
     name := "sangria-parser",
     description := "Scala GraphQL parser",
-    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
-    
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.4.0",
@@ -106,7 +102,9 @@ lazy val core = project
   .settings(
     name := "sangria-core",
     description := "Scala GraphQL implementation",
-    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-core" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-core" % "3.0.0"),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "sangria.introspection.IntrospectionDirective.apply"),
@@ -128,7 +126,8 @@ lazy val core = project
         "sangria.schema.Directive.copy$default$*"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.Directive$")
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.Directive$"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.MappedAbstractType")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
@@ -167,7 +166,9 @@ lazy val derivation = project
   .settings(
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
-    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
     // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
                              else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)),

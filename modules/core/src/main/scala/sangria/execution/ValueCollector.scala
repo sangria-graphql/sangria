@@ -146,7 +146,8 @@ object ValueCollector {
               marshaller,
               fromInput.marshaller,
               errors = errors,
-              valueMap = (v: Any) => fromInput.fromResult(v.asInstanceOf[fromInput.marshaller.Node]),
+              valueMap =
+                (v: Any) => fromInput.fromResult(v.asInstanceOf[fromInput.marshaller.Node]),
               defaultValueInfo = defaultInfo,
               undefinedValues = undefinedArgs,
               isArgument = true,
