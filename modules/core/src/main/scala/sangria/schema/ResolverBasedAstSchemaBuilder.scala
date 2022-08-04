@@ -132,6 +132,30 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       case r @ AnyFieldResolver(fn) if fn.isDefinedAt(origin) => r
     }
 
+  override def buildSchema(
+      definition: Option[ast.SchemaDefinition],
+      extensions: List[ast.SchemaExtensionDefinition],
+      queryType: ObjectType[Ctx, Any],
+      mutationType: Option[ObjectType[Ctx, Any]],
+      subscriptionType: Option[ObjectType[Ctx, Any]],
+      additionalTypes: List[Type with Named],
+      directives: List[Directive],
+      mat: AstSchemaMaterializer[Ctx]) =
+    Schema[Ctx, Any](
+      query = queryType,
+      mutation = mutationType,
+      subscription = subscriptionType,
+      additionalTypes = additionalTypes,
+      description = definition.flatMap(_.description.map(_.value)),
+      directives = directives,
+      astDirectives =
+        definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(
+          _.directives),
+      astNodes = Vector(mat.document) ++ extensions ++ definition.toVector,
+      validationRules = SchemaValidationRule.default :+ new ResolvedDirectiveValidationRule(
+        this.directives.filterNot(_.repeatable).map(_.name).toSet)
+    )
+
   override def resolveField(
       origin: MatOrigin,
       typeDefinition: Either[ast.TypeDefinition, ObjectLikeType[Ctx, _]],
@@ -162,7 +186,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
               Some(
                 fn(
-                  DynamicDirectiveContext[Ctx, Any](
+                  DynamicDirectiveContext(
                     d,
                     typeDefinition,
                     definition,
@@ -353,7 +377,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
           Some(
             complexity(
-              ComplexityDynamicDirectiveContext[Ctx, Any](
+              ComplexityDynamicDirectiveContext(
                 d,
                 typeDefinition,
                 definition,
@@ -395,7 +419,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
             implicit val marshaller = ddfp.marshaller
 
             resolve(
-              DynamicDirectiveFieldProviderContext[Ctx, Any](
+              DynamicDirectiveFieldProviderContext(
                 origin,
                 astDir,
                 typeDefinition,
@@ -611,9 +635,11 @@ object ResolverBasedAstSchemaBuilder {
     }
 
   def defaultInputResolver[Ctx, In: InputUnmarshaller] =
-    FieldResolver[Ctx] { case (_, _) =>
-      extractFieldValue[Ctx, In]
-    }
+    FieldResolver[Ctx](
+      { case (_, _) =>
+        extractFieldValue[Ctx, In]
+      },
+      PartialFunction.empty)
 
   def defaultExistingInputResolver[Ctx, In: InputUnmarshaller] =
     ExistingFieldResolver[Ctx] { case (_, _, _) =>
@@ -646,10 +672,13 @@ object ResolverBasedAstSchemaBuilder {
                     case GenericDirectiveResolver(directive, _, resolve) =>
                       resolve(GenericDirectiveContext(astDir, node, Args(directive, astDir)))
                     case gd @ GenericDynamicDirectiveResolver(_, _, resolve) =>
-                      implicit val marshaller: ResultMarshallerForType[T] = gd.marshaller
+                      implicit val marshaller = gd.marshaller
 
                       resolve(
-                        GenericDynamicDirectiveContext(astDir, node, createDynamicArgs(astDir)))
+                        GenericDynamicDirectiveContext(
+                          astDir,
+                          node,
+                          createDynamicArgs(astDir)(marshaller)))
                   }
               }
 

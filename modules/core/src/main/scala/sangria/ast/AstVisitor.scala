@@ -405,7 +405,7 @@ object AstVisitor {
             tc.foreach(c => loop(c))
             breakOrSkip(onLeave(n))
           }
-        case n @ DirectiveDefinition(_, args, locations, description, comment, _) =>
+        case n @ DirectiveDefinition(_, args, locations, description, _, comment, _) =>
           if (breakOrSkip(onEnter(n))) {
             args.foreach(d => loop(d))
             locations.foreach(d => loop(d))

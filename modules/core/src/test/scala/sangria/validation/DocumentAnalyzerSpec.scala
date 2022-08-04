@@ -7,6 +7,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import sangria.renderer.QueryRenderer
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers {
   val NumberType = EnumType(
     "Number",
@@ -20,8 +23,11 @@ class DocumentAnalyzerSpec extends AnyWordSpec with Matchers with StringMatchers
       Field(
         "normalField",
         OptionType(NumberType),
-        arguments = Argument("enumArg", OptionInputType(NumberType)) :: Nil,
-        resolve = ctx => ctx.argOpt[Int]("enumArg")),
+        arguments = Argument[Option[Int @@ CoercedScalaResult]](
+          "enumArg",
+          OptionInputType(NumberType)) :: Nil,
+        resolve = ctx => ctx.argOpt[Int]("enumArg")
+      ),
       Field(
         "deprecatedField",
         OptionType(StringType),

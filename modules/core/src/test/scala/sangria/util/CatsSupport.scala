@@ -62,11 +62,11 @@ trait CatsSupport { this: AnyWordSpec with Matchers =>
 
             val testData = testTestData.orElse(bgTestData).getOrElse(JsObject.empty)
 
-            val given = getGiven(test, testSchema)
+            val `given` = getGiven(test, testSchema)
             val action = getAction(test, testName, testData)
             val assertions = getAssertions(test, testName)
 
-            val result = executeAction(given, action)
+            val result = executeAction(`given`, action)
 
             assertions.foreach { a =>
               assertActionResult(result, a)
@@ -213,26 +213,26 @@ object CatsScenarioExecutor extends FutureResultSupport {
         value.asInstanceOf[JsValue].get("type").exists(_.stringValue == c.definition.name))
   )
 
-  def executeAction(given: Given[Any, Any], action: Action) = action match {
+  def executeAction(`given`: Given[Any, Any], action: Action) = action match {
     case Parse =>
       ParsingResult(
-        QueryParser.parse(given.query).toEither.left.map(_.asInstanceOf[SangriaSyntaxError]))
+        QueryParser.parse(`given`.query).toEither.left.map(_.asInstanceOf[SangriaSyntaxError]))
 
     case Validate(rules) =>
       ValidationResult(
         new RuleBasedQueryValidator(rules.toList)
-          .validateQuery(given.schema, QueryParser.parse(given.query).get))
+          .validateQuery(`given`.schema, QueryParser.parse(`given`.query).get))
 
     case Execute(validate, value, vars, op) =>
       val validator = if (validate) QueryValidator.default else QueryValidator.empty
 
       ExecutionResult(
         QueryParser
-          .parse(given.query)
+          .parse(`given`.query)
           .map(queryAst =>
             Executor
               .execute(
-                given.schema,
+                `given`.schema,
                 queryAst,
                 root = value,
                 queryValidator = validator,
@@ -586,8 +586,8 @@ object CatsScenarioData {
   }
 
   def getGiven(value: YamlValue, schema: Option[Schema[Any, Any]]) = {
-    val given = value("given")
-    val query = given("query").stringValue
+    val `given` = value("given")
+    val query = `given`("query").stringValue
 
     Given(query, schema)
   }

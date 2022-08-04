@@ -523,7 +523,7 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
       lazy val A: ObjectType[Unit, Any] = ObjectType(
         "A",
         () =>
-          fields(
+          fields[Unit, Any](
             Field("nullableA", OptionType(A), resolve = _ => ""),
             Field("nonNullA", A, resolve = _ => ""),
             Field("throws", A, resolve = _ => throw PrivacyError("Catch me if you can"))

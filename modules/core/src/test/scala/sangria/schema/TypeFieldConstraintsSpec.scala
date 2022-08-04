@@ -5,6 +5,9 @@ import sangria.util.SimpleGraphQlSupport._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class TypeFieldConstraintsSpec extends AnyWordSpec with Matchers {
 
   "ObjectType" should {
@@ -425,10 +428,12 @@ class TypeFieldConstraintsSpec extends AnyWordSpec with Matchers {
           Field(
             "slice",
             IntType,
-            arguments = Argument("parts", IntType) :: Argument(
-              "careful",
-              OptionInputType(BooleanType)) :: Nil,
-            resolve = _.args.arg[Int]("parts")),
+            arguments =
+              Argument("parts", IntType) :: Argument[Option[Boolean @@ CoercedScalaResult]](
+                "careful",
+                OptionInputType(BooleanType)) :: Nil,
+            resolve = _.args.arg[Int]("parts")
+          ),
           Field("color", StringType, resolve = _.value.color)
         )
       )

@@ -18,6 +18,9 @@ import sangria.util.SimpleGraphQlSupport._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case object UUIDViolation extends BaseViolation("Invalid UUID")
 
@@ -44,7 +47,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
     "provide basic resolution capabilities" in {
       import sangria.marshalling.sprayJson._
 
-      val ValueArg = Argument("value", StringType)
+      val ValueArg: Argument[String] = Argument("value", StringType)
       val TestDir =
         Directive("test", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
 
@@ -101,11 +104,13 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
             c.withArgs(MinArg, MaxArg)((min, max) =>
               c.inputType(c.definition.valueType, intValidationAlias(min, max)))),
         DirectiveScalarResolver(CoolDir, _ => StringType),
-        DirectiveResolver(TestDir, resolve = _.arg(ValueArg)),
+        DirectiveResolver(TestDir, resolve = _.arg[String](ValueArg)),
         DynamicDirectiveResolver[Any, JsValue]("json", resolve = _.args),
-        FieldResolver { case (TypeName("Query"), FieldName("id")) =>
-          _ => UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")
-        },
+        FieldResolver(
+          { case (TypeName("Query"), FieldName("id")) =>
+            _ => UUID.fromString("a26bdfd4-0fcf-484f-b363-585091b3319f")
+          },
+          PartialFunction.empty),
         AnyFieldResolver.defaultInput[Any, JsValue]
       )
 
@@ -269,7 +274,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
     }
 
     "resolve fields based on the directives" in {
-      val ValueArg = Argument("value", StringType)
+      val ValueArg: Argument[String] = Argument("value", StringType)
 
       val ConstDir =
         Directive("const", arguments = ValueArg :: Nil, locations = Set(DL.FieldDefinition))
@@ -278,7 +283,7 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
       val AddFinalDir = Directive("addFinal", locations = Set(DL.Schema, DL.FieldDefinition))
 
       val builder = resolverBased[Any](
-        DirectiveResolver(ConstDir, c => c.arg(ValueArg)),
+        DirectiveResolver(ConstDir, c => c.arg[String](ValueArg)),
         DirectiveResolver(
           AddDir,
           c =>
@@ -336,11 +341,14 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           case (TypeName("Color"), v) if v.name == "GREEN" => "#00FF00"
           case (TypeName("Color"), v) if v.name == "BLUE" => "#0000FF"
         },
-        FieldResolver { case (TypeName("Mutation"), FieldName("eat")) =>
-          ctx =>
-            "tasty " + ctx.arg[String]("color") + " " + ctx.arg[InputObjectType.DefaultInput](
-              "fruit")("color")
-        }
+        FieldResolver(
+          { case (TypeName("Mutation"), FieldName("eat")) =>
+            ctx =>
+              "tasty " + ctx.arg[String]("color") + " " + ctx.arg[InputObjectType.DefaultInput](
+                "fruit")("color")
+          },
+          PartialFunction.empty
+        )
       )
 
       val schemaAst =
@@ -464,10 +472,13 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
 
     "resolve fields based on names" in {
       val builder = resolverBased[Unit](
-        FieldResolver {
-          case (TypeName("Query"), field @ FieldName(fieldName)) if fieldName.startsWith("test") =>
-            c => c.arg[Int](field.arguments.head.name) + 1
-        },
+        FieldResolver(
+          {
+            case (TypeName("Query"), field @ FieldName(fieldName))
+                if fieldName.startsWith("test") =>
+              c => c.arg[Int](field.arguments.head.name) + 1
+          },
+          PartialFunction.empty),
         FieldResolver.map("Query" -> Map("a" -> (_ => "a value"), "b" -> (_ => "b value"))),
         ExistingFieldResolver {
           case (_, _, field) if field.name.startsWith("existing") =>
@@ -736,10 +747,13 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
           }
         """
 
-      val builder = resolverBased[Any](FieldResolver {
-        case (_, FieldName("name")) => _ => "test"
-        case (_, _) => _ => ()
-      })
+      val builder = resolverBased[Any](
+        FieldResolver(
+          {
+            case (_, FieldName("name")) => _ => "test"
+            case (_, _) => _ => ()
+          },
+          PartialFunction.empty))
 
       val resolverBuilder = builder.validateSchemaWithException(schemaDocument)
 
@@ -903,6 +917,121 @@ class ResolverBasedAstSchemaBuilderSpec extends AnyWordSpec with Matchers with F
             }]
           }
         """.parseJson)
+    }
+
+    "validate unique directives on extensions" in {
+      val TestDir = Directive(
+        "dir",
+        locations =
+          Set(DL.Object, DL.Interface, DL.Union, DL.InputObject, DL.Scalar, DL.Schema, DL.Enum))
+
+      val TestRepDir = Directive(
+        "dir",
+        repeatable = true,
+        locations =
+          Set(DL.Object, DL.Interface, DL.Union, DL.InputObject, DL.Scalar, DL.Schema, DL.Enum))
+
+      val builder = resolverBased[Unit](AdditionalDirectives(Seq(TestDir)))
+      val builderRep = resolverBased[Unit](AdditionalDirectives(Seq(TestRepDir)))
+
+      def testForUnique(schemaAst: ast.Document) = {
+        val error = intercept[SchemaValidationException](
+          Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst)))
+
+        error.violations should have size 1
+
+        error.violations.head.errorMessage should include(
+          "The directive 'dir' can only be used once at this location.")
+
+        // should be successful
+        Schema.buildFromAst(schemaAst, builderRep.validateSchemaWithException(schemaAst))
+      }
+
+      testForUnique(gql"""
+          type Query @dir {field: String}
+          extend type Query @dir
+        """)
+
+      testForUnique(gql"""
+          type Query {field: String}
+          interface Foo @dir {field: String}
+          extend interface Foo @dir
+        """)
+
+      testForUnique(gql"""
+          type Query @dir {filed: String}
+          type Cat {field: String}
+          type Dog {field: String}
+
+          union Foo @dir = Cat | Dog
+
+          extend union Foo @dir
+        """)
+
+      testForUnique(gql"""
+          type Query @dir {filed: String}
+          enum Foo @dir {RED, BLUE}
+          extend enum Foo @dir
+        """)
+
+      testForUnique(gql"""
+          type Query @dir {filed: String}
+          scalar Foo @dir
+          extend scalar Foo @dir
+        """)
+
+      testForUnique(gql"""
+          type Query @dir {filed: String}
+          input Foo @dir {field: String}
+          extend input Foo @dir
+        """)
+
+      testForUnique(gql"""
+          type Query @dir {filed: String}
+          schema @dir {query: Query}
+          extend schema @dir
+        """)
+    }
+
+    "validate unique directives on extensions with schema extension" in {
+      val TestDir = Directive(
+        "dir",
+        locations =
+          Set(DL.Object, DL.Interface, DL.Union, DL.InputObject, DL.Scalar, DL.Schema, DL.Enum))
+
+      val builder = resolverBased[Unit](AdditionalDirectives(Seq(TestDir)))
+
+      val mainSchemaAst = gql"type Query @dir {field: String}"
+      val extSchemaAst = gql"extend type Query @dir"
+
+      val schema =
+        Schema.buildFromAst(mainSchemaAst, builder.validateSchemaWithException(mainSchemaAst))
+
+      val error = intercept[SchemaValidationException](
+        schema.extend(extSchemaAst, builder.validateSchemaWithException(extSchemaAst)))
+
+      error.violations should have size 1
+      error.violations.head.errorMessage should include(
+        "The directive 'dir' can only be used once at this location.")
+    }
+
+    "allow empty field list on types as long as provider contributes new fields" in {
+      val TestDir = Directive("dir", locations = Set(DL.Object))
+
+      val builder = resolverBased[Any](DirectiveFieldProvider(
+        TestDir,
+        c =>
+          List(MaterializedField(
+            c.origin,
+            Field("hello", c.scalarType("String"), resolve = (_: Context[Any, Any]) => "world")))))
+
+      val schemaAst = gql"type Query @dir"
+
+      val schema = Schema.buildFromAst(schemaAst, builder.validateSchemaWithException(schemaAst))
+
+      val query = gql"{hello}"
+
+      Executor.execute(schema, query).await should be(Map("data" -> Map("hello" -> "world")))
     }
   }
 }

@@ -15,6 +15,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+import sangria.marshalling.ScalaInput
+
 class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
   val TestInputObject = InputObjectType(
     "TestInputObject",
@@ -42,7 +46,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       Field(
         "fieldWithNullableStringInput",
         OptionType(StringType),
-        arguments = Argument("input", OptionInputType(StringType)) :: Nil,
+        arguments = Argument[Option[String @@ CoercedScalaResult]](
+          "input",
+          OptionInputType(StringType)) :: Nil,
         resolve = ctx =>
           ctx
             .argOpt[Any]("input")
@@ -52,7 +58,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       Field(
         "fieldWithNullableStringInputDefined",
         BooleanType,
-        arguments = Argument("input", OptionInputType(StringType)) :: Nil,
+        arguments = Argument[Option[String @@ CoercedScalaResult]](
+          "input",
+          OptionInputType(StringType)) :: Nil,
         resolve = ctx => ctx.argDefinedInQuery("input")
       ),
       Field(
@@ -65,8 +73,10 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       Field(
         "fieldWithDefaultArgumentValue",
         OptionType(StringType),
-        arguments =
-          Argument("input", OptionInputType(StringType), defaultValue = "Hello World") :: Nil,
+        arguments = Argument[Option[String @@ CoercedScalaResult], String](
+          "input",
+          OptionInputType(StringType),
+          defaultValue = "Hello World") :: Nil,
         resolve = ctx =>
           DefaultValueRenderer.renderCoercedInputValueCompact(
             ctx.arg[Any]("input"),
@@ -84,8 +94,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       Field(
         "list",
         OptionType(StringType),
-        arguments =
-          Argument("input", OptionInputType(ListInputType(OptionInputType(StringType)))) :: Nil,
+        arguments = Argument[Option[Seq[Option[String @@ CoercedScalaResult]]]](
+          "input",
+          OptionInputType(ListInputType(OptionInputType(StringType)))) :: Nil,
         resolve = ctx =>
           ctx
             .argOpt[Any]("input")
@@ -97,7 +108,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       Field(
         "nnList",
         OptionType(StringType),
-        arguments = Argument("input", ListInputType(OptionInputType(StringType))) :: Nil,
+        arguments = Argument[Seq[Option[String @@ CoercedScalaResult]]](
+          "input",
+          ListInputType(OptionInputType(StringType))) :: Nil,
         resolve = ctx =>
           DefaultValueRenderer.renderCoercedInputValueCompact(
             ctx.arg[Any]("input"),
@@ -106,7 +119,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       Field(
         "listNN",
         OptionType(StringType),
-        arguments = Argument("input", OptionInputType(ListInputType(StringType))) :: Nil,
+        arguments = Argument[Option[Seq[String @@ CoercedScalaResult]]](
+          "input",
+          OptionInputType(ListInputType(StringType))) :: Nil,
         resolve = ctx =>
           ctx
             .argOpt[Any]("input")
@@ -116,7 +131,8 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       Field(
         "nnListNN",
         OptionType(StringType),
-        arguments = Argument("input", ListInputType(StringType)) :: Nil,
+        arguments =
+          Argument[Seq[String @@ CoercedScalaResult]]("input", ListInputType(StringType)) :: Nil,
         resolve = ctx =>
           DefaultValueRenderer.renderCoercedInputValueCompact(
             ctx.arg[Any]("input"),
@@ -125,7 +141,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
     )
   )
 
-  def schema = Schema(TestType)
+  def schema = Schema[Unit, Unit](TestType)
 
   "Execute: Handles inputs" when {
     "Handles objects and nullability" when {
@@ -395,7 +411,13 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
         "executes with complex input (scala input)" in {
           val args = Map("input" -> Map("a" -> "foo", "b" -> List("bar"), "c" -> "baz"))
 
-          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be(
+          Executor
+            .execute(
+              schema.asInstanceOf[Schema[Unit, Unit]],
+              testQuery,
+              variables = mapVars(args)
+            )
+            .await should be(
             Map(
               "data" -> Map(
                 "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
@@ -405,7 +427,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
         "executes with complex input (json input)" in {
           val args = """{"input": {"a": "foo", "b": ["bar"], "c": "baz"}}""".parseJson
 
-          Executor.execute(schema, testQuery, variables = args).await should be(
+          Executor
+            .execute(schema.asInstanceOf[Schema[Unit, Unit]], testQuery, variables = args)
+            .await should be(
             Map(
               "data" -> Map(
                 "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
@@ -428,7 +452,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
         "properly coerces single value to array (scala input)" in {
           val args = Map("input" -> Map("a" -> "foo", "b" -> "bar", "c" -> "baz"))
 
-          Executor.execute(schema, testQuery, variables = mapVars(args)).await should be(
+          Executor
+            .execute(schema.asInstanceOf[Schema[Unit, Unit]], testQuery, variables = mapVars(args))
+            .await should be(
             Map(
               "data" -> Map(
                 "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
@@ -438,7 +464,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
         "properly coerces single value to array (json input)" in {
           val args = """{"input": {"a": "foo", "b": "bar", "c": "baz"}}""".parseJson
 
-          Executor.execute(schema, testQuery, variables = args).await should be(
+          Executor
+            .execute(schema.asInstanceOf[Schema[Unit, Unit]], testQuery, variables = args)
+            .await should be(
             Map(
               "data" -> Map(
                 "fieldWithObjectInput" -> """{a:"foo",b:["bar"],c:"baz"}"""
@@ -447,7 +475,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
 
         def assertErrorResult[T: InputUnmarshaller](args: T, expectedError: String) = {
           val result = Executor
-            .execute(schema, testQuery, variables = args)
+            .execute(schema.asInstanceOf[Schema[Unit, Unit]], testQuery, variables = args)
             .awaitAndRecoverQueryAnalysisScala
             .asInstanceOf[Map[String, AnyRef]]
 
@@ -532,7 +560,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             }
           """)
 
-        Executor.execute(schema, query, variables = args).await should be(
+        Executor
+          .execute(schema.asInstanceOf[Schema[Unit, Unit]], query, variables = args)
+          .await should be(
           Map(
             "data" -> Map(
               "fieldWithNullableStringInput" -> null
@@ -548,7 +578,9 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             }
           """)
 
-        Executor.execute(schema, query, variables = args).await should be(
+        Executor
+          .execute(schema.asInstanceOf[Schema[Unit, Unit]], query, variables = args)
+          .await should be(
           Map(
             "data" -> Map(
               "fieldWithNullableStringInput" -> "\"a\""

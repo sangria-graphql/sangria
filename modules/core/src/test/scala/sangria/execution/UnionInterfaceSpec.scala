@@ -7,6 +7,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class UnionInterfaceSpec
     extends AnyWordSpec
     with Matchers
@@ -369,7 +372,9 @@ class UnionInterfaceSpec
           Field(
             "quz",
             OptionType(ListType(OptionType(QuzType))),
-            arguments = Argument("id", OptionInputType(ListInputType(StringType))) :: Nil,
+            arguments = Argument[Option[Seq[String @@ CoercedScalaResult]]](
+              "id",
+              OptionInputType(ListInputType(StringType))) :: Nil,
             resolve = c =>
               c.argOpt[Seq[String]]("id")
                 .map(queried => c.value.quz.filter(quz => queried.contains(quz.id)))

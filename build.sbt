@@ -1,13 +1,22 @@
 import sbt.Developer
 import sbt.Keys._
 
+import com.typesafe.tools.mima.core._
+
+val isScala3 = Def.setting(
+  CrossVersion.partialVersion(scalaVersion.value).exists(_._1 == 3)
+)
+
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
-ThisBuild / scalaVersion := crossScalaVersions.value.last
+ThisBuild / crossScalaVersions := Seq("2.12.16", "2.13.8", "3.1.3")
+ThisBuild / scalaVersion := "2.13.8"
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 )
+
+// For now we set up GH Actions manually for Scala 3
+ThisBuild / githubWorkflowScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("3."))
 
 // Release
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
@@ -26,6 +35,10 @@ ThisBuild / githubWorkflowPublish := Seq(
   )
 )
 
+def emptyForScala3(isScala3: Boolean, module: ModuleID): Set[ModuleID] =
+  if (isScala3) Set.empty
+  else Set(module)
+
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
@@ -43,7 +56,16 @@ lazy val ast = project
   .settings(
     name := "sangria-ast",
     description := "Scala GraphQL AST representation",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.DirectiveDefinition.*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$")
+    ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-ast_$ver/latest/"))
@@ -58,11 +80,13 @@ lazy val parser = project
   .settings(
     name := "sangria-parser",
     description := "Scala GraphQL parser",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.4.0",
-      "org.scalatest" %% "scalatest" % "3.2.12" % Test
+      "org.scalatest" %% "scalatest" % "3.2.13" % Test
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -78,30 +102,56 @@ lazy val core = project
   .settings(
     name := "sangria-core",
     description := "Scala GraphQL implementation",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-core" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-core" % "3.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.introspection.IntrospectionDirective$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionDirective.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.package.introspectionQueryString"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.package.introspectionQuery"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.schema.Directive.<init>*"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.schema.Directive.apply*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.schema.Directive.copy$default$*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.Directive$"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.MappedAbstractType")
+    ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Visitor
-      "org.sangria-graphql" %% "macro-visit" % "0.1.3",
+      "org.sangria-graphql" %% "macro-visit" % "0.2.0-RC1",
       // Marshalling
-      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.7",
+      "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.8",
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
-      // Macros
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       // Testing
       "co.fs2" %% "fs2-core" % "2.5.11" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.12" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.13" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
-      "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2" % Test,
+      "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.1" % Test,
       "org.sangria-graphql" %% "sangria-monix" % "2.0.1" % Test,
-      "eu.timepit" %% "refined" % "0.9.29" % Test,
+      "eu.timepit" %% "refined" % "0.10.1" % Test,
       // CATs
-      "net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test,
-      "io.github.classgraph" % "classgraph" % "4.8.147" % Test
-    ),
+      ("net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test).cross(CrossVersion.for3Use2_13),
+      "io.github.classgraph" % "classgraph" % "4.8.149" % Test
+    ) ++ (if (isScala3.value) Seq.empty
+          else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)), // Macros
+
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-core_$ver/latest/"))
@@ -116,11 +166,12 @@ lazy val derivation = project
   .settings(
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
-    libraryDependencies ++= Seq(
-      // Macros
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    ),
+    mimaPreviousArtifacts := emptyForScala3(
+      isScala3.value,
+      "org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
+    // Macros
+    libraryDependencies ++= (if (isScala3.value) Seq.empty
+                             else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-derivation_$ver/latest/"))
@@ -178,11 +229,12 @@ lazy val projectInfo = Seq(
 )
 
 lazy val scalacSettings = Seq(
-  scalacOptions ++= Seq("-deprecation", "-feature", "-Xlint:-missing-interpolator,_"),
+  scalacOptions ++= Seq("-deprecation", "-feature"),
+  scalacOptions ++= { if (!isScala3.value) Seq("-Xlint:-missing-interpolator,_") else Seq.empty },
   scalacOptions ++= {
     if (scalaVersion.value.startsWith("2.12")) Seq("-language:higherKinds") else List.empty[String]
   },
-  scalacOptions += "-target:jvm-1.8",
+  scalacOptions += { if (isScala3.value) "-Xtarget:8" else "-target:jvm-1.8" },
   autoAPIMappings := true,
   Compile / doc / scalacOptions ++= // scaladoc options
     Opts.doc.title("Sangria") ++ Seq(

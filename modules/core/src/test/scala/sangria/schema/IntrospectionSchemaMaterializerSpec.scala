@@ -19,6 +19,10 @@ import spray.json._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@
+import sangria.marshalling.FromInput.CoercedScalaResult
+import sangria.marshalling.ScalaInput
+
 class IntrospectionSchemaMaterializerSpec
     extends AnyWordSpec
     with Matchers
@@ -134,13 +138,15 @@ class IntrospectionSchemaMaterializerSpec
         mutation = Some(ObjectType(
           "MutationType",
           "This is a simple mutation type",
-          fields[Any, Any](
-            Field(
-              "setString",
-              OptionType(StringType),
-              Some("Set the string field"),
-              arguments = Argument("value", OptionInputType(StringType)) :: Nil,
-              resolve = _ => "foo"))
+          fields[Any, Any](Field(
+            "setString",
+            OptionType(StringType),
+            Some("Set the string field"),
+            arguments = Argument[Option[String @@ CoercedScalaResult]](
+              "value",
+              OptionInputType(StringType)) :: Nil,
+            resolve = _ => "foo"
+          ))
         )),
         subscription = Some(ObjectType(
           "SubscriptionType",
@@ -242,7 +248,7 @@ class IntrospectionSchemaMaterializerSpec
             "one",
             OptionType(StringType),
             Some("A field with a single arg"),
-            arguments = Argument(
+            arguments = Argument[Option[Int @@ CoercedScalaResult]](
               "intArg",
               OptionInputType(IntType),
               description = "This is an int arg") :: Nil,
@@ -252,7 +258,7 @@ class IntrospectionSchemaMaterializerSpec
             "two",
             OptionType(StringType),
             Some("A field with a two args"),
-            arguments = Argument(
+            arguments = Argument[Option[Seq[Option[Int @@ CoercedScalaResult]]]](
               "listArg",
               OptionInputType(ListInputType(OptionInputType(IntType))),
               description = "This is an list of int arg") ::
@@ -283,7 +289,7 @@ class IntrospectionSchemaMaterializerSpec
             "food",
             OptionType(foodType),
             Some("Repeats the arg you give it"),
-            arguments = Argument(
+            arguments = Argument[Option[Int @@ CoercedScalaResult]](
               "kind",
               OptionInputType(foodType),
               description = "what kind of food?") :: Nil,
@@ -347,15 +353,20 @@ class IntrospectionSchemaMaterializerSpec
             Field(
               "defaultInt",
               OptionType(StringType),
-              arguments = Argument("intArg", OptionInputType(IntType), 10) :: Nil,
-              resolve = _ => None),
+              arguments = Argument[Option[Int @@ CoercedScalaResult], Int](
+                "intArg",
+                OptionInputType(IntType),
+                10) :: Nil,
+              resolve = _ => None
+            ),
             Field(
               "defaultList",
               OptionType(StringType),
-              arguments = Argument(
-                "listArg",
-                OptionInputType(ListInputType(OptionInputType(IntType))),
-                scalaInput(Vector(1, 2, 3))) :: Nil,
+              arguments =
+                Argument[Option[Seq[Option[Int @@ CoercedScalaResult]]], Vector[Int] @@ ScalaInput](
+                  "listArg",
+                  OptionInputType(ListInputType(OptionInputType(IntType))),
+                  scalaInput(Vector(1, 2, 3))) :: Nil,
               resolve = _ => None
             ),
             Field(
@@ -387,7 +398,15 @@ class IntrospectionSchemaMaterializerSpec
             "customDirective",
             Some("This is a custom directive"),
             shouldInclude = _ => true,
-            locations = Set(DirectiveLocation.Field)))
+            locations = Set(DirectiveLocation.Field)),
+          Directive(
+            "customRepeatableDirective",
+            Some("This is a custom repeatable directive"),
+            shouldInclude = _ => true,
+            repeatable = true,
+            locations = Set(DirectiveLocation.Field)
+          )
+        )
       ))
 
     "builds a schema aware of deprecation" in testSchema(
@@ -441,8 +460,12 @@ class IntrospectionSchemaMaterializerSpec
           fields[Any, Any](Field(
             "foo",
             OptionType(StringType),
-            arguments = Argument("custom1", OptionInputType(CustomScalar)) ::
-              Argument("custom2", OptionInputType(CustomScalar)) ::
+            arguments = Argument[Option[Int @@ CoercedScalaResult]](
+              "custom1",
+              OptionInputType(CustomScalar)) ::
+              Argument[Option[Int @@ CoercedScalaResult]](
+                "custom2",
+                OptionInputType(CustomScalar)) ::
               Nil,
             resolve = _ => None
           ))
@@ -469,8 +492,12 @@ class IntrospectionSchemaMaterializerSpec
           fields[Any, Any](Field(
             "foo",
             OptionType(IntType),
-            arguments = Argument("custom1", OptionInputType(CustomScalar)) ::
-              Argument("custom2", OptionInputType(CustomScalar)) ::
+            arguments = Argument[Option[Int @@ CoercedScalaResult]](
+              "custom1",
+              OptionInputType(CustomScalar)) ::
+              Argument[Option[Int @@ CoercedScalaResult]](
+                "custom2",
+                OptionInputType(CustomScalar)) ::
               Nil,
             resolve = _ => None
           ))

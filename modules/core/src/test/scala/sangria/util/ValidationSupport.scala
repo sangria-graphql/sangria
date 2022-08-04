@@ -8,6 +8,9 @@ import sangria.util.SimpleGraphQlSupport._
 import scala.util.Success
 import org.scalatest.matchers.should.Matchers
 
+import sangria.util.tag.@@
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 trait ValidationSupport extends Matchers {
   type TestField = Field[Unit, Unit]
 
@@ -29,9 +32,12 @@ trait ValidationSupport extends Matchers {
       Field(
         "name",
         OptionType(StringType),
-        arguments = Argument("surname", OptionInputType(BooleanType)) :: Nil,
+        arguments = Argument[Option[Boolean @@ CoercedScalaResult]](
+          "surname",
+          OptionInputType(BooleanType)) :: Nil,
         resolve = _ => None)
-    ))
+    )
+  )
 
   val DogCommand = EnumType(
     "DogCommand",
@@ -57,7 +63,9 @@ trait ValidationSupport extends Matchers {
       Field(
         "name",
         OptionType(StringType),
-        arguments = Argument("surname", OptionInputType(BooleanType)) :: Nil,
+        arguments = Argument[Option[Boolean @@ CoercedScalaResult]](
+          "surname",
+          OptionInputType(BooleanType)) :: Nil,
         resolve = _ => None),
       Field("nickname", OptionType(StringType), resolve = _ => None),
       Field("barks", OptionType(BooleanType), resolve = _ => None),
@@ -65,18 +73,18 @@ trait ValidationSupport extends Matchers {
       Field(
         "doesKnowCommand",
         OptionType(BooleanType),
-        arguments = Argument("dogCommand", OptionInputType(DogCommand)) :: Nil,
+        arguments = List(Argument("dogCommand", OptionInputType(DogCommand))),
         resolve = _ => None),
       Field(
         "isHousetrained",
         OptionType(BooleanType),
-        arguments = Argument("atOtherHomes", OptionInputType(BooleanType), true) :: Nil,
+        arguments = List(Argument("atOtherHomes", OptionInputType(BooleanType), true)),
         resolve = _ => None),
       Field(
         "isAtLocation",
         OptionType(BooleanType),
         arguments =
-          Argument("x", OptionInputType(IntType)) :: Argument("y", OptionInputType(IntType)) :: Nil,
+          List(Argument("x", OptionInputType(IntType)), Argument("y", OptionInputType(IntType))),
         resolve = _ => None)
     )
   )
@@ -109,7 +117,7 @@ trait ValidationSupport extends Matchers {
         Field(
           "name",
           OptionType(StringType),
-          arguments = Argument("surname", OptionInputType(BooleanType)) :: Nil,
+          arguments = List(Argument("surname", OptionInputType(BooleanType))),
           resolve = _ => None),
         Field("pets", OptionType(ListType(OptionType(Pet))), resolve = _ => None),
         Field("relatives", OptionType(ListType(OptionType(Human))), resolve = _ => None)
@@ -143,88 +151,86 @@ trait ValidationSupport extends Matchers {
       Field(
         "intArgField",
         OptionType(StringType),
-        arguments = Argument("intArg", OptionInputType(IntType)) :: Nil,
+        arguments = List(Argument("intArg", OptionInputType(IntType))),
         resolve = _ => None),
       Field(
         "bigIntArgField",
         OptionType(StringType),
-        arguments = Argument("bigIntArg", OptionInputType(BigIntType)) :: Nil,
+        arguments = List(Argument("bigIntArg", OptionInputType(BigIntType))),
         resolve = _ => None),
       Field(
         "nonNullIntArgField",
         OptionType(StringType),
-        arguments = Argument("nonNullIntArg", IntType) :: Nil,
+        arguments = List(Argument("nonNullIntArg", IntType)),
         resolve = _ => None),
       Field(
         "stringArgField",
         OptionType(StringType),
-        arguments = Argument("stringArg", OptionInputType(StringType)) :: Nil,
+        arguments = List(Argument("stringArg", OptionInputType(StringType))),
         resolve = _ => None),
       Field(
         "booleanArgField",
         OptionType(StringType),
-        arguments = Argument("booleanArg", OptionInputType(BooleanType)) :: Nil,
+        arguments = List(Argument("booleanArg", OptionInputType(BooleanType))),
         resolve = _ => None),
       Field(
         "enumArgField",
         OptionType(StringType),
-        arguments = Argument("enumArg", OptionInputType(FurColor)) :: Nil,
+        arguments = List(Argument("enumArg", OptionInputType(FurColor))),
         resolve = _ => None),
       Field(
         "floatArgField",
         OptionType(StringType),
-        arguments = Argument("floatArg", OptionInputType(FloatType)) :: Nil,
+        arguments = List(Argument("floatArg", OptionInputType(FloatType))),
         resolve = _ => None),
       Field(
         "bigDecimalArgField",
         OptionType(StringType),
-        arguments = Argument("bigDecimalArg", OptionInputType(BigDecimalType)) :: Nil,
+        arguments = List(Argument("bigDecimalArg", OptionInputType(BigDecimalType))),
         resolve = _ => None),
       Field(
         "idArgField",
         OptionType(StringType),
-        arguments = Argument("idArg", OptionInputType(IDType)) :: Nil,
+        arguments = List(Argument("idArg", OptionInputType(IDType))),
         resolve = _ => None),
       Field(
         "stringListArgField",
         OptionType(StringType),
-        arguments = Argument(
-          "stringListArg",
-          OptionInputType(ListInputType(OptionInputType(StringType)))) :: Nil,
+        arguments = List(
+          Argument("stringListArg", OptionInputType(ListInputType(OptionInputType(StringType))))),
         resolve = _ => None
       ),
       Field(
         "complexArgField",
         OptionType(StringType),
-        arguments = Argument("complexArg", OptionInputType(ComplexInput)) :: Nil,
+        arguments = List(Argument("complexArg", OptionInputType(ComplexInput))),
         resolve = _ => None),
       Field(
         "multipleReqs",
         OptionType(StringType),
-        arguments = Argument("req1", IntType) :: Argument("req2", IntType) :: Nil,
+        arguments = List(Argument("req1", IntType), Argument("req2", IntType)),
         resolve = _ => None),
       Field(
         "nonNullFieldWithDefault",
         OptionType(StringType),
-        arguments = Argument("arg", IntType, 0) :: Nil,
+        arguments = List(Argument("arg", IntType, 0)),
         resolve = _ => None),
       Field(
         "multipleOpts",
         OptionType(StringType),
-        arguments = Argument("opt1", OptionInputType(IntType), 0) :: Argument(
-          "opt2",
-          OptionInputType(IntType),
-          0) :: Nil,
+        arguments = List(
+          Argument("opt1", OptionInputType(IntType), 0),
+          Argument("opt2", OptionInputType(IntType), 0)),
         resolve = _ => None
       ),
       Field(
         "multipleOptAndReq",
         OptionType(StringType),
-        arguments = Argument("req1", IntType) ::
-          Argument("req2", IntType) ::
-          Argument("opt1", OptionInputType(IntType), 0) ::
-          Argument("opt2", OptionInputType(IntType), 0) ::
-          Nil,
+        arguments = List(
+          Argument("req1", IntType),
+          Argument("req2", IntType),
+          Argument("opt1", OptionInputType(IntType), 0),
+          Argument("opt2", OptionInputType(IntType), 0)),
         resolve = _ => None
       )
     )
@@ -236,7 +242,7 @@ trait ValidationSupport extends Matchers {
       Field(
         "human",
         OptionType(Human),
-        arguments = Argument("id", OptionInputType(IDType)) :: Nil,
+        arguments = List(Argument("id", OptionInputType(IDType))),
         resolve = _ => None),
       Field("alien", OptionType(Alien), resolve = _ => None),
       Field("dog", OptionType(Dog), resolve = _ => None),
@@ -280,6 +286,21 @@ trait ValidationSupport extends Matchers {
         "onVariableDefinition",
         locations = Set(DirectiveLocation.VariableDefinition),
         shouldInclude = alwaysInclude),
+      Directive(
+        "genericDirectiveA",
+        locations = Set(DirectiveLocation.FragmentDefinition, DirectiveLocation.Field),
+        shouldInclude = alwaysInclude),
+      Directive(
+        "genericDirectiveB",
+        locations = Set(DirectiveLocation.FragmentDefinition, DirectiveLocation.Field),
+        shouldInclude = alwaysInclude),
+      Directive(
+        "repeatableDirective",
+        repeatable = true,
+        arguments = Argument("id", IntType, "Some generic ID") :: Nil,
+        locations = Set(DirectiveLocation.Object),
+        shouldInclude = alwaysInclude
+      ),
       Directive(
         "onSchema",
         locations = Set(DirectiveLocation.Schema),

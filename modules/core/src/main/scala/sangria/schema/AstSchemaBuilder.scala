@@ -708,6 +708,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         description = directiveDescription(definition),
         locations = locations,
         arguments = arguments,
+        repeatable = definition.repeatable,
         shouldInclude = directiveShouldInclude(definition)
       ))
 

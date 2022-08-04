@@ -13,6 +13,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class Image(url: Option[String], width: Option[Int], height: Option[Int])
 
@@ -49,9 +52,11 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
         Field(
           "pic",
           OptionType(BlogImageType),
-          arguments = Argument("width", OptionInputType(IntType)) :: Argument(
-            "height",
-            OptionInputType(IntType)) :: Nil,
+          arguments = Argument[Option[Int @@ CoercedScalaResult]](
+            "width",
+            OptionInputType(IntType)) :: Argument[Option[
+            Int @@ CoercedScalaResult
+          ]]("height", OptionInputType(IntType)) :: Nil,
           resolve = ctx =>
             for {
               w <- ctx.argOpt[Int]("width")
@@ -87,7 +92,7 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
       Field(
         "article",
         OptionType(BlogArticleType),
-        arguments = Argument("id", OptionInputType(IDType)) :: Nil,
+        arguments = List(Argument("id", OptionInputType(IDType))),
         resolve = ctx => ctx.argOpt[String]("id").flatMap(id => article(id.toInt))
       ),
       Field(
@@ -103,7 +108,7 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
       Field(
         "articleSubscribe",
         OptionType(BlogArticleType),
-        arguments = Argument("id", OptionInputType(IDType)) :: Nil,
+        arguments = List(Argument("id", OptionInputType(IDType))),
         resolve = ctx => ctx.argOpt[String]("id").flatMap(id => article(id.toInt))
       ))
   )

@@ -610,6 +610,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                   None,
                   Vector.empty,
                   Some(AstLocation(1545, 83, 1)))),
+              false,
               Vector.empty,
               Some(AstLocation(1557, 84, 1))
             ),
@@ -633,6 +634,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                 DirectiveLocation("INLINE_FRAGMENT", Vector.empty, Some(AstLocation(1703, 89, 6)))
               ),
               None,
+              false,
               Vector.empty,
               Some(AstLocation(1633, 86, 1))
             )

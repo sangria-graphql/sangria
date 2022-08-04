@@ -157,6 +157,20 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
       nonBreakingChange[DirectiveArgumentAdded]("Argument `c` was added to `foo` directive")
     )
 
+    "detect changes repeatable directive definition" in checkChanges(
+      gql"""
+        directive @a repeatable on OBJECT
+        directive @b(foo: Int) on OBJECT
+      """,
+      gql"""
+        directive @a on OBJECT
+        directive @b(foo: Int) repeatable on OBJECT
+      """,
+      breakingChange[DirectiveRepeatableChanged]("Directive `a` was made unique per location"),
+      nonBreakingChange[DirectiveRepeatableChanged](
+        "Directive `b` was made repeatable per location")
+    )
+
     "should detect changes in input types" in checkChanges(
       graphql"""
         input Sort {dir: Int}
@@ -332,10 +346,12 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
           c: [String]!
           d: Int
           e: Int!
+          f: Boolean! = true
         }
       """,
       nonBreakingChange[TypeAdded]("`Int` type was added"),
       breakingChange[InputFieldAdded]("Input field `e` was added to `Filter` type"),
+      nonBreakingChange[InputFieldAdded]("Input field `f` was added to `Filter` type"),
       nonBreakingChange[InputFieldAdded]("Input field `d` was added to `Filter` type"),
       breakingChange[InputFieldTypeChanged](
         "`Filter.b` input field type changed from `String` to `[String]`"),
@@ -550,7 +566,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
         type Query {
           foo: String
         }
-         
+
         "new description"
         schema {
           query: Query

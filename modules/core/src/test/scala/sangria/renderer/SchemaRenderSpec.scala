@@ -12,9 +12,13 @@ import sangria.validation.IntCoercionViolation
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson._
 import sangria.marshalling.ScalaInput.scalaInput
+import sangria.marshalling.ScalaInput
 import sangria.parser.QueryParser
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
 
 class SchemaRenderSpec
     extends AnyWordSpec
@@ -139,7 +143,8 @@ class SchemaRenderSpec
     "Prints String Field With Int Arg" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args = Argument("argOne", OptionInputType(IntType)) :: Nil
+        args =
+          Argument[Option[Int @@ CoercedScalaResult]]("argOne", OptionInputType(IntType)) :: Nil
       ) should equal("""
         |schema {
         |  query: Root
@@ -154,7 +159,10 @@ class SchemaRenderSpec
     "Prints String Field With Int Arg With Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args = Argument("argOne", OptionInputType(IntType), 2) :: Nil
+        args = Argument[Option[Int @@ CoercedScalaResult], Int](
+          "argOne",
+          OptionInputType(IntType),
+          2) :: Nil
       ) should equal("""
         |schema {
         |  query: Root
@@ -184,7 +192,9 @@ class SchemaRenderSpec
     "Prints String Field With Multiple Args" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args = Argument("argOne", OptionInputType(IntType)) :: Argument(
+        args = Argument[Option[Int @@ CoercedScalaResult]](
+          "argOne",
+          OptionInputType(IntType)) :: Argument[Option[String @@ CoercedScalaResult]](
           "argTwo",
           OptionInputType(StringType)) :: Nil
       ) should equal("""
@@ -201,10 +211,13 @@ class SchemaRenderSpec
     "Prints String Field With Multiple Args, First is Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args = Argument("argOne", OptionInputType(IntType), 1) ::
-          Argument("argTwo", OptionInputType(StringType)) ::
-          Argument("argThree", OptionInputType(BooleanType)) ::
-          Nil
+        args =
+          Argument[Option[Int @@ CoercedScalaResult], Int]("argOne", OptionInputType(IntType), 1) ::
+            Argument[Option[String @@ CoercedScalaResult]]("argTwo", OptionInputType(StringType)) ::
+            Argument[Option[Boolean @@ CoercedScalaResult]](
+              "argThree",
+              OptionInputType(BooleanType)) ::
+            Nil
       ) should equal("""
         |schema {
         |  query: Root
@@ -219,9 +232,14 @@ class SchemaRenderSpec
     "Prints String Field With Multiple Args, Second is Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args = Argument("argOne", OptionInputType(IntType)) ::
-          Argument("argTwo", OptionInputType(StringType), defaultValue = "foo") ::
-          Argument("argThree", OptionInputType(BooleanType)) ::
+        args = Argument[Option[Int @@ CoercedScalaResult]]("argOne", OptionInputType(IntType)) ::
+          Argument[Option[String @@ CoercedScalaResult], String](
+            "argTwo",
+            OptionInputType(StringType),
+            defaultValue = "foo") ::
+          Argument[Option[Boolean @@ CoercedScalaResult]](
+            "argThree",
+            OptionInputType(BooleanType)) ::
           Nil
       ) should equal("""
         |schema {
@@ -237,9 +255,12 @@ class SchemaRenderSpec
     "Prints String Field With Multiple Args, Last is Default" in {
       renderSingleFieldSchema(
         tpe = OptionType(StringType),
-        args = Argument("argOne", OptionInputType(IntType)) ::
-          Argument("argTwo", OptionInputType(StringType)) ::
-          Argument("argThree", OptionInputType(BooleanType), false) ::
+        args = Argument[Option[Int @@ CoercedScalaResult]]("argOne", OptionInputType(IntType)) ::
+          Argument[Option[String @@ CoercedScalaResult]]("argTwo", OptionInputType(StringType)) ::
+          Argument[Option[Boolean @@ CoercedScalaResult], Boolean](
+            "argThree",
+            OptionInputType(BooleanType),
+            false) ::
           Nil
       ) should equal("""
         |schema {
@@ -703,17 +724,20 @@ class SchemaRenderSpec
         "myDirective",
         description = Some(
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere ornare nulla, non bibendum nisi dictum at. Etiam consequat velit ut leo fringilla mollis. Integer ut fringilla ante. Curabitur sagittis malesuada nibh sed vestibulum.\nNunc eu metus felis. Cras tellus nibh, porta nec lorem quis, elementum egestas tellus. Etiam vitae tellus vitae dui varius lobortis."),
-        arguments = Argument(
+        arguments = Argument[Option[Seq[String @@ CoercedScalaResult]], List[String] @@ ScalaInput](
           "first",
           OptionInputType(ListInputType(StringType)),
           "Some descr",
           scalaInput(List("foo", "bar", "baz"))) ::
-          Argument(
+          Argument[Option[Seq[String @@ CoercedScalaResult]], Int @@ ScalaInput](
             "middle",
             OptionInputType(ListInputType(StringType)),
             "Several\n  lines\nof \"description\"",
             scalaInput(123)) ::
-          Argument("last", OptionInputType(IntType), "Another descr") ::
+          Argument[Option[Int @@ CoercedScalaResult]](
+            "last",
+            OptionInputType(IntType),
+            "Another descr") ::
           Nil,
         locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.InputFieldDefinition),
         shouldInclude = _ => true
@@ -797,6 +821,9 @@ class SchemaRenderSpec
         |  description: String
         |  locations: [__DirectiveLocation!]!
         |  args: [__InputValue!]!
+        |
+        |  "Permits using the directive multiple times at the same location."
+        |  isRepeatable: Boolean!
         |}
         |
         |"A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies."

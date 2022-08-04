@@ -153,24 +153,28 @@ private[parser] sealed trait Ignored extends PositionTracking { this: Parser =>
 
 private[parser] sealed trait Document {
   this: Parser
+    with Tokens
     with Operations
     with Ignored
     with Fragments
     with Operations
     with Values
+    with Types
+    with Directives
     with TypeSystemDefinitions =>
 
-  protected def Document = rule {
-    IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
-      ((location, d, comments) => ast.Document(d.toVector, comments, location))
-  }
+  protected[parser] def Document =
+    rule {
+      IgnoredNoComment.* ~ trackPos ~ Definition.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
+        ((location, d, comments) => ast.Document(d.toVector, comments, location))
+    }
 
-  protected def InputDocument = rule {
+  protected[parser] def InputDocument = rule {
     IgnoredNoComment.* ~ trackPos ~ ValueConst.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
       ((location, vs, comments) => ast.InputDocument(vs.toVector, comments, location))
   }
 
-  protected def InputDocumentWithVariables = rule {
+  protected[parser] def InputDocumentWithVariables = rule {
     IgnoredNoComment.* ~ trackPos ~ Value.+ ~ IgnoredNoComment.* ~ Comments ~ EOI ~>
       ((location, vs, comments) => ast.InputDocument(vs.toVector, comments, location))
   }
@@ -333,7 +337,7 @@ private[parser] sealed trait TypeSystemDefinitions {
   }
 
   private[this] def EnumTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ enum ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
+    (Comments ~ trackPos ~ extend ~ `enum` ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ EnumValuesDefinition ~> ((comment, location, name, dirs, values) =>
       ast.EnumTypeExtensionDefinition(
         name,
@@ -342,7 +346,7 @@ private[parser] sealed trait TypeSystemDefinitions {
         comment,
         values._2,
         location))) |
-      (Comments ~ trackPos ~ extend ~ enum ~ Name ~ DirectivesConst ~> (
+      (Comments ~ trackPos ~ extend ~ `enum` ~ Name ~ DirectivesConst ~> (
         (comment, location, name, dirs) =>
           ast.EnumTypeExtensionDefinition(
             name,
@@ -375,9 +379,9 @@ private[parser] sealed trait TypeSystemDefinitions {
   }
 
   private[this] def ScalarTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ scalar ~ Name ~ DirectivesConst ~> (
+    Comments ~ trackPos ~ extend ~ scalar ~ Name ~ DirectivesConst ~> (
       (comment, location, name, dirs) =>
-        ast.ScalarTypeExtensionDefinition(name, dirs, comment, location)))
+        ast.ScalarTypeExtensionDefinition(name, dirs, comment, location))
   }
 
   private[this] def ImplementsInterfaces = rule {
@@ -431,7 +435,7 @@ private[parser] sealed trait TypeSystemDefinitions {
   private[this] def UnionMembers = rule(ws('|').? ~ NamedType.+(ws('|')) ~> (_.toVector))
 
   private[this] def EnumTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ enum ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
+    Description ~ Comments ~ trackPos ~ `enum` ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
       Vector.empty))) ~ EnumValuesDefinition.? ~> ((descr, comment, location, name, dirs, values) =>
       ast.EnumTypeDefinition(
         name,
@@ -471,11 +475,13 @@ private[parser] sealed trait TypeSystemDefinitions {
     wsNoComment('{') ~ InputValueDefinition.+ ~ Comments ~ wsNoComment('}') ~> (_ -> _)
   }
 
+  private def repeatable = rule(capture(Keyword("repeatable")).? ~> (_.isDefined))
+
   private[this] def DirectiveDefinition = rule {
     Description ~ Comments ~ trackPos ~ directive ~ '@' ~ NameStrict ~ (ArgumentsDefinition.? ~> (_.getOrElse(
-      Vector.empty))) ~ on ~ DirectiveLocations ~> (
-      (descr, comment, location, name, args, locations) =>
-        ast.DirectiveDefinition(name, args, locations, descr, comment, location))
+      Vector.empty))) ~ repeatable ~ on ~ DirectiveLocations ~> (
+      (descr, comment, location, name, args, rep, locations) =>
+        ast.DirectiveDefinition(name, args, locations, descr, rep, comment, location))
   }
 
   private[this] def DirectiveLocations = rule {
@@ -614,7 +620,7 @@ private[parser] sealed trait Operations extends PositionTracking {
 }
 
 private[parser] sealed trait Fragments {
-  this: Parser with Tokens with Ignored with Directives with Types with Operations =>
+  this: Parser with Tokens with Ignored with Directives with Types with Operations with Values =>
 
   protected[this] def experimentalFragmentVariables: Boolean
 
@@ -657,7 +663,15 @@ private[parser] sealed trait Fragments {
   private[this] def TypeCondition = rule(on ~ NamedType)
 }
 
-private[parser] sealed trait Values { this: Parser with Tokens with Ignored with Operations =>
+private[parser] sealed trait Values {
+  this: Parser
+    with Tokens
+    with Ignored
+    with Operations
+    with Fragments
+    with Values
+    with Types
+    with Directives =>
   protected[this] def ValueConst: Rule1[ast.Value] = rule {
     NumberValue | StringValue | BooleanValue | NullValue | EnumValue | ListValueConst | ObjectValueConst
   }
@@ -727,7 +741,8 @@ private[parser] sealed trait Values { this: Parser with Tokens with Ignored with
   }
 }
 
-private[parser] sealed trait Directives { this: Parser with Tokens with Operations with Ignored =>
+private[parser] sealed trait Directives {
+  this: Parser with Tokens with Operations with Ignored with Fragments with Values with Types =>
   protected[this] def Directives = rule(Directive.+ ~> (_.toVector))
   protected[this] def DirectivesConst = rule(DirectiveConst.+ ~> (_.toVector))
 
@@ -801,7 +816,8 @@ object QueryParser {
       config.parseComments)
 
     parser.Document.run() match {
-      case Success(res) => Success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
+      case Success(res) =>
+        Success(res.copy(sourceMapper = config.sourceMapperFn(id, input)))
       case Failure(e: ParseError) => Failure(SyntaxError(parser, input, e))
       case f @ Failure(_) => f
     }

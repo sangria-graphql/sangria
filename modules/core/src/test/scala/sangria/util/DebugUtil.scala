@@ -83,7 +83,7 @@ object DebugUtil {
       }
     }
 
-  private implicit val conf = myPrettifier
+  private implicit val conf: Prettifier = myPrettifier
 
   def prettyRender[T](obj: T): String =
     obj.pretty
