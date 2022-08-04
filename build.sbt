@@ -16,7 +16,7 @@ ThisBuild / githubWorkflowBuildPreamble ++= List(
 )
 
 // Workaround for not running derivation tests for Scala 3 yet.
-// Should be deleted and githubWorkflowBuild should be restored to default when 
+// Should be deleted and githubWorkflowBuild should be restored to default when
 // derivation is compiling for all versions
 lazy val testAll = taskKey[Unit]("Test all available modules depending on the Scala version")
 testAll := {
@@ -42,6 +42,10 @@ ThisBuild / githubWorkflowPublish := Seq(
   )
 )
 
+def emptyForScala3(isScala3: Boolean, module: ModuleID): Set[ModuleID] =
+  if (isScala3) Set.empty
+  else Set(module)
+
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
@@ -59,7 +63,7 @@ lazy val ast = project
   .settings(
     name := "sangria-ast",
     description := "Scala GraphQL AST representation",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.DirectiveDefinition.*"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
@@ -81,7 +85,8 @@ lazy val parser = project
   .settings(
     name := "sangria-parser",
     description := "Scala GraphQL parser",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
+    
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.4.0",
@@ -101,7 +106,7 @@ lazy val core = project
   .settings(
     name := "sangria-core",
     description := "Scala GraphQL implementation",
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-core" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-core" % "3.0.0"),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "sangria.introspection.IntrospectionDirective.apply"),
@@ -162,7 +167,7 @@ lazy val derivation = project
   .settings(
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
-    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
+    mimaPreviousArtifacts := emptyForScala3(isScala3.value, "org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
     // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
                              else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)),

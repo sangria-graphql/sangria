@@ -125,13 +125,14 @@ trait ToExprGivens {
             ${ Expr(p) })
         }
 
-      case DirectiveDefinition(n, a, l, desc, c, p) =>
+      case DirectiveDefinition(n, a, l, desc, r, c, p) =>
         '{
           sangria.ast.DirectiveDefinition(
             ${ Expr(n) },
             ${ Expr(a) },
             ${ Expr(l) },
             ${ Expr(desc) },
+            ${ Expr(r) },
             ${ Expr(c) },
             ${ Expr(p) })
         }
