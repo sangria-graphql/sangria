@@ -30,7 +30,7 @@ class SchemaExtensionSpec
   val SomeInterfaceType: InterfaceType[Unit, SomeInterface] = InterfaceType(
     "SomeInterface",
     () =>
-      fields(
+      fields[Unit, SomeInterface](
         Field("name", OptionType(StringType), resolve = _.value.name),
         Field("some", OptionType(SomeInterfaceType), resolve = _.value.some)
       )
@@ -40,7 +40,7 @@ class SchemaExtensionSpec
     "Foo",
     interfaces = interfaces(SomeInterfaceType),
     () =>
-      fields(
+      fields[Unit, Foo](
         Field("name", OptionType(StringType), resolve = _.value.name),
         Field("some", OptionType(SomeInterfaceType), resolve = _.value.some),
         Field("tree", ListType(OptionType(FooType)), resolve = _.value.tree)
@@ -51,7 +51,7 @@ class SchemaExtensionSpec
     "Bar",
     interfaces = interfaces(SomeInterfaceType),
     () =>
-      fields(
+      fields[Unit, Bar](
         Field("name", OptionType(StringType), resolve = _.value.name),
         Field("some", OptionType(SomeInterfaceType), resolve = _.value.some),
         Field("foo", OptionType(FooType), resolve = _.value.foo)

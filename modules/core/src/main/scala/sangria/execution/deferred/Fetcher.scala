@@ -70,11 +70,14 @@ class Fetcher[Ctx, Res, RelRes, Id](
       allIds.getOrElseUpdate(rel, MutableSet[Any]()) += id
 
     deferred.foreach {
-      case FetcherDeferredRel(s, rel, relId) if s eq this => addToSet(rel, relId)
-      case FetcherDeferredRelOpt(s, rel, relId) if s eq this => addToSet(rel, relId)
-      case FetcherDeferredRelSeq(s, rel, relId) if s eq this => addToSet(rel, relId)
+      case FetcherDeferredRel(s, rel, relId) if s eq this =>
+        addToSet(rel.asInstanceOf[Relation[Any, Any, Any]], relId)
+      case FetcherDeferredRelOpt(s, rel, relId) if s eq this =>
+        addToSet(rel.asInstanceOf[Relation[Any, Any, Any]], relId)
+      case FetcherDeferredRelSeq(s, rel, relId) if s eq this =>
+        addToSet(rel.asInstanceOf[Relation[Any, Any, Any]], relId)
       case FetcherDeferredRelSeqMany(s, rel, relIds) if s eq this =>
-        relIds.foreach(addToSet(rel, _))
+        relIds.foreach(addToSet(rel.asInstanceOf[Relation[Any, Any, Any]], _))
       case _ => // skip
     }
 

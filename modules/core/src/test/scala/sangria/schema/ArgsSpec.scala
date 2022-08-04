@@ -7,6 +7,9 @@ import spray.json._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class ArgsSpec extends AnyWordSpec with Matchers {
   val NonDefaultArgumentName = "nonDefaultArgument"
   val DefaultArgumentName = "defaultArgument"
@@ -19,7 +22,7 @@ class ArgsSpec extends AnyWordSpec with Matchers {
     description = "Argument without default value"
   )
 
-  val defaultArgument = Argument(
+  val defaultArgument = Argument[Option[Int @@ CoercedScalaResult], Int](
     name = DefaultArgumentName,
     argumentType = OptionInputType(IntType),
     defaultValue = 10,

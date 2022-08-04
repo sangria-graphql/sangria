@@ -18,6 +18,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   class TestSubject {
     def a: Option[String] = Some("Apple")
@@ -123,8 +126,10 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         Field(
           "pic",
           OptionType(StringType),
-          arguments = Argument("size", OptionInputType(IntType)) :: Nil,
-          resolve = ctx => ctx.value.pic(ctx.argOpt[Int]("size"))),
+          arguments =
+            Argument[Option[Int @@ CoercedScalaResult]]("size", OptionInputType(IntType)) :: Nil,
+          resolve = ctx => ctx.value.pic(ctx.argOpt[Int]("size"))
+        ),
         Field("deep", OptionType(DeepDataType), resolve = _.value.deep),
         Field("future", OptionType(DataType), resolve = _.value.future)
       )
@@ -512,7 +517,9 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           fields[Unit, Unit](Field(
             "b",
             OptionType(StringType),
-            arguments = Argument("numArg", OptionInputType(IntType)) :: Argument(
+            arguments = Argument[Option[Int @@ CoercedScalaResult]](
+              "numArg",
+              OptionInputType(IntType)) :: Argument[Option[String @@ CoercedScalaResult]](
               "stringArg",
               OptionInputType(StringType)) :: Nil,
             resolve = ctx => { resolvedArgs = ctx.args.raw; None }

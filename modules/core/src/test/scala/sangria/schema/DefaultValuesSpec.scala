@@ -339,8 +339,8 @@ class DefaultValuesSpec extends AnyWordSpec with Matchers with FutureResultSuppo
 
       "generated typeclass-based serialisation" in {
         object MyJsonProtocol extends DefaultJsonProtocol {
-          implicit val sharesFormat = jsonFormat2(Shares.apply)
-          implicit val commentFormat = jsonFormat3(Comment.apply)
+          implicit val sharesFormat: JsonFormat[Shares] = jsonFormat2(Shares.apply)
+          implicit val commentFormat: JsonFormat[Comment] = jsonFormat3(Comment.apply)
         }
 
         import MyJsonProtocol._

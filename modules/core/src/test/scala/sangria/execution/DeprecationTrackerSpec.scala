@@ -19,7 +19,7 @@ class DeprecationTrackerSpec
     var ctx: Option[Context[_, _]] = None
 
     var enumValue: Option[Any] = None
-    var enum: Option[String] = None
+    var `enum`: Option[String] = None
 
     def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]) = {
       times.incrementAndGet()
@@ -27,10 +27,10 @@ class DeprecationTrackerSpec
       this.ctx = Some(ctx)
     }
 
-    def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx) = {
+    def deprecatedEnumValueUsed[T, Ctx](`enum`: EnumType[T], value: T, userContext: Ctx) = {
       times.incrementAndGet()
       this.enumValue = Some(value)
-      this.enum = Some(enum.name)
+      this.`enum` = Some(`enum`.name)
     }
   }
 
@@ -179,7 +179,7 @@ class DeprecationTrackerSpec
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be(1)
-      deprecationTracker.enum should be(Some("TestEnum"))
+      deprecationTracker.`enum` should be(Some("TestEnum"))
       deprecationTracker.enumValue should be(Some(2))
     }
 
@@ -216,7 +216,7 @@ class DeprecationTrackerSpec
       Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
 
       deprecationTracker.times.get should be(0)
-      deprecationTracker.enum should be(None)
+      deprecationTracker.`enum` should be(None)
       deprecationTracker.enumValue should be(None)
     }
   }

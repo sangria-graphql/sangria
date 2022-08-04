@@ -71,7 +71,7 @@ class SchemaDefinitionSpec extends AnyWordSpec with Matchers with FutureResultSu
         "Foo",
         interfaces = Nil,
         () =>
-          fields(
+          fields[Unit, Foo](
             Field("name", OptionType(StringType), resolve = _.value.name),
             Field("city", OptionType(StringType), resolve = _.value.name)
           )
@@ -81,7 +81,7 @@ class SchemaDefinitionSpec extends AnyWordSpec with Matchers with FutureResultSu
       val FooType1: ObjectType[Unit, Foo] = ObjectType(
         "Foo",
         interfaces = Nil,
-        () => fields(Field("name", OptionType(StringType), resolve = _.value.name))
+        () => fields[Unit, Foo](Field("name", OptionType(StringType), resolve = _.value.name))
       )
 
       val field1 =

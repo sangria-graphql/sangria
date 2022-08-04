@@ -164,7 +164,7 @@ object UpdateCtx {
 }
 
 private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
-    source: Val,
+    source: S[Any],
     stream: SubscriptionStream[S])
     extends LeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit

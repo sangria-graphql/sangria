@@ -4,7 +4,7 @@ import sangria.schema.{Context, EnumType}
 
 trait DeprecationTracker {
   def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]): Unit
-  def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx): Unit
+  def deprecatedEnumValueUsed[T, Ctx](`enum`: EnumType[T], value: T, userContext: Ctx): Unit
 }
 
 object DeprecationTracker {
@@ -14,7 +14,7 @@ object DeprecationTracker {
 
 object NilDeprecationTracker extends DeprecationTracker {
   def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]) = ()
-  def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx) = ()
+  def deprecatedEnumValueUsed[T, Ctx](`enum`: EnumType[T], value: T, userContext: Ctx) = ()
 }
 
 class LoggingDeprecationTracker(logFn: String => Unit) extends DeprecationTracker {
@@ -22,6 +22,6 @@ class LoggingDeprecationTracker(logFn: String => Unit) extends DeprecationTracke
     logFn(
       s"Deprecated field '${ctx.parentType.name}.${ctx.field.name}' used at path '${ctx.path}'.")
 
-  def deprecatedEnumValueUsed[T, Ctx](enum: EnumType[T], value: T, userContext: Ctx) =
-    logFn(s"Deprecated enum value '$value' used of enum '${enum.name}'.")
+  def deprecatedEnumValueUsed[T, Ctx](`enum`: EnumType[T], value: T, userContext: Ctx) =
+    logFn(s"Deprecated enum value '$value' used of enum '${`enum`.name}'.")
 }

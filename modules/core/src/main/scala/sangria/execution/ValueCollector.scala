@@ -119,8 +119,7 @@ object ValueCollector {
   ): Try[Args] = {
     import coercionHelper._
 
-    if (argumentDefs.isEmpty)
-      emptyArgs
+    if (argumentDefs.isEmpty) emptyArgs
     else {
       val astArgMap = argumentAsts.groupBy(_.name).map { case (k, v) => (k, v.head) }
       val marshaller = CoercedScalaResultMarshaller.default
@@ -147,7 +146,8 @@ object ValueCollector {
               marshaller,
               fromInput.marshaller,
               errors = errors,
-              valueMap = fromInput.fromResult,
+              valueMap =
+                (v: Any) => fromInput.fromResult(v.asInstanceOf[fromInput.marshaller.Node]),
               defaultValueInfo = defaultInfo,
               undefinedValues = undefinedArgs,
               isArgument = true,

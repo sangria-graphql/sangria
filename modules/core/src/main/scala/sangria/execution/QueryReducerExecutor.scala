@@ -27,7 +27,7 @@ object QueryReducerExecutor {
       Future.failed(ValidationError(violations, exceptionHandler))
     else {
       val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, _ @@ ScalaInput](
+      val valueCollector = new ValueCollector[Ctx, Any @@ ScalaInput](
         schema,
         InputUnmarshaller.emptyMapVars,
         queryAst.sourceMapper,
@@ -35,7 +35,7 @@ object QueryReducerExecutor {
         userContext,
         exceptionHandler,
         scalarMiddleware,
-        true)(InputUnmarshaller.scalaInputUnmarshaller[_ @@ ScalaInput])
+        true)(InputUnmarshaller.scalaInputUnmarshaller[Any @@ ScalaInput])
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)

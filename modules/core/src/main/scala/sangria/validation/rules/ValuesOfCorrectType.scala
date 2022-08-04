@@ -116,11 +116,11 @@ class ValuesOfCorrectType extends ValidationRule {
         ))
 
     def enumTypeSuggestion(tpe: Type, node: ast.Value): Option[Violation] = tpe match {
-      case enum: EnumType[_] =>
+      case enumT: EnumType[_] =>
         val name = QueryRenderer.render(node)
-        val suggestions = StringUtil.suggestionList(name, enum.values.map(_.name))
+        val suggestions = StringUtil.suggestionList(name, enumT.values.map(_.name))
 
-        if (suggestions.nonEmpty) Some(EnumValueCoercionViolation(name, enum.name, suggestions))
+        if (suggestions.nonEmpty) Some(EnumValueCoercionViolation(name, enumT.name, suggestions))
         else None
 
       case _ => None

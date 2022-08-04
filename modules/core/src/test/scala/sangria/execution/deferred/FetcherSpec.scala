@@ -8,6 +8,8 @@ import sangria.macros._
 import sangria.schema._
 import sangria.util.{FutureResultSupport, Pos}
 import sangria.util.SimpleGraphQlSupport._
+import sangria.util.tag.@@
+import sangria.marshalling.FromInput.CoercedScalaResult
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.matchers.should.Matchers
@@ -23,11 +25,11 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   case class ColorDeferred(id: String) extends Deferred[String]
 
   object Category {
-    implicit val hasId = HasId[Category, String](_.id)
+    implicit val hasId: HasId[Category, String] = HasId[Category, String](_.id)
   }
 
   object Product {
-    implicit val hasId = HasId[Product, Int](_.id)
+    implicit val hasId: HasId[Product, Int] = HasId[Product, Int](_.id)
   }
 
   val prodCat = Relation[Product, String]("product-category", _.inCategories)
@@ -101,13 +103,13 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       lazy val ProductType: ObjectType[Repo, Product] = ObjectType(
         "Product",
         () =>
-          fields(
-            Field("id", IntType, resolve = c => c.value.id),
-            Field("name", StringType, resolve = c => c.value.name),
+          fields[Repo, Product](
+            Field("id", IntType, resolve = (c: Context[_, Product]) => c.value.id),
+            Field("name", StringType, resolve = (c: Context[_, Product]) => c.value.name),
             Field(
               "categories",
               ListType(CategoryType),
-              resolve = c => fetcherCat.deferSeqOpt(c.value.inCategories)),
+              resolve = (c: Context[_, Product]) => fetcherCat.deferSeqOpt(c.value.inCategories)),
             Field(
               "categoryRel",
               CategoryType,
@@ -126,7 +128,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       lazy val CategoryType: ObjectType[Repo, Category] = ObjectType(
         "Category",
         () =>
-          fields(
+          fields[Repo, Category](
             Field("id", StringType, resolve = c => c.value.id),
             Field("name", StringType, resolve = c => c.value.name),
             Field("color", StringType, resolve = c => ColorDeferred("red")),
@@ -200,12 +202,15 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           Field(
             "productOpt",
             OptionType(ProductType),
-            arguments = Argument("id", OptionInputType(IntType)) :: Nil,
-            resolve = c => fetcherProd.deferOpt(c.argOpt[Int]("id"))),
+            arguments =
+              Argument[Option[Int @@ CoercedScalaResult]]("id", OptionInputType(IntType)) :: Nil,
+            resolve = c => fetcherProd.deferOpt(c.argOpt[Int]("id"))
+          ),
           Field(
             "productsOptExplicit",
             ListType(OptionType(ProductType)),
-            arguments = Argument("ids", ListInputType(IntType)) :: Nil,
+            arguments =
+              Argument[Seq[Int @@ CoercedScalaResult]]("ids", ListInputType(IntType)) :: Nil,
             resolve = c => fetcherProd.deferSeqOptExplicit(c.arg[Seq[Int]]("ids"))
           ),
           Field("root", CategoryType, resolve = _ => fetcherCat.defer("1")),

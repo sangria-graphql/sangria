@@ -5,9 +5,9 @@ import sangria.parser.QueryParser
 import sangria.renderer.QueryRenderer
 
 object queryAst {
-  implicit val queryAstInputUnmarshaller = new QueryAstInputUnmarshaller
+  implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller
 
-  implicit val queryAstResultMarshaller = new QueryAstResultMarshaller
+  implicit val queryAstResultMarshaller: QueryAstResultMarshaller = new QueryAstResultMarshaller
 
   implicit object QueryAstMarshallerForType extends ResultMarshallerForType[ast.Value] {
     val marshaller = queryAstResultMarshaller
@@ -22,7 +22,7 @@ object queryAst {
 
   private object QueryAstFromInput extends FromInput[ast.Value] {
     val marshaller = queryAstResultMarshaller
-    def fromResult(node: marshaller.Node) = node
+    def fromResult(node: marshaller.Node) = node.asInstanceOf[sangria.ast.Value]
   }
 
   implicit def queryAstFromInput[T <: ast.Value]: FromInput[T] =

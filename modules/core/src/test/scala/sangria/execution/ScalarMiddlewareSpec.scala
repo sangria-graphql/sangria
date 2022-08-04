@@ -10,6 +10,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class ScalarMiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   import ScalarMiddlewareSpec._
 
@@ -43,9 +46,15 @@ class ScalarMiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSu
       InputField("name", StringType)))
 
   val IdArg = Argument("id", EncodedIdType)
-  val IdArgWithDefault = Argument("id", OptionInputType(EncodedIdType), defaultValue = "SOME_ID")
+  val IdArgWithDefault = Argument[Option[String @@ CoercedScalaResult], String](
+    "id",
+    OptionInputType(EncodedIdType),
+    defaultValue = "SOME_ID")
   val IdArgWithValidDefault =
-    Argument("id", OptionInputType(EncodedIdType), defaultValue = "test-SOME_ID")
+    Argument[Option[String @@ CoercedScalaResult], String](
+      "id",
+      OptionInputType(EncodedIdType),
+      defaultValue = "test-SOME_ID")
   val ComplexArg = Argument("c", ComplexInputType)
   val ComplexArgWithDefault = Argument("c", ComplexInputWithDefaultType)
   val ComplexArgWithValidDefault = Argument("c", ComplexInputWithValidDefaultType)

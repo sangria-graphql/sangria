@@ -22,8 +22,8 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
       comments: Vector[Option[Comment]])
 
   object MyJsonProtocol extends DefaultJsonProtocol {
-    implicit val commentFormat = jsonFormat2(Comment.apply)
-    implicit val articleFormat = jsonFormat4(Article.apply)
+    implicit val commentFormat: JsonFormat[Comment] = jsonFormat2(Comment.apply)
+    implicit val articleFormat: JsonFormat[Article] = jsonFormat4(Article.apply)
   }
 
   import MyJsonProtocol._

@@ -186,7 +186,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
               Some(
                 fn(
-                  DynamicDirectiveContext[Ctx, Any](
+                  DynamicDirectiveContext(
                     d,
                     typeDefinition,
                     definition,
@@ -377,7 +377,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
           Some(
             complexity(
-              ComplexityDynamicDirectiveContext[Ctx, Any](
+              ComplexityDynamicDirectiveContext(
                 d,
                 typeDefinition,
                 definition,
@@ -419,7 +419,7 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
             implicit val marshaller = ddfp.marshaller
 
             resolve(
-              DynamicDirectiveFieldProviderContext[Ctx, Any](
+              DynamicDirectiveFieldProviderContext(
                 origin,
                 astDir,
                 typeDefinition,
@@ -635,9 +635,11 @@ object ResolverBasedAstSchemaBuilder {
     }
 
   def defaultInputResolver[Ctx, In: InputUnmarshaller] =
-    FieldResolver[Ctx] { case (_, _) =>
-      extractFieldValue[Ctx, In]
-    }
+    FieldResolver[Ctx](
+      { case (_, _) =>
+        extractFieldValue[Ctx, In]
+      },
+      PartialFunction.empty)
 
   def defaultExistingInputResolver[Ctx, In: InputUnmarshaller] =
     ExistingFieldResolver[Ctx] { case (_, _, _) =>
@@ -670,10 +672,13 @@ object ResolverBasedAstSchemaBuilder {
                     case GenericDirectiveResolver(directive, _, resolve) =>
                       resolve(GenericDirectiveContext(astDir, node, Args(directive, astDir)))
                     case gd @ GenericDynamicDirectiveResolver(_, _, resolve) =>
-                      implicit val marshaller: ResultMarshallerForType[T] = gd.marshaller
+                      implicit val marshaller = gd.marshaller
 
                       resolve(
-                        GenericDynamicDirectiveContext(astDir, node, createDynamicArgs(astDir)))
+                        GenericDynamicDirectiveContext(
+                          astDir,
+                          node,
+                          createDynamicArgs(astDir)(marshaller)))
                   }
               }
 

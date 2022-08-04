@@ -70,7 +70,7 @@ sealed trait AbstractType extends Type with Named {
       .flatMap(_.find(_.isInstanceOf(value)).asInstanceOf[Option[ObjectType[Ctx, _]]])
 }
 
-sealed trait MappedAbstractType[T] extends Type with AbstractType with OutputType[T] {
+sealed trait MappedAbstractType[T] extends Type with AbstractType {
   def contraMap(value: T): Any
 }
 
@@ -554,20 +554,20 @@ case class UnionType[Ctx](
 
 object UnionType {
   def apply[Ctx](name: String, types: List[ObjectType[Ctx, _]]): UnionType[Ctx] =
-    UnionType[Ctx](name, None, () => types)
+    UnionType(name, None, () => types)
 
   def apply[Ctx](
       name: String,
       description: Option[String],
       types: List[ObjectType[Ctx, _]]): UnionType[Ctx] =
-    UnionType[Ctx](name, description, () => types)
+    UnionType(name, description, () => types)
 
   def apply[Ctx](
       name: String,
       description: Option[String],
       types: List[ObjectType[Ctx, _]],
       astDirectives: Vector[ast.Directive]): UnionType[Ctx] =
-    UnionType[Ctx](name, description, () => types, astDirectives)
+    UnionType(name, description, () => types, astDirectives)
 
   def apply[Ctx](
       name: String,
@@ -652,7 +652,10 @@ object Field {
       fieldType,
       description,
       arguments,
-      ctx => SubscriptionValue[Ctx, StreamSource, stream.StreamSource](resolve(ctx), s),
+      ctx =>
+        SubscriptionValue[Ctx, StreamSource, stream.StreamSource](
+          resolve(ctx).asInstanceOf[stream.StreamSource[Any]],
+          s),
       deprecationReason,
       SubscriptionField[stream.StreamSource](s) +: tags,
       complexity,

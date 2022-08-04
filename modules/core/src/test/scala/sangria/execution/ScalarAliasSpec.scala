@@ -16,6 +16,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.CoercedScalaResult
+
 class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   import ScalarAliasSpec._
 
@@ -23,12 +26,14 @@ class ScalarAliasSpec extends AnyWordSpec with Matchers with FutureResultSupport
 
   case class RefineViolation(error: String) extends ValueCoercionViolation(error)
 
-  implicit val UserIdType = ScalarAlias[UserId, String](StringType, _.id, id => Right(UserId(id)))
+  implicit val UserIdType: ScalarAlias[UserId, String] =
+    ScalarAlias[UserId, String](StringType, _.id, id => Right(UserId(id)))
 
-  implicit val PositiveIntType = ScalarAlias[Int Refined Positive, Int](
-    IntType,
-    _.value,
-    i => refineV[Positive](i).left.map(RefineViolation))
+  implicit val PositiveIntType: ScalarAlias[Int Refined Positive, Int] =
+    ScalarAlias[Int Refined Positive, Int](
+      IntType,
+      _.value,
+      i => refineV[Positive](i).left.map(RefineViolation))
 
   case object IDViolation extends ValueCoercionViolation("Invalid ID")
 

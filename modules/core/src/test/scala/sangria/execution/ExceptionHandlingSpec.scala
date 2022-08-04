@@ -38,7 +38,7 @@ class ExceptionHandlingSpec
       Field(
         "success",
         OptionType(StringType),
-        arguments = Argument("num", OptionInputType(IntType)) :: Nil,
+        arguments = List(Argument("num", OptionInputType(IntType))),
         resolve = _ => "Yay"),
       Field(
         "errorInScalar",

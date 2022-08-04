@@ -117,48 +117,66 @@ class FetcherBasedDeferredResolver[-Ctx](
         val f = ctx.fetcher.asInstanceOf[Fetcher[Any, Any, Any, Any]]
 
         deferred match {
-          case FetcherDeferredRel(_, rel, relId)
-              if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
-            cachedResults(rel)(relId).headOption match {
+          case FetcherDeferredRel(_, rel: Relation[Any, Any, Any], relId)
+              if cachedResults.contains(rel.asInstanceOf[Relation[Any, Any, Any]]) && cachedResults(
+                rel.asInstanceOf[Relation[Any, Any, Any]]).contains(relId) =>
+            cachedResults(rel.asInstanceOf[Relation[Any, Any, Any]])(relId).headOption match {
               case Some(head) => head
               case None => throw AbsentDeferredRelValueError(f, deferred, rel, relId)
             }
 
-          case FetcherDeferredRel(_, rel, relId) if m.contains(rel) && m(rel).contains(relId) =>
-            m(rel)(relId).headOption match {
+          case FetcherDeferredRel(_, rel, relId)
+              if m.contains(rel.asInstanceOf[Relation[Any, Any, Any]]) && m(
+                rel.asInstanceOf[Relation[Any, Any, Any]]).contains(relId) =>
+            m(rel.asInstanceOf[Relation[Any, Any, Any]])(relId).headOption match {
               case Some(head) => head
-              case None => throw AbsentDeferredRelValueError(f, deferred, rel, relId)
+              case None =>
+                throw AbsentDeferredRelValueError(
+                  f,
+                  deferred,
+                  rel.asInstanceOf[Relation[Any, Any, Any]],
+                  relId)
             }
 
           case FetcherDeferredRel(_, rel, relId) =>
-            throw AbsentDeferredRelValueError(f, deferred, rel, relId)
+            throw AbsentDeferredRelValueError(
+              f,
+              deferred,
+              rel.asInstanceOf[Relation[Any, Any, Any]],
+              relId)
+
+          case FetcherDeferredRelOpt(_, rel: Relation[Any, Any, Any], relId)
+              if cachedResults.contains(rel.asInstanceOf[Relation[Any, Any, Any]]) && cachedResults(
+                rel.asInstanceOf[Relation[Any, Any, Any]]).contains(relId) =>
+            cachedResults(rel.asInstanceOf[Relation[Any, Any, Any]])(relId).headOption
 
           case FetcherDeferredRelOpt(_, rel, relId)
-              if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
-            cachedResults(rel)(relId).headOption
-
-          case FetcherDeferredRelOpt(_, rel, relId) if m.contains(rel) && m(rel).contains(relId) =>
-            m(rel)(relId).headOption
+              if m.contains(rel.asInstanceOf[Relation[Any, Any, Any]]) && m(
+                rel.asInstanceOf[Relation[Any, Any, Any]]).contains(relId) =>
+            m(rel.asInstanceOf[Relation[Any, Any, Any]])(relId).headOption
 
           case FetcherDeferredRelOpt(_, _, _) =>
             None
 
-          case FetcherDeferredRelSeq(_, rel, relId)
+          case FetcherDeferredRelSeq(_, rel: Relation[Any, Any, Any], relId)
               if cachedResults.contains(rel) && cachedResults(rel).contains(relId) =>
             cachedResults(rel)(relId)
 
-          case FetcherDeferredRelSeq(_, rel, relId) if m.contains(rel) && m(rel).contains(relId) =>
+          case FetcherDeferredRelSeq(_, rel: Relation[Any, Any, Any], relId)
+              if m.contains(rel) && m(rel).contains(relId) =>
             m(rel)(relId)
 
           case FetcherDeferredRelSeq(_, _, _) =>
             Vector.empty
 
-          case FetcherDeferredRelSeqMany(_, rel, relIds) if cachedResults.contains(rel) =>
+          case FetcherDeferredRelSeqMany(_, rel: Relation[Any, Any, Any], relIds)
+              if cachedResults.contains(rel) =>
             removeDuplicates(
               f,
               relIds.flatMap(relId => cachedResults(rel).getOrElse(relId, Vector.empty)))
 
-          case FetcherDeferredRelSeqMany(_, rel, relIds) if m.contains(rel) =>
+          case FetcherDeferredRelSeqMany(_, rel: Relation[Any, Any, Any], relIds)
+              if m.contains(rel) =>
             removeDuplicates(f, relIds.flatMap(relId => m(rel).getOrElse(relId, Vector.empty)))
 
           case FetcherDeferredRelSeqMany(_, _, _) =>

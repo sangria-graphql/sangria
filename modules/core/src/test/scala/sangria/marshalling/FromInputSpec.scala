@@ -6,6 +6,9 @@ import spray.json._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput.InputObjectResult
+
 class FromInputSpec extends AnyWordSpec with Matchers {
   case class Comment(author: String, text: Option[String])
   case class Article(
@@ -15,8 +18,8 @@ class FromInputSpec extends AnyWordSpec with Matchers {
       comments: Vector[Option[Comment]])
 
   object MyJsonProtocol extends DefaultJsonProtocol {
-    implicit val commentFormat = jsonFormat2(Comment.apply)
-    implicit val articleFormat = jsonFormat4(Article.apply)
+    implicit val commentFormat: JsonFormat[Comment] = jsonFormat2(Comment.apply)
+    implicit val articleFormat: JsonFormat[Article] = jsonFormat4(Article.apply)
   }
 
   import sangria.marshalling.sprayJson.sprayJsonWriterToInput
@@ -130,20 +133,21 @@ class FromInputSpec extends AnyWordSpec with Matchers {
                 "" + value
               })
           }, {
-            val arg = Argument(
-              "articles",
-              OptionInputType(ListInputType(OptionInputType(Article1Type))),
-              Vector(
-                Some(
-                  Article(
-                    "def1",
-                    None,
-                    Some(Vector("c", "d")),
-                    Vector(Some(Comment("c1", None)), None))),
-                None,
-                Some(Article("def2", Some("some text"), None, Vector.empty))
+            val arg =
+              Argument[Option[Seq[Option[Article @@ InputObjectResult]]], Seq[Option[Article]]](
+                "articles",
+                OptionInputType(ListInputType(OptionInputType(Article1Type))),
+                Vector(
+                  Some(
+                    Article(
+                      "def1",
+                      None,
+                      Some(Vector("c", "d")),
+                      Vector(Some(Comment("c1", None)), None))),
+                  None,
+                  Some(Article("def2", Some("some text"), None, Vector.empty))
+                )
               )
-            )
 
             Field(
               "optListOpt",
