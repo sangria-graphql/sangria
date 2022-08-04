@@ -223,11 +223,12 @@ lazy val projectInfo = Seq(
 )
 
 lazy val scalacSettings = Seq(
-  scalacOptions ++= Seq("-deprecation", "-feature", "-Xlint:-missing-interpolator,_"),
+  scalacOptions ++= Seq("-deprecation", "-feature"),
+  scalacOptions ++= { if (!isScala3.value) Seq("-Xlint:-missing-interpolator,_") else Seq.empty },
   scalacOptions ++= {
     if (scalaVersion.value.startsWith("2.12")) Seq("-language:higherKinds") else List.empty[String]
   },
-  scalacOptions += "-target:jvm-1.8",
+  scalacOptions += { if (isScala3.value) "-Xtarget:8" else "-target:jvm-1.8" },
   autoAPIMappings := true,
   Compile / doc / scalacOptions ++= // scaladoc options
     Opts.doc.title("Sangria") ++ Seq(
