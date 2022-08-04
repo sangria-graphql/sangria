@@ -15,6 +15,16 @@ ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 )
 
+// Workaround for not running derivation tests for Scala 3 yet.
+// Should be deleted and githubWorkflowBuild should be restored to default when 
+// derivation is compiling for all versions
+lazy val testAll = taskKey[Unit]("Test all available modules depending on the Scala version")
+testAll := {
+  if (isScala3.value) Def.sequential(parser / Test / test, core / Test / test).value
+  else Def.sequential(parser / Test / test, core / Test / test, derivation / Test / test).value
+}
+ThisBuild / githubWorkflowBuild := Seq(WorkflowStep.Sbt(List("testAll")))
+
 // Release
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
