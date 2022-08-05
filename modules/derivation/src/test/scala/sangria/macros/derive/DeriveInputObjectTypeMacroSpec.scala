@@ -163,17 +163,21 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
 
       tpe.fields should have size 3
 
-      tpe.fields(0).name should be("identifier")
-      tpe.fields(0).description should be(Some("the object ID"))
-      tpe.fields(0).fieldType should be(StringType)
+      val identifierField = tpe.fields.find(_.name == "identifier")
+      identifierField shouldNot be(None)
+      identifierField.get.description should be(Some("the object ID"))
+      identifierField.get.fieldType should be(StringType)
 
-      tpe.fields(1).name should be("colors")
-      tpe.fields(1).description should be(Some("my colors"))
-      tpe.fields(1).fieldType should be(ListInputType(StringType))
+      val colorsField = tpe.fields.find(_.name == "colors")
+      colorsField shouldNot be(None)
+      colorsField.get.description should be(Some("my colors"))
+      colorsField.get.fieldType should be(ListInputType(StringType))
 
-      tpe.fields(2).name should be("excluded")
-      tpe.fields(2).description should be(None)
-      tpe.fields(2).fieldType should be(OptionInputType(ListInputType(OptionInputType(IntType))))
+      val excludedField = tpe.fields.find(_.name == "excluded")
+      excludedField shouldNot be(None)
+      excludedField.get.description should be(None)
+      excludedField.get.fieldType should be(
+        OptionInputType(ListInputType(OptionInputType(IntType))))
     }
 
     "allow to set name and description with annotations" in {
@@ -181,11 +185,13 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
 
       tpe.fields should have size 2
 
-      tpe.fields(0).name should be("id")
-      tpe.fields(0).description should be(Some("my id"))
+      val idField = tpe.fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.description should be(Some("my id"))
 
-      tpe.fields(1).name should be("myList")
-      tpe.fields(1).description should be(None)
+      val myListField = tpe.fields.find(_.name == "myList")
+      myListField shouldNot be(None)
+      myListField.get.description should be(None)
     }
 
     "prioritize field config name and description" in {
@@ -195,11 +201,13 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
 
       tpe.fields should have size 2
 
-      tpe.fields(0).name should be("id")
-      tpe.fields(0).description should be(Some("new descr"))
+      val idField = tpe.fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.description should be(Some("new descr"))
 
-      tpe.fields(1).name should be("fooBar")
-      tpe.fields(1).description should be(None)
+      val fooBarField = tpe.fields.find(_.name == "fooBar")
+      fooBarField shouldNot be(None)
+      fooBarField.get.description should be(None)
     }
 
     "support overriding field types" in {
@@ -267,9 +275,9 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       }
 
       object MyJsonProtocol extends DefaultJsonProtocol {
-        implicit val TestDeeperFormat = jsonFormat2(TestDeeper.apply)
-        implicit val TestNestedFormat = jsonFormat3(TestNested.apply)
-        implicit val TestDefaultsFormat = jsonFormat5(TestDefaults.apply)
+        implicit val TestDeeperFormat: JsonFormat[TestDeeper] = jsonFormat2(TestDeeper.apply)
+        implicit val TestNestedFormat: JsonFormat[TestNested] = jsonFormat3(TestNested.apply)
+        implicit val TestDefaultsFormat: JsonFormat[TestDefaults] = jsonFormat5(TestDefaults.apply)
       }
 
       import MyJsonProtocol._
