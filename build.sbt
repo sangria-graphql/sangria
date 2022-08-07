@@ -9,14 +9,11 @@ val isScala3 = Def.setting(
 
 // sbt-github-actions needs configuration in `ThisBuild`
 ThisBuild / crossScalaVersions := Seq("2.12.16", "2.13.8", "3.1.3")
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 )
-
-// For now we set up GH Actions manually for Scala 3
-ThisBuild / githubWorkflowScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("3."))
 
 // Release
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
