@@ -95,14 +95,17 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       fields should have size 3
 
-      fields(0).name should be("id")
-      fields(0).fieldType should be(StringType)
+      val idField = fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.fieldType should be(StringType)
 
-      fields(1).name should be("list")
-      fields(1).fieldType should be(ListType(StringType))
+      val listField = fields.find(_.name == "list")
+      listField shouldNot be(None)
+      listField.get.fieldType should be(ListType(StringType))
 
-      fields(2).name should be("excluded")
-      fields(2).fieldType should be(IntType)
+      val excludedField = fields.find(_.name == "excluded")
+      excludedField shouldNot be(None)
+      excludedField.get.fieldType should be(IntType)
     }
 
     "validate known field names" in {
@@ -143,14 +146,17 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 3
 
-      tpe.fields(0).name should be("id")
-      tpe.fields(0).fieldType should be(StringType)
+      val idField = tpe.fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.fieldType should be(StringType)
 
-      tpe.fields(1).name should be("foo")
-      tpe.fields(1).fieldType should be(ListType(StringType))
+      val fooField = tpe.fields.find(_.name == "foo")
+      fooField shouldNot be(None)
+      fooField.get.fieldType should be(ListType(StringType))
 
-      tpe.fields(2).name should be("bar")
-      tpe.fields(2).fieldType should be(BooleanType)
+      val barField = tpe.fields.find(_.name == "bar")
+      barField shouldNot be(None)
+      barField.get.fieldType should be(BooleanType)
     }
 
     "allow to override fields" in {
@@ -160,21 +166,25 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 3
 
-      tpe.fields(0).name should be("excluded")
-      tpe.fields(0).fieldType should be(IntType)
+      val excludedField = tpe.fields.find(_.name == "excluded")
+      excludedField shouldNot be(None)
+      excludedField.get.fieldType should be(IntType)
 
-      tpe.fields(1).name should be("id")
-      tpe.fields(1).fieldType should be(ListType(StringType))
+      val idField = tpe.fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.fieldType should be(ListType(StringType))
 
-      tpe.fields(2).name should be("bar")
-      tpe.fields(2).fieldType should be(BooleanType)
+      val barField = tpe.fields.find(_.name == "bar")
+      barField shouldNot be(None)
+      barField.get.fieldType should be(BooleanType)
     }
 
     "allow to set field complexity with config" in {
       val tpe =
         deriveObjectType[Unit, TestSubject](FieldComplexity("id", (_, _, child) => child * 123.0))
-
-      tpe.fields(0).complexity.get((), Args.empty, 2d) should be(246.0)
+      val idField = tpe.fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.complexity.get((), Args.empty, 2d) should be(246.0)
     }
 
     "allow to set name, description, deprecationReason and fieldTags with config" in {
@@ -189,23 +199,26 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 3
 
-      tpe.fields(0).name should be("identifier")
-      tpe.fields(0).description should be(Some("the object ID"))
-      tpe.fields(0).deprecationReason should be(Some("foo"))
-      tpe.fields(0).tags should be(Nil)
-      tpe.fields(0).fieldType should be(StringType)
+      val identifierField = tpe.fields.find(_.name == "identifier")
+      identifierField shouldNot be(None)
+      identifierField.get.description should be(Some("the object ID"))
+      identifierField.get.deprecationReason should be(Some("foo"))
+      identifierField.get.tags should be(Nil)
+      identifierField.get.fieldType should be(StringType)
 
-      tpe.fields(1).name should be("colors")
-      tpe.fields(1).description should be(Some("my colors"))
-      tpe.fields(1).deprecationReason should be(None)
-      tpe.fields(1).tags should be(List(CachedTag, AuthorizedTag))
-      tpe.fields(1).fieldType should be(ListType(StringType))
+      val colorField = tpe.fields.find(_.name == "colors")
+      colorField shouldNot be(None)
+      colorField.get.description should be(Some("my colors"))
+      colorField.get.deprecationReason should be(None)
+      colorField.get.tags should be(List(CachedTag, AuthorizedTag))
+      colorField.get.fieldType should be(ListType(StringType))
 
-      tpe.fields(2).name should be("excluded")
-      tpe.fields(2).description should be(None)
-      tpe.fields(2).deprecationReason should be(Some("bar"))
-      tpe.fields(2).tags should be(Nil)
-      tpe.fields(2).fieldType should be(IntType)
+      val excludedField = tpe.fields.find(_.name == "excluded")
+      excludedField shouldNot be(None)
+      excludedField.get.description should be(None)
+      excludedField.get.deprecationReason should be(Some("bar"))
+      excludedField.get.tags should be(Nil)
+      excludedField.get.fieldType should be(IntType)
     }
 
     "allow field names transformation" in {
@@ -231,17 +244,19 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 2
 
-      tpe.fields(0).name should be("id")
-      tpe.fields(0).description should be(Some("my id"))
-      tpe.fields(0).deprecationReason should be(Some("No IDs anymore!"))
-      tpe.fields(0).tags should be(Nil)
-      tpe.fields(0).fieldType should be(IDType)
+      val idField = tpe.fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.description should be(Some("my id"))
+      idField.get.deprecationReason should be(Some("No IDs anymore!"))
+      idField.get.tags should be(Nil)
+      idField.get.fieldType should be(IDType)
 
-      tpe.fields(1).name should be("myList")
-      tpe.fields(1).description should be(None)
-      tpe.fields(1).deprecationReason should be(None)
-      tpe.fields(1).tags should be(List(CachedTag, AuthorizedTag))
-      tpe.fields(1).fieldType should be(ListType(StringType))
+      val myListField = tpe.fields.find(_.name == "myList")
+      myListField shouldNot be(None)
+      myListField.get.description should be(None)
+      myListField.get.deprecationReason should be(None)
+      myListField.get.tags should be(List(CachedTag, AuthorizedTag))
+      myListField.get.fieldType should be(ListType(StringType))
     }
 
     "prioritize field config name, description, deprecationReason and merge fieldTags" in {
@@ -253,17 +268,19 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       tpe.fields should have size 2
 
-      tpe.fields(0).name should be("id")
-      tpe.fields(0).description should be(Some("new descr"))
-      tpe.fields(0).deprecationReason should be(Some("new depr"))
-      tpe.fields(0).tags should be(List(FooTag))
-      tpe.fields(0).fieldType should be(IDType)
+      val idField = tpe.fields.find(_.name == "id")
+      idField shouldNot be(None)
+      idField.get.description should be(Some("new descr"))
+      idField.get.deprecationReason should be(Some("new depr"))
+      idField.get.tags should be(List(FooTag))
+      idField.get.fieldType should be(IDType)
 
-      tpe.fields(1).name should be("fooBar")
-      tpe.fields(1).description should be(None)
-      tpe.fields(1).deprecationReason should be(None)
-      tpe.fields(1).tags should be(List(FooTag, CachedTag, AuthorizedTag))
-      tpe.fields(1).fieldType should be(ListType(StringType))
+      val fooBarField = tpe.fields.find(_.name == "fooBar")
+      fooBarField shouldNot be(None)
+      fooBarField.get.description should be(None)
+      fooBarField.get.deprecationReason should be(None)
+      fooBarField.get.tags should be(List(FooTag, CachedTag, AuthorizedTag))
+      fooBarField.get.fieldType should be(ListType(StringType))
     }
 
     "support overriding field types" in {
@@ -337,9 +354,9 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
     }
 
     "support companion objects for `Enumeration`s" in {
-      val enum = test.AnotherEnum.valNameType
+      val `enum` = test.AnotherEnum.valNameType
 
-      enum.values.map(_.name) should (
+      `enum`.values.map(_.name) should (
         have(size(3)).and(contain("FOO")).and(contain("BAR")).and(contain("BAZ"))
       )
     }
@@ -405,21 +422,31 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       commentIntro.fields should have size 3
 
-      commentIntro.fields(0).name should be("author")
-      commentIntro.fields(0).description should be(Some("The comment author"))
+      val authorField = commentIntro.fields.find(_.name == "author")
+      authorField shouldNot be(None)
+      authorField.get.name should be("author")
+      authorField.get.description should be(Some("The comment author"))
 
-      commentIntro.fields(1).name should be("text")
-      commentIntro.fields(1).description should be(Some("Comment text"))
+      val textField = commentIntro.fields.find(_.name == "text")
+      textField shouldNot be(None)
+      textField.get.name should be("text")
+      textField.get.description should be(Some("Comment text"))
 
-      commentIntro.fields(2).name should be("color")
-      commentIntro.fields(2).description should be(None)
+      val colorField = commentIntro.fields.find(_.name == "color")
+      colorField shouldNot be(None)
+      colorField.get.name should be("color")
+      colorField.get.description should be(None)
 
-      articleIntro.fields(3).name should be("comments")
-      articleIntro.fields(3).tpe should be(
+      val commentsField = articleIntro.fields.find(_.name == "comments")
+      commentsField shouldNot be(None)
+      commentsField.get.name should be("comments")
+      commentsField.get.tpe should be(
         IntrospectionListTypeRef(IntrospectionNamedTypeRef(TypeKind.Object, "Comment")))
 
-      articleIntro.fields(4).name should be("fruit")
-      articleIntro.fields(4).tpe should be(
+      val fruitField = articleIntro.fields.find(_.name == "fruit")
+      fruitField shouldNot be(None)
+      fruitField.get.name should be("fruit")
+      fruitField.get.tpe should be(
         IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "MyFruit")))
     }
 
@@ -427,7 +454,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
       case class A(id: Int, b: B)
       case class B(name: String, a: A, b: B)
 
-      implicit lazy val AType =
+      implicit lazy val AType: ObjectType[Unit, A] =
         deriveObjectType[Unit, A](ReplaceField("b", Field("b", BType, resolve = _.value.b)))
 
       implicit lazy val BType: ObjectType[Unit, B] = deriveObjectType(
@@ -489,7 +516,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
     "derive methods with arguments via annotations" in {
       object MyJsonProtocol extends DefaultJsonProtocol {
-        implicit val PetFormat = jsonFormat2(Pet.apply)
+        implicit val PetFormat: JsonFormat[Pet] = jsonFormat2(Pet.apply)
       }
 
       import MyJsonProtocol._
@@ -530,6 +557,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             @GraphQLDefault(47589)
             defaultId: String) =
           s"id = $id, defaultId = $defaultId"
+
       }
 
       val tpe = deriveContextObjectType[Ctx, FooBar, Unit](_.fooBar)
@@ -639,7 +667,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
     "allow to rename arguments, set arguments descriptions and default values with config" in {
       object MyJsonProtocol extends DefaultJsonProtocol {
-        implicit val PetFormat = jsonFormat2(Pet.apply)
+        implicit val PetFormat: JsonFormat[Pet] = jsonFormat2(Pet.apply)
       }
 
       import MyJsonProtocol._
@@ -773,6 +801,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
     "derive object types for type-parameterized classes" in {
       implicit val testSubject = deriveObjectType[Unit, TestSubject]()
+      deriveObjectType[Unit, TestContainer[TestSubject]]()
 
       "deriveObjectType[Unit, TestContainer[TestSubject]]()" should compile
     }

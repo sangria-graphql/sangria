@@ -18,6 +18,39 @@ import org.scalatest.wordspec.AnyWordSpec
 class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   val timeout = 10 seconds
 
+  case class Fruit(id: Int, name: String, color: String)
+
+  case class FruitEaten(name: String, eater: String)
+  case class FruitSmashed(id: Int)
+
+  trait Mutation {
+    this: Ctx =>
+
+    @GraphQLField
+    def eatFruit(name: String, eater: String): String = {
+      eventBus.onNext(FruitEaten(name, eater))
+
+      "OmNomNom"
+    }
+
+    @GraphQLField
+    def smashFruit(id: Int) = {
+      eventBus.onNext(FruitSmashed(id))
+
+      "Splash!"
+    }
+
+    @GraphQLField
+    def stop = {
+      eventBus.onComplete()
+
+      "Full!"
+    }
+  }
+  class Ctx extends Mutation {
+    val eventBus = _root_.monix.reactive.subjects.ReplaySubject[Any]()
+  }
+
   "Stream based subscriptions" when {
     "using monix" should {
       import _root_.monix.execution.Scheduler.Implicits.global
@@ -113,40 +146,6 @@ class StreamSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       }
 
       "complex stream scenario" in {
-        case class Fruit(id: Int, name: String, color: String)
-
-        case class FruitEaten(name: String, eater: String)
-        case class FruitSmashed(id: Int)
-
-        trait Mutation {
-          this: Ctx =>
-
-          @GraphQLField
-          def eatFruit(name: String, eater: String): String = {
-            eventBus.onNext(FruitEaten(name, eater))
-
-            "OmNomNom"
-          }
-
-          @GraphQLField
-          def smashFruit(id: Int) = {
-            eventBus.onNext(FruitSmashed(id))
-
-            "Splash!"
-          }
-
-          @GraphQLField
-          def stop = {
-            eventBus.onComplete()
-
-            "Full!"
-          }
-        }
-
-        class Ctx extends Mutation {
-          val eventBus = ReplaySubject[Any]()
-        }
-
         val cherryPicker = Fetcher.caching[Ctx, Fruit, Int]((ctx, ids) =>
           Future.successful(ids.map(id => Fruit(id, "cherry", "red"))))(HasId(_.id))
 
