@@ -135,7 +135,7 @@ lazy val core = project
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
       // Testing
-      "co.fs2" %% "fs2-core" % "2.5.11" % Test,
+      "co.fs2" %% "fs2-core" % "3.2.12" % Test,
       "org.scalatest" %% "scalatest" % "3.2.13" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
