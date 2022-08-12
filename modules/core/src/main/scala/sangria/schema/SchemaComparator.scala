@@ -635,7 +635,8 @@ object SchemaChange {
 
           s"`${tpe.name}` changed from ${article(oldKind)} $oldKind type to ${article(newKind)} $newKind type"
         },
-        true)
+        true
+      )
       with TypeChange
 
   case class EnumValueRemoved(tpe: EnumType[_], value: EnumValue[_])
@@ -802,7 +803,8 @@ object SchemaChange {
         s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d =>
             s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d =>
             s"`${QueryRenderer.renderCompact(d)}`")}",
-        breakingChange = false)
+        breakingChange = false
+      )
       with TypeChange
 
   case class ObjectTypeArgumentDefaultChanged(
@@ -816,7 +818,8 @@ object SchemaChange {
             .fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold(
             "none")(d => s"`${QueryRenderer.renderCompact(d)}`")}",
         breakingChange = false,
-        dangerousChange = true)
+        dangerousChange = true
+      )
       with TypeChange
 
   case class DirectiveArgumentDefaultChanged(
@@ -829,7 +832,8 @@ object SchemaChange {
             "none")(d => "`" + QueryRenderer.renderCompact(d) + "`")} to ${newDefault.fold("none")(
             d => "`" + QueryRenderer.renderCompact(d) + "`")}",
         breakingChange = false,
-        dangerousChange = true)
+        dangerousChange = true
+      )
 
   case class ObjectTypeInterfaceAdded(tpe: ObjectType[_, _], interface: InterfaceType[_, _])
       extends AbstractChange(
@@ -923,7 +927,8 @@ object SchemaChange {
       extends AbstractAstDirectiveRemoved(
         s"Directive `${QueryRenderer.renderCompact(
             directive)}` removed from a input field `${tpe.name}.${field.name}`",
-        DirectiveLocation.InputFieldDefinition)
+        DirectiveLocation.InputFieldDefinition
+      )
 
   case class DirectiveArgumentAstDirectiveAdded(
       dir: Directive,
@@ -932,7 +937,8 @@ object SchemaChange {
       extends AbstractAstDirectiveAdded(
         s"Directive `${QueryRenderer.renderCompact(
             directive)}` added on a directive argument `${dir.name}.${argument.name}`",
-        DirectiveLocation.ArgumentDefinition)
+        DirectiveLocation.ArgumentDefinition
+      )
 
   case class DirectiveArgumentAstDirectiveRemoved(
       dir: Directive,
@@ -941,7 +947,8 @@ object SchemaChange {
       extends AbstractAstDirectiveRemoved(
         s"Directive `${QueryRenderer.renderCompact(
             directive)}` removed from a directive argument `${dir.name}.${argument.name}`",
-        DirectiveLocation.ArgumentDefinition)
+        DirectiveLocation.ArgumentDefinition
+      )
 
   case class FieldArgumentAstDirectiveAdded(
       tpe: ObjectLikeType[_, _],
@@ -951,7 +958,8 @@ object SchemaChange {
       extends AbstractAstDirectiveAdded(
         s"Directive `${QueryRenderer.renderCompact(
             directive)}` added on a field argument `${tpe.name}.${field.name}[${argument.name}]`",
-        DirectiveLocation.ArgumentDefinition)
+        DirectiveLocation.ArgumentDefinition
+      )
 
   case class FieldArgumentAstDirectiveRemoved(
       tpe: ObjectLikeType[_, _],
@@ -961,7 +969,8 @@ object SchemaChange {
       extends AbstractAstDirectiveRemoved(
         s"Directive `${QueryRenderer.renderCompact(
             directive)}` removed from a field argument `${tpe.name}.${field.name}[${argument.name}]`",
-        DirectiveLocation.ArgumentDefinition)
+        DirectiveLocation.ArgumentDefinition
+      )
 
   case class ObjectTypeAstDirectiveAdded(tpe: ObjectType[_, _], directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
@@ -1064,7 +1073,8 @@ object SchemaChange {
       extends AbstractChange(
         if (newRepeatable) s"Directive `${directive.name}` was made repeatable per location"
         else s"Directive `${directive.name}` was made unique per location",
-        breaking)
+        breaking
+      )
 
   case class InputFieldTypeChanged(
       tpe: InputObjectType[_],
@@ -1075,7 +1085,8 @@ object SchemaChange {
       extends AbstractChange(
         s"`${tpe.name}.${field.name}` input field type changed from `${SchemaRenderer
             .renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
-        breaking)
+        breaking
+      )
       with TypeChange
 
   case class ObjectTypeArgumentTypeChanged(
@@ -1088,7 +1099,8 @@ object SchemaChange {
       extends AbstractChange(
         s"`${tpe.name}.${field.name}(${argument.name})` type changed from `${SchemaRenderer
             .renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
-        breaking)
+        breaking
+      )
       with TypeChange
 
   case class DirectiveArgumentTypeChanged(
@@ -1100,7 +1112,8 @@ object SchemaChange {
       extends AbstractChange(
         s"`${directive.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(
             oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
-        breaking)
+        breaking
+      )
 
   case class FieldTypeChanged(
       tpe: ObjectLikeType[_, _],
@@ -1111,7 +1124,8 @@ object SchemaChange {
       extends AbstractChange(
         s"`${tpe.name}.${field.name}` field type changed from `${SchemaRenderer.renderTypeName(
             oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
-        breaking)
+        breaking
+      )
       with TypeChange
 
   case class SchemaMutationTypeChanged(
@@ -1128,7 +1142,8 @@ object SchemaChange {
       extends AbstractChange(
         s"Schema subscription type changed from ${oldType.fold("none")(t =>
             "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
-        oldType.nonEmpty)
+        oldType.nonEmpty
+      )
 
   private val AnArticleLetters = Set('a', 'e', 'i', 'o')
 

@@ -118,7 +118,8 @@ case class Executor[Ctx, Root](
                   scheme,
                   validationTiming,
                   timing
-                ))
+                )
+            )
           }
       }
 
@@ -266,7 +267,8 @@ case class Executor[Ctx, Root](
         scheme.extended,
         validationTiming,
         queryReducerTiming,
-        queryAst)
+        queryAst
+      )
 
       val result =
         operation.operationType match {
