@@ -61,9 +61,7 @@ lazy val ast = project
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.copy"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem](
-        "sangria.execution.Resolver.resolveSimpleListValue")
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$")
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -126,7 +124,9 @@ lazy val core = project
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.this"),
       ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.Directive$"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.MappedAbstractType")
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.MappedAbstractType"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem](
+        "sangria.execution.Resolver.resolveSimpleListValue")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
