@@ -1090,6 +1090,26 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
               "locations" -> Vector(Map("line" -> 1, "column" -> 9))))))
     }
 
+    "handles Iterables as ListType" in {
+      val Success(doc) = QueryParser.parse("{set}")
+
+      val QueryType = ObjectType(
+        "Query",
+        fields[Unit, Unit](
+          Field("set", ListType(StringType), resolve = _ => Set("one", "two", "three"))
+        )
+      )
+
+      val schema = Schema(QueryType)
+
+      val result = Executor
+        .execute(schema, doc)
+        .await
+        .asInstanceOf[Map[String, Any]]
+
+      result("data") should be(Map("set" -> Vector("one", "two", "three")))
+    }
+
     "support extended result in queries" in {
       import ExecutionScheme.Extended
 

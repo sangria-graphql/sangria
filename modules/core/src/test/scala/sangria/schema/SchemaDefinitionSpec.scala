@@ -102,5 +102,19 @@ class SchemaDefinitionSpec extends AnyWordSpec with Matchers with FutureResultSu
 
       intercept[SchemaValidationException](Schema(queryType))
     }
+
+    "allows using an Iterable as a ListTYpe" in {
+      case class Foo(elements: Set[String])
+
+      ObjectType(
+        "Foo",
+        interfaces = Nil,
+        () =>
+          fields[Unit, Foo](
+            Field("elements", ListType(StringType), resolve = _.value.elements)
+          )
+      )
+    }
+
   }
 }

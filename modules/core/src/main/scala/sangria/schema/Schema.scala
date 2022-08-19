@@ -1123,7 +1123,7 @@ object InputField {
       .asInstanceOf[InputField[res.Res]]
 }
 
-case class ListType[T](ofType: OutputType[T]) extends OutputType[Seq[T]] with NullableType
+case class ListType[T](ofType: OutputType[T]) extends OutputType[Iterable[T]] with NullableType
 case class ListInputType[T](ofType: InputType[T]) extends InputType[Seq[T]] with NullableType
 
 case class OptionType[T](ofType: OutputType[T]) extends OutputType[Option[T]]
