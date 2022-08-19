@@ -61,7 +61,9 @@ lazy val ast = project
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.copy"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$")
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem](
+        "sangria.execution.Resolver.resolveSimpleListValue")
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)

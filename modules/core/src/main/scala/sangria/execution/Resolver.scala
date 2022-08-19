@@ -1227,7 +1227,7 @@ class Resolver[Ctx](
           Result(ErrorRegistry.empty, None)
         else {
           val actualValue = value match {
-            case seq: Seq[_] => seq
+            case seq: Iterable[_] => seq
             case other => Seq(other)
           }
 
@@ -1368,7 +1368,7 @@ class Resolver[Ctx](
     value == null || value == None
 
   def resolveSimpleListValue(
-      simpleRes: Seq[Result],
+      simpleRes: Iterable[Result],
       path: ExecutionPath,
       optional: Boolean,
       astPosition: Option[AstLocation]): Result = {
