@@ -71,6 +71,7 @@ class ArgsSpec extends AnyWordSpec with Matchers {
         args.defaultInfo should be(Cache.empty)
 
         args.arg(nonDefaultArgument) should be(9001)
+        args.argOpt(nonDefaultArgument) should be(Some(9001))
       }
 
       "not build with undefined arguments" in {
@@ -86,6 +87,9 @@ class ArgsSpec extends AnyWordSpec with Matchers {
         args.defaultInfo should be(Cache.empty)
 
         args.arg(optionalArgument) should be(Some(9001))
+        // https://github.com/sangria-graphql/sangria/issues/434
+//        val result: Option[Option[Int]] = args.argOpt(optionalArgument)
+//        result should be(Some(Some(9001)))
       }
 
       "build with optional argument and undefined input" in {

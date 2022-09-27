@@ -124,7 +124,7 @@ object ValueCollector {
       val astArgMap = argumentAsts.groupBy(_.name).map { case (k, v) => (k, v.head) }
       val marshaller = CoercedScalaResultMarshaller.default
       val errors = new VectorBuilder[Violation]
-      val defaultInfo = Some(Cache.empty[String, Any])
+      val defaultInfo = Cache.empty[String, Any]
       val undefinedArgs = Some(new VectorBuilder[String])
 
       val res = argumentDefs.foldLeft(
@@ -148,7 +148,7 @@ object ValueCollector {
               errors = errors,
               valueMap =
                 (v: Any) => fromInput.fromResult(v.asInstanceOf[fromInput.marshaller.Node]),
-              defaultValueInfo = defaultInfo,
+              defaultValueInfo = Some(defaultInfo),
               undefinedValues = undefinedArgs,
               isArgument = true,
               fromScalarMiddleware = fromScalarMiddleware
@@ -192,7 +192,7 @@ object ValueCollector {
             argsWithDefault,
             optionalArgs,
             undefinedArgs.get.result().toSet,
-            defaultInfo.get))
+            defaultInfo))
       }
     }
   }
