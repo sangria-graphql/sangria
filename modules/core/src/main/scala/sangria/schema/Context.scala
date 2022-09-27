@@ -458,34 +458,37 @@ case class Args(
     throw new IllegalArgumentException(
       s"Optional argument '$name' accessed as a non-optional argument, but it was not provided in the query and argument does not define a default value.")
 
-  def arg[T](arg: Argument[T]): T =
-    if (optionalArgs.contains(arg.name) && argsWithDefault.contains(arg.name) && defaultInfo
-        .contains(arg.name))
-      getAsOptional[T](arg.name).getOrElse(defaultInfo(arg.name).asInstanceOf[T])
-    else if (optionalArgs.contains(arg.name) && argsWithDefault.contains(arg.name))
-      getAsOptional[T](arg.name).getOrElse(invariantExplicitlyNull(arg.name))
-    else if (optionalArgs.contains(arg.name))
-      getAsOptional[Any](arg.name).asInstanceOf[T]
+  def arg[T](arg: Argument[T]): T = {
+    val name = arg.name
+    if (!optionalArgs.contains(name))
+      raw(name).asInstanceOf[T]
+    else if (!argsWithDefault.contains(name))
+      getAsOptional[Any](name).asInstanceOf[T]
+    else if (!defaultInfo.contains(name))
+      getAsOptional[T](name).getOrElse(invariantExplicitlyNull(name))
     else
-      raw(arg.name).asInstanceOf[T]
+      getAsOptional[T](name).getOrElse(defaultInfo(name).asInstanceOf[T])
+  }
 
   def arg[T](name: String): T =
-    if (optionalArgs.contains(name) && argsWithDefault.contains(name) && defaultInfo.contains(name))
-      getAsOptional[T](name).getOrElse(defaultInfo(name).asInstanceOf[T])
-    else if (optionalArgs.contains(name) && argsWithDefault.contains(name))
-      getAsOptional[T](name).getOrElse(invariantExplicitlyNull(name))
-    else if (optionalArgs.contains(name))
-      getAsOptional[T](name).getOrElse(invariantNotProvided(name))
-    else
+    if (!optionalArgs.contains(name))
       raw(name).asInstanceOf[T]
+    else if (!argsWithDefault.contains(name))
+      getAsOptional[T](name).getOrElse(invariantNotProvided(name))
+    else if (!defaultInfo.contains(name))
+      getAsOptional[T](name).getOrElse(invariantExplicitlyNull(name))
+    else
+      getAsOptional[T](name).getOrElse(defaultInfo(name).asInstanceOf[T])
 
   def argOpt[T](name: String): Option[T] = getAsOptional(name)
 
-  def argOpt[T](arg: Argument[T]): Option[T] =
-    if (optionalArgs.contains(arg.name))
-      getAsOptional[T](arg.name)
+  def argOpt[T](arg: Argument[T]): Option[T] = {
+    val name = arg.name
+    if (optionalArgs.contains(name))
+      getAsOptional[T](name)
     else
-      raw.get(arg.name).asInstanceOf[Option[T]]
+      raw.get(name).asInstanceOf[Option[T]]
+  }
 
   def argDefinedInQuery(name: String): Boolean = !undefinedArgs.contains(name)
   def argDefinedInQuery(arg: Argument[_]): Boolean = argDefinedInQuery(arg.name)
@@ -604,7 +607,7 @@ object Args {
   private def convert[In: InputUnmarshaller, Out: ResultMarshallerForType](
       value: In,
       tpe: InputType[_],
-      variables: Option[Map[String, VariableValue]] = None): Option[Out] = {
+      variables: Option[Map[String, VariableValue]]): Option[Out] = {
     val rm = implicitly[ResultMarshallerForType[Out]]
 
     ValueCoercionHelper.default.coerceInputValue(
