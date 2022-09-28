@@ -703,7 +703,8 @@ class AstSchemaMaterializer[Ctx] private (
   def extendEnumType(origin: MatOrigin, tpe: EnumType[_]) = {
     val extensions = findEnumExtensions(tpe.name)
     val extraValues = extensions.flatMap(_.values)
-    val extraDirs = extensions.flatMap(_.directives)
+    val extraDirs =
+      extensions.flatMap(_.directives).asInstanceOf[Vector[ast.Directive with OnEnumType]]
 
     val ev = extraValues.flatMap(buildEnumValue(origin, Right(tpe), _, extensions))
 

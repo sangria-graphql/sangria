@@ -126,7 +126,10 @@ lazy val core = project
       ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.Directive$"),
       ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.MappedAbstractType"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem](
-        "sangria.execution.Resolver.resolveSimpleListValue")
+        "sangria.execution.Resolver.resolveSimpleListValue"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Argument.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.subs"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.apply")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(

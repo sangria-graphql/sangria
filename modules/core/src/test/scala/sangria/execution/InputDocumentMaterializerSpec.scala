@@ -67,7 +67,7 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
             coerceInput = v => Right(v),
             complexity = scalarComplexity(definition),
             scalarInfo = scalarValueInfo(definition),
-            astDirectives = definition.directives
+            astDirectives = definition.directives.asInstanceOf[Vector[ast.Directive with OnScalar]]
           ))
       else
         super.buildScalarType(origin, extensions, definition, mat)

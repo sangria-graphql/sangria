@@ -105,6 +105,8 @@ object Named {
   def isValidName(name: String): Boolean = NameRegexp.pattern.matcher(name).matches()
 }
 
+trait OnScalar
+
 /** Defines a GraphQL scalar value type.
   *
   * `coerceOutput` is allowed to return following scala values:
@@ -135,7 +137,7 @@ case class ScalarType[T](
     coerceInput: ast.Value => Either[Violation, T],
     complexity: Double = 0.0d,
     scalarInfo: Set[ScalarValueInfo] = Set.empty,
-    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astDirectives: Vector[ast.Directive with OnScalar] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends InputType[T @@ CoercedScalaResult]
     with OutputType[T]
@@ -143,6 +145,13 @@ case class ScalarType[T](
     with NullableType
     with UnmodifiedType
     with Named {
+
+  def withDirective(directive: ast.Directive with OnScalar): ScalarType[T] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnScalar)*): ScalarType[T] =
+    copy(astDirectives = astDirectives ++ directives)
+
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
@@ -214,6 +223,8 @@ sealed trait ObjectLikeType[Ctx, Val]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
+trait OnObject
+
 /** GraphQL schema object description.
   *
   * Describes a type of object in a GraphQL schema that is presented by a Sangria server. Objects of
@@ -235,10 +246,14 @@ case class ObjectType[Ctx, Val: ClassTag](
     fieldsFn: () => List[Field[Ctx, Val]],
     interfaces: List[InterfaceType[Ctx, _]],
     instanceCheck: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean,
-    astDirectives: Vector[ast.Directive],
+    astDirectives: Vector[ast.Directive with OnObject],
     astNodes: Vector[ast.AstNode]
 ) extends ObjectLikeType[Ctx, Val] {
   lazy val valClass: Class[_] = implicitly[ClassTag[Val]].runtimeClass
+  def withDirective(directive: ast.Directive with OnObject): ObjectType[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: (ast.Directive with OnObject)*): ObjectType[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
 
   def withInstanceCheck(
       fn: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean): ObjectType[Ctx, Val] =
@@ -367,6 +382,8 @@ object ObjectType {
     (value, valClass, tpe) => valClass.isAssignableFrom(value.getClass)
 }
 
+trait OnInterface
+
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
   */
@@ -376,7 +393,7 @@ case class InterfaceType[Ctx, Val](
     fieldsFn: () => List[Field[Ctx, Val]],
     interfaces: List[InterfaceType[Ctx, _]],
     manualPossibleTypes: () => List[ObjectType[_, _]],
-    astDirectives: Vector[ast.Directive],
+    astDirectives: Vector[ast.Directive with OnInterface] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends ObjectLikeType[Ctx, Val]
     with AbstractType {
@@ -385,6 +402,12 @@ case class InterfaceType[Ctx, Val](
   def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]): InterfaceType[Ctx, Val] =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
+
+  def withDirective(directive: ast.Directive with OnInterface): InterfaceType[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnInterface)*): InterfaceType[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
 }
 
 object InterfaceType {
@@ -522,6 +545,8 @@ object PossibleType {
     create[Abstract, Concrete]
 }
 
+trait OnUnion
+
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
   */
@@ -529,7 +554,7 @@ case class UnionType[Ctx](
     name: String,
     description: Option[String] = None,
     typesFn: () => List[ObjectType[Ctx, _]],
-    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astDirectives: Vector[ast.Directive with OnUnion] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty)
     extends OutputType[Any]
     with CompositeType[Any]
@@ -537,6 +562,13 @@ case class UnionType[Ctx](
     with NullableType
     with UnmodifiedType
     with HasAstInfo {
+
+  def withDirective(directive: ast.Directive with OnUnion): UnionType[Ctx] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnUnion)*): UnionType[Ctx] =
+    copy(astDirectives = astDirectives ++ directives)
+
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 
@@ -566,17 +598,19 @@ object UnionType {
       name: String,
       description: Option[String],
       types: List[ObjectType[Ctx, _]],
-      astDirectives: Vector[ast.Directive]): UnionType[Ctx] =
+      astDirectives: Vector[ast.Directive with OnUnion]): UnionType[Ctx] =
     UnionType(name, description, () => types, astDirectives)
 
   def apply[Ctx](
       name: String,
       description: Option[String],
       types: List[ObjectType[Ctx, _]],
-      astDirectives: Vector[ast.Directive],
+      astDirectives: Vector[ast.Directive with OnUnion],
       astNodes: Vector[ast.AstNode]): UnionType[Ctx] =
     UnionType[Ctx](name, description, () => types, astDirectives, astNodes)
 }
+
+trait OnField
 
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
@@ -594,7 +628,7 @@ case class Field[Ctx, Val](
     tags: List[FieldTag],
     complexity: Option[(Ctx, Args, Double) => Double],
     manualPossibleTypes: () => List[ObjectType[_, _]],
-    astDirectives: Vector[ast.Directive],
+    astDirectives: Vector[ast.Directive with OnField],
     astNodes: Vector[ast.AstNode])
     extends Named
     with HasArguments
@@ -604,6 +638,10 @@ case class Field[Ctx, Val](
     copy(manualPossibleTypes = () => possible.toList.map(_.objectType))
   def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]): Field[Ctx, Val] =
     copy(manualPossibleTypes = () => possible().map(_.objectType))
+  def withDirective(directive: ast.Directive with OnField): Field[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: (ast.Directive with OnField)*): Field[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.FieldDefinition = SchemaRenderer.renderField(this)
 }
@@ -618,8 +656,9 @@ object Field {
       possibleTypes: => List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) => Double] = None,
-      deprecationReason: Option[String] = None)(implicit
-      ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
+      deprecationReason: Option[String] = None,
+      astDirectives: Vector[ast.Directive with OnField] = Vector.empty
+  )(implicit ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
     Field[Ctx, Val](
       name,
       fieldType,
@@ -630,7 +669,7 @@ object Field {
       tags,
       complexity,
       () => possibleTypes.map(_.objectType),
-      Vector.empty,
+      astDirectives,
       Vector.empty)
 
   def subs[Ctx, Val, StreamSource, Res, Out](
@@ -642,7 +681,8 @@ object Field {
       possibleTypes: => List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) => Double] = None,
-      deprecationReason: Option[String] = None
+      deprecationReason: Option[String] = None,
+      astDirectives: Vector[ast.Directive with OnField] = Vector.empty
   )(implicit
       stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out]): Field[Ctx, Val] = {
     val s = stream.subscriptionStream
@@ -660,7 +700,7 @@ object Field {
       SubscriptionField[stream.StreamSource](s) +: tags,
       complexity,
       () => possibleTypes.map(_.objectType),
-      Vector.empty,
+      astDirectives,
       Vector.empty
     )
   }
@@ -687,6 +727,8 @@ trait InputValue[T] {
   def defaultValue: Option[(_, ToInput[_, _])]
 }
 
+trait OnArgument
+
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
   */
@@ -696,13 +738,17 @@ case class Argument[T](
     description: Option[String],
     defaultValue: Option[(_, ToInput[_, _])],
     fromInput: FromInput[_],
-    astDirectives: Vector[ast.Directive],
+    astDirectives: Vector[ast.Directive with OnArgument],
     astNodes: Vector[ast.AstNode])
     extends InputValue[T]
     with Named
     with HasAstInfo {
   override def inputValueType: InputType[_] = argumentType
   override def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
+  def withDirective(directive: ast.Directive with OnArgument): Argument[T] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: (ast.Directive with OnArgument)*): Argument[T] =
+    copy(astDirectives = astDirectives ++ directives)
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderArg(this)
 }
 
@@ -724,7 +770,12 @@ object Argument {
       Vector.empty,
       Vector.empty)
 
-  def apply[T, Default](name: String, argumentType: InputType[T], defaultValue: Default)(implicit
+  def apply[T, Default](
+      name: String,
+      argumentType: InputType[T],
+      defaultValue: Default,
+      astDirectives: Vector[ast.Directive with OnArgument] = Vector.empty
+  )(implicit
       toInput: ToInput[Default, _],
       fromInput: FromInput[T],
       res: ArgumentType[T]): Argument[res.Res] =
@@ -734,7 +785,7 @@ object Argument {
       None,
       Some(defaultValue -> toInput),
       fromInput,
-      Vector.empty,
+      astDirectives,
       Vector.empty)
 
   def apply[T](name: String, argumentType: InputType[T], description: String)(implicit
@@ -921,6 +972,8 @@ trait ArgumentTypeLowestPrio {
   }
 }
 
+trait OnEnumType
+
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
   */
@@ -928,7 +981,7 @@ case class EnumType[T](
     name: String,
     description: Option[String] = None,
     values: List[EnumValue[T]],
-    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astDirectives: Vector[ast.Directive with OnEnumType] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty)
     extends InputType[T @@ CoercedScalaResult]
     with OutputType[T]
@@ -941,6 +994,12 @@ case class EnumType[T](
     values.groupBy(_.name).map { case (k, v) => (k, v.head) }
   lazy val byValue: Map[T, EnumValue[T]] =
     values.groupBy(_.value).map { case (k, v) => (k, v.head) }
+
+  def withDirective(directive: ast.Directive with OnEnumType): EnumType[T] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnEnumType)*): EnumType[T] =
+    copy(astDirectives = astDirectives ++ directives)
 
   def coerceUserInput(value: Any): Either[Violation, (T, Boolean)] = value match {
     case valueName: String =>
@@ -968,6 +1027,8 @@ case class EnumType[T](
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
 
+trait OnEnumValue
+
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
   */
@@ -976,14 +1037,23 @@ case class EnumValue[+T](
     description: Option[String] = None,
     value: T,
     deprecationReason: Option[String] = None,
-    astDirectives: Vector[ast.Directive] = Vector.empty,
+    astDirectives: Vector[ast.Directive with OnEnumValue] = Vector.empty,
     astNodes: Vector[ast.AstNode] = Vector.empty)
     extends Named
     with HasDeprecation
     with HasAstInfo {
+
+  def withDirective(directive: ast.Directive with OnEnumValue): EnumValue[T] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnEnumValue)*): EnumValue[T] =
+    copy(astDirectives = astDirectives ++ directives)
+
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.EnumValueDefinition = SchemaRenderer.renderEnumValue(this)
 }
+
+trait OnInputObjectType
 
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
@@ -992,7 +1062,7 @@ case class InputObjectType[T](
     name: String,
     description: Option[String] = None,
     fieldsFn: () => List[InputField[_]],
-    astDirectives: Vector[ast.Directive],
+    astDirectives: Vector[ast.Directive with OnInputObjectType],
     astNodes: Vector[ast.AstNode]
 ) extends InputType[T @@ InputObjectResult]
     with NullableType
@@ -1004,6 +1074,12 @@ case class InputObjectType[T](
   // noinspection RedundantCollectionConversion
   lazy val fieldsByName: Map[String, InputField[_]] =
     fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap // required for 2.12
+
+  def withDirective(directive: ast.Directive with OnInputObjectType): InputObjectType[T] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnInputObjectType)*): InputObjectType[T] =
+    copy(astDirectives = astDirectives ++ directives)
 
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
@@ -1051,6 +1127,8 @@ trait InputObjectDefaultResultLowPrio {
     }
 }
 
+trait OnInputField
+
 /** @param description
   *   A description of this schema element that can be presented to clients of the GraphQL service.
   */
@@ -1059,11 +1137,18 @@ case class InputField[T](
     fieldType: InputType[T],
     description: Option[String],
     defaultValue: Option[(_, ToInput[_, _])],
-    astDirectives: Vector[ast.Directive],
+    astDirectives: Vector[ast.Directive with OnInputField],
     astNodes: Vector[ast.AstNode]
 ) extends InputValue[T]
     with Named
     with HasAstInfo {
+
+  def withDirective(directive: ast.Directive with OnInputField): InputField[T] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnInputField)*): InputField[T] =
+    copy(astDirectives = astDirectives ++ directives)
+
   def inputValueType: InputType[T] = fieldType
   def rename(newName: String): InputField.this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderInputField(this)
@@ -1220,6 +1305,8 @@ case class Directive(
   def toAst: ast.DirectiveDefinition = SchemaRenderer.renderDirective(this)
 }
 
+trait OnSchema
+
 /** GraphQL schema description.
   *
   * Describes the schema that is presented by a Sangria server. An instance of this type needs to be
@@ -1247,10 +1334,17 @@ case class Schema[Ctx, Val](
     override val description: Option[String] = None,
     directives: List[Directive] = BuiltinDirectives,
     validationRules: List[SchemaValidationRule] = SchemaValidationRule.default,
-    override val astDirectives: Vector[ast.Directive] = Vector.empty,
+    override val astDirectives: Vector[ast.Directive with OnSchema] = Vector.empty,
     override val astNodes: Vector[ast.AstNode] = Vector.empty)
     extends HasAstInfo
     with HasDescription {
+
+  def withDirective(directive: ast.Directive with OnSchema): Schema[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: (ast.Directive with OnSchema)*): Schema[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
+
   def extend(
       document: ast.Document,
       builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =

@@ -149,8 +149,8 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
       description = definition.flatMap(_.description.map(_.value)),
       directives = directives,
       astDirectives =
-        definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(
-          _.directives),
+        (definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(
+          _.directives)).asInstanceOf[Vector[ast.Directive with OnSchema]],
       astNodes = Vector(mat.document) ++ extensions ++ definition.toVector,
       validationRules = SchemaValidationRule.default :+ new ResolvedDirectiveValidationRule(
         this.directives.filterNot(_.repeatable).map(_.name).toSet)

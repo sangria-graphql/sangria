@@ -324,8 +324,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       description = definition.flatMap(_.description.map(_.value)),
       directives = directives,
       astDirectives =
-        definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(
-          _.directives),
+        (definition.fold(Vector.empty[ast.Directive])(_.directives) ++ extensions.flatMap(
+          _.directives)).asInstanceOf[Vector[ast.Directive with OnSchema]],
       astNodes = Vector(mat.document) ++ extensions ++ definition.toVector
     )
 
@@ -346,7 +346,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       directives = directives,
       description = originalSchema.description,
       validationRules = originalSchema.validationRules,
-      astDirectives = originalSchema.astDirectives ++ extensions.flatMap(_.directives),
+      astDirectives = (originalSchema.astDirectives ++ extensions.flatMap(_.directives))
+        .asInstanceOf[Vector[ast.Directive with OnSchema]],
       astNodes = {
         val (docs, other) = originalSchema.astNodes.partition(_.isInstanceOf[ast.Document])
         val newDoc = ast.Document.merge(docs.asInstanceOf[Vector[ast.Document]] :+ mat.document)
@@ -374,7 +375,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
             interfaces = interfaces,
             instanceCheck =
               (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) => fn(value, clazz),
-            astDirectives = directives,
+            astDirectives = directives.asInstanceOf[Vector[ast.Directive with OnObject]],
             astNodes = (definition +: extensions).toVector
           )
         case None =>
@@ -384,7 +385,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
             fieldsFn = fields,
             interfaces = interfaces,
             instanceCheck = ObjectType.defaultInstanceCheck[Ctx, Any],
-            astDirectives = directives,
+            astDirectives = directives.asInstanceOf[Vector[ast.Directive with OnObject]],
             astNodes = (definition +: extensions).toVector
           )
       }
@@ -404,7 +405,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         existing.copy(
           fieldsFn = fields,
           interfaces = interfaces,
-          astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
+          astDirectives = existing.astDirectives ++ extensions.flatMap(
+            _.directives.asInstanceOf[Vector[ast.Directive with OnObject]]),
           astNodes = existing.astNodes ++ extensions,
           instanceCheck = (value: Any, clazz: Class[_], _: ObjectType[Ctx, Any]) => fn(value, clazz)
         )(ClassTag(existing.valClass))
@@ -412,7 +414,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         existing.copy(
           fieldsFn = fields,
           interfaces = interfaces,
-          astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
+          astDirectives = existing.astDirectives ++ extensions.flatMap(
+            _.directives.asInstanceOf[Vector[ast.Directive with OnObject]]),
           astNodes = existing.astNodes ++ extensions,
           instanceCheck =
             existing.instanceCheck.asInstanceOf[(Any, Class[_], ObjectType[Ctx, _]) => Boolean]
@@ -430,7 +433,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         name = typeName(definition),
         description = typeDescription(definition),
         fieldsFn = fields,
-        astDirectives = definition.directives ++ extensions.flatMap(_.directives),
+        astDirectives = (definition.directives ++ extensions.flatMap(_.directives))
+          .asInstanceOf[Vector[ast.Directive with OnInputObjectType]],
         astNodes = definition +: extensions
       ))
 
@@ -449,7 +453,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         fieldsFn = fields,
         interfaces = Nil,
         manualPossibleTypes = () => Nil,
-        astDirectives = directives,
+        astDirectives = directives.asInstanceOf[Vector[ast.Directive with OnInterface]],
         astNodes = (definition +: extensions).toVector
       ))
   }
@@ -464,7 +468,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       fieldsFn = fields,
       manualPossibleTypes = () => Nil,
       interfaces = Nil,
-      astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
+      astDirectives = (existing.astDirectives ++ extensions
+        .flatMap(_.directives)).asInstanceOf[Vector[ast.Directive with OnInterface]],
       astNodes = existing.astNodes ++ extensions
     )
 
@@ -479,7 +484,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         name = typeName(definition),
         description = typeDescription(definition),
         types = types,
-        astDirectives = definition.directives ++ extensions.flatMap(_.directives),
+        astDirectives = (definition.directives ++ extensions.flatMap(_.directives))
+          .asInstanceOf[Vector[ast.Directive with OnUnion]],
         astNodes = definition +: extensions
       ))
 
@@ -491,8 +497,10 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       mat: AstSchemaMaterializer[Ctx]): UnionType[Ctx] =
     existing.copy(
       typesFn = () => types,
-      astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
-      astNodes = existing.astNodes ++ extensions)
+      astDirectives = (existing.astDirectives ++ extensions.flatMap(_.directives))
+        .asInstanceOf[Vector[ast.Directive with OnUnion]],
+      astNodes = existing.astNodes ++ extensions
+    )
 
   def extendScalarAlias[T, ST](
       origin: MatOrigin,
@@ -516,7 +524,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         coerceInput = scalarCoerceInput(definition),
         complexity = scalarComplexity(definition),
         scalarInfo = scalarValueInfo(definition),
-        astDirectives = definition.directives ++ extensions.flatMap(_.directives),
+        astDirectives = (definition.directives ++ extensions.flatMap(_.directives))
+          .asInstanceOf[Vector[ast.Directive with OnScalar]],
         astNodes = definition +: extensions
       ))
 
@@ -531,7 +540,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         name = typeName(definition),
         description = typeDescription(definition),
         values = values,
-        astDirectives = definition.directives ++ extensions.flatMap(_.directives),
+        astDirectives = (definition.directives ++ extensions.flatMap(_.directives))
+          .asInstanceOf[Vector[ast.Directive with OnEnumType]],
         astNodes = definition +: extensions
       ))
 
@@ -547,7 +557,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         description = enumValueDescription(definition),
         value = enumValue(typeDefinition, definition),
         deprecationReason = enumValueDeprecationReason(definition),
-        astDirectives = definition.directives,
+        astDirectives = definition.directives.asInstanceOf[Vector[ast.Directive with OnEnumValue]],
         astNodes = Vector(definition)
       ))
 
@@ -570,7 +580,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         deprecationReason = fieldDeprecationReason(definition),
         complexity = fieldComplexity(typeDefinition, definition),
         manualPossibleTypes = () => Nil,
-        astDirectives = definition.directives,
+        astDirectives = definition.directives.asInstanceOf[Vector[ast.Directive with OnField]],
         astNodes = Vector(definition)
       ))
 
@@ -655,7 +665,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         description = inputFieldDescription(definition),
         fieldType = tpe,
         defaultValue = defaultValue,
-        astDirectives = definition.directives,
+        astDirectives = definition.directives.asInstanceOf[Vector[ast.Directive with OnInputField]],
         astNodes = Vector(definition)
       ))
 
@@ -683,7 +693,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         argumentType = tpe,
         defaultValue = defaultValue,
         fromInput = argumentFromInput(typeDefinition, fieldDefinition, definition),
-        astDirectives = definition.directives,
+        astDirectives = definition.directives.asInstanceOf[Vector[ast.Directive with OnArgument]],
         astNodes = Vector(definition)
       ))
 
@@ -720,8 +730,10 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       mat: AstSchemaMaterializer[Ctx]): InputObjectType[T] =
     existing.copy(
       fieldsFn = fields,
-      astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
-      astNodes = existing.astNodes ++ extensions)
+      astDirectives = (existing.astDirectives ++ extensions.flatMap(_.directives))
+        .asInstanceOf[Vector[ast.Directive with OnInputObjectType]],
+      astNodes = existing.astNodes ++ extensions
+    )
 
   def transformEnumType[T](
       origin: MatOrigin,
@@ -731,7 +743,9 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     val dirs = existing.astDirectives ++ extensions.flatMap(_.directives)
 
     if (dirs.nonEmpty)
-      existing.copy(astDirectives = dirs, astNodes = existing.astNodes ++ extensions)
+      existing.copy(
+        astDirectives = dirs.asInstanceOf[Vector[ast.Directive with OnEnumType]],
+        astNodes = existing.astNodes ++ extensions)
     else existing
   }
 
@@ -743,7 +757,9 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     val dirs = existing.astDirectives ++ extensions.flatMap(_.directives)
 
     if (dirs.nonEmpty)
-      existing.copy(astDirectives = dirs, astNodes = existing.astNodes ++ extensions)
+      existing.copy(
+        astDirectives = dirs.asInstanceOf[Vector[ast.Directive with OnScalar]],
+        astNodes = existing.astNodes ++ extensions)
     else existing
   }
 
