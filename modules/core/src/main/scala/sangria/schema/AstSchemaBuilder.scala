@@ -3,7 +3,9 @@ package sangria.schema
 import sangria.ast
 import sangria.execution.FieldTag
 import sangria.marshalling.{FromInput, MarshallerCapability, ScalarValueInfo, ToInput}
+import sangria.schema.DirectiveLocationValue.On
 import sangria.schema.InputObjectType.DefaultInput
+import sangria.util.tag.@@
 import sangria.validation.Violation
 
 import scala.reflect.ClassTag
@@ -570,7 +572,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         deprecationReason = fieldDeprecationReason(definition),
         complexity = fieldComplexity(typeDefinition, definition),
         manualPossibleTypes = () => Nil,
-        astDirectives = definition.directives,
+        astDirectives = definition.directives
+          .asInstanceOf[Vector[ast.Directive with On[DirectiveLocationValue.Field.type]]],
         astNodes = Vector(definition)
       ))
 
