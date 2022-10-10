@@ -143,6 +143,10 @@ case class ScalarType[T](
     with NullableType
     with UnmodifiedType
     with Named {
+  def withDirective(directive: ast.Directive): ScalarType[T] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): ScalarType[T] =
+    copy(astDirectives = astDirectives ++ directives)
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
@@ -239,6 +243,11 @@ case class ObjectType[Ctx, Val: ClassTag](
     astNodes: Vector[ast.AstNode]
 ) extends ObjectLikeType[Ctx, Val] {
   lazy val valClass: Class[_] = implicitly[ClassTag[Val]].runtimeClass
+
+  def withDirective(directive: ast.Directive): ObjectType[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): ObjectType[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
 
   def withInstanceCheck(
       fn: (Any, Class[_], ObjectType[Ctx, Val]) => Boolean): ObjectType[Ctx, Val] =
@@ -380,6 +389,10 @@ case class InterfaceType[Ctx, Val](
     astNodes: Vector[ast.AstNode] = Vector.empty
 ) extends ObjectLikeType[Ctx, Val]
     with AbstractType {
+  def withDirective(directive: ast.Directive): InterfaceType[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): InterfaceType[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*): InterfaceType[Ctx, Val] =
     copy(manualPossibleTypes = () => possible.toList.map(_.objectType))
   def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]): InterfaceType[Ctx, Val] =
@@ -537,6 +550,10 @@ case class UnionType[Ctx](
     with NullableType
     with UnmodifiedType
     with HasAstInfo {
+  def withDirective(directive: ast.Directive): UnionType[Ctx] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): UnionType[Ctx] =
+    copy(astDirectives = astDirectives ++ directives)
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 
@@ -600,6 +617,10 @@ case class Field[Ctx, Val](
     with HasArguments
     with HasDeprecation
     with HasAstInfo {
+  def withDirective(directive: ast.Directive): Field[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): Field[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
   def withPossibleTypes(possible: PossibleObject[Ctx, Val]*): Field[Ctx, Val] =
     copy(manualPossibleTypes = () => possible.toList.map(_.objectType))
   def withPossibleTypes(possible: () => List[PossibleObject[Ctx, Val]]): Field[Ctx, Val] =
@@ -618,8 +639,9 @@ object Field {
       possibleTypes: => List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) => Double] = None,
-      deprecationReason: Option[String] = None)(implicit
-      ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
+      deprecationReason: Option[String] = None,
+      astDirectives: Vector[ast.Directive] = Vector.empty
+  )(implicit ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
     Field[Ctx, Val](
       name,
       fieldType,
@@ -630,7 +652,7 @@ object Field {
       tags,
       complexity,
       () => possibleTypes.map(_.objectType),
-      Vector.empty,
+      astDirectives,
       Vector.empty)
 
   def subs[Ctx, Val, StreamSource, Res, Out](
@@ -642,7 +664,8 @@ object Field {
       possibleTypes: => List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) => Double] = None,
-      deprecationReason: Option[String] = None
+      deprecationReason: Option[String] = None,
+      astDirectives: Vector[ast.Directive] = Vector.empty
   )(implicit
       stream: SubscriptionStreamLike[StreamSource, Action, Ctx, Res, Out]): Field[Ctx, Val] = {
     val s = stream.subscriptionStream
@@ -660,7 +683,7 @@ object Field {
       SubscriptionField[stream.StreamSource](s) +: tags,
       complexity,
       () => possibleTypes.map(_.objectType),
-      Vector.empty,
+      astDirectives,
       Vector.empty
     )
   }
@@ -701,6 +724,13 @@ case class Argument[T](
     extends InputValue[T]
     with Named
     with HasAstInfo {
+
+  def withDirective(directive: ast.Directive): Argument[T] =
+    copy(astDirectives = astDirectives :+ directive)
+
+  def withDirectives(directives: ast.Directive*): Argument[T] =
+    copy(astDirectives = astDirectives ++ directives)
+
   override def inputValueType: InputType[_] = argumentType
   override def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderArg(this)
@@ -942,6 +972,11 @@ case class EnumType[T](
   lazy val byValue: Map[T, EnumValue[T]] =
     values.groupBy(_.value).map { case (k, v) => (k, v.head) }
 
+  def withDirective(directive: ast.Directive): EnumType[T] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): EnumType[T] =
+    copy(astDirectives = astDirectives ++ directives)
+
   def coerceUserInput(value: Any): Either[Violation, (T, Boolean)] = value match {
     case valueName: String =>
       byName
@@ -981,6 +1016,10 @@ case class EnumValue[+T](
     extends Named
     with HasDeprecation
     with HasAstInfo {
+  def withDirective(directive: ast.Directive): EnumValue[T] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): EnumValue[T] =
+    copy(astDirectives = astDirectives ++ directives)
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.EnumValueDefinition = SchemaRenderer.renderEnumValue(this)
 }
@@ -1005,6 +1044,10 @@ case class InputObjectType[T](
   lazy val fieldsByName: Map[String, InputField[_]] =
     fields.groupBy(_.name).map { case (k, v) => (k, v.head) }.toMap // required for 2.12
 
+  def withDirective(directive: ast.Directive): InputObjectType[T] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): InputObjectType[T] =
+    copy(astDirectives = astDirectives ++ directives)
   def rename(newName: String): this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.TypeDefinition = SchemaRenderer.renderType(this)
 }
@@ -1064,6 +1107,10 @@ case class InputField[T](
 ) extends InputValue[T]
     with Named
     with HasAstInfo {
+  def withDirective(directive: ast.Directive): InputField[T] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): InputField[T] =
+    copy(astDirectives = astDirectives ++ directives)
   def inputValueType: InputType[T] = fieldType
   def rename(newName: String): InputField.this.type = copy(name = newName).asInstanceOf[this.type]
   def toAst: ast.InputValueDefinition = SchemaRenderer.renderInputField(this)
@@ -1251,6 +1298,12 @@ case class Schema[Ctx, Val](
     override val astNodes: Vector[ast.AstNode] = Vector.empty)
     extends HasAstInfo
     with HasDescription {
+
+  def withDirective(directive: ast.Directive): Schema[Ctx, Val] =
+    copy(astDirectives = astDirectives :+ directive)
+  def withDirectives(directives: ast.Directive*): Schema[Ctx, Val] =
+    copy(astDirectives = astDirectives ++ directives)
+
   def extend(
       document: ast.Document,
       builder: AstSchemaBuilder[Ctx] = AstSchemaBuilder.default[Ctx]): Schema[Ctx, Val] =
