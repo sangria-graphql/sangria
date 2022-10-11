@@ -1,6 +1,7 @@
 package sangria.execution.batch
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe
 import fs2.Stream
 import sangria.streaming.SubscriptionStream
 
@@ -9,7 +10,7 @@ import scala.concurrent.Future
 object Fs2Support {
   type IOS[A] = Stream[IO, A]
 
-  class Fs2SubscriptionStream(implicit CS: ContextShift[IO]) extends SubscriptionStream[IOS] {
+  class Fs2SubscriptionStream(implicit runtime: unsafe.IORuntime) extends SubscriptionStream[IOS] {
     def supported[T[_]](other: SubscriptionStream[T]) = other.isInstanceOf[Fs2SubscriptionStream]
 
     def map[A, B](source: IOS[A])(fn: A => B) = source.map(fn)
@@ -40,10 +41,10 @@ object Fs2Support {
         throw new IllegalStateException("No streams produced!")
 
     def recover[T](stream: IOS[T])(fn: Throwable => T) =
-      stream.handleErrorWith { case e => Stream.emit(fn(e)) }
+      stream.handleErrorWith(e => Stream.emit(fn(e)))
   }
 
   implicit def observableSubscriptionStream(implicit
-      CS: ContextShift[IO]): SubscriptionStream[IOS] =
+      runtime: unsafe.IORuntime): SubscriptionStream[IOS] =
     new Fs2SubscriptionStream
 }
