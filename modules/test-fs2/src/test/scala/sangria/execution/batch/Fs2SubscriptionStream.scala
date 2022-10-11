@@ -1,8 +1,9 @@
-package sangria.util
+package sangria.execution.batch
 
 import cats.effect.{ContextShift, IO}
 import fs2.Stream
 import sangria.streaming.SubscriptionStream
+
 import scala.concurrent.Future
 
 object Fs2Support {
