@@ -325,7 +325,7 @@ sealed trait WithDirectives extends AstNode {
 
 case class Directive(
     name: String,
-    arguments: Vector[Argument],
+    arguments: Vector[Argument] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     location: Option[AstLocation] = None)
     extends AstNode
