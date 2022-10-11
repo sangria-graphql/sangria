@@ -1,7 +1,7 @@
 package sangria.execution.batch
 
 import scala.concurrent.ExecutionContext
-import cats.effect.{ContextShift, IO}
+import cats.effect.unsafe
 import sangria.macros._
 import sangria.marshalling._
 import sangria.schema._
@@ -12,31 +12,31 @@ import Fs2Support._
 import sangria.util.SimpleGraphQlSupport._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.util.tag.@@
 import sangria.marshalling.FromInput.CoercedScalaResult
 
 class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
-  implicit val ec: ExecutionContext = ExecutionContext.global
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  private implicit val runtime: unsafe.IORuntime = unsafe.IORuntime.global
+  private implicit val ec: ExecutionContext = runtime.compute
 
-  val IdsArg = Argument[Seq[Int @@ CoercedScalaResult]]("ids", ListInputType(IntType))
-  val IdArg = Argument("id", IntType)
-  val NameArg = Argument("name", StringType)
-  val NamesArg = Argument[Seq[String @@ CoercedScalaResult]]("names", ListInputType(StringType))
+  private val IdsArg = Argument[Seq[Int @@ CoercedScalaResult]]("ids", ListInputType(IntType))
+  private val IdArg = Argument("id", IntType)
+  private val NameArg = Argument("name", StringType)
+  private val NamesArg =
+    Argument[Seq[String @@ CoercedScalaResult]]("names", ListInputType(StringType))
 
-  val DataType = ObjectType(
+  private val DataType = ObjectType(
     "Data",
     fields[Unit, (Int, String)](
       Field("id", IntType, resolve = _.value._1),
       Field("name", StringType, resolve = _.value._2)))
 
-  lazy val DataInputType =
+  private lazy val DataInputType =
     InputObjectType("DataInput", List(InputField("id", IntType), InputField("name", StringType)))
 
-  val DataArg = Argument("data", ListInputType(DataInputType))
+  private val DataArg = Argument("data", ListInputType(DataInputType))
 
-  lazy val QueryType: ObjectType[Unit, Unit] = ObjectType(
+  private lazy val QueryType: ObjectType[Unit, Unit] = ObjectType(
     "Query",
     () =>
       fields[Unit, Unit](
@@ -74,7 +74,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
       )
   )
 
-  lazy val MutationType = ObjectType(
+  private lazy val MutationType = ObjectType(
     "Mutation",
     fields[Unit, Unit](
       Field(
@@ -86,7 +86,7 @@ class BatchExecutorSpec extends AnyWordSpec with Matchers with FutureResultSuppo
       ))
   )
 
-  val schema = Schema(
+  private val schema = Schema(
     QueryType,
     Some(MutationType),
     directives = BuiltinDirectives :+ BatchExecutor.ExportDirective)
