@@ -39,7 +39,7 @@ def emptyForScala3(isScala3: Boolean, module: ModuleID): Set[ModuleID] =
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, parser, core, benchmarks, derivation, sangria)
+  .aggregate(ast, parser, core, benchmarks, derivation, sangriaTestMonix, sangriaTestFS2, sangria)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -139,13 +139,11 @@ lazy val core = project
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
       // Testing
-      "co.fs2" %% "fs2-core" % "2.5.11" % Test,
       "org.scalatest" %% "scalatest" % "3.2.13" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.1" % Test,
-      "org.sangria-graphql" %% "sangria-monix" % "2.0.1" % Test,
       "eu.timepit" %% "refined" % "0.10.1" % Test,
       // CATs
       ("net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test).cross(CrossVersion.for3Use2_13),
@@ -191,6 +189,30 @@ lazy val sangria = project
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria_$ver/latest/"))
     }
+  )
+  .disablePlugins(MimaPlugin)
+
+lazy val sangriaTestMonix = project
+  .in(file("modules/test-monix"))
+  .withId("sangria-test-monix")
+  .dependsOn(core % "compile->compile;test->test", derivation)
+  .settings(scalacSettings ++ shellSettings ++ noPublishSettings)
+  .settings(
+    name := "sangria-test-monix",
+    description := "Tests with monix",
+    libraryDependencies += "org.sangria-graphql" %% "sangria-monix" % "2.0.1" % Test
+  )
+  .disablePlugins(MimaPlugin)
+
+lazy val sangriaTestFS2 = project
+  .in(file("modules/test-fs2"))
+  .withId("sangria-test-fs2")
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(scalacSettings ++ shellSettings ++ noPublishSettings)
+  .settings(
+    name := "sangria-test-monix",
+    description := "Tests with monix",
+    libraryDependencies += "co.fs2" %% "fs2-core" % "2.5.11" % Test
   )
   .disablePlugins(MimaPlugin)
 

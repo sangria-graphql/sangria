@@ -8,7 +8,7 @@ import sangria.schema._
 import sangria.util.{FutureResultSupport, Pos}
 import spray.json._
 import sangria.marshalling.sprayJson._
-import sangria.util.Fs2Support._
+import Fs2Support._
 import sangria.util.SimpleGraphQlSupport._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
