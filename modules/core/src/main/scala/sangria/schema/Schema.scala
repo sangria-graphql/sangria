@@ -10,6 +10,7 @@ import sangria.{ast, introspection}
 import sangria.validation._
 import sangria.introspection._
 import sangria.renderer.{QueryRenderer, SchemaFilter, SchemaRenderer}
+import sangria.schema.DirectiveLocationValue.On
 import sangria.schema.InputObjectType.DefaultInput
 import sangria.streaming.SubscriptionStreamLike
 
@@ -594,7 +595,7 @@ case class Field[Ctx, Val](
     tags: List[FieldTag],
     complexity: Option[(Ctx, Args, Double) => Double],
     manualPossibleTypes: () => List[ObjectType[_, _]],
-    astDirectives: Vector[ast.Directive],
+    astDirectives: Vector[ast.Directive with On[DirectiveLocationValue.Field.type]],
     astNodes: Vector[ast.AstNode])
     extends Named
     with HasArguments
@@ -618,8 +619,9 @@ object Field {
       possibleTypes: => List[PossibleObject[_, _]] = Nil,
       tags: List[FieldTag] = Nil,
       complexity: Option[(Ctx, Args, Double) => Double] = None,
-      deprecationReason: Option[String] = None)(implicit
-      ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
+      deprecationReason: Option[String] = None,
+      astDirectives: Vector[ast.Directive with On[DirectiveLocationValue.Field.type]] = Vector.empty
+  )(implicit ev: ValidOutType[Res, Out]): Field[Ctx, Val] =
     Field[Ctx, Val](
       name,
       fieldType,
@@ -630,7 +632,7 @@ object Field {
       tags,
       complexity,
       () => possibleTypes.map(_.objectType),
-      Vector.empty,
+      astDirectives,
       Vector.empty)
 
   def subs[Ctx, Val, StreamSource, Res, Out](
@@ -1131,6 +1133,20 @@ case class OptionInputType[T](ofType: InputType[T]) extends InputType[Option[T]]
 
 sealed trait HasArguments {
   def arguments: List[Argument[_]]
+}
+
+sealed trait DirectiveLocationValue {
+  def spec: String
+}
+object DirectiveLocationValue {
+  trait On[V <: DirectiveLocationValue]
+
+  case object ArgumentDefinition extends DirectiveLocationValue {
+    override val spec: String = "ARGUMENT_DEFINITION"
+  }
+  case object Field extends DirectiveLocationValue {
+    override val spec: String = "FIELD"
+  }
 }
 
 object DirectiveLocation extends Enumeration {
