@@ -7,21 +7,21 @@ import sangria.visitor._
 import scala.util.control.Breaks.{break, breakable}
 
 trait AstVisitor {
-  def onEnter: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue }
-  def onLeave: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue }
+  def onEnter: PartialFunction[AstNode, VisitorCommand] = PartialFunction.empty
+  def onLeave: PartialFunction[AstNode, VisitorCommand] = PartialFunction.empty
 }
 
 object AstVisitor {
   import AstVisitorCommand._
 
   def apply(
-      onEnter: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue },
-      onLeave: PartialFunction[AstNode, VisitorCommand] = { case _ => VisitorCommand.Continue }
+      onEnter: PartialFunction[AstNode, VisitorCommand] = PartialFunction.empty,
+      onLeave: PartialFunction[AstNode, VisitorCommand] = PartialFunction.empty
   ): DefaultAstVisitor = DefaultAstVisitor(onEnter, onLeave)
 
   def simple(
-      onEnter: PartialFunction[AstNode, Unit] = { case _ => () },
-      onLeave: PartialFunction[AstNode, Unit] = { case _ => () }
+      onEnter: PartialFunction[AstNode, Unit] = PartialFunction.empty,
+      onLeave: PartialFunction[AstNode, Unit] = PartialFunction.empty
   ): DefaultAstVisitor = DefaultAstVisitor(
     {
       case node if onEnter.isDefinedAt(node) =>
