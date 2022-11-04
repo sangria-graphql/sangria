@@ -257,7 +257,10 @@ lazy val scalacSettings = Seq(
   scalacOptions ++= {
     if (scalaVersion.value.startsWith("2.12")) Seq("-language:higherKinds") else List.empty[String]
   },
-  scalacOptions += { if (isScala3.value) "-Xtarget:8" else "-target:jvm-1.8" },
+  scalacOptions ++= {
+    if (scalaVersion.value.startsWith("2.12")) Seq.empty
+    else Seq("-release", "8")
+  },
   autoAPIMappings := true,
   Compile / doc / scalacOptions ++= // scaladoc options
     Opts.doc.title("Sangria") ++ Seq(
