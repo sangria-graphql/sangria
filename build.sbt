@@ -212,7 +212,7 @@ lazy val sangriaTestFS2 = project
   .settings(
     name := "sangria-test-monix",
     description := "Tests with monix",
-    libraryDependencies += "co.fs2" %% "fs2-core" % "3.3.0" % Test
+    libraryDependencies += "co.fs2" %% "fs2-core" % "3.4.0" % Test
   )
   .disablePlugins(MimaPlugin)
 
