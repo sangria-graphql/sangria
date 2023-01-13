@@ -94,7 +94,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       schema: Schema[_, _],
       data: T,
       query: String,
-      expectedData: Map[String, Any],
+      expectedData: Option[Map[String, Any]],
       expectedErrorStrings: Seq[(String, Seq[Pos])],
       args: JsValue = JsObject.empty,
       userContext: Any = (),
@@ -110,7 +110,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       userContext = userContext,
       resolver = resolver.asInstanceOf[DeferredResolver[Any]]).asInstanceOf[Map[String, Any]]
 
-    result("data") should be(expectedData)
+    result.get("data") should be(expectedData)
 
     val errors = result.getOrElse("errors", Vector.empty).asInstanceOf[Seq[Map[String, Any]]]
 
@@ -254,7 +254,7 @@ trait GraphQlSupport extends FutureResultSupport with Matchers {
   def checkContainsErrors[T](
       data: T,
       query: String,
-      expectedData: Map[String, Any],
+      expectedData: Option[Map[String, Any]],
       expectedErrorStrings: Seq[(String, Seq[Pos])],
       args: JsValue = JsObject.empty,
       validateQuery: Boolean = true): Unit =

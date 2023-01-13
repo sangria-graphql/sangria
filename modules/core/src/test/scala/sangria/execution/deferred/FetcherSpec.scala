@@ -558,7 +558,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             }
           }
         """,
-        Map("c1" -> null, "c2" -> Map("name" -> "Root", "selfOpt" -> null)),
+        Some(Map("c1" -> null, "c2" -> Map("name" -> "Root", "selfOpt" -> null))),
         List(
           "Fetcher has not resolved non-optional ID 'foo!'." -> List(Pos(3, 41)),
           "Fetcher has not resolved non-optional ID 'qwe'." -> List(Pos(7, 17))),
@@ -875,7 +875,7 @@ class FetcherSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         }
       """,
-      Map("category" -> null),
+      Some(Map("category" -> null)),
       List(
         "Fetcher has not resolved non-optional relation ID '1' for relation 'SimpleRelation(product-category)'." -> List(
           Pos(4, 13))),

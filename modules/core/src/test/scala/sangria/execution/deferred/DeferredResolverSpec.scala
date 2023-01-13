@@ -279,7 +279,7 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
           fail2 {name}
         }
       """,
-      Map("fail1" -> null, "root" -> Map("name" -> "Cat root"), "fail2" -> null),
+      Some(Map("fail1" -> null, "root" -> Map("name" -> "Cat root"), "fail2" -> null)),
       List("foo" -> List(Pos(3, 11)), "foo" -> List(Pos(5, 11))),
       resolver = new MyDeferredResolver
     )
@@ -294,7 +294,7 @@ class DeferredResolverSpec extends AnyWordSpec with Matchers with FutureResultSu
           fail2 {name}
         }
       """,
-      Map("fail1" -> null, "root" -> Map("name" -> "Cat root"), "fail2" -> null),
+      Some(Map("fail1" -> null, "root" -> Map("name" -> "Cat root"), "fail2" -> null)),
       List("foo" -> List(Pos(3, 11)), "foo" -> List(Pos(5, 11))),
       resolver = new MyDeferredResolver
     )

@@ -134,7 +134,7 @@ class SchemaExtensionSpec
         schema = schema.extend(ast),
         data = (),
         query = "{ newField }",
-        expectedData = Map("newField" -> null),
+        expectedData = Some(Map("newField" -> null)),
         expectedErrorStrings =
           List(DefaultIntrospectionSchemaBuilder.MaterializedSchemaErrorMessage -> List(Pos(1, 3)))
       )

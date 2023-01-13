@@ -475,7 +475,7 @@ class IntrospectionSchemaMaterializerSpec
         clientSchema,
         (),
         "query NoNo($v: Custom) { foo(custom1: 123, custom2: $v) }",
-        null,
+        None,
         List(
           """Schema was materialized and cannot be used for any queries except introspection queries.""" -> List(
             Pos(1, 39))),

@@ -1656,7 +1656,7 @@ class AstSchemaMaterializerSpec
               }
             }
           """,
-          Map("foo" -> null),
+          Some(Map("foo" -> null)),
           List(
             """Cannot return null for non-nullable type""" -> List(Pos(4, 17)),
             """Cannot return null for non-nullable type""" -> List(Pos(5, 17)),

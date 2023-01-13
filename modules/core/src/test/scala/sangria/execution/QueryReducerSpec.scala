@@ -611,7 +611,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           exceptionHandler = exceptionHandler,
           queryReducers = tagColl :: Nil)
         .awaitAndRecoverQueryAnalysisScala should be(
-        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+        Map("errors" -> List(Map("message" -> "boom!"))))
     }
 
     "handle `TryValue` exceptions correctly" in {
@@ -639,7 +639,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           exceptionHandler = exceptionHandler,
           queryReducers = tagColl :: Nil)
         .awaitAndRecoverQueryAnalysisScala should be(
-        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+        Map("errors" -> List(Map("message" -> "boom!"))))
     }
 
     "handle `FutureValue` exceptions correctly" in {
@@ -667,7 +667,7 @@ class QueryReducerSpec extends AnyWordSpec with Matchers with FutureResultSuppor
           exceptionHandler = exceptionHandler,
           queryReducers = tagColl :: Nil)
         .awaitAndRecoverQueryAnalysisScala should be(
-        Map("data" -> null, "errors" -> List(Map("message" -> "boom!"))))
+        Map("errors" -> List(Map("message" -> "boom!"))))
     }
 
     "collect all mapped tag values and update a user context" in {
