@@ -153,7 +153,8 @@ class Resolver[Ctx](
           marshalResult(
             data.asInstanceOf[Option[resultResolver.marshaller.Node]],
             marshalErrors(errors),
-            marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]
+            marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]],
+            beforeExecution = false
           ).asInstanceOf[marshaller.Node])
 
     case dr: DeferredResult =>
@@ -165,7 +166,8 @@ class Resolver[Ctx](
             marshalResult(
               data.asInstanceOf[Option[resultResolver.marshaller.Node]],
               marshalErrors(errors),
-              marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]]
+              marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]],
+              beforeExecution = false
             ).asInstanceOf[marshaller.Node]
         }
       )

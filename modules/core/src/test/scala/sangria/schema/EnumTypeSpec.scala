@@ -78,7 +78,7 @@ class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
     "does not accept string literals" in checkContainsErrors(
       (),
       """{ colorEnum(fromEnum: "GREEN") }""",
-      Map("colorEnum" -> null),
+      Some(Map("colorEnum" -> null)),
       List(
         "Argument 'fromEnum' has wrong value: Enum value expected." -> List(Pos(1, 3), Pos(1, 23))),
       validateQuery = false
@@ -87,7 +87,7 @@ class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
     "does not accept internal value in place of enum literal" in checkContainsErrors(
       (),
       """{ colorEnum(fromEnum: 1) }""",
-      Map("colorEnum" -> null),
+      Some(Map("colorEnum" -> null)),
       List(
         "Argument 'fromEnum' has wrong value: Enum value expected." -> List(Pos(1, 3), Pos(1, 23))),
       validateQuery = false
@@ -112,20 +112,20 @@ class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       JsObject("color" -> JsString("GREEN"))
     )
 
-    "does not accept internal value as enum variables" in checkContainsErrors(
+    "not accept internal value as enum variables" in checkContainsErrors(
       (),
       """query test($color: Color!) { colorEnum(fromEnum: $color) }""",
-      null,
+      None,
       List(
         "Variable '$color' expected value of type 'Color!' but got: 1. Reason: Enum value expected" -> List(
           Pos(1, 12))),
       JsObject("color" -> JsNumber(1))
     )
 
-    "does not accept string variables as enum input" in checkContainsErrors(
+    "not accept string variables as enum input" in checkContainsErrors(
       (),
       """query test($color: String!) { colorEnum(fromEnum: $color) }""",
-      null,
+      None,
       List(
         "Variable '$color' of type 'String!' used in position expecting type 'Color'." -> List(
           Pos(1, 12),
@@ -134,10 +134,10 @@ class EnumTypeSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       validateQuery = true
     )
 
-    "does not accept internal value variable as enum input" in checkContainsErrors(
+    "not accept internal value variable as enum input" in checkContainsErrors(
       (),
       """query test($color: Int!) { colorEnum(fromEnum: $color) }""",
-      null,
+      None,
       List(
         "Variable '$color' of type 'Int!' used in position expecting type 'Color'." -> List(
           Pos(1, 12),

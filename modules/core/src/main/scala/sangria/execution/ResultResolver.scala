@@ -8,13 +8,23 @@ class ResultResolver(
     val marshaller: ResultMarshaller,
     exceptionHandler: ExceptionHandler,
     preserveOriginalErrors: Boolean) {
-  def marshalErrors(errors: ErrorRegistry) =
+  def marshalErrors(errors: ErrorRegistry): Option[marshaller.Node] =
     if (errors.isEmpty) None else Some(marshaller.arrayNode(errors.errorList))
+
+  /** @deprecated
+    *   please set the argument 'beforeExecution'
+    */
+  def marshalResult(
+      data: Option[marshaller.Node],
+      errors: Option[marshaller.Node],
+      extensions: Option[marshaller.Node]): marshaller.Node =
+    marshalResult(data, errors, extensions, beforeExecution = false)
 
   def marshalResult(
       data: Option[marshaller.Node],
       errors: Option[marshaller.Node],
-      extensions: Option[marshaller.Node]) = {
+      extensions: Option[marshaller.Node],
+      beforeExecution: Boolean): marshaller.Node = {
     val names =
       if (errors.isDefined & extensions.isDefined) Vector("data", "errors", "extensions")
       else if (errors.isDefined) Vector("data", "errors")
@@ -25,7 +35,9 @@ class ResultResolver(
 
     val withData = data match {
       case Some(d) => marshaller.addMapNodeElem(empty, "data", d, optional = false)
-      case None => marshaller.addMapNodeElem(empty, "data", marshaller.nullNode, optional = false)
+      case None =>
+        if (beforeExecution) empty
+        else marshaller.addMapNodeElem(empty, "data", marshaller.nullNode, optional = false)
     }
 
     val withErrors = errors match {
@@ -41,8 +53,18 @@ class ResultResolver(
     marshaller.mapNode(withExtensions)
   }
 
-  def resolveError(error: Throwable) =
-    marshalResult(None, marshalErrors(ErrorRegistry(ExecutionPath.empty, error)), None)
+  /** @deprecated
+    *   please set the argument 'beforeExecution'
+    */
+  def resolveError(error: Throwable): marshaller.Node =
+    resolveError(error, beforeExecution = false)
+
+  def resolveError(error: Throwable, beforeExecution: Boolean): marshaller.Node =
+    marshalResult(
+      None,
+      marshalErrors(ErrorRegistry(ExecutionPath.empty, error)),
+      None,
+      beforeExecution)
 
   def handleSupportedError(
       path: ExecutionPath,

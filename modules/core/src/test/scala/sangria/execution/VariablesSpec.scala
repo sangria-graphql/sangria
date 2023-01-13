@@ -307,7 +307,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
               nnListNN(input: ["a1", null, "b1"])
             }
           """,
-          null,
+          None,
           List("Expected type 'String!', found 'null'." -> Seq(Pos(3, 38)))
         )
 
@@ -318,7 +318,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {a: "foo", c: null})
             }
           """,
-          null,
+          None,
           List("Expected type 'String!', found 'null'." -> Seq(Pos(3, 57)))
         )
 
@@ -329,7 +329,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
               nnListNN(input: null)
             }
           """,
-          null,
+          None,
           List("Expected type '[String!]!', found 'null'." -> Seq(Pos(3, 31)))
         )
 
@@ -340,7 +340,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: {a: "foo", c: "baz", d: ["aa", null]})
             }
           """,
-          null,
+          None,
           List("Expected type 'String!', found 'null'." -> Seq(Pos(3, 74)))
         )
 
@@ -391,7 +391,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
               fieldWithObjectInput(input: ["foo", "bar", "baz"])
             }
           """,
-          Map("fieldWithObjectInput" -> null),
+          Some(Map("fieldWithObjectInput" -> null)),
           List(
             """Value '["foo","bar","baz"]' of wrong type was provided to the field of type 'TestInputObject!' at path 'input'.""" -> List(
               Pos(3, 15),
@@ -479,7 +479,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             .awaitAndRecoverQueryAnalysisScala
             .asInstanceOf[Map[String, AnyRef]]
 
-          result("data") should equal(null)
+          result.get("data") should equal(None)
 
           val errors = result("errors").asInstanceOf[Seq[Map[String, Any]]]
 
@@ -622,7 +622,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput(input: $value)
           }
         """,
-        null,
+        None,
         List(
           """Variable '$value' expected value of type 'String!' but value is undefined.""" -> List(
             Pos(2, 33)))
@@ -635,7 +635,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput(input: $value)
           }
         """,
-        null,
+        None,
         List(
           """Variable '$value' expected value of type 'String!' but got: null.""" -> List(
             Pos(2, 33))),
@@ -676,7 +676,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput
           }
         """,
-        Map("fieldWithNonNullableStringInput" -> null),
+        Some(Map("fieldWithNonNullableStringInput" -> null)),
         List(
           "Null value was provided for the NotNull Type 'String!' at path 'input'." -> Seq(
             Pos(3, 13))),
@@ -695,7 +695,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             fieldWithNonNullableStringInput(input: $foo)
           }
         """,
-        Map("fieldWithNonNullableStringInput" -> null),
+        Some(Map("fieldWithNonNullableStringInput" -> null)),
         List(
           "Null value was provided for the NotNull Type 'String!' at path 'input'." -> Seq(
             Pos(3, 13))),
@@ -744,7 +744,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             nnList(input: $input)
           }
         """,
-        null,
+        None,
         List(
           """Variable '$input' expected value of type '[String]!' but got: null.""" -> List(
             Pos(2, 19))),
@@ -802,7 +802,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             listNN(input: $input)
           }
         """,
-        null,
+        None,
         List(
           """Variable '$input' expected value of type '[String!]' but got: ["A",null,"B"].""" -> List(
             Pos(2, 19))),
@@ -816,7 +816,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             nnListNN(input: $input)
           }
         """,
-        Map("nnListNN" -> null),
+        Some(Map("nnListNN" -> null)),
         List(
           "Null value was provided for the NotNull Type '[String!]!' at path 'input'." -> Seq(
             Pos(3, 13))),
@@ -842,7 +842,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             nnListNN(input: $input)
           }
         """,
-        null,
+        None,
         List(
           """Variable '$input' expected value of type '[String!]!' but got: ["A",null,"B"].""" -> List(
             Pos(2, 19))),
@@ -856,7 +856,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             fieldWithObjectInput(input: $input)
           }
         """,
-        null,
+        None,
         List(
           """Variable 'TestType!' expected value of type '$input' which cannot be used as an input type.""" -> List(
             Pos(2, 19))),
@@ -871,7 +871,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
             fieldWithObjectInput(input: $input)
           }
         """,
-        null,
+        None,
         List(
           """Variable 'UnknownType!' expected value of type '$input' which cannot be used as an input type.""" -> List(
             Pos(2, 19))),

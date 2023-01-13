@@ -74,7 +74,7 @@ class CustomScalarSpec extends AnyWordSpec with Matchers {
             foo(dateInput: "2015-05-test")
           }
         """,
-        null,
+        None,
         List(
           """Expected type 'Date!', found '"2015-05-test"'. Date value expected""" -> List(
             Pos(3, 28)))

@@ -17,11 +17,12 @@ trait WithViolations extends UserFacingError {
 trait ErrorWithResolver {
   this: Throwable =>
 
+  def beforeExecution: Boolean
   def exceptionHandler: ExceptionHandler
 
   def resolveError(implicit marshaller: ResultMarshaller): marshaller.Node =
     new ResultResolver(marshaller, exceptionHandler, false)
-      .resolveError(this)
+      .resolveError(this, beforeExecution)
       .asInstanceOf[marshaller.Node]
 }
 
@@ -34,6 +35,8 @@ class ExecutionError(
     with AstNodeLocation
     with UserFacingError
     with ErrorWithResolver {
+
+  override val beforeExecution: Boolean = false
   override def simpleErrorMessage = super.getMessage
   override def getMessage() = super.getMessage + astLocation
 }
@@ -42,6 +45,11 @@ abstract class InternalExecutionError(message: String)
     extends Exception(message)
     with AstNodeLocation
     with ErrorWithResolver {
+
+  /** the error response format is different if the error happened before execution or not
+    * https://spec.graphql.org/October2021/#sec-Data
+    */
+  override val beforeExecution: Boolean = false
   override def simpleErrorMessage = super.getMessage
   override def getMessage() = super.getMessage + astLocation
 }
@@ -84,6 +92,7 @@ case object IntrospectionNotAllowedError
 
 trait QueryAnalysisError extends ErrorWithResolver {
   this: Throwable =>
+  override val beforeExecution: Boolean = true
 }
 
 case class VariableCoercionError(violations: Vector[Violation], eh: ExceptionHandler)

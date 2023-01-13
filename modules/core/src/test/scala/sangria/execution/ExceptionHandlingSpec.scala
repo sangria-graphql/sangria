@@ -165,6 +165,32 @@ class ExceptionHandlingSpec
         ))
     }
 
+    // https://spec.graphql.org/October2021/#sec-Data
+    "the data entry is not be present if an error was raised before execution begins" in {
+      val query = gql"""
+          query GetShoppingBag($$id: String!) {
+            cart(id: $$id) {
+              version
+            }
+          }
+        """
+
+      val res =
+        Executor.execute(schema, query).recover { case analysis: QueryAnalysisError =>
+          analysis.resolveError
+        }
+
+      res.await should be(
+        Map(
+          "errors" -> Vector(
+            Map(
+              "message" -> "Cannot query field 'cart' on type 'Test'. (line 3, column 13):\n            cart(id: $id) {\n            ^",
+              "locations" -> Vector(Map("line" -> 3, "column" -> 13))
+            )
+          )
+        ))
+    }
+
     "handle violation-based errors" in {
       val Success(doc) = QueryParser.parse("""
         {
@@ -194,7 +220,6 @@ class ExceptionHandlingSpec
 
       res.await should be(
         Map(
-          "data" -> null,
           "errors" -> Vector(
             Map(
               "message" -> "Field is missing!!! D:",
@@ -232,9 +257,8 @@ class ExceptionHandlingSpec
             analysis.resolveError
           }
 
-      res.await should be(Map(
-        "data" -> null,
-        "errors" -> Vector(
+      res.await should be(
+        Map("errors" -> Vector(
           Map("message" -> "Wrong operation?!", "extensions" -> Map("errorCode" -> "AAAAAaaAA!")))))
     }
 
