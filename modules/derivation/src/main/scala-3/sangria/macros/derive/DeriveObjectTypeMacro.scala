@@ -402,7 +402,7 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
               default match {
                 case Some((defaultTpe, defaultValue)) =>
                   defaultTpe.asType match
-                    case ('[d]) =>
+                    case '[d] =>
                       (
                         Expr.summon[ToInput[d, _]],
                         Expr.summon[FromInput[Option[i]]],
