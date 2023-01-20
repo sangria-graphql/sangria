@@ -1,5 +1,6 @@
 package sangria.schema
 
+import argonaut.{DecodeJson, HCursor}
 import sangria.execution.AttributeCoercionError
 import sangria.marshalling.sprayJson._
 import sangria.util.Cache
@@ -8,13 +9,17 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.marshalling.FromInput
 import sangria.marshalling.FromInput.CoercedScalaResult
+import sangria.marshalling.argonaut.argonautDecoderFromInput
 
 class ArgsSpec extends AnyWordSpec with Matchers {
   val NonDefaultArgumentName = "nonDefaultArgument"
   val DefaultArgumentName = "defaultArgument"
   val OptionalArgumentName = "optionalArg"
   val NestedParentArgumentName = "nestedParentArgument"
+  val CustomInputArgumentName = "customInputArgument"
+  val OptionalCustomInputArgumentName = "optionalCustomInputArgument"
 
   val nonDefaultArgument = Argument(
     name = NonDefaultArgumentName,
@@ -49,6 +54,36 @@ class ArgsSpec extends AnyWordSpec with Matchers {
     argumentType = nestedObj,
     description = "Nested parent argument"
   )
+
+  case class CustomInput(message: String)
+
+  implicit val customInputJsonDecoder: DecodeJson[CustomInput] =
+    (cursor: HCursor) => for {
+      message <- cursor.get[String]("message")
+    } yield CustomInput(message)
+
+  implicit val fromInputCustomInput: FromInput[CustomInput] = argonautDecoderFromInput[CustomInput]
+
+  val customInputType: InputObjectType[CustomInput] =
+    InputObjectType[CustomInput](
+      name = "CustomInputType",
+      description = "Custom input type",
+      fields = List(InputField(name = "message", fieldType = StringType))
+    )
+
+  val customInputArgument: Argument[CustomInput] =
+    Argument[CustomInput](
+      name = CustomInputArgumentName,
+      argumentType = customInputType,
+      description = "Custom input argument"
+    )
+
+  val optionalCustomInputArgument: Argument[Option[CustomInput]] =
+    Argument[Option[CustomInput]](
+      name = OptionalCustomInputArgumentName,
+      argumentType = OptionInputType(customInputType),
+      description = "Optional custom input argument"
+    )
 
   "Args: Companion object" when {
     "buildArgs with map input" should {
@@ -280,6 +315,54 @@ class ArgsSpec extends AnyWordSpec with Matchers {
         fields(NonDefaultArgumentName) should be(JsNumber(1))
         fields(DefaultArgumentName) should be(JsNumber(2))
         fields.get(OptionalArgumentName) should be(Symbol("empty"))
+      }
+    }
+
+    "buildArgs with custom input types" should {
+      val message = "Hello Sangria"
+      val customInputMap = Map("message" -> message)
+      val expectedValue = CustomInput(message)
+
+      "build with custom input argument" in {
+        val definitions = List(customInputArgument)
+        val values = Map(CustomInputArgumentName -> customInputMap)
+        val args = Args(definitions, values)
+
+        args.raw should be(Map(CustomInputArgumentName -> expectedValue))
+        args.argsWithDefault should be(Set.empty)
+        args.optionalArgs should be(Set.empty)
+        args.undefinedArgs should be(Set.empty)
+        args.defaultInfo should be(Cache.empty)
+
+        args.arg(customInputArgument) should be(expectedValue)
+      }
+
+      "build with optional custom input argument and defined input" in {
+        val definitions = List(optionalCustomInputArgument)
+        val values = Map(OptionalCustomInputArgumentName -> customInputMap)
+        val args = Args(definitions, values)
+
+        args.raw should be(Map(OptionalCustomInputArgumentName -> Some(expectedValue)))
+        args.argsWithDefault should be(Set.empty)
+        args.optionalArgs should be(Set(OptionalCustomInputArgumentName))
+        args.undefinedArgs should be(Set.empty)
+        args.defaultInfo should be(Cache.empty)
+
+        args.arg(optionalCustomInputArgument) should be(Some(expectedValue))
+      }
+
+      "build with optional custom input argument and undefined input" in {
+        val definitions = List(optionalCustomInputArgument)
+        val values = Map.empty[String, Any]
+        val args = Args(definitions, values)
+
+        args.raw should be(Map.empty)
+        args.argsWithDefault should be(Set.empty)
+        args.optionalArgs should be(Set(OptionalCustomInputArgumentName))
+        args.undefinedArgs should be(Set(OptionalCustomInputArgumentName))
+        args.defaultInfo should be(Cache.empty)
+
+        args.arg(optionalCustomInputArgument) should be(None)
       }
     }
   }
