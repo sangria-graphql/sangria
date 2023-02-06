@@ -310,6 +310,7 @@ object AstVisitor {
               description,
               comment,
               trailingComments,
+              _,
               _) =>
           if (breakOrSkip(onEnter(n))) {
             fields.foreach(d => loop(d))
