@@ -10,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import sangria.util.tag.@@ // Scala 3 issue workaround
 import sangria.marshalling.FromInput
-import sangria.marshalling.FromInput.CoercedScalaResult
+import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.marshalling.argonaut.argonautDecoderFromInput
 
 class ArgsSpec extends AnyWordSpec with Matchers {
@@ -58,9 +58,10 @@ class ArgsSpec extends AnyWordSpec with Matchers {
   case class CustomInput(message: String)
 
   implicit val customInputJsonDecoder: DecodeJson[CustomInput] =
-    (cursor: HCursor) => for {
-      message <- cursor.get[String]("message")
-    } yield CustomInput(message)
+    (cursor: HCursor) =>
+      for {
+        message <- cursor.get[String]("message")
+      } yield CustomInput(message)
 
   implicit val fromInputCustomInput: FromInput[CustomInput] = argonautDecoderFromInput[CustomInput]
 
@@ -72,14 +73,14 @@ class ArgsSpec extends AnyWordSpec with Matchers {
     )
 
   val customInputArgument: Argument[CustomInput] =
-    Argument[CustomInput](
+    Argument[CustomInput @@ InputObjectResult](
       name = CustomInputArgumentName,
       argumentType = customInputType,
       description = "Custom input argument"
     )
 
   val optionalCustomInputArgument: Argument[Option[CustomInput]] =
-    Argument[Option[CustomInput]](
+    Argument[Option[CustomInput @@ InputObjectResult]](
       name = OptionalCustomInputArgumentName,
       argumentType = OptionInputType(customInputType),
       description = "Optional custom input argument"
