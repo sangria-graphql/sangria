@@ -38,7 +38,7 @@ class ContextArgSpec extends AnyWordSpec with Matchers {
         """,
         Map("data" -> Map("foo" -> "Some(hello)")))
     }
-    "return Some(None) if the field have the argument but no value" in {
+    "return None if the field have the argument but no value" in {
       check(
         schema,
         (),
