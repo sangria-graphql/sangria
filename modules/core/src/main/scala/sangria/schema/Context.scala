@@ -450,6 +450,9 @@ case class Args(
   private def getAsOptional[T](name: String): Option[T] =
     raw.get(name).asInstanceOf[Option[Option[T]]].flatten
 
+  private def getAsOptionalOption[T](name: String): Option[T] =
+    raw.get(name).asInstanceOf[Option[T]]
+
   private def invariantExplicitlyNull(name: String) =
     throw new IllegalArgumentException(
       s"Optional argument '$name' accessed as a non-optional argument (it has a default value), but query explicitly set argument to `null`.")
@@ -484,9 +487,10 @@ case class Args(
 
   def argOpt[T](arg: Argument[T]): Option[T] = {
     val name = arg.name
-    if (optionalArgs.contains(name))
-      getAsOptional[T](name)
-    else
+    if (optionalArgs.contains(name)) {
+      if (arg.argumentType.isOptional && arg.defaultValue.isEmpty) getAsOptionalOption[T](name)
+      else getAsOptional[T](name)
+    } else
       raw.get(name).asInstanceOf[Option[T]]
   }
 
