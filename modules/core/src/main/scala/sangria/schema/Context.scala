@@ -224,7 +224,8 @@ trait WithArguments {
   def arg[T](name: String): T = args.arg(name)
 
   def argOpt[T](name: String): Option[T] = args.argOpt(name)
-  def argOpt[T](arg: Argument[T]): Option[T] = args.argOpt(arg)
+  def argOpt[T](arg: Argument[T])(implicit lookup: OptArgResolutionTypeLookup[T]): Option[T] =
+    args.argOpt(arg)
 
   def argDefinedInQuery(name: String): Boolean = args.argDefinedInQuery(name)
   def argDefinedInQuery(arg: Argument[_]): Boolean = args.argDefinedInQuery(arg)
@@ -441,6 +442,20 @@ case class Context[Ctx, Val](
   }
 }
 
+trait OptArgResolutionTypeLookup[T] {
+  def cast(value: Option[Any]): Option[T]
+}
+
+object OptArgResolutionTypeLookup extends OptArgResolutionTypeLookupLowPrio {
+  implicit def optionLookup[T]: OptArgResolutionTypeLookup[Option[T]] =
+    (value: Option[Any]) => value.asInstanceOf[Option[Option[T]]]
+}
+
+trait OptArgResolutionTypeLookupLowPrio {
+  implicit def identLookup[T]: OptArgResolutionTypeLookup[T] =
+    (value: Option[Any]) => value.asInstanceOf[Option[Option[T]]].flatten
+}
+
 case class Args(
     raw: Map[String, Any],
     argsWithDefault: Set[String],
@@ -449,6 +464,10 @@ case class Args(
     defaultInfo: Cache[String, Any]) {
   private def getAsOptional[T](name: String): Option[T] =
     raw.get(name).asInstanceOf[Option[Option[T]]].flatten
+
+  private def getAsOptionalOption[T](name: String)(implicit
+      lookup: OptArgResolutionTypeLookup[T]): Option[T] =
+    lookup.cast(raw.get(name))
 
   private def invariantExplicitlyNull(name: String) =
     throw new IllegalArgumentException(
@@ -482,10 +501,10 @@ case class Args(
 
   def argOpt[T](name: String): Option[T] = getAsOptional(name)
 
-  def argOpt[T](arg: Argument[T]): Option[T] = {
+  def argOpt[T](arg: Argument[T])(implicit lookup: OptArgResolutionTypeLookup[T]): Option[T] = {
     val name = arg.name
     if (optionalArgs.contains(name))
-      getAsOptional[T](name)
+      getAsOptionalOption[T](name)
     else
       raw.get(name).asInstanceOf[Option[T]]
   }
