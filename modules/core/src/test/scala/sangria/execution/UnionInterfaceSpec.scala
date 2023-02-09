@@ -116,7 +116,7 @@ class UnionInterfaceSpec
             "fields" -> List(
               Map("name" -> "name")
             ),
-            "interfaces" -> null,
+            "interfaces" -> Nil,
             "possibleTypes" -> List(
               Map("name" -> "Cat"),
               Map("name" -> "Dog"),

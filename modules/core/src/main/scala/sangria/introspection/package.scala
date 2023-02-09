@@ -272,7 +272,7 @@ package object introspection {
           "interfaces",
           OptionType(ListType(__Type)),
           resolve = _.value._2 match {
-            case t: ObjectType[_, _] =>
+            case t: ObjectLikeType[_, _] =>
               Some(t.allInterfaces.asInstanceOf[Vector[Type]].map(true -> _))
             case _ => None
           }
