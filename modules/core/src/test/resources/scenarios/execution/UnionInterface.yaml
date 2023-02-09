@@ -70,13 +70,13 @@ tests:
     when:
       execute:
     then:
-      data: 
+      data:
         Named:
           kind: "INTERFACE"
           name: "Named"
           fields:
             - name: "name"
-          interfaces: null
+          interfaces: []
           possibleTypes:
             - name: "Cat"
             - name: "Dog"
@@ -93,7 +93,7 @@ tests:
             - name: "Cat"
           enumValues: null
           inputFields: null
-  
+
   - name: executes using union types
     given:
       query: |
@@ -112,7 +112,7 @@ tests:
         validate-query: false
         test-value: bob
     then:
-      data: 
+      data:
         __typename: "Person"
         name: "Bob"
         pets:
@@ -122,7 +122,7 @@ tests:
           - __typename: "Dog"
             name: "Odie"
             barks: true
-              
+
   - name: executes union types with inline fragments
     given:
       query: |
@@ -145,7 +145,7 @@ tests:
       execute:
         test-value: bob
     then:
-      data: 
+      data:
         __typename: "Person"
         name: "Bob"
         pets:
@@ -208,7 +208,7 @@ tests:
       data:
         __typename: "Person"
         name: "Bob"
-        friends: 
+        friends:
           - __typename: "Person"
             name: "Liz"
           - __typename: "Dog"
