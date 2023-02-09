@@ -163,7 +163,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
         name = typeName(definition),
         description = typeDescription(definition),
         fieldsFn = fields,
-        interfaces = Nil,
+        interfaces = List.empty,
         manualPossibleTypes = () => Nil,
         astDirectives = Vector.empty,
         astNodes = Vector.empty

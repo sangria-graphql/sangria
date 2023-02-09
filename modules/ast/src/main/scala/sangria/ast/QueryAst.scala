@@ -534,7 +534,8 @@ case class InterfaceTypeDefinition(
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None)
+    location: Option[AstLocation] = None,
+    interfaces: Vector[NamedType] = Vector.empty)
     extends TypeDefinition
     with WithTrailingComments
     with WithDescription {

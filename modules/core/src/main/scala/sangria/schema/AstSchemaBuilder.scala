@@ -447,7 +447,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         name = typeName(definition),
         description = typeDescription(definition),
         fieldsFn = fields,
-        interfaces = Nil,
+        interfaces = List.empty,
         manualPossibleTypes = () => Nil,
         astDirectives = directives,
         astNodes = (definition +: extensions).toVector
@@ -463,7 +463,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     existing.copy(
       fieldsFn = fields,
       manualPossibleTypes = () => Nil,
-      interfaces = Nil,
+      interfaces = List.empty,
       astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
       astNodes = existing.astNodes ++ extensions
     )
