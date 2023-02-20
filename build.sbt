@@ -39,7 +39,16 @@ def emptyForScala3(isScala3: Boolean, module: ModuleID): Set[ModuleID] =
 lazy val root = project
   .in(file("."))
   .withId("sangria-root")
-  .aggregate(ast, parser, core, benchmarks, derivation, sangriaTestMonix, sangriaTestFS2, sangria)
+  .aggregate(
+    ast,
+    parser,
+    core,
+    benchmarks,
+    derivation,
+    sangriaTestMonix,
+    sangriaTestFS2,
+    sangriaTestCatsEffect,
+    sangria)
   .settings(inThisBuild(projectInfo))
   .settings(
     scalacSettings ++ shellSettings ++ noPublishSettings
@@ -210,9 +219,24 @@ lazy val sangriaTestFS2 = project
   .dependsOn(core % "compile->compile;test->test")
   .settings(scalacSettings ++ shellSettings ++ noPublishSettings)
   .settings(
-    name := "sangria-test-monix",
-    description := "Tests with monix",
+    name := "sangria-test-fs2",
+    description := "Tests with FS2",
     libraryDependencies += "co.fs2" %% "fs2-core" % "3.6.0" % Test
+  )
+  .disablePlugins(MimaPlugin)
+
+lazy val sangriaTestCatsEffect = project
+  .in(file("modules/test-cats-effect"))
+  .withId("sangria-test-cats-effect")
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(scalacSettings ++ shellSettings ++ noPublishSettings)
+  .settings(
+    name := "sangria-test-cats-effect",
+    description := "Tests with Cats Effect",
+    libraryDependencies ++= List(
+      "org.typelevel" %% "cats-effect" % "3.4.7" % Test,
+      "org.sangria-graphql" %% "sangria-circe" % "1.3.2" % Test
+    )
   )
   .disablePlugins(MimaPlugin)
 
