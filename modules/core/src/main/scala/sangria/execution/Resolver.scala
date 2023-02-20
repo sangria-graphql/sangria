@@ -142,6 +142,10 @@ class Resolver[Ctx](
         })
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
+    case s: EffectBasedExecutionScheme[_] =>
+      s.mapEffect(result.map(_.swap)) { case (_, in) => in._2 }
+        .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+
     case s =>
       throw new IllegalStateException(s"Unsupported execution scheme: $s")
   }
