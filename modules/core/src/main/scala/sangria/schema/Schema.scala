@@ -1485,7 +1485,14 @@ case class Schema[Ctx, Val](
     directives.groupBy(_.name).mapValues(_.head).toMap
 
   def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
-    case ast.NamedType(name, _) => inputTypes.get(name).map(OptionInputType(_))
+    case ast.NamedType(name, _) =>
+      inputTypes.get(name).map(OptionInputType(_)) match {
+        // this.types does not include builtin scalar types,
+        // if the schema does not use a scalar in fields or arguments at least once
+        // https://github.com/sangria-graphql/sangria/issues/965
+        case None => BuiltinScalars.find(_.name == name).map(OptionInputType(_))
+        case output => output
+      }
     case ast.NotNullType(ofType, _) =>
       getInputType(ofType).collect { case OptionInputType(ot) => ot }
     case ast.ListType(ofType, _) => getInputType(ofType).map(t => OptionInputType(ListInputType(t)))

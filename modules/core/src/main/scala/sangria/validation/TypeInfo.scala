@@ -112,6 +112,8 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
             }
           case None => inputTypeStack.push(None)
         }
+      case ast.InputValueDefinition(_, valueType, Some(_), _, _, _, _) =>
+        inputTypeStack.push(schema.getInputType(valueType))
       case ast.ObjectField(name, value, _, _) =>
         val (fieldType, defaultValue) = inputType match {
           case Some(it) if it.namedType.isInstanceOf[InputObjectType[_]] =>
@@ -183,6 +185,8 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         argument = None
         defaultValueStack.pop()
         inputTypeStack.pop()
+      case ast.InputValueDefinition(_, _, Some(_), _, _, _, _) =>
+        inputTypeStack.pop()
       case ast.ListValue(_, _, _) =>
         defaultValueStack.pop()
         inputTypeStack.pop()
@@ -209,4 +213,5 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         case o: ObjectLikeType[_, _] => o.getField(schema, astField.name).headOption
         case _ => None
       }
+
 }
