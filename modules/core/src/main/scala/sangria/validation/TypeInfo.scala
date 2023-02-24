@@ -100,20 +100,37 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
 
         defaultValueStack.push(argument.flatMap(_.defaultValue))
         inputTypeStack.push(argument.map(_.inputValueType))
-      case ast.ListValue(values, _, _) =>
-        // List positions never have a default value.
-        defaultValueStack.push(None)
-
-        inputType match {
-          case Some(it) =>
-            it.nonOptionalType match {
-              case it: ListInputType[_] => inputTypeStack.push(Some(it.ofType))
-              case _ => inputTypeStack.push(None)
-            }
-          case None => inputTypeStack.push(None)
+      case v: ast.Value =>
+        // is the value part of InputValueDefinition?
+        ancestorStack.toSeq.drop(1) match {
+          case Seq(ast.InputValueDefinition(_, valueType, Some(someValue), _, _, _, _), xs @ _*)
+              if v == someValue =>
+            inputTypeStack.push(schema.getInputType(valueType))
+          case _ => // noop
         }
-      case ast.InputValueDefinition(_, valueType, Some(_), _, _, _, _) =>
-        inputTypeStack.push(schema.getInputType(valueType))
+        v match {
+          case ast.ListValue(values, _, _) =>
+            // List positions never have a default value.
+            defaultValueStack.push(None)
+
+            inputType match {
+              case Some(it) =>
+                it.nonOptionalType match {
+                  case it: ListInputType[_] => inputTypeStack.push(Some(it.ofType))
+                  case _ => inputTypeStack.push(None)
+                }
+              case None => inputTypeStack.push(None)
+            }
+          case ast.EnumValue(name, _, _) =>
+            enumValue = inputType
+              .map(_.namedType)
+              .collect { case enumT: EnumType[_] =>
+                enumT.byName.get(name)
+              }
+              .flatten
+          case _ => // noop
+        }
+
       case ast.ObjectField(name, value, _, _) =>
         val (fieldType, defaultValue) = inputType match {
           case Some(it) if it.namedType.isInstanceOf[InputObjectType[_]] =>
@@ -130,13 +147,7 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
 
         defaultValueStack.push(defaultValue)
         inputTypeStack.push(fieldType)
-      case ast.EnumValue(name, _, _) =>
-        enumValue = inputType
-          .map(_.namedType)
-          .collect { case enumT: EnumType[_] =>
-            enumT.byName.get(name)
-          }
-          .flatten
+
       case _ => // ignore
     }
   }
@@ -185,16 +196,26 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         argument = None
         defaultValueStack.pop()
         inputTypeStack.pop()
-      case ast.InputValueDefinition(_, _, Some(_), _, _, _, _) =>
-        inputTypeStack.pop()
-      case ast.ListValue(_, _, _) =>
-        defaultValueStack.pop()
-        inputTypeStack.pop()
+      case v: ast.Value =>
+        // is the value part of InputValueDefinition?
+        ancestorStack.toSeq.drop(1) match {
+          case Seq(ast.InputValueDefinition(_, _, Some(someValue), _, _, _, _), xs @ _*)
+              if v == someValue =>
+            inputTypeStack.pop()
+          case _ => // noop
+        }
+        v match {
+          case ast.ListValue(_, _, _) =>
+            defaultValueStack.pop()
+            inputTypeStack.pop()
+          case ast.EnumValue(_, _, _) =>
+            enumValue = None
+          case _ => // noop
+        }
+
       case ast.ObjectField(_, _, _, _) =>
         defaultValueStack.pop()
         inputTypeStack.pop()
-      case ast.EnumValue(_, _, _) =>
-        enumValue = None
       case _ => // ignore
     }
 

@@ -802,6 +802,10 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
   "Validate (SDL): Argument/Field default values" when {
 
     "Object Type field with argument default values" should {
+      "succeed by Int with comment" in expectPassesSDL(
+        Document.emptyStub,
+        """type Test { f("comment" a: Int = 1): String } """,
+        defaultRule)
       "succeed by Int" in expectPassesSDL(
         Document.emptyStub,
         """type Test { f(a: Int = 1): String } """,
