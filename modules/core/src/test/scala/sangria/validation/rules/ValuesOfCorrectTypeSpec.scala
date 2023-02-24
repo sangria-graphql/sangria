@@ -2,6 +2,8 @@ package sangria.validation.rules
 
 import sangria.util.{Pos, ValidationSupport}
 import org.scalatest.wordspec.AnyWordSpec
+import sangria.ast.Document
+import sangria.validation.{BadValueViolation, UnknownFieldViolation}
 
 class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
 
@@ -793,5 +795,364 @@ class ValuesOfCorrectTypeSpec extends AnyWordSpec with ValidationSupport {
       """,
       "Expected type 'String', found '2'. String value expected" -> Seq(Pos(2, 50))
     )
+  }
+
+  // tests for https://github.com/sangria-graphql/sangria/issues/965
+  // wherever an ast.InputValueDefinition appears in the SDL should be captured
+  "Validate (SDL): Argument/Field default values" when {
+
+    "Object Type field with argument default values" should {
+      "succeed by Int with comment" in expectPassesSDL(
+        Document.emptyStub,
+        """type Test { f("comment" a: Int = 1): String } """,
+        defaultRule)
+      "succeed by Int" in expectPassesSDL(
+        Document.emptyStub,
+        """type Test { f(a: Int = 1): String } """,
+        defaultRule)
+      "succeed by Boolean" in expectPassesSDL(
+        Document.emptyStub,
+        """type Test { f(a: Boolean = true): String } """,
+        defaultRule)
+
+      "succeed by String" in expectPassesSDL(
+        Document.emptyStub,
+        """type Test { f(a: String = "string"): String } """,
+        defaultRule)
+
+      "succeed by Float" in expectPassesSDL(
+        Document.emptyStub,
+        """type Test { f(a: Float = 1.1): String } """,
+        defaultRule)
+
+      "fail using string value on Int" in expectFailsSDL(
+        Document.emptyStub,
+        """type Test { f(a: Int = "string"): String } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '"string"'. Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using string value on Float" in expectFailsSDL(
+        Document.emptyStub,
+        """type Test { f(a: Float = "string"): String } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Float', found '"string"'. Float or Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using string value on Boolean" in expectFailsSDL(
+        Document.emptyStub,
+        """type Test { f(a: Boolean = "string"): String } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Boolean', found '"string"'. Boolean value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using int value value on String" in expectFailsSDL(
+        Document.emptyStub,
+        """type Test { f(a: String = 1): String } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'String', found '1'. String value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using float value value on Int" in expectFailsSDL(
+        Document.emptyStub,
+        """type Test { f(a: Int = 1.1): String } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '1.1'. Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using wrong field name of input type on object field argument" in expectFailsSDL(
+        """
+          |input A {
+          | f1: Int
+          | f2: Float
+          |}
+          |""".stripMargin,
+        """
+          |type Test {
+          | f(a: A = {wrong: 50}): String
+          |}
+          |""".stripMargin,
+        defaultRule
+      ) {
+
+        case v: UnknownFieldViolation =>
+          v.simpleErrorMessage shouldBe "Field 'wrong' is not defined by type 'A'."
+        case v => fail(s"Expected 'UnknownFieldViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using wrong value of input type on object field argument" in expectFailsSDL(
+        """
+          |input A {
+          | f1: Int
+          | f2: Float
+          |}
+          |""".stripMargin,
+        """
+          |type Test {
+          | f(a: A = {f1: "string"}): String
+          |}
+          |""".stripMargin,
+        defaultRule
+      ) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '"string"'. Int value expected"""
+        case v => fail(s"Expected 'UnknownFieldViolation' but got ${v.getClass}")
+
+      }
+
+    }
+
+    "Input Type field with default values" should {
+
+      "succeed by Int" in expectPassesSDL(
+        Document.emptyStub,
+        """input Test { a: Int = 1 } """,
+        defaultRule)
+
+      "succeed by String" in expectPassesSDL(
+        Document.emptyStub,
+        """input Test { a: String = "string" } """,
+        defaultRule)
+
+      "succeed by Float" in expectPassesSDL(
+        Document.emptyStub,
+        """input Test { a: Float = 1.1 } """,
+        defaultRule)
+
+      "succeed by Boolean" in expectPassesSDL(
+        Document.emptyStub,
+        """input Test { a: Boolean = true } """,
+        defaultRule)
+
+      "fail using string value on Int" in expectFailsSDL(
+        Document.emptyStub,
+        """input Test { a: Int = "string" } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '"string"'. Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using string value on Float" in expectFailsSDL(
+        Document.emptyStub,
+        """input test { a: Float = "string" } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Float', found '"string"'. Float or Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using string value on Boolean" in expectFailsSDL(
+        Document.emptyStub,
+        """input test { a: Boolean = "string" } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Boolean', found '"string"'. Boolean value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using int value value on String" in expectFailsSDL(
+        Document.emptyStub,
+        """input test { a: String = 1 } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'String', found '1'. String value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using float value value on Int" in expectFailsSDL(
+        Document.emptyStub,
+        """input test { a: Int = 1.1 } """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '1.1'. Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+      "fail using wrong field name of input type in default value of input field" in expectFailsSDL(
+        """
+          |input A {
+          | f1: Int
+          | f2: Float
+          |}
+          |""".stripMargin,
+        """
+          |input Test {
+          | a: A = {wrong: 50}
+          |}
+          |""".stripMargin,
+        defaultRule
+      ) {
+
+        case v: UnknownFieldViolation =>
+          v.simpleErrorMessage shouldBe "Field 'wrong' is not defined by type 'A'."
+        case v => fail(s"Expected 'UnknownFieldViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using wrong value of input type in default value of input field" in expectFailsSDL(
+        """
+          |input A {
+          | f1: Int
+          | f2: Float
+          |}
+          |""".stripMargin,
+        """
+          |input Test {
+          | a: A = {f1: "string"}
+          |}
+          |""".stripMargin,
+        defaultRule
+      ) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '"string"'. Int value expected"""
+        case v => fail(s"Expected 'UnknownFieldViolation' but got ${v.getClass}")
+
+      }
+
+    }
+
+    "Directive Type field with argument default values" should {
+      "succeed by Int" in expectPassesSDL(
+        Document.emptyStub,
+        """directive @test(a: Int = 1) on FIELD_DEFINITION""",
+        defaultRule)
+      "succeed by Boolean" in expectPassesSDL(
+        Document.emptyStub,
+        """directive @test(a: Boolean = true) on FIELD_DEFINITION""",
+        defaultRule)
+
+      "succeed by String" in expectPassesSDL(
+        Document.emptyStub,
+        """directive @test(a: String = "string") on FIELD_DEFINITION""",
+        defaultRule)
+
+      "succeed by Float" in expectPassesSDL(
+        Document.emptyStub,
+        """directive @test(a: Float = 1.1) on FIELD_DEFINITION""",
+        defaultRule)
+
+      "fail using string value on Int" in expectFailsSDL(
+        Document.emptyStub,
+        """directive @test(a: Int = "string") on FIELD_DEFINITION """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '"string"'. Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using string value on Float" in expectFailsSDL(
+        Document.emptyStub,
+        """directive @test(a: Float = "string") on FIELD_DEFINITION """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Float', found '"string"'. Float or Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using string value on Boolean" in expectFailsSDL(
+        Document.emptyStub,
+        """directive @test(a: Boolean = "string") on FIELD_DEFINITION """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Boolean', found '"string"'. Boolean value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using int value value on String" in expectFailsSDL(
+        Document.emptyStub,
+        """directive @test(a: String = 1) on FIELD_DEFINITION """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'String', found '1'. String value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using float value value on Int" in expectFailsSDL(
+        Document.emptyStub,
+        """directive @test(a: Int = 1.1) on FIELD_DEFINITION """,
+        defaultRule) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '1.1'. Int value expected"""
+        case v => fail(s"Expected 'BadValueViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using wrong field name of input type on object field argument" in expectFailsSDL(
+        """
+          |input A {
+          | f1: Int
+          | f2: Float
+          |}
+          |""".stripMargin,
+        """directive @test(a: A = {wrong: 50}) on FIELD_DEFINITION""",
+        defaultRule
+      ) {
+
+        case v: UnknownFieldViolation =>
+          v.simpleErrorMessage shouldBe "Field 'wrong' is not defined by type 'A'."
+        case v => fail(s"Expected 'UnknownFieldViolation' but got ${v.getClass}")
+
+      }
+
+      "fail using wrong value of input type on object field argument" in expectFailsSDL(
+        """
+          |input A {
+          | f1: Int
+          | f2: Float
+          |}
+          |""".stripMargin,
+        """directive @test(a: A = {f1: "string"}) on FIELD_DEFINITION""",
+        defaultRule
+      ) {
+
+        case v: BadValueViolation =>
+          v.simpleErrorMessage shouldBe """Expected type 'Int', found '"string"'. Int value expected"""
+        case v => fail(s"Expected 'UnknownFieldViolation' but got ${v.getClass}")
+
+      }
+
+    }
   }
 }

@@ -7,7 +7,7 @@ import sangria.util.SimpleGraphQlSupport._
 
 import scala.util.Success
 import org.scalatest.matchers.should.Matchers
-
+import sangria.ast.Document
 import sangria.util.tag.@@
 import sangria.marshalling.FromInput.CoercedScalaResult
 
@@ -420,6 +420,40 @@ trait ValidationSupport extends Matchers {
 
   def expectFailsSimple(query: String, expectedErrors: (String, Seq[Pos])*) =
     expectInvalid(schema, defaultRule.get :: Nil, query, expectedErrors)
+
+  def expectFailsSDL(initialSchemaSDL: String, sdlUnderTest: String, v: Option[ValidationRule])(
+      violationCheck: Violation => Unit): Unit = {
+    val Success(doc) = QueryParser.parse(initialSchemaSDL)
+
+    expectFailsSDL(doc.merge(Document.emptyStub), sdlUnderTest, v)(violationCheck)
+  }
+
+  def expectFailsSDL(initialSchemaDoc: Document, sdlUnderTest: String, v: Option[ValidationRule])(
+      violationCheck: Violation => Unit): Unit = {
+    val schema = Schema.buildFromAst(initialSchemaDoc)
+    val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
+    val violations = validator(v.toList).validateQuery(schema, docUnderTest)
+    violations shouldNot be(empty)
+    violations.size shouldBe 1
+    violationCheck(violations.head)
+  }
+
+  def expectPassesSDL(
+      initialSchemaSDL: String,
+      sdlUnderTest: String,
+      v: Option[ValidationRule]): Unit = {
+    val Success(doc) = QueryParser.parse(initialSchemaSDL)
+    expectPassesSDL(doc.merge(Document.emptyStub), sdlUnderTest, v)
+  }
+  def expectPassesSDL(
+      initialSchemaDoc: Document,
+      sdlUnderTest: String,
+      v: Option[ValidationRule]): Unit = {
+    val schema = Schema.buildFromAst(initialSchemaDoc)
+    val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
+    val violations = validator(v.toList).validateQuery(schema, docUnderTest)
+    violations shouldBe empty
+  }
 
   def validator(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
 }
