@@ -82,7 +82,7 @@ package object schema {
     "Float",
     description = Some(
       "The `Float` scalar type represents signed double-precision fractional " +
-        "values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."),
+        "values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754)."),
     coerceOutput = (v, _) =>
       // .isNaN and .isInfinity box, we explicitly avoid that here
       if (java.lang.Double.isNaN(v) || java.lang.Double.isInfinite(v))
