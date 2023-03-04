@@ -234,7 +234,7 @@ lazy val sangriaTestCatsEffect = project
     name := "sangria-test-cats-effect",
     description := "Tests with Cats Effect",
     libraryDependencies ++= List(
-      "org.typelevel" %% "cats-effect" % "3.4.7" % Test,
+      "org.typelevel" %% "cats-effect" % "3.4.8" % Test,
       "org.sangria-graphql" %% "sangria-circe" % "1.3.2" % Test
     )
   )
