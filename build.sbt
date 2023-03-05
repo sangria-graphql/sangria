@@ -153,7 +153,7 @@ lazy val core = project
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.1" % Test,
-      "eu.timepit" %% "refined" % "0.10.1" % Test,
+      "eu.timepit" %% "refined" % "0.10.2" % Test,
       // CATs
       ("net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test).cross(CrossVersion.for3Use2_13),
       "io.github.classgraph" % "classgraph" % "4.8.155" % Test
