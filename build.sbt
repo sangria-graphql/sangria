@@ -19,6 +19,7 @@ ThisBuild / githubWorkflowBuildPreamble ++= List(
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
   Seq(RefPredicate.StartsWith(Ref.Tag("v")))
+ThisBuild / versionScheme := Some("early-semver")
 
 ThisBuild / githubWorkflowPublish := Seq(
   WorkflowStep.Sbt(
