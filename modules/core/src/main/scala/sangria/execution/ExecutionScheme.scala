@@ -14,11 +14,14 @@ sealed trait ExecutionScheme {
   def flatMapFuture[Ctx, Res, T](future: Future[T])(resultFn: T => Result[Ctx, Res])(implicit
       ec: ExecutionContext): Result[Ctx, Res]
   def extended: Boolean
+  def effectScheme(ec: ExecutionContext): EffectScheme
 }
 
 object ExecutionScheme extends AlternativeExecutionScheme {
   implicit object Default extends ExecutionScheme {
     type Result[Ctx, Res] = Future[Res]
+
+    override def effectScheme(ec: ExecutionContext): EffectScheme = new FutureEffectScheme()(ec)
 
     def failed[Ctx, Res](error: Throwable): Result[Ctx, Res] =
       Future.failed(error)
@@ -46,9 +49,11 @@ trait EffectOps[F[_]] {
 
 @ApiMayChange
 class EffectBasedExecutionScheme[F[_]](
-    ops: EffectOps[F]
+    ops: EffectOps[F],
+    effect: EffectScheme
 ) extends ExecutionScheme {
   override type Result[Ctx, Res] = F[Res]
+  override def effectScheme(ec: ExecutionContext): EffectScheme = effect
   override def failed[Ctx, Res](error: Throwable): Result[Ctx, Res] =
     ops.failed(error)
   override def onComplete[Ctx, Res](result: Result[Ctx, Res])(op: => Unit)(implicit
@@ -56,9 +61,6 @@ class EffectBasedExecutionScheme[F[_]](
   override def flatMapFuture[Ctx, Res, T](future: Future[T])(resultFn: T => Result[Ctx, Res])(
       implicit ec: ExecutionContext): Result[Ctx, Res] =
     ops.flatMapFuture(future)(resultFn)
-  def mapEffect[Ctx, Res, T](future: Future[(Ctx, T)])(f: (Ctx, T) => Res)(implicit
-      ec: ExecutionContext): F[Res] =
-    ops.map(future) { case (ctx, in) => f(ctx, in) }
 
   override def extended: Boolean = false
 }
@@ -70,6 +72,7 @@ trait AlternativeExecutionScheme {
 
   implicit object Extended extends ExecutionScheme {
     type Result[Ctx, T] = Future[ExecutionResult[Ctx, T]]
+    override def effectScheme(ec: ExecutionContext): EffectScheme = new FutureEffectScheme()(ec)
 
     def failed[Ctx, Res](error: Throwable): Result[Ctx, Res] =
       Future.failed(error)
@@ -93,6 +96,7 @@ trait AlternativeExecutionScheme {
   } =
     new ExecutionScheme with StreamBasedExecutionScheme[S] {
       type Result[Ctx, T] = S[T]
+      override def effectScheme(ec: ExecutionContext): EffectScheme = new FutureEffectScheme()(ec)
 
       def subscriptionStream = stream
       def extended = false
@@ -115,6 +119,7 @@ trait AlternativeExecutionScheme {
   } =
     new ExecutionScheme with StreamBasedExecutionScheme[S] {
       type Result[Ctx, T] = S[ExecutionResult[Ctx, T]]
+      override def effectScheme(ec: ExecutionContext): EffectScheme = new FutureEffectScheme()(ec)
 
       def subscriptionStream = stream
       def extended = true

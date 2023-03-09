@@ -8,6 +8,7 @@ import sangria.ast.SourceMapper
 import sangria.schema._
 import sangria.streaming.SubscriptionStream
 
+import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
@@ -32,7 +33,7 @@ class Resolver[Ctx](
     validationTiming: TimeMeasurement,
     queryReducerTiming: TimeMeasurement,
     queryAst: ast.Document
-)(implicit executionContext: ExecutionContext) {
+)(implicit executionContext: ExecutionContext, effectScheme: EffectScheme) {
   val resultResolver = new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
   val toScalarMiddleware = Middleware.composeToScalarMiddleware(middleware.map(_._2), userContext)
 
@@ -45,17 +46,22 @@ class Resolver[Ctx](
       collectActionsPar(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty, userContext)
 
     handleScheme(
-      processFinalResolve(
-        resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered))
-        .map(_ -> userContext),
-      scheme)
+      effectScheme.map(
+        processFinalResolve(
+          resolveActionsPar(ExecutionPath.empty, tpe, actions, userContext, fields.namesOrdered)))(
+        _ -> userContext),
+      scheme
+    )
   }
 
   def resolveFieldsSeq(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
-    val result = resolveSeq(ExecutionPath.empty, tpe, value, fields, ErrorRegistry.empty)
+    val result = resolveSeq(ExecutionPath.empty, tpe, value, fields)
 
-    handleScheme(result.flatMap(res => processFinalResolve(res._1).map(_ -> res._2)), scheme)
+    handleScheme(
+      effectScheme.flatMap(result)(res =>
+        effectScheme.map(processFinalResolve(res._1))(_ -> res._2)),
+      scheme)
   }
 
   def resolveFieldsSubs(tpe: ObjectType[Ctx, _], value: Any, fields: CollectedFields)(
@@ -120,62 +126,68 @@ class Resolver[Ctx](
         throw new IllegalStateException(s"Unsupported execution scheme: $s")
     }
 
-  def handleScheme(
-      result: Future[((Vector[RegisteredError], marshaller.Node), Ctx)],
+  private def handleScheme(
+      result: effectScheme.F[((Vector[RegisteredError], marshaller.Node), Ctx)],
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = scheme match {
     case ExecutionScheme.Default =>
-      result.map { case ((_, res), _) => res }.asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
+      effectScheme
+        .map(result) { case ((_, res), _) => res }
+        .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case ExecutionScheme.Extended =>
-      result
-        .map { case ((errors, res), uc) =>
+      effectScheme
+        .map(result) { case ((errors, res), uc) =>
           ExecutionResult(uc, res, errors, middleware, validationTiming, queryReducerTiming)
         }
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case s: ExecutionScheme.StreamBasedExecutionScheme[_] =>
       s.subscriptionStream
-        .singleFuture(result.map {
+        .singleFuture(effectScheme.toFuture(effectScheme.map(result) {
           case ((errors, res), uc) if s.extended =>
             ExecutionResult(uc, res, errors, middleware, validationTiming, queryReducerTiming)
           case ((_, res), _) => res
-        })
+        }))
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case s: EffectBasedExecutionScheme[_] =>
-      s.mapEffect(result.map(_.swap)) { case (_, in) => in._2 }
+      effectScheme
+        .map(result) { case ((_, res), _) => res }
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case s =>
       throw new IllegalStateException(s"Unsupported execution scheme: $s")
   }
 
-  def processFinalResolve(resolve: Resolve) = resolve match {
-    case Result(errors, data, _) =>
-      Future.successful(
-        errors.originalErrors ->
-          marshalResult(
-            data.asInstanceOf[Option[resultResolver.marshaller.Node]],
-            marshalErrors(errors),
-            marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]],
-            beforeExecution = false
-          ).asInstanceOf[marshaller.Node])
-
-    case dr: DeferredResult =>
-      immediatelyResolveDeferred(
-        userContext,
-        dr,
-        _.map { case (Result(errors, data, _)) =>
+  private def processFinalResolve(
+      resolve: Resolve): effectScheme.F[(Vector[RegisteredError], marshaller.Node)] =
+    resolve match {
+      case Result(errors, data, _) =>
+        effectScheme.success(
           errors.originalErrors ->
             marshalResult(
               data.asInstanceOf[Option[resultResolver.marshaller.Node]],
               marshalErrors(errors),
               marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]],
               beforeExecution = false
-            ).asInstanceOf[marshaller.Node]
-        }
-      )
-  }
+            ).asInstanceOf[marshaller.Node])
+
+      case dr: DeferredResult =>
+        effectScheme.fromFuture(
+          immediatelyResolveDeferred(
+            userContext,
+            dr,
+            _.map { case (Result(errors, data, _)) =>
+              errors.originalErrors ->
+                marshalResult(
+                  data.asInstanceOf[Option[resultResolver.marshaller.Node]],
+                  marshalErrors(errors),
+                  marshallExtensions.asInstanceOf[Option[resultResolver.marshaller.Node]],
+                  beforeExecution = false
+                ).asInstanceOf[marshaller.Node]
+            }
+          ))
+    }
 
   private def marshallExtensions: Option[marshaller.Node] = {
     val extensions =
@@ -201,8 +213,28 @@ class Resolver[Ctx](
     res
   }
 
-  private def resolveDeferredWithGrouping(deferred: Vector[Future[Vector[Defer]]]) =
+  private def immediatelyResolveDeferredF[T](
+      uc: Ctx,
+      dr: DeferredResult,
+      fn: effectScheme.F[Result] => effectScheme.F[T]): effectScheme.F[T] = {
+    val res = fn(effectScheme.fromFuture(dr.futureValue))
+
+    // TODO: we should something with result
+    val result =
+      effectScheme.map(resolveDeferredWithGroupingF(dr.deferred.map(effectScheme.fromFuture)))(
+        groups => groups.foreach(group => resolveDeferred(uc, group)))
+
+    res
+  }
+
+  private def resolveDeferredWithGrouping(
+      deferred: Vector[Future[Vector[Defer]]]): Future[Vector[Vector[Defer]]] =
     Future.sequence(deferred).map(listOfDef => deferredResolver.groupDeferred(listOfDef.flatten))
+
+  private def resolveDeferredWithGroupingF(
+      deferred: Vector[effectScheme.F[Vector[Defer]]]): effectScheme.F[Vector[Vector[Defer]]] =
+    effectScheme.map(effectScheme.sequence(deferred))(listOfDef =>
+      deferredResolver.groupDeferred(listOfDef.flatten))
 
   private type Actions = (
       ErrorRegistry,
@@ -210,7 +242,7 @@ class Resolver[Ctx](
           Vector[ast.Field],
           Option[(Field[Ctx, _], Option[MappedCtxUpdate[Ctx, Any, Any]], LeafAction[Ctx, _])])]])
 
-  def resolveSubs[S[_]](
+  private def resolveSubs[S[_]](
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       value: Any,
@@ -259,15 +291,16 @@ class Resolver[Ctx](
             val resMap = marshaller.emptyMapNode(Seq(origField.outputName))
 
             Some(
-              marshallResult(Result(
-                updatedErrors,
-                Some(
-                  marshaller.addMapNodeElem(
-                    resMap.asInstanceOf[marshaller.MapBuilder],
-                    fields.head.outputName,
-                    marshaller.nullNode,
-                    optional = isOptional(tpe, origField.name)))
-              )))
+              marshallResult(
+                Result(
+                  updatedErrors,
+                  Some(
+                    marshaller.addMapNodeElem(
+                      resMap,
+                      fields.head.outputName,
+                      marshaller.nullNode,
+                      optional = isOptional(tpe, origField.name)))
+                )))
           case ErrorFieldResolution(updatedErrors) =>
             Some(marshallResult(Result(updatedErrors, None)))
           case StreamFieldResolution(updatedErrors, svalue, standardFn) =>
@@ -311,61 +344,63 @@ class Resolver[Ctx](
     }
 
     stream -> stream.mapFuture(stream.merge(fieldStreams.asInstanceOf[Vector[S[Result]]]))(r =>
-      processFinalResolve(r.buildValue))
+      effectScheme.toFuture(processFinalResolve(r.buildValue)))
   }
 
-  def resolveSeq(
+  private def resolveSeq(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       value: Any,
-      fields: CollectedFields,
-      errorReg: ErrorRegistry): Future[(Result, Ctx)] =
-    fields.fields
+      fields: CollectedFields): effectScheme.F[(Result, Ctx)] = {
+    val result = fields.fields
       .foldLeft(
-        Future.successful(
+        effectScheme.success(
           (
             Result(ErrorRegistry.empty, Some(marshaller.emptyMapNode(fields.namesOrdered))),
             userContext))) { case (future, elem) =>
-        future.flatMap { resAndCtx =>
+        effectScheme.flatMap(future) { resAndCtx =>
           (resAndCtx, elem) match {
-            case (acc @ (Result(_, None, _), _), _) => Future.successful(acc)
+            case (acc @ (Result(_, None, _), _), _) => effectScheme.success(acc)
             case (acc, CollectedField(name, origField, _))
                 if tpe.getField(schema, origField.name).isEmpty =>
-              Future.successful(acc)
+              effectScheme.success(acc)
             case (
                   (Result(errors, s @ Some(acc), _), uc),
                   CollectedField(name, origField, Failure(error))) =>
-              Future.successful(Result(
-                errors.add(path.add(origField, tpe), error),
-                if (isOptional(tpe, origField.name))
-                  Some(
-                    marshaller.addMapNodeElem(
-                      acc.asInstanceOf[marshaller.MapBuilder],
-                      origField.outputName,
-                      marshaller.nullNode,
-                      optional = true))
-                else None
-              ) -> uc)
+              effectScheme.success(
+                Result(
+                  errors.add(path.add(origField, tpe), error),
+                  if (isOptional(tpe, origField.name))
+                    Some(
+                      marshaller.addMapNodeElem(
+                        acc.asInstanceOf[marshaller.MapBuilder],
+                        origField.outputName,
+                        marshaller.nullNode,
+                        optional = true))
+                  else None
+                ) -> uc)
             case (
                   (accRes @ Result(errors, s @ Some(acc), _), uc),
                   CollectedField(name, origField, Success(fields))) =>
-              resolveSingleFieldSeq(
-                path,
-                uc,
-                tpe,
-                value,
-                errors,
-                name,
-                origField,
-                fields,
-                accRes,
-                acc)
+              effectScheme.fromFuture(
+                resolveSingleFieldSeq(
+                  path,
+                  uc,
+                  tpe,
+                  value,
+                  errors,
+                  name,
+                  origField,
+                  fields,
+                  accRes,
+                  acc))
           }
         }
       }
-      .map { case (res, ctx) =>
-        res.buildValue -> ctx
-      }
+    effectScheme.map(result) { case (res, ctx) =>
+      res.buildValue -> ctx
+    }
+  }
 
   private def resolveSingleFieldSeq(
       path: ExecutionPath,
@@ -699,7 +734,7 @@ class Resolver[Ctx](
     }
   }
 
-  def collectActionsPar(
+  private def collectActionsPar(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       value: Any,
@@ -782,7 +817,7 @@ class Resolver[Ctx](
             "Subscription values are not supported for normal operations"))))
     }
 
-  def resolveActionsPar(
+  private def resolveActionsPar(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       actions: Actions,
@@ -1160,9 +1195,9 @@ class Resolver[Ctx](
     }
   }
 
-  private def resolveDeferred(uc: Ctx, toResolve: Vector[Defer]) =
+  private def resolveDeferred(uc: Ctx, toResolve: Vector[Defer]): Unit =
     if (toResolve.nonEmpty) {
-      def findActualDeferred(deferred: Deferred[_]): Deferred[_] = deferred match {
+      @tailrec def findActualDeferred(deferred: Deferred[_]): Deferred[_] = deferred match {
         case MappingDeferred(d, _) => findActualDeferred(d)
         case d => d
       }
@@ -1209,7 +1244,7 @@ class Resolver[Ctx](
       }
     }
 
-  def resolveValue(
+  private def resolveValue(
       path: ExecutionPath,
       astFields: Vector[ast.Field],
       tpe: OutputType[_],
@@ -1370,10 +1405,10 @@ class Resolver[Ctx](
         }
     }
 
-  def isUndefinedValue(value: Any) =
+  private def isUndefinedValue(value: Any) =
     value == null || value == None
 
-  def resolveSimpleListValue(
+  private def resolveSimpleListValue(
       simpleRes: Iterable[Result],
       path: ExecutionPath,
       optional: Boolean,
@@ -1704,7 +1739,7 @@ class Resolver[Ctx](
   def isOptional(tpe: OutputType[_]): Boolean =
     tpe.isInstanceOf[OptionType[_]]
 
-  def nullForNotNullTypeError(position: Option[AstLocation]) =
+  private def nullForNotNullTypeError(position: Option[AstLocation]) =
     new ExecutionError(
       "Cannot return null for non-nullable type",
       exceptionHandler,
@@ -1774,9 +1809,9 @@ class Resolver[Ctx](
               optional = false)
       )
 
-    def nodeValue = value.asInstanceOf[Option[marshaller.Node]]
-    def builderValue = value.asInstanceOf[Option[marshaller.MapBuilder]]
-    def buildValue = copy(value = builderValue.map(marshaller.mapNode))
+    def nodeValue: Option[marshaller.Node] = value.asInstanceOf[Option[marshaller.Node]]
+    private def builderValue = value.asInstanceOf[Option[marshaller.MapBuilder]]
+    def buildValue: Result = copy(value = builderValue.map(marshaller.mapNode))
 
     def appendErrors(
         path: ExecutionPath,
@@ -1786,7 +1821,7 @@ class Resolver[Ctx](
       else this
   }
 
-  case class ParentDeferredContext(uc: Ctx, expectedBranches: Int) {
+  private case class ParentDeferredContext(uc: Ctx, expectedBranches: Int) {
     val children =
       Vector.fill(expectedBranches)(ChildDeferredContext(Promise[Vector[Future[Vector[Defer]]]]()))
 
@@ -1816,13 +1851,13 @@ class Resolver[Ctx](
   }
 
   sealed trait FieldResolution
-  case class ErrorFieldResolution(errors: ErrorRegistry) extends FieldResolution
-  case class StandardFieldResolution(
+  private case class ErrorFieldResolution(errors: ErrorRegistry) extends FieldResolution
+  private case class StandardFieldResolution(
       errors: ErrorRegistry,
       action: LeafAction[Ctx, Any],
       ctxUpdate: Option[MappedCtxUpdate[Ctx, Any, Any]])
       extends FieldResolution
-  case class StreamFieldResolution[Val, S[_]](
+  private case class StreamFieldResolution[Val, S[_]](
       errors: ErrorRegistry,
       value: SubscriptionValue[Ctx, Val, S],
       standardResolution: Any => StandardFieldResolution)
