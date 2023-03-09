@@ -138,7 +138,38 @@ lazy val core = project
       ProblemFilters.exclude[IncompatibleMethTypeProblem](
         "sangria.execution.Resolver.resolveSimpleListValue"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.subs"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.apply")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.apply"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.execution.ExecutionScheme.effectScheme"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver.handleScheme"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.processFinalResolve"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver.resolveSeq"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.ParentDeferredContext"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.ErrorFieldResolution"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.StandardFieldResolution"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.StreamFieldResolution"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver.resolveSubs"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.collectActionsPar"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.resolveActionsPar"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver.resolveValue"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.resolveValue$default$7"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.isUndefinedValue"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.resolveSimpleListValue"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver.nullForNotNullTypeError"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.Resolver#Result.builderValue")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
