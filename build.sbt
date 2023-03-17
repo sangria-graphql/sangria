@@ -238,7 +238,9 @@ lazy val sangriaTestCatsEffect = project
     description := "Tests with Cats Effect",
     libraryDependencies ++= List(
       "org.typelevel" %% "cats-effect" % "3.4.8" % Test,
-      "org.sangria-graphql" %% "sangria-circe" % "1.3.2" % Test
+      "org.sangria-graphql" %% "sangria-circe" % "1.3.2" % Test,
+      "io.circe" %% "circe-parser" % "0.14.1" % Test,
+      "io.circe" %% "circe-literal" % "0.14.1" % Test
     )
   )
   .disablePlugins(MimaPlugin)
