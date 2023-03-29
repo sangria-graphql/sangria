@@ -522,23 +522,8 @@ object ContainerMembersValidator extends SchemaElementValidator {
 
   override def validateObjectType(
       schema: Schema[_, _],
-      tpe: ObjectType[_, _]): Vector[Violation] = {
-    val generalErrors = validateObjectLikeType(schema, tpe, "Object")
-
-    val nonUnique =
-      tpe.interfaces.groupBy(_.name).iterator.collect {
-        case (intName, dup) if dup.size > 1 =>
-          val astMembers = tpe.astNodes.collect {
-            case astUnion: ObjectTypeDefinition => astUnion.interfaces
-            case astUnion: ObjectTypeExtensionDefinition => astUnion.interfaces
-          }
-          val locations = astMembers.flatten.filter(_.name == intName).flatMap(_.location).toList
-
-          NonUniqueInterfacesViolation(tpe.name, intName, sourceMapper(schema), locations)
-      }
-
-    generalErrors ++ nonUnique
-  }
+      tpe: ObjectType[_, _]): Vector[Violation] = 
+    validateObjectLikeType(schema, tpe, "Object")
 
   override def validateInterfaceType(
       schema: Schema[_, _],
@@ -554,7 +539,19 @@ object ContainerMembersValidator extends SchemaElementValidator {
         Vector(EmptyFieldsViolation(kind, tpe.name, sourceMapper(schema), location(tpe)))
       else Vector.empty
 
-    val nonUnique =
+    val nonUniqueInterfaces =
+      tpe.interfaces.groupBy(_.name).iterator.collect {
+        case (intName, dup) if dup.size > 1 =>
+          val astMembers = tpe.astNodes.collect {
+            case astUnion: ObjectTypeDefinition => astUnion.interfaces
+            case astUnion: ObjectTypeExtensionDefinition => astUnion.interfaces
+          }
+          val locations = astMembers.flatten.filter(_.name == intName).flatMap(_.location).toList
+
+          NonUniqueInterfacesViolation(tpe.name, intName, sourceMapper(schema), locations)
+      }
+
+    val nonUniqueFields =
       tpe.ownFields.groupBy(_.name).iterator.collect {
         case (fieldName, dup) if dup.size > 1 =>
           NonUniqueFieldsViolation(
@@ -565,7 +562,7 @@ object ContainerMembersValidator extends SchemaElementValidator {
             dup.flatMap(location).toList)
       }
 
-    emptyErrors ++ nonUnique
+    emptyErrors ++ nonUniqueFields ++ nonUniqueInterfaces
   }
 
   override def validateField(
