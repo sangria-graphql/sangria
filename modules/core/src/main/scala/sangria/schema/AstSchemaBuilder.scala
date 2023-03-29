@@ -86,6 +86,15 @@ trait AstSchemaBuilder[Ctx] {
       existing: InterfaceType[Ctx, _],
       extensions: List[ast.InterfaceTypeExtensionDefinition],
       fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
+      mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any]
+
+  @deprecated
+  def extendInterfaceType(
+      origin: MatOrigin,
+      existing: InterfaceType[Ctx, _],
+      extensions: List[ast.InterfaceTypeExtensionDefinition],
+      fields: () => List[Field[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any]
 
   def buildUnionType(
@@ -478,13 +487,21 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
       extensions: List[ast.InterfaceTypeExtensionDefinition],
       fields: () => List[Field[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any] =
-    existing.copy(
-      fieldsFn = fields,
-      manualPossibleTypes = () => Nil,
-      interfaces = Nil,
-      astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
-      astNodes = existing.astNodes ++ extensions
-    )
+    extendInterfaceType(origin, existing, extensions, fields, List.empty, mat)
+
+  def extendInterfaceType(
+      origin: MatOrigin,
+      existing: InterfaceType[Ctx, _],
+      extensions: List[ast.InterfaceTypeExtensionDefinition],
+      fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
+      mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any] = existing.copy(
+    fieldsFn = fields,
+    manualPossibleTypes = () => Nil,
+    interfaces = interfaces,
+    astDirectives = existing.astDirectives ++ extensions.flatMap(_.directives),
+    astNodes = existing.astNodes ++ extensions
+  )
 
   def buildUnionType(
       origin: MatOrigin,

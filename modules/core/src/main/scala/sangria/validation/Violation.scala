@@ -1034,6 +1034,15 @@ case class NonUniqueInterfacesViolation(
     s"Object type '$typeName' can implement interface '$interfaceName' only once."
 }
 
+case class ImplementSelfViolation(
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation])
+    extends AstNodeViolation {
+  lazy val simpleErrorMessage =
+    s"Interface '$typeName' cannot implement itself."
+}
+
 case class NonUniqueFieldArgumentsViolation(
     typeName: String,
     fieldName: String,

@@ -234,6 +234,27 @@ class AstSchemaMaterializerSpec
         cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
+      "Simple type with multiple interfaces in hierarchy" in {
+        val schema =
+          """schema {
+            |  query: Hello
+            |}
+            |
+            |interface Bar implements Foo {
+            |  str: String
+            |}
+            |
+            |interface Foo {
+            |  str: String
+            |}
+            |
+            |type Hello implements Bar & Foo {
+            |  str: String
+            |}""".stripMargin
+
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
+      }
+
       "Simple output enum" in {
         val schema =
           """schema {
@@ -587,6 +608,52 @@ class AstSchemaMaterializerSpec
             }
 
             type Hello implements Bar {
+              foo: String
+            }
+          """
+
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+
+        error.getMessage should include("Unknown type 'Bar'.")
+      }
+
+      "Self in interface list" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Hello
+            }
+
+            type Hello implements Bar {
+              foo: String
+            }
+
+            interface Bar implements Bar {
+              foo: String
+            }
+          """
+
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+
+        error.getMessage should include("Interface 'Bar' cannot implement itself")
+      }
+
+      "Loop in interface list" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Hello
+            }
+
+            type Hello implements Bar & Foo {
+              foo: String
+            }
+
+            interface Bar implements Foo {
+              foo: String
+            }
+
+            interface Foo implements Bar {
               foo: String
             }
           """

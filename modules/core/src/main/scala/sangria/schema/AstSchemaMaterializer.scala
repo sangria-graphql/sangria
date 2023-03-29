@@ -697,8 +697,9 @@ class AstSchemaMaterializer[Ctx] private (
       tpe,
       extensions.toList,
       () => buildFields(origin, tpe, tpe.fields, extensions).toList,
-      extendInterfaces(origin, tpe, extensions),
-      this)
+      buildInterfaces(origin, tpe, tpe.interfaces, extensions).toList,
+      this
+    )
   }
 
   def extendEnumType(origin: MatOrigin, tpe: EnumType[_]) = {
@@ -740,6 +741,7 @@ class AstSchemaMaterializer[Ctx] private (
       tpe,
       extensions.toList,
       () => extendFields(origin, tpe, extensions),
+      extendInterfaces(origin, tpe, extensions),
       this)
   }
 
@@ -748,8 +750,29 @@ class AstSchemaMaterializer[Ctx] private (
       tpe: ast.ObjectTypeDefinition,
       interfaces: Vector[ast.NamedType],
       extensions: Vector[ast.ObjectTypeExtensionDefinition]): Vector[InterfaceType[Ctx, Any]] = {
+
     val extraInts = extensions.flatMap(_.interfaces)
     val allInts = interfaces ++ extraInts
+
+    allInts.map(getInterfaceType(origin, _))
+  }
+
+  def buildInterfaces(
+      origin: MatOrigin,
+      tpe: ast.InterfaceTypeDefinition,
+      interfaces: Vector[ast.NamedType],
+      extensions: Vector[ast.InterfaceTypeExtensionDefinition]): Vector[InterfaceType[Ctx, Any]] = {
+
+    val extraInts = extensions.flatMap(_.interfaces)
+    val allInts = interfaces ++ extraInts
+
+    // Validate for implementing self
+    allInts.foreach { i =>
+      if (i.name == tpe.name)
+        throw MaterializedSchemaValidationError(
+          Vector(ImplementSelfViolation(tpe.name, document.sourceMapper, i.location.toList))
+        )
+    }
 
     allInts.map(getInterfaceType(origin, _))
   }
@@ -768,12 +791,12 @@ class AstSchemaMaterializer[Ctx] private (
 
   def extendInterfaces(
       origin: MatOrigin,
-      tpe: ast.InterfaceTypeDefinition,
+      tpe: InterfaceType[Ctx, _],
       extensions: Vector[ast.InterfaceTypeExtensionDefinition]): List[InterfaceType[Ctx, Any]] = {
     val extraInts = extensions.flatMap(_.interfaces)
 
     val ei = extraInts.map(getInterfaceType(origin, _))
-    val oi = tpe.interfaces.map(getInterfaceType(origin, _))
+    val oi = tpe.interfaces.map(getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any]])
 
     (ei ++ oi).toList
   }
