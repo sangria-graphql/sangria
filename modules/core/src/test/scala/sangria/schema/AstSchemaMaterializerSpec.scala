@@ -617,6 +617,28 @@ class AstSchemaMaterializerSpec
         error.getMessage should include("Unknown type 'Bar'.")
       }
 
+      "Missing declaration of inerithed field" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Hello
+            }
+
+            interface Bar {
+              bar: String
+            }
+
+            type Hello implements Bar {
+              foo: String
+            }
+          """
+
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+
+        error.getMessage should include(
+          "Object type 'Hello' misses the declaration of field 'foo'.")
+      }
+
       "Self in interface list" in {
         val ast =
           graphql"""
