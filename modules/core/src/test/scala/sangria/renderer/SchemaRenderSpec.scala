@@ -1136,6 +1136,31 @@ class SchemaRenderSpec
         |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
+    "render interface implementing interfaces types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend interface Foo@someDir(arg: [
+            "foo"
+          ])
+
+          extend interface FooWithFields implements Bar @someDir(arg: 1)@anotherDir{
+            "some docs"
+            foo(arg: Int = 1@hello): Bar @dir(test:true)
+          } 
+        """
+
+      cycleRender(schema) should equal("""
+        |# just testing
+        |extend interface Foo @someDir(arg: ["foo"])
+        |
+        |extend interface FooWithFields implements Bar @someDir(arg: 1) @anotherDir {
+        |  "some docs"
+        |  foo(arg: Int = 1 @hello): Bar @dir(test: true)
+        |}
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
+    }
+
     "render union types" in {
       val schema =
         graphql"""

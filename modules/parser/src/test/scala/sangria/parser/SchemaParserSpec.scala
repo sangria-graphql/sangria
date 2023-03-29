@@ -1530,15 +1530,15 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             Vector(
               OperationTypeDefinition(
                 OperationType.Query,
-                NamedType("Query", Some(AstLocation("", 78, 4, 20))),
+                NamedType("Query", Some(AstLocation(78, 4, 20))),
                 Vector.empty,
-                Some(AstLocation("", 71, 4, 13)))),
+                Some(AstLocation(71, 4, 13)))),
             Vector(
               Directive(
                 "dir1",
                 Vector.empty,
                 Vector.empty,
-                Some(AstLocation("", 51, 3, 18))
+                Some(AstLocation(51, 3, 18))
               )),
             Some(
               StringValue(
@@ -1546,13 +1546,13 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                 false,
                 None,
                 Vector.empty,
-                Some(AstLocation("", 11, 2, 11)))),
+                Some(AstLocation(11, 2, 11)))),
             Vector.empty,
             Vector.empty,
-            Some(AstLocation("", 44, 3, 11))
+            Some(AstLocation(44, 3, 11))
           )),
           Vector.empty,
-          Some(AstLocation("", 11, 2, 11)),
+          Some(AstLocation(11, 2, 11)),
           None
         ))
     }
@@ -1580,65 +1580,65 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                   "dir4",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation("", 25, 2, 25))
+                  Some(AstLocation(25, 2, 25))
                 )),
               Vector.empty,
               Vector.empty,
-              Some(AstLocation("", 11, 2, 11))
+              Some(AstLocation(11, 2, 11))
             ),
             SchemaDefinition(
               Vector(
                 OperationTypeDefinition(
                   OperationType.Query,
-                  NamedType("Query", Some(AstLocation("", 76, 5, 20))),
+                  NamedType("Query", Some(AstLocation(76, 5, 20))),
                   Vector.empty,
-                  Some(AstLocation("", 69, 5, 13)))),
+                  Some(AstLocation(69, 5, 13)))),
               Vector(
                 Directive(
                   "dir1",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation("", 49, 4, 18))
+                  Some(AstLocation(49, 4, 18))
                 )),
               None,
               Vector.empty,
               Vector.empty,
-              Some(AstLocation("", 42, 4, 11))
+              Some(AstLocation(42, 4, 11))
             ),
             SchemaExtensionDefinition(
               Vector(
                 OperationTypeDefinition(
                   OperationType.Mutation,
-                  NamedType("Mutation", Some(AstLocation("", 167, 9, 23))),
+                  NamedType("Mutation", Some(AstLocation(167, 9, 23))),
                   Vector.empty,
-                  Some(AstLocation("", 157, 9, 13)))),
+                  Some(AstLocation(157, 9, 13)))),
               Vector(
                 Directive(
                   "dir2",
                   Vector.empty,
                   Vector.empty,
-                  Some(AstLocation("", 119, 8, 25))
+                  Some(AstLocation(119, 8, 25))
                 ),
                 Directive(
                   "dir3",
                   Vector(
                     Argument(
                       "test",
-                      BooleanValue(true, Vector.empty, Some(AstLocation("", 137, 8, 43))),
+                      BooleanValue(true, Vector.empty, Some(AstLocation(137, 8, 43))),
                       Vector.empty,
-                      Some(AstLocation("", 131, 8, 37))
+                      Some(AstLocation(131, 8, 37))
                     )),
                   Vector.empty,
-                  Some(AstLocation("", 125, 8, 31))
+                  Some(AstLocation(125, 8, 31))
                 )
               ),
               Vector.empty,
               Vector.empty,
-              Some(AstLocation("", 105, 8, 11))
+              Some(AstLocation(105, 8, 11))
             )
           ),
           Vector.empty,
-          Some(AstLocation("", 11, 2, 11)),
+          Some(AstLocation(11, 2, 11)),
           None
         ))
     }
@@ -1683,7 +1683,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
         ))
     }
 
-    "parse interface extending interface" in {
+    "Allow interface implementing interface" in {
 
       val ast = parseQuery("""
       |interface Node {
@@ -1755,6 +1755,128 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
               Vector(
                 NamedType("Node", Some(AstLocation(61, 6, 31)))
               )
+            )
+          ),
+          Vector.empty,
+          Some(AstLocation(1, 2, 1)),
+          None
+        )
+      )
+
+    }
+
+    "Allow extensions on interface implementing interface" in {
+
+      val ast = parseQuery("""
+      |interface Foo {
+      |  foo: String
+      |}
+      |
+      |interface Bar {
+      |  bar: Int
+      |}
+      |
+      |interface Baz implements Foo {
+      |  foo: String
+      |}
+      |
+      |extend interface Baz implements Bar {
+      |  baz: Boolean
+      |  bar: Int
+      |  foo: String
+      |}
+      """.stripMargin).get
+
+      ast.withoutSourceMapper should be(
+        Document(
+          Vector(
+            InterfaceTypeDefinition(
+              "Foo",
+              Vector(
+                FieldDefinition(
+                  "foo",
+                  NamedType("String", Some(AstLocation(24, 3, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(19, 3, 3)))),
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation(1, 2, 1)),
+              Vector.empty
+            ),
+            InterfaceTypeDefinition(
+              "Bar",
+              Vector(
+                FieldDefinition(
+                  "bar",
+                  NamedType("Int", Some(AstLocation(57, 7, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(52, 7, 3)))),
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation(34, 6, 1)),
+              Vector.empty
+            ),
+            InterfaceTypeDefinition(
+              "Baz",
+              Vector(
+                FieldDefinition(
+                  "foo",
+                  NamedType("String", Some(AstLocation(102, 11, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(97, 11, 3)))),
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation(64, 10, 1)),
+              Vector(NamedType("Foo", Some(AstLocation(89, 10, 26))))
+            ),
+            InterfaceTypeExtensionDefinition(
+              "Baz",
+              Vector(
+                FieldDefinition(
+                  "baz",
+                  NamedType("Boolean", Some(AstLocation(157, 15, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(152, 15, 3))),
+                FieldDefinition(
+                  "bar",
+                  NamedType("Int", Some(AstLocation(172, 16, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(167, 16, 3))),
+                FieldDefinition(
+                  "foo",
+                  NamedType("String", Some(AstLocation(183, 17, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(178, 17, 3)))
+              ),
+              Vector.empty,
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation(112, 14, 1)),
+              Vector(NamedType("Bar", Some(AstLocation(144, 14, 33))))
             )
           ),
           Vector.empty,
