@@ -795,6 +795,14 @@ class AstSchemaMaterializer[Ctx] private (
       extensions: Vector[ast.InterfaceTypeExtensionDefinition]): List[InterfaceType[Ctx, Any]] = {
     val extraInts = extensions.flatMap(_.interfaces)
 
+    // Validate for implementing self
+    extraInts.foreach { i =>
+      if (i.name == tpe.name)
+        throw MaterializedSchemaValidationError(
+          Vector(ImplementSelfViolation(tpe.name, document.sourceMapper, i.location.toList))
+        )
+    }
+
     val ei = extraInts.map(getInterfaceType(origin, _))
     val oi = tpe.interfaces.map(getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any]])
 
