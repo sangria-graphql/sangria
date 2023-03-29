@@ -61,7 +61,8 @@ case class IntrospectionInterfaceType(
     name: String,
     description: Option[String],
     fields: Seq[IntrospectionField],
-    possibleTypes: Seq[IntrospectionNamedTypeRef])
+    possibleTypes: Seq[IntrospectionNamedTypeRef],
+    interfaces: Seq[IntrospectionNamedTypeRef])
     extends IntrospectionType {
   val kind = TypeKind.Interface
 }

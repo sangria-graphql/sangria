@@ -411,16 +411,19 @@ private[parser] sealed trait TypeSystemDefinitions {
   }
 
   private[this] def InterfaceTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
-      Vector.empty))) ~ FieldsDefinition.? ~> ((descr, comment, location, name, dirs, fields) =>
-      ast.InterfaceTypeDefinition(
-        name,
-        fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector),
-        dirs,
-        descr,
-        comment,
-        fields.fold(Vector.empty[ast.Comment])(_._2),
-        location))
+    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
+      Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition.? ~> (
+      (descr, comment, location, name, interfaces, dirs, fields) =>
+        ast.InterfaceTypeDefinition(
+          name,
+          fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector),
+          dirs,
+          descr,
+          comment,
+          fields.fold(Vector.empty[ast.Comment])(_._2),
+          location,
+          interfaces
+        ))
   }
 
   private[this] def UnionTypeDefinition = rule {

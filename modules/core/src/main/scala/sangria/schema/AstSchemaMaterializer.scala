@@ -692,11 +692,13 @@ class AstSchemaMaterializer[Ctx] private (
       tpe: ast.InterfaceTypeDefinition): Option[InterfaceType[Ctx, Any]] = {
     val extensions = findInterfaceExtensions(tpe.name)
 
+    // TODO generate interfaces
     builder.buildInterfaceType(
       origin,
       tpe,
       extensions.toList,
       () => buildFields(origin, tpe, tpe.fields, extensions).toList,
+      extendInterfaces(origin, tpe, extensions),
       this)
   }
 
@@ -761,6 +763,18 @@ class AstSchemaMaterializer[Ctx] private (
 
     val ei = extraInts.map(getInterfaceType(origin, _))
     val oi = tpe.interfaces.map(getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any]])
+
+    (ei ++ oi).toList
+  }
+
+  def extendInterfaces(
+      origin: MatOrigin,
+      tpe: ast.InterfaceTypeDefinition,
+      extensions: Vector[ast.InterfaceTypeExtensionDefinition]): List[InterfaceType[Ctx, Any]] = {
+    val extraInts = extensions.flatMap(_.interfaces)
+
+    val ei = extraInts.map(getInterfaceType(origin, _))
+    val oi = tpe.interfaces.map(getInterfaceType(origin, _))
 
     (ei ++ oi).toList
   }

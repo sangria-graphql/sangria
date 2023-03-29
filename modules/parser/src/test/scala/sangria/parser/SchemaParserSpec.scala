@@ -1682,5 +1682,88 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
           None
         ))
     }
+
+    "parse interface extending interface" in {
+
+      val ast = parseQuery("""
+      |interface Node {
+      |  id: ID!
+      |}
+      |
+      |interface Resource implements Node {
+      |  id: ID!
+      |  url: String
+      |}
+      """.stripMargin).get
+
+      ast.withoutSourceMapper should be(
+        Document(
+          Vector(
+            InterfaceTypeDefinition(
+              "Node",
+              Vector(
+                FieldDefinition(
+                  "id",
+                  NotNullType(
+                    NamedType("ID", Some(AstLocation(24, 3, 7))),
+                    Some(AstLocation(24, 3, 7))
+                  ),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(20, 3, 3))
+                )
+              ),
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation(1, 2, 1)),
+              Vector.empty
+            ),
+            InterfaceTypeDefinition(
+              "Resource",
+              Vector(
+                FieldDefinition(
+                  "id",
+                  NotNullType(
+                    NamedType("ID", Some(AstLocation(74, 7, 7))),
+                    Some(AstLocation(74, 7, 7))
+                  ),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(70, 7, 3))
+                ),
+                FieldDefinition(
+                  "url",
+                  NamedType("String", Some(AstLocation(85, 8, 8))),
+                  Vector.empty,
+                  Vector.empty,
+                  None,
+                  Vector.empty,
+                  Some(AstLocation(80, 8, 3))
+                )
+              ),
+              Vector.empty,
+              None,
+              Vector.empty,
+              Vector.empty,
+              Some(AstLocation(31, 6, 1)),
+              Vector(
+                NamedType("Node", Some(AstLocation(61, 6, 31)))
+              )
+            )
+          ),
+          Vector.empty,
+          Some(AstLocation(1, 2, 1)),
+          None
+        )
+      )
+
+    }
+
   }
 }

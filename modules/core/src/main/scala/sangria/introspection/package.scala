@@ -274,8 +274,8 @@ package object introspection {
           resolve = _.value._2 match {
             case t: ObjectType[_, _] =>
               Some(t.allInterfaces.asInstanceOf[Vector[Type]].map(true -> _))
-            case _: InterfaceType[_, _] =>
-              Some(Vector.empty)
+            case t: InterfaceType[_, _] =>
+              Some(t.interfaces.asInstanceOf[List[Type]].map(true -> _))
             case _ => None
           }
         ),

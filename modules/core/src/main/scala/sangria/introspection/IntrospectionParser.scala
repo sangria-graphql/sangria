@@ -65,7 +65,11 @@ object IntrospectionParser {
       possibleTypes = mapFieldOpt(tpe, "possibleTypes")
         .map(um.getListValue)
         .getOrElse(Vector.empty)
-        .map(i => parseNamedTypeRef(i, path :+ "possibleTypes"))
+        .map(i => parseNamedTypeRef(i, path :+ "possibleTypes")),
+      interfaces = mapFieldOpt(tpe, "interfaces")
+        .map(um.getListValue)
+        .getOrElse(Vector.empty)
+        .map(i => parseNamedTypeRef(i, path :+ "interfaces"))
     )
 
   private def parseUnion[In: InputUnmarshaller](tpe: In, path: Vector[String]) =

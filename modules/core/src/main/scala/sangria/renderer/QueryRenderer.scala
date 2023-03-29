@@ -668,12 +668,16 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, frontSep = true) +
           renderInputFieldDefinitions(fields, itd, indent, config, frontSep = true)
 
-      case itd @ InterfaceTypeDefinition(name, fields, dirs, description, _, _, _) =>
+      case itd @ InterfaceTypeDefinition(name, fields, dirs, description, _, _, _, interfaces) =>
         renderDescription(itd, prev, indent, config) +
           renderComment(itd, description.orElse(prev), indent, config) +
           indent.str + "interface" + config.mandatorySeparator + name +
-          renderDirs(dirs, config, indent, frontSep = true) +
-          renderFieldDefinitions(fields, itd, indent, config, frontSep = true)
+          (if (interfaces.nonEmpty) config.mandatorySeparator else "") +
+          renderInterfaces(interfaces, config, indent, withSep = false) +
+          (if (dirs.nonEmpty) config.separator else "") +
+          renderDirs(dirs, config, indent, withSep = false) +
+          (if (fields.nonEmpty) config.separator else "") +
+          renderFieldDefinitions(fields, itd, indent, config)
 
       case utd @ UnionTypeDefinition(name, types, dirs, description, _, _) =>
         val typesString =
@@ -728,11 +732,15 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
           renderFieldDefinitions(fields, ted, indent, config)
 
-      case ext @ InterfaceTypeExtensionDefinition(name, fields, dirs, _, _, _) =>
+      case ext @ InterfaceTypeExtensionDefinition(name, fields, dirs, _, _, _, interfaces) =>
         renderComment(ext, prev, indent, config) +
           indent.str + "extend" + config.mandatorySeparator + "interface" + config.mandatorySeparator + name +
-          renderDirs(dirs, config, indent, frontSep = true) +
-          renderFieldDefinitions(fields, ext, indent, config, frontSep = true)
+          (if (interfaces.nonEmpty) config.mandatorySeparator else "") +
+          renderInterfaces(interfaces, config, indent, withSep = false) +
+          (if (dirs.nonEmpty) config.separator else "") +
+          renderDirs(dirs, config, indent, withSep = false) +
+          (if (fields.nonEmpty) config.separator else "") +
+          renderFieldDefinitions(fields, ext, indent, config)
 
       case ext @ UnionTypeExtensionDefinition(name, types, dirs, _, _) =>
         val typesString =
