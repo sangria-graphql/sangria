@@ -983,6 +983,34 @@ class AstSchemaMaterializerSpec
           "Object type 'Query' can implement interface 'Foo' only once.")
       }
 
+      "don't allow to extend the interface implementing self" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            interface Foo {
+              foo: String
+            }
+
+            interface Bar {
+              bar: String
+            }
+
+            type Query implements Foo & Bar {
+              foo: String
+              bar: String
+            }
+
+            extend interface Bar implements Bar
+          """
+
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+
+        error.getMessage should include("Interface 'Bar' cannot implement itself.")
+      }
+
       "don't allow to have duplicate fields in the extension" in {
         val ast =
           graphql"""
