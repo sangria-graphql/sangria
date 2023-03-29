@@ -1520,17 +1520,30 @@ case class Schema[Ctx, Val](
       .groupBy(_._1)
       .map { case (k, v) => (k, v.map(_._2)) }
 
-  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = {
-    def findConcreteTypes(tpe: ObjectLikeType[_, _]): Vector[ObjectType[_, _]] = tpe match {
+  lazy val allImplementations: Map[String, Vector[ObjectLikeType[_, _]]] = {
+    def findDescendants(tpe: ObjectLikeType[_, _]): Vector[ObjectLikeType[_, _]] = tpe match {
       case obj: ObjectType[_, _] => Vector(obj)
       case interface: InterfaceType[_, _] =>
-        directImplementations(interface.name).flatMap(findConcreteTypes)
+        Vector(interface) ++ directImplementations(interface.name).flatMap(findDescendants)
     }
 
     directImplementations.map { case (name, directImpls) =>
-      name -> directImpls.flatMap(findConcreteTypes).groupBy(_.name).map(_._2.head).toVector
+      name -> directImpls.flatMap(findDescendants).groupBy(_.name).map(_._2.head).toVector
     }
   }
+
+  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] =
+    allImplementations
+      .map { case (k, xs) =>
+        (
+          k,
+          xs.collect { case obj: ObjectType[_, _] =>
+            obj
+          })
+      }
+      .filter { case (_, v) =>
+        v.nonEmpty
+      }
 
   lazy val possibleTypes: Map[String, Vector[ObjectType[_, _]]] =
     implementations ++ unionTypes.values.map(ut => ut.name -> ut.types.toVector)

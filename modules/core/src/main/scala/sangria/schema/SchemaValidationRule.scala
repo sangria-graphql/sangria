@@ -114,7 +114,7 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
 object InterfaceImplementationValidationRule extends SchemaValidationRule {
   private def validateObjectType[Ctx, Val](
       schema: Schema[Ctx, Val],
-      objTpe: ObjectType[_, _],
+      objTpe: ObjectLikeType[_, _],
       intTpe: InterfaceType[_, _]): Vector[Violation] = {
     val objFields: Map[String, Vector[Field[_, _]]] = objTpe.ownFields.groupBy(_.name)
 
@@ -194,7 +194,7 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
   }
 
   def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation] =
-    schema.possibleTypes.toList.flatMap { case (intName, objTypes) =>
+    schema.allImplementations.toList.flatMap { case (intName, objTypes) =>
       schema.outputTypes(intName) match {
         case intTpe: InterfaceType[_, _] => objTypes.flatMap(validateObjectType(schema, _, intTpe))
         case _ => Nil
@@ -520,9 +520,7 @@ object ContainerMembersValidator extends SchemaElementValidator {
     emptyErrors ++ nonUnique
   }
 
-  override def validateObjectType(
-      schema: Schema[_, _],
-      tpe: ObjectType[_, _]): Vector[Violation] = 
+  override def validateObjectType(schema: Schema[_, _], tpe: ObjectType[_, _]): Vector[Violation] =
     validateObjectLikeType(schema, tpe, "Object")
 
   override def validateInterfaceType(

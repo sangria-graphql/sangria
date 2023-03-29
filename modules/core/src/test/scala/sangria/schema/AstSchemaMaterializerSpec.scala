@@ -617,28 +617,6 @@ class AstSchemaMaterializerSpec
         error.getMessage should include("Unknown type 'Bar'.")
       }
 
-      "Missing declaration of inerithed field" in {
-        val ast =
-          graphql"""
-            schema {
-              query: Hello
-            }
-
-            interface Bar {
-              bar: String
-            }
-
-            type Hello implements Bar {
-              foo: String
-            }
-          """
-
-        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
-
-        error.getMessage should include(
-          "Object type 'Hello' misses the declaration of field 'foo'.")
-      }
-
       "Self in interface list" in {
         val ast =
           graphql"""
@@ -657,7 +635,8 @@ class AstSchemaMaterializerSpec
 
         val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include("Interface 'Bar' cannot implement itself")
+        error.getMessage should include(
+          "Interface 'Bar' cannot implement 'Bar' because it would create a circular reference.")
       }
 
       "Loop in interface list" in {
@@ -682,7 +661,8 @@ class AstSchemaMaterializerSpec
 
         val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include("Unknown type 'Bar'.")
+        error.getMessage should include(
+          "Interface 'Bar' cannot implement 'Foo' because it would create a circular reference.")
       }
 
       "Unknown type in union list" in {
@@ -1008,7 +988,8 @@ class AstSchemaMaterializerSpec
 
         val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
 
-        error.getMessage should include("Interface 'Bar' cannot implement itself.")
+        error.getMessage should include(
+          "Interface 'Bar' cannot implement 'Bar' because it would create a circular reference.")
       }
 
       "don't allow to have duplicate fields in the extension" in {

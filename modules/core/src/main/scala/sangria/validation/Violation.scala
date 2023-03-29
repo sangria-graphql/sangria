@@ -1034,13 +1034,14 @@ case class NonUniqueInterfacesViolation(
     s"Object type '$typeName' can implement interface '$interfaceName' only once."
 }
 
-case class ImplementSelfViolation(
+case class CircularImplementViolation(
     typeName: String,
+    interfaceName: String,
     sourceMapper: Option[SourceMapper],
     locations: List[AstLocation])
     extends AstNodeViolation {
   lazy val simpleErrorMessage =
-    s"Interface '$typeName' cannot implement itself."
+    s"Interface '$typeName' cannot implement '$interfaceName' because it would create a circular reference."
 }
 
 case class NonUniqueFieldArgumentsViolation(

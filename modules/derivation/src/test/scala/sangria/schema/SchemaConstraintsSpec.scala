@@ -903,6 +903,275 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
     )
   }
 
+  "Interfaces must adhere to Interface they implement" should {
+    "accepts an Interface which implements an Interface" in validSchema(graphql"""
+        type Query {
+          test: FooBar
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          bar(input: String): String
+          foo(input: String): String
+        }
+
+        type FooBar implements Foo & Bar {
+          bar(input: String): String
+          foo(input: String): String
+        }
+      """)
+
+    "accepts an Interface which implements an Interface along with more fields" in validSchema(
+      graphql"""
+        type Query {
+          test: FooBarBaz
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          foo(input: String): String
+          bar(input: String): String
+        }
+
+        interface Baz implements Foo & Bar {
+          foo(input: String): String
+          bar(input: String): String
+          baz(input: String): String
+        }
+
+        type FooBarBaz implements Foo & Bar & Baz {
+          foo(input: String): String
+          bar(input: String): String
+          baz(input: String): String
+        }
+      """)
+
+    "accepts an Interface which implements an Interface field along with additional optional arguments" in validSchema(
+      graphql"""
+        type Query {
+          test: FooBar
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          foo(input: String, anotherInput: String): String
+        }
+
+        type FooBar implements Foo & Bar {
+          foo(input: String, anotherInput: String): String
+        }
+      """)
+
+    "rejects an Interface missing an Interface argument" in invalidSchema(
+      graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          foo: String
+        }
+
+        type FooBar implements Bar & Foo {
+          fooBar: String
+        }
+      """,
+      "Foo.foo expects argument 'input', but Bar.foo does not provide it." -> Seq(
+        Pos(7, 15),
+        Pos(11, 11)
+      )
+    )
+
+    "rejects an Interface with an incorrectly typed Interface field" in invalidSchema(
+      graphql"""
+        type Query {
+          test: Test
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          foo(input: String): Int
+        }
+
+        type Test implements Foo & Bar {
+          test: Int
+        }
+      """,
+      "Foo.foo expects type 'String', but Bar.foo provides type 'Int'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
+
+    "rejects an Interface with both an incorrectly typed field and argument" in invalidSchema(
+      graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          foo: Int
+        }
+
+        type FooBar implements Foo & Bar {
+          fooBar: String
+        }
+      """,
+      "Foo.foo expects type 'String', but Bar.foo provides type 'Int'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
+
+    "rejects an Interface which implements an Interface field along with additional required arguments" in invalidSchema(
+      graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          foo(input: String, anotherInput: String!): String
+        }
+
+        type FooBar implements Foo & Bar {
+          fooBar: String
+        }
+      """,
+      "Bar.foo(anotherInput) is of required type 'String!', but is not also provided by the interface Foo.foo." -> Seq(
+        Pos(11, 30),
+        Pos(7, 11))
+    )
+
+    "accepts an Interface with an equivalently wrapped Interface field type" in validSchema(
+      graphql"""
+        type Query {
+          foo: FooBar
+        }
+
+        interface Foo {
+          foo: [String]!
+        }
+
+        interface Bar {
+          foo: [String]!
+        }
+
+        type FooBar implements Foo & Bar {
+          foo: [String]!
+        }
+      """)
+
+    "rejects an Interface with a non-list Interface field list type" in invalidSchema(
+      graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo: [String]
+        }
+
+        interface Bar implements Foo {
+          foo: String
+        }
+
+        type FooBar implements Foo & Bar {
+          fooBar: String
+        }
+      """,
+      "Foo.foo expects type '[String]', but Bar.foo provides type 'String'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
+
+    "rejects an Interface with a list Interface field non-list type" in invalidSchema(
+      graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo: String
+        }
+
+        interface Bar implements Foo {
+          foo: [String]
+        }
+
+        type FooBar implements Foo & Bar {
+          fooBar: String
+        }
+      """,
+      "Foo.foo expects type 'String', but Bar.foo provides type '[String]'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
+
+    "accepts an Interface with a subset non-null Interface field type" in validSchema(graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo: String
+        }
+
+        interface Bar implements Foo {
+          foo: String!
+        }
+
+        type FooBar implements Foo & Bar {
+          fooBar: String
+        }
+      """)
+
+    "rejects an Object with a superset nullable Interface field type" in invalidSchema(
+      graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo: String!
+        }
+
+        interface Bar implements Foo {
+          foo: String
+        }
+
+        type FooBar implements Foo & Bar {
+          fooBar: String
+        }
+      """,
+      "Foo.foo expects type 'String!', but Bar.foo provides type 'String'." -> Seq(
+        Pos(11, 11),
+        Pos(7, 11))
+    )
+
+  }
+
   private[this] def buildSchema(document: ast.Document) =
     Schema.buildFromAst(document)
 
