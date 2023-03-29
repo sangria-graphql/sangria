@@ -71,7 +71,39 @@ lazy val ast = project
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.copy"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$")
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.introspection.IntrospectionInterfaceType.*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionInterfaceType.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionInterfaceType.copy"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.InterfaceTypeDefinition$"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.ast.InterfaceTypeDefinition.*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeDefinition.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeDefinition.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeDefinition.tupled"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeDefinition.curried"),
+      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.InterfaceTypeExtensionDefinition$"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.ast.InterfaceTypeExtensionDefinition.*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeExtensionDefinition.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeExtensionDefinition.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeExtensionDefinition.tupled"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeExtensionDefinition.curried"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeExtensionDefinition.<init>*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeExtensionDefinition.apply$default$*")
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -140,7 +172,23 @@ lazy val core = project
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.subs"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver.*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver#*")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver#*"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.schema.AstSchemaBuilder.buildInterfaceType"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.schema.AstSchemaBuilder.extendInterfaceType"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.schema.IntrospectionSchemaBuilder.buildInterfaceType"),
+      ProblemFilters.exclude[MissingTypesProblem](
+        "sangria.introspection.IntrospectionInterfaceType$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionInterfaceType.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionInterfaceType.tupled"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionInterfaceType.curried"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.introspection.IntrospectionInterfaceType.copy")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(

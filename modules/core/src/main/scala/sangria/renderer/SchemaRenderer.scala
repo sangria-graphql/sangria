@@ -220,16 +220,25 @@ object SchemaRenderer {
     ast.InterfaceTypeDefinition(
       tpe.name,
       renderFieldsI(tpe.fields),
-      description = renderDescription(tpe.description),
-      interfaces = renderImplementedInterfaces(tpe))
+      renderImplementedInterfaces(tpe),
+      Vector.empty,
+      renderDescription(tpe.description),
+      Vector.empty,
+      Vector.empty,
+      None
+    )
 
   def renderInterface(tpe: InterfaceType[_, _]) =
     ast.InterfaceTypeDefinition(
       tpe.name,
       renderFields(tpe.uniqueFields),
+      renderImplementedInterfaces(tpe),
       tpe.astDirectives,
       renderDescription(tpe.description),
-      interfaces = renderImplementedInterfaces(tpe))
+      Vector.empty,
+      Vector.empty,
+      None
+    )
 
   def renderUnion(tpe: IntrospectionUnionType) =
     ast.UnionTypeDefinition(

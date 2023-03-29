@@ -313,31 +313,32 @@ private[parser] sealed trait TypeSystemDefinitions {
         ast.InterfaceTypeExtensionDefinition(
           name,
           fields._1.toVector,
+          interfaces,
           dirs,
           comment,
           fields._2,
-          location,
-          interfaces))) |
+          location))) |
       (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
         Vector.empty))) ~ DirectivesConst ~> ((comment, location, name, interfaces, dirs) =>
         ast.InterfaceTypeExtensionDefinition(
           name,
           Vector.empty,
+          interfaces,
           dirs,
           comment,
           Vector.empty,
-          location,
-          interfaces))) |
+          location))) |
       Comments ~ trackPos ~ extend ~ interface ~ Name ~ ImplementsInterfaces ~> (
         (comment, location, name, interfaces) =>
           ast.InterfaceTypeExtensionDefinition(
             name,
             Vector.empty,
+            interfaces,
             Vector.empty,
             comment,
             Vector.empty,
-            location,
-            interfaces))
+            location
+          ))
   }
 
   private[this] def UnionTypeExtensionDefinition = rule {
@@ -430,12 +431,12 @@ private[parser] sealed trait TypeSystemDefinitions {
         ast.InterfaceTypeDefinition(
           name,
           fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector),
+          interfaces,
           dirs,
           descr,
           comment,
           fields.fold(Vector.empty[ast.Comment])(_._2),
-          location,
-          interfaces
+          location
         ))
   }
 

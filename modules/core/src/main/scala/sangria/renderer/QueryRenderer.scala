@@ -668,7 +668,7 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, frontSep = true) +
           renderInputFieldDefinitions(fields, itd, indent, config, frontSep = true)
 
-      case itd @ InterfaceTypeDefinition(name, fields, dirs, description, _, _, _, interfaces) =>
+      case itd @ InterfaceTypeDefinition(name, fields, interfaces, dirs, description, _, _, _) =>
         renderDescription(itd, prev, indent, config) +
           renderComment(itd, description.orElse(prev), indent, config) +
           indent.str + "interface" + config.mandatorySeparator + name +
@@ -732,7 +732,7 @@ object QueryRenderer {
           renderDirs(dirs, config, indent, withSep = fields.nonEmpty) +
           renderFieldDefinitions(fields, ted, indent, config)
 
-      case ext @ InterfaceTypeExtensionDefinition(name, fields, dirs, _, _, _, interfaces) =>
+      case ext @ InterfaceTypeExtensionDefinition(name, fields, interfaces, dirs, _, _, _) =>
         renderComment(ext, prev, indent, config) +
           indent.str + "extend" + config.mandatorySeparator + "interface" + config.mandatorySeparator + name +
           (if (interfaces.nonEmpty) config.mandatorySeparator else "") +

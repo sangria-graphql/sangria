@@ -61,10 +61,21 @@ case class IntrospectionInterfaceType(
     name: String,
     description: Option[String],
     fields: Seq[IntrospectionField],
-    possibleTypes: Seq[IntrospectionNamedTypeRef],
-    interfaces: Seq[IntrospectionNamedTypeRef])
-    extends IntrospectionType {
+    interfaces: Seq[IntrospectionNamedTypeRef],
+    possibleTypes: Seq[IntrospectionNamedTypeRef]
+) extends IntrospectionType {
+
   val kind = TypeKind.Interface
+
+}
+
+object IntrospectionInterfaceType {
+  def apply(
+      name: String,
+      description: Option[String],
+      fields: Seq[IntrospectionField],
+      possibleTypes: Seq[IntrospectionNamedTypeRef]): IntrospectionInterfaceType =
+    IntrospectionInterfaceType(name, description, fields, Seq.empty, possibleTypes)
 }
 
 case class IntrospectionUnionType(

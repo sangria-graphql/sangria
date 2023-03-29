@@ -530,16 +530,37 @@ case class ObjectTypeDefinition(
 case class InterfaceTypeDefinition(
     name: String,
     fields: Vector[FieldDefinition],
+    interfaces: Vector[NamedType] = Vector.empty,
     directives: Vector[Directive] = Vector.empty,
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None,
-    interfaces: Vector[NamedType] = Vector.empty)
+    location: Option[AstLocation] = None)
     extends TypeDefinition
     with WithTrailingComments
     with WithDescription {
   def rename(newName: String): InterfaceTypeDefinition = copy(name = newName)
+}
+
+object InterfaceTypeDefinition {
+
+  def apply(
+      name: String,
+      fields: Vector[FieldDefinition],
+      directives: Vector[Directive],
+      description: Option[StringValue],
+      comments: Vector[Comment],
+      trailingComments: Vector[Comment],
+      location: Option[AstLocation]): InterfaceTypeDefinition = new InterfaceTypeDefinition(
+    name,
+    fields,
+    Vector.empty,
+    directives,
+    description,
+    comments,
+    trailingComments,
+    location
+  )
 }
 
 /** @group typesystem
@@ -620,14 +641,36 @@ case class ObjectTypeExtensionDefinition(
 case class InterfaceTypeExtensionDefinition(
     name: String,
     fields: Vector[FieldDefinition],
+    interfaces: Vector[NamedType],
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
-    location: Option[AstLocation] = None,
-    interfaces: Vector[NamedType] = Vector.empty)
+    location: Option[AstLocation] = None)
     extends ObjectLikeTypeExtensionDefinition
     with WithTrailingComments {
+
   def rename(newName: String): InterfaceTypeExtensionDefinition = copy(name = newName)
+}
+
+object InterfaceTypeExtensionDefinition {
+
+  def apply(
+      name: String,
+      fields: Vector[FieldDefinition],
+      directives: Vector[Directive],
+      comments: Vector[Comment],
+      trailingComments: Vector[Comment],
+      location: Option[AstLocation]): InterfaceTypeExtensionDefinition =
+    InterfaceTypeExtensionDefinition(
+      name,
+      fields,
+      Vector.empty,
+      directives,
+      comments,
+      trailingComments,
+      location
+    )
+
 }
 
 /** @group typesystem
