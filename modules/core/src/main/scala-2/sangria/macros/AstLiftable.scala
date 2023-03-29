@@ -97,8 +97,8 @@ trait AstLiftable {
       q"_root_.sangria.ast.EnumTypeDefinition($n, $v, $d, $desc, $c, $tc, $p)"
     case InputObjectTypeDefinition(n, f, d, desc, c, tc, p) =>
       q"_root_.sangria.ast.InputObjectTypeDefinition($n, $f, $d, $desc, $c, $tc, $p)"
-    case InterfaceTypeDefinition(n, f, d, desc, c, tc, p, i) =>
-      q"_root_.sangria.ast.InterfaceTypeDefinition($n, $f, $d, $desc, $c, $tc, $p, $i)"
+    case InterfaceTypeDefinition(n, f, i, d, desc, c, tc, p) =>
+      q"_root_.sangria.ast.InterfaceTypeDefinition($n, $f, $i, $d, $desc, $c, $tc, $p)"
     case ObjectTypeDefinition(n, i, f, d, desc, c, tc, p) =>
       q"_root_.sangria.ast.ObjectTypeDefinition($n, $i, $f, $d, $desc, $c, $tc, $p)"
     case ScalarTypeDefinition(n, d, desc, c, p) =>
