@@ -692,7 +692,6 @@ class AstSchemaMaterializer[Ctx] private (
       tpe: ast.InterfaceTypeDefinition): Option[InterfaceType[Ctx, Any]] = {
     val extensions = findInterfaceExtensions(tpe.name)
 
-    // TODO generate interfaces
     builder.buildInterfaceType(
       origin,
       tpe,
