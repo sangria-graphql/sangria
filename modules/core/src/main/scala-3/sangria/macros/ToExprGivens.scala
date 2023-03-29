@@ -158,7 +158,7 @@ trait ToExprGivens {
             ${ Expr(tc) },
             ${ Expr(p) })
         }
-      case InterfaceTypeExtensionDefinition(n, f, d, c, tc, p) =>
+      case InterfaceTypeExtensionDefinition(n, f, d, c, tc, p, i) =>
         '{
           sangria.ast.InterfaceTypeExtensionDefinition(
             ${ Expr(n) },
@@ -166,7 +166,9 @@ trait ToExprGivens {
             ${ Expr(d) },
             ${ Expr(c) },
             ${ Expr(tc) },
-            ${ Expr(p) })
+            ${ Expr(p) },
+            ${ Expr(i) }
+          )
         }
       case InputObjectTypeExtensionDefinition(n, f, d, c, tc, p) =>
         '{
@@ -237,7 +239,7 @@ trait ToExprGivens {
             ${ Expr(tc) },
             ${ Expr(p) })
         }
-      case InterfaceTypeDefinition(n, f, d, desc, c, tc, p) =>
+      case InterfaceTypeDefinition(n, f, d, desc, c, tc, p, i) =>
         '{
           sangria.ast.InterfaceTypeDefinition(
             ${ Expr(n) },
@@ -246,7 +248,9 @@ trait ToExprGivens {
             ${ Expr(desc) },
             ${ Expr(c) },
             ${ Expr(tc) },
-            ${ Expr(p) })
+            ${ Expr(p) },
+            ${ Expr(i) }
+          )
         }
       case ObjectTypeDefinition(n, i, f, d, desc, c, tc, p) =>
         '{
