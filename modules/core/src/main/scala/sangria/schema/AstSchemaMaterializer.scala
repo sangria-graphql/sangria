@@ -317,9 +317,9 @@ class AstSchemaMaterializer[Ctx] private (
 
       val allInterfaceDefs: Vector[ast.InterfaceTypeDefinition] = (interfaceTypeExtensionDefs
         .find(ie => ie.name == validating.name)
-        .map(ie => ie.interfaces)
-        .getOrElse(Vector.empty) ++ validating.interfaces).flatMap { i =>
-        interfaceTypeDefs.find(itd => i.name == itd.name).toVector
+        .fold(Vector.empty[ast.NamedType])(ie => ie.interfaces) ++ validating.interfaces).flatMap {
+        i =>
+          interfaceTypeDefs.find(itd => i.name == itd.name).toVector
       }
 
       allInterfaceDefs.flatMap { id =>
