@@ -86,6 +86,11 @@ class AstSchemaMaterializer[Ctx] private (
     case d: ast.DirectiveDefinition => d
   }
 
+  private lazy val interfaceTypeDefs: Vector[ast.InterfaceTypeDefinition] =
+    allDefinitions.collect { case d: ast.InterfaceTypeDefinition =>
+      d
+    }
+
   private lazy val directiveDefsMap = directiveDefs.groupBy(_.name)
   private lazy val typeDefsMap = typeDefs.groupBy(_.name)
 
@@ -296,10 +301,43 @@ class AstSchemaMaterializer[Ctx] private (
       scalarTypeExtensionDefs.flatMap(
         validateExtensionsAst[ScalarType[_], ast.ScalarTypeDefinition](_, "scalar")),
       unionTypeExtensionDefs.flatMap(
-        validateExtensionsAst[UnionType[_], ast.UnionTypeDefinition](_, "union"))
+        validateExtensionsAst[UnionType[_], ast.UnionTypeDefinition](_, "union")),
+      interfaceTypeDefs.flatMap(validateInterfaceType)
     )
 
     nestedErrors.flatten
+  }
+
+  private def validateInterfaceType(
+      interfaceType: ast.InterfaceTypeDefinition): Vector[Violation] = {
+
+    def go(
+        validating: ast.InterfaceTypeDefinition,
+        visited: Set[ast.InterfaceTypeDefinition]): Vector[Violation] = {
+
+      val allInterfaceDefs: Vector[ast.InterfaceTypeDefinition] = (interfaceTypeExtensionDefs
+        .find(ie => ie.name == validating.name)
+        .fold(Vector.empty[ast.NamedType])(ie => ie.interfaces) ++ validating.interfaces).flatMap {
+        i =>
+          interfaceTypeDefs.find(itd => i.name == itd.name).toVector
+      }
+
+      allInterfaceDefs.flatMap { id =>
+        if (visited.contains(id)) {
+          Vector(
+            CircularImplementViolation(
+              validating.name,
+              id.name,
+              document.sourceMapper,
+              id.location.toList)
+          )
+        } else {
+          go(id, visited.union(Set(validating)))
+        }
+      }
+    }
+
+    go(interfaceType, Set.empty)
   }
 
   private def validateExtensionsAst[T1: ClassTag, T2: ClassTag](
@@ -697,7 +735,9 @@ class AstSchemaMaterializer[Ctx] private (
       tpe,
       extensions.toList,
       () => buildFields(origin, tpe, tpe.fields, extensions).toList,
-      this)
+      buildInterfaces(origin, tpe, tpe.interfaces, extensions).toList,
+      this
+    )
   }
 
   def extendEnumType(origin: MatOrigin, tpe: EnumType[_]) = {
@@ -739,6 +779,7 @@ class AstSchemaMaterializer[Ctx] private (
       tpe,
       extensions.toList,
       () => extendFields(origin, tpe, extensions),
+      extendInterfaces(origin, tpe, extensions),
       this)
   }
 
@@ -747,6 +788,19 @@ class AstSchemaMaterializer[Ctx] private (
       tpe: ast.ObjectTypeDefinition,
       interfaces: Vector[ast.NamedType],
       extensions: Vector[ast.ObjectTypeExtensionDefinition]): Vector[InterfaceType[Ctx, Any]] = {
+
+    val extraInts = extensions.flatMap(_.interfaces)
+    val allInts = interfaces ++ extraInts
+
+    allInts.map(getInterfaceType(origin, _))
+  }
+
+  def buildInterfaces(
+      origin: MatOrigin,
+      tpe: ast.InterfaceTypeDefinition,
+      interfaces: Vector[ast.NamedType],
+      extensions: Vector[ast.InterfaceTypeExtensionDefinition]): Vector[InterfaceType[Ctx, Any]] = {
+
     val extraInts = extensions.flatMap(_.interfaces)
     val allInts = interfaces ++ extraInts
 
@@ -757,6 +811,18 @@ class AstSchemaMaterializer[Ctx] private (
       origin: MatOrigin,
       tpe: ObjectType[Ctx, _],
       extensions: Vector[ast.ObjectTypeExtensionDefinition]): List[InterfaceType[Ctx, Any]] = {
+    val extraInts = extensions.flatMap(_.interfaces)
+
+    val ei = extraInts.map(getInterfaceType(origin, _))
+    val oi = tpe.interfaces.map(getTypeFromDef(origin, _).asInstanceOf[InterfaceType[Ctx, Any]])
+
+    (ei ++ oi).toList
+  }
+
+  def extendInterfaces(
+      origin: MatOrigin,
+      tpe: InterfaceType[Ctx, _],
+      extensions: Vector[ast.InterfaceTypeExtensionDefinition]): List[InterfaceType[Ctx, Any]] = {
     val extraInts = extensions.flatMap(_.interfaces)
 
     val ei = extraInts.map(getInterfaceType(origin, _))

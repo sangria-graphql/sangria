@@ -45,6 +45,9 @@ object SchemaRenderer {
   def renderImplementedInterfaces(tpe: IntrospectionObjectType) =
     tpe.interfaces.map(t => ast.NamedType(t.name)).toVector
 
+  def renderImplementedInterfaces(tpe: IntrospectionInterfaceType) =
+    tpe.interfaces.map(t => ast.NamedType(t.name)).toVector
+
   def renderImplementedInterfaces(tpe: ObjectLikeType[_, _]) =
     tpe.allInterfaces.map(t => ast.NamedType(t.name))
 
@@ -217,14 +220,25 @@ object SchemaRenderer {
     ast.InterfaceTypeDefinition(
       tpe.name,
       renderFieldsI(tpe.fields),
-      description = renderDescription(tpe.description))
+      renderImplementedInterfaces(tpe),
+      Vector.empty,
+      renderDescription(tpe.description),
+      Vector.empty,
+      Vector.empty,
+      None
+    )
 
   def renderInterface(tpe: InterfaceType[_, _]) =
     ast.InterfaceTypeDefinition(
       tpe.name,
       renderFields(tpe.uniqueFields),
+      renderImplementedInterfaces(tpe),
       tpe.astDirectives,
-      renderDescription(tpe.description))
+      renderDescription(tpe.description),
+      Vector.empty,
+      Vector.empty,
+      None
+    )
 
   def renderUnion(tpe: IntrospectionUnionType) =
     ast.UnionTypeDefinition(

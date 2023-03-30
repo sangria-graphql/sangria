@@ -307,24 +307,38 @@ private[parser] sealed trait TypeSystemDefinitions {
   }
 
   private[this] def InterfaceTypeExtensionDefinition = rule {
-    (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
-      Vector.empty))) ~ FieldsDefinition ~> ((comment, location, name, dirs, fields) =>
-      ast.InterfaceTypeExtensionDefinition(
-        name,
-        fields._1.toVector,
-        dirs,
-        comment,
-        fields._2,
-        location))) |
-      (Comments ~ trackPos ~ extend ~ interface ~ Name ~ DirectivesConst ~> (
-        (comment, location, name, dirs) =>
+    (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
+      Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition ~> (
+      (comment, location, name, interfaces, dirs, fields) =>
+        ast.InterfaceTypeExtensionDefinition(
+          name,
+          fields._1.toVector,
+          interfaces,
+          dirs,
+          comment,
+          fields._2,
+          location))) |
+      (Comments ~ trackPos ~ extend ~ interface ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
+        Vector.empty))) ~ DirectivesConst ~> ((comment, location, name, interfaces, dirs) =>
+        ast.InterfaceTypeExtensionDefinition(
+          name,
+          Vector.empty,
+          interfaces,
+          dirs,
+          comment,
+          Vector.empty,
+          location))) |
+      Comments ~ trackPos ~ extend ~ interface ~ Name ~ ImplementsInterfaces ~> (
+        (comment, location, name, interfaces) =>
           ast.InterfaceTypeExtensionDefinition(
             name,
             Vector.empty,
-            dirs,
+            interfaces,
+            Vector.empty,
             comment,
             Vector.empty,
-            location)))
+            location
+          ))
   }
 
   private[this] def UnionTypeExtensionDefinition = rule {
@@ -411,16 +425,19 @@ private[parser] sealed trait TypeSystemDefinitions {
   }
 
   private[this] def InterfaceTypeDefinition = rule {
-    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (DirectivesConst.? ~> (_.getOrElse(
-      Vector.empty))) ~ FieldsDefinition.? ~> ((descr, comment, location, name, dirs, fields) =>
-      ast.InterfaceTypeDefinition(
-        name,
-        fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector),
-        dirs,
-        descr,
-        comment,
-        fields.fold(Vector.empty[ast.Comment])(_._2),
-        location))
+    Description ~ Comments ~ trackPos ~ interface ~ Name ~ (ImplementsInterfaces.? ~> (_.getOrElse(
+      Vector.empty))) ~ (DirectivesConst.? ~> (_.getOrElse(Vector.empty))) ~ FieldsDefinition.? ~> (
+      (descr, comment, location, name, interfaces, dirs, fields) =>
+        ast.InterfaceTypeDefinition(
+          name,
+          fields.fold(Vector.empty[ast.FieldDefinition])(_._1.toVector),
+          interfaces,
+          dirs,
+          descr,
+          comment,
+          fields.fold(Vector.empty[ast.Comment])(_._2),
+          location
+        ))
   }
 
   private[this] def UnionTypeDefinition = rule {

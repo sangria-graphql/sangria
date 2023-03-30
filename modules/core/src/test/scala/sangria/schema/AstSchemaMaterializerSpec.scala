@@ -234,6 +234,27 @@ class AstSchemaMaterializerSpec
         cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
       }
 
+      "Simple type with multiple interfaces in hierarchy" in {
+        val schema =
+          """schema {
+            |  query: Hello
+            |}
+            |
+            |interface Bar implements Foo {
+            |  str: String
+            |}
+            |
+            |interface Foo {
+            |  str: String
+            |}
+            |
+            |type Hello implements Bar & Foo {
+            |  str: String
+            |}""".stripMargin
+
+        cycleOutput(schema) should equal(schema)(after.being(strippedOfCarriageReturns))
+      }
+
       "Simple output enum" in {
         val schema =
           """schema {
@@ -596,6 +617,54 @@ class AstSchemaMaterializerSpec
         error.getMessage should include("Unknown type 'Bar'.")
       }
 
+      "Self in interface list" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Hello
+            }
+
+            type Hello implements Bar {
+              foo: String
+            }
+
+            interface Bar implements Bar {
+              foo: String
+            }
+          """
+
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+
+        error.getMessage should include(
+          "Interface 'Bar' cannot implement 'Bar' because it would create a circular reference.")
+      }
+
+      "Loop in interface list" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Hello
+            }
+
+            type Hello implements Bar & Foo {
+              foo: String
+            }
+
+            interface Bar implements Foo {
+              foo: String
+            }
+
+            interface Foo implements Bar {
+              foo: String
+            }
+          """
+
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+
+        error.getMessage should include(
+          "Interface 'Bar' cannot implement 'Foo' because it would create a circular reference.")
+      }
+
       "Unknown type in union list" in {
         val ast =
           graphql"""
@@ -892,6 +961,35 @@ class AstSchemaMaterializerSpec
 
         error.getMessage should include(
           "Object type 'Query' can implement interface 'Foo' only once.")
+      }
+
+      "don't allow to extend the interface implementing self" in {
+        val ast =
+          graphql"""
+            schema {
+              query: Query
+            }
+
+            interface Foo {
+              foo: String
+            }
+
+            interface Bar {
+              bar: String
+            }
+
+            type Query implements Foo & Bar {
+              foo: String
+              bar: String
+            }
+
+            extend interface Bar implements Bar
+          """
+
+        val error = intercept[MaterializedSchemaValidationError](Schema.buildFromAst(ast))
+
+        error.getMessage should include(
+          "Interface 'Bar' cannot implement 'Bar' because it would create a circular reference.")
       }
 
       "don't allow to have duplicate fields in the extension" in {

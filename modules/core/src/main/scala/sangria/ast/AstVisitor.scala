@@ -306,12 +306,14 @@ object AstVisitor {
         case n @ InterfaceTypeDefinition(
               _,
               fields,
+              interfaces,
               dirs,
               description,
               comment,
               trailingComments,
               _) =>
           if (breakOrSkip(onEnter(n))) {
+            interfaces.foreach(d => loop(d))
             fields.foreach(d => loop(d))
             dirs.foreach(d => loop(d))
             description.foreach(s => loop(s))
@@ -360,8 +362,9 @@ object AstVisitor {
             tc.foreach(s => loop(s))
             breakOrSkip(onLeave(n))
           }
-        case n @ InterfaceTypeExtensionDefinition(_, fields, dirs, comment, tc, _) =>
+        case n @ InterfaceTypeExtensionDefinition(_, fields, ints, dirs, comment, tc, _) =>
           if (breakOrSkip(onEnter(n))) {
+            ints.foreach(d => loop(d))
             fields.foreach(d => loop(d))
             dirs.foreach(d => loop(d))
             comment.foreach(s => loop(s))

@@ -114,7 +114,7 @@ object DefaultValuesValidationRule extends SchemaValidationRule {
 object InterfaceImplementationValidationRule extends SchemaValidationRule {
   private def validateObjectType[Ctx, Val](
       schema: Schema[Ctx, Val],
-      objTpe: ObjectType[_, _],
+      objTpe: ObjectLikeType[_, _],
       intTpe: InterfaceType[_, _]): Vector[Violation] = {
     val objFields: Map[String, Vector[Field[_, _]]] = objTpe.ownFields.groupBy(_.name)
 
@@ -194,7 +194,7 @@ object InterfaceImplementationValidationRule extends SchemaValidationRule {
   }
 
   def validate[Ctx, Val](schema: Schema[Ctx, Val]): List[Violation] =
-    schema.possibleTypes.toList.flatMap { case (intName, objTypes) =>
+    schema.allImplementations.toList.flatMap { case (intName, objTypes) =>
       schema.outputTypes(intName) match {
         case intTpe: InterfaceType[_, _] => objTypes.flatMap(validateObjectType(schema, _, intTpe))
         case _ => Nil
@@ -520,25 +520,8 @@ object ContainerMembersValidator extends SchemaElementValidator {
     emptyErrors ++ nonUnique
   }
 
-  override def validateObjectType(
-      schema: Schema[_, _],
-      tpe: ObjectType[_, _]): Vector[Violation] = {
-    val generalErrors = validateObjectLikeType(schema, tpe, "Object")
-
-    val nonUnique =
-      tpe.interfaces.groupBy(_.name).iterator.collect {
-        case (intName, dup) if dup.size > 1 =>
-          val astMembers = tpe.astNodes.collect {
-            case astUnion: ObjectTypeDefinition => astUnion.interfaces
-            case astUnion: ObjectTypeExtensionDefinition => astUnion.interfaces
-          }
-          val locations = astMembers.flatten.filter(_.name == intName).flatMap(_.location).toList
-
-          NonUniqueInterfacesViolation(tpe.name, intName, sourceMapper(schema), locations)
-      }
-
-    generalErrors ++ nonUnique
-  }
+  override def validateObjectType(schema: Schema[_, _], tpe: ObjectType[_, _]): Vector[Violation] =
+    validateObjectLikeType(schema, tpe, "Object")
 
   override def validateInterfaceType(
       schema: Schema[_, _],
@@ -554,7 +537,19 @@ object ContainerMembersValidator extends SchemaElementValidator {
         Vector(EmptyFieldsViolation(kind, tpe.name, sourceMapper(schema), location(tpe)))
       else Vector.empty
 
-    val nonUnique =
+    val nonUniqueInterfaces =
+      tpe.interfaces.groupBy(_.name).iterator.collect {
+        case (intName, dup) if dup.size > 1 =>
+          val astMembers = tpe.astNodes.collect {
+            case astUnion: ObjectTypeDefinition => astUnion.interfaces
+            case astUnion: ObjectTypeExtensionDefinition => astUnion.interfaces
+          }
+          val locations = astMembers.flatten.filter(_.name == intName).flatMap(_.location).toList
+
+          NonUniqueInterfacesViolation(tpe.name, intName, sourceMapper(schema), locations)
+      }
+
+    val nonUniqueFields =
       tpe.ownFields.groupBy(_.name).iterator.collect {
         case (fieldName, dup) if dup.size > 1 =>
           NonUniqueFieldsViolation(
@@ -565,7 +560,7 @@ object ContainerMembersValidator extends SchemaElementValidator {
             dup.flatMap(location).toList)
       }
 
-    emptyErrors ++ nonUnique
+    emptyErrors ++ nonUniqueFields ++ nonUniqueInterfaces
   }
 
   override def validateField(

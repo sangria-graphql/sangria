@@ -480,7 +480,7 @@ class SchemaRenderSpec
         |  query: Root
         |}
         |
-        |interface Baaz {
+        |interface Baaz implements Foo {
         |  int: Int
         |  str: String
         |}
@@ -496,6 +496,69 @@ class SchemaRenderSpec
         |
         |type Root {
         |  bar: Bar
+        |}
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
+    }
+
+    "Print Multiple Interface (with deeper interface hierarchy)" in {
+      val foo = InterfaceType(
+        "Foo",
+        fields[Unit, Unit](
+          Field("str", OptionType(StringType), resolve = _ => "foo")
+        ))
+
+      val bar = InterfaceType(
+        "Bar",
+        fields[Unit, Unit](
+          Field("int", OptionType(IntType), resolve = _ => 1)
+        ),
+        interfaces[Unit, Unit](foo))
+
+      val baz = InterfaceType(
+        "Baz",
+        fields[Unit, Unit](
+          Field("bool", OptionType(BooleanType), resolve = _ => true)
+        ),
+        interfaces[Unit, Unit](bar))
+
+      val fooBarBaz = ObjectType("FooBarBaz", interfaces[Unit, Unit](baz), Nil)
+
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("fooBarBaz", OptionType(fooBarBaz), resolve = _ => ())
+        ))
+
+      val schema = Schema(root)
+
+      render(schema) should equal("""
+        |schema {
+        |  query: Root
+        |}
+        |
+        |interface Bar implements Foo {
+        |  int: Int
+        |  str: String
+        |}
+        |
+        |interface Baz implements Bar & Foo {
+        |  bool: Boolean
+        |  int: Int
+        |  str: String
+        |}
+        |
+        |interface Foo {
+        |  str: String
+        |}
+        |
+        |type FooBarBaz implements Baz & Bar & Foo {
+        |  bool: Boolean
+        |  int: Int
+        |  str: String
+        |}
+        |
+        |type Root {
+        |  fooBarBaz: FooBarBaz
         |}
         |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
@@ -1067,6 +1130,31 @@ class SchemaRenderSpec
         |extend interface Foo @someDir(arg: ["foo"])
         |
         |extend interface FooWithFields @someDir(arg: 1) @anotherDir {
+        |  "some docs"
+        |  foo(arg: Int = 1 @hello): Bar @dir(test: true)
+        |}
+        |""".stripMargin)(after.being(strippedOfCarriageReturns))
+    }
+
+    "render interface implementing interfaces types" in {
+      val schema =
+        graphql"""
+          # just testing
+          extend interface Foo@someDir(arg: [
+            "foo"
+          ])
+
+          extend interface FooWithFields implements Bar @someDir(arg: 1)@anotherDir{
+            "some docs"
+            foo(arg: Int = 1@hello): Bar @dir(test:true)
+          } 
+        """
+
+      cycleRender(schema) should equal("""
+        |# just testing
+        |extend interface Foo @someDir(arg: ["foo"])
+        |
+        |extend interface FooWithFields implements Bar @someDir(arg: 1) @anotherDir {
         |  "some docs"
         |  foo(arg: Int = 1 @hello): Bar @dir(test: true)
         |}

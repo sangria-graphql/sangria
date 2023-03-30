@@ -33,9 +33,16 @@ trait IntrospectionSchemaBuilder[Ctx] {
       mat: IntrospectionSchemaMaterializer[Ctx, _])
       : Option[InputObjectType[InputObjectType.DefaultInput]]
 
+  @deprecated("Interfaces can implement interfaces", "") // TODO put version
   def buildInterfaceType(
       definition: IntrospectionInterfaceType,
       fields: () => List[Field[Ctx, Any]],
+      mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[InterfaceType[Ctx, Any]]
+
+  def buildInterfaceType(
+      definition: IntrospectionInterfaceType,
+      fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]): Option[InterfaceType[Ctx, Any]]
 
   def buildUnionType(
@@ -158,12 +165,19 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
       definition: IntrospectionInterfaceType,
       fields: () => List[Field[Ctx, Any]],
       mat: IntrospectionSchemaMaterializer[Ctx, _]) =
+    buildInterfaceType(definition, fields, List.empty, mat)
+
+  def buildInterfaceType(
+      definition: IntrospectionInterfaceType,
+      fields: () => List[Field[Ctx, Any]],
+      interfaces: List[InterfaceType[Ctx, Any]],
+      mat: IntrospectionSchemaMaterializer[Ctx, _]) =
     Some(
       InterfaceType[Ctx, Any](
         name = typeName(definition),
         description = typeDescription(definition),
         fieldsFn = fields,
-        interfaces = Nil,
+        interfaces = interfaces,
         manualPossibleTypes = () => Nil,
         astDirectives = Vector.empty,
         astNodes = Vector.empty
