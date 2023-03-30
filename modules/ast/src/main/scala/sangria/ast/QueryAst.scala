@@ -530,7 +530,7 @@ case class ObjectTypeDefinition(
 case class InterfaceTypeDefinition(
     name: String,
     fields: Vector[FieldDefinition],
-    interfaces: Vector[NamedType] = Vector.empty,
+    interfaces: Vector[NamedType],
     directives: Vector[Directive] = Vector.empty,
     description: Option[StringValue] = None,
     comments: Vector[Comment] = Vector.empty,
