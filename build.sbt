@@ -89,6 +89,10 @@ lazy val ast = project
         "sangria.ast.InterfaceTypeDefinition.tupled"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "sangria.ast.InterfaceTypeDefinition.curried"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeDefinition.<init>*"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.InterfaceTypeDefinition.apply$default$*"),
       ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.InterfaceTypeExtensionDefinition$"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem](
         "sangria.ast.InterfaceTypeExtensionDefinition.*"),
