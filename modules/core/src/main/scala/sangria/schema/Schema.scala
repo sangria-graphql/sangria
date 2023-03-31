@@ -1529,7 +1529,7 @@ case class Schema[Ctx, Val](
 
     directImplementations.map { case (name, directImpls) =>
       name -> directImpls.flatMap(findDescendants).groupBy(_.name).map(_._2.head).toVector
-    } ++ unionTypes.values.map(ut => ut.name -> ut.types.toVector)
+    }
   }
 
   def isPossibleImplementation(baseTypeName: String, tpe: ObjectLikeType[_, _]): Boolean =
@@ -1537,8 +1537,20 @@ case class Schema[Ctx, Val](
       .get(baseTypeName)
       .exists(_.exists(_.name == tpe.name))
 
-  @deprecated("Use possibleTypes instead", "4.0.0")
-  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = possibleTypes
+  @deprecated("Use concreteImplementations instead", "4.0.0")
+  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = concreteImplementations
+
+  lazy val concreteImplementations: Map[String, Vector[ObjectType[_, _]]] = allImplementations
+    .map { case (k, xs) =>
+      (
+        k,
+        xs.collect { case obj: ObjectType[_, _] =>
+          obj
+        })
+    }
+    .filter { case (_, v) =>
+      v.nonEmpty
+    }
 
   /** This contains the map of all the concrete types by supertype.
     *
@@ -1556,17 +1568,7 @@ case class Schema[Ctx, Val](
     *   Map of subtype by supertype name
     */
   lazy val possibleTypes: Map[String, Vector[ObjectType[_, _]]] =
-    allImplementations
-      .map { case (k, xs) =>
-        (
-          k,
-          xs.collect { case obj: ObjectType[_, _] =>
-            obj
-          })
-      }
-      .filter { case (_, v) =>
-        v.nonEmpty
-      }
+    concreteImplementations ++ unionTypes.values.map(ut => ut.name -> ut.types.toVector)
 
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]): Boolean =
     possibleTypes.get(baseTypeName).exists(_.exists(_.name == tpe.name))
