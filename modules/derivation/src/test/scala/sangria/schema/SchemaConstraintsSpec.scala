@@ -971,6 +971,84 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         }
       """)
 
+    "rejects an Interface with a differently typed Interface field" in invalidSchema(
+      graphql"""
+        type Query {
+          test: AnotherObject
+        }
+
+        type A { foo: String }
+        type B { foo: String }
+
+        interface AnotherInterface {
+          field: A
+        }
+
+        type AnotherObject implements AnotherInterface {
+          field: B
+        }
+      """,
+      "AnotherInterface.field expects type 'A', but AnotherObject.field provides type 'B'." -> Seq(
+        Pos(14, 11),
+        Pos(10, 11))
+    )
+
+    "accepts an Interface with a subtyped Interface field (interface)" in validSchema(graphql"""
+        type Query {
+          test: Foo
+        }
+
+        interface Node {
+          id: ID!
+        }
+
+        interface Edge {
+          cursor: String!
+          node: Node!
+        }
+
+        interface Foo implements Node {
+          id: ID!
+        }
+
+        type ConcreteFoo implements Foo & Node {
+          id: ID!
+        }
+
+        type FooEdge implements Edge {
+          cursor: String!
+          node: Foo!
+        }
+
+        type Test {
+          fooEdge: FooEdge
+        }
+      """)
+
+    "accepts an Interface with a subtyped Interface field (union)" in validSchema(graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        type SomeObject {
+          field: String
+        }
+
+        union SomeUnionType = SomeObject
+
+        interface Foo {
+          foo: SomeUnionType
+        }
+
+        interface Bar implements Foo {
+          foo: SomeUnionType
+        }
+
+        type FooBar implements Foo & Bar {
+          test: String
+        }
+      """)
+
     "rejects an Interface missing an Interface argument" in invalidSchema(
       graphql"""
         type Query {
@@ -993,6 +1071,29 @@ class SchemaConstraintsSpec extends AnyWordSpec with Matchers {
         Pos(7, 15),
         Pos(11, 11)
       )
+    )
+
+    "rejects an Interface with an incorrectly typed Interface argument" in invalidSchema(
+      graphql"""
+        type Query {
+          fooBar: FooBar
+        }
+
+        interface Foo {
+          foo(input: String): String
+        }
+
+        interface Bar implements Foo {
+          foo(input: Int): String
+        }
+
+        type FooBar implements Foo & Bar {
+          test: Int
+        }
+      """,
+      "Foo.foo(input) expects type 'String', but Bar.foo(input) provides type 'Int'." -> Seq(
+        Pos(7, 15),
+        Pos(11, 15))
     )
 
     "rejects an Interface with an incorrectly typed Interface field" in invalidSchema(
