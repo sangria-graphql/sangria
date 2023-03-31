@@ -1532,21 +1532,43 @@ case class Schema[Ctx, Val](
     }
   }
 
-  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] =
-    allImplementations
-      .map { case (k, xs) =>
-        (
-          k,
-          xs.collect { case obj: ObjectType[_, _] =>
-            obj
-          })
-      }
-      .filter { case (_, v) =>
-        v.nonEmpty
-      }
+  def isPossibleImplementation(baseTypeName: String, tpe: ObjectLikeType[_, _]): Boolean =
+    tpe.name == baseTypeName || allImplementations
+      .get(baseTypeName)
+      .exists(_.exists(_.name == tpe.name))
 
+  @deprecated("Use concreteImplementations instead", "4.0.0")
+  lazy val implementations: Map[String, Vector[ObjectType[_, _]]] = concreteImplementations
+
+  lazy val concreteImplementations: Map[String, Vector[ObjectType[_, _]]] = allImplementations
+    .map { case (k, xs) =>
+      (
+        k,
+        xs.collect { case obj: ObjectType[_, _] =>
+          obj
+        })
+    }
+    .filter { case (_, v) =>
+      v.nonEmpty
+    }
+
+  /** This contains the map of all the concrete types by supertype.
+    *
+    * The supertype can be either a union or interface.
+    *
+    * According to the spec, even if an interface can implement another interface, this must only
+    * contains concrete types
+    *
+    * @see
+    *   https://spec.graphql.org/June2018/#sec-Union
+    * @see
+    *   https://spec.graphql.org/June2018/#sec-Interface
+    *
+    * @return
+    *   Map of subtype by supertype name
+    */
   lazy val possibleTypes: Map[String, Vector[ObjectType[_, _]]] =
-    implementations ++ unionTypes.values.map(ut => ut.name -> ut.types.toVector)
+    concreteImplementations ++ unionTypes.values.map(ut => ut.name -> ut.types.toVector)
 
   def isPossibleType(baseTypeName: String, tpe: ObjectType[_, _]): Boolean =
     possibleTypes.get(baseTypeName).exists(_.exists(_.name == tpe.name))

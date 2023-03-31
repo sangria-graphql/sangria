@@ -22,7 +22,10 @@ object TypeComparators {
       case (sub, OptionInputType(ofType2)) => isSubType(schema, sub, ofType2)
       case (ListType(ofType1), ListType(ofType2)) => isSubType(schema, ofType1, ofType2)
       case (ListInputType(ofType1), ListInputType(ofType2)) => isSubType(schema, ofType1, ofType2)
-      case (t1: ObjectType[_, _], t2: AbstractType) => schema.isPossibleType(t2.name, t1)
+      case (t1: ObjectType[_, _], t2: AbstractType) =>
+        schema.isPossibleType(t2.name, t1)
+      case (t1: InterfaceType[_, _], t2: AbstractType) =>
+        schema.isPossibleImplementation(t2.name, t1)
       case (t1: Named, t2: Named) => t1.name == t2.name
       case _ => false
     }
