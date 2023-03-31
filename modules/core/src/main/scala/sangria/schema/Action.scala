@@ -8,12 +8,13 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Try}
 import scala.util.control.NonFatal
 
-sealed trait Action[+Ctx, +Val] {
+trait Action[+Ctx, +Val] {
   def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): Action[Ctx, NewVal]
 }
-sealed trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val] {
+trait LeafAction[+Ctx, +Val] extends Action[Ctx, Val] {
   def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
 }
+sealed trait StandardLeafAction[+Ctx, +Val] extends LeafAction[Ctx, Val]
 sealed trait ReduceAction[+Ctx, +Val] extends Action[Ctx, Val] {
   def map[NewVal](fn: Val => NewVal)(implicit ec: ExecutionContext): LeafAction[Ctx, NewVal]
 }
@@ -53,7 +54,9 @@ object LeafAction {
   def apply[Ctx, Val](a: LeafAction[Ctx, Val]): LeafAction[Ctx, Val] = a
 }
 
-case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceAction[Ctx, Val] {
+case class Value[Ctx, Val](value: Val)
+    extends StandardLeafAction[Ctx, Val]
+    with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): LeafAction[Ctx, NewVal] =
     try Value(fn(value))
@@ -63,7 +66,7 @@ case class Value[Ctx, Val](value: Val) extends LeafAction[Ctx, Val] with ReduceA
 }
 
 case class TryValue[Ctx, Val](value: Try[Val])
-    extends LeafAction[Ctx, Val]
+    extends StandardLeafAction[Ctx, Val]
     with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): TryValue[Ctx, NewVal] =
@@ -71,7 +74,7 @@ case class TryValue[Ctx, Val](value: Try[Val])
 }
 
 case class PartialValue[Ctx, Val](value: Val, errors: Vector[Throwable])
-    extends LeafAction[Ctx, Val] {
+    extends StandardLeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): LeafAction[Ctx, NewVal] =
     try PartialValue(fn(value), errors)
@@ -81,7 +84,7 @@ case class PartialValue[Ctx, Val](value: Val, errors: Vector[Throwable])
 }
 
 case class FutureValue[Ctx, Val](value: Future[Val])
-    extends LeafAction[Ctx, Val]
+    extends StandardLeafAction[Ctx, Val]
     with ReduceAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): FutureValue[Ctx, NewVal] =
@@ -89,7 +92,7 @@ case class FutureValue[Ctx, Val](value: Future[Val])
 }
 
 case class PartialFutureValue[Ctx, Val](value: Future[PartialValue[Ctx, Val]])
-    extends LeafAction[Ctx, Val] {
+    extends StandardLeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): PartialFutureValue[Ctx, NewVal] =
     PartialFutureValue(value.map(_.map(fn) match {
@@ -99,7 +102,7 @@ case class PartialFutureValue[Ctx, Val](value: Future[PartialValue[Ctx, Val]])
     }))
 }
 
-case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx, Val] {
+case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends StandardLeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): DeferredValue[Ctx, NewVal] =
     DeferredValue(MappingDeferred(value, (v: Val) => (fn(v), Vector.empty)))
@@ -109,7 +112,7 @@ case class DeferredValue[Ctx, Val](value: Deferred[Val]) extends LeafAction[Ctx,
 }
 
 case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]])
-    extends LeafAction[Ctx, Val] {
+    extends StandardLeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): DeferredFutureValue[Ctx, NewVal] =
     DeferredFutureValue(value.map(MappingDeferred(_, (v: Val) => (fn(v), Vector.empty))))
@@ -120,7 +123,7 @@ case class DeferredFutureValue[Ctx, Val](value: Future[Deferred[Val]])
 }
 
 case class SequenceLeafAction[Ctx, Val](value: Seq[LeafAction[Ctx, Val]])
-    extends LeafAction[Ctx, Seq[Val]] {
+    extends StandardLeafAction[Ctx, Seq[Val]] {
   override def map[NewVal](fn: Seq[Val] => NewVal)(implicit
       ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewVal] =
     new MappedSequenceLeafAction[Ctx, Val, NewVal](this, fn)
@@ -129,7 +132,7 @@ case class SequenceLeafAction[Ctx, Val](value: Seq[LeafAction[Ctx, Val]])
 class MappedSequenceLeafAction[Ctx, Val, NewVal](
     val action: SequenceLeafAction[Ctx, Val],
     val mapFn: Seq[Val] => NewVal)
-    extends LeafAction[Ctx, NewVal] {
+    extends StandardLeafAction[Ctx, NewVal] {
   override def map[NewNewVal](fn: NewVal => NewNewVal)(implicit
       ec: ExecutionContext): MappedSequenceLeafAction[Ctx, Val, NewNewVal] =
     new MappedSequenceLeafAction[Ctx, Val, NewNewVal](action, v => fn(mapFn(v)))
@@ -160,7 +163,7 @@ object UpdateCtx {
 private[sangria] case class SubscriptionValue[Ctx, Val, S[_]](
     source: S[Any],
     stream: SubscriptionStream[S])
-    extends LeafAction[Ctx, Val] {
+    extends StandardLeafAction[Ctx, Val] {
   override def map[NewVal](fn: Val => NewVal)(implicit
       ec: ExecutionContext): SubscriptionValue[Ctx, NewVal, S] =
     throw new IllegalStateException(

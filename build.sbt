@@ -48,7 +48,7 @@ lazy val root = project
     derivation,
     sangriaTestMonix,
     sangriaTestFS2,
-    sangriaTestCatsEffect,
+    sangriaCatsEffectExperimental,
     sangria)
   .settings(inThisBuild(projectInfo))
   .settings(
@@ -284,16 +284,16 @@ lazy val sangriaTestFS2 = project
   )
   .disablePlugins(MimaPlugin)
 
-lazy val sangriaTestCatsEffect = project
-  .in(file("modules/test-cats-effect"))
-  .withId("sangria-test-cats-effect")
+lazy val sangriaCatsEffectExperimental = project
+  .in(file("modules/cats-effect-experimental"))
+  .withId("sangria-cats-effect-experimental")
   .dependsOn(core % "compile->compile;test->test")
-  .settings(scalacSettings ++ shellSettings ++ noPublishSettings)
+  .settings(scalacSettings ++ shellSettings)
   .settings(
-    name := "sangria-test-cats-effect",
-    description := "Tests with Cats Effect",
+    name := "sangria-cats-effect-experimental",
+    description := "Experimental support for Cats Effect",
     libraryDependencies ++= List(
-      "org.typelevel" %% "cats-effect" % "3.4.8" % Test,
+      "org.typelevel" %% "cats-effect" % "3.4.8",
       "org.sangria-graphql" %% "sangria-circe" % "1.3.2" % Test
     )
   )
