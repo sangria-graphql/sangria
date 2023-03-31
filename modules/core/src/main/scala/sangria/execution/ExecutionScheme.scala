@@ -14,6 +14,7 @@ sealed trait ExecutionScheme {
   def flatMapFuture[Ctx, Res, T](future: Future[T])(resultFn: T => Result[Ctx, Res])(implicit
       ec: ExecutionContext): Result[Ctx, Res]
   def extended: Boolean
+  val resolverBuilder: ResolverBuilder
 }
 
 object ExecutionScheme extends AlternativeExecutionScheme {
@@ -34,6 +35,8 @@ object ExecutionScheme extends AlternativeExecutionScheme {
       future.flatMap(resultFn)
 
     def extended = false
+
+    override val resolverBuilder: ResolverBuilder = FutureResolverBuilder
   }
 }
 
@@ -46,7 +49,8 @@ trait EffectOps[F[_]] {
 
 @ApiMayChange
 class EffectBasedExecutionScheme[F[_]](
-    ops: EffectOps[F]
+    val ops: EffectOps[F],
+    val resolverBuilder: ResolverBuilder
 ) extends ExecutionScheme {
   override type Result[Ctx, Res] = F[Res]
   override def failed[Ctx, Res](error: Throwable): Result[Ctx, Res] =
@@ -85,6 +89,8 @@ trait AlternativeExecutionScheme {
       future.flatMap(resultFn)
 
     def extended = true
+
+    override val resolverBuilder: ResolverBuilder = FutureResolverBuilder
   }
 
   implicit def Stream[S[_]](implicit
@@ -107,6 +113,8 @@ trait AlternativeExecutionScheme {
       def flatMapFuture[Ctx, Res, T](future: Future[T])(resultFn: T => Result[Ctx, Res])(implicit
           ec: ExecutionContext): Result[Ctx, Res] =
         stream.flatMapFuture(future)(resultFn)
+
+      override val resolverBuilder: ResolverBuilder = FutureResolverBuilder
     }
 
   implicit def StreamExtended[S[_]](implicit
@@ -129,6 +137,8 @@ trait AlternativeExecutionScheme {
       def flatMapFuture[Ctx, Res, T](future: Future[T])(resultFn: T => Result[Ctx, Res])(implicit
           ec: ExecutionContext): Result[Ctx, Res] =
         stream.flatMapFuture(future)(resultFn)
+
+      override val resolverBuilder: ResolverBuilder = FutureResolverBuilder
     }
 }
 

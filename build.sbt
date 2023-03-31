@@ -192,7 +192,11 @@ lazy val core = project
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "sangria.introspection.IntrospectionInterfaceType.curried"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionInterfaceType.copy")
+        "sangria.introspection.IntrospectionInterfaceType.copy"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.execution.ExecutionScheme.resolverBuilder"),
+      ProblemFilters.exclude[IncompatibleTemplateDefProblem]("sangria.execution.Resolver"),
+      ProblemFilters.exclude[MissingClassProblem]("sangria.execution.Resolver$*")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
