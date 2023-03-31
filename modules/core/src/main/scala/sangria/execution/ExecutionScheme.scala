@@ -1,11 +1,10 @@
 package sangria.execution
 
-import sangria.annotations.ApiMayChange
 import sangria.streaming.SubscriptionStream
 
 import scala.concurrent.{ExecutionContext, Future}
 
-sealed trait ExecutionScheme {
+trait ExecutionScheme {
   type Result[Ctx, Res]
 
   def failed[Ctx, Res](error: Throwable): Result[Ctx, Res]
@@ -38,33 +37,6 @@ object ExecutionScheme extends AlternativeExecutionScheme {
 
     override val resolverBuilder: ResolverBuilder = FutureResolverBuilder
   }
-}
-
-@ApiMayChange
-trait EffectOps[F[_]] {
-  def failed[Ctx, Res](error: Throwable): F[Res]
-  def flatMapFuture[Res, T](future: Future[T])(resultFn: T => F[Res]): F[Res]
-  def map[T, Out](in: Future[T])(f: T => Out): F[Out]
-}
-
-@ApiMayChange
-class EffectBasedExecutionScheme[F[_]](
-    val ops: EffectOps[F],
-    val resolverBuilder: ResolverBuilder
-) extends ExecutionScheme {
-  override type Result[Ctx, Res] = F[Res]
-  override def failed[Ctx, Res](error: Throwable): Result[Ctx, Res] =
-    ops.failed(error)
-  override def onComplete[Ctx, Res](result: Result[Ctx, Res])(op: => Unit)(implicit
-      ec: ExecutionContext): Result[Ctx, Res] = ???
-  override def flatMapFuture[Ctx, Res, T](future: Future[T])(resultFn: T => Result[Ctx, Res])(
-      implicit ec: ExecutionContext): Result[Ctx, Res] =
-    ops.flatMapFuture(future)(resultFn)
-  def mapEffect[Ctx, Res, T](future: Future[(Ctx, T)])(f: (Ctx, T) => Res)(implicit
-      ec: ExecutionContext): F[Res] =
-    ops.map(future) { case (ctx, in) => f(ctx, in) }
-
-  override def extended: Boolean = false
 }
 
 trait AlternativeExecutionScheme {

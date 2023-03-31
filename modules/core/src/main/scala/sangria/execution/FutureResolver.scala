@@ -168,7 +168,7 @@ private[execution] class FutureResolver[Ctx](
         throw new IllegalStateException(s"Unsupported execution scheme: $s")
     }
 
-  private def handleScheme(
+  protected def handleScheme(
       result: Future[((Vector[RegisteredError], marshaller.Node), Ctx)],
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = scheme match {
     case ExecutionScheme.Default =>
@@ -188,10 +188,6 @@ private[execution] class FutureResolver[Ctx](
             ExecutionResult(uc, res, errors, middleware, validationTiming, queryReducerTiming)
           case ((_, res), _) => res
         })
-        .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
-
-    case s: EffectBasedExecutionScheme[_] =>
-      s.mapEffect(result.map(_.swap)) { case (_, in) => in._2 }
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
     case s =>
@@ -880,7 +876,7 @@ private[execution] class FutureResolver[Ctx](
     e
   }
 
-  private def resolveLeafAction(
+  protected def resolveLeafAction(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       userCtx: Ctx,
@@ -888,6 +884,29 @@ private[execution] class FutureResolver[Ctx](
       field: Field[Ctx, _],
       updateCtx: Option[MappedCtxUpdate[Ctx, Any, Any]])(
       action: LeafAction[Ctx, Any]): (ast.Field, Resolve) =
+    action match {
+      case a: StandardLeafAction[Ctx, Any] =>
+        resolveStandardLeafAction(path, tpe, userCtx, astFields, field, updateCtx)(a)
+      case other => unresolvableLeafAction(path, tpe, astFields, updateCtx)(other)
+    }
+
+  protected def unresolvableLeafAction(
+      path: ExecutionPath,
+      tpe: ObjectType[Ctx, _],
+      astFields: Vector[ast.Field],
+      updateCtx: Option[MappedCtxUpdate[Ctx, Any, Any]])(
+      action: LeafAction[Ctx, Any]): (ast.Field, Resolve) =
+    illegalActionException(path, tpe, astFields, updateCtx)(
+      s"Action of type '${action.getClass.toString}' is not supported by this resolver")
+
+  protected def resolveStandardLeafAction(
+      path: ExecutionPath,
+      tpe: ObjectType[Ctx, _],
+      userCtx: Ctx,
+      astFields: Vector[ast.Field],
+      field: Field[Ctx, _],
+      updateCtx: Option[MappedCtxUpdate[Ctx, Any, Any]])(
+      action: StandardLeafAction[Ctx, Any]): (ast.Field, Resolve) =
     action match {
       case v: Value[Ctx, Any] => resolveValue(path, tpe, userCtx, astFields, field, updateCtx)(v)
       case t: TryValue[Ctx, Any] =>
@@ -1107,7 +1126,7 @@ private[execution] class FutureResolver[Ctx](
     )
   }
 
-  private def resolveFutureValue(
+  protected def resolveFutureValue(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       userCtx: Ctx,
@@ -1818,7 +1837,7 @@ private[execution] class FutureResolver[Ctx](
       sourceMapper,
       position.toList)
 
-  private sealed trait Resolve {
+  protected sealed trait Resolve {
     def appendErrors(
         path: ExecutionPath,
         errors: Vector[Throwable],
