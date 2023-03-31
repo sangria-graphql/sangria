@@ -312,8 +312,8 @@ private[parser] sealed trait TypeSystemDefinitions {
       (comment, location, name, interfaces, dirs, fields) =>
         ast.InterfaceTypeExtensionDefinition(
           name,
-          fields._1.toVector,
           interfaces,
+          fields._1.toVector,
           dirs,
           comment,
           fields._2,
@@ -322,8 +322,8 @@ private[parser] sealed trait TypeSystemDefinitions {
         Vector.empty))) ~ DirectivesConst ~> ((comment, location, name, interfaces, dirs) =>
         ast.InterfaceTypeExtensionDefinition(
           name,
-          Vector.empty,
           interfaces,
+          Vector.empty,
           dirs,
           comment,
           Vector.empty,
@@ -332,8 +332,8 @@ private[parser] sealed trait TypeSystemDefinitions {
         (comment, location, name, interfaces) =>
           ast.InterfaceTypeExtensionDefinition(
             name,
-            Vector.empty,
             interfaces,
+            Vector.empty,
             Vector.empty,
             comment,
             Vector.empty,

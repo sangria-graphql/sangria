@@ -640,8 +640,8 @@ case class ObjectTypeExtensionDefinition(
   */
 case class InterfaceTypeExtensionDefinition(
     name: String,
-    fields: Vector[FieldDefinition],
     interfaces: Vector[NamedType],
+    fields: Vector[FieldDefinition],
     directives: Vector[Directive] = Vector.empty,
     comments: Vector[Comment] = Vector.empty,
     trailingComments: Vector[Comment] = Vector.empty,
@@ -653,6 +653,14 @@ case class InterfaceTypeExtensionDefinition(
 }
 
 object InterfaceTypeExtensionDefinition {
+  def apply(name: String, fields: Vector[FieldDefinition]): InterfaceTypeExtensionDefinition =
+    new InterfaceTypeExtensionDefinition(name, Vector.empty, fields)
+
+  def apply(
+      name: String,
+      fields: Vector[FieldDefinition],
+      directives: Vector[Directive]): InterfaceTypeExtensionDefinition =
+    new InterfaceTypeExtensionDefinition(name, Vector.empty, fields, directives)
 
   def apply(
       name: String,
@@ -661,16 +669,14 @@ object InterfaceTypeExtensionDefinition {
       comments: Vector[Comment],
       trailingComments: Vector[Comment],
       location: Option[AstLocation]): InterfaceTypeExtensionDefinition =
-    InterfaceTypeExtensionDefinition(
+    new InterfaceTypeExtensionDefinition(
       name,
-      fields,
       Vector.empty,
+      fields,
       directives,
       comments,
       trailingComments,
-      location
-    )
-
+      location)
 }
 
 /** @group typesystem

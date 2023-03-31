@@ -1846,6 +1846,7 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             ),
             InterfaceTypeExtensionDefinition(
               "Baz",
+              Vector(NamedType("Bar", Some(AstLocation(144, 14, 33)))),
               Vector(
                 FieldDefinition(
                   "baz",
@@ -1872,7 +1873,6 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                   Vector.empty,
                   Some(AstLocation(178, 17, 3)))
               ),
-              Vector(NamedType("Bar", Some(AstLocation(144, 14, 33)))),
               Vector.empty,
               Vector.empty,
               Vector.empty,
