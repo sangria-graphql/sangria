@@ -22,7 +22,7 @@ class IOExecutionScheme extends AnyWordSpec with Matchers {
     override def map[T, Out](in: Future[T])(f: T => Out): IO[Out] = IO.fromFuture(IO(in)).map(f)
   }
   private implicit val ioExecutionScheme: EffectBasedExecutionScheme[IO] =
-    new EffectBasedExecutionScheme[IO](ioEffectOps)
+    new EffectBasedExecutionScheme[IO](ioEffectOps, FutureResolverBuilder)
 
   import IOExecutionScheme._
   "IOExecutionScheme" must {
