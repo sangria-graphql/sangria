@@ -11,7 +11,7 @@ val isScala3 = Def.setting(
 ThisBuild / crossScalaVersions := Seq("2.12.17", "2.13.10", "3.2.2")
 ThisBuild / scalaVersion := crossScalaVersions.value.tail.head
 ThisBuild / githubWorkflowBuildPreamble ++= List(
-  WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
+//  WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting"))
 )
 

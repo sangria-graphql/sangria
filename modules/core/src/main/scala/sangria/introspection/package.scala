@@ -168,7 +168,16 @@ package object introspection {
       List[Field[Unit, Field[_, _]]](
         Field("name", StringType, resolve = _.value.name),
         Field("description", OptionType(StringType), resolve = _.value.description),
-        Field("args", ListType(__InputValue), resolve = _.value.arguments),
+        Field(
+          "args",
+          ListType(__InputValue),
+          arguments = includeDeprecated :: Nil,
+          resolve = { ctx =>
+            val incDep = ctx.arg(includeDeprecated)
+            if (incDep) ctx.value.arguments
+            else ctx.value.arguments.filter(_.deprecationReason.isEmpty)
+          }
+        ),
         Field("type", __Type, resolve = false -> _.value.fieldType),
         Field("isDeprecated", BooleanType, resolve = _.value.deprecationReason.isDefined),
         Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason)
@@ -309,10 +318,17 @@ package object introspection {
         Field(
           "inputFields",
           OptionType(ListType(__InputValue)),
-          resolve = _.value._2 match {
-            case io: InputObjectType[_] => Some(io.fields)
-            case _ => None
-          }),
+          arguments = includeDeprecated :: Nil,
+          resolve = ctx => {
+            val incDep = ctx.arg(includeDeprecated)
+
+            ctx.value._2 match {
+              case io: InputObjectType[_] if incDep => Some(io.fields)
+              case io: InputObjectType[_] => Some(io.fields.filter(_.deprecationReason.isEmpty))
+              case _ => None
+            }
+          }
+        ),
         Field(
           "ofType",
           OptionType(__Type),
@@ -342,7 +358,9 @@ package object introspection {
           Some("A GraphQL-formatted string representing the default value for this input value."),
         resolve = ctx =>
           ctx.value.defaultValue.flatMap(ctx.renderInputValueCompact(_, ctx.value.inputValueType))
-      )
+      ),
+      Field("isDeprecated", BooleanType, resolve = _.value.deprecationReason.isDefined),
+      Field("deprecationReason", OptionType(StringType), resolve = _.value.deprecationReason)
     )
   )
 
@@ -374,7 +392,16 @@ package object introspection {
         "locations",
         ListType(__DirectiveLocation),
         resolve = _.value.locations.toVector.sorted),
-      Field("args", ListType(__InputValue), resolve = _.value.arguments),
+      Field(
+        "args",
+        ListType(__InputValue),
+        arguments = includeDeprecated :: Nil,
+        resolve = ctx => {
+          val incDep = ctx.arg(includeDeprecated)
+          if (incDep) ctx.value.arguments
+          else ctx.value.arguments.filter(_.deprecationReason.isEmpty)
+        }
+      ),
       Field(
         "isRepeatable",
         BooleanType,
@@ -475,7 +502,7 @@ package object introspection {
        |      name
        |      description
        |      locations
-       |      args {
+       |      args(includeDeprecated: true) {
        |        ...InputValue
        |      }
        |      ${if (directiveRepeatableFlag) "isRepeatable" else ""}
@@ -490,7 +517,7 @@ package object introspection {
        |  fields(includeDeprecated: true) {
        |    name
        |    description
-       |    args {
+       |    args(includeDeprecated: true) {
        |      ...InputValue
        |    }
        |    type {
@@ -499,7 +526,7 @@ package object introspection {
        |    isDeprecated
        |    deprecationReason
        |  }
-       |  inputFields {
+       |  inputFields(includeDeprecated: true) {
        |    ...InputValue
        |  }
        |  interfaces {
@@ -520,6 +547,8 @@ package object introspection {
        |  description
        |  type { ...TypeRef }
        |  defaultValue
+       |  isDeprecated
+       |  deprecationReason
        |}
        |fragment TypeRef on __Type {
        |  kind

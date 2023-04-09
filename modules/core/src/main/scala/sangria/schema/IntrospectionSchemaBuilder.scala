@@ -262,6 +262,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
         description = inputFieldDescription(definition),
         fieldType = tpe,
         defaultValue = defaultValue,
+        deprecationReason = inputFieldDeprecationReason(definition),
         astDirectives = Vector.empty,
         astNodes = Vector.empty
       ))
@@ -279,6 +280,7 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
         argumentType = tpe,
         defaultValue = defaultValue,
         fromInput = argumentFromInput(fieldDefinition, definition),
+        deprecationReason = inputValueDeprecationReason(definition),
         astDirectives = Vector.empty,
         astNodes = Vector.empty
       ))
@@ -378,6 +380,14 @@ class DefaultIntrospectionSchemaBuilder[Ctx] extends IntrospectionSchemaBuilder[
     definition.name
 
   def fieldDeprecationReason(definition: IntrospectionField): Option[String] =
+    definition.deprecationReason.orElse(
+      if (definition.isDeprecated) Some(DefaultDeprecationReason) else None)
+
+  def inputFieldDeprecationReason(definition: IntrospectionInputValue): Option[String] =
+    definition.deprecationReason.orElse(
+      if (definition.isDeprecated) Some(DefaultDeprecationReason) else None)
+
+  def inputValueDeprecationReason(definition: IntrospectionInputValue): Option[String] =
     definition.deprecationReason.orElse(
       if (definition.isDeprecated) Some(DefaultDeprecationReason) else None)
 
