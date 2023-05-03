@@ -172,6 +172,16 @@ case class Args(
       getAsOptional[T](name).getOrElse(defaultInfo(name).asInstanceOf[T])
   }
 
+  /** Retrieve a mandatory (non-optional) argument. If an optional argument without a default is
+    * specified an [[IllegalArgumentException]] will be thrown
+    *
+    * @param name
+    *   the name of the argument
+    * @return
+    *   the argument value
+    * @throws IllegalArgumentException
+    *   when an optional argument without a default is specified
+    */
   def arg[T](name: String): T =
     if (!optionalArgs.contains(name))
       raw(name).asInstanceOf[T]
@@ -182,6 +192,13 @@ case class Args(
     else
       getAsOptional[T](name).getOrElse(defaultInfo(name).asInstanceOf[T])
 
+  /** Retrieve an optional argument. If a non-optional argument is specified an error will be thrown
+    *
+    * @param name
+    *   the name of the argument
+    * @return
+    *   An [[Option]] containing the argument if present, or None if absent
+    */
   def argOpt[T](name: String): Option[T] = getAsOptional(name)
 
   def argOpt[T](arg: Argument[T]): Option[T] = {
