@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import sangria.ast
+import sangria.macros._
 import sangria.util.Pos
 import sangria.util.SimpleGraphQlSupport._
 import sangria.validation.ValueCoercionViolation
@@ -11,6 +12,7 @@ import sangria.validation.ValueCoercionViolation
 import scala.util.{Failure, Success, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sangria.validation.BigDecimalCoercionViolation
 
 class CustomScalarSpec extends AnyWordSpec with Matchers {
   "Schema" should {
@@ -79,6 +81,49 @@ class CustomScalarSpec extends AnyWordSpec with Matchers {
           """Expected type 'Date!', found '"2015-05-test"'. Date value expected""" -> List(
             Pos(3, 28)))
       )
+    }
+
+    "allow to overwrite built-in scalar type" in {
+
+      def parseBigDecimal(s: String) = Try(BigDecimal(s)) match {
+        case Success(d) => Right(d)
+        case Failure(error) => Left(BigDecimalCoercionViolation)
+      }
+
+      val BigDecimalType = ScalarType[BigDecimal](
+        "BigDecimal",
+        description = Some("A string only BigDecimal type"),
+        coerceOutput = (d, _) => d.toString,
+        coerceUserInput = {
+          case s: String => parseBigDecimal(s)
+          case _ => Left(BigDecimalCoercionViolation)
+        },
+        coerceInput = {
+          case ast.StringValue(s, _, _, _, _) => parseBigDecimal(s)
+          case _ => Left(BigDecimalCoercionViolation)
+        }
+      )
+
+      val schemaSdl = graphql"""
+        scalar BigDecimal
+
+        type Query {
+          age: BigDecimal!
+        }
+      """
+
+      val schema = Schema.buildFromAst[Unit](
+        schemaSdl,
+        AstSchemaBuilder.resolverBased(
+          ScalarResolver[Unit] { case ast.ScalarTypeDefinition("BigDecimal", _, _, _, _) =>
+            BigDecimalType
+          }
+        )
+      )
+
+      schema.scalarTypes.collectFirst { case ("BigDecimal", tpe) => tpe } should be(
+        Some(BigDecimalType))
+
     }
   }
 }

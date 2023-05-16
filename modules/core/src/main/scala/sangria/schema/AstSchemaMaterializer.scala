@@ -576,10 +576,10 @@ class AstSchemaMaterializer[Ctx] private (
   def getNamedType(
       origin: MatOrigin,
       typeName: String,
-      location: Option[AstLocation]): Type with Named =
-    typeDefCache.getOrElseUpdate(
-      origin -> typeName,
-      Schema.getBuiltInType(typeName).getOrElse {
+      location: Option[AstLocation]): Type with Named = {
+
+    def update = {
+      val builtType = {
         val existing = existingDefsMat.get(typeName).toVector
         val sdl = typeDefsMat.filter(_.name == typeName)
         val additional = builder.additionalTypes.filter(_.name == typeName).toVector
@@ -606,11 +606,21 @@ class AstSchemaMaterializer[Ctx] private (
             getNamedType(origin, allCandidates.head)
           } else None
 
-        builtType.getOrElse(
-          throw MaterializedSchemaValidationError(Vector(
-            UnknownTypeViolation(typeName, Seq.empty, document.sourceMapper, location.toList))))
+        builtType
       }
+
+      builtType
+        .orElse(Schema.getBuiltInType(typeName))
+        .getOrElse(throw MaterializedSchemaValidationError(Vector(
+          UnknownTypeViolation(typeName, Seq.empty, document.sourceMapper, location.toList))))
+
+    }
+
+    typeDefCache.getOrElseUpdate(
+      origin -> typeName,
+      update
     )
+  }
 
   def getNamedType(origin: MatOrigin, tpe: MaterializedType): Option[Type with Named] =
     tpe match {
