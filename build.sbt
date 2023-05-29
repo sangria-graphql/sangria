@@ -126,7 +126,7 @@ lazy val parser = project
       "org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
     libraryDependencies ++= Seq(
       // AST Parser
-      "org.parboiled" %% "parboiled" % "2.4.1",
+      "org.parboiled" %% "parboiled" % "2.5.0",
       "org.scalatest" %% "scalatest" % "3.2.16" % Test
     ),
     apiURL := {
