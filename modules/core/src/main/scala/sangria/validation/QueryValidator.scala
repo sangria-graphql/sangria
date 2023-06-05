@@ -15,7 +15,7 @@ trait QueryValidator {
 }
 
 object QueryValidator {
-  val allRules: List[ValidationRule] = List(
+  val allRules: Seq[ValidationRule] = Seq(
     new ValuesOfCorrectType,
     new ExecutableDefinitions,
     new FieldsOnCorrectType,
@@ -45,7 +45,7 @@ object QueryValidator {
     new SingleFieldSubscriptions
   )
 
-  def ruleBased(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
+  def ruleBased(rules: Seq[ValidationRule]) = new RuleBasedQueryValidator(rules)
 
   val empty = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
@@ -55,7 +55,7 @@ object QueryValidator {
   val default: RuleBasedQueryValidator = ruleBased(allRules)
 }
 
-class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
+class RuleBasedQueryValidator(rules: Seq[ValidationRule]) extends QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
     val ctx = new ValidationContext(schema, queryAst, queryAst.sourceMapper, new TypeInfo(schema))
 
@@ -92,7 +92,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
   def validateUsingRules(
       queryAst: ast.AstNode,
       ctx: ValidationContext,
-      visitors: List[ValidationRule#AstValidatingVisitor],
+      visitors: Iterable[ValidationRule#AstValidatingVisitor],
       topLevel: Boolean): Unit = AstVisitor.visitAstRecursive(
     doc = queryAst,
     onEnter = node => {
