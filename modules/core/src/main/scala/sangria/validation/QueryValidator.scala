@@ -55,9 +55,17 @@ object QueryValidator {
   val default: RuleBasedQueryValidator = ruleBased(allRules)
 }
 
-class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
+class RuleBasedQueryValidator(
+    rules: List[ValidationRule],
+    errorsLimit: Option[Int] = None
+) extends QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
-    val ctx = new ValidationContext(schema, queryAst, queryAst.sourceMapper, new TypeInfo(schema))
+    val ctx = new ValidationContext(
+      schema,
+      queryAst,
+      queryAst.sourceMapper,
+      new TypeInfo(schema),
+      errorsLimit)
 
     validateUsingRules(queryAst, ctx, rules.map(_.visitor(ctx)), topLevel = true)
 
@@ -148,7 +156,8 @@ class ValidationContext(
     val schema: Schema[_, _],
     val doc: ast.Document,
     val sourceMapper: Option[SourceMapper],
-    val typeInfo: TypeInfo) {
+    val typeInfo: TypeInfo,
+    errorsLimit: Option[Int] = None) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val errors = ListBuffer[Violation]()
@@ -161,8 +170,14 @@ class ValidationContext(
   def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
     !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
 
-  def addViolation(v: Violation) = errors += v
-  def addViolations(vs: Vector[Violation]) = errors ++= vs
+  def addViolation(v: Violation) = errorsLimit.fold(errors += v) { limit =>
+    if (errors.length >= limit) errors
+    else errors += v
+  }
+  def addViolations(vs: Vector[Violation]) = errorsLimit.fold(errors ++= vs) { limit =>
+    vs.foreach(addViolation)
+    errors
+  }
 
   def violations = errors.toVector
 }
