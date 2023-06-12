@@ -690,6 +690,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         description = inputFieldDescription(definition),
         fieldType = tpe,
         defaultValue = defaultValue,
+        deprecationReason = inputValueDeprecationReason(definition),
         astDirectives = definition.directives,
         astNodes = Vector(definition)
       ))
@@ -718,6 +719,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         argumentType = tpe,
         defaultValue = defaultValue,
         fromInput = argumentFromInput(typeDefinition, fieldDefinition, definition),
+        deprecationReason = inputValueDeprecationReason(definition),
         astDirectives = definition.directives,
         astNodes = Vector(definition)
       ))
@@ -851,12 +853,15 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     None
 
   def enumValueDeprecationReason(definition: ast.EnumValueDefinition): Option[String] =
-    deprecationReason(definition.directives.toList)
+    deprecationReason(definition.directives)
 
   def fieldDeprecationReason(definition: ast.FieldDefinition): Option[String] =
-    deprecationReason(definition.directives.toList)
+    deprecationReason(definition.directives)
 
-  def deprecationReason(dirs: List[ast.Directive]): Option[String] =
+  def inputValueDeprecationReason(definition: ast.InputValueDefinition): Option[String] =
+    deprecationReason(definition.directives)
+
+  def deprecationReason(dirs: Iterable[ast.Directive]): Option[String] =
     dirs.find(_.name == DeprecatedDirective.name).flatMap { d =>
       d.arguments.find(_.name == ReasonArg.name) match {
         case Some(reason) =>

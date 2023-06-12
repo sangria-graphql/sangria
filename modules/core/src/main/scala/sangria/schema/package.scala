@@ -258,7 +258,11 @@ package object schema {
     "deprecated",
     description = Some("Marks an element of a GraphQL schema as no longer supported."),
     arguments = ReasonArg :: Nil,
-    locations = Set(DirectiveLocation.FieldDefinition, DirectiveLocation.EnumValue),
+    locations = Set(
+      DirectiveLocation.FieldDefinition,
+      DirectiveLocation.ArgumentDefinition,
+      DirectiveLocation.InputFieldDefinition,
+      DirectiveLocation.EnumValue),
     shouldInclude = ctx => !ctx.arg(IfArg)
   )
 

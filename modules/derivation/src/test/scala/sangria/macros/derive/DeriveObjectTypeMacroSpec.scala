@@ -603,25 +603,36 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "id",
             None,
             IntrospectionNamedTypeRef(TypeKind.Scalar, "Int"),
-            Some("123")),
+            Some("123"),
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "songs",
             None,
             IntrospectionNonNullTypeRef(IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),
-            None
+            None,
+            isDeprecated = false,
+            deprecationReason = None
           ),
           IntrospectionInputValue(
             "pet",
             None,
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-            Some("""{name:"xxx",size:322}""")),
+            Some("""{name:"xxx",size:322}"""),
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "aaa",
             Some("bbbb"),
             IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))),
-            Some("[Red]"))
+            Some("[Red]"),
+            isDeprecated = false,
+            deprecationReason = None
+          )
         ))
 
       val Some(optField) = introType.fields.find(_.name == "opt")
@@ -634,17 +645,26 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "str",
             None,
             IntrospectionNamedTypeRef(TypeKind.Scalar, "String"),
-            None),
+            None,
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "color",
             None,
             IntrospectionNamedTypeRef(TypeKind.Enum, "Color"),
-            None),
+            None,
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "pet",
             None,
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-            None)
+            None,
+            isDeprecated = false,
+            deprecationReason = None
+          )
         ))
 
       val Some(paramTypeField) = introType.fields.find(_.name == "paramType")
@@ -656,12 +676,18 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "id",
             None,
             IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "ID")),
-            None),
+            None,
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "defaultId",
             None,
             IntrospectionNamedTypeRef(TypeKind.Scalar, "ID"),
-            Some(""""47589""""))
+            Some(""""47589""""),
+            isDeprecated = false,
+            deprecationReason = None
+          )
         ))
     }
 
@@ -720,25 +746,35 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "id",
             Some("`id`"),
             IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "Int")),
-            None),
+            None,
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "songs",
             Some("`songs`"),
             IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String"))),
-            Some("""["My favorite song"]""")
+            Some("""["My favorite song"]"""),
+            isDeprecated = false,
+            deprecationReason = None
           ),
           IntrospectionInputValue(
             "pet",
             Some("`pet`"),
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-            Some("""{name:"Octocat"}""")),
+            Some("""{name:"Octocat"}"""),
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "colors",
             None,
             IntrospectionNonNullTypeRef(IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color")))),
-            None
+            None,
+            isDeprecated = false,
+            deprecationReason = None
           )
         ))
 
@@ -752,17 +788,26 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "description",
             Some("Optional description"),
             IntrospectionNamedTypeRef(TypeKind.Scalar, "String"),
-            None),
+            None,
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "color",
             Some("a color"),
             IntrospectionNamedTypeRef(TypeKind.Enum, "Color"),
-            None),
+            None,
+            isDeprecated = false,
+            deprecationReason = None
+          ),
           IntrospectionInputValue(
             "pet",
             None,
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-            Some("""{name:"Bell",size:3}"""))
+            Some("""{name:"Bell",size:3}"""),
+            isDeprecated = false,
+            deprecationReason = None
+          )
         ))
     }
 
