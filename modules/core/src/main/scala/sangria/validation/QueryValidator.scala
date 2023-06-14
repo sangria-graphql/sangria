@@ -162,7 +162,7 @@ class ValidationContext(
     val doc: ast.Document,
     val sourceMapper: Option[SourceMapper],
     val typeInfo: TypeInfo,
-    val errorsLimit: Option[Int]) {
+    errorsLimit: Option[Int]) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val errors = ListBuffer[Violation]()
