@@ -41,7 +41,7 @@ class QueryValidatorSpec extends AnyWordSpec {
         """
 
       "not limit number of errors returned if the limit is not provided" in {
-        val validator = new RuleBasedQueryValidator(rules)
+        val validator = RuleBasedQueryValidator(rules)
 
         val Success(doc) = QueryParser.parse(invalidQuery)
         val result = validator.validateQuery(schema, doc)

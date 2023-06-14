@@ -45,7 +45,7 @@ object QueryValidator {
     new SingleFieldSubscriptions
   )
 
-  def ruleBased(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
+  def ruleBased(rules: List[ValidationRule]) = RuleBasedQueryValidator(rules)
 
   val empty = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
@@ -57,7 +57,7 @@ object QueryValidator {
 
 class RuleBasedQueryValidator(
     rules: List[ValidationRule],
-    errorsLimit: Option[Int] = None
+    errorsLimit: Option[Int]
 ) extends QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
     val ctx = new ValidationContext(
@@ -90,7 +90,7 @@ class RuleBasedQueryValidator(
       inputType: InputType[_]): Vector[Violation] = {
     val typeInfo = new TypeInfo(schema, Some(inputType))
 
-    val ctx = new ValidationContext(schema, ast.Document.emptyStub, doc.sourceMapper, typeInfo)
+    val ctx = ValidationContext(schema, ast.Document.emptyStub, doc.sourceMapper, typeInfo)
 
     validateUsingRules(doc, ctx, rules.map(_.visitor(ctx)), topLevel = true)
 
@@ -148,8 +148,13 @@ class RuleBasedQueryValidator(
     val cls = classTag[T].runtimeClass
     val newRules = rules.filterNot(r => cls.isAssignableFrom(r.getClass))
 
-    new RuleBasedQueryValidator(newRules)
+    RuleBasedQueryValidator(newRules)
   }
+}
+
+object RuleBasedQueryValidator {
+  def apply(rules: List[ValidationRule]): RuleBasedQueryValidator =
+    new RuleBasedQueryValidator(rules, None)
 }
 
 class ValidationContext(
@@ -157,7 +162,7 @@ class ValidationContext(
     val doc: ast.Document,
     val sourceMapper: Option[SourceMapper],
     val typeInfo: TypeInfo,
-    errorsLimit: Option[Int] = None) {
+    val errorsLimit: Option[Int]) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val errors = ListBuffer[Violation]()
@@ -183,6 +188,14 @@ class ValidationContext(
 }
 
 object ValidationContext {
+  def apply(
+      schema: Schema[_, _],
+      doc: ast.Document,
+      sourceMapper: Option[SourceMapper],
+      typeInfo: TypeInfo
+  ): ValidationContext =
+    new ValidationContext(schema, doc, sourceMapper, typeInfo, None)
+
   @deprecated(
     "The validations are now implemented as a part of `ValuesOfCorrectType` validation.",
     "1.4.0")
