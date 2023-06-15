@@ -45,14 +45,18 @@ object QueryValidator {
     new SingleFieldSubscriptions
   )
 
-  def ruleBased(rules: List[ValidationRule]) = RuleBasedQueryValidator(rules)
+  @deprecated("use ruleBased setting 'errorsLimit' instead", "4.0.1")
+  def ruleBased(rules: List[ValidationRule]): RuleBasedQueryValidator =
+    RuleBasedQueryValidator(rules)
+  def ruleBased(rules: List[ValidationRule], errorsLimit: Option[Int]): RuleBasedQueryValidator =
+    new RuleBasedQueryValidator(rules, errorsLimit)
 
-  val empty = new QueryValidator {
+  val empty: QueryValidator = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
       Vector.empty
   }
 
-  val default: RuleBasedQueryValidator = ruleBased(allRules)
+  val default: RuleBasedQueryValidator = ruleBased(allRules, errorsLimit = Some(10))
 }
 
 class RuleBasedQueryValidator(
