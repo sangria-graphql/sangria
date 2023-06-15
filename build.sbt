@@ -1,6 +1,8 @@
 import sbt.Developer
 import sbt.Keys._
 
+import com.typesafe.tools.mima.core._
+
 val isScala3 = Def.setting(scalaBinaryVersion.value == "3")
 
 // sbt-github-actions needs configuration in `ThisBuild`
@@ -91,6 +93,10 @@ lazy val core = project
     name := "sangria-core",
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-core" % "4.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.validation.RuleBasedQueryValidator.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.validation.ValidationContext.this")
+    ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Visitor
