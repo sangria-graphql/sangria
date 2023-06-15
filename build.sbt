@@ -1,12 +1,10 @@
 import sbt.Developer
 import sbt.Keys._
 
-import com.typesafe.tools.mima.core._
-
 val isScala3 = Def.setting(scalaBinaryVersion.value == "3")
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.17", "2.13.10", "3.3.0")
+ThisBuild / crossScalaVersions := Seq("2.12.18", "2.13.11", "3.3.0")
 ThisBuild / scalaVersion := crossScalaVersions.value.tail.head
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
@@ -30,10 +28,6 @@ ThisBuild / githubWorkflowPublish := Seq(
     )
   )
 )
-
-def emptyForScala3(isScala3: Boolean, module: ModuleID): Set[ModuleID] =
-  if (isScala3) Set.empty
-  else Set(module)
 
 lazy val root = project
   .in(file("."))
@@ -61,52 +55,7 @@ lazy val ast = project
   .settings(
     name := "sangria-ast",
     description := "Scala GraphQL AST representation",
-    mimaPreviousArtifacts := emptyForScala3(
-      isScala3.value,
-      "org.sangria-graphql" %% "sangria-ast" % "3.0.0"),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.ast.DirectiveDefinition.*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.copy"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.ast.DirectiveDefinition.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.DirectiveDefinition$"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "sangria.introspection.IntrospectionInterfaceType.*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionInterfaceType.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionInterfaceType.copy"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.InterfaceTypeDefinition$"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "sangria.ast.InterfaceTypeDefinition.*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeDefinition.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeDefinition.copy"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeDefinition.tupled"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeDefinition.curried"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeDefinition.<init>*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeDefinition.apply$default$*"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.ast.InterfaceTypeExtensionDefinition$"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "sangria.ast.InterfaceTypeExtensionDefinition.*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeExtensionDefinition.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeExtensionDefinition.copy"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeExtensionDefinition.tupled"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeExtensionDefinition.curried"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeExtensionDefinition.<init>*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.ast.InterfaceTypeExtensionDefinition.apply$default$*")
-    ),
+    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-ast" % "4.0.0"),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-ast_$ver/latest/"))
@@ -121,9 +70,7 @@ lazy val parser = project
   .settings(
     name := "sangria-parser",
     description := "Scala GraphQL parser",
-    mimaPreviousArtifacts := emptyForScala3(
-      isScala3.value,
-      "org.sangria-graphql" %% "sangria-parser" % "3.0.0"),
+    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-parser" % "4.0.0"),
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.5.0",
@@ -143,59 +90,7 @@ lazy val core = project
   .settings(
     name := "sangria-core",
     description := "Scala GraphQL implementation",
-    mimaPreviousArtifacts := emptyForScala3(
-      isScala3.value,
-      "org.sangria-graphql" %% "sangria-core" % "3.0.0"),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionDirective.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionDirective.copy"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionDirective.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.introspection.IntrospectionDirective$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionDirective.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.package.introspectionQueryString"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.package.introspectionQuery"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.schema.Directive.<init>*"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.schema.Directive.apply*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.copy"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "sangria.schema.Directive.copy$default$*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Directive.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.Directive$"),
-      ProblemFilters.exclude[MissingTypesProblem]("sangria.schema.MappedAbstractType"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem](
-        "sangria.execution.Resolver.resolveSimpleListValue"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.subs"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.Field.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver.*"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Resolver#*"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "sangria.schema.AstSchemaBuilder.buildInterfaceType"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "sangria.schema.AstSchemaBuilder.extendInterfaceType"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "sangria.schema.IntrospectionSchemaBuilder.buildInterfaceType"),
-      ProblemFilters.exclude[MissingTypesProblem](
-        "sangria.introspection.IntrospectionInterfaceType$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionInterfaceType.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionInterfaceType.tupled"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionInterfaceType.curried"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.introspection.IntrospectionInterfaceType.copy"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "sangria.execution.ExecutionScheme.resolverBuilder"),
-      ProblemFilters.exclude[IncompatibleTemplateDefProblem]("sangria.execution.Resolver"),
-      ProblemFilters.exclude[MissingClassProblem]("sangria.execution.Resolver$*")
-    ),
+    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-core" % "4.0.0"),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Visitor
@@ -231,9 +126,7 @@ lazy val derivation = project
   .settings(
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
-    mimaPreviousArtifacts := emptyForScala3(
-      isScala3.value,
-      "org.sangria-graphql" %% "sangria-derivation" % "3.0.0"),
+    mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-derivation" % "4.0.0"),
     // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
                              else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)),
