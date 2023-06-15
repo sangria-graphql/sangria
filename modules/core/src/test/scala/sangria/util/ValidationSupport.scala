@@ -455,5 +455,5 @@ trait ValidationSupport extends Matchers {
     violations shouldBe empty
   }
 
-  def validator(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
+  def validator(rules: List[ValidationRule]) = RuleBasedQueryValidator(rules)
 }
