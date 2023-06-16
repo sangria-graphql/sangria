@@ -220,7 +220,7 @@ object CatsScenarioExecutor extends FutureResultSupport {
 
     case Validate(rules) =>
       ValidationResult(
-        new RuleBasedQueryValidator(rules.toList)
+        RuleBasedQueryValidator(rules.toList)
           .validateQuery(`given`.schema, QueryParser.parse(`given`.query).get))
 
     case Execute(validate, value, vars, op) =>

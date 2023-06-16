@@ -45,19 +45,31 @@ object QueryValidator {
     new SingleFieldSubscriptions
   )
 
-  def ruleBased(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
+  @deprecated("use ruleBased setting 'errorsLimit' instead", "4.0.1")
+  def ruleBased(rules: List[ValidationRule]): RuleBasedQueryValidator =
+    RuleBasedQueryValidator(rules)
+  def ruleBased(rules: List[ValidationRule], errorsLimit: Option[Int]): RuleBasedQueryValidator =
+    new RuleBasedQueryValidator(rules, errorsLimit)
 
-  val empty = new QueryValidator {
+  val empty: QueryValidator = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
       Vector.empty
   }
 
-  val default: RuleBasedQueryValidator = ruleBased(allRules)
+  val default: RuleBasedQueryValidator = ruleBased(allRules, errorsLimit = Some(10))
 }
 
-class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
+class RuleBasedQueryValidator(
+    rules: List[ValidationRule],
+    errorsLimit: Option[Int]
+) extends QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
-    val ctx = new ValidationContext(schema, queryAst, queryAst.sourceMapper, new TypeInfo(schema))
+    val ctx = new ValidationContext(
+      schema,
+      queryAst,
+      queryAst.sourceMapper,
+      new TypeInfo(schema),
+      errorsLimit)
 
     validateUsingRules(queryAst, ctx, rules.map(_.visitor(ctx)), topLevel = true)
 
@@ -82,7 +94,7 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
       inputType: InputType[_]): Vector[Violation] = {
     val typeInfo = new TypeInfo(schema, Some(inputType))
 
-    val ctx = new ValidationContext(schema, ast.Document.emptyStub, doc.sourceMapper, typeInfo)
+    val ctx = ValidationContext(schema, ast.Document.emptyStub, doc.sourceMapper, typeInfo)
 
     validateUsingRules(doc, ctx, rules.map(_.visitor(ctx)), topLevel = true)
 
@@ -140,15 +152,21 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
     val cls = classTag[T].runtimeClass
     val newRules = rules.filterNot(r => cls.isAssignableFrom(r.getClass))
 
-    new RuleBasedQueryValidator(newRules)
+    RuleBasedQueryValidator(newRules)
   }
+}
+
+object RuleBasedQueryValidator {
+  def apply(rules: List[ValidationRule]): RuleBasedQueryValidator =
+    new RuleBasedQueryValidator(rules, None)
 }
 
 class ValidationContext(
     val schema: Schema[_, _],
     val doc: ast.Document,
     val sourceMapper: Option[SourceMapper],
-    val typeInfo: TypeInfo) {
+    val typeInfo: TypeInfo,
+    errorsLimit: Option[Int]) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
   private val errors = ListBuffer[Violation]()
@@ -161,13 +179,27 @@ class ValidationContext(
   def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
     !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
 
-  def addViolation(v: Violation) = errors += v
-  def addViolations(vs: Vector[Violation]) = errors ++= vs
+  def addViolation(v: Violation) = errorsLimit.fold(errors += v) { limit =>
+    if (errors.length >= limit) errors
+    else errors += v
+  }
+  def addViolations(vs: Vector[Violation]) = errorsLimit.fold(errors ++= vs) { limit =>
+    vs.foreach(addViolation)
+    errors
+  }
 
   def violations = errors.toVector
 }
 
 object ValidationContext {
+  def apply(
+      schema: Schema[_, _],
+      doc: ast.Document,
+      sourceMapper: Option[SourceMapper],
+      typeInfo: TypeInfo
+  ): ValidationContext =
+    new ValidationContext(schema, doc, sourceMapper, typeInfo, None)
+
   @deprecated(
     "The validations are now implemented as a part of `ValuesOfCorrectType` validation.",
     "1.4.0")
