@@ -94,8 +94,10 @@ lazy val core = project
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-core" % "4.0.0"),
     mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.validation.RuleBasedQueryValidator.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.validation.ValidationContext.this")
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.RuleBasedQueryValidator.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.ValidationContext.this")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
@@ -111,7 +113,7 @@ lazy val core = project
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.1" % Test,
-      "eu.timepit" %% "refined" % "0.10.3" % Test,
+      "eu.timepit" %% "refined" % "0.11.0" % Test,
       // CATs
       ("net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test).cross(CrossVersion.for3Use2_13),
       "io.github.classgraph" % "classgraph" % "4.8.160" % Test
