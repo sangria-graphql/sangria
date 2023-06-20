@@ -43,7 +43,7 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
     "support nested enum instances" in {
       val `enum` = deriveEnumType[Difficulty]()
       `enum`.name should be("Difficulty")
-      `enum`.values.map(_.name).sorted should be(
+      `enum`.values.map(_.name) should be(
         List(
           "Easy",
           "Hard",
@@ -104,14 +104,13 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       val singletonEnum = deriveEnumType[Fruit]()
       val `enum` = deriveEnumType[Color.Value]()
 
-      singletonEnum.values.map(_.name).sorted should be(
+      singletonEnum.values.map(_.name) should be(
         List("Guava", "MegaOrange", "RedApple", "SuperBanana"))
       singletonEnum.values.map(_.value).sortBy(_.toString) should be(
         List(Guava, MegaOrange, RedApple, SuperBanana))
 
-      `enum`.values.map(_.name).sorted should be(List("DarkBlue", "LightGreen", "Red"))
-      `enum`.values.map(_.value).sortBy(_.toString) should be(
-        List(Color.DarkBlue, Color.LightGreen, Color.Red))
+      `enum`.values.map(_.name) should be(List("DarkBlue", "LightGreen", "Red"))
+      `enum`.values.map(_.value) should be(List(Color.DarkBlue, Color.LightGreen, Color.Red))
     }
 
     "validate known values and mutually exclusive props" in {
@@ -142,18 +141,18 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       val singletonEnum = deriveEnumType[FruitAnnotated]()
       val `enum` = deriveEnumType[ColorAnnotated.Value]()
 
-      singletonEnum.values.map(_.name).sorted should be("JustApple" :: "MegaOrangeAnnotated" :: Nil)
-      `enum`.values.map(_.name).sorted should be(
-        "Dark1Blue_FooStuff" :: "DarkBlue" :: "NormalRed" :: Nil)
+      // "JustApple" is after "MegaOrangeAnnotated" because the sorting is done on the enum scala name
+      // and "JustApple" is "RedAppleAnnotated"
+      singletonEnum.values.map(_.name) should be("MegaOrangeAnnotated" :: "JustApple" :: Nil)
+      `enum`.values.map(_.name) should be("Dark1Blue_FooStuff" :: "DarkBlue" :: "NormalRed" :: Nil)
     }
 
     "uppercase GraphQL enum values" in {
       val singletonEnum = deriveEnumType[FruitAnnotated](UppercaseValues)
       val `enum` = deriveEnumType[ColorAnnotated.Value](UppercaseValues)
 
-      singletonEnum.values.map(_.name).sorted should be(
-        "JUST_APPLE" :: "MEGA_ORANGE_ANNOTATED" :: Nil)
-      `enum`.values.map(_.name).sorted should be(
+      singletonEnum.values.map(_.name) should be("MEGA_ORANGE_ANNOTATED" :: "JUST_APPLE" :: Nil)
+      `enum`.values.map(_.name) should be(
         "DARK1_BLUE_FOO_STUFF" :: "DARK_BLUE" :: "NORMAL_RED" :: Nil)
     }
 
@@ -165,13 +164,13 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       val enumUpperCase =
         deriveEnumType[ColorAnnotated.Value](TransformValueNames("Color" + _), UppercaseValues)
 
-      singletonEnum.values.map(_.name).sorted should be(
+      singletonEnum.values.map(_.name) should be(
         "DifficultyEasy" :: "DifficultyHard" :: "DifficultyMedium" :: Nil)
-      singletonEnumUpperCase.values.map(_.name).sorted should be(
+      singletonEnumUpperCase.values.map(_.name) should be(
         "DIFFICULTY_EASY" :: "DIFFICULTY_HARD" :: "DIFFICULTY_MEDIUM" :: Nil)
-      `enum`.values.map(_.name).sorted should be(
+      `enum`.values.map(_.name) should be(
         "ColorDark1Blue_FooStuff" :: "ColorDarkBlue" :: "ColorNormalRed" :: Nil)
-      enumUpperCase.values.map(_.name).sorted should be(
+      enumUpperCase.values.map(_.name) should be(
         "COLOR_DARK1_BLUE_FOO_STUFF" :: "COLOR_DARK_BLUE" :: "COLOR_NORMAL_RED" :: Nil)
     }
 
@@ -191,15 +190,15 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
         DeprecateValue("DarkBlue", "nah")
       )
 
-      singletonEnum.values.sortBy(_.name) should be(
+      singletonEnum.values should be(
         List(
-          EnumValue("JustBanana", None, SuperBanana, None),
+          EnumValue("Yay", Some("my color"), Guava, None),
           EnumValue("MegaOrange", None, MegaOrange, Some("not cool")),
           EnumValue("RedApple", Some("apple!"), RedApple, Some("foo")),
-          EnumValue("Yay", Some("my color"), Guava, None)
+          EnumValue("JustBanana", None, SuperBanana, None)
         ))
 
-      `enum`.values.sortBy(_.name) should be(
+      `enum`.values should be(
         List(
           EnumValue("DarkBlue", Some("my color"), Color.DarkBlue, Some("nah")),
           EnumValue("JustGreen", None, Color.LightGreen, None),
@@ -211,12 +210,13 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       val singletonEnum = deriveEnumType[FruitAnnotated]()
       val `enum` = deriveEnumType[ColorAnnotated.Value]()
 
-      singletonEnum.values.sortBy(_.name) should be(
+      singletonEnum.values should be(
         List(
-          EnumValue("JustApple", Some("The red one"), RedAppleAnnotated, None),
-          EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore"))))
+          EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore")),
+          EnumValue("JustApple", Some("The red one"), RedAppleAnnotated, None)
+        ))
 
-      `enum`.values.sortBy(_.name) should be(
+      `enum`.values should be(
         List(
           EnumValue("Dark1Blue_FooStuff", None, ColorAnnotated.Dark1Blue_FooStuff, None),
           EnumValue("DarkBlue", None, ColorAnnotated.DarkBlue, Some("Don't like blue")),
@@ -230,12 +230,12 @@ class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
       val `enum` =
         deriveEnumType[ColorAnnotated.Value](UppercaseValues, DocumentValue("Red", "TestTest"))
 
-      singletonEnum.values.sortBy(_.name) should be(
+      singletonEnum.values should be(
         List(
-          EnumValue("FooBar", Some("The red one"), RedAppleAnnotated, None),
-          EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore"))))
+          EnumValue("MegaOrangeAnnotated", None, MegaOrangeAnnotated, Some("Not tasty anymore")),
+          EnumValue("FooBar", Some("The red one"), RedAppleAnnotated, None)))
 
-      `enum`.values.sortBy(_.name) should be(
+      `enum`.values should be(
         List(
           EnumValue("DARK1_BLUE_FOO_STUFF", None, ColorAnnotated.Dark1Blue_FooStuff, None),
           EnumValue("DARK_BLUE", None, ColorAnnotated.DarkBlue, Some("Don't like blue")),
