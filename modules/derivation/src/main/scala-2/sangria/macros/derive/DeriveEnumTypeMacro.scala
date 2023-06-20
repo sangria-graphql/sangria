@@ -9,7 +9,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
     with DeriveMacroSupport {
   import c.universe._
 
-  def deriveEnumType[T: WeakTypeTag](config: Tree*) = {
+  def deriveEnumType[T: WeakTypeTag](config: Tree*): c.universe.Tree = {
     val t = weakTypeTag[T]
     val validatedConfig = validateEnumConfig(config)
     val errors = validatedConfig.collect { case Left(error) => error }
@@ -96,7 +96,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
     if (extractedValues.isEmpty)
       reportErrors(List(c.enclosingPosition -> "Enum value list is empty"))
     else
-      extractedValues.map { value =>
+      extractedValues.sortBy(_.name.decodedName.toString.trim).map { value =>
         val name = value.name.decodedName.toString.trim
         val annotationName = symbolName(value.annotations)
         val configName = config.collect { case MacroRenameValue(`name`, tree, _) =>

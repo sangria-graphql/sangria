@@ -106,7 +106,7 @@ object DeriveEnumTypeMacro extends DeriveMacroSupport {
         List(PositionByQuotes(quotes) -> "Enum value list is empty")
       )
     else
-      extractedValues.map { value =>
+      extractedValues.sortBy(_.name).map { value =>
         val name = value.name
         val annotationName = symbolName(value.annotations)
         val configName = config.collect { case MacroRenameValue(`name`, expr, _) =>
