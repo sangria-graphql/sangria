@@ -12,6 +12,7 @@ import scala.reflect.{ClassTag, classTag}
 
 trait QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
+  def errorsLimit: Option[Int]
 }
 
 object QueryValidator {
@@ -54,14 +55,15 @@ object QueryValidator {
   val empty: QueryValidator = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
       Vector.empty
+    override val errorsLimit: Option[Int] = None
   }
 
-  val default: RuleBasedQueryValidator = ruleBased(allRules, errorsLimit = Some(10))
+  val default: RuleBasedQueryValidator = ruleBased(allRules, errorsLimit = Some(1))
 }
 
 class RuleBasedQueryValidator(
     rules: List[ValidationRule],
-    errorsLimit: Option[Int]
+    override val errorsLimit: Option[Int]
 ) extends QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
     val ctx = new ValidationContext(

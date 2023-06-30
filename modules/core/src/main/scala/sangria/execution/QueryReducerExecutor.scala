@@ -35,7 +35,9 @@ object QueryReducerExecutor {
         userContext,
         exceptionHandler,
         scalarMiddleware,
-        true)(InputUnmarshaller.scalaInputUnmarshaller[Any @@ ScalaInput])
+        true,
+        errorsLimit = queryValidator.errorsLimit
+      )(InputUnmarshaller.scalaInputUnmarshaller[Any @@ ScalaInput])
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)

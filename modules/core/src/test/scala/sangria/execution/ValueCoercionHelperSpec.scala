@@ -213,7 +213,9 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
       (),
       ExceptionHandler.empty,
       None,
-      true)
+      true,
+      errorsLimit = None
+    )
     val variables = valueCollector
       .getVariableValues(
         QueryParser

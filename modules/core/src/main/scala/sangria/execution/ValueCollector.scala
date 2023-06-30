@@ -19,9 +19,10 @@ class ValueCollector[Ctx, Input](
     userContext: Ctx,
     exceptionHandler: ExceptionHandler,
     fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]],
-    ignoreErrors: Boolean)(implicit um: InputUnmarshaller[Input]) {
+    ignoreErrors: Boolean,
+    errorsLimit: Option[Int])(implicit um: InputUnmarshaller[Input]) {
   val coercionHelper =
-    new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
+    new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext), errorsLimit)
 
   private val argumentCache =
     Cache.empty[(ExecutionPath.PathCacheKeyReversed, Vector[ast.Argument]), Try[Args]]
@@ -63,7 +64,14 @@ class ValueCollector[Ctx, Input](
             }
         }
 
-      val (errors, values) = res.partition(_._2.isLeft)
+      val (allErrors, values) = res.partition(_._2.isLeft)
+
+      // additionally reduce the number of errors
+      // although we limit the number of errors per input, it's still possible to exceed the limit if errors are combined.
+      val errors = errorsLimit match {
+        case Some(limit) => allErrors.take(limit)
+        case _ => allErrors
+      }
 
       if (errors.nonEmpty)
         Failure(

@@ -26,7 +26,9 @@ case class InputDocumentMaterializer[Vars](
       (),
       ExceptionHandler.empty,
       None,
-      false)(iu)
+      false,
+      errorsLimit = None
+    )(iu)
 
     val violations = QueryValidator.default.validateInputDocument(schema, document, inputType)
 

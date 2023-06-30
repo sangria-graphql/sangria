@@ -4,9 +4,10 @@ import sangria.ast
 import sangria.ast.SourceMapper
 import sangria.marshalling.{InputUnmarshaller, ResultMarshaller}
 import sangria.schema._
-import sangria.validation.QueryValidator
+import sangria.validation.{QueryValidator, RuleBasedQueryValidator}
 import InputUnmarshaller.emptyMapVars
 import sangria.execution.deferred.DeferredResolver
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -43,7 +44,9 @@ case class Executor[Ctx, Root](
         userContext,
         exceptionHandler,
         scalarMiddleware,
-        false)(um)
+        false,
+        errorsLimit = queryValidator.errorsLimit
+      )(um)
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
@@ -155,7 +158,9 @@ case class Executor[Ctx, Root](
         userContext,
         exceptionHandler,
         scalarMiddleware,
-        false)(um)
+        false,
+        errorsLimit = queryValidator.errorsLimit
+      )(um)
 
       val executionResult = for {
         operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
