@@ -12,6 +12,10 @@ import scala.reflect.{ClassTag, classTag}
 
 trait QueryValidator {
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
+  def validateQuery(
+      schema: Schema[_, _],
+      queryAst: ast.Document,
+      errorsLimit: Option[Int]): Vector[Violation]
 }
 
 object QueryValidator {
@@ -54,6 +58,10 @@ object QueryValidator {
   val empty: QueryValidator = new QueryValidator {
     def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
       Vector.empty
+    def validateQuery(
+        schema: Schema[_, _],
+        queryAst: ast.Document,
+        errorsLimit: Option[Int]): Vector[Violation] = Vector.empty
   }
 
   val default: RuleBasedQueryValidator = ruleBased(allRules, errorsLimit = Some(10))
@@ -63,13 +71,19 @@ class RuleBasedQueryValidator(
     rules: List[ValidationRule],
     errorsLimit: Option[Int]
 ) extends QueryValidator {
-  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] = {
+  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
+    validateQuery(schema, queryAst, errorsLimit)
+
+  def validateQuery(
+      schema: Schema[_, _],
+      queryAst: ast.Document,
+      errorsLimitOverride: Option[Int]): Vector[Violation] = {
     val ctx = new ValidationContext(
       schema,
       queryAst,
       queryAst.sourceMapper,
       new TypeInfo(schema),
-      errorsLimit)
+      errorsLimitOverride)
 
     validateUsingRules(queryAst, ctx, rules.map(_.visitor(ctx)), topLevel = true)
 

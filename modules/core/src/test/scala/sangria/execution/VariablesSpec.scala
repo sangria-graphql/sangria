@@ -922,5 +922,54 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
         validateQuery = false
       )
     }
+
+    "Execute: Limits number of errors" should {
+      val query =
+        """
+          query noErrorLimits($input1: [String!]!, $input2: [String!]!, $input3: [String!]!) {
+            result1: nnListNN(input: $input1)
+            result2: nnListNN(input: $input2)
+            result3: nnListNN(input: $input3)
+          }
+        """
+      val variables =
+        """{"input1": ["A",null,"B",null], "input2": [null,"C",null], "input3": [null,null,"D"]}""".parseJson
+
+      "return all errors if no limit is provided" in checkContainsErrors(
+        (),
+        query,
+        None,
+        List(
+          """Variable '$input1' expected value of type '[String!]!' but got: ["A",null,"B",null].""" ->
+            List(Pos(2, 31)),
+          """Variable '$input1' expected value of type '[String!]!' but got: ["A",null,"B",null].""" ->
+            List(Pos(2, 31)),
+          """Variable '$input2' expected value of type '[String!]!' but got: [null,"C",null].""" ->
+            List(Pos(2, 52)),
+          """Variable '$input2' expected value of type '[String!]!' but got: [null,"C",null].""" ->
+            List(Pos(2, 52)),
+          """Variable '$input3' expected value of type '[String!]!' but got: [null,null,"D"].""" ->
+            List(Pos(2, 73)),
+          """Variable '$input3' expected value of type '[String!]!' but got: [null,null,"D"].""" ->
+            List(Pos(2, 73))
+        ),
+        variables
+      )
+      "return errors up to the limit" in checkContainsErrors(
+        (),
+        query,
+        None,
+        List(
+          """Variable '$input1' expected value of type '[String!]!' but got: ["A",null,"B",null].""" ->
+            List(Pos(2, 31)),
+          """Variable '$input1' expected value of type '[String!]!' but got: ["A",null,"B",null].""" ->
+            List(Pos(2, 31)),
+          """Variable '$input2' expected value of type '[String!]!' but got: [null,"C",null].""" ->
+            List(Pos(2, 52))
+        ),
+        variables,
+        errorsLimit = Some(3)
+      )
+    }
   }
 }

@@ -58,6 +58,16 @@ class QueryValidatorSpec extends AnyWordSpec {
 
         assertResult(errorsLimit)(result.length)
       }
+      "limit number of errors returned if the limit is provided as a method argument override" in {
+        val errorsLimit = 10
+        val errorsLimitOverride = 5
+        val validator = new RuleBasedQueryValidator(rules, Some(errorsLimit))
+
+        val Success(doc) = QueryParser.parse(invalidQuery)
+        val result = validator.validateQuery(schema, doc, Some(errorsLimitOverride))
+
+        assertResult(errorsLimitOverride)(result.length)
+      }
     }
   }
 }
