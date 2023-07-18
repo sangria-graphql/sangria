@@ -19,8 +19,7 @@ case class Executor[Ctx, Root](
     deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
-    queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-    errorsLimit: Option[Int] = None
+    queryReducers: List[QueryReducer[Ctx, _]] = Nil
 )(implicit executionContext: ExecutionContext) {
   def prepare[Input](
       queryAst: ast.Document,
@@ -30,7 +29,8 @@ case class Executor[Ctx, Root](
       variables: Input = emptyMapVars
   )(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
     val (violations, validationTiming) =
-      TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst, errorsLimit))
+      TimeMeasurement.measure(
+        queryValidator.validateQuery(schema, queryAst, queryValidator.errorsLimit))
 
     if (violations.nonEmpty)
       Future.failed(ValidationError(violations, exceptionHandler))
@@ -51,7 +51,7 @@ case class Executor[Ctx, Root](
         unmarshalledVariables <- valueCollector.getVariableValues(
           operation.variables,
           scalarMiddleware,
-          errorsLimit
+          queryValidator.errorsLimit
         )
         fieldCollector = new FieldCollector[Ctx, Root](
           schema,
@@ -144,7 +144,8 @@ case class Executor[Ctx, Root](
       um: InputUnmarshaller[Input],
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
     val (violations, validationTiming) =
-      TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst, errorsLimit))
+      TimeMeasurement.measure(
+        queryValidator.validateQuery(schema, queryAst, queryValidator.errorsLimit))
 
     if (violations.nonEmpty)
       scheme.failed(ValidationError(violations, exceptionHandler))
@@ -165,7 +166,7 @@ case class Executor[Ctx, Root](
         unmarshalledVariables <- valueCollector.getVariableValues(
           operation.variables,
           scalarMiddleware,
-          errorsLimit
+          queryValidator.errorsLimit
         )
         fieldCollector = new FieldCollector[Ctx, Root](
           schema,
@@ -329,8 +330,7 @@ object Executor {
       deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
       middleware: List[Middleware[Ctx]] = Nil,
       maxQueryDepth: Option[Int] = None,
-      queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-      errorsLimit: Option[Int] = None
+      queryReducers: List[QueryReducer[Ctx, _]] = Nil
   )(implicit
       executionContext: ExecutionContext,
       marshaller: ResultMarshaller,
@@ -344,8 +344,7 @@ object Executor {
       deprecationTracker,
       middleware,
       maxQueryDepth,
-      queryReducers,
-      errorsLimit)
+      queryReducers)
       .execute(queryAst, userContext, root, operationName, variables)
 
   def prepare[Ctx, Root, Input](
@@ -361,8 +360,7 @@ object Executor {
       deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
       middleware: List[Middleware[Ctx]] = Nil,
       maxQueryDepth: Option[Int] = None,
-      queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-      errorsLimit: Option[Int] = None
+      queryReducers: List[QueryReducer[Ctx, _]] = Nil
   )(implicit
       executionContext: ExecutionContext,
       um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] =
@@ -374,8 +372,7 @@ object Executor {
       deprecationTracker,
       middleware,
       maxQueryDepth,
-      queryReducers,
-      errorsLimit)
+      queryReducers)
       .prepare(queryAst, userContext, root, operationName, variables)
 
   def getOperationRootType[Ctx, Root](

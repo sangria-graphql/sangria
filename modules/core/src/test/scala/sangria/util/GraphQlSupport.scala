@@ -30,6 +30,10 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       HandledException(e.getMessage)
     }
 
+    val queryValidator = if (validateQuery) QueryValidator.default else QueryValidator.empty
+    val queryValidatorWithErrorsLimits =
+      errorsLimit.fold(queryValidator)(queryValidator.withErrorsLimit)
+
     Executor
       .execute(
         schema.asInstanceOf[Schema[Any, T]],
@@ -38,9 +42,8 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
         data,
         variables = args,
         exceptionHandler = exceptionHandler,
-        queryValidator = if (validateQuery) QueryValidator.default else QueryValidator.empty,
-        deferredResolver = resolver,
-        errorsLimit = errorsLimit
+        queryValidator = queryValidatorWithErrorsLimits,
+        deferredResolver = resolver
       )
       .awaitAndRecoverQueryAnalysisScala
   }

@@ -16,6 +16,9 @@ trait QueryValidator {
       schema: Schema[_, _],
       queryAst: ast.Document,
       errorsLimit: Option[Int]): Vector[Violation]
+
+  def errorsLimit: Option[Int]
+  def withErrorsLimit(limit: Int): QueryValidator
 }
 
 object QueryValidator {
@@ -62,6 +65,9 @@ object QueryValidator {
         schema: Schema[_, _],
         queryAst: ast.Document,
         errorsLimit: Option[Int]): Vector[Violation] = Vector.empty
+
+    override def errorsLimit: Option[Int] = None
+    override def withErrorsLimit(limit: Int): QueryValidator = this
   }
 
   val default: RuleBasedQueryValidator = ruleBased(allRules, errorsLimit = Some(10))
@@ -69,8 +75,12 @@ object QueryValidator {
 
 class RuleBasedQueryValidator(
     rules: List[ValidationRule],
-    errorsLimit: Option[Int]
+    val errorsLimit: Option[Int]
 ) extends QueryValidator {
+
+  def withErrorsLimit(limit: Int): RuleBasedQueryValidator =
+    new RuleBasedQueryValidator(rules, Some(limit))
+
   def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
     validateQuery(schema, queryAst, errorsLimit)
 
