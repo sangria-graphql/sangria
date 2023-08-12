@@ -1,4 +1,4 @@
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.2")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.3")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.8")
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.8")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.5")
