@@ -11,7 +11,7 @@ import scala.collection.mutable.{ListBuffer, Map => MutableMap, Set => MutableSe
 import scala.reflect.{ClassTag, classTag}
 
 trait QueryValidator {
-  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
+//  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation]
   def validateQuery(
       schema: Schema[_, _],
       queryAst: ast.Document,
@@ -49,41 +49,32 @@ object QueryValidator {
     new SingleFieldSubscriptions
   )
 
-  @deprecated("use ruleBased setting 'errorsLimit' instead", "4.0.1")
   def ruleBased(rules: List[ValidationRule]): RuleBasedQueryValidator =
-    RuleBasedQueryValidator(rules)
-  def ruleBased(rules: List[ValidationRule], errorsLimit: Option[Int]): RuleBasedQueryValidator =
-    new RuleBasedQueryValidator(rules, errorsLimit)
+    new RuleBasedQueryValidator(rules)
 
   val empty: QueryValidator = new QueryValidator {
-    def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
-      Vector.empty
     def validateQuery(
         schema: Schema[_, _],
         queryAst: ast.Document,
         errorsLimit: Option[Int]): Vector[Violation] = Vector.empty
   }
 
-  val default: RuleBasedQueryValidator = ruleBased(allRules, errorsLimit = Some(10))
+  val default: RuleBasedQueryValidator = ruleBased(allRules)
 }
 
 class RuleBasedQueryValidator(
-    rules: List[ValidationRule],
-    errorsLimit: Option[Int]
+    rules: List[ValidationRule]
 ) extends QueryValidator {
-  def validateQuery(schema: Schema[_, _], queryAst: ast.Document): Vector[Violation] =
-    validateQuery(schema, queryAst, errorsLimit)
-
   def validateQuery(
       schema: Schema[_, _],
       queryAst: ast.Document,
-      errorsLimitOverride: Option[Int]): Vector[Violation] = {
+      errorsLimit: Option[Int]): Vector[Violation] = {
     val ctx = new ValidationContext(
       schema,
       queryAst,
       queryAst.sourceMapper,
       new TypeInfo(schema),
-      errorsLimitOverride)
+      errorsLimit)
 
     validateUsingRules(queryAst, ctx, rules.map(_.visitor(ctx)), topLevel = true)
 
@@ -166,13 +157,8 @@ class RuleBasedQueryValidator(
     val cls = classTag[T].runtimeClass
     val newRules = rules.filterNot(r => cls.isAssignableFrom(r.getClass))
 
-    RuleBasedQueryValidator(newRules)
+    new RuleBasedQueryValidator(newRules)
   }
-}
-
-object RuleBasedQueryValidator {
-  def apply(rules: List[ValidationRule]): RuleBasedQueryValidator =
-    new RuleBasedQueryValidator(rules, None)
 }
 
 class ValidationContext(
