@@ -11,7 +11,7 @@ import sangria.validation.{QueryValidator, RuleBasedQueryValidator, Violation}
 @State(Scope.Thread)
 class OverlappingFieldsCanBeMergedBenchmark {
 
-  val validator: QueryValidator = RuleBasedQueryValidator(
+  val validator: QueryValidator = new RuleBasedQueryValidator(
     List(new rules.OverlappingFieldsCanBeMerged))
 
   val schema: Schema[_, _] =
@@ -98,7 +98,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
     bh.consume(doValidate(validator, deepAbstractConcrete))
 
   private def doValidate(validator: QueryValidator, document: Document): Vector[Violation] = {
-    val result = validator.validateQuery(schema, document)
+    val result = validator.validateQuery(schema, document, None)
     require(result.isEmpty)
     result
   }

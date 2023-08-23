@@ -8,7 +8,7 @@ import scala.util.Success
 
 class QueryValidatorSpec extends AnyWordSpec {
   "QueryValidator" when {
-    val rules = QueryValidator.allRules
+    val validator = new RuleBasedQueryValidator(QueryValidator.allRules)
 
     "testing RuleBasedQueryValidator" should {
       val TestInputType = InputObjectType(
@@ -41,32 +41,19 @@ class QueryValidatorSpec extends AnyWordSpec {
         """
 
       "not limit number of errors returned if the limit is not provided" in {
-        val validator = RuleBasedQueryValidator(rules)
-
         val Success(doc) = QueryParser.parse(invalidQuery)
-        val result = validator.validateQuery(schema, doc)
+        val result = validator.validateQuery(schema, doc, None)
 
         // 10 errors are expected because there are 5 input objects in the list with 2 missing fields each
         assertResult(10)(result.length)
       }
       "limit number of errors returned if the limit is provided" in {
         val errorsLimit = 5
-        val validator = new RuleBasedQueryValidator(rules, Some(errorsLimit))
 
         val Success(doc) = QueryParser.parse(invalidQuery)
-        val result = validator.validateQuery(schema, doc)
+        val result = validator.validateQuery(schema, doc, Some(errorsLimit))
 
         assertResult(errorsLimit)(result.length)
-      }
-      "limit number of errors returned if the limit is provided as a method argument override" in {
-        val errorsLimit = 10
-        val errorsLimitOverride = 5
-        val validator = new RuleBasedQueryValidator(rules, Some(errorsLimit))
-
-        val Success(doc) = QueryParser.parse(invalidQuery)
-        val result = validator.validateQuery(schema, doc, Some(errorsLimitOverride))
-
-        assertResult(errorsLimitOverride)(result.length)
       }
     }
   }

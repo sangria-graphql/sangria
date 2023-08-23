@@ -75,7 +75,8 @@ object BatchExecutor {
       middleware: List[Middleware[Ctx]] = Nil,
       maxQueryDepth: Option[Int] = None,
       queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-      inferVariableDefinitions: Boolean = true
+      inferVariableDefinitions: Boolean = true,
+      errorsLimit: Option[Int] = None
   )(implicit
       executionContext: ExecutionContext,
       marshaller: SymmetricMarshaller[T],
@@ -100,7 +101,7 @@ object BatchExecutor {
             inferVariableDefinitions,
             exceptionHandler))
         .flatMap { case res @ (updatedDocument, _) =>
-          val violations = queryValidator.validateQuery(schema, updatedDocument)
+          val violations = queryValidator.validateQuery(schema, updatedDocument, errorsLimit)
 
           if (violations.nonEmpty) Failure(ValidationError(violations, exceptionHandler))
           else Success(res)
