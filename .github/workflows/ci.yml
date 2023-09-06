@@ -40,16 +40,14 @@ jobs:
           java-version: 8
           cache: sbt
 
-      # TODO uncomment before merging
-      #- name: Check binary compatibility
-      #  run: sbt '++ ${{ matrix.scala }}' mimaReportBinaryIssues
+      - name: Check binary compatibility
+        run: sbt '++ ${{ matrix.scala }}' mimaReportBinaryIssues
 
       - name: Check formatting
         run: sbt '++ ${{ matrix.scala }}' scalafmtCheckAll
 
-      # TODO uncomment before merging
-      #- name: Check that workflows are up to date
-      #  run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
+      - name: Check that workflows are up to date
+        run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
 
       - name: Build project
         run: sbt '++ ${{ matrix.scala }}' test
