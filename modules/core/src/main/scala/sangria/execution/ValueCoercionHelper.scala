@@ -580,8 +580,10 @@ class ValueCoercionHelper[Ctx](
     nodeLocation.toList ++ firstValue.toList
   }
 
-  private def isValidValue[In](inputType: InputType[_], input: Option[In], errorsLimit: Option[Int])(
-      implicit um: InputUnmarshaller[In]): Vector[Violation] = {
+  private def isValidValue[In](
+      inputType: InputType[_],
+      input: Option[In],
+      errorsLimit: Option[Int])(implicit um: InputUnmarshaller[In]): Vector[Violation] = {
 
     // keeping track of the number of errors
     var errors = 0
