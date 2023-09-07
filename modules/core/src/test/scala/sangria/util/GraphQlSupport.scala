@@ -22,7 +22,8 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       args: A,
       userContext: Any = (),
       resolver: DeferredResolver[Any] = DeferredResolver.empty,
-      validateQuery: Boolean = true) = {
+      validateQuery: Boolean = true,
+      errorsLimit: Option[Int] = None) = {
     val Success(doc) = QueryParser.parse(query)
 
     val exceptionHandler = ExceptionHandler { case (m, e) =>
@@ -38,7 +39,8 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
         variables = args,
         exceptionHandler = exceptionHandler,
         queryValidator = if (validateQuery) QueryValidator.default else QueryValidator.empty,
-        deferredResolver = resolver
+        deferredResolver = resolver,
+        errorsLimit = errorsLimit
       )
       .awaitAndRecoverQueryAnalysisScala
   }
@@ -99,7 +101,8 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       args: JsValue = JsObject.empty,
       userContext: Any = (),
       resolver: DeferredResolver[_] = DeferredResolver.empty,
-      validateQuery: Boolean = true
+      validateQuery: Boolean = true,
+      errorsLimit: Option[Int] = None
   ): Unit = {
     val result = executeTestQuery(
       schema,
@@ -108,7 +111,9 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       args,
       validateQuery = validateQuery,
       userContext = userContext,
-      resolver = resolver.asInstanceOf[DeferredResolver[Any]]).asInstanceOf[Map[String, Any]]
+      resolver = resolver.asInstanceOf[DeferredResolver[Any]],
+      errorsLimit = errorsLimit
+    ).asInstanceOf[Map[String, Any]]
 
     result.get("data") should be(expectedData)
 
@@ -257,7 +262,8 @@ trait GraphQlSupport extends FutureResultSupport with Matchers {
       expectedData: Option[Map[String, Any]],
       expectedErrorStrings: Seq[(String, Seq[Pos])],
       args: JsValue = JsObject.empty,
-      validateQuery: Boolean = true): Unit =
+      validateQuery: Boolean = true,
+      errorsLimit: Option[Int] = None): Unit =
     SimpleGraphQlSupport.checkContainsErrors(
       schema,
       data,
@@ -265,7 +271,8 @@ trait GraphQlSupport extends FutureResultSupport with Matchers {
       expectedData,
       expectedErrorStrings,
       args = args,
-      validateQuery = validateQuery)
+      validateQuery = validateQuery,
+      errorsLimit = errorsLimit)
 }
 
 case class Pos(line: Int, col: Int)

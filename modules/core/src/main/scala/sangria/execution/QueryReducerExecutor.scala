@@ -19,9 +19,10 @@ object QueryReducerExecutor {
       queryValidator: QueryValidator = QueryValidator.default,
       exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
       deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
-      middleware: List[Middleware[Ctx]] = Nil
+      middleware: List[Middleware[Ctx]] = Nil,
+      errorsLimit: Option[Int] = None
   )(implicit executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] = {
-    val violations = queryValidator.validateQuery(schema, queryAst)
+    val violations = queryValidator.validateQuery(schema, queryAst, errorsLimit)
 
     if (violations.nonEmpty)
       Future.failed(ValidationError(violations, exceptionHandler))

@@ -351,7 +351,7 @@ trait ValidationSupport extends Matchers {
       expectedErrors: Seq[(String, Seq[Pos])]) = {
     val Success(doc) = QueryParser.parse(query)
 
-    assertViolations(validator(rules).validateQuery(s, doc), expectedErrors: _*)
+    assertViolations(validator(rules).validateQuery(s, doc, None), expectedErrors: _*)
   }
 
   def expectInputInvalid(
@@ -367,7 +367,7 @@ trait ValidationSupport extends Matchers {
 
   def expectValid(s: Schema[_, _], rules: List[ValidationRule], query: String) = {
     val Success(doc) = QueryParser.parse(query)
-    val errors = validator(rules).validateQuery(s, doc)
+    val errors = validator(rules).validateQuery(s, doc, None)
 
     withClue(renderViolations(errors)) {
       errors should have size 0
@@ -432,7 +432,7 @@ trait ValidationSupport extends Matchers {
       violationCheck: Violation => Unit): Unit = {
     val schema = Schema.buildFromAst(initialSchemaDoc)
     val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
-    val violations = validator(v.toList).validateQuery(schema, docUnderTest)
+    val violations = validator(v.toList).validateQuery(schema, docUnderTest, None)
     violations shouldNot be(empty)
     violations.size shouldBe 1
     violationCheck(violations.head)
@@ -451,9 +451,9 @@ trait ValidationSupport extends Matchers {
       v: Option[ValidationRule]): Unit = {
     val schema = Schema.buildFromAst(initialSchemaDoc)
     val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
-    val violations = validator(v.toList).validateQuery(schema, docUnderTest)
+    val violations = validator(v.toList).validateQuery(schema, docUnderTest, None)
     violations shouldBe empty
   }
 
-  def validator(rules: List[ValidationRule]) = RuleBasedQueryValidator(rules)
+  def validator(rules: List[ValidationRule]) = new RuleBasedQueryValidator(rules)
 }

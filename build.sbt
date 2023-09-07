@@ -94,8 +94,27 @@ lazy val core = project
     description := "Scala GraphQL implementation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-core" % "4.0.0"),
     mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Executor.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Executor.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Executor.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Executor.execute"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.execution.Executor.prepare"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.validation.RuleBasedQueryValidator.this"),
+        "sangria.execution.QueryReducerExecutor.reduceQueryWithoutVariables"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.ValueCoercionHelper.isValidValue"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.ValueCoercionHelper.getVariableValue"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.batch.BatchExecutor.executeBatch"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.schema.ResolverBasedAstSchemaBuilder.validateSchema"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.QueryValidator.validateQuery"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.validation.QueryValidator.validateQuery"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.RuleBasedQueryValidator.validateQuery"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "sangria.validation.ValidationContext.this")
     ),

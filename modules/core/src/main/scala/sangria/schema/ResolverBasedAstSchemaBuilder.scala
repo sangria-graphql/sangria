@@ -61,8 +61,9 @@ class ResolverBasedAstSchemaBuilder[Ctx](val resolvers: Seq[AstSchemaResolver[Ct
 
   def validateSchema(
       schema: ast.Document,
-      validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator): Vector[Violation] =
-    allowKnownDynamicDirectives(validator.validateQuery(validationSchema, schema))
+      validator: QueryValidator = ResolverBasedAstSchemaBuilder.validator,
+      errorsLimit: Option[Int] = None): Vector[Violation] =
+    allowKnownDynamicDirectives(validator.validateQuery(validationSchema, schema, errorsLimit))
 
   def validateSchemaWithException(
       schema: ast.Document,

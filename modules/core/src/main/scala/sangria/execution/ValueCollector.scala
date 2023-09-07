@@ -28,8 +28,14 @@ class ValueCollector[Ctx, Input](
 
   def getVariableValues(
       definitions: Vector[ast.VariableDefinition],
-      fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]])
-      : Try[Map[String, VariableValue]] =
+      fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]]
+  ): Try[Map[String, VariableValue]] = getVariableValues(definitions, fromScalarMiddleware, None)
+
+  def getVariableValues(
+      definitions: Vector[ast.VariableDefinition],
+      fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]],
+      errorsLimit: Option[Int]
+  ): Try[Map[String, VariableValue]] =
     if (!um.isMapNode(inputVars))
       Failure(
         new ExecutionError(
@@ -37,33 +43,51 @@ class ValueCollector[Ctx, Input](
           exceptionHandler))
     else {
       val res =
-        definitions.foldLeft(Vector.empty[(String, Either[Vector[Violation], VariableValue])]) {
+        definitions.foldLeft(
+          (0, Vector.empty[(String, Either[Vector[Violation], VariableValue])])) {
           case (acc, varDef) =>
-            val value = schema
-              .getInputType(varDef.tpe)
-              .map(
-                coercionHelper.getVariableValue(
+            val (accErrors, accResult) = acc
+
+            // early termination if errors limit is defined and the current number of violations exceeds the limit
+            if (errorsLimit.exists(_ <= accErrors)) acc
+            else {
+              val value = schema
+                .getInputType(varDef.tpe)
+                .map(coercionHelper.getVariableValue(
                   varDef,
                   _,
                   um.getRootMapValue(inputVars, varDef.name),
-                  fromScalarMiddleware))
-              .getOrElse(
-                Left(
-                  Vector(
-                    UnknownVariableTypeViolation(
-                      varDef.name,
-                      QueryRenderer.render(varDef.tpe),
-                      sourceMapper,
-                      varDef.location.toList))))
+                  fromScalarMiddleware,
+                  // calculate the allowed number of errors to be returned (if any)
+                  errorsLimit.map(_ - accErrors)
+                ))
+                .getOrElse(
+                  Left(
+                    Vector(
+                      UnknownVariableTypeViolation(
+                        varDef.name,
+                        QueryRenderer.render(varDef.tpe),
+                        sourceMapper,
+                        varDef.location.toList))))
 
-            value match {
-              case Right(Some(v)) => acc :+ (varDef.name -> Right(v))
-              case Right(None) => acc
-              case Left(violations) => acc :+ (varDef.name -> Left(violations))
+              value match {
+                case Right(Some(v)) => (accErrors, accResult :+ (varDef.name -> Right(v)))
+                case Right(None) => acc
+                case Left(violations) =>
+                  // number of errors that is allowed to use (all if errors limit is not defined)
+                  val errorsLeftToUse = errorsLimit.fold(violations.length) { limit =>
+                    Math.min(violations.length, limit - accErrors)
+                  }
+
+                  (
+                    accErrors + errorsLeftToUse,
+                    accResult :+ (varDef.name -> Left(violations.take(errorsLeftToUse)))
+                  )
+              }
             }
         }
 
-      val (errors, values) = res.partition(_._2.isLeft)
+      val (errors, values) = res._2.partition(_._2.isLeft)
 
       if (errors.nonEmpty)
         Failure(

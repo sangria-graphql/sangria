@@ -580,107 +580,128 @@ class ValueCoercionHelper[Ctx](
     nodeLocation.toList ++ firstValue.toList
   }
 
-  def isValidValue[In](tpe: InputType[_], input: Option[In])(implicit
-      um: InputUnmarshaller[In]): Vector[Violation] = (tpe, input) match {
-    case (OptionInputType(ofType), Some(value)) if um.isDefined(value) =>
-      isValidValue(ofType, Some(value))
-    case (OptionInputType(_), _) => Vector.empty
-    case (_, None) => Vector(NotNullValueIsNullViolation(sourceMapper, Nil))
+  private def isValidValue[In](
+      inputType: InputType[_],
+      input: Option[In],
+      errorsLimit: Option[Int])(implicit um: InputUnmarshaller[In]): Vector[Violation] = {
 
-    case (ListInputType(ofType), Some(values)) if um.isListNode(values) =>
-      um.getListValue(values)
-        .toVector
-        .flatMap(v =>
-          isValidValue(
-            ofType,
-            v match {
-              case opt: Option[In @unchecked] => opt
-              case other => Option(other)
-            }).map(ListValueViolation(0, _, sourceMapper, Nil)))
+    // keeping track of the number of errors
+    var errors = 0
+    def addViolation(violation: Violation): Vector[Violation] = {
+      errors += 1
+      Vector(violation)
+    }
 
-    case (ListInputType(ofType), Some(value)) if um.isDefined(value) =>
-      isValidValue(
-        ofType,
-        value match {
-          case opt: Option[In @unchecked] => opt
-          case other => Option(other)
-        }).map(ListValueViolation(0, _, sourceMapper, Nil))
+    def isValidValueRec(tpe: InputType[_], in: Option[In])(implicit
+        um: InputUnmarshaller[In]): Vector[Violation] =
+      // early termination if errors limit is defined and the current number of violations exceeds the limit
+      if (errorsLimit.exists(_ <= errors)) Vector.empty
+      else
+        (tpe, in) match {
+          case (OptionInputType(ofType), Some(value)) if um.isDefined(value) =>
+            isValidValueRec(ofType, Some(value))
+          case (OptionInputType(_), _) => Vector.empty
+          case (_, None) => addViolation(NotNullValueIsNullViolation(sourceMapper, Nil))
 
-    case (objTpe: InputObjectType[_], Some(valueMap)) if um.isMapNode(valueMap) =>
-      val unknownFields = um.getMapKeys(valueMap).toVector.collect {
-        case f if !objTpe.fieldsByName.contains(f) =>
-          UnknownInputObjectFieldViolation(
-            SchemaRenderer.renderTypeName(objTpe, true),
-            f,
-            sourceMapper,
-            Nil)
-      }
+          case (ListInputType(ofType), Some(values)) if um.isListNode(values) =>
+            um.getListValue(values)
+              .toVector
+              .flatMap(v =>
+                isValidValueRec(
+                  ofType,
+                  v match {
+                    case opt: Option[In @unchecked] => opt
+                    case other => Option(other)
+                  }).map(ListValueViolation(0, _, sourceMapper, Nil)))
 
-      val fieldViolations =
-        objTpe.fields.toVector.flatMap(f =>
-          isValidValue(f.fieldType, um.getMapValue(valueMap, f.name))
-            .map(MapValueViolation(f.name, _, sourceMapper, Nil)))
+          case (ListInputType(ofType), Some(value)) if um.isDefined(value) =>
+            isValidValueRec(
+              ofType,
+              value match {
+                case opt: Option[In @unchecked] => opt
+                case other => Option(other)
+              }).map(ListValueViolation(0, _, sourceMapper, Nil))
 
-      fieldViolations ++ unknownFields
+          case (objTpe: InputObjectType[_], Some(valueMap)) if um.isMapNode(valueMap) =>
+            val unknownFields = um.getMapKeys(valueMap).toVector.collect {
+              case f if !objTpe.fieldsByName.contains(f) =>
+                addViolation(
+                  UnknownInputObjectFieldViolation(
+                    SchemaRenderer.renderTypeName(objTpe, true),
+                    f,
+                    sourceMapper,
+                    Nil)).head
+            }
 
-    case (objTpe: InputObjectType[_], _) =>
-      Vector(
-        InputObjectIsOfWrongTypeMissingViolation(
-          SchemaRenderer.renderTypeName(objTpe, true),
-          sourceMapper,
-          Nil))
+            val fieldViolations =
+              objTpe.fields.toVector.flatMap(f =>
+                isValidValueRec(f.fieldType, um.getMapValue(valueMap, f.name))
+                  .map(MapValueViolation(f.name, _, sourceMapper, Nil)))
 
-    case (scalar: ScalarType[_], Some(value)) if um.isScalarNode(value) =>
-      val coerced = um.getScalarValue(value) match {
-        case node: ast.Value => scalar.coerceInput(node)
-        case other => scalar.coerceUserInput(other)
-      }
+            fieldViolations ++ unknownFields
 
-      coerced match {
-        case Left(violation) => Vector(violation)
-        case _ => Vector.empty
-      }
+          case (objTpe: InputObjectType[_], _) =>
+            addViolation(
+              InputObjectIsOfWrongTypeMissingViolation(
+                SchemaRenderer.renderTypeName(objTpe, true),
+                sourceMapper,
+                Nil))
 
-    case (scalar: ScalarAlias[_, _], Some(value)) if um.isScalarNode(value) =>
-      val coerced = um.getScalarValue(value) match {
-        case node: ast.Value => scalar.aliasFor.coerceInput(node)
-        case other => scalar.aliasFor.coerceUserInput(other)
-      }
+          case (scalar: ScalarType[_], Some(value)) if um.isScalarNode(value) =>
+            val coerced = um.getScalarValue(value) match {
+              case node: ast.Value => scalar.coerceInput(node)
+              case other => scalar.coerceUserInput(other)
+            }
 
-      coerced match {
-        case Left(violation) => Vector(violation)
-        case Right(v) =>
-          scalar.fromScalar(v) match {
-            case Left(violation) => Vector(violation)
-            case _ => Vector.empty
-          }
-      }
+            coerced match {
+              case Left(violation) => addViolation(violation)
+              case _ => Vector.empty
+            }
 
-    case (enumT: EnumType[_], Some(value)) if um.isEnumNode(value) =>
-      val coerced = um.getScalarValue(value) match {
-        case node: ast.Value => enumT.coerceInput(node)
-        case other => enumT.coerceUserInput(other)
-      }
+          case (scalar: ScalarAlias[_, _], Some(value)) if um.isScalarNode(value) =>
+            val coerced = um.getScalarValue(value) match {
+              case node: ast.Value => scalar.aliasFor.coerceInput(node)
+              case other => scalar.aliasFor.coerceUserInput(other)
+            }
 
-      coerced match {
-        case Left(violation) => Vector(violation)
-        case _ => Vector.empty
-      }
+            coerced match {
+              case Left(violation) => addViolation(violation)
+              case Right(v) =>
+                scalar.fromScalar(v) match {
+                  case Left(violation) => addViolation(violation)
+                  case _ => Vector.empty
+                }
+            }
 
-    case (enumT: EnumType[_], Some(value)) =>
-      Vector(EnumCoercionViolation)
+          case (enumT: EnumType[_], Some(value)) if um.isEnumNode(value) =>
+            val coerced = um.getScalarValue(value) match {
+              case node: ast.Value => enumT.coerceInput(node)
+              case other => enumT.coerceUserInput(other)
+            }
 
-    case _ =>
-      Vector(GenericInvalidValueViolation(sourceMapper, Nil))
+            coerced match {
+              case Left(violation) => addViolation(violation)
+              case _ => Vector.empty
+            }
+
+          case (enumT: EnumType[_], Some(value)) =>
+            addViolation(EnumCoercionViolation)
+
+          case _ =>
+            addViolation(GenericInvalidValueViolation(sourceMapper, Nil))
+        }
+
+    isValidValueRec(inputType, input)
   }
 
   def getVariableValue[In](
       definition: ast.VariableDefinition,
       tpe: InputType[_],
       input: Option[In],
-      fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]])(implicit
-      um: InputUnmarshaller[In]): Either[Vector[Violation], Option[VariableValue]] = {
-    val violations = isValidValue(tpe, input)
+      fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]],
+      errorsLimit: Option[Int]
+  )(implicit um: InputUnmarshaller[In]): Either[Vector[Violation], Option[VariableValue]] = {
+    val violations = isValidValue(tpe, input, errorsLimit)
 
     if (violations.isEmpty) {
       val fieldPath = s"$$${definition.name}" :: Nil
