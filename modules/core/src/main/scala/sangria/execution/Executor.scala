@@ -20,7 +20,7 @@ case class Executor[Ctx, Root](
     middleware: List[Middleware[Ctx]] = Nil,
     maxQueryDepth: Option[Int] = None,
     queryReducers: List[QueryReducer[Ctx, _]] = Nil,
-    errorsLimit: Option[Int] = None
+    errorsLimit: Option[Int] = Some(10)
 )(implicit executionContext: ExecutionContext) {
   def prepare[Input](
       queryAst: ast.Document,
