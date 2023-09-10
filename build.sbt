@@ -121,7 +121,7 @@ lazy val core = project
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
       // AST Visitor
-      "org.sangria-graphql" %% "macro-visit" % "0.2.0-RC1",
+      "org.sangria-graphql" %% "macro-visit" % "0.2.0",
       // Marshalling
       "org.sangria-graphql" %% "sangria-marshalling-api" % "1.0.8",
       // Streaming
