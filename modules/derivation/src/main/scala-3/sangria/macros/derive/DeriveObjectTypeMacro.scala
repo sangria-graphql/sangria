@@ -14,8 +14,6 @@ import sangria.schema.{
 
 import scala.concurrent.Future
 
-import scala.annotation.experimental
-
 import scala.quoted._
 import sangria.schema.InterfaceType
 import scala.reflect.ClassTag
@@ -26,7 +24,6 @@ import scala.annotation.tailrec
 
 object DeriveObjectTypeMacro {
 
-  @experimental
   def deriveContextObjectType[Ctx, CtxVal, Val](using Quotes)(using
       ctx: Type[Ctx],
       ctxVal: Type[CtxVal],
@@ -36,7 +33,6 @@ object DeriveObjectTypeMacro {
     new DeriveObjectTypeMacro().deriveObjectType(ctx, Some(ctxVal -> fn), v, configSeq)
   }
 
-  @experimental
   def deriveNormalObjectType[Ctx, Val](using Quotes)(using
       ctx: Type[Ctx],
       v: Type[Val]
@@ -50,7 +46,6 @@ object DeriveObjectTypeMacro {
 // Quotes instance in the class directly
 class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSupport {
 
-  @experimental
   def deriveObjectType[Ctx, CtxVal, Val](
       ctxType: Type[Ctx],
       ctxValType: Option[(Type[CtxVal], Expr[Ctx => CtxVal])],
@@ -101,7 +96,6 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
     }
   }
 
-  @experimental
   private def collectFields[Ctx, T, Val, CtxVal](
       config: Seq[MacroDeriveObjectSetting],
       ctxType: Type[Ctx],
@@ -262,7 +256,6 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
     }
   }
 
-  @experimental
   private def findActualFieldType[T](fieldType: globalQuotes.reflect.TypeRepr) =
     import globalQuotes.reflect._
     if (isSupertype[Future[_]](fieldType) && fieldType.typeArgs.nonEmpty)
@@ -286,7 +279,6 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
     import quotes.reflect._
     subtype <:< TypeRepr.of[T]
 
-  @experimental
   private def fieldWithArguments[Ctx, CtxVal, Val](
       config: Seq[MacroDeriveObjectSetting],
       member: KnownMember,
@@ -361,7 +353,6 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
       }
   }
 
-  @experimental
   private def createArg(config: Seq[MacroDeriveObjectSetting], member: KnownMember)(
       arg: globalQuotes.reflect.Symbol) =
     import globalQuotes.reflect._

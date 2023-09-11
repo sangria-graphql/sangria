@@ -6,11 +6,9 @@ import sangria.schema.{Field, InputField}
 import sangria.marshalling.ToInput
 import sangria.schema.WithoutInputTypeTags
 import sangria.schema.InputType
-import scala.annotation.experimental
 import scala.annotation.tailrec
 
 object DeriveInputObjectTypeMacro {
-  @experimental
   def deriveInputObjectType[T](using Quotes, Type[T])(
       config: Expr[Seq[DeriveInputObjectSetting]]) = {
     val Varargs(configSeq) = config
@@ -22,7 +20,6 @@ object DeriveInputObjectTypeMacro {
 // Quotes instance in the class directly
 private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSupport {
 
-  @experimental
   def deriveInputObjectType[T](using targetType: Type[T])(
       config: Seq[Expr[DeriveInputObjectSetting]]) = {
     import globalQuotes.reflect._
@@ -78,7 +75,6 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
     }
   }
 
-  @experimental
   private def collectFields[T](using targetType: Type[T])(config: Seq[MacroSetting])
       : Either[List[(PositionPointer, String)], List[Expr[InputField[_]]]] =
     import globalQuotes.reflect._
