@@ -3,12 +3,9 @@ package sangria.macros.derive
 import scala.quoted._
 import sangria.schema.EnumType
 
-import scala.annotation.experimental
-
 object DeriveEnumTypeMacro extends DeriveMacroSupport {
 
   // Supports Scala 2 style enumeration only
-  @experimental
   def deriveEnumType[T: Type](configSeq: Expr[Seq[DeriveEnumSetting]])(using
       Quotes): Expr[EnumType[T]] = {
     import quotes.reflect._
@@ -94,7 +91,6 @@ object DeriveEnumTypeMacro extends DeriveMacroSupport {
     }
   }
 
-  @experimental
   private def collectEnumValues[T](using quotes: Quotes)(using Type[T])(
       values: List[quotes.reflect.Symbol],
       config: Seq[MacroDeriveEnumSetting]): List[Expr[sangria.schema.EnumValue[T]]] = {
