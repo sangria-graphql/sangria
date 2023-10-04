@@ -9,7 +9,13 @@ trait StringMatchers {
 
   def stripCarriageReturns(s: String) = s.replaceAll("\\r", "")
 
+  val whitespace = "\\s+".r
+
+  def normalizeAllWhitespace(str: String): String =
+    whitespace.replaceAllIn(str, " ").trim
+
   implicit class StringHelpers(s: String) {
     def stripCR: String = stripCarriageReturns(s)
+    def normalizeAllWS: String = normalizeAllWhitespace(s)
   }
 }

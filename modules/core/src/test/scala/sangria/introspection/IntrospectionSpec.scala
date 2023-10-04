@@ -91,7 +91,12 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                 Map(
                   "name" -> "args",
                   "description" -> null,
-                  "args" -> Vector.empty,
+                  "args" -> Vector(Map(
+                    "name" -> "includeDeprecated",
+                    "description" -> null,
+                    "type" -> Map("kind" -> "SCALAR", "name" -> "Boolean", "ofType" -> null),
+                    "defaultValue" -> "false"
+                  )),
                   "type" -> Map(
                     "kind" -> "NON_NULL",
                     "name" -> null,
@@ -309,7 +314,12 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                 Map(
                   "name" -> "args",
                   "description" -> null,
-                  "args" -> Vector.empty,
+                  "args" -> Vector(Map(
+                    "name" -> "includeDeprecated",
+                    "description" -> null,
+                    "type" -> Map("kind" -> "SCALAR", "name" -> "Boolean", "ofType" -> null),
+                    "defaultValue" -> "false"
+                  )),
                   "type" -> Map(
                     "kind" -> "NON_NULL",
                     "name" -> null,
@@ -401,6 +411,22 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                 Map(
                   "name" -> "defaultValue",
                   "description" -> "A GraphQL-formatted string representing the default value for this input value.",
+                  "args" -> Vector.empty,
+                  "type" -> Map("kind" -> "SCALAR", "name" -> "String", "ofType" -> null),
+                  "isDeprecated" -> false,
+                  "deprecationReason" -> null
+                ),
+                Map(
+                  "name" -> "isDeprecated",
+                  "description" -> null,
+                  "args" -> Vector.empty,
+                  "type" -> Map("kind" -> "SCALAR", "name" -> "Boolean", "ofType" -> null),
+                  "isDeprecated" -> false,
+                  "deprecationReason" -> null
+                ),
+                Map(
+                  "name" -> "deprecationReason",
+                  "description" -> null,
                   "args" -> Vector.empty,
                   "type" -> Map("kind" -> "SCALAR", "name" -> "String", "ofType" -> null),
                   "isDeprecated" -> false,
@@ -599,7 +625,12 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                 Map(
                   "name" -> "inputFields",
                   "description" -> null,
-                  "args" -> Vector.empty,
+                  "args" -> Vector(Map(
+                    "name" -> "includeDeprecated",
+                    "description" -> null,
+                    "type" -> Map("kind" -> "SCALAR", "name" -> "Boolean", "ofType" -> null),
+                    "defaultValue" -> "false"
+                  )),
                   "type" -> Map(
                     "kind" -> "LIST",
                     "name" -> null,
@@ -746,7 +777,11 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
             Map(
               "name" -> "deprecated",
               "description" -> "Marks an element of a GraphQL schema as no longer supported.",
-              "locations" -> Vector("ENUM_VALUE", "FIELD_DEFINITION"),
+              "locations" -> Vector(
+                "ARGUMENT_DEFINITION",
+                "ENUM_VALUE",
+                "FIELD_DEFINITION",
+                "INPUT_FIELD_DEFINITION"),
               "args" -> Vector(Map(
                 "name" -> "reason",
                 "description" -> "Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted in [Markdown](https://daringfireball.net/projects/markdown/).",

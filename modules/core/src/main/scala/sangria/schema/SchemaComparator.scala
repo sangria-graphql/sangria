@@ -82,6 +82,7 @@ object SchemaComparator {
       added = SchemaChange.DirectiveArgumentAdded(newDir, _, _),
       removed = SchemaChange.DirectiveArgumentRemoved(oldDir, _),
       description = SchemaChange.DirectiveArgumentDescriptionChanged(newDir, _, _, _),
+      deprecated = SchemaChange.DirectiveArgumentDeprecated(newDir, _, _, _),
       default = SchemaChange.DirectiveArgumentDefaultChanged(newDir, _, _, _),
       typeChange = SchemaChange.DirectiveArgumentTypeChanged(newDir, _, _, _, _),
       dirAdded = SchemaChange.DirectiveArgumentAstDirectiveAdded(newDir, _, _),
@@ -269,6 +270,10 @@ object SchemaComparator {
         oldField,
         newField,
         SchemaChange.InputFieldDescriptionChanged(newType, newField, _, _)) ++
+        findDeprecationChanged(
+          oldField,
+          newField,
+          SchemaChange.InputFieldDeprecated(newType, newField, _, _)) ++
         findInInputFields(oldType, newType, oldField, newField)
     }
 
@@ -397,6 +402,7 @@ object SchemaComparator {
       added = SchemaChange.ObjectTypeArgumentAdded(newType, newField, _, _),
       removed = SchemaChange.ObjectTypeArgumentRemoved(oldType, oldField, _),
       description = SchemaChange.ObjectTypeArgumentDescriptionChanged(newType, newField, _, _, _),
+      deprecated = SchemaChange.ObjectTypeArgumentDeprecated(newType, newField, _, _, _),
       default = SchemaChange.ObjectTypeArgumentDefaultChanged(newType, newField, _, _, _),
       typeChange = SchemaChange.ObjectTypeArgumentTypeChanged(newType, newField, _, _, _, _),
       dirAdded = SchemaChange.FieldArgumentAstDirectiveAdded(newType, newField, _, _),
@@ -412,6 +418,7 @@ object SchemaComparator {
       added: (Argument[_], Boolean) => SchemaChange,
       removed: Argument[_] => SchemaChange,
       description: (Argument[_], Option[String], Option[String]) => SchemaChange,
+      deprecated: (Argument[_], Option[String], Option[String]) => SchemaChange,
       default: (Argument[_], Option[ast.Value], Option[ast.Value]) => SchemaChange,
       typeChange: (Argument[_], Boolean, InputType[_], InputType[_]) => SchemaChange,
       dirAdded: (Argument[_], ast.Directive) => SchemaChange,
@@ -433,6 +440,7 @@ object SchemaComparator {
       val newArg = newArgs.find(_.name == name).get
 
       findDescriptionChanged(oldArg, newArg, description(newArg, _, _)) ++
+        findDeprecationChanged(oldArg, newArg, deprecated(newArg, _, _)) ++
         findInArg(
           oldArg,
           newArg,
@@ -751,6 +759,14 @@ object SchemaChange {
       with DescriptionChange
       with TypeChange
 
+  case class InputFieldDeprecated(
+      tpe: InputObjectType[_],
+      field: InputField[_],
+      oldDeprecationReason: Option[String],
+      newDeprecationReason: Option[String]
+  ) extends AbstractChange(s"`${tpe.name}.${field.name}` was deprecated", false)
+      with DeprecationChange
+
   case class DirectiveDescriptionChanged(
       directive: Directive,
       oldDescription: Option[String],
@@ -778,12 +794,33 @@ object SchemaChange {
       with DescriptionChange
       with TypeChange
 
+  case class ObjectTypeArgumentDeprecated(
+      tpe: ObjectLikeType[_, _],
+      field: Field[_, _],
+      argument: Argument[_],
+      oldDeprecationReason: Option[String],
+      newDeprecationReason: Option[String])
+      extends AbstractChange(
+        s"Argument `${argument.name}` on `${tpe.name}.${field.name}` was deprecated",
+        false)
+      with DeprecationChange
+
   case class DirectiveArgumentDescriptionChanged(
       directive: Directive,
       argument: Argument[_],
       oldDescription: Option[String],
       newDescription: Option[String])
       extends AbstractChange(s"`${directive.name}(${argument.name})` description is changed", false)
+      with DescriptionChange
+
+  case class DirectiveArgumentDeprecated(
+      directive: Directive,
+      argument: Argument[_],
+      oldDescription: Option[String],
+      newDescription: Option[String])
+      extends AbstractChange(
+        s"Directive argument `${directive.name}.${argument.name}` was deprecated",
+        false)
       with DescriptionChange
 
   case class FieldDeprecationChanged(

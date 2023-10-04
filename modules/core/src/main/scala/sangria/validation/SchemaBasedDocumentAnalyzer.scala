@@ -69,10 +69,43 @@ case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Docum
                   if (value.deprecationReason.isDefined && !deprecated.contains(key))
                     deprecated(key) =
                       DeprecatedEnumValue(parent, value, enumValue, value.deprecationReason.get)
+                case _ => // do nothing
+              }
+
+            case _: ast.Argument
+                if typeInfo.argument.isDefined && typeInfo.argument.get.deprecationReason.isDefined =>
+              val arg = typeInfo.argument.get
+              val deprecationReason = arg.deprecationReason.get
+
+              (typeInfo.directive, typeInfo.previousParentType, typeInfo.fieldDef) match {
+                case (Some(directive), _, _) =>
+                  val key = directive.name + "." + arg.name
+
+                  if (!deprecated.contains(key))
+                    deprecated(key) = DeprecatedDirectiveArgument(directive, arg, deprecationReason)
+
+                case (_, Some(parent), Some(field)) =>
+                  val key = parent.name + "." + field.name + "." + arg.name
+
+                  if (!deprecated.contains(key))
+                    deprecated(key) = DeprecatedFieldArgument(parent, field, arg, deprecationReason)
 
                 case _ => // do nothing
               }
 
+            case _: ast.ObjectField
+                if typeInfo.inputField.isDefined && typeInfo.inputField.get.deprecationReason.isDefined =>
+              val field = typeInfo.inputField.get
+              typeInfo.argument.map(_.argumentType.namedInputType) match {
+                case Some(parent: InputObjectType[_]) =>
+                  val key = parent.name + "." + field.name
+                  if (!deprecated.contains(key))
+                    deprecated(key) =
+                      DeprecatedInputField(parent, field, field.deprecationReason.get)
+                case _ => // do nothing
+              }
+
+            case _ => // do nothing
           }
       }
       .values
@@ -121,6 +154,34 @@ object SchemaBasedDocumentAnalyzer {
       extends DeprecatedUsage {
     def errorMessage =
       s"The field '${parentType.name}.${field.name}' is deprecated. $deprecationReason"
+  }
+
+  case class DeprecatedInputField(
+      parentType: InputObjectType[_],
+      field: InputField[_],
+      deprecationReason: String
+  ) extends DeprecatedUsage {
+    def errorMessage =
+      s"The input field '${parentType.name}.${field.name}' is deprecated. $deprecationReason"
+  }
+
+  case class DeprecatedFieldArgument(
+      parentType: CompositeType[_],
+      field: Field[_, _],
+      argument: Argument[_],
+      deprecationReason: String
+  ) extends DeprecatedUsage {
+    def errorMessage =
+      s"The argument '${argument.name}' on '${parentType.name}.${field.name}' is deprecated. $deprecationReason"
+  }
+
+  case class DeprecatedDirectiveArgument(
+      directive: Directive,
+      argument: Argument[_],
+      deprecationReason: String
+  ) extends DeprecatedUsage {
+    def errorMessage =
+      s"The argument '${argument.name}' on directive '${directive.name}' is deprecated. $deprecationReason"
   }
 
   case class DeprecatedEnumValue(

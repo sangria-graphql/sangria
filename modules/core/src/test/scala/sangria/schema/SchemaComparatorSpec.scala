@@ -193,6 +193,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
         input Filter {
           name: String!
           descr: String
+          foo: String
         }
       """,
       graphql"""
@@ -203,13 +204,18 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
 
           "filter by size"
           size: Int
+
+          foo: String @deprecated
         }
       """,
       nonBreakingChange[TypeAdded]("`Int` type was added"),
       breakingChange[InputFieldRemoved]("Input field `descr` was removed from `Filter` type"),
       nonBreakingChange[InputFieldAdded]("Input field `size` was added to `Filter` type"),
       nonBreakingChange[InputFieldDescriptionChanged]("`Filter.name` description is changed"),
-      nonBreakingChange[TypeDescriptionChanged]("`Filter` type description is changed")
+      nonBreakingChange[TypeDescriptionChanged]("`Filter` type description is changed"),
+      nonBreakingChange[InputFieldDeprecated]("`Filter.foo` was deprecated"),
+      nonBreakingChange[InputFieldAstDirectiveAdded](
+        "Directive `@deprecated` added on an input field `Filter.foo`")
     )
 
     "detect changes in object like type fields and interfaces when they are added or removed" in checkChanges(
@@ -267,6 +273,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
             b: String
             b1: String
             c: [String]
+            c1: String
           ): String!
         }
       """,
@@ -278,6 +285,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
             b: [String]
             b1: String!
             c: [String]!
+            c1: String @deprecated
             d: Int
             e: Int!
           ): String!
@@ -297,7 +305,11 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
       nonBreakingChange[ObjectTypeArgumentDefaultChanged](
         "`Filter.foo(a)` default value changed from none to `\"foo\"`"),
       nonBreakingChange[ObjectTypeArgumentDescriptionChanged](
-        "`Filter.foo(a)` description is changed")
+        "`Filter.foo(a)` description is changed"),
+      nonBreakingChange[ObjectTypeArgumentDeprecated](
+        "Argument `c1` on `Filter.foo` was deprecated"),
+      nonBreakingChange[FieldArgumentAstDirectiveAdded](
+        "Directive `@deprecated` added on a field argument `Filter.foo[c1]`")
     )
 
     "detect changes in input type fields default value changes" in checkChanges(
@@ -466,14 +478,14 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
           foo(bar: String @foo): String
         }
 
-        directive @test(bar: String @hello) on FIELD
+        directive @test(bar: String @hello foo: String) on FIELD
       """,
       gql"""
         type Query {
           foo(bar: String @bar(ids: [1, 2])): String
         }
 
-        directive @test(bar: String @world) on FIELD
+        directive @test(bar: String @world foo: String @deprecated) on FIELD
       """,
       nonBreakingChange[FieldArgumentAstDirectiveAdded](
         "Directive `@bar(ids:[1,2])` added on a field argument `Query.foo[bar]`"),
@@ -482,7 +494,10 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
       nonBreakingChange[DirectiveArgumentAstDirectiveRemoved](
         "Directive `@hello` removed from a directive argument `test.bar`"),
       nonBreakingChange[DirectiveArgumentAstDirectiveAdded](
-        "Directive `@world` added on a directive argument `test.bar`")
+        "Directive `@world` added on a directive argument `test.bar`"),
+      nonBreakingChange[DirectiveArgumentAstDirectiveAdded](
+        "Directive `@deprecated` added on a directive argument `test.foo`"),
+      nonBreakingChange[DirectiveArgumentDeprecated]("Directive argument `test.foo` was deprecated")
     )
 
     "detect changes in input field AST directives" in checkChangesWithoutQueryType(

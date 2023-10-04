@@ -79,7 +79,9 @@ object SchemaRenderer {
       arg.name,
       renderTypeNameAst(arg.argumentType),
       arg.defaultValue.flatMap(renderDefault(_, arg.argumentType)),
-      arg.astDirectives,
+      withoutDeprecated(arg.astDirectives) ++ renderDeprecation(
+        arg.deprecationReason.isDefined,
+        arg.deprecationReason),
       renderDescription(arg.description)
     )
 
@@ -138,14 +140,18 @@ object SchemaRenderer {
       field.name,
       renderTypeName(field.tpe),
       renderDefault(field.defaultValue),
-      description = renderDescription(field.description))
+      directives = renderDeprecation(field.isDeprecated.getOrElse(false), field.deprecationReason),
+      description = renderDescription(field.description)
+    )
 
   def renderInputField(field: InputField[_]) =
     ast.InputValueDefinition(
       field.name,
       renderTypeNameAst(field.fieldType),
       field.defaultValue.flatMap(renderDefault(_, field.fieldType)),
-      field.astDirectives,
+      withoutDeprecated(field.astDirectives) ++ renderDeprecation(
+        field.deprecationReason.isDefined,
+        field.deprecationReason),
       renderDescription(field.description)
     )
 

@@ -603,25 +603,34 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "id",
             None,
             IntrospectionNamedTypeRef(TypeKind.Scalar, "Int"),
-            Some("123")),
+            Some("123"),
+            None,
+            None),
           IntrospectionInputValue(
             "songs",
             None,
             IntrospectionNonNullTypeRef(IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String")))),
+            None,
+            None,
             None
           ),
           IntrospectionInputValue(
             "pet",
             None,
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-            Some("""{name:"xxx",size:322}""")),
+            Some("""{name:"xxx",size:322}"""),
+            None,
+            None),
           IntrospectionInputValue(
             "aaa",
             Some("bbbb"),
             IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color"))),
-            Some("[Red]"))
+            Some("[Red]"),
+            None,
+            None
+          )
         ))
 
       val Some(optField) = introType.fields.find(_.name == "opt")
@@ -634,16 +643,22 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "str",
             None,
             IntrospectionNamedTypeRef(TypeKind.Scalar, "String"),
+            None,
+            None,
             None),
           IntrospectionInputValue(
             "color",
             None,
             IntrospectionNamedTypeRef(TypeKind.Enum, "Color"),
+            None,
+            None,
             None),
           IntrospectionInputValue(
             "pet",
             None,
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
+            None,
+            None,
             None)
         ))
 
@@ -656,12 +671,16 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "id",
             None,
             IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "ID")),
+            None,
+            None,
             None),
           IntrospectionInputValue(
             "defaultId",
             None,
             IntrospectionNamedTypeRef(TypeKind.Scalar, "ID"),
-            Some(""""47589""""))
+            Some(""""47589""""),
+            None,
+            None)
         ))
     }
 
@@ -720,24 +739,32 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "id",
             Some("`id`"),
             IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "Int")),
+            None,
+            None,
             None),
           IntrospectionInputValue(
             "songs",
             Some("`songs`"),
             IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String"))),
-            Some("""["My favorite song"]""")
+            Some("""["My favorite song"]"""),
+            None,
+            None
           ),
           IntrospectionInputValue(
             "pet",
             Some("`pet`"),
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-            Some("""{name:"Octocat"}""")),
+            Some("""{name:"Octocat"}"""),
+            None,
+            None),
           IntrospectionInputValue(
             "colors",
             None,
             IntrospectionNonNullTypeRef(IntrospectionListTypeRef(
               IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Enum, "Color")))),
+            None,
+            None,
             None
           )
         ))
@@ -752,17 +779,23 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             "description",
             Some("Optional description"),
             IntrospectionNamedTypeRef(TypeKind.Scalar, "String"),
+            None,
+            None,
             None),
           IntrospectionInputValue(
             "color",
             Some("a color"),
             IntrospectionNamedTypeRef(TypeKind.Enum, "Color"),
+            None,
+            None,
             None),
           IntrospectionInputValue(
             "pet",
             None,
             IntrospectionNamedTypeRef(TypeKind.InputObject, "Pet"),
-            Some("""{name:"Bell",size:3}"""))
+            Some("""{name:"Bell",size:3}"""),
+            None,
+            None)
         ))
     }
 
