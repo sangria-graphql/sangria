@@ -8,7 +8,8 @@ import sangria.schema._
 import sangria.streaming.SubscriptionStream
 
 import scala.annotation.tailrec
-import scala.collection.immutable.VectorBuilder
+import scala.collection.immutable.{ListMap, VectorBuilder}
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
@@ -1534,6 +1535,124 @@ private[execution] class FutureResolver[Ctx](
     Result(errorReg, if (canceled) None else Some(marshaller.arrayNode(listBuilder.result())))
   }
 
+  private def trackDeprecation(ctx: Context[Ctx, _]): Unit = {
+    val fieldArgs = ctx.args
+    val visitedDirectives = mutable.Set[String]()
+
+    def getArgValue(name: String, args: Args): Option[_] =
+      if (args.argDefinedInQuery(name)) {
+        if (args.optionalArgs.contains(name)) {
+          args.argOpt(name)
+        } else {
+          Some(args.arg(name))
+        }
+      } else {
+        None
+      }
+
+    def deprecatedArgsUsed(argDefs: List[Argument[_]], argValues: Args): List[Argument[_]] =
+      argDefs.filter { argDef =>
+        val argValue = getArgValue(argDef.name, argValues)
+        argDef.deprecationReason.isDefined && argValue.isDefined
+      }
+
+    def trackDeprecatedDirectiveArgs(astDirective: ast.Directive): Unit = {
+      // prevent infinite loop from directiveA -> arg -> directiveA -> arg ...
+      if (visitedDirectives.contains(astDirective.name)) {
+        return
+      }
+      visitedDirectives.add(astDirective.name)
+
+      ctx.schema.directives.find(_.name == astDirective.name) match {
+        case Some(directive) =>
+          val directiveArgs = valueCollector
+            .getArgumentValues(
+              Some(astDirective),
+              directive.arguments,
+              astDirective.arguments,
+              variables)
+
+          directiveArgs match {
+            case Success(directiveArgs) =>
+              deprecatedArgsUsed(directive.arguments, directiveArgs).foreach { arg =>
+                deprecationTracker.deprecatedDirectiveArgUsed(directive, arg, ctx)
+              }
+            case _ => // if we fail to get args, the query should fail elsewhere
+          }
+
+          // nested argument directives
+          directive.arguments.foreach { nestedArg =>
+            nestedArg.astDirectives.foreach(trackDeprecatedDirectiveArgs)
+          }
+        case _ => // do nothing
+      }
+    }
+
+    def trackDeprecatedInputObjectFields(inputType: InputType[_], ioArg: Any): Unit =
+      inputType match {
+        case ioDef: InputObjectType[_] =>
+          ioDef.fields.foreach { field =>
+            // field deprecation
+            val fieldVal: Option[_] = (ioArg match {
+              case lm: ListMap[String, _] => lm.get(field.name)
+              case _ => None
+            }) match {
+              case Some(Some(nested)) => Some(nested)
+              case value => value
+            }
+
+            if (field.deprecationReason.isDefined && fieldVal.isDefined) {
+              deprecationTracker.deprecatedInputObjectFieldUsed(ioDef, field, ctx)
+            }
+
+            // for nested input objects
+            if (fieldVal.isDefined) trackDeprecatedInputObjectFields(field.fieldType, fieldVal.get)
+
+            // field directive args deprecation
+            field.astDirectives.foreach(trackDeprecatedDirectiveArgs)
+          }
+        case OptionInputType(ofType) =>
+          ioArg match {
+            case Some(ioArg) => trackDeprecatedInputObjectFields(ofType, ioArg)
+            case _ => trackDeprecatedInputObjectFields(ofType, ioArg)
+          }
+        case ListInputType(ofType) =>
+          ioArg match {
+            case seq: Seq[_] => seq.foreach(trackDeprecatedInputObjectFields(ofType, _))
+            case _ => // do nothing
+          }
+        case _ => // do nothing
+      }
+
+    val field = ctx.field
+    val astField = ctx.astFields.head
+
+    // field deprecation
+    val allFields =
+      ctx.parentType.getField(ctx.schema, astField.name).asInstanceOf[Vector[Field[Ctx, Any]]]
+    if (allFields.exists(_.deprecationReason.isDefined))
+      deprecationTracker.deprecatedFieldUsed(ctx)
+
+    // directive argument deprecation
+    field.astDirectives.foreach(trackDeprecatedDirectiveArgs)
+
+    // field argument deprecation
+    deprecatedArgsUsed(field.arguments, fieldArgs).foreach { arg =>
+      deprecationTracker.deprecatedFieldArgUsed(arg, ctx)
+    }
+
+    field.arguments.foreach { argDef =>
+      // argument directives args deprecation
+      argDef.astDirectives.foreach(trackDeprecatedDirectiveArgs)
+
+      // input object field deprecation
+      getArgValue(argDef.name, fieldArgs) match {
+        case Some(ioArg) => trackDeprecatedInputObjectFields(argDef.argumentType, ioArg)
+        case _ => // do nothing
+      }
+    }
+  }
+
   private def resolveField(
       userCtx: Ctx,
       tpe: ObjectType[Ctx, _],
@@ -1572,8 +1691,7 @@ private[execution] class FutureResolver[Ctx](
               deferredResolverState = deferredResolverState
             )
 
-            if (allFields.exists(_.deprecationReason.isDefined))
-              deprecationTracker.deprecatedFieldUsed(ctx)
+            trackDeprecation(ctx)
 
             try {
               val mBefore = middleware.collect { case (mv, m: MiddlewareBeforeField[Ctx]) =>
