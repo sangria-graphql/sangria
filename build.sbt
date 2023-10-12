@@ -149,7 +149,53 @@ lazy val core = project
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.InputField.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.schema.InputField.apply"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "sangria.schema.InputValue.deprecationReason")
+        "sangria.schema.InputValue.deprecationReason"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.execution.DeprecationTracker.deprecatedDirectiveArgUsed"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.execution.DeprecationTracker.deprecatedInputObjectFieldUsed"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.execution.DeprecationTracker.deprecatedFieldArgUsed"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.execution.DeprecationTracker.empty"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.Executor.<init>$default$5"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.Executor.execute$default$10"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.Executor.prepare$default$10"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.Executor.deprecationTracker"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.Executor.copy$default$5"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.Executor.apply$default$5"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.execution.Executor._5"),
+      ProblemFilters.exclude[MissingClassProblem]("sangria.execution.NilDeprecationTracker"),
+      ProblemFilters.exclude[MissingClassProblem]("sangria.execution.NilDeprecationTracker$"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.QueryReducerExecutor.reduceQueryWithoutVariables$default$8"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.ValueCoercionHelper.<init>$default$2"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem](
+        "sangria.execution.ValueCoercionHelper.this"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.ValueCoercionHelper.<init>$default$2"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.execution.ValueCollector.this"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.execution.batch.BatchExecutor.executeBatch$default$10"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.schema.Context.apply"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.schema.Context.this"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.schema.Context.deprecationTracker"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.schema.Context.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.schema.Context.copy$default$10"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("sangria.schema.Context._10"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "sangria.schema.WithInputTypeRendering.deprecationTracker"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "sangria.schema.WithInputTypeRendering.deprecationTracker")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
