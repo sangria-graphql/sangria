@@ -21,6 +21,7 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
   var directive: Option[Directive] = None
   var enumValue: Option[EnumValue[_]] = None
   var argument: Option[Argument[_]] = None
+  var inputField: Option[InputField[_]] = None
 
   def tpe = typeStack.headOption.flatten
   def previousParentType = parentTypeStack.headOption(1).flatten
@@ -132,21 +133,18 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         }
 
       case ast.ObjectField(name, value, _, _) =>
-        val (fieldType, defaultValue) = inputType match {
+        inputField = inputType match {
           case Some(it) if it.namedType.isInstanceOf[InputObjectType[_]] =>
             it.namedType match {
-              case obj: InputObjectType[_] =>
-                val field = obj.fieldsByName.get(name)
-
-                field.map(_.inputValueType) -> field.flatMap(_.defaultValue)
-              case _ => None -> None
+              case obj: InputObjectType[_] => obj.fieldsByName.get(name)
+              case _ => None
             }
 
-          case _ => None -> None
+          case _ => None
         }
 
-        defaultValueStack.push(defaultValue)
-        inputTypeStack.push(fieldType)
+        defaultValueStack.push(inputField.flatMap(_.defaultValue))
+        inputTypeStack.push(inputField.map(_.fieldType))
 
       case _ => // ignore
     }

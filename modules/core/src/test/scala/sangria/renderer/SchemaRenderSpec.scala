@@ -883,7 +883,7 @@ class SchemaRenderSpec
         |  name: String!
         |  description: String
         |  locations: [__DirectiveLocation!]!
-        |  args: [__InputValue!]!
+        |  args(includeDeprecated: Boolean = false): [__InputValue!]!
         |
         |  "Permits using the directive multiple times at the same location."
         |  isRepeatable: Boolean!
@@ -961,7 +961,7 @@ class SchemaRenderSpec
         |type __Field {
         |  name: String!
         |  description: String
-        |  args: [__InputValue!]!
+        |  args(includeDeprecated: Boolean = false): [__InputValue!]!
         |  type: __Type!
         |  isDeprecated: Boolean!
         |  deprecationReason: String
@@ -975,6 +975,8 @@ class SchemaRenderSpec
         |
         |  "A GraphQL-formatted string representing the default value for this input value."
         |  defaultValue: String
+        |  isDeprecated: Boolean
+        |  deprecationReason: String
         |}
         |
         |"A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations."
@@ -1010,7 +1012,7 @@ class SchemaRenderSpec
         |  interfaces: [__Type!]
         |  possibleTypes: [__Type!]
         |  enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
-        |  inputFields: [__InputValue!]
+        |  inputFields(includeDeprecated: Boolean = false): [__InputValue!]
         |  ofType: __Type
         |}
         |

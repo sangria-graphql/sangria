@@ -24,7 +24,9 @@ object IntrospectionParser {
       name = mapStringField(value, "name", path),
       description = mapStringFieldOpt(value, "description"),
       tpe = parseTypeRef(mapField(value, "type", path), path :+ "type"),
-      defaultValue = mapStringFieldOpt(value, "defaultValue")
+      defaultValue = mapStringFieldOpt(value, "defaultValue"),
+      isDeprecated = mapBooleanFieldOpt(value, "isDeprecated", path),
+      deprecationReason = mapStringFieldOpt(value, "deprecationReason")
     )
 
   private def parseField[In: InputUnmarshaller](field: In, path: Vector[String]) =

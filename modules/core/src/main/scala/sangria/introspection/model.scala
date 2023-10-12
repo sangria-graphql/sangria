@@ -115,7 +115,10 @@ case class IntrospectionInputValue(
     name: String,
     description: Option[String],
     tpe: IntrospectionTypeRef,
-    defaultValue: Option[String])
+    defaultValue: Option[String],
+    isDeprecated: Option[Boolean],
+    deprecationReason: Option[String]
+)
 
 sealed trait IntrospectionTypeRef {
   def kind: TypeKind.Value

@@ -19,14 +19,17 @@ import spray.json._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import sangria.util.StringMatchers
 import sangria.util.tag.@@
 import sangria.marshalling.FromInput.CoercedScalaResult
 import sangria.marshalling.ScalaInput
+import sangria.schema.IntType
 
 class IntrospectionSchemaMaterializerSpec
     extends AnyWordSpec
     with Matchers
-    with FutureResultSupport {
+    with FutureResultSupport
+    with StringMatchers {
 
   // Test property:
   // Given a server's schema, a client may query that server with introspection,
@@ -37,9 +40,11 @@ class IntrospectionSchemaMaterializerSpec
   def testSchema(serverSchema: Schema[Any, Any]): Schema[Any, Any] = {
     import sangria.marshalling.queryAst._
 
-    val initialIntrospection = Executor.execute(serverSchema, introspectionQuery).await
+    val initialIntrospection =
+      Executor.execute(serverSchema, introspectionQuery(true, true, true)).await
     val clientSchema = IntrospectionSchemaMaterializer.buildSchema(initialIntrospection)
-    val secondIntrospection = Executor.execute(clientSchema, introspectionQuery).await
+    val secondIntrospection =
+      Executor.execute(clientSchema, introspectionQuery(true, true, true)).await
 
     initialIntrospection should be(secondIntrospection)
 
@@ -409,41 +414,119 @@ class IntrospectionSchemaMaterializerSpec
         )
       ))
 
-    "builds a schema aware of deprecation" in testSchema(
-      Schema(ObjectType(
-        "Simple",
-        "This is a simple type",
-        fields[Any, Any](
-          Field(
-            "shinyString",
-            OptionType(StringType),
-            Some("This is a shiny string field"),
-            resolve = _ => None),
-          Field(
-            "deprecatedString",
-            OptionType(StringType),
-            Some("This is a deprecated string field"),
-            deprecationReason = Some("Use shinyString"),
-            resolve = _ => None),
-          Field(
-            "color",
-            fieldType = OptionType(EnumType(
-              "Color",
-              values = List(
-                EnumValue("RED", Some("So rosy"), "RED"),
-                EnumValue("GREEN", Some("So grassy"), "GREEN"),
-                EnumValue("BLUE", Some("So calming"), "BLUE"),
-                EnumValue(
-                  "MAUVE",
-                  Some("So sickening"),
-                  "MAUVE",
-                  deprecationReason = Some("No longer in fashion"))
+    "builds a schema aware of deprecation" in {
+      import sangria.marshalling.sprayJson._
+
+      val serverSchema = testSchema(
+        Schema(
+          ObjectType(
+            "Simple",
+            "This is a simple type",
+            fields[Any, Any](
+              Field(
+                "shinyString",
+                OptionType(StringType),
+                Some("This is a shiny string field"),
+                resolve = _ => None),
+              Field(
+                "deprecatedString",
+                OptionType(StringType),
+                Some("This is a deprecated string field"),
+                deprecationReason = Some("Use shinyString"),
+                resolve = _ => None),
+              Field(
+                "color",
+                fieldType = OptionType(EnumType(
+                  "Color",
+                  values = List(
+                    EnumValue("RED", Some("So rosy"), "RED"),
+                    EnumValue("GREEN", Some("So grassy"), "GREEN"),
+                    EnumValue("BLUE", Some("So calming"), "BLUE"),
+                    EnumValue(
+                      "MAUVE",
+                      Some("So sickening"),
+                      "MAUVE",
+                      deprecationReason = Some("No longer in fashion"))
+                  )
+                )),
+                resolve = _ => None
+              ),
+              Field(
+                "foo",
+                fieldType = OptionType(StringType),
+                Some("This is a field with some deprecated args"),
+                resolve = _ => None,
+                arguments = List(
+                  Argument(
+                    "arg1",
+                    IntType
+                  ).withDeprecationReason("use arg2"),
+                  Argument("arg2", StringType),
+                  Argument(
+                    "additionalInput",
+                    InputObjectType(
+                      "SimpleInput",
+                      List(
+                        InputField("before", StringType).withDeprecationReason("use after"),
+                        InputField("after", IntType)
+                      ))
+                  )
+                )
               )
-            )),
-            resolve = _ => None
+            )
+          ),
+          directives = BuiltinDirectives :+ Directive(
+            "customDirective",
+            arguments = List(
+              Argument("deprecated", OptionInputType(IntType)).withDeprecationReason(
+                "use notDeprecated"),
+              Argument("notDeprecated", OptionInputType(StringType))
+            ),
+            locations =
+              Set(DirectiveLocation.ArgumentDefinition, DirectiveLocation.InputFieldDefinition)
           )
         )
-      )))
+      )
+
+      withClue(serverSchema.renderPretty)(serverSchema.renderPretty.normalizeAllWS should be("""
+      schema {
+        query: Simple
+         }
+
+      enum Color {
+        "So rosy"
+        RED
+
+        "So grassy"
+        GREEN
+
+        "So calming"
+        BLUE
+
+        "So sickening"
+        MAUVE @deprecated(reason: "No longer in fashion")
+      }
+
+      "This is a simple type"
+      type Simple {
+        "This is a shiny string field"
+        shinyString: String
+
+        "This is a deprecated string field"
+        deprecatedString: String @deprecated(reason: "Use shinyString")
+        color: Color
+
+        "This is a field with some deprecated args"
+        foo(arg1: Int! @deprecated(reason: "use arg2"), arg2: String!, additionalInput: SimpleInput!): String
+      }
+
+      input SimpleInput {
+        before: String! @deprecated(reason: "use after")
+        after: Int!
+      }
+
+      directive @customDirective(deprecated: Int @deprecated(reason: "use notDeprecated"), notDeprecated: String) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION """.normalizeAllWS))
+    }
 
     "builds a schema with description" in testSchema(
       Schema(

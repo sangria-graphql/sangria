@@ -691,6 +691,7 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         fieldType = tpe,
         defaultValue = defaultValue,
         astDirectives = definition.directives,
+        deprecationReason = inputValueDeprecationReason(definition),
         astNodes = Vector(definition)
       ))
 
@@ -719,7 +720,8 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
         defaultValue = defaultValue,
         fromInput = argumentFromInput(typeDefinition, fieldDefinition, definition),
         astDirectives = definition.directives,
-        astNodes = Vector(definition)
+        astNodes = Vector(definition),
+        deprecationReason = inputValueDeprecationReason(definition)
       ))
 
   def buildArgumentType(
@@ -851,6 +853,9 @@ class DefaultAstSchemaBuilder[Ctx] extends AstSchemaBuilder[Ctx] {
     None
 
   def enumValueDeprecationReason(definition: ast.EnumValueDefinition): Option[String] =
+    deprecationReason(definition.directives.toList)
+
+  def inputValueDeprecationReason(definition: ast.InputValueDefinition): Option[String] =
     deprecationReason(definition.directives.toList)
 
   def fieldDeprecationReason(definition: ast.FieldDefinition): Option[String] =
