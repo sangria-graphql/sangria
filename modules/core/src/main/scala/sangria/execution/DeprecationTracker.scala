@@ -20,25 +20,7 @@ trait DeprecationTracker {
 }
 
 object DeprecationTracker {
-  val empty = NilDeprecationTracker
   val print = new LoggingDeprecationTracker(println)
-}
-
-object NilDeprecationTracker extends DeprecationTracker {
-  def deprecatedFieldUsed[Ctx](ctx: Context[Ctx, _]) = ()
-  def deprecatedEnumValueUsed[T, Ctx](`enum`: EnumType[T], value: T, userContext: Ctx) = ()
-  def deprecatedDirectiveArgUsed[Ctx](
-      directive: Directive,
-      argument: Argument[_],
-      ctx: Context[Ctx, _]) = ()
-  def deprecatedInputObjectFieldUsed[T, Ctx](
-      inputObject: InputObjectType[T],
-      field: InputField[_],
-      ctx: Context[Ctx, _]) = ()
-  def deprecatedFieldArgUsed[Ctx](
-      argument: Argument[_],
-      ctx: Context[Ctx, _]
-  ) = ()
 }
 
 class LoggingDeprecationTracker(logFn: String => Unit) extends DeprecationTracker {

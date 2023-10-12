@@ -87,7 +87,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ nonDeprecated }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(0)
       deprecationTracker.ctx should be(None)
@@ -110,7 +110,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ nonDeprecated deprecated}")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("deprecated"))
@@ -138,7 +138,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ someField(notDeprecated: 123) }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(0)
       deprecationTracker.ctx should be(None)
@@ -165,7 +165,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ someField(deprecated: 123) }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("someField"))
@@ -199,7 +199,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ someField(input: { notDeprecated: 123}) }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(0)
       deprecationTracker.ctx should be(None)
@@ -230,7 +230,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ someField(input: { deprecated: 123}) }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("someField"))
@@ -267,7 +267,7 @@ class DeprecationTrackerSpec
       }"""
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("someField"))
@@ -298,7 +298,7 @@ class DeprecationTrackerSpec
       }"""
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("someField"))
@@ -338,7 +338,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ someField @customDirective(notDeprecated: 123) }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(0)
       deprecationTracker.ctx should be(None)
@@ -388,7 +388,7 @@ class DeprecationTrackerSpec
         "{ fooField @customDirective(notDeprecated: 123) barField @customDirective(deprecated: 123) }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("barField"))
@@ -417,7 +417,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ nested { aa: nested { bb: deprecated }}}")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("nested", "aa", "bb"))
@@ -454,7 +454,7 @@ class DeprecationTrackerSpec
       val Success(query) = QueryParser.parse("{ foo }")
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.ctx.get.path.path should be(Vector("foo"))
@@ -492,7 +492,7 @@ class DeprecationTrackerSpec
 
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(1)
       deprecationTracker.`enum` should be(Some("TestEnum"))
@@ -529,7 +529,7 @@ class DeprecationTrackerSpec
 
       val deprecationTracker = new RecordingDeprecationTracker
 
-      Executor.execute(schema, query, deprecationTracker = deprecationTracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(deprecationTracker)).await
 
       deprecationTracker.times.get should be(0)
       deprecationTracker.`enum` should be(None)
@@ -554,7 +554,7 @@ class DeprecationTrackerSpec
       val schema = Schema(testType)
       val Success(query) = QueryParser.parse("{ nonDeprecated }")
 
-      Executor.execute(schema, query, deprecationTracker = DeprecationTracker.empty).await
+      Executor.execute(schema, query, deprecationTracker = None).await
     }
   }
 
@@ -590,7 +590,7 @@ class DeprecationTrackerSpec
       val sb = new StringBuilder()
       val tracker = new LoggingDeprecationTracker(sb.append(_))
 
-      Executor.execute(schema, query, deprecationTracker = tracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(tracker)).await
 
       sb.toString() should include("Deprecated enum value '2' used of enum 'TestEnum'.")
     }
@@ -614,7 +614,7 @@ class DeprecationTrackerSpec
       val sb = new StringBuilder()
       val tracker = new LoggingDeprecationTracker(sb.append(_))
 
-      Executor.execute(schema, query, deprecationTracker = tracker).await
+      Executor.execute(schema, query, deprecationTracker = Some(tracker)).await
 
       sb.toString() should include(
         "Deprecated field 'TestType.deprecated' used at path 'deprecated'.")

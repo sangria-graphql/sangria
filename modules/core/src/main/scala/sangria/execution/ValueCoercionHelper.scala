@@ -13,7 +13,7 @@ import scala.collection.immutable.VectorBuilder
 
 class ValueCoercionHelper[Ctx](
     sourceMapper: Option[SourceMapper] = None,
-    deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
+    deprecationTracker: Option[DeprecationTracker] = None,
     userContext: Option[Ctx] = None) {
   import ValueCoercionHelper.defaultValueMapFn
 
@@ -527,7 +527,7 @@ class ValueCoercionHelper[Ctx](
                   isArgument))),
           { case (v, deprecated) =>
             if (deprecated && userContext.isDefined)
-              deprecationTracker.deprecatedEnumValueUsed(enumT, v, userContext.get)
+              deprecationTracker.foreach(_.deprecatedEnumValueUsed(enumT, v, userContext.get))
 
             val prepared = firstKindMarshaller match {
               case raw: RawResultMarshaller => raw.rawScalarNode(v)

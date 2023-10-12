@@ -79,7 +79,7 @@ trait WithInputTypeRendering[Ctx] {
   /** The context object that was passed to Sangria's execution method. */
   def ctx: Ctx
   def sourceMapper: Option[SourceMapper]
-  def deprecationTracker: DeprecationTracker
+  def deprecationTracker: Option[DeprecationTracker]
   def marshaller: ResultMarshaller
 
   private lazy val coercionHelper =
@@ -114,7 +114,7 @@ case class Context[Ctx, Val](
     marshaller: ResultMarshaller,
     query: ast.Document,
     sourceMapper: Option[SourceMapper],
-    deprecationTracker: DeprecationTracker,
+    deprecationTracker: Option[DeprecationTracker],
     astFields: Vector[ast.Field],
     path: ExecutionPath,
     deferredResolverState: Any,

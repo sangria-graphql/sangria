@@ -15,7 +15,7 @@ class ValueCollector[Ctx, Input](
     schema: Schema[_, _],
     inputVars: Input,
     sourceMapper: Option[SourceMapper],
-    deprecationTracker: DeprecationTracker,
+    deprecationTracker: Option[DeprecationTracker],
     userContext: Ctx,
     exceptionHandler: ExceptionHandler,
     fromScalarMiddleware: Option[(Any, InputType[_]) => Option[Either[Violation, Any]]],

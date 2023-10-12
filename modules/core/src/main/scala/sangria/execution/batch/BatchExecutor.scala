@@ -71,7 +71,7 @@ object BatchExecutor {
       queryValidator: QueryValidator = QueryValidator.default,
       deferredResolver: DeferredResolver[Ctx] = DeferredResolver.empty,
       exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
-      deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
+      deprecationTracker: Option[DeprecationTracker] = None,
       middleware: List[Middleware[Ctx]] = Nil,
       maxQueryDepth: Option[Int] = None,
       queryReducers: List[QueryReducer[Ctx, _]] = Nil,

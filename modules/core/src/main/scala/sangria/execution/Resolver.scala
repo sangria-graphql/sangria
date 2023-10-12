@@ -20,7 +20,7 @@ private[execution] trait ResolverBuilder {
       exceptionHandler: ExceptionHandler,
       deferredResolver: DeferredResolver[Ctx],
       sourceMapper: Option[SourceMapper],
-      deprecationTracker: DeprecationTracker,
+      deprecationTracker: Option[DeprecationTracker],
       middleware: List[(Any, Middleware[Ctx])],
       maxQueryDepth: Option[Int],
       deferredResolverState: Any,

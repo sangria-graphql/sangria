@@ -26,7 +26,7 @@ private[execution] object FutureResolverBuilder extends ResolverBuilder {
       exceptionHandler: ExceptionHandler,
       deferredResolver: DeferredResolver[Ctx],
       sourceMapper: Option[SourceMapper],
-      deprecationTracker: DeprecationTracker,
+      deprecationTracker: Option[DeprecationTracker],
       middleware: List[(Any, Middleware[Ctx])],
       maxQueryDepth: Option[Int],
       deferredResolverState: Any,
@@ -70,7 +70,7 @@ private[execution] class FutureResolver[Ctx](
     exceptionHandler: ExceptionHandler,
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
-    deprecationTracker: DeprecationTracker,
+    deprecationTracker: Option[DeprecationTracker],
     middleware: List[(Any, Middleware[Ctx])],
     maxQueryDepth: Option[Int],
     deferredResolverState: Any,
@@ -1535,7 +1535,9 @@ private[execution] class FutureResolver[Ctx](
     Result(errorReg, if (canceled) None else Some(marshaller.arrayNode(listBuilder.result())))
   }
 
-  private def trackDeprecation(ctx: Context[Ctx, _]): Unit = {
+  private def trackDeprecation(
+      deprecationTracker: DeprecationTracker,
+      ctx: Context[Ctx, _]): Unit = {
     val fieldArgs = ctx.args
     val visitedDirectives = mutable.Set[String]()
 
@@ -1691,7 +1693,7 @@ private[execution] class FutureResolver[Ctx](
               deferredResolverState = deferredResolverState
             )
 
-            trackDeprecation(ctx)
+            deprecationTracker.foreach(trackDeprecation(_, ctx))
 
             try {
               val mBefore = middleware.collect { case (mv, m: MiddlewareBeforeField[Ctx]) =>
