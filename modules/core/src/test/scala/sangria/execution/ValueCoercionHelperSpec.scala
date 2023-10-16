@@ -209,7 +209,7 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
       testSchema,
       (if (vars._2.nonEmpty) vars._2 else "{}").parseJson,
       None,
-      DeprecationTracker.empty,
+      None,
       (),
       ExceptionHandler.empty,
       None,

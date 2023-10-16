@@ -18,7 +18,7 @@ object QueryReducerExecutor {
       operationName: Option[String] = None,
       queryValidator: QueryValidator = QueryValidator.default,
       exceptionHandler: ExceptionHandler = ExceptionHandler.empty,
-      deprecationTracker: DeprecationTracker = DeprecationTracker.empty,
+      deprecationTracker: Option[DeprecationTracker] = None,
       middleware: List[Middleware[Ctx]] = Nil,
       errorsLimit: Option[Int] = None
   )(implicit executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] = {

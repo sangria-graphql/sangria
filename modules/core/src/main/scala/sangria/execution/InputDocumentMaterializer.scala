@@ -22,7 +22,7 @@ case class InputDocumentMaterializer[Vars](
       schema,
       variables,
       document.sourceMapper,
-      DeprecationTracker.empty,
+      None,
       (),
       ExceptionHandler.empty,
       None,
