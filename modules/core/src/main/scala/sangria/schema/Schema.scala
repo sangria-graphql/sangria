@@ -1494,7 +1494,15 @@ case class Schema[Ctx, Val](
       .map(collectTypes("a subscription type", 10, _, queryAndSubTypes))
       .getOrElse(queryAndSubTypes)
 
-    queryAndSubAndMutTypes
+    val queryAndSubAndMutAndDirArgTypes = directives.foldLeft(queryAndSubAndMutTypes) {
+      case (acc, dir) =>
+        val argumentTypes = dir.arguments.map(_.argumentType)
+        argumentTypes.foldLeft(acc) { case (acc, arg) =>
+          collectTypes("an argument type", 10, arg, acc)
+        }
+    }
+
+    queryAndSubAndMutAndDirArgTypes
   }
 
   lazy val typeList: Vector[Type with Named] =
