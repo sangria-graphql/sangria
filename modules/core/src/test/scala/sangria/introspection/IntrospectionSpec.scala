@@ -1,6 +1,7 @@
 package sangria.introspection
 
 import sangria.execution.Executor
+import sangria.macros._
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.util.FutureResultSupport
@@ -1255,6 +1256,56 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
         .asInstanceOf[Seq[Map[String, Any]]](0)("message")
         .asInstanceOf[String] should include(
         "Null value was provided for the NotNull Type 'String!' at path 'name'.")
+    }
+
+    "exposes enum types from AST based schema" in {
+      val ast = gql"""
+      enum SomeEnum {
+        FOO
+        BAR
+      }
+
+      directive @customDirective(something: SomeEnum!) on FIELD
+
+      type Query {
+        foo: String
+      }
+      """
+
+      val builder = AstSchemaBuilder.default[Any]
+      val schema = Schema.buildFromAst(ast, builder)
+
+      val Success(query) = QueryParser.parse("""{
+        __schema {
+            types {
+                kind
+                name
+                enumValues {
+                    name
+                }
+            }
+        }
+      } """)
+
+      val introspection = Executor.execute(schema, query).await
+
+      val types =
+        introspection
+          .asInstanceOf[Map[String, Any]]("data")
+          .asInstanceOf[Map[String, Any]]("__schema")
+          .asInstanceOf[Map[String, Any]]("types")
+          .asInstanceOf[Vector[Map[String, Any]]]
+
+      types should contain(
+        Map(
+          "kind" -> "ENUM",
+          "name" -> "SomeEnum",
+          "enumValues" -> Vector(
+            Map("name" -> "FOO"),
+            Map("name" -> "BAR")
+          )
+        )
+      )
     }
 
     "exposes descriptions on types and fields" in {
