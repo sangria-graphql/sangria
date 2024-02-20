@@ -76,7 +76,7 @@ lazy val parser = project
     libraryDependencies ++= Seq(
       // AST Parser
       "org.parboiled" %% "parboiled" % "2.5.1",
-      "org.scalatest" %% "scalatest" % "3.2.17" % Test
+      "org.scalatest" %% "scalatest" % "3.2.18" % Test
     ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -206,7 +206,7 @@ lazy val core = project
       // Streaming
       "org.sangria-graphql" %% "sangria-streaming-api" % "1.0.3",
       // Testing
-      "org.scalatest" %% "scalatest" % "3.2.17" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.18" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
