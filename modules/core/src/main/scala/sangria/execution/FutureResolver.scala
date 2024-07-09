@@ -1891,6 +1891,15 @@ private[execution] class FutureResolver[Ctx](
       field: Field[Ctx, _],
       astFields: Vector[ast.Field],
       maxLevel: Int): Vector[ProjectedName] = {
+
+    def collectProjectionsInternal(
+        path: ExecutionPath,
+        tpe: OutputType[_],
+        astFields: Vector[ast.Field],
+        currLevel: Int): Vector[ProjectedName] =
+      loop(path, tpe, astFields, currLevel)
+
+    @tailrec
     def loop(
         path: ExecutionPath,
         tpe: OutputType[_],
@@ -1904,28 +1913,33 @@ private[execution] class FutureResolver[Ctx](
           case objTpe: ObjectType[Ctx, _] =>
             fieldCollector.collectFields(path, objTpe, astFields) match {
               case Success(ff) =>
-                ff.fields.collect {
-                  case CollectedField(_, _, Success(fields))
-                      if objTpe.getField(schema, fields.head.name).nonEmpty && !objTpe
-                        .getField(schema, fields.head.name)
-                        .head
-                        .tags
-                        .contains(ProjectionExclude) =>
-                    val astField = fields.head
-                    val field = objTpe.getField(schema, astField.name).head
-                    val projectionNames = field.tags.iterator.collect { case ProjectionName(name) =>
-                      name
-                    }.toVector
+                ff.fields.collect { case CollectedField(_, _, Success(astFields)) =>
+                  val astField = astFields.head
+                  val fields = objTpe.getField(schema, astField.name)
+                  if (fields.isEmpty) Vector.empty
+                  else {
+                    val field = fields.head
+                    if (field.tags.contains(ProjectionExclude)) Vector.empty
+                    else {
+                      val projectionNames = field.tags.iterator.collect {
+                        case ProjectionName(name) => name
+                      }
 
-                    val projectedName =
-                      if (projectionNames.nonEmpty) projectionNames
-                      else Vector(field.name)
+                      val projectedName =
+                        if (projectionNames.nonEmpty) projectionNames
+                        else Iterator.single(field.name)
 
-                    projectedName.map(name =>
-                      ProjectedName(
-                        name,
-                        loop(path.add(astField, objTpe), field.fieldType, fields, currLevel + 1),
-                        Args(field, astField, variables)))
+                      projectedName.map { name =>
+                        val children =
+                          collectProjectionsInternal(
+                            path.add(astField, objTpe),
+                            field.fieldType,
+                            astFields,
+                            currLevel + 1)
+                        ProjectedName(name, children, Args(field, astField, variables))
+                      }
+                    }
+                  }
                 }.flatten
               case Failure(_) => Vector.empty
             }
@@ -1933,7 +1947,7 @@ private[execution] class FutureResolver[Ctx](
             schema.possibleTypes
               .get(abst.name)
               .map(
-                _.flatMap(loop(path, _, astFields, currLevel + 1))
+                _.flatMap(collectProjectionsInternal(path, _, astFields, currLevel + 1))
                   .groupBy(_.name)
                   .map(_._2.head)
                   .toVector)
@@ -1941,7 +1955,7 @@ private[execution] class FutureResolver[Ctx](
           case _ => Vector.empty
         }
 
-    loop(path, field.fieldType, astFields, 1)
+    collectProjectionsInternal(path, field.fieldType, astFields, 1)
   }
 
   private def isOptional(tpe: ObjectType[_, _], fieldName: String): Boolean =
