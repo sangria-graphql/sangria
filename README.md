@@ -88,10 +88,10 @@ In case you need some help or support, then you can use [StackOverflow](https://
 When you are [asking a question](https://stackoverflow.com/questions/ask?tags=scala,graphql,sangria),
 be sure to add `scala`, `graphql` and `sangria` tags, so that other people can easily find them.
 
-## Gitter & Mailing List 
+## Gitter
 
 For more general, lengthy discussions or pretty much anything else please join us in the 
-[gitter chat](https://gitter.im/sangria-graphql/sangria) and [google groups](https://groups.google.com/forum/#!forum/sangria-graphql).
+[gitter chat](https://gitter.im/sangria-graphql/sangria).
 
 ## Contribute
 
