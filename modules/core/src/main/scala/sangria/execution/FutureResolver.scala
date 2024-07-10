@@ -1759,7 +1759,7 @@ private[execution] class FutureResolver[Ctx](
                     case Some(action) => action
                     case None =>
                       field.resolve match {
-                        case pfn: Projector[Ctx, Any, _] =>
+                        case pfn: Projector[Ctx, Any, _, _] =>
                           pfn(updatedCtx, collectProjections(path, field, astFields, pfn.maxLevel))
                         case fn =>
                           fn(updatedCtx)
