@@ -1105,6 +1105,25 @@ case class NoQueryTypeViolation(sourceMapper: Option[SourceMapper], locations: L
     "Must provide schema definition with query type or a type named Query."
 }
 
+case class OneOfMandatoryField(
+    fieldName: String,
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation]
+) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"oneOf input field '${typeName}.${fieldName}' must be nullable."
+}
+
+case class OneOfDefaultValueField(
+    fieldName: String,
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation]
+) extends AstNodeViolation {
+  lazy val simpleErrorMessage =
+    s"oneOf input field '${typeName}.${fieldName}' cannot have a default value."
+}
+
 case class NonUniqueTypeDefinitionViolation(
     typeName: String,
     sourceMapper: Option[SourceMapper],

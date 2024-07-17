@@ -581,6 +581,44 @@ class AstSchemaMaterializerSpec
         error.getMessage should include("Must provide only one mutation type in schema.")
       }
 
+      "Does not allow mandatory fields in oneOf input objects" in {
+        val ast = graphql"""
+          type Query {
+            query(input: OneOfInput!): String
+          }
+
+          input OneOfInput @oneOf {
+            foo: String!
+            bar: Int
+          }
+        """
+
+        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
+
+        error.getMessage should include("oneOf input field 'OneOfInput.foo' must be nullable.")
+      }
+
+      "Does not allow mandatory fields in oneOf input object extensions" in {
+        val ast = graphql"""
+          type Query {
+            query(input: OneOfInput!): String
+          }
+
+          input OneOfInput @oneOf {
+            foo: String
+            bar: Int
+          }
+
+          extend input OneOfInput @oneOf {
+            more: Boolean!
+          }
+        """
+
+        val error = intercept[SchemaValidationException](Schema.buildFromAst(ast))
+
+        error.getMessage should include("oneOf input field 'OneOfInput.more' must be nullable.")
+      }
+
       "Allows only a single subscription type" in {
         val ast =
           graphql"""
