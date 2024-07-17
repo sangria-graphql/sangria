@@ -1105,6 +1105,14 @@ case class NoQueryTypeViolation(sourceMapper: Option[SourceMapper], locations: L
     "Must provide schema definition with query type or a type named Query."
 }
 
+case class NotExactlyOneOfField(
+    typeName: String,
+    sourceMapper: Option[SourceMapper],
+    locations: List[AstLocation]
+) extends AstNodeViolation {
+  lazy val simpleErrorMessage = s"Exactly one key must be specified for oneOf type '${typeName}'."
+}
+
 case class OneOfMandatoryField(
     fieldName: String,
     typeName: String,

@@ -1,5 +1,6 @@
 package sangria.util
 
+import sangria.ast
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.validation._
@@ -145,6 +146,13 @@ trait ValidationSupport extends Matchers {
     )
   )
 
+  val OneOfInput = InputObjectType(
+    "OneOfInput",
+    List(
+      InputField("catName", OptionInputType(StringType)),
+      InputField("dogId", OptionInputType(IntType))
+    )).withDirective(ast.Directive(OneOfDirective.name))
+
   val ComplicatedArgs = ObjectType(
     "ComplicatedArgs",
     List[TestField](
@@ -251,7 +259,13 @@ trait ValidationSupport extends Matchers {
       Field("catOrDog", OptionType(CatOrDog), resolve = _ => None),
       Field("dogOrHuman", OptionType(DogOrHuman), resolve = _ => None),
       Field("humanOrAlien", OptionType(HumanOrAlien), resolve = _ => None),
-      Field("complicatedArgs", OptionType(ComplicatedArgs), resolve = _ => None)
+      Field("complicatedArgs", OptionType(ComplicatedArgs), resolve = _ => None),
+      Field(
+        "oneOfQuery",
+        OptionType(CatOrDog),
+        arguments = List(Argument("input", OneOfInput)),
+        resolve = _ => None
+      )
     )
   )
 

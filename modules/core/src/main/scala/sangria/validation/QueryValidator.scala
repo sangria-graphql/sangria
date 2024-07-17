@@ -45,7 +45,8 @@ object QueryValidator {
     new VariablesAreInputTypes,
     new VariablesInAllowedPosition,
     new InputDocumentNonConflictingVariableInference,
-    new SingleFieldSubscriptions
+    new SingleFieldSubscriptions,
+    new ExactlyOneOfFieldGiven
   )
 
   def ruleBased(rules: List[ValidationRule]): RuleBasedQueryValidator =
