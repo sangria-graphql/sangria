@@ -81,11 +81,12 @@ class AstSchemaMaterializerSpec
 
         val schema = Schema.buildFromAst(ast)
 
-        schema.directives should have size 3
+        schema.directives should have size 4
 
         (schema.directivesByName("skip") should be).theSameInstanceAs(SkipDirective)
         (schema.directivesByName("include") should be).theSameInstanceAs(IncludeDirective)
         (schema.directivesByName("deprecated") should be).theSameInstanceAs(DeprecatedDirective)
+        (schema.directivesByName("oneOf") should be).theSameInstanceAs(OneOfDirective)
       }
 
       "Overriding directives excludes specified" in {
@@ -98,6 +99,7 @@ class AstSchemaMaterializerSpec
             directive @skip on FIELD
             directive @include on FIELD
             directive @deprecated on FIELD_DEFINITION
+            directive @oneOf on FIELD_DEFINITION
 
             type Hello {
               str: String
@@ -106,12 +108,13 @@ class AstSchemaMaterializerSpec
 
         val schema = Schema.buildFromAst(ast)
 
-        schema.directives should have size 3
+        schema.directives should have size 4
 
         // We don't allow to override the built-in directives, since it's too dangerous
         (schema.directivesByName("skip") should be).theSameInstanceAs(SkipDirective)
         (schema.directivesByName("include") should be).theSameInstanceAs(IncludeDirective)
         (schema.directivesByName("deprecated") should be).theSameInstanceAs(DeprecatedDirective)
+        (schema.directivesByName("oneOf") should be).theSameInstanceAs(OneOfDirective)
       }
 
       "Adding directives maintains built-in one" in {
@@ -130,11 +133,12 @@ class AstSchemaMaterializerSpec
 
         val schema = Schema.buildFromAst(ast)
 
-        schema.directives should have size 4
+        schema.directives should have size 5
 
         (schema.directivesByName("skip") should be).theSameInstanceAs(SkipDirective)
         (schema.directivesByName("include") should be).theSameInstanceAs(IncludeDirective)
         (schema.directivesByName("deprecated") should be).theSameInstanceAs(DeprecatedDirective)
+        (schema.directivesByName("oneOf") should be).theSameInstanceAs(OneOfDirective)
       }
 
       "Type modifiers" in {
