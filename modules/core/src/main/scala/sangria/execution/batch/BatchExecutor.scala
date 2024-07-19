@@ -101,7 +101,10 @@ object BatchExecutor {
             inferVariableDefinitions,
             exceptionHandler))
         .flatMap { case res @ (updatedDocument, _) =>
-          val violations = queryValidator.validateQuery(schema, updatedDocument, errorsLimit)
+          // we're not going to pass variables here, as we call validateQuery again on
+          // executeIndividual which has the unmarshalled variables at that point
+          val violations =
+            queryValidator.validateQuery(schema, updatedDocument, Map.empty, errorsLimit)
 
           if (violations.nonEmpty) Failure(ValidationError(violations, exceptionHandler))
           else Success(res)

@@ -29,107 +29,125 @@ case class Executor[Ctx, Root](
       operationName: Option[String] = None,
       variables: Input = emptyMapVars
   )(implicit um: InputUnmarshaller[Input]): Future[PreparedQuery[Ctx, Root, Input]] = {
-    val (violations, validationTiming) =
-      TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst, errorsLimit))
+    val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
+    val valueCollector = new ValueCollector[Ctx, Input](
+      schema,
+      variables,
+      queryAst.sourceMapper,
+      deprecationTracker,
+      userContext,
+      exceptionHandler,
+      scalarMiddleware,
+      false)(um)
 
-    if (violations.nonEmpty)
-      Future.failed(ValidationError(violations, exceptionHandler))
-    else {
-      val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, Input](
-        schema,
-        variables,
-        queryAst.sourceMapper,
-        deprecationTracker,
-        userContext,
-        exceptionHandler,
+    val operationCtx = for {
+      operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
+      unmarshalledVariables <- valueCollector.getVariableValues(
+        operation.variables,
         scalarMiddleware,
-        false)(um)
+        errorsLimit
+      )
+    } yield (operation, unmarshalledVariables)
 
-      val executionResult = for {
-        operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
-        unmarshalledVariables <- valueCollector.getVariableValues(
-          operation.variables,
-          scalarMiddleware,
-          errorsLimit
-        )
-        fieldCollector = new FieldCollector[Ctx, Root](
-          schema,
-          queryAst,
-          unmarshalledVariables,
-          queryAst.sourceMapper,
-          valueCollector,
-          exceptionHandler)
-        tpe <- Executor.getOperationRootType(
-          schema,
-          exceptionHandler,
-          operation,
-          queryAst.sourceMapper)
-        fields <- fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
-      } yield {
-        val preparedFields = fields.fields.flatMap {
-          case CollectedField(_, astField, Success(_)) =>
-            val allFields =
-              tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
-            val field = allFields.head
-            val args = valueCollector.getFieldArgumentValues(
-              ExecutionPath.empty.add(astField, tpe),
-              Some(astField),
-              field.arguments,
-              astField.arguments,
-              unmarshalledVariables)
+    operationCtx match {
+      case Failure(error) =>
+        // return validation errors without variables first if variables is what failed
+        val (violations, validationTiming) =
+          TimeMeasurement.measure(
+            queryValidator.validateQuery(schema, queryAst, Map.empty, errorsLimit))
 
-            args.toOption.map(PreparedField(field, _))
-          case _ => None
+        if (violations.nonEmpty)
+          Future.failed(ValidationError(violations, exceptionHandler))
+        else
+          Future.failed(error)
+      case Success((operation, unmarshalledVariables)) =>
+        val (violations, validationTiming) =
+          TimeMeasurement.measure(
+            queryValidator.validateQuery(schema, queryAst, unmarshalledVariables, errorsLimit))
+
+        if (violations.nonEmpty)
+          Future.failed(ValidationError(violations, exceptionHandler))
+        else {
+          val executionResult = for {
+            tpe <- Executor.getOperationRootType(
+              schema,
+              exceptionHandler,
+              operation,
+              queryAst.sourceMapper)
+            fieldCollector = new FieldCollector[Ctx, Root](
+              schema,
+              queryAst,
+              unmarshalledVariables,
+              queryAst.sourceMapper,
+              valueCollector,
+              exceptionHandler)
+            fields <- fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
+          } yield {
+            val preparedFields = fields.fields.flatMap {
+              case CollectedField(_, astField, Success(_)) =>
+                val allFields =
+                  tpe.getField(schema, astField.name).asInstanceOf[Vector[Field[Ctx, Root]]]
+                val field = allFields.head
+                val args = valueCollector.getFieldArgumentValues(
+                  ExecutionPath.empty.add(astField, tpe),
+                  Some(astField),
+                  field.arguments,
+                  astField.arguments,
+                  unmarshalledVariables)
+
+                args.toOption.map(PreparedField(field, _))
+              case _ => None
+            }
+
+            QueryReducerExecutor
+              .reduceQuery(
+                schema,
+                queryReducers,
+                exceptionHandler,
+                fieldCollector,
+                valueCollector,
+                unmarshalledVariables,
+                tpe,
+                fields,
+                userContext)
+              .map { case (newCtx, timing) =>
+                new PreparedQuery[Ctx, Root, Input](
+                  queryAst,
+                  operation,
+                  tpe,
+                  newCtx,
+                  root,
+                  preparedFields,
+                  (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) =>
+                    executeOperation(
+                      queryAst,
+                      operationName,
+                      variables,
+                      um,
+                      operation,
+                      queryAst.sourceMapper,
+                      valueCollector,
+                      fieldCollector,
+                      m,
+                      unmarshalledVariables,
+                      tpe,
+                      fields,
+                      c,
+                      r,
+                      scheme,
+                      validationTiming,
+                      timing
+                    )
+                )
+              }
+          }
+
+          executionResult match {
+            case Success(future) => future
+            case Failure(error) => Future.failed(error)
+          }
         }
 
-        QueryReducerExecutor
-          .reduceQuery(
-            schema,
-            queryReducers,
-            exceptionHandler,
-            fieldCollector,
-            valueCollector,
-            unmarshalledVariables,
-            tpe,
-            fields,
-            userContext)
-          .map { case (newCtx, timing) =>
-            new PreparedQuery[Ctx, Root, Input](
-              queryAst,
-              operation,
-              tpe,
-              newCtx,
-              root,
-              preparedFields,
-              (c: Ctx, r: Root, m: ResultMarshaller, scheme: ExecutionScheme) =>
-                executeOperation(
-                  queryAst,
-                  operationName,
-                  variables,
-                  um,
-                  operation,
-                  queryAst.sourceMapper,
-                  valueCollector,
-                  fieldCollector,
-                  m,
-                  unmarshalledVariables,
-                  tpe,
-                  fields,
-                  c,
-                  r,
-                  scheme,
-                  validationTiming,
-                  timing
-                )
-            )
-          }
-      }
-
-      executionResult match {
-        case Success(future) => future
-        case Failure(error) => Future.failed(error)
-      }
     }
   }
 
@@ -143,82 +161,101 @@ case class Executor[Ctx, Root](
       marshaller: ResultMarshaller,
       um: InputUnmarshaller[Input],
       scheme: ExecutionScheme): scheme.Result[Ctx, marshaller.Node] = {
-    val (violations, validationTiming) =
-      TimeMeasurement.measure(queryValidator.validateQuery(schema, queryAst, errorsLimit))
 
-    if (violations.nonEmpty)
-      scheme.failed(ValidationError(violations, exceptionHandler))
-    else {
-      val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
-      val valueCollector = new ValueCollector[Ctx, Input](
-        schema,
-        variables,
-        queryAst.sourceMapper,
-        deprecationTracker,
-        userContext,
-        exceptionHandler,
+    val scalarMiddleware = Middleware.composeFromScalarMiddleware(middleware, userContext)
+    val valueCollector = new ValueCollector[Ctx, Input](
+      schema,
+      variables,
+      queryAst.sourceMapper,
+      deprecationTracker,
+      userContext,
+      exceptionHandler,
+      scalarMiddleware,
+      false)(um)
+
+    val operationCtx = for {
+      operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
+      unmarshalledVariables <- valueCollector.getVariableValues(
+        operation.variables,
         scalarMiddleware,
-        false)(um)
+        errorsLimit
+      )
+    } yield (operation, unmarshalledVariables)
 
-      val executionResult = for {
-        operation <- Executor.getOperation(exceptionHandler, queryAst, operationName)
-        unmarshalledVariables <- valueCollector.getVariableValues(
-          operation.variables,
-          scalarMiddleware,
-          errorsLimit
-        )
-        fieldCollector = new FieldCollector[Ctx, Root](
-          schema,
-          queryAst,
-          unmarshalledVariables,
-          queryAst.sourceMapper,
-          valueCollector,
-          exceptionHandler)
-        tpe <- Executor.getOperationRootType(
-          schema,
-          exceptionHandler,
-          operation,
-          queryAst.sourceMapper)
-        fields <- fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
-      } yield {
-        val reduced = QueryReducerExecutor.reduceQuery(
-          schema,
-          queryReducers,
-          exceptionHandler,
-          fieldCollector,
-          valueCollector,
-          unmarshalledVariables,
-          tpe,
-          fields,
-          userContext)
-        scheme.flatMapFuture(reduced) { case (newCtx, timing) =>
-          executeOperation(
-            queryAst,
-            operationName,
-            variables,
-            um,
-            operation,
-            queryAst.sourceMapper,
-            valueCollector,
-            fieldCollector,
-            marshaller,
-            unmarshalledVariables,
-            tpe,
-            fields,
-            newCtx,
-            root,
-            scheme,
-            validationTiming,
-            timing
-          )
+    operationCtx match {
+      case Failure(error) =>
+        // return validation errors without variables first if variables is what failed
+        val (violations, validationTiming) =
+          TimeMeasurement.measure(
+            queryValidator.validateQuery(schema, queryAst, Map.empty, errorsLimit))
+
+        if (violations.nonEmpty)
+          scheme.failed(ValidationError(violations, exceptionHandler))
+        else
+          scheme.failed(error)
+      case Success((operation, unmarshalledVariables)) =>
+        val (violations, validationTiming) =
+          TimeMeasurement.measure(
+            queryValidator.validateQuery(schema, queryAst, unmarshalledVariables, errorsLimit))
+
+        if (violations.nonEmpty)
+          scheme.failed(ValidationError(violations, exceptionHandler))
+        else {
+          val executionResult = for {
+            tpe <- Executor.getOperationRootType(
+              schema,
+              exceptionHandler,
+              operation,
+              queryAst.sourceMapper)
+            fieldCollector = new FieldCollector[Ctx, Root](
+              schema,
+              queryAst,
+              unmarshalledVariables,
+              queryAst.sourceMapper,
+              valueCollector,
+              exceptionHandler)
+            fields <- fieldCollector.collectFields(ExecutionPath.empty, tpe, Vector(operation))
+          } yield {
+            val reduced = QueryReducerExecutor.reduceQuery(
+              schema,
+              queryReducers,
+              exceptionHandler,
+              fieldCollector,
+              valueCollector,
+              unmarshalledVariables,
+              tpe,
+              fields,
+              userContext)
+            scheme.flatMapFuture(reduced) { case (newCtx, timing) =>
+              executeOperation(
+                queryAst,
+                operationName,
+                variables,
+                um,
+                operation,
+                queryAst.sourceMapper,
+                valueCollector,
+                fieldCollector,
+                marshaller,
+                unmarshalledVariables,
+                tpe,
+                fields,
+                newCtx,
+                root,
+                scheme,
+                validationTiming,
+                timing
+              )
+            }
+          }
+
+          executionResult match {
+            case Success(result) => result
+            case Failure(error) => scheme.failed(error)
+          }
         }
-      }
-
-      executionResult match {
-        case Success(result) => result
-        case Failure(error) => scheme.failed(error)
-      }
     }
+
   }
 
   private def executeOperation[Input](

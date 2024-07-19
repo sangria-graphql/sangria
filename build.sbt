@@ -195,7 +195,11 @@ lazy val core = project
       ProblemFilters.exclude[IncompatibleResultTypeProblem](
         "sangria.schema.WithInputTypeRendering.deprecationTracker"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](
-        "sangria.schema.WithInputTypeRendering.deprecationTracker")
+        "sangria.schema.WithInputTypeRendering.deprecationTracker"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.RuleBasedQueryValidator.validateInputDocument"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.RuleBasedQueryValidator.validateInputDocument")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(

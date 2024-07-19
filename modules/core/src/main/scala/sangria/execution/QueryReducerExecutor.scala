@@ -22,7 +22,7 @@ object QueryReducerExecutor {
       middleware: List[Middleware[Ctx]] = Nil,
       errorsLimit: Option[Int] = None
   )(implicit executionContext: ExecutionContext): Future[(Ctx, TimeMeasurement)] = {
-    val violations = queryValidator.validateQuery(schema, queryAst, errorsLimit)
+    val violations = queryValidator.validateQuery(schema, queryAst, Map.empty, errorsLimit)
 
     if (violations.nonEmpty)
       Future.failed(ValidationError(violations, exceptionHandler))

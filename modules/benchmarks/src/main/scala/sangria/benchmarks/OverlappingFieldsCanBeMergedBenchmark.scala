@@ -98,7 +98,7 @@ class OverlappingFieldsCanBeMergedBenchmark {
     bh.consume(doValidate(validator, deepAbstractConcrete))
 
   private def doValidate(validator: QueryValidator, document: Document): Vector[Violation] = {
-    val result = validator.validateQuery(schema, document, None)
+    val result = validator.validateQuery(schema, document, Map.empty, None)
     require(result.isEmpty)
     result
   }

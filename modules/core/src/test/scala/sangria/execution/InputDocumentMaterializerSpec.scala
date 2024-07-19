@@ -2,6 +2,7 @@ package sangria.execution
 
 import sangria.macros._
 import sangria.ast
+import sangria.execution
 import sangria.marshalling.ScalaInput.scalaInput
 import sangria.marshalling.sprayJson._
 import sangria.parser.QueryParser
@@ -111,7 +112,11 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
           }
         """
 
-      val errors = QueryValidator.default.validateInputDocument(schema, inp, "Config")
+      val errors = QueryValidator.default.validateInputDocument(
+        schema,
+        inp,
+        "Config",
+        Map.empty[String, execution.VariableValue])
 
       assertViolations(
         errors,
@@ -164,7 +169,11 @@ class InputDocumentMaterializerSpec extends AnyWordSpec with Matchers with Strin
           }
         """
 
-      val errors = QueryValidator.default.validateInputDocument(schema, inp, "Config")
+      val errors = QueryValidator.default.validateInputDocument(
+        schema,
+        inp,
+        "Config",
+        Map.empty[String, execution.VariableValue])
 
       assertViolations(
         errors,

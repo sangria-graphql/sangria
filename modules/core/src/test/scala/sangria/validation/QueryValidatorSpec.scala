@@ -42,7 +42,7 @@ class QueryValidatorSpec extends AnyWordSpec {
 
       "not limit number of errors returned if the limit is not provided" in {
         val Success(doc) = QueryParser.parse(invalidQuery)
-        val result = validator.validateQuery(schema, doc, None)
+        val result = validator.validateQuery(schema, doc, Map.empty, None)
 
         // 10 errors are expected because there are 5 input objects in the list with 2 missing fields each
         assertResult(10)(result.length)
@@ -51,7 +51,7 @@ class QueryValidatorSpec extends AnyWordSpec {
         val errorsLimit = 5
 
         val Success(doc) = QueryParser.parse(invalidQuery)
-        val result = validator.validateQuery(schema, doc, Some(errorsLimit))
+        val result = validator.validateQuery(schema, doc, Map.empty, Some(errorsLimit))
 
         assertResult(errorsLimit)(result.length)
       }

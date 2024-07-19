@@ -3,6 +3,7 @@ package sangria.validation
 import sangria.ast
 import sangria.ast.AstVisitorCommand._
 import sangria.ast.{AstVisitor, AstVisitorCommand, SourceMapper}
+import sangria.execution
 import sangria.renderer.SchemaRenderer
 import sangria.schema._
 import sangria.validation.rules._
@@ -14,6 +15,7 @@ trait QueryValidator {
   def validateQuery(
       schema: Schema[_, _],
       queryAst: ast.Document,
+      variableValues: Map[String, execution.VariableValue],
       errorsLimit: Option[Int]): Vector[Violation]
 }
 
@@ -56,6 +58,7 @@ object QueryValidator {
     def validateQuery(
         schema: Schema[_, _],
         queryAst: ast.Document,
+        variableValues: Map[String, execution.VariableValue],
         errorsLimit: Option[Int]): Vector[Violation] = Vector.empty
   }
 
@@ -66,12 +69,15 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
   def validateQuery(
       schema: Schema[_, _],
       queryAst: ast.Document,
-      errorsLimit: Option[Int]): Vector[Violation] = {
+      variables: Map[String, execution.VariableValue],
+      errorsLimit: Option[Int]
+  ): Vector[Violation] = {
     val ctx = new ValidationContext(
       schema,
       queryAst,
       queryAst.sourceMapper,
       new TypeInfo(schema),
+      variables,
       errorsLimit)
 
     validateUsingRules(queryAst, ctx, rules.map(_.visitor(ctx)), topLevel = true)
@@ -82,9 +88,11 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
   def validateInputDocument(
       schema: Schema[_, _],
       doc: ast.InputDocument,
-      inputTypeName: String): Vector[Violation] =
+      inputTypeName: String,
+      variables: Map[String, execution.VariableValue]
+  ): Vector[Violation] =
     schema.getInputType(ast.NamedType(inputTypeName)) match {
-      case Some(it) => validateInputDocument(schema, doc, it)
+      case Some(it) => validateInputDocument(schema, doc, it, variables)
       case None =>
         throw new IllegalStateException(
           s"Can't find input type '$inputTypeName' in the schema. Known input types are: ${schema.inputTypes.keys.toVector.sorted
@@ -94,10 +102,18 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
   def validateInputDocument(
       schema: Schema[_, _],
       doc: ast.InputDocument,
-      inputType: InputType[_]): Vector[Violation] = {
+      inputType: InputType[_],
+      variables: Map[String, execution.VariableValue]
+  ): Vector[Violation] = {
     val typeInfo = new TypeInfo(schema, Some(inputType))
 
-    val ctx = ValidationContext(schema, ast.Document.emptyStub, doc.sourceMapper, typeInfo)
+    val ctx = ValidationContext(
+      schema,
+      ast.Document.emptyStub,
+      doc.sourceMapper,
+      typeInfo,
+      variables
+    )
 
     validateUsingRules(doc, ctx, rules.map(_.visitor(ctx)), topLevel = true)
 
@@ -164,6 +180,7 @@ class ValidationContext(
     val doc: ast.Document,
     val sourceMapper: Option[SourceMapper],
     val typeInfo: TypeInfo,
+    val variables: Map[String, execution.VariableValue],
     errorsLimit: Option[Int]) {
   // Using mutable data-structures and mutability to minimize validation footprint
 
@@ -194,9 +211,10 @@ object ValidationContext {
       schema: Schema[_, _],
       doc: ast.Document,
       sourceMapper: Option[SourceMapper],
-      typeInfo: TypeInfo
+      typeInfo: TypeInfo,
+      variables: Map[String, execution.VariableValue]
   ): ValidationContext =
-    new ValidationContext(schema, doc, sourceMapper, typeInfo, None)
+    new ValidationContext(schema, doc, sourceMapper, typeInfo, variables, None)
 
   @deprecated(
     "The validations are now implemented as a part of `ValuesOfCorrectType` validation.",

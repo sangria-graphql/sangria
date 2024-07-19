@@ -1,6 +1,7 @@
 package sangria.util
 
 import sangria.ast
+import sangria.execution
 import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.validation._
@@ -11,6 +12,8 @@ import org.scalatest.matchers.should.Matchers
 import sangria.ast.Document
 import sangria.util.tag.@@
 import sangria.marshalling.FromInput.CoercedScalaResult
+import sangria.execution.ExceptionHandler
+import sangria.execution.ValueCollector
 
 trait ValidationSupport extends Matchers {
   type TestField = Field[Unit, Unit]
@@ -247,6 +250,7 @@ trait ValidationSupport extends Matchers {
   val QueryRoot = ObjectType(
     "QueryRoot",
     List[TestField](
+      Field("foo", OptionType(StringType), resolve = _ => None),
       Field(
         "human",
         OptionType(Human),
@@ -362,10 +366,14 @@ trait ValidationSupport extends Matchers {
       s: Schema[_, _],
       rules: List[ValidationRule],
       query: String,
-      expectedErrors: Seq[(String, Seq[Pos])]) = {
+      expectedErrors: Seq[(String, Seq[Pos])],
+      vars: (String, String) = "" -> ""
+  ) = {
     val Success(doc) = QueryParser.parse(query)
 
-    assertViolations(validator(rules).validateQuery(s, doc, None), expectedErrors: _*)
+    val variables = getVariableValues(s, vars)
+
+    assertViolations(validator(rules).validateQuery(s, doc, variables, None), expectedErrors: _*)
   }
 
   def expectInputInvalid(
@@ -376,12 +384,48 @@ trait ValidationSupport extends Matchers {
       typeName: String) = {
     val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
 
-    assertViolations(validator(rules).validateInputDocument(s, doc, typeName), expectedErrors: _*)
+    assertViolations(
+      validator(rules)
+        .validateInputDocument(s, doc, typeName, Map.empty[String, execution.VariableValue]),
+      expectedErrors: _*)
   }
 
-  def expectValid(s: Schema[_, _], rules: List[ValidationRule], query: String) = {
+  private def getVariableValues(s: Schema[_, _], vars: (String, String)) = {
+    import spray.json._
+    import sangria.marshalling.sprayJson._
+
+    val valueCollector = new ValueCollector(
+      s,
+      (if (vars._2.nonEmpty) vars._2 else "{}").parseJson,
+      None,
+      None,
+      (),
+      ExceptionHandler.empty,
+      None,
+      true)
+
+    valueCollector
+      .getVariableValues(
+        QueryParser
+          .parse(s"query Foo${if (vars._1.nonEmpty) "(" + vars._1 + ")" else ""} {foo}")
+          .get
+          .operations(Some("Foo"))
+          .variables,
+        None)
+      .get
+  }
+
+  def expectValid(
+      s: Schema[_, _],
+      rules: List[ValidationRule],
+      query: String,
+      vars: (String, String) = "" -> ""
+  ) = {
     val Success(doc) = QueryParser.parse(query)
-    val errors = validator(rules).validateQuery(s, doc, None)
+
+    val variables = getVariableValues(s, vars)
+
+    val errors = validator(rules).validateQuery(s, doc, variables, None)
 
     withClue(renderViolations(errors)) {
       errors should have size 0
@@ -396,15 +440,22 @@ trait ValidationSupport extends Matchers {
     val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
 
     withClue("Should validate") {
-      validator(rules).validateInputDocument(s, doc, typeName) should have size 0
+      validator(rules).validateInputDocument(
+        s,
+        doc,
+        typeName,
+        Map.empty[String, execution.VariableValue]) should have size 0
     }
   }
 
   def expectPassesRule(rule: ValidationRule, query: String) =
     expectValid(schema, rule :: Nil, query)
 
-  def expectPasses(query: String) =
-    expectValid(schema, defaultRule.get :: Nil, query)
+  def expectPasses(
+      query: String,
+      vars: (String, String) = "" -> ""
+  ) =
+    expectValid(schema, defaultRule.get :: Nil, query, vars)
 
   def expectInputPasses(typeName: String, query: String) =
     expectValidInput(schema, defaultRule.get :: Nil, query, typeName)
@@ -419,12 +470,18 @@ trait ValidationSupport extends Matchers {
       query,
       expectedErrors.map { case (msg, pos) => msg -> pos.toList })
 
-  def expectFails(query: String, expectedErrors: List[(String, Option[Pos])]) =
+  def expectFails(
+      query: String,
+      expectedErrors: List[(String, Option[Pos])],
+      vars: (String, String) = "" -> ""
+  ) =
     expectInvalid(
       schema,
       defaultRule.get :: Nil,
       query,
-      expectedErrors.map { case (msg, pos) => msg -> pos.toList })
+      expectedErrors.map { case (msg, pos) => msg -> pos.toList },
+      vars
+    )
 
   def expectInputFails(typeName: String, query: String, expectedErrors: List[(String, List[Pos])]) =
     expectInputInvalid(schema, defaultRule.get :: Nil, query, expectedErrors, typeName)
@@ -446,7 +503,11 @@ trait ValidationSupport extends Matchers {
       violationCheck: Violation => Unit): Unit = {
     val schema = Schema.buildFromAst(initialSchemaDoc)
     val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
-    val violations = validator(v.toList).validateQuery(schema, docUnderTest, None)
+    val violations = validator(v.toList).validateQuery(
+      schema,
+      docUnderTest,
+      Map.empty[String, execution.VariableValue],
+      None)
     violations shouldNot be(empty)
     violations.size shouldBe 1
     violationCheck(violations.head)
@@ -465,7 +526,11 @@ trait ValidationSupport extends Matchers {
       v: Option[ValidationRule]): Unit = {
     val schema = Schema.buildFromAst(initialSchemaDoc)
     val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
-    val violations = validator(v.toList).validateQuery(schema, docUnderTest, None)
+    val violations = validator(v.toList).validateQuery(
+      schema,
+      docUnderTest,
+      Map.empty[String, execution.VariableValue],
+      None)
     violations shouldBe empty
   }
 
