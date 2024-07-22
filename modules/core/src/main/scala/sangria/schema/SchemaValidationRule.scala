@@ -616,24 +616,24 @@ object OneOfInputObjectValidator extends SchemaElementValidator {
       schema: Schema[_, _],
       tpe: InputObjectType[_]
   ): Vector[Violation] = if (tpe.astDirectives.exists(_.name == OneOfDirective.name))
-    tpe.fields.toVector.flatMap { field =>
+    tpe.fields.iterator.flatMap { field =>
       val defaultValueError =
         field.defaultValue.map(_ => OneOfDefaultValueField(field.name, tpe.name, None, List.empty))
 
-      val nonOptionalError = field.fieldType.isOptional match {
-        case false =>
-          Some(
-            OneOfMandatoryField(
-              field.name,
-              tpe.name,
-              None,
-              List.empty
-            )
+      val nonOptionalError = if (field.fieldType.isOptional) {
+        None
+      } else {
+        Some(
+          OneOfMandatoryField(
+            field.name,
+            tpe.name,
+            None,
+            List.empty
           )
-        case true => None
+        )
       }
-      Vector(defaultValueError, nonOptionalError).flatten
-    }
+      Iterator(defaultValueError, nonOptionalError).flatten
+    }.toVector
   else Vector.empty
 }
 
