@@ -48,7 +48,7 @@ class ExactlyOneOfFieldGivenSpec extends AnyWordSpec with ValidationSupport {
       List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 31)))
     )
 
-    "fail with more than one non-null fields given" in expectFails(
+    "fail with more than one non-null args given" in expectFails(
       """
           query OneOfQuery {
             oneOfQuery(input: {
@@ -67,7 +67,65 @@ class ExactlyOneOfFieldGivenSpec extends AnyWordSpec with ValidationSupport {
       List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 31)))
     )
 
-    "pass with a null variable and non-null arg given" in expectPasses(
+    "fail with one non-null arg and one null arg given" in expectFails(
+      """
+          query OneOfQuery {
+            oneOfQuery(input: {
+                catName: "Gretel",
+                dogId: null
+            }) {
+                ... on Cat {
+                    name
+                }
+                ... on Dog {
+                    name
+                }
+            }
+          }
+        """,
+      List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 31)))
+    )
+
+    "fail with more than one null args given" in expectFails(
+      """
+          query OneOfQuery {
+            oneOfQuery(input: {
+                catName: null,
+                dogId: null
+            }) {
+                ... on Cat {
+                    name
+                }
+                ... on Dog {
+                    name
+                }
+            }
+          }
+        """,
+      List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 31)))
+    )
+
+    "fail with an null arg and non-null variable given" in expectFails(
+      """
+      query OneOfQuery($catName: String) {
+        oneOfQuery(input: {
+          catName: $catName,
+          dogId: null
+        }) {
+            ... on Cat {
+              name
+            }
+            ... on Dog {
+              name
+            }
+          }
+        }
+    """,
+      List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 27))),
+      "$catName: String" -> """{"catName": "Gretel"}"""
+    )
+
+    "fail with an non-null arg and null variable given" in expectFails(
       """
       query OneOfQuery($catName: String) {
         oneOfQuery(input: {
@@ -83,6 +141,7 @@ class ExactlyOneOfFieldGivenSpec extends AnyWordSpec with ValidationSupport {
           }
         }
     """,
+      List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 27))),
       "$catName: String" -> """{"catName": null}"""
     )
 
@@ -106,7 +165,7 @@ class ExactlyOneOfFieldGivenSpec extends AnyWordSpec with ValidationSupport {
       "$catName: String" -> """{"catName": "Gretel"}"""
     )
 
-    "pass with a variable object with only one non-null value" in expectPasses(
+    "pass with a variable object with only one non-null value" in expectFails(
       """
       query OneOfQuery($input: OneOfInput!) {
         oneOfQuery(input: $input) {
@@ -119,6 +178,7 @@ class ExactlyOneOfFieldGivenSpec extends AnyWordSpec with ValidationSupport {
           }
         }
     """,
+      List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 27))),
       "$input: OneOfInput!" -> """{"input":{"catName": "Gretel", "dogId": null}}"""
     )
 
@@ -172,12 +232,11 @@ class ExactlyOneOfFieldGivenSpec extends AnyWordSpec with ValidationSupport {
       "$input: OneOfInput!" -> """{"input":{"dogId": 123}}"""
     )
 
-    "pass with a variables with default value but only one resolved to non-null" in expectPasses(
+    "passes with a variable that has a default value" in expectPasses(
       """
-      query OneOfQuery($catName: String = "Gretel", $dogId: Int) {
+      query OneOfQuery($catName: String = "Gretel") {
         oneOfQuery(input: {
-          catName: $catName,
-          dogId: $dogId
+          catName: $catName
         }) {
             ... on Cat {
               name
@@ -188,27 +247,7 @@ class ExactlyOneOfFieldGivenSpec extends AnyWordSpec with ValidationSupport {
           }
         }
     """,
-      """$catName: String = "Gretel", $dogId: Int""" -> """{}"""
-    )
-
-    "fail with a variable object with default value that causes there to be more than one non-null value" in expectFails(
-      """
-      query OneOfQuery($catName: String = "Gretel", $dogId: Int) {
-        oneOfQuery(input: {
-          catName: $catName,
-          dogId: $dogId
-        }) {
-            ... on Cat {
-              name
-            }
-            ... on Dog {
-              name
-            }
-          }
-        }
-    """,
-      List("Exactly one key must be specified for oneOf type 'OneOfInput'." -> Some(Pos(3, 27))),
-      """$catName: String = "Gretel", $dogId: Int""" -> """{"dogId":123}"""
+      """$catName: String = "Gretel"""" -> """{}"""
     )
   }
 }

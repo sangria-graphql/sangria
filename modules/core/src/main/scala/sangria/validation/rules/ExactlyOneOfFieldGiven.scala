@@ -38,9 +38,9 @@ class ExactlyOneOfFieldGiven extends ValidationRule {
     inputType.fold(AstVisitorCommand.RightContinue) { inputType =>
       inputType.namedInputType match {
         case namedInputType: schema.InputObjectType[_] if hasOneOfDirective(namedInputType) =>
-          val nonNullFields = node match {
+          val (allFields, nonNullFields) = node match {
             case Left(ast.ObjectValue(fields, _, _)) =>
-              fields.filter { field =>
+              val nonNullFields = fields.filter { field =>
                 field.value match {
                   case ast.NullValue(_, _) => false
                   case ast.VariableValue(name, _, _) =>
@@ -54,6 +54,7 @@ class ExactlyOneOfFieldGiven extends ValidationRule {
                   case _ => true
                 }
               }
+              (fields, nonNullFields)
 
             case Right(ast.VariableValue(name, _, _)) =>
               val variableValue = getResolvedVariableValue(name, namedInputType, ctx.variables)
@@ -62,20 +63,22 @@ class ExactlyOneOfFieldGiven extends ValidationRule {
                 variableValue match {
                   case Some(resolved) =>
                     val variableObj = resolved.asInstanceOf[Map[String, Any]]
-                    namedInputType.fields.filter { field =>
-                      variableObj.get(field.name).fold(false)(_ != None)
+                    val allFields = variableObj.filter { case (key, _) =>
+                      namedInputType.fieldsByName.contains(key)
                     }
-                  case _ => Vector.empty
+                    val nonNullFields = allFields.filter { case (_, v) => v != None }
+                    (allFields, nonNullFields)
+                  case _ => (Vector.empty, Vector.empty)
                 }
               catch {
                 // could get this from asInstanceOf failing for unexpected variable type.
                 // other validation will cover this problem.
-                case _: Throwable => Vector.empty
+                case _: Throwable => (Vector.empty, Vector.empty)
               }
           }
 
-          nonNullFields.size match {
-            case 1 => AstVisitorCommand.RightContinue
+          (allFields.size, nonNullFields.size) match {
+            case (1, 1) => AstVisitorCommand.RightContinue
             case _ =>
               val pos = node.fold(_.location, _.location)
               Left(
