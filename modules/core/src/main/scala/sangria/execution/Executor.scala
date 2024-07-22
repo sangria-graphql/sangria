@@ -52,9 +52,7 @@ case class Executor[Ctx, Root](
     operationCtx match {
       case Failure(error) =>
         // return validation errors without variables first if variables is what failed
-        val (violations, validationTiming) =
-          TimeMeasurement.measure(
-            queryValidator.validateQuery(schema, queryAst, Map.empty, errorsLimit))
+        val violations = queryValidator.validateQuery(schema, queryAst, Map.empty, errorsLimit)
 
         if (violations.nonEmpty)
           Future.failed(ValidationError(violations, exceptionHandler))
@@ -185,10 +183,7 @@ case class Executor[Ctx, Root](
     operationCtx match {
       case Failure(error) =>
         // return validation errors without variables first if variables is what failed
-        val (violations, validationTiming) =
-          TimeMeasurement.measure(
-            queryValidator.validateQuery(schema, queryAst, Map.empty, errorsLimit))
-
+        val violations = queryValidator.validateQuery(schema, queryAst, Map.empty, errorsLimit)
         if (violations.nonEmpty)
           scheme.failed(ValidationError(violations, exceptionHandler))
         else
