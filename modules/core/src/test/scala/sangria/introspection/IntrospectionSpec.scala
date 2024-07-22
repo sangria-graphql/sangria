@@ -790,6 +790,13 @@ class IntrospectionSpec extends AnyWordSpec with Matchers with FutureResultSuppo
                 "defaultValue" -> "\"No longer supported\""
               )),
               "isRepeatable" -> false
+            ),
+            Map(
+              "name" -> "oneOf",
+              "description" -> "Indicates exactly one field must be supplied and this field must not be `null`.",
+              "locations" -> Vector("INPUT_OBJECT"),
+              "args" -> Vector.empty,
+              "isRepeatable" -> false
             )
           ),
           "description" -> null

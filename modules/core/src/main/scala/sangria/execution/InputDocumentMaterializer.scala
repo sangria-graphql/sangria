@@ -2,6 +2,7 @@ package sangria.execution
 
 import sangria.ast.{AstVisitor, InputDocument, VariableDefinition}
 import sangria.ast
+import sangria.execution
 import sangria.marshalling.{FromInput, InputUnmarshaller}
 import sangria.renderer.SchemaRenderer
 import sangria.schema._
@@ -28,16 +29,30 @@ case class InputDocumentMaterializer[Vars](
       None,
       false)(iu)
 
-    val violations = QueryValidator.default.validateInputDocument(schema, document, inputType)
+    val variableDefinitions = inferVariableDefinitions(document, inputType)
 
-    if (violations.nonEmpty)
-      Failure(InputDocumentMaterializationError(violations, ExceptionHandler.empty))
-    else {
-      val variableDefinitions = inferVariableDefinitions(document, inputType)
+    collector.getVariableValues(variableDefinitions, None) match {
+      case Failure(e) =>
+        // return validation errors without variables first if variables is what failed
+        val violations =
+          QueryValidator.default.validateInputDocument(
+            schema,
+            document,
+            inputType,
+            Map.empty[String, execution.VariableValue]
+          )
 
-      collector.getVariableValues(variableDefinitions, None) match {
-        case Failure(e) => Failure(e)
-        case Success(vars) =>
+        if (violations.nonEmpty)
+          Failure(InputDocumentMaterializationError(violations, ExceptionHandler.empty))
+        else
+          Failure(e)
+      case Success(vars) =>
+        val violations =
+          QueryValidator.default.validateInputDocument(schema, document, inputType, vars)
+
+        if (violations.nonEmpty)
+          Failure(InputDocumentMaterializationError(violations, ExceptionHandler.empty))
+        else {
           try
             Success(document.values.flatMap { value =>
               collector.coercionHelper.coerceInputValue(
@@ -56,7 +71,7 @@ case class InputDocumentMaterializer[Vars](
           catch {
             case NonFatal(e) => Failure(e)
           }
-      }
+        }
     }
   }
 

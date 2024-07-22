@@ -267,8 +267,18 @@ package object schema {
     shouldInclude = ctx => !ctx.arg(IfArg)
   )
 
+  val OneOfDirective: Directive = Directive(
+    "oneOf",
+    description =
+      Some("Indicates exactly one field must be supplied and this field must not be `null`."),
+    arguments = List.empty,
+    locations = Set(
+      DirectiveLocation.InputObject
+    )
+  )
+
   val BuiltinDirectives: List[Directive] =
-    IncludeDirective :: SkipDirective :: DeprecatedDirective :: Nil
+    IncludeDirective :: SkipDirective :: DeprecatedDirective :: OneOfDirective :: Nil
 
   val BuiltinDirectivesByName: Map[String, Directive] =
     BuiltinDirectives.groupBy(_.name).map { case (k, v) => (k, v.head) }

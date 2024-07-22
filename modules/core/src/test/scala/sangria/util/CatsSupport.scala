@@ -221,7 +221,7 @@ object CatsScenarioExecutor extends FutureResultSupport {
     case Validate(rules) =>
       ValidationResult(
         new RuleBasedQueryValidator(rules.toList)
-          .validateQuery(`given`.schema, QueryParser.parse(`given`.query).get, None))
+          .validateQuery(`given`.schema, QueryParser.parse(`given`.query).get, Map.empty, None))
 
     case Execute(validate, value, vars, op) =>
       val validator = if (validate) QueryValidator.default else QueryValidator.empty

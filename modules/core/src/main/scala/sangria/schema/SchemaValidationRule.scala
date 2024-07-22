@@ -33,7 +33,9 @@ object SchemaValidationRule {
     ContainerMembersValidator,
     ValidNamesValidator,
     IntrospectionNamesValidator,
-    InputObjectTypeRecursionValidator)
+    InputObjectTypeRecursionValidator,
+    OneOfInputObjectValidator
+  )
 
   val default: List[SchemaValidationRule] = List(
     DefaultValuesValidationRule,
@@ -607,6 +609,32 @@ object EnumValueReservedNameValidator extends SchemaElementValidator {
       Vector(
         ReservedEnumValueNameViolation(tpe.name, value.name, sourceMapper(schema), location(value)))
     else Vector.empty
+}
+
+object OneOfInputObjectValidator extends SchemaElementValidator {
+  override def validateInputObjectType(
+      schema: Schema[_, _],
+      tpe: InputObjectType[_]
+  ): Vector[Violation] = if (tpe.astDirectives.exists(_.name == OneOfDirective.name))
+    tpe.fields.iterator.flatMap { field =>
+      val defaultValueError =
+        field.defaultValue.map(_ => OneOfDefaultValueField(field.name, tpe.name, None, List.empty))
+
+      val nonOptionalError = if (field.fieldType.isOptional) {
+        None
+      } else {
+        Some(
+          OneOfMandatoryField(
+            field.name,
+            tpe.name,
+            None,
+            List.empty
+          )
+        )
+      }
+      Iterator(defaultValueError, nonOptionalError).flatten
+    }.toVector
+  else Vector.empty
 }
 
 object InputObjectTypeRecursionValidator extends SchemaElementValidator {

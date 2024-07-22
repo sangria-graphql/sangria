@@ -30,7 +30,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
         }
         """)
 
-      QueryValidator.default.validateQuery(StarWarsSchema, query, None) should be(Symbol("empty"))
+      QueryValidator.default.validateQuery(StarWarsSchema, query, Map.empty, None) should be(
+        Symbol("empty"))
     }
 
     "Notes that non-existent fields are invalid" in {
@@ -42,7 +43,11 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
         }
         """)
 
-      QueryValidator.default.validateQuery(StarWarsSchema, query, None) should have size 1
+      QueryValidator.default.validateQuery(
+        StarWarsSchema,
+        query,
+        Map.empty,
+        None) should have size 1
     }
 
     "Requires fields on objects" in {
@@ -52,7 +57,11 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
         }
         """)
 
-      QueryValidator.default.validateQuery(StarWarsSchema, query, None) should have size 1
+      QueryValidator.default.validateQuery(
+        StarWarsSchema,
+        query,
+        Map.empty,
+        None) should have size 1
     }
 
     "Disallows fields on scalars" in {
@@ -66,7 +75,11 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
         }
         """)
 
-      QueryValidator.default.validateQuery(StarWarsSchema, query, None) should have size 1
+      QueryValidator.default.validateQuery(
+        StarWarsSchema,
+        query,
+        Map.empty,
+        None) should have size 1
     }
 
     "Disallows object fields on interfaces" in {
@@ -79,7 +92,11 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
         }
         """)
 
-      QueryValidator.default.validateQuery(StarWarsSchema, query, None) should have size 1
+      QueryValidator.default.validateQuery(
+        StarWarsSchema,
+        query,
+        Map.empty,
+        None) should have size 1
     }
 
     "Allows object fields in fragments" in {
@@ -96,7 +113,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
         }
         """)
 
-      QueryValidator.default.validateQuery(StarWarsSchema, query, None) should be(Symbol("empty"))
+      QueryValidator.default.validateQuery(StarWarsSchema, query, Map.empty, None) should be(
+        Symbol("empty"))
     }
 
     "Allows object fields in inline fragments" in {
@@ -111,7 +129,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
         }
         """)
 
-      QueryValidator.default.validateQuery(StarWarsSchema, query, None) should be(Symbol("empty"))
+      QueryValidator.default.validateQuery(StarWarsSchema, query, Map.empty, None) should be(
+        Symbol("empty"))
     }
   }
 }
