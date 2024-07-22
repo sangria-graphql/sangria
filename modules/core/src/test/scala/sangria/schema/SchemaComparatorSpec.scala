@@ -668,6 +668,60 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
       nonBreakingChange[ScalarTypeAstDirectiveRemoved](
         "Directive `@bar(ids:[1,2])` removed from a scalar type `Foo5`")
     )
+
+    "detect removal of @oneOf" in checkChangesWithoutQueryType(
+      gql"""
+        input UserBy @oneOf {
+          id: ID
+          email: String
+          username: String
+          registrationNumber: Int
+        }
+        type Query {
+          user(by: UserBy!): String
+        }
+      """,
+      gql"""
+        input UserBy {
+          id: ID
+          email: String
+          username: String
+          registrationNumber: Int
+        }
+        type Query {
+          user(by: UserBy!): String
+        }
+      """,
+      nonBreakingChange[InputObjectTypeAstDirectiveRemoved](
+        "Directive `@oneOf` removed from an input type `UserBy`")
+    )
+
+    "detect add of @oneOf" in checkChangesWithoutQueryType(
+      gql"""
+        input UserBy {
+          id: ID
+          email: String
+          username: String
+          registrationNumber: Int
+        }
+        type Query {
+          user(by: UserBy!): String
+        }
+      """,
+      gql"""
+        input UserBy @oneOf {
+          id: ID
+          email: String
+          username: String
+          registrationNumber: Int
+        }
+        type Query {
+          user(by: UserBy!): String
+        }
+      """,
+      breakingChange[InputObjectTypeAstDirectiveAdded](
+        "Directive `@oneOf` added on an input type `UserBy`")
+    )
   }
 
   private[this] def breakingChange[T: ClassTag](description: String) =

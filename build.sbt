@@ -199,7 +199,17 @@ lazy val core = project
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "sangria.validation.RuleBasedQueryValidator.validateInputDocument"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.validation.RuleBasedQueryValidator.validateInputDocument")
+        "sangria.validation.RuleBasedQueryValidator.validateInputDocument"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.schema.SchemaChange#AbstractAstDirectiveAdded.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.this"),
+      ProblemFilters.exclude[MissingTypesProblem](
+        "sangria.schema.SchemaChange$InputObjectTypeAstDirectiveAdded$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.apply")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
