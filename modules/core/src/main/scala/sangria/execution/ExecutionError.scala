@@ -63,8 +63,7 @@ case class UndefinedConcreteTypeError(
     sourceMapper: Option[SourceMapper] = None,
     locations: List[AstLocation] = Nil)
     extends InternalExecutionError(
-      s"Can't find appropriate subtype of ${UndefinedConcreteTypeError.renderAbstractType(
-          abstractType)} type '${abstractType.name}' for value of class '${UndefinedConcreteTypeError
+      s"Can't find appropriate subtype of ${UndefinedConcreteTypeError.renderAbstractType(abstractType)} type '${abstractType.name}' for value of class '${UndefinedConcreteTypeError
           .renderValueClass(value)}' at path '$path'. Possible types: ${UndefinedConcreteTypeError
           .renderPossibleTypes(possibleTypes)}. Got value: $value.")
 

@@ -841,9 +841,7 @@ object SchemaChange {
       oldDefault: Option[ast.Value],
       newDefault: Option[ast.Value])
       extends AbstractChange(
-        s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d =>
-            s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d =>
-            s"`${QueryRenderer.renderCompact(d)}`")}",
+        s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")}",
         breakingChange = false
       )
       with TypeChange
@@ -856,8 +854,7 @@ object SchemaChange {
       newDefault: Option[ast.Value])
       extends AbstractChange(
         s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault
-            .fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold(
-            "none")(d => s"`${QueryRenderer.renderCompact(d)}`")}",
+            .fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")}",
         breakingChange = false,
         dangerousChange = true
       )
@@ -869,9 +866,7 @@ object SchemaChange {
       oldDefault: Option[ast.Value],
       newDefault: Option[ast.Value])
       extends AbstractChange(
-        s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold(
-            "none")(d => "`" + QueryRenderer.renderCompact(d) + "`")} to ${newDefault.fold("none")(
-            d => "`" + QueryRenderer.renderCompact(d) + "`")}",
+        s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d => "`" + QueryRenderer.renderCompact(d) + "`")} to ${newDefault.fold("none")(d => "`" + QueryRenderer.renderCompact(d) + "`")}",
         breakingChange = false,
         dangerousChange = true
       )
@@ -941,8 +936,7 @@ object SchemaChange {
       value: EnumValue[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` added on an enum value `${tpe.name}.${value.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on an enum value `${tpe.name}.${value.name}`",
         DirectiveLocation.EnumValue,
         breakingChange = false
       )
@@ -952,8 +946,7 @@ object SchemaChange {
       value: EnumValue[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` removed from a enum value `${tpe.name}.${value.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a enum value `${tpe.name}.${value.name}`",
         DirectiveLocation.EnumValue)
 
   case class InputFieldAstDirectiveAdded(
@@ -961,8 +954,7 @@ object SchemaChange {
       field: InputField[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` added on an input field `${tpe.name}.${field.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on an input field `${tpe.name}.${field.name}`",
         DirectiveLocation.InputFieldDefinition,
         breakingChange = false
       )
@@ -972,8 +964,7 @@ object SchemaChange {
       field: InputField[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` removed from a input field `${tpe.name}.${field.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a input field `${tpe.name}.${field.name}`",
         DirectiveLocation.InputFieldDefinition
       )
 
@@ -982,8 +973,7 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` added on a directive argument `${dir.name}.${argument.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on a directive argument `${dir.name}.${argument.name}`",
         DirectiveLocation.ArgumentDefinition,
         breakingChange = false
       )
@@ -993,8 +983,7 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` removed from a directive argument `${dir.name}.${argument.name}`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a directive argument `${dir.name}.${argument.name}`",
         DirectiveLocation.ArgumentDefinition
       )
 
@@ -1004,8 +993,7 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveAdded(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` added on a field argument `${tpe.name}.${field.name}[${argument.name}]`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` added on a field argument `${tpe.name}.${field.name}[${argument.name}]`",
         DirectiveLocation.ArgumentDefinition,
         breakingChange = false
       )
@@ -1016,8 +1004,7 @@ object SchemaChange {
       argument: Argument[_],
       directive: ast.Directive)
       extends AbstractAstDirectiveRemoved(
-        s"Directive `${QueryRenderer.renderCompact(
-            directive)}` removed from a field argument `${tpe.name}.${field.name}[${argument.name}]`",
+        s"Directive `${QueryRenderer.renderCompact(directive)}` removed from a field argument `${tpe.name}.${field.name}[${argument.name}]`",
         DirectiveLocation.ArgumentDefinition
       )
 
@@ -1169,8 +1156,7 @@ object SchemaChange {
       oldFieldType: InputType[_],
       newFieldType: InputType[_])
       extends AbstractChange(
-        s"`${directive.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(
-            oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
+        s"`${directive.name}(${argument.name})` type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
         breaking
       )
 
@@ -1181,8 +1167,7 @@ object SchemaChange {
       oldFieldType: OutputType[_],
       newFieldType: OutputType[_])
       extends AbstractChange(
-        s"`${tpe.name}.${field.name}` field type changed from `${SchemaRenderer.renderTypeName(
-            oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
+        s"`${tpe.name}.${field.name}` field type changed from `${SchemaRenderer.renderTypeName(oldFieldType)}` to `${SchemaRenderer.renderTypeName(newFieldType)}`",
         breaking
       )
       with TypeChange
@@ -1191,16 +1176,14 @@ object SchemaChange {
       oldType: Option[ObjectType[_, _]],
       newType: Option[ObjectType[_, _]])
       extends AbstractChange(
-        s"Schema mutation type changed from ${oldType.fold("none")(t =>
-            "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
+        s"Schema mutation type changed from ${oldType.fold("none")(t => "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
         oldType.nonEmpty)
 
   case class SchemaSubscriptionTypeChanged(
       oldType: Option[ObjectType[_, _]],
       newType: Option[ObjectType[_, _]])
       extends AbstractChange(
-        s"Schema subscription type changed from ${oldType.fold("none")(t =>
-            "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
+        s"Schema subscription type changed from ${oldType.fold("none")(t => "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
         oldType.nonEmpty
       )
 

@@ -304,8 +304,8 @@ object CatsAssertions extends Matchers {
     }
 
     withLoc.locations.zipWithIndex.foreach { case (pos, idx) =>
-      withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(
-          idx).column}): ${violation.errorMessage}") {
+      withClue(
+        s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(idx).column}): ${violation.errorMessage}") {
         ErrorLocation(pos.line, pos.column) should be(locations(idx))
       }
     }
@@ -330,8 +330,8 @@ object CatsAssertions extends Matchers {
     }
 
     actualLocs.zipWithIndex.foreach { case (pos, idx) =>
-      withClue(s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(
-          idx).column}): ${error("message").stringValue}") {
+      withClue(
+        s"Violation position mismatch (line: ${locations(idx).line}, column: ${locations(idx).column}): ${error("message").stringValue}") {
         ErrorLocation(pos("line").intValue, pos("column").intValue) should be(locations(idx))
       }
     }
