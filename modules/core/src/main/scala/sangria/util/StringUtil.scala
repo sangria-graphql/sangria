@@ -3,6 +3,7 @@ package sangria.util
 import sangria.since3_0_0
 
 import java.util.Locale
+import scala.collection.AbstractIterator
 import scala.collection.mutable.ListBuffer
 
 object StringUtil {
@@ -109,6 +110,30 @@ object StringUtil {
 
   def charHex(ch: Char): String =
     Integer.toHexString(ch).toUpperCase(Locale.ENGLISH)
+
+  // Redefine `linesIterator`, since the implementation provided by Scala is not consistent for our
+  // cross-compiled versions
+  def linesIterator(string: String): Iterator[String] = new AbstractIterator[String] {
+    def hasNext: Boolean = !done
+    def next(): String = if (done) Iterator.empty.next() else advance()
+
+    private def isLineBreak(c: Char) = c == '\r' || c == '\n'
+    private def isWindowsLineBreak(c1: Char, c2: Char) = c1 == '\r' && c2 == '\n'
+    private[this] val len = string.length
+    private[this] var index = 0
+    @`inline` private def done: Boolean = index >= len
+    private def advance(): String = {
+      val start = index
+      while (!done && !isLineBreak(string.charAt(index))) index += 1
+      val end = index
+      if (!done) {
+        val c = string.charAt(index)
+        index += 1
+        if (!done && isWindowsLineBreak(c, string.charAt(index))) index += 1
+      }
+      string.substring(start, end)
+    }
+  }
 
   /** Produces the value of a block string from its parsed raw value, similar to Coffeescript's
     * block string, Python's docstring trim or Ruby's strip_heredoc.

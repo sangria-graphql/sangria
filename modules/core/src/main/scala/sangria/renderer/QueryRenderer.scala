@@ -1,8 +1,7 @@
 package sangria.renderer
 
-import sangria.ast.AstLocation
-import sangria.util.StringUtil.{escapeBlockString, escapeString}
 import sangria.ast._
+import sangria.util.StringUtil.{escapeBlockString, escapeString, linesIterator}
 
 object QueryRenderer {
   val Pretty: QueryRendererConfig = QueryRendererConfig(
@@ -477,7 +476,7 @@ object QueryRenderer {
       extraIndent: Boolean = true): String =
     if (node.value.trim.nonEmpty) {
       val ind = if (extraIndent) indent.incForce.str else indent.strForce
-      val lines = escapeBlockString(node.value).split("\n").iterator.map { line =>
+      val lines = linesIterator(escapeBlockString(node.value)).map { line =>
         if (line.isEmpty) line // do not output lines with only whitespaces inside
         else ind + line
       }
