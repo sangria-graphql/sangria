@@ -477,7 +477,7 @@ object QueryRenderer {
       extraIndent: Boolean = true): String =
     if (node.value.trim.nonEmpty) {
       val ind = if (extraIndent) indent.incForce.str else indent.strForce
-      val lines = escapeBlockString(node.value).split("\n").iterator.map { line =>
+      val lines = escapeBlockString(node.value).linesIterator.map { line =>
         if (line.isEmpty) line // do not output lines with only whitespaces inside
         else ind + line
       }
