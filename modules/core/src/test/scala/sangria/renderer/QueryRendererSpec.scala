@@ -987,6 +987,53 @@ class QueryRendererSpec extends AnyWordSpec with Matchers with StringMatchers {
             |  # se
             |}""".stripMargin)(after.being(strippedOfCarriageReturns))
       }
+
+      "renders comments with various line separators correctly" in {
+        val simpleType = sangria.schema.ObjectType[Unit, Unit](
+          name = "SimpleType",
+          description = "A simple object type.",
+          fields = sangria.schema.fields[Unit, Unit](
+            sangria.schema.Field(
+              name = "value",
+              description = Some(
+                "A field with a multi-line description that contains different line breaks.\n" +
+                  "LF:\n\n" +
+                  "CRLF:\r\n\r\n" +
+                  "CR:\r\r" +
+                  "Empty lines above should have no indentation when rendered."),
+              fieldType = sangria.schema.StringType,
+              resolve = _ => "theValue"
+            )
+          )
+        )
+
+        val compactRendered =
+          QueryRenderer.render(simpleType.toAst, QueryRenderer.Compact)
+        val prettyRendered =
+          QueryRenderer.render(simpleType.toAst, QueryRenderer.Pretty)
+
+        compactRendered should equal(
+          """"A simple object type." type SimpleType {"A field with a multi-line description that contains different line breaks.\nLF:\n\nCRLF:\r\n\r\nCR:\r\rEmpty lines above should have no indentation when rendered." value:String!}""")
+
+        prettyRendered.replace(" ", "_") should equal(
+          Seq(
+            "\"A simple object type.\"",
+            "type SimpleType {",
+            "  \"\"\"",
+            "  A field with a multi-line description that contains different line breaks.",
+            "  LF:",
+            "",
+            "  CRLF:",
+            "",
+            "  CR:",
+            "",
+            "  Empty lines above should have no indentation when rendered.",
+            "  \"\"\"",
+            "  value: String!",
+            "}"
+          ).mkString("\n").replace(" ", "_")
+        )(after.being(strippedOfCarriageReturns))
+      }
     }
   }
 }
