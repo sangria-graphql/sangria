@@ -91,7 +91,7 @@ class QueryAstResultMarshaller extends ResultMarshaller {
 
   def enumNode(value: String, typeName: String) = ast.EnumValue(value)
 
-  def arrayNode(values: Vector[Node]) = ast.ListValue(values.toVector)
+  def arrayNode(values: Vector[Node]) = ast.ListValue(values)
   def optionalArrayNodeValue(value: Option[Node]) = value match {
     case Some(v) => v
     case None => nullNode

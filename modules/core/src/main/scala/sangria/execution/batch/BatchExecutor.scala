@@ -32,6 +32,8 @@ import scala.util.{Failure, Success, Try}
 import scala.util.control.Breaks.{break, breakable}
 import BatchExecutionPlan._
 
+import scala.annotation.tailrec
+
 /** __EXPERIMENTAL__
   *
   * Batch query executor which provides following features:
@@ -340,12 +342,14 @@ object BatchExecutor {
     }
   }
 
+  @tailrec
   private def isInputList(tpe: Type): Boolean = tpe match {
     case _: ListInputType[_] => true
     case OptionInputType(ofType) => isInputList(ofType)
     case _ => false
   }
 
+  @tailrec
   private def isInputList(tpe: ast.Type): Boolean = tpe match {
     case _: ast.ListType => true
     case ast.NotNullType(ofType, _) => isInputList(ofType)

@@ -2,9 +2,10 @@ package sangria
 
 import sangria.parser.QueryParser
 import sangria.schema._
-
-import sangria.util.tag.@@ // Scala 3 issue workaround
+import sangria.util.tag.@@
 import sangria.marshalling.FromInput.CoercedScalaResult
+
+import scala.annotation.tailrec
 
 package object introspection {
   object TypeKind extends Enumeration {
@@ -194,6 +195,7 @@ package object introspection {
     false)
 
   private def getKind(value: (Boolean, Type)) = {
+    @tailrec
     def identifyKind(t: Type, optional: Boolean): TypeKind.Value = t match {
       case OptionType(ofType) => identifyKind(ofType, true)
       case OptionInputType(ofType) => identifyKind(ofType, true)
@@ -213,6 +215,7 @@ package object introspection {
     identifyKind(tpe, fromTypeList)
   }
 
+  @tailrec
   private def findNamed(tpe: Type): Option[Type with Named] = tpe match {
     case o: OptionType[_] => findNamed(o.ofType)
     case o: OptionInputType[_] => findNamed(o.ofType)
@@ -222,6 +225,7 @@ package object introspection {
     case _ => None
   }
 
+  @tailrec
   private def findListType(tpe: Type): Option[Type] = tpe match {
     case o: OptionType[_] => findListType(o.ofType)
     case o: OptionInputType[_] => findListType(o.ofType)

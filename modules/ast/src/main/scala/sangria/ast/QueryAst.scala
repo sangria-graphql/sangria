@@ -85,8 +85,8 @@ object Document {
     *
     * The result `Document` will retain correlation to the original `sourceMapper`s.
     */
-  def merge(documents: Traversable[Document]): Document = {
-    val originalSourceMappers = documents.flatMap(_.sourceMapper).toVector
+  def merge(documents: Iterable[Document]): Document = {
+    val originalSourceMappers = documents.flatMap(_.sourceMapper)
     val sourceMapper =
       if (originalSourceMappers.nonEmpty) Some(AggregateSourceMapper.merge(originalSourceMappers))
       else None

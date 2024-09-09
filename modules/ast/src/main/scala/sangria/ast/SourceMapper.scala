@@ -58,7 +58,8 @@ class DefaultSourceMapper(val id: String, val sourceMapperInput: SourceMapperInp
   */
 class AggregateSourceMapper(val id: String, val delegates: Vector[SourceMapper])
     extends SourceMapper {
-  lazy val delegateById: Map[String, SourceMapper] = delegates.iterator.map(d => d.id -> d).toMap
+  private lazy val delegateById: Map[String, SourceMapper] =
+    delegates.iterator.map(d => d.id -> d).toMap
 
   override lazy val source: String = delegates.map(_.source.trim).mkString("\n\n")
 
@@ -75,6 +76,6 @@ object AggregateSourceMapper {
     case m => Vector(m)
   }
 
-  def merge(mappers: Vector[SourceMapper]): AggregateSourceMapper =
-    new AggregateSourceMapper("merged", mappers.flatMap(expand))
+  def merge(mappers: Iterable[SourceMapper]): AggregateSourceMapper =
+    new AggregateSourceMapper("merged", mappers.flatMap(expand).toVector)
 }
