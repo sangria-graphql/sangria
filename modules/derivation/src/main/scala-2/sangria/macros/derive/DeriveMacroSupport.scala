@@ -20,43 +20,37 @@ trait DeriveMacroSupport {
   }
 
   protected def symbolName(annotations: List[Annotation]): Option[Tree] =
-    annotations
+    annotations.iterator
       .map(_.tree)
-      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] => arg }
-      .headOption
+      .collectFirst { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLName] => arg }
 
   protected def symbolOutputType(annotations: List[Annotation]): Option[Tree] =
-    annotations
+    annotations.iterator
       .map(_.tree)
-      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLOutputType] => arg }
-      .headOption
+      .collectFirst { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLOutputType] => arg }
 
   protected def symbolInputType(annotations: List[Annotation]): Option[Tree] =
-    annotations
+    annotations.iterator
       .map(_.tree)
-      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLInputType] => arg }
-      .headOption
+      .collectFirst { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLInputType] => arg }
 
   protected def symbolDescription(annotations: List[Annotation]): Option[Tree] =
-    annotations
+    annotations.iterator
       .map(_.tree)
-      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] => arg }
-      .headOption
+      .collectFirst { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDescription] => arg }
 
   protected def symbolDefault(annotations: List[Annotation]): Option[Tree] =
-    annotations
+    annotations.iterator
       .map(_.tree)
-      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDefault] => arg }
-      .headOption
+      .collectFirst { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDefault] => arg }
 
   protected def symbolDeprecation(annotations: List[Annotation]): Option[Tree] =
-    annotations
+    annotations.iterator
       .map(_.tree)
-      .collect { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDeprecated] => arg }
-      .headOption
+      .collectFirst { case q"new $name($arg)" if name.tpe =:= typeOf[GraphQLDeprecated] => arg }
 
   protected def symbolFieldTags(annotations: List[Annotation]): Tree =
-    annotations
+    annotations.iterator
       .map(_.tree)
       .foldLeft(q"List[sangria.execution.FieldTag]()") {
         case (acc, q"new $name(..$fieldTags)") if name.tpe =:= typeOf[GraphQLFieldTags] =>
@@ -65,10 +59,10 @@ trait DeriveMacroSupport {
       }
 
   protected def memberExcluded(annotations: List[Annotation]): Boolean =
-    annotations.find(_.tree.tpe =:= typeOf[GraphQLExclude]).fold(false)(_ => true)
+    annotations.exists(_.tree.tpe =:= typeOf[GraphQLExclude])
 
   protected def memberField(annotations: List[Annotation]): Boolean =
-    annotations.find(_.tree.tpe =:= typeOf[GraphQLField]).fold(false)(_ => true)
+    annotations.exists(_.tree.tpe =:= typeOf[GraphQLField])
 
   // TODO: most probably not needed, so should be removed in future
   protected def defaultMethodArgValue(method: String, pos: Int) = {

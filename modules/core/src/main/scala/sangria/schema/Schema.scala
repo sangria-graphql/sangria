@@ -1522,7 +1522,7 @@ case class Schema[Ctx, Val](
       .toMap
 
   lazy val directivesByName: Map[String, Directive] =
-    directives.groupBy(_.name).mapValues(_.head).toMap
+    directives.groupBy(_.name).iterator.map { case (k, v) => (k, v.head) }.toMap
 
   def getInputType(tpe: ast.Type): Option[InputType[_]] = tpe match {
     case ast.NamedType(name, _) =>

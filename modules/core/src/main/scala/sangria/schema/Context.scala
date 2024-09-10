@@ -7,7 +7,6 @@ import sangria.marshalling._
 import sangria.util.Cache
 import sangria.{ast, introspection}
 
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 case class MappingDeferred[A, +B](deferred: Deferred[A], mapFn: A => (B, Vector[Throwable]))

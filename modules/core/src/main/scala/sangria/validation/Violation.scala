@@ -1110,7 +1110,7 @@ case class NotExactlyOneOfField(
     sourceMapper: Option[SourceMapper],
     locations: List[AstLocation]
 ) extends AstNodeViolation {
-  lazy val simpleErrorMessage = s"Exactly one key must be specified for oneOf type '${typeName}'."
+  lazy val simpleErrorMessage = s"Exactly one key must be specified for oneOf type '$typeName'."
 }
 
 case class OneOfMandatoryField(

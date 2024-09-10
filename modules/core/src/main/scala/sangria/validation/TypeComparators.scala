@@ -2,7 +2,10 @@ package sangria.validation
 
 import sangria.schema._
 
+import scala.annotation.tailrec
+
 object TypeComparators {
+  @tailrec
   def isEqualType(type1: Type, type2: Type): Boolean =
     (type1, type2) match {
       case (OptionType(t1), OptionType(t2)) => isEqualType(t1, t2)
@@ -13,6 +16,7 @@ object TypeComparators {
       case _ => false
     }
 
+  @tailrec
   def isSubType(schema: Schema[_, _], subType: Type, superType: Type): Boolean =
     (subType, superType) match {
       case (OptionType(ofType1), OptionType(ofType2)) => isSubType(schema, ofType1, ofType2)

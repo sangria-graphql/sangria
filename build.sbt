@@ -58,6 +58,13 @@ lazy val ast = project
     name := "sangria-ast",
     description := "Scala GraphQL AST representation",
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-ast" % "4.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("sangria.ast.Document.merge"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem](
+        "sangria.ast.AggregateSourceMapper.merge"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.ast.AggregateSourceMapper.delegateById")
+    ),
     apiURL := {
       val ver = CrossVersion.binaryScalaVersion(scalaVersion.value)
       Some(url(s"https://www.javadoc.io/doc/org.sangria-graphql/sangria-ast_$ver/latest/"))
