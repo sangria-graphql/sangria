@@ -4,26 +4,26 @@ import sangria.schema._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+sealed trait Difficulty
+
+object Difficulty {
+  case object Easy extends Difficulty
+  case object Medium extends Difficulty
+  case object Hard extends Difficulty
+}
+
+sealed trait Fruit
+
+case object RedApple extends Fruit
+case object SuperBanana extends Fruit
+case object MegaOrange extends Fruit
+
+sealed abstract class ExoticFruit(val score: Int) extends Fruit
+
+case object Guava extends ExoticFruit(123)
+
 class DeriveEnumTypeMacroSpec extends AnyWordSpec with Matchers {
   import DeriveMacroTestModel._
-
-  sealed trait Difficulty
-
-  object Difficulty {
-    case object Easy extends Difficulty
-    case object Medium extends Difficulty
-    case object Hard extends Difficulty
-  }
-
-  sealed trait Fruit
-
-  case object RedApple extends Fruit
-  case object SuperBanana extends Fruit
-  case object MegaOrange extends Fruit
-
-  sealed abstract class ExoticFruit(val score: Int) extends Fruit
-
-  case object Guava extends ExoticFruit(123)
 
   @GraphQLName("MyFruit")
   @GraphQLDescription("Very tasty fruit")
