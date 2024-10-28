@@ -477,7 +477,7 @@ private[execution] class FutureResolver[Ctx](
 
             val resolved = future
               .flatMap { vs =>
-                val errors = vs.flatMap(_.errors).toVector
+                val errors = vs.iterator.flatMap(_.errors).toVector
                 val successfulValues = vs.collect { case SeqFutRes(v, _, _) if v != null => v }
                 val dctx = vs.collect { case SeqFutRes(_, _, d) if d != null => d }
 
@@ -839,7 +839,7 @@ private[execution] class FutureResolver[Ctx](
         else {
           val allDeferred = complexRes.flatMap(_._2.deferred)
           val finalValue = Future
-            .sequence(complexRes.map { case (astField, DeferredResult(_, future)) =>
+            .sequence(complexRes.iterator.map { case (astField, DeferredResult(_, future)) =>
               future.map(astField -> _)
             })
             .map { results =>
@@ -1949,6 +1949,7 @@ private[execution] class FutureResolver[Ctx](
               .map(
                 _.flatMap(collectProjectionsInternal(path, _, astFields, currLevel + 1))
                   .groupBy(_.name)
+                  .iterator
                   .map(_._2.head)
                   .toVector)
               .getOrElse(Vector.empty)

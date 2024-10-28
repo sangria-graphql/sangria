@@ -132,7 +132,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
 
         val actualValue =
           if (value.isModuleClass) {
-            if (value.owner.isModuleClass) {
+            if (value.owner.isModuleClass && !value.owner.isPackage) {
               q"${value.owner.name.toTermName}.${value.name.toTermName}"
             } else {
               q"${value.name.toTermName}"
