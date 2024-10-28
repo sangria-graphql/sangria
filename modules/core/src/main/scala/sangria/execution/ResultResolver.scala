@@ -154,7 +154,7 @@ class ResultResolver(
       Seq.empty
 
   private def marshallPositions(px: List[AstLocation]) =
-    marshaller.mapAndMarshal(px, createLocation)
+    marshaller.mapAndMarshal(px, createLocation _)
 
   case class ErrorRegistry(
       errorList: Vector[marshaller.Node],
