@@ -142,7 +142,8 @@ private[execution] class FutureResolver[Ctx](
           }
           .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
-      case es: ExecutionScheme.StreamBasedExecutionScheme[({ type X[_] })#X @unchecked] =>
+      case es: ExecutionScheme.StreamBasedExecutionScheme[
+            ({ type X[_] })#X @unchecked] @unchecked =>
         val (_, res) = resolveSubs(
           ExecutionPath.empty,
           tpe,
@@ -182,7 +183,7 @@ private[execution] class FutureResolver[Ctx](
         }
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
-    case s: ExecutionScheme.StreamBasedExecutionScheme[_] =>
+    case s: ExecutionScheme.StreamBasedExecutionScheme[_] @unchecked =>
       s.subscriptionStream
         .singleFuture(result.map {
           case ((errors, res), uc) if s.extended =>
@@ -299,6 +300,9 @@ private[execution] class FutureResolver[Ctx](
           value,
           ErrorRegistry.empty,
           fields) match {
+          case _: StandardFieldResolution =>
+            throw new IllegalStateException(
+              "StandardFieldResolution is not supposed to appear here")
           case ErrorFieldResolution(updatedErrors) if isOptional(tpe, origField.name) =>
             val resMap = marshaller.emptyMapNode(Seq(origField.outputName))
 
@@ -425,6 +429,9 @@ private[execution] class FutureResolver[Ctx](
         Future.successful(Result(updatedErrors, None) -> uc)
       case resolution: StandardFieldResolution =>
         resolveStandardFieldResolutionSeq(path, uc, tpe, origField, fields, accRes, resolution)
+      case _: StreamFieldResolution[_, _] =>
+        Future.failed(
+          new IllegalStateException("StreamFieldResolution is not supposed to happen here"))
     }
 
   private def resolveStandardFieldResolutionSeq(
@@ -665,9 +672,9 @@ private[execution] class FutureResolver[Ctx](
             Future.failed(
               new IllegalStateException(
                 "Subscription values are not supported for normal operations"))
-          case _: MappedSequenceLeafAction[_, _, _] =>
+          case e =>
             Future.failed(
-              new IllegalStateException("MappedSequenceLeafAction is not supposed to appear here"))
+              new IllegalStateException(s"${e.getClass.toString} is not supposed to appear here"))
         }
       } catch {
         case NonFatal(e) =>
@@ -742,6 +749,8 @@ private[execution] class FutureResolver[Ctx](
           case ErrorFieldResolution(updatedErrors) if isOptional(tpe, origField.name) =>
             updatedErrors -> Some(acc :+ (Vector(origField) -> None))
           case ErrorFieldResolution(updatedErrors) => updatedErrors -> None
+          case _: StreamFieldResolution[_, _] =>
+            throw new IllegalStateException("IllegalStateException is not supposed to happen here")
         }
     }
 
@@ -798,6 +807,10 @@ private[execution] class FutureResolver[Ctx](
         SeqRes(
           SeqFutRes(errors = Vector(new IllegalStateException(
             "Subscription values are not supported for normal operations"))))
+      case e =>
+        SeqRes(
+          SeqFutRes(errors = Vector(
+            new IllegalStateException(s"${e.getClass.toString} is not supposed to appear here"))))
     }
 
   private def resolveActionsPar(
@@ -922,7 +935,7 @@ private[execution] class FutureResolver[Ctx](
         resolveDeferredValue(path, tpe, userCtx, astFields, field, updateCtx)(d)
       case d: DeferredFutureValue[Ctx, Any] =>
         resolveDeferredFutureValue(path, tpe, userCtx, astFields, field, updateCtx)(d)
-      case s: SequenceLeafAction[Ctx, Any] =>
+      case s: SequenceLeafAction[Ctx, Any] @unchecked =>
         resolveSequenceLeafAction(path, tpe, userCtx, astFields, field, updateCtx)(s)
       case _: MappedSequenceLeafAction[_, _, _] =>
         illegalActionException(path, tpe, astFields, updateCtx)(
@@ -1354,7 +1367,8 @@ private[execution] class FutureResolver[Ctx](
         }
 
         actualValue match {
-          case Some(someValue) => resolveValue(path, astFields, optTpe, field, someValue, userCtx)
+          case Some(someValue) =>
+            resolveValue(path, astFields, optTpe, field, someValue, userCtx, None)
           case None => Result(ErrorRegistry.empty, None)
         }
       case ListType(listTpe) =>
@@ -1367,7 +1381,7 @@ private[execution] class FutureResolver[Ctx](
           }
 
           val res = actualValue.zipWithIndex.map { case (v, idx) =>
-            resolveValue(path.withIndex(idx), astFields, listTpe, field, v, userCtx)
+            resolveValue(path.withIndex(idx), astFields, listTpe, field, v, userCtx, None)
           }
 
           val simpleRes = res.collect { case r: Result => r }
@@ -1456,7 +1470,7 @@ private[execution] class FutureResolver[Ctx](
         catch {
           case NonFatal(e) => Result(ErrorRegistry(path, e), None)
         }
-      case obj: ObjectType[Ctx, _] =>
+      case obj: ObjectType[Ctx @unchecked, _] =>
         if (isUndefinedValue(value))
           Result(ErrorRegistry.empty, None)
         else
@@ -1479,7 +1493,8 @@ private[execution] class FutureResolver[Ctx](
             }
 
           abst.typeOf(actualValue, schema) match {
-            case Some(obj) => resolveValue(path, astFields, obj, field, actualValue, userCtx)
+            case Some(obj) =>
+              resolveValue(path, astFields, obj, field, actualValue, userCtx, None)
             case None =>
               Result(
                 ErrorRegistry(
@@ -1596,7 +1611,7 @@ private[execution] class FutureResolver[Ctx](
           ioDef.fields.foreach { field =>
             // field deprecation
             val fieldVal: Option[_] = (ioArg match {
-              case lm: ListMap[String, _] => lm.get(field.name)
+              case lm: ListMap[String, _] @unchecked => lm.get(field.name)
               case _ => None
             }) match {
               case Some(Some(nested)) => Some(nested)
@@ -1754,22 +1769,10 @@ private[execution] class FutureResolver[Ctx](
                 }
 
               try {
-                val res =
-                  beforeAction match {
-                    case Some(action) => action
-                    case None =>
-                      field.resolve match {
-                        case pfn: Projector[Ctx, Any, _] =>
-                          pfn(updatedCtx, collectProjections(path, field, astFields, pfn.maxLevel))
-                        case fn =>
-                          fn(updatedCtx)
-                      }
-                  }
-
                 def createResolution(result: Any): StandardFieldResolution =
                   result match {
                     // these specific cases are important for time measuring middleware and eager values
-                    case resolved: Value[Ctx, Any @unchecked] =>
+                    case resolved: Value[Ctx @unchecked, Any @unchecked] =>
                       StandardFieldResolution(
                         errors,
                         if (mAfter.nonEmpty)
@@ -1778,7 +1781,7 @@ private[execution] class FutureResolver[Ctx](
                           resolved,
                         None)
 
-                    case resolved: PartialValue[Ctx, Any @unchecked] =>
+                    case resolved: PartialValue[Ctx @unchecked, Any @unchecked] =>
                       StandardFieldResolution(
                         errors,
                         if (mAfter.nonEmpty)
@@ -1790,7 +1793,7 @@ private[execution] class FutureResolver[Ctx](
                         else None
                       )
 
-                    case resolved: TryValue[Ctx, Any @unchecked] =>
+                    case resolved: TryValue[Ctx @unchecked, Any @unchecked] =>
                       StandardFieldResolution(
                         errors,
                         if (mAfter.nonEmpty && resolved.value.isSuccess)
@@ -1802,7 +1805,7 @@ private[execution] class FutureResolver[Ctx](
                         else None
                       )
 
-                    case res: SequenceLeafAction[Ctx, _] =>
+                    case res: SequenceLeafAction[Ctx @unchecked, _] =>
                       StandardFieldResolution(
                         errors,
                         res,
@@ -1812,7 +1815,10 @@ private[execution] class FutureResolver[Ctx](
                             if (mAfter.nonEmpty) doAfterMiddleware else identity,
                             if (mError.nonEmpty) doErrorMiddleware else identity)))
 
-                    case res: MappedSequenceLeafAction[Ctx, Any @unchecked, Any @unchecked] =>
+                    case res: MappedSequenceLeafAction[
+                          Ctx @unchecked,
+                          Any @unchecked,
+                          Any @unchecked] =>
                       val mapFn = res.mapFn.asInstanceOf[Any => Any]
 
                       StandardFieldResolution(
@@ -1825,7 +1831,7 @@ private[execution] class FutureResolver[Ctx](
                             if (mError.nonEmpty) doErrorMiddleware else identity))
                       )
 
-                    case resolved: LeafAction[Ctx, Any @unchecked] =>
+                    case resolved: LeafAction[Ctx @unchecked, Any @unchecked] =>
                       StandardFieldResolution(
                         errors,
                         resolved,
@@ -1838,7 +1844,7 @@ private[execution] class FutureResolver[Ctx](
                         else None
                       )
 
-                    case res: UpdateCtx[Ctx, Any @unchecked] =>
+                    case res: UpdateCtx[Ctx @unchecked, Any @unchecked] =>
                       StandardFieldResolution(
                         errors,
                         res.action,
@@ -1849,7 +1855,7 @@ private[execution] class FutureResolver[Ctx](
                             if (mError.nonEmpty) doErrorMiddleware else identity))
                       )
 
-                    case res: MappedUpdateCtx[Ctx, Any @unchecked, Any @unchecked] =>
+                    case res: MappedUpdateCtx[Ctx @unchecked, Any @unchecked, Any @unchecked] =>
                       StandardFieldResolution(
                         errors,
                         res.action,
@@ -1859,12 +1865,25 @@ private[execution] class FutureResolver[Ctx](
                             if (mAfter.nonEmpty) doAfterMiddlewareWithMap(res.mapFn) else res.mapFn,
                             if (mError.nonEmpty) doErrorMiddleware else identity))
                       )
+
+                    case e => throw new IllegalStateException(s"Unsupported action: $e")
                   }
 
-                res match {
-                  case s: SubscriptionValue[Ctx, _, _] =>
+                val result =
+                  beforeAction match {
+                    case Some(action) => action
+                    case None =>
+                      field.resolve match {
+                        case pfn: Projector[Ctx, Any, _] =>
+                          pfn(updatedCtx, collectProjections(path, field, astFields, pfn.maxLevel))
+                        case fn =>
+                          fn(updatedCtx)
+                      }
+                  }
+                result match {
+                  case s: SubscriptionValue[Ctx @unchecked, _, _] =>
                     StreamFieldResolution(errors, s, createResolution)
-                  case _ => createResolution(res)
+                  case _ => createResolution(result)
                 }
               } catch {
                 case NonFatal(e) =>
@@ -1910,11 +1929,11 @@ private[execution] class FutureResolver[Ctx](
         tpe match {
           case OptionType(ofType) => loop(path, ofType, astFields, currLevel)
           case ListType(ofType) => loop(path, ofType, astFields, currLevel)
-          case objTpe: ObjectType[Ctx, _] =>
+          case objTpe: ObjectType[Ctx @unchecked, _] =>
             fieldCollector.collectFields(path, objTpe, astFields) match {
               case Success(ff) =>
-                ff.fields.collect { case CollectedField(_, _, Success(astFields)) =>
-                  val astField = astFields.head
+                ff.fields.collect { case CollectedField(_, _, Success(astFields2)) =>
+                  val astField = astFields2.head
                   val fields = objTpe.getField(schema, astField.name)
                   if (fields.isEmpty) Vector.empty
                   else {
@@ -1934,7 +1953,7 @@ private[execution] class FutureResolver[Ctx](
                           collectProjectionsInternal(
                             path.add(astField, objTpe),
                             field.fieldType,
-                            astFields,
+                            astFields2,
                             currLevel + 1)
                         ProjectedName(name, children, Args(field, astField, variables))
                       }
