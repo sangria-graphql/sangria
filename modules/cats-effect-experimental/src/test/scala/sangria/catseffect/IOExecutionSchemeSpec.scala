@@ -62,8 +62,20 @@ object IOExecutionSchemeSpec {
     () =>
       fields[Unit, Unit](
         Field("ids", ListType(IntType), resolve = _ => List(1, 2)),
-        Field("parent", StringType, resolve = _ => IO("hello"))
-      ))
+        Field(
+          "parent",
+          StringType,
+          resolve = { _ =>
+            (for {
+              value <- IO(Option("hello"))
+            } yield value match {
+              case Some(value) => IO.pure(value)
+              case None => IO.raiseError(new Exception("No value"))
+            }).flatten: IO[String]
+          }
+        )
+      )
+  )
 
   private val schema = Schema(QueryType)
 }
