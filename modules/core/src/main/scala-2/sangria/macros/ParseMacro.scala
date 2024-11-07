@@ -2,8 +2,10 @@ package sangria.macros
 
 import sangria.parser.{QueryParser, SyntaxError}
 
+import scala.annotation.nowarn
 import scala.reflect.macros.blackbox
 
+@nowarn("msg=early initializers are deprecated")
 class ParseMacro(context: blackbox.Context)
     extends {
       val c = context
@@ -22,6 +24,7 @@ class ParseMacro(context: blackbox.Context)
         // Expects a string interpolation that doesn't contain any
         // expressions, thus containing only a single tree
         case Apply(_, List(Apply(_, t :: Nil))) =>
+          @nowarn("msg=match may not be exhaustive.")
           val q"${gql: String}" = t
 
           try q"${QueryParser.parse(gql).get}"
@@ -42,6 +45,7 @@ class ParseMacro(context: blackbox.Context)
         // Expects a string interpolation that doesn't contain any
         // expressions, thus containing only a single tree
         case Apply(_, List(Apply(_, t :: Nil))) =>
+          @nowarn("msg=match may not be exhaustive.")
           val q"${gql: String}" = t
 
           try q"${QueryParser.parseInput(gql).get}"
@@ -62,6 +66,7 @@ class ParseMacro(context: blackbox.Context)
         // Expects a string interpolation that doesn't contain any
         // expressions, thus containing only a single tree
         case Apply(_, List(Apply(_, t :: Nil))) =>
+          @nowarn("msg=match may not be exhaustive.")
           val q"${gql: String}" = t
 
           try q"${QueryParser.parseInputDocument(gql).get}"
