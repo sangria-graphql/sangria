@@ -115,7 +115,7 @@ case class VarTypeMismatchViolation(
   }
 
   lazy val simpleErrorMessage =
-    s"Variable '$$$definitionName' expected value of type '$expectedType' but ${input.map("got: " + _).getOrElse("value is undefined")}. Reason: $violationMessage"
+    s"Variable '$$$definitionName' expected value of type '$expectedType' but ${input.fold("value is undefined")("got: " + _)}. Reason: $violationMessage"
 }
 
 case class UnknownVariableTypeViolation(
@@ -343,9 +343,7 @@ case class MisplacedDirectiveViolation(
   val code = "misplacedDirective"
   val args = Map(
     "directiveName" -> name,
-    "location" -> correctPlacement
-      .map(loc => DirectiveLocation.toSpecString(loc._1))
-      .getOrElse("here"))
+    "location" -> correctPlacement.fold("here")(loc => DirectiveLocation.toSpecString(loc._1)))
 
   lazy val simpleErrorMessage =
     s"Directive '$name' may not be used ${correctPlacement.fold("here")("on " + _._2)}."

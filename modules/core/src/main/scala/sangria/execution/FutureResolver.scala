@@ -447,7 +447,7 @@ private[execution] class FutureResolver[Ctx](
     val sfield = tpe.getField(schema, origField.name).head
     val fieldPath = path.add(fields.head, tpe)
 
-    def resolveUc(v: Any) = newUc.map(_.ctxFn(v)).getOrElse(uc)
+    def resolveUc(v: Any) = newUc.fold(uc)(_.ctxFn(v))
 
     def resolveError(e: Throwable) = {
       try newUc.foreach(_.onError(e))
@@ -875,7 +875,7 @@ private[execution] class FutureResolver[Ctx](
   }
 
   private def resolveUc(newUc: Option[MappedCtxUpdate[Ctx, Any, Any]], v: Any, userCtx: Ctx) =
-    newUc.map(_.ctxFn(v)).getOrElse(userCtx)
+    newUc.fold(userCtx)(_.ctxFn(v))
 
   private def resolveVal(newUc: Option[MappedCtxUpdate[Ctx, Any, Any]], v: Any) = newUc match {
     case Some(MappedCtxUpdate(_, mapFn, _)) => mapFn(v)

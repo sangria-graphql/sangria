@@ -154,12 +154,11 @@ object QueryReducerExecutor {
         case abst: AbstractType =>
           schema.possibleTypes
             .get(abst.name)
-            .map(types =>
+            .fold(initialValues)(types =>
               types.map(loop(path, _, astFields)).transpose.zipWithIndex.map { case (values, idx) =>
                 val reducer = reducers(idx)
                 reducer.reduceAlternatives(values.asInstanceOf[Seq[reducer.Acc]])
               })
-            .getOrElse(initialValues)
         case s: ScalarType[_] => reducers.map(_.reduceScalar(path, userContext, s))
         case ScalarAlias(aliasFor, _, _) =>
           reducers.map(_.reduceScalar(path, userContext, aliasFor))
