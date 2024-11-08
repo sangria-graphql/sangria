@@ -108,7 +108,7 @@ class DeriveEnumTypeMacro(context: blackbox.Context)
           val upperCase = config.exists(_.isInstanceOf[MacroUppercaseValues])
 
           val transformed =
-            transformFnOpt.map(fn => q"$fn($nonTransformedName)").getOrElse(nonTransformedName)
+            transformFnOpt.fold(nonTransformedName)(fn => q"$fn($nonTransformedName)")
           if (upperCase)
             q"sangria.util.StringUtil.camelCaseToUnderscore($transformed).toUpperCase"
           else

@@ -1487,12 +1487,10 @@ case class Schema[Ctx, Val](
     val queryTypesWithAdditions = additionalTypes.foldLeft(queryTypes) { case (acc, tpe) =>
       collectTypes("additional type", 10, tpe, acc)
     }
-    val queryAndSubTypes = mutation
-      .map(collectTypes("a mutation type", 10, _, queryTypesWithAdditions))
-      .getOrElse(queryTypesWithAdditions)
-    val queryAndSubAndMutTypes = subscription
-      .map(collectTypes("a subscription type", 10, _, queryAndSubTypes))
-      .getOrElse(queryAndSubTypes)
+    val queryAndSubTypes = mutation.fold(queryTypesWithAdditions)(
+      collectTypes("a mutation type", 10, _, queryTypesWithAdditions))
+    val queryAndSubAndMutTypes = subscription.fold(queryAndSubTypes)(
+      collectTypes("a subscription type", 10, _, queryAndSubTypes))
 
     val queryAndSubAndMutAndDirArgTypes = directives.foldLeft(queryAndSubAndMutTypes) {
       case (acc, dir) =>

@@ -98,7 +98,7 @@ case class PartialFutureValue[Ctx, Val](value: Future[PartialValue[Ctx, Val]])
     PartialFutureValue(value.map(_.map(fn) match {
       case v: PartialValue[Ctx, NewVal] => v
       case TryValue(Failure(e)) => throw e
-      case v => throw new IllegalStateException("Unexpected result from `PartialValue.map`: " + v)
+      case v => throw new IllegalStateException(s"Unexpected result from `PartialValue.map`: $v")
     }))
 }
 

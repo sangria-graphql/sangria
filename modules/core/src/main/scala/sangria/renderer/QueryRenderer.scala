@@ -548,10 +548,8 @@ object QueryRenderer {
         renderComment(vd, prev, indent, config) +
           indent.str + "$" + name + ":" + config.separator +
           renderNode(tpe, config, indent.zero) +
-          defaultValue
-            .map(v =>
-              config.separator + "=" + config.separator + renderNode(v, config, indent.zero))
-            .getOrElse("") +
+          defaultValue.fold("")(v =>
+            config.separator + "=" + config.separator + renderNode(v, config, indent.zero)) +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case NotNullType(ofType, _) =>
@@ -565,7 +563,7 @@ object QueryRenderer {
 
       case f @ Field(alias, name, args, dirs, sels, _, _, _) =>
         renderComment(f, prev, indent, config) +
-          indent.str + alias.map(_ + ":" + config.separator).getOrElse("") + name +
+          indent.str + alias.fold("")(_ + ":" + config.separator) + name +
           renderArgs(args, indent, config, withSep = false) +
           (if (dirs.nonEmpty || sels.nonEmpty) config.separator else "") +
           renderDirs(dirs, config, indent, withSep = sels.nonEmpty) +
