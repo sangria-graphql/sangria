@@ -235,7 +235,7 @@ lazy val core = project
       "eu.timepit" %% "refined" % "0.11.2" % Test,
       // CATs
       ("net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test).cross(CrossVersion.for3Use2_13),
-      "io.github.classgraph" % "classgraph" % "4.8.177" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.179" % Test
     ) ++ (if (isScala3.value) Seq.empty
           else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)), // Macros
 
