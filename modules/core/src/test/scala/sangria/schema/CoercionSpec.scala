@@ -78,14 +78,16 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         LongType.coerceInput(BigIntValue(BigInt("123234"))) should be(Right(123234L))
         LongType.coerceInput(BigIntValue(BigInt("1232342131243432"))) should be(
           Right(1232342131243432L))
+        LongType.coerceInput(StringValue(Long.MaxValue.toString)) should be(Right(Long.MaxValue))
         LongType
           .coerceInput(BigIntValue(BigInt("123234438749837964783648763284768372648723684763287")))
           .isLeft should be(true)
 
+
         LongType.coerceInput(FloatValue(12.34)).isLeft should be(true)
         LongType.coerceInput(BigDecimalValue(BigDecimal(12.34))).isLeft should be(true)
         LongType.coerceInput(BooleanValue(true)).isLeft should be(true)
-        LongType.coerceInput(StringValue("123")).isLeft should be(true)
+        LongType.coerceInput(StringValue("123234438749837964783648763284768372648723684763287")).isLeft should be(true)
       }
 
       "BigInt" in {
@@ -223,7 +225,10 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         LongType.coerceUserInput(12.34d).isLeft should be(true)
         LongType.coerceUserInput(BigDecimal(12.34)).isLeft should be(true)
         LongType.coerceUserInput(true).isLeft should be(true)
-        LongType.coerceUserInput("123").isLeft should be(true)
+        LongType.coerceUserInput("123") should be(Right(123L))
+        LongType.coerceUserInput("").isLeft should be(true)
+        LongType.coerceUserInput("1232344387498237498732974982334324234325435").isLeft should be(true)
+        LongType.coerceUserInput("123.0").isLeft should be(true)
         LongType.coerceUserInput(new Date).isLeft should be(true)
       }
 

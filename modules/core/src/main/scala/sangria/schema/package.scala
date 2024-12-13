@@ -47,12 +47,14 @@ package object schema {
       case i: BigInt => Right(i.longValue)
       case d: Double if d.isWhole => Right(d.toLong)
       case d: BigDecimal if d.isValidLong => Right(d.longValue)
+      case s: String if s.toLongOption.isDefined => Right(s.toLong)
       case _ => Left(LongCoercionViolation)
     },
     coerceInput = {
       case ast.IntValue(i, _, _) => Right(i: Long)
       case ast.BigIntValue(i, _, _) if !i.isValidLong => Left(BigLongCoercionViolation)
       case ast.BigIntValue(i, _, _) => Right(i.longValue)
+      case ast.StringValue(s, _, _, _, _) if s.toLongOption.isDefined => Right(s.toLong)
       case _ => Left(LongCoercionViolation)
     }
   )
