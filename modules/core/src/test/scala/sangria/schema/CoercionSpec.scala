@@ -83,11 +83,12 @@ class CoercionSpec extends AnyWordSpec with Matchers {
           .coerceInput(BigIntValue(BigInt("123234438749837964783648763284768372648723684763287")))
           .isLeft should be(true)
 
-
         LongType.coerceInput(FloatValue(12.34)).isLeft should be(true)
         LongType.coerceInput(BigDecimalValue(BigDecimal(12.34))).isLeft should be(true)
         LongType.coerceInput(BooleanValue(true)).isLeft should be(true)
-        LongType.coerceInput(StringValue("123234438749837964783648763284768372648723684763287")).isLeft should be(true)
+        LongType
+          .coerceInput(StringValue("123234438749837964783648763284768372648723684763287"))
+          .isLeft should be(true)
       }
 
       "BigInt" in {
@@ -227,7 +228,9 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         LongType.coerceUserInput(true).isLeft should be(true)
         LongType.coerceUserInput("123") should be(Right(123L))
         LongType.coerceUserInput("").isLeft should be(true)
-        LongType.coerceUserInput("1232344387498237498732974982334324234325435").isLeft should be(true)
+        LongType
+          .coerceUserInput("1232344387498237498732974982334324234325435")
+          .isLeft should be(true)
         LongType.coerceUserInput("123.0").isLeft should be(true)
         LongType.coerceUserInput(new Date).isLeft should be(true)
       }
