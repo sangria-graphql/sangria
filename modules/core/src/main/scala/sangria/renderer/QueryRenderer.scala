@@ -506,13 +506,13 @@ object QueryRenderer {
     node match {
       case d @ Document(defs, _, _, _) =>
         defs.iterator
-          .map(renderNode(_, config, indent))
+          .map(renderNode(_, config, indent, prefix = None, prev = None))
           .mkString(config.definitionSeparator) +
           renderTrailingComment(d, None, indent, config)
 
       case d @ InputDocument(defs, _, _, _) =>
         defs.iterator
-          .map(renderNode(_, config, indent))
+          .map(renderNode(_, config, indent, prefix = None, prev = None))
           .mkString(config.definitionSeparator) +
           renderTrailingComment(d, None, indent, config)
 
@@ -547,16 +547,21 @@ object QueryRenderer {
       case vd @ VariableDefinition(name, tpe, defaultValue, dirs, _, _) =>
         renderComment(vd, prev, indent, config) +
           indent.str + "$" + name + ":" + config.separator +
-          renderNode(tpe, config, indent.zero) +
+          renderNode(tpe, config, indent.zero, prefix = None, prev = None) +
           defaultValue.fold("")(v =>
-            config.separator + "=" + config.separator + renderNode(v, config, indent.zero)) +
+            config.separator + "=" + config.separator + renderNode(
+              v,
+              config,
+              indent.zero,
+              prefix = None,
+              prev = None)) +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case NotNullType(ofType, _) =>
-        renderNode(ofType, config, indent.zero) + "!"
+        renderNode(ofType, config, indent.zero, prefix = None, prev = None) + "!"
 
       case ListType(ofType, _) =>
-        "[" + renderNode(ofType, config, indent.zero) + "]"
+        "[" + renderNode(ofType, config, indent.zero, prefix = None, prev = None) + "]"
 
       case NamedType(name, _) =>
         name
@@ -589,7 +594,12 @@ object QueryRenderer {
 
       case a @ Argument(name, value, _, _) =>
         renderComment(a, prev, indent, config) +
-          indent.str + name + ":" + config.separator + renderNode(value, config, indent.zero)
+          indent.str + name + ":" + config.separator + renderNode(
+            value,
+            config,
+            indent.zero,
+            prefix = None,
+            prev = None)
 
       case v @ IntValue(value, _, _) => renderInputComment(v, indent, config) + value
       case v @ BigIntValue(value, _, _) => renderInputComment(v, indent, config) + value
@@ -611,9 +621,19 @@ object QueryRenderer {
           if (config.formatInputValues && shouldRenderComment(v, None, config))
             (if (idx != 0) config.lineBreak else "") +
               config.lineBreak +
-              renderNode(v, config, indent + (if (addIdent(v)) 1 else 0))
+              renderNode(
+                v,
+                config,
+                indent + (if (addIdent(v)) 1 else 0),
+                prefix = None,
+                prev = None)
           else
-            (if (idx != 0) config.separator else "") + renderNode(v, config, indent)
+            (if (idx != 0) config.separator else "") + renderNode(
+              v,
+              config,
+              indent,
+              prefix = None,
+              prev = None)
 
         renderInputComment(v, indent, config) +
           "[" + value.iterator.zipWithIndex
@@ -626,7 +646,12 @@ object QueryRenderer {
             .map { case (v, idx) =>
               (if (idx != 0 && config.formatInputValues && shouldRenderComment(v, None, config))
                  config.lineBreak
-               else "") + renderNode(v, config, inputFieldIndent(config, indent))
+               else "") + renderNode(
+                v,
+                config,
+                inputFieldIndent(config, indent),
+                prefix = None,
+                prev = None)
             }
             .mkString(config.inputFieldSeparator) +
           inputLineBreak(config) + inputIndent(config, indent) + "}"
@@ -634,9 +659,9 @@ object QueryRenderer {
       case v @ ObjectField(name, value, _, _) =>
         val rendered =
           if (config.formatInputValues && shouldRenderComment(value, None, config))
-            config.lineBreak + renderNode(value, config, indent.inc)
+            config.lineBreak + renderNode(value, config, indent.inc, prefix = None, prev = None)
           else
-            config.separator + renderNode(value, config, indent)
+            config.separator + renderNode(value, config, indent, prefix = None, prev = None)
 
         (if (config.formatInputValues) renderComment(v, prev, indent, config) else "") +
           indent.str + name + ":" + rendered
@@ -681,7 +706,7 @@ object QueryRenderer {
           if (types.nonEmpty)
             config.separator + "=" + config.separator +
               types.iterator
-                .map(renderNode(_, config, indent.zero))
+                .map(renderNode(_, config, indent.zero, prefix = None, prev = None))
                 .mkString(config.separator + "|" + config.separator)
           else
             ""
@@ -709,15 +734,30 @@ object QueryRenderer {
           renderComment(fd, description.orElse(prev), indent, config) +
           indent.str + name +
           renderInputValueDefs(args, indent, config, withSep = false) +
-          ":" + config.separator + renderNode(fieldType, config, indent.zero) +
+          ":" + config.separator + renderNode(
+            fieldType,
+            config,
+            indent.zero,
+            prefix = None,
+            prev = None) +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case ivd @ InputValueDefinition(name, valueType, default, dirs, description, _, _) =>
         renderDescription(ivd, prev, indent, config) +
           renderComment(ivd, description.orElse(prev), indent, config) +
-          indent.str + name + ":" + config.separator + renderNode(valueType, config, indent.zero) +
+          indent.str + name + ":" + config.separator + renderNode(
+            valueType,
+            config,
+            indent.zero,
+            prefix = None,
+            prev = None) +
           default.fold("")(d =>
-            config.separator + "=" + config.separator + renderNode(d, config, indent.zero)) +
+            config.separator + "=" + config.separator + renderNode(
+              d,
+              config,
+              indent.zero,
+              prefix = None,
+              prev = None)) +
           renderDirs(dirs, config, indent, frontSep = true)
 
       case ted @ ObjectTypeExtensionDefinition(name, interfaces, fields, dirs, _, _, _) =>
@@ -744,7 +784,7 @@ object QueryRenderer {
           if (types.nonEmpty)
             config.separator + "=" + config.separator +
               types.iterator
-                .map(renderNode(_, config, indent.zero))
+                .map(renderNode(_, config, indent.zero, prefix = None, prev = None))
                 .mkString(config.separator + "|" + config.separator)
           else
             ""
@@ -787,7 +827,9 @@ object QueryRenderer {
               renderNode(
                 l,
                 config,
-                if (shouldRenderComment(l, None, config)) indent.inc else indent.zero)
+                if (shouldRenderComment(l, None, config)) indent.inc else indent.zero,
+                prefix = None,
+                prev = None)
           }
 
         renderDescription(dd, prev, indent, config) +
@@ -815,7 +857,9 @@ object QueryRenderer {
           indent.str + renderOpType(op) + ":" + config.separator + renderNode(
             tpe,
             config,
-            indent.zero)
+            indent.zero,
+            prefix = None,
+            prev = None)
     }
 
   private def trailingLineBreak(tc: WithTrailingComments, config: QueryRendererConfig) =

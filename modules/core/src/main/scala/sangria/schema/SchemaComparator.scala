@@ -138,7 +138,7 @@ object SchemaComparator {
     )
 
     val descriptionChanges =
-      findDescriptionChanged(oldSchema, newSchema, SchemaChange.SchemaDescriptionChanged)
+      findDescriptionChanged(oldSchema, newSchema, SchemaChange.SchemaDescriptionChanged.apply)
 
     withSubscription ++ directiveChanges ++ descriptionChanges
   }

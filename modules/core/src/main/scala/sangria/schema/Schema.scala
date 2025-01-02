@@ -29,7 +29,6 @@ sealed trait Type {
         case ListInputType(ofType) => getNamedType(ofType)
         case ListType(ofType) => getNamedType(ofType)
         case n: Named => n
-        case t => throw new IllegalStateException("Expected named type, but got: " + t)
       }
 
     getNamedType(this)
@@ -360,7 +359,7 @@ object ObjectType {
       description: Option[String],
       interfaces: List[InterfaceType[Ctx, _]],
       fieldsFn: () => List[Field[Ctx, Val]]) =
-    ObjectType(
+    new ObjectType(
       name,
       description,
       fieldsFn,
@@ -498,16 +497,17 @@ case class PossibleInterface[Ctx, Concrete](interfaceType: InterfaceType[Ctx, _]
 object PossibleInterface extends PossibleInterfaceLowPrioImplicits {
   def apply[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit
       ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
-    PossibleInterface[Ctx, Concrete](interface)
+    new PossibleInterface[Ctx, Concrete](interface)
+
   implicit def convert[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit
       ev: PossibleType[Abstract, Concrete]): PossibleInterface[Ctx, Concrete] =
-    PossibleInterface[Ctx, Concrete](interface)
+    new PossibleInterface[Ctx, Concrete](interface)
 }
 
 trait PossibleInterfaceLowPrioImplicits {
   implicit def applyUnit[Ctx, Abstract, Concrete](interface: InterfaceType[Ctx, Abstract])(implicit
       ev: PossibleType[Abstract, Concrete]): PossibleInterface[Unit, Concrete] =
-    PossibleInterface[Unit, Concrete](interface.asInstanceOf[InterfaceType[Unit, Abstract]])
+    new PossibleInterface[Unit, Concrete](interface.asInstanceOf[InterfaceType[Unit, Abstract]])
 }
 
 case class PossibleObject[Ctx, Abstract](objectType: ObjectType[Ctx, _])
@@ -515,11 +515,11 @@ case class PossibleObject[Ctx, Abstract](objectType: ObjectType[Ctx, _])
 object PossibleObject {
   implicit def apply[Ctx, Abstract, Concrete](obj: ObjectType[Ctx, Concrete])(implicit
       ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract] =
-    PossibleObject[Ctx, Abstract](obj)
+    new PossibleObject[Ctx, Abstract](obj)
 
   implicit def applyUnit[Ctx, Abstract, Concrete](obj: ObjectType[Unit, Concrete])(implicit
       ev: PossibleType[Abstract, Concrete]): PossibleObject[Ctx, Abstract] =
-    PossibleObject[Ctx, Abstract](obj.asInstanceOf[ObjectType[Ctx, Concrete]])
+    new PossibleObject[Ctx, Abstract](obj.asInstanceOf[ObjectType[Ctx, Concrete]])
 }
 
 trait PossibleType[AbstrType, ConcreteType]
@@ -1547,8 +1547,9 @@ case class Schema[Ctx, Val](
   def getOutputType(tpe: ast.Type, topLevel: Boolean = false): Option[OutputType[_]] = tpe match {
     case ast.NamedType(name, _) =>
       outputTypes.get(name).map(ot => if (topLevel) ot else OptionType(ot))
-    case ast.NotNullType(ofType, _) => getOutputType(ofType).collect { case OptionType(ot) => ot }
-    case ast.ListType(ofType, _) => getOutputType(ofType).map(ListType(_))
+    case ast.NotNullType(ofType, _) =>
+      getOutputType(ofType, topLevel = false).collect { case OptionType(ot) => ot }
+    case ast.ListType(ofType, _) => getOutputType(ofType, topLevel = false).map(ListType(_))
   }
 
   lazy val directImplementations: Map[String, Vector[ObjectLikeType[_, _]]] =
