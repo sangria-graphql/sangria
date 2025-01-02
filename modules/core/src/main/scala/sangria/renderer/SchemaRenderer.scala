@@ -314,7 +314,6 @@ object SchemaRenderer {
       case io: IntrospectionInputObjectType => renderInputObject(io)
       case s: IntrospectionScalarType => renderScalar(s)
       case e: IntrospectionEnumType => renderEnum(e)
-      case kind => throw new IllegalArgumentException(s"Unsupported kind: $kind")
     }
 
   def renderType(tpe: Type with Named): ast.TypeDefinition =

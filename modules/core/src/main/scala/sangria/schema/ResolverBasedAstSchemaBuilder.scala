@@ -609,9 +609,6 @@ object ResolverBasedAstSchemaBuilder {
 
       if (iu.isMapNode(objValue)) objValue
       else invalidType("Object", objValue)
-    case t =>
-      throw SchemaMaterializationException(
-        s"Extractor for a type '${SchemaRenderer.renderTypeName(t)}' is not supported yet.")
   }
 
   def extractFieldValue[Ctx, In](context: Context[Ctx, _])(implicit

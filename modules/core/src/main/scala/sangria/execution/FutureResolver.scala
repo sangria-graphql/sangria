@@ -226,7 +226,7 @@ private[execution] class FutureResolver[Ctx](
   private def marshallExtensions: Option[marshaller.Node] = {
     val extensions =
       middleware.flatMap {
-        case (v, m: MiddlewareExtension[Ctx]) =>
+        case (v, m: MiddlewareExtension[Ctx @unchecked]) =>
           m.afterQueryExtensions(v.asInstanceOf[m.QueryVal], middlewareCtx)
         case _ => Nil
       }

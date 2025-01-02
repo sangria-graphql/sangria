@@ -85,13 +85,13 @@ case class InputDocumentMaterializer[Vars](
             typeInfo.withInputType(inputType)
 
             AstVisitor {
-              case v: ast.VariableValue if typeInfo.inputType.isDefined =>
+              case v2: ast.VariableValue if typeInfo.inputType.isDefined =>
                 val parentType = typeInfo.inputType.get
                 val parentTypeAst = SchemaRenderer.renderTypeNameAst(parentType)
 
-                state.get(v.name) match {
+                state.get(v2.name) match {
                   case None =>
-                    state(v.name) = ast.VariableDefinition(v.name, parentTypeAst, None)
+                    state(v2.name) = ast.VariableDefinition(v2.name, parentTypeAst, None)
                     VisitorCommand.Continue
                   case _ => VisitorCommand.Continue
                 }

@@ -113,7 +113,9 @@ class AstSchemaMaterializer[Ctx] private (
       unionTypeExtensionDefs.isEmpty)
       schema
     else {
-      existingDefsMat = schema.allTypes.mapValues(MaterializedType(existingOrigin, _)).toMap
+      existingDefsMat = schema.allTypes.iterator.map { case (k, v) =>
+        (k, MaterializedType(existingOrigin, v))
+      }.toMap
 
       val queryType = getTypeFromDef(existingOrigin, schema.query)
 
@@ -647,9 +649,9 @@ class AstSchemaMaterializer[Ctx] private (
         extendScalarAlias(origin, tpe.asInstanceOf[ScalarAlias[Any, Any]])
       case tpe: EnumType[_] => extendEnumType(origin, tpe)
       case tpe: InputObjectType[_] => extendInputObjectType(origin, tpe)
-      case tpe: UnionType[Ctx] => extendUnionType(origin, tpe)
-      case tpe: ObjectType[Ctx, _] => extendObjectType(origin, tpe)
-      case tpe: InterfaceType[Ctx, _] => extendInterfaceType(origin, tpe)
+      case tpe: UnionType[Ctx @unchecked] => extendUnionType(origin, tpe)
+      case tpe: ObjectType[Ctx @unchecked, _] => extendObjectType(origin, tpe)
+      case tpe: InterfaceType[Ctx @unchecked, _] => extendInterfaceType(origin, tpe)
     }
 
   def buildField(

@@ -163,7 +163,6 @@ object QueryReducerExecutor {
         case ScalarAlias(aliasFor, _, _) =>
           reducers.map(_.reduceScalar(path, userContext, aliasFor))
         case e: EnumType[_] => reducers.map(_.reduceEnum(path, userContext, e))
-        case _ => initialValues
       }
 
     val reduced = fields.fields.foldLeft(Array(initialValues: _*)) {
