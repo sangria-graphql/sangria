@@ -129,34 +129,13 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
                         ctxValType match {
                           case Some((tpe, fn)) =>
                             given Type[CtxVal] = tpe
-                            Expr.summon[t => Action[Ctx, t]] match
-                              case Some(conversion) =>
-                                '{
-                                  $conversion(${
-                                    unsafeSelectByName[t]('{ $fn(c.ctx) }, field.method.name)
-                                  })
-                                }
-                              case None =>
-                                reportSummoningErrors(
-                                  Seq(
-                                    s"Implicit conversion not found: ${TypeRepr.of[t => Action[Ctx, t]].show}"),
-                                  Seq(None)
-                                )
+                            wrappedInActionConversion[Ctx, t](
+                              unsafeSelectByName[t]('{ $fn(c.ctx) }, field.method.name)
+                            )
                           case None =>
-                            Expr.summon[t => Action[Ctx, t]] match
-                              case Some(conversion) =>
-                                '{
-                                  $conversion(${
-                                    unsafeSelectByName[t]('{ c.value }, field.method.name)
-                                      .asExprOf[t]
-                                  })
-                                }
-                              case None =>
-                                reportSummoningErrors(
-                                  Seq(
-                                    s"Implicit conversion not found: ${TypeRepr.of[t => Action[Ctx, t]].show}"),
-                                  Seq(None)
-                                )
+                            wrappedInActionConversion[Ctx, t](
+                              unsafeSelectByName[t]('{ c.value }, field.method.name)
+                            )
                         }
                       }
                   }
@@ -181,7 +160,7 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
                   case Some(lookup) => '{ $lookup.graphqlType }
                   case None =>
                     reportSummoningErrors(
-                      Seq(s"GraphQlOutputType not found: ${TypeRepr.of[t => Action[Ctx, t]].show}"),
+                      Seq(s"GraphQlOutputType not found: ${TypeRepr.of[t => Action[Ctx, _]].show}"),
                       Seq(None)
                     )
           }
@@ -319,38 +298,32 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
               case d: DefDef =>
                 d.returnTpt.tpe.asType match
                   case '[t] =>
-                    Expr.summon[t => Action[Ctx, t]] match
-                      case Some(conversion) =>
-                        '{
-                          $conversion(${
-                            args
-                              .foldLeft[Select | Apply](method) { (m, argList) =>
-                                Apply(m, argList)
-                              }
-                              .asExprOf[t]
-                          })
+                    wrappedInActionConversion[Ctx, t](
+                      args
+                        .foldLeft[Select | Apply](method) { (m, argList) =>
+                          Apply(m, argList)
                         }
-                      case None =>
-                        reportSummoningErrors(
-                          Seq(
-                            s"Implicit conversion not found: ${TypeRepr.of[t => Action[Ctx, t]].show}"),
-                          Seq(None)
-                        )
+                        .asExprOf[t]
+                    )
           else
             globalQuotes.reflect.Ref(member.method).tpe.widen.asType match {
               case '[t] =>
-                Expr.summon[t => Action[Ctx, t]] match
-                  case Some(conversion) =>
-                    '{ $conversion(${ method.asExprOf[t] }) }
-                  case None =>
-                    reportSummoningErrors(
-                      Seq(
-                        s"Implicit conversion not found: ${TypeRepr.of[t => Action[Ctx, t]].show}"),
-                      Seq(None)
-                    )
+                wrappedInActionConversion[Ctx, t](method.asExprOf[t])
             }
         }
       }
+  }
+
+  private def wrappedInActionConversion[Ctx: Type, T: Type](value: Expr[T]) = {
+    import globalQuotes.reflect._
+    Expr.summon[T => Action[Ctx, _]] match
+      case Some(conversion) =>
+        '{ $conversion(${ value }) }
+      case None =>
+        reportSummoningErrors(
+          Seq(s"Implicit conversion not found: ${TypeRepr.of[T => Action[Ctx, _]].show}"),
+          Seq(None)
+        )
   }
 
   private def createArg(config: Seq[MacroDeriveObjectSetting], member: KnownMember)(

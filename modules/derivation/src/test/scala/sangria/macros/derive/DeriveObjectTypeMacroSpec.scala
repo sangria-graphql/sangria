@@ -836,5 +836,32 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       "deriveObjectType[Unit, TestContainer[TestSubject]]()" should compile
     }
+
+    "handle Future result values correctly (issue #906)" in {
+      import Issue906Context._
+      import sangria.parser.QueryParser
+
+      val query = QueryParser
+        .parse(
+          s"""
+             query SomeTest {
+                 mySample {
+                   myFutureString
+                 }
+             }
+            """
+        )
+        .fold(throw _, identity)
+
+      Executor.execute(MySample.schema, query, MyRepository.sample).await should be(
+        Map(
+          "data" -> Map(
+            "mySample" -> Map(
+              "myFutureString" -> "Hello World"
+            )
+          )
+        )
+      )
+    }
   }
 }

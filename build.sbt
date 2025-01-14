@@ -254,6 +254,11 @@ lazy val derivation = project
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-derivation" % "4.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      // internal method
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.macros.derive.DeriveMacroSupport.unsafeSelectByName")
+    ),
     // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
                              else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)),
