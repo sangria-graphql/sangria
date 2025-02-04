@@ -111,12 +111,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (3.3.4)
+      - name: Download target directories (3.3.5)
         uses: actions/download-artifact@v4
         with:
-          name: target-${{ matrix.os }}-3.3.4-${{ matrix.java }}
+          name: target-${{ matrix.os }}-3.3.5-${{ matrix.java }}
 
-      - name: Inflate target directories (3.3.4)
+      - name: Inflate target directories (3.3.5)
         run: |
           tar xf targets.tar
           rm targets.tar
