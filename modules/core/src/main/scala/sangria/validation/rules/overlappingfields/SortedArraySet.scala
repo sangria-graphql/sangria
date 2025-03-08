@@ -81,9 +81,9 @@ object SortedArraySet {
         members.set(into, first_from)
         into += 1
         while ({
-          from += 1
-          from < members.size() && members.get(from) == first_from
-        }) ()
+            from += 1
+            from < members.size() && members.get(from) == first_from
+          }) ()
       }
       members.subList(into, members.size()).clear()
     }
