@@ -434,18 +434,18 @@ class AstSchemaMaterializer[Ctx] private (
     var iteration = 0
 
     while ({
-        prevCount = typeDefCache.size
-        iteration += 1
+      prevCount = typeDefCache.size
+      iteration += 1
 
-        typeDefCache.forEachValue {
-          case o: ObjectLikeType[_, _] => o.fields
-          case o: InputObjectType[_] => o.fields
-          case _ => // do nothing
-        }
+      typeDefCache.forEachValue {
+        case o: ObjectLikeType[_, _] => o.fields
+        case o: InputObjectType[_] => o.fields
+        case _ => // do nothing
+      }
 
-        newCount = typeDefCache.size
-        prevCount != newCount && iteration < 20
-      }) ()
+      newCount = typeDefCache.size
+      prevCount != newCount && iteration < 20
+    }) ()
   }
 
   def getTypeFromExistingType(origin: MatOrigin, tpe: OutputType[_]): OutputType[Any] = tpe match {
