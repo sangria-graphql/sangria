@@ -288,6 +288,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
             c1: String @deprecated
             d: Int
             e: Int!
+            f: Int! = 42
           ): String!
         }
       """,
@@ -302,6 +303,7 @@ class SchemaComparatorSpec extends AnyWordSpec with Matchers {
       breakingChange[ObjectTypeArgumentTypeChanged](
         "`Filter.foo(c)` type changed from `[String]` to `[String]!`"),
       breakingChange[ObjectTypeArgumentAdded]("Argument `e` was added to `Filter.foo` field"),
+      nonBreakingChange[ObjectTypeArgumentAdded]("Argument `f` was added to `Filter.foo` field"),
       nonBreakingChange[ObjectTypeArgumentDefaultChanged](
         "`Filter.foo(a)` default value changed from none to `\"foo\"`"),
       nonBreakingChange[ObjectTypeArgumentDescriptionChanged](
