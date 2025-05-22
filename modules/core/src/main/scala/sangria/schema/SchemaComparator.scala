@@ -436,7 +436,7 @@ object SchemaComparator {
     val add = newA.diff(oldA).toVector.map { name =>
       val arg = newArgs.find(_.name == name).get
 
-      added(arg, !isOptional(arg))
+      added(arg, !isOptional(arg) && arg.defaultValue.isEmpty)
     }
 
     val changed = oldA.intersect(newA).flatMap { name =>
