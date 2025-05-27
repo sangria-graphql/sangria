@@ -1711,22 +1711,52 @@ private[execution] class FutureResolver[Ctx](
             deprecationTracker.foreach(trackDeprecation(_, ctx))
 
             try {
-              val mBefore = middleware.collect { case (mv, m: MiddlewareBeforeField[Ctx]) =>
-                (m.beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx), mv, m)
+              var beforeAction: Option[Action[Ctx, _]] = None
+              val beforeAttachmentsBuilder: VectorBuilder[MiddlewareAttachment] =
+                new VectorBuilder()
+
+              val mAfterBuilder
+                  : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareAfterField[Ctx])] =
+                new VectorBuilder()
+
+              val mErrorBuilder
+                  : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareBeforeField[Ctx])] =
+                new VectorBuilder()
+
+              middleware.foreach {
+                case (mv, m: MiddlewareBeforeField[Ctx]) =>
+                  val beforeFieldResult = m
+                    .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
+
+                  beforeFieldResult.actionOverride.foreach { action =>
+                    beforeAction = Some(action)
+                  }
+                  beforeFieldResult.attachment.foreach { att =>
+                    beforeAttachmentsBuilder += att
+                  }
+
+                  if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
+                    mAfterBuilder += ((
+                      beforeFieldResult,
+                      mv,
+                      m.asInstanceOf[MiddlewareAfterField[Ctx]]))
+                  }
+                  if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
+                    mErrorBuilder += ((
+                      beforeFieldResult,
+                      mv,
+                      m.asInstanceOf[MiddlewareErrorField[Ctx]]))
+                  }
+                case _ => ()
               }
 
-              val beforeAction = mBefore.collect {
-                case (BeforeFieldResult(_, Some(action), _), _, _) => action
-              }.lastOption
-              val beforeAttachments = mBefore.iterator.collect {
-                case (BeforeFieldResult(_, _, Some(att)), _, _) => att
-              }.toVector
+              val beforeAttachments = beforeAttachmentsBuilder.result()
               val updatedCtx =
                 if (beforeAttachments.nonEmpty) ctx.copy(middlewareAttachments = beforeAttachments)
                 else ctx
 
-              val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField[Ctx]]).reverse
-              val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField[Ctx]])
+              val mAfter = mAfterBuilder.result().reverse
+              val mError = mErrorBuilder.result()
 
               def doAfterMiddleware[Val](v: Val): Val =
                 mAfter.foldLeft(v) {
