@@ -824,29 +824,36 @@ private[execution] class FutureResolver[Ctx](
     res match {
       case None => Result(errors, None)
       case Some(results) =>
-        val resolvedValues: Vector[(ast.Field, Resolve)] = results.map { case (astFields, rest) =>
-          rest match {
-            case None => astFields.head -> Result(ErrorRegistry.empty, None)
-            case Some((field, updateCtx, v)) =>
-              resolveLeafAction(path, tpe, userCtx, astFields, field, updateCtx)(v)
-          }
-        }
+        val complexResBuilder: VectorBuilder[(ast.Field, DeferredResult)] = new VectorBuilder
 
         val resSoFar =
-          resolvedValues.iterator
-            .collect { case (af, r: Result) => af -> r }
+          results.iterator
+            .map { case (astFields, rest) =>
+              val (field, result) = rest match {
+                case None => astFields.head -> Result(ErrorRegistry.empty, None)
+                case Some((f, updateCtx, v)) =>
+                  resolveLeafAction(path, tpe, userCtx, astFields, f, updateCtx)(v)
+              }
+              result match {
+                case r: Result => Some((field, r))
+                case r: DeferredResult =>
+                  complexResBuilder += ((field, r))
+                  None
+              }
+            }
+            .collect { case Some(f) => f }
             .foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
-              case (res, (astField, other)) =>
-                res.addToMap(
+              case (acc, (astField, other)) =>
+                acc.addToMap(
                   other,
                   astField.outputName,
                   isOptional(tpe, astField.name),
                   path.add(astField, tpe),
                   astField.location,
-                  res.errors)
+                  acc.errors)
             }
 
-        val complexRes = resolvedValues.collect { case (af, r: DeferredResult) => af -> r }
+        val complexRes = complexResBuilder.result()
 
         if (complexRes.isEmpty) resSoFar.buildValue
         else {
@@ -857,14 +864,14 @@ private[execution] class FutureResolver[Ctx](
             })
             .map { results =>
               results
-                .foldLeft(resSoFar) { case (res, (astField, other)) =>
-                  res.addToMap(
+                .foldLeft(resSoFar) { case (acc, (astField, other)) =>
+                  acc.addToMap(
                     other,
                     astField.outputName,
                     isOptional(tpe, astField.name),
                     path.add(astField, tpe),
                     astField.location,
-                    res.errors)
+                    acc.errors)
                 }
                 .buildValue
             }
