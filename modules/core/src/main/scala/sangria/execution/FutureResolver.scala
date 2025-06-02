@@ -1382,22 +1382,27 @@ private[execution] class FutureResolver[Ctx](
         if (isUndefinedValue(value))
           Result(ErrorRegistry.empty, None)
         else {
+          // this is very hot place, so resorting to mutability to minimize the footprint
+          val simpleResBuilder: VectorBuilder[Result] = new VectorBuilder
+
           val actualValue = value match {
-            case seq: Iterable[_] => seq
-            case other => Seq(other)
+            case seq: Iterable[_] => seq.iterator
+            case other => Iterator.single(other)
           }
 
-          val res = actualValue.zipWithIndex.map { case (v, idx) =>
-            resolveValue(path.withIndex(idx), astFields, listTpe, field, v, userCtx, None)
-          }
+          val res: Vector[Resolve] = actualValue.zipWithIndex.map { case (v, idx) =>
+            val result =
+              resolveValue(path.withIndex(idx), astFields, listTpe, field, v, userCtx, None)
+            if (result.isInstanceOf[Result]) simpleResBuilder += result.asInstanceOf[Result]
+            result
+          }.toVector
 
-          val simpleRes = res.collect { case r: Result => r }
+          val simpleRes = simpleResBuilder.result()
           val optional = isOptional(listTpe)
 
           if (simpleRes.size == res.size)
             resolveSimpleListValue(simpleRes, path, optional, astFields.head.location)
           else {
-            // this is very hot place, so resorting to mutability to minimize the footprint
             val deferredBuilder = new VectorBuilder[Future[Vector[Defer]]]
             val resultFutures = new VectorBuilder[Future[Result]]
 
