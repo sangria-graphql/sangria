@@ -1400,11 +1400,13 @@ private[execution] class FutureResolver[Ctx](
           val simpleRes = simpleResBuilder.result()
           val optional = isOptional(listTpe)
 
-          if (simpleRes.size == res.size)
+          val resSize = res.size
+          if (simpleRes.size == resSize)
             resolveSimpleListValue(simpleRes, path, optional, astFields.head.location)
           else {
             val deferredBuilder = new VectorBuilder[Future[Vector[Defer]]]
             val resultFutures = new VectorBuilder[Future[Result]]
+            resultFutures.sizeHint(resSize)
 
             val resIt = res.iterator
 
@@ -1538,6 +1540,7 @@ private[execution] class FutureResolver[Ctx](
 
     var errorReg = ErrorRegistry.empty
     val listBuilder = new VectorBuilder[marshaller.Node]
+    listBuilder.sizeHint(simpleRes.size)
     var canceled = false
     val resIt = simpleRes.iterator
 
