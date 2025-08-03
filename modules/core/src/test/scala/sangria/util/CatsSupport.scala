@@ -240,8 +240,6 @@ object CatsScenarioExecutor extends FutureResultSupport {
                 operationName = op,
                 exceptionHandler = exceptionHandler)
               .await))
-    case a =>
-      throw new IllegalStateException(s"Not yet supported action: $a")
   }
 
   val exceptionHandler = ExceptionHandler { case (_, e: ResolveException) =>

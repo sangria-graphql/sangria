@@ -5,7 +5,7 @@ import sangria.schema.{InputType, OutputType}
 import scala.quoted._
 import scala.reflect.ClassTag
 
-trait DeriveMacroSupport {
+private[derive] trait DeriveMacroSupport {
 
   def reportErrors(using Quotes)(errors: Seq[(PositionPointer, String)]) = {
     import quotes.reflect.report
@@ -109,11 +109,12 @@ trait DeriveMacroSupport {
     }
   }
 
-  protected def unsafeSelectByName[S](using quotes: Quotes)(using
-      Type[S])(memberExpr: Expr[_], name: String): Expr[S] = {
+  protected def unsafeSelectByName[T: Type](using quotes: Quotes)(
+      memberExpr: Expr[_],
+      name: String
+  ): Expr[T] = {
     import quotes.reflect._
-    val a = Select.unique(memberExpr.asTerm, name)
-    a.etaExpand(Symbol.spliceOwner).asExprOf[S]
+    Select.unique(memberExpr.asTerm, name).asExprOf[T]
   }
 
   protected def getClassTag[T](using Type[T], Quotes): Expr[ClassTag[T]] = {

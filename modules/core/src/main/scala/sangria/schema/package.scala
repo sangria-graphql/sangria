@@ -2,6 +2,7 @@ package sangria
 
 import sangria.marshalling.MarshallerCapability
 import sangria.validation._
+import scala.util.Try
 
 /** Types that describe a GraphQL schema.
   *
@@ -47,12 +48,14 @@ package object schema {
       case i: BigInt => Right(i.longValue)
       case d: Double if d.isWhole => Right(d.toLong)
       case d: BigDecimal if d.isValidLong => Right(d.longValue)
+      case s: String if Try(s.toLong).isSuccess => Right(s.toLong)
       case _ => Left(LongCoercionViolation)
     },
     coerceInput = {
       case ast.IntValue(i, _, _) => Right(i: Long)
       case ast.BigIntValue(i, _, _) if !i.isValidLong => Left(BigLongCoercionViolation)
       case ast.BigIntValue(i, _, _) => Right(i.longValue)
+      case ast.StringValue(s, _, _, _, _) if Try(s.toLong).isSuccess => Right(s.toLong)
       case _ => Left(LongCoercionViolation)
     }
   )

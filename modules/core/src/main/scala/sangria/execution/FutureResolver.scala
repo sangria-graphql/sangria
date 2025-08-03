@@ -226,7 +226,7 @@ private[execution] class FutureResolver[Ctx](
   private def marshallExtensions: Option[marshaller.Node] = {
     val extensions =
       middleware.flatMap {
-        case (v, m: MiddlewareExtension[Ctx]) =>
+        case (v, m: MiddlewareExtension[Ctx @unchecked]) =>
           m.afterQueryExtensions(v.asInstanceOf[m.QueryVal], middlewareCtx)
         case _ => Nil
       }
@@ -824,29 +824,36 @@ private[execution] class FutureResolver[Ctx](
     res match {
       case None => Result(errors, None)
       case Some(results) =>
-        val resolvedValues: Vector[(ast.Field, Resolve)] = results.map { case (astFields, rest) =>
-          rest match {
-            case None => astFields.head -> Result(ErrorRegistry.empty, None)
-            case Some((field, updateCtx, v)) =>
-              resolveLeafAction(path, tpe, userCtx, astFields, field, updateCtx)(v)
-          }
-        }
+        val complexResBuilder: VectorBuilder[(ast.Field, DeferredResult)] = new VectorBuilder
 
         val resSoFar =
-          resolvedValues.iterator
-            .collect { case (af, r: Result) => af -> r }
+          results.iterator
+            .map { case (astFields, rest) =>
+              val (field, result) = rest match {
+                case None => astFields.head -> Result(ErrorRegistry.empty, None)
+                case Some((f, updateCtx, v)) =>
+                  resolveLeafAction(path, tpe, userCtx, astFields, f, updateCtx)(v)
+              }
+              result match {
+                case r: Result => Some((field, r))
+                case r: DeferredResult =>
+                  complexResBuilder += ((field, r))
+                  None
+              }
+            }
+            .collect { case Some(f) => f }
             .foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
-              case (res, (astField, other)) =>
-                res.addToMap(
+              case (acc, (astField, other)) =>
+                acc.addToMap(
                   other,
                   astField.outputName,
                   isOptional(tpe, astField.name),
                   path.add(astField, tpe),
                   astField.location,
-                  res.errors)
+                  acc.errors)
             }
 
-        val complexRes = resolvedValues.collect { case (af, r: DeferredResult) => af -> r }
+        val complexRes = complexResBuilder.result()
 
         if (complexRes.isEmpty) resSoFar.buildValue
         else {
@@ -857,14 +864,14 @@ private[execution] class FutureResolver[Ctx](
             })
             .map { results =>
               results
-                .foldLeft(resSoFar) { case (res, (astField, other)) =>
-                  res.addToMap(
+                .foldLeft(resSoFar) { case (acc, (astField, other)) =>
+                  acc.addToMap(
                     other,
                     astField.outputName,
                     isOptional(tpe, astField.name),
                     path.add(astField, tpe),
                     astField.location,
-                    res.errors)
+                    acc.errors)
                 }
                 .buildValue
             }
@@ -1375,24 +1382,31 @@ private[execution] class FutureResolver[Ctx](
         if (isUndefinedValue(value))
           Result(ErrorRegistry.empty, None)
         else {
+          // this is very hot place, so resorting to mutability to minimize the footprint
+          val simpleResBuilder: VectorBuilder[Result] = new VectorBuilder
+
           val actualValue = value match {
-            case seq: Iterable[_] => seq
-            case other => Seq(other)
+            case seq: Iterable[_] => seq.iterator
+            case other => Iterator.single(other)
           }
 
-          val res = actualValue.zipWithIndex.map { case (v, idx) =>
-            resolveValue(path.withIndex(idx), astFields, listTpe, field, v, userCtx, None)
-          }
+          val res: Vector[Resolve] = actualValue.zipWithIndex.map { case (v, idx) =>
+            val result =
+              resolveValue(path.withIndex(idx), astFields, listTpe, field, v, userCtx, None)
+            if (result.isInstanceOf[Result]) simpleResBuilder += result.asInstanceOf[Result]
+            result
+          }.toVector
 
-          val simpleRes = res.collect { case r: Result => r }
+          val simpleRes = simpleResBuilder.result()
           val optional = isOptional(listTpe)
 
-          if (simpleRes.size == res.size)
+          val resSize = res.size
+          if (simpleRes.size == resSize)
             resolveSimpleListValue(simpleRes, path, optional, astFields.head.location)
           else {
-            // this is very hot place, so resorting to mutability to minimize the footprint
             val deferredBuilder = new VectorBuilder[Future[Vector[Defer]]]
             val resultFutures = new VectorBuilder[Future[Result]]
+            resultFutures.sizeHint(resSize)
 
             val resIt = res.iterator
 
@@ -1526,6 +1540,7 @@ private[execution] class FutureResolver[Ctx](
 
     var errorReg = ErrorRegistry.empty
     val listBuilder = new VectorBuilder[marshaller.Node]
+    listBuilder.sizeHint(simpleRes.size)
     var canceled = false
     val resIt = simpleRes.iterator
 
@@ -1711,22 +1726,52 @@ private[execution] class FutureResolver[Ctx](
             deprecationTracker.foreach(trackDeprecation(_, ctx))
 
             try {
-              val mBefore = middleware.collect { case (mv, m: MiddlewareBeforeField[Ctx]) =>
-                (m.beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx), mv, m)
+              var beforeAction: Option[Action[Ctx, _]] = None
+              val beforeAttachmentsBuilder: VectorBuilder[MiddlewareAttachment] =
+                new VectorBuilder()
+
+              val mAfterBuilder
+                  : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareAfterField[Ctx])] =
+                new VectorBuilder()
+
+              val mErrorBuilder
+                  : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareBeforeField[Ctx])] =
+                new VectorBuilder()
+
+              middleware.foreach {
+                case (mv, m: MiddlewareBeforeField[Ctx]) =>
+                  val beforeFieldResult = m
+                    .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
+
+                  beforeFieldResult.actionOverride.foreach { action =>
+                    beforeAction = Some(action)
+                  }
+                  beforeFieldResult.attachment.foreach { att =>
+                    beforeAttachmentsBuilder += att
+                  }
+
+                  if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
+                    mAfterBuilder += ((
+                      beforeFieldResult,
+                      mv,
+                      m.asInstanceOf[MiddlewareAfterField[Ctx]]))
+                  }
+                  if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
+                    mErrorBuilder += ((
+                      beforeFieldResult,
+                      mv,
+                      m.asInstanceOf[MiddlewareErrorField[Ctx]]))
+                  }
+                case _ => ()
               }
 
-              val beforeAction = mBefore.collect {
-                case (BeforeFieldResult(_, Some(action), _), _, _) => action
-              }.lastOption
-              val beforeAttachments = mBefore.iterator.collect {
-                case (BeforeFieldResult(_, _, Some(att)), _, _) => att
-              }.toVector
+              val beforeAttachments = beforeAttachmentsBuilder.result()
               val updatedCtx =
                 if (beforeAttachments.nonEmpty) ctx.copy(middlewareAttachments = beforeAttachments)
                 else ctx
 
-              val mAfter = mBefore.filter(_._3.isInstanceOf[MiddlewareAfterField[Ctx]]).reverse
-              val mError = mBefore.filter(_._3.isInstanceOf[MiddlewareErrorField[Ctx]])
+              val mAfter = mAfterBuilder.result().reverse
+              val mError = mErrorBuilder.result()
 
               def doAfterMiddleware[Val](v: Val): Val =
                 mAfter.foldLeft(v) {

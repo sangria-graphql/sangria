@@ -6,7 +6,7 @@ import com.typesafe.tools.mima.core._
 val isScala3 = Def.setting(scalaBinaryVersion.value == "3")
 
 // sbt-github-actions needs configuration in `ThisBuild`
-ThisBuild / crossScalaVersions := Seq("2.12.20", "2.13.15", "3.3.4")
+ThisBuild / crossScalaVersions := Seq("2.12.20", "2.13.16", "3.3.6")
 ThisBuild / scalaVersion := crossScalaVersions.value.tail.head
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility")),
@@ -232,10 +232,10 @@ lazy val core = project
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.1" % Test,
-      "eu.timepit" %% "refined" % "0.11.2" % Test,
+      "eu.timepit" %% "refined" % "0.11.3" % Test,
       // CATs
       ("net.jcazevedo" %% "moultingyaml" % "0.4.2" % Test).cross(CrossVersion.for3Use2_13),
-      "io.github.classgraph" % "classgraph" % "4.8.177" % Test
+      "io.github.classgraph" % "classgraph" % "4.8.180" % Test
     ) ++ (if (isScala3.value) Seq.empty
           else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)), // Macros
 
@@ -254,6 +254,11 @@ lazy val derivation = project
     name := "sangria-derivation",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     mimaPreviousArtifacts := Set("org.sangria-graphql" %% "sangria-derivation" % "4.0.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      // internal method
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.macros.derive.DeriveMacroSupport.unsafeSelectByName")
+    ),
     // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
                              else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)),
@@ -298,7 +303,7 @@ lazy val sangriaTestFS2 = project
   .settings(
     name := "sangria-test-fs2",
     description := "Tests with FS2",
-    libraryDependencies += "co.fs2" %% "fs2-core" % "3.11.0" % Test
+    libraryDependencies += "co.fs2" %% "fs2-core" % "3.12.0" % Test
   )
   .disablePlugins(MimaPlugin)
 
@@ -311,7 +316,7 @@ lazy val sangriaCatsEffectExperimental = project
     name := "sangria-cats-effect-experimental",
     description := "Experimental support for Cats Effect",
     libraryDependencies ++= List(
-      "org.typelevel" %% "cats-effect" % "3.5.5",
+      "org.typelevel" %% "cats-effect" % "3.6.1",
       "org.sangria-graphql" %% "sangria-circe" % "1.3.2" % Test
     )
   )

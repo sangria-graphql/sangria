@@ -138,7 +138,7 @@ object SchemaComparator {
     )
 
     val descriptionChanges =
-      findDescriptionChanged(oldSchema, newSchema, SchemaChange.SchemaDescriptionChanged)
+      findDescriptionChanged(oldSchema, newSchema, SchemaChange.SchemaDescriptionChanged.apply)
 
     withSubscription ++ directiveChanges ++ descriptionChanges
   }
@@ -436,7 +436,7 @@ object SchemaComparator {
     val add = newA.diff(oldA).toVector.map { name =>
       val arg = newArgs.find(_.name == name).get
 
-      added(arg, !isOptional(arg))
+      added(arg, !isOptional(arg) && arg.defaultValue.isEmpty)
     }
 
     val changed = oldA.intersect(newA).flatMap { name =>
@@ -841,7 +841,9 @@ object SchemaChange {
       oldDefault: Option[ast.Value],
       newDefault: Option[ast.Value])
       extends AbstractChange(
-        s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")}",
+        s"`${tpe.name}.${field.name}` default value changed from ${oldDefault.fold("none")(d =>
+            s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d =>
+            s"`${QueryRenderer.renderCompact(d)}`")}",
         breakingChange = false
       )
       with TypeChange
@@ -854,7 +856,8 @@ object SchemaChange {
       newDefault: Option[ast.Value])
       extends AbstractChange(
         s"`${tpe.name}.${field.name}(${argument.name})` default value changed from ${oldDefault
-            .fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")}",
+            .fold("none")(d => s"`${QueryRenderer.renderCompact(d)}`")} to ${newDefault.fold(
+            "none")(d => s"`${QueryRenderer.renderCompact(d)}`")}",
         breakingChange = false,
         dangerousChange = true
       )
@@ -866,7 +869,9 @@ object SchemaChange {
       oldDefault: Option[ast.Value],
       newDefault: Option[ast.Value])
       extends AbstractChange(
-        s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold("none")(d => "`" + QueryRenderer.renderCompact(d) + "`")} to ${newDefault.fold("none")(d => "`" + QueryRenderer.renderCompact(d) + "`")}",
+        s"`${directive.name}(${argument.name})` default value changed from ${oldDefault.fold(
+            "none")(d => "`" + QueryRenderer.renderCompact(d) + "`")} to ${newDefault.fold("none")(
+            d => "`" + QueryRenderer.renderCompact(d) + "`")}",
         breakingChange = false,
         dangerousChange = true
       )
@@ -1175,15 +1180,14 @@ object SchemaChange {
   case class SchemaMutationTypeChanged(
       oldType: Option[ObjectType[_, _]],
       newType: Option[ObjectType[_, _]])
-      extends AbstractChange(
-        s"Schema mutation type changed from ${oldType.fold("none")(t => "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
-        oldType.nonEmpty)
+      extends AbstractChange(s"Schema mutation type changed from ${oldType.fold("none")(t => "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type", oldType.nonEmpty)
 
   case class SchemaSubscriptionTypeChanged(
       oldType: Option[ObjectType[_, _]],
       newType: Option[ObjectType[_, _]])
       extends AbstractChange(
-        s"Schema subscription type changed from ${oldType.fold("none")(t => "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
+        s"Schema subscription type changed from ${oldType.fold("none")(t =>
+            "`" + t.name + "`")} to ${newType.fold("none")(t => "`" + t.name + "`")} type",
         oldType.nonEmpty
       )
 
