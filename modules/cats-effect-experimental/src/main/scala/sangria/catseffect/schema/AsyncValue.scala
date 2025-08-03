@@ -14,7 +14,7 @@ case class AsyncValue[Ctx, Val, F[_]: Async](value: F[Val]) extends LeafAction[C
 
 
 object AsyncResolver {
-  implicit def asyncToAction[Ctx, Val, Res, F[_]: Async](resolver: Context[Ctx, Val] => F[Res]): Context[Ctx, Val] => Action[Ctx, Res] = {
+  implicit def asyncToAction[Ctx, Val, Res, F[_] : Async](resolver: Context[Ctx, Val] => F[Res]): Context[Ctx, Val] => Action[Ctx, Res] = {
     context => AsyncValue(resolver(context))
   }
 }
