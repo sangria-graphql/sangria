@@ -1,22 +1,20 @@
 package sangria.schema
 
 import sangria.ast.{AstNode, Document}
-
-import language.implicitConversions
 import sangria.execution.{FieldTag, SubscriptionField}
+import sangria.introspection._
 import sangria.marshalling.FromInput.{CoercedScalaResult, InputObjectResult}
 import sangria.marshalling._
-import sangria.{ast, introspection}
-import sangria.validation._
-import sangria.introspection._
 import sangria.renderer.{QueryRenderer, SchemaFilter, SchemaRenderer}
 import sangria.schema.InputObjectType.DefaultInput
 import sangria.streaming.SubscriptionStreamLike
+import sangria.util.tag._
+import sangria.validation._
+import sangria.{ast, introspection}
 
 import scala.annotation.{implicitNotFound, tailrec}
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import sangria.util.tag._
-
 import scala.util.matching.Regex
 
 sealed trait Type {
@@ -656,18 +654,20 @@ object Field {
       Vector.empty)
 
   def async[Ctx, Val, Res, Out, F[_]](
-                                       name: String,
-                                       fieldType: OutputType[Out],
-                                       description: Option[String] = None,
-                                       arguments: List[Argument[_]] = Nil,
-                                       resolve: Context[Ctx, Val] => F[Res],
-                                       possibleTypes: => List[PossibleObject[_, _]] = Nil,
-                                       tags: List[FieldTag] = Nil,
-                                       complexity: Option[(Ctx, Args, Double) => Double] = None,
-                                       deprecationReason: Option[String] = None,
-                                       astDirectives: Vector[ast.Directive] = Vector.empty
-                                     )(implicit ev: ValidOutType[Res, Out],
-                                       asyncToAction: (Context[Ctx, Val] => F[Res]) => Context[Ctx, Val] => Action[Ctx, Res]): Field[Ctx, Val] =
+      name: String,
+      fieldType: OutputType[Out],
+      description: Option[String] = None,
+      arguments: List[Argument[_]] = Nil,
+      resolve: Context[Ctx, Val] => F[Res],
+      possibleTypes: => List[PossibleObject[_, _]] = Nil,
+      tags: List[FieldTag] = Nil,
+      complexity: Option[(Ctx, Args, Double) => Double] = None,
+      deprecationReason: Option[String] = None,
+      astDirectives: Vector[ast.Directive] = Vector.empty
+  )(implicit
+      ev: ValidOutType[Res, Out],
+      asyncToAction: (Context[Ctx, Val] => F[Res]) => Context[Ctx, Val] => Action[Ctx, Res])
+      : Field[Ctx, Val] =
     Field[Ctx, Val](
       name,
       fieldType,
@@ -679,7 +679,8 @@ object Field {
       complexity,
       () => possibleTypes.map(_.objectType),
       astDirectives,
-      Vector.empty)
+      Vector.empty
+    )
 
   def subs[Ctx, Val, StreamSource, Res, Out](
       name: String,

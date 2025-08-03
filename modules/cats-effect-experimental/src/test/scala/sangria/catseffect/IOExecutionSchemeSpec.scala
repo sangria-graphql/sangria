@@ -13,7 +13,7 @@ import sangria.marshalling.circe._
 import sangria.schema._
 
 /** The integration with [[cats.effect.IO]] is far from being complete for now.
- */
+  */
 class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
 
   import IOExecutionSchemeSpec._
@@ -58,12 +58,11 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
   }
 }
 
-
 object IOExecutionSchemeSpec {
 
   import sangria.catseffect.schema.AsyncResolver._
 
-  private def resolve[F[_] : Async](): F[String] = {
+  private def resolve[F[_]: Async](): F[String] = {
     import cats.syntax.functor._
     Async[F].pure(Option("hello")).map {
       case Some(value) => value
