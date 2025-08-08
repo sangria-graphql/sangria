@@ -4,11 +4,12 @@ import org.parboiled2._
 import sangria.ast.AstLocation
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 
 private[parser] trait PositionTracking { this: Parser =>
 
   /** The indices (offsets into the source code) of the first characters of each line. */
-  private[this] var lineIdx = Array(0)
+  private[this] var lineIdx = ArrayBuffer.empty[int]
 
   def parseLocations: Boolean
   def sourceId: String
