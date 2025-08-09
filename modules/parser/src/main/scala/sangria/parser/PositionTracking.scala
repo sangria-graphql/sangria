@@ -36,15 +36,14 @@ private[parser] trait PositionTracking { this: Parser =>
     *
     * Assumes that the array is sorted in ascending order.
     */
-  private def findLastItem(arr: ArrayBuffer[Int], item: Int) = {
-    if (arr.length > 0) {
+  private def findLastItem(arr: ArrayBuffer[Int], item: Int) =
+    if (arr.nonEmpty) {
       arr.search(item) match {
         case Found(idx) => (idx + 1, arr(idx))
         case InsertionPoint(idx) if idx == 0 => (idx, arr(idx))
-        case InsertionPoint(idx) => (idx, arr(idx-1))
+        case InsertionPoint(idx) => (idx, arr(idx - 1))
       }
     } else {
       (0, 0)
     }
-  }
 }
