@@ -3,19 +3,23 @@ package sangria.parser
 import org.parboiled2._
 import sangria.ast.AstLocation
 
-import scala.annotation.tailrec
+import scala.collection.Searching._
+import scala.collection.mutable.ArrayBuffer
 
 private[parser] trait PositionTracking { this: Parser =>
 
   /** The indices (offsets into the source code) of the first characters of each line. */
-  private[this] var lineIdx = Array(0)
+  private[this] val lineIdx = ArrayBuffer[Int](0)
 
   def parseLocations: Boolean
   def sourceId: String
 
   def trackNewLine: Rule0 = rule {
     test(parseLocations) ~ run {
-      if (!contains(lineIdx, cursor)) lineIdx = lineIdx :+ cursor
+      lineIdx.search(cursor) match {
+        case _: InsertionPoint => lineIdx += cursor
+        case _ => None
+      }
     } | MATCH
   }
 
@@ -27,31 +31,19 @@ private[parser] trait PositionTracking { this: Parser =>
     } | push(None)
   }
 
-  /** Returns true if the array contains the given item.
-    *
-    * Assumes that the array is sorted in ascending order.
-    */
-  private def contains(arr: Array[Int], item: Int) = {
-    @tailrec def go(i: Int): Boolean =
-      if (i < 0) false
-      else if (arr(i) < item) false // no remaining values will match as the array is sorted
-      else if (arr(i) == item) true
-      else go(i - 1)
-
-    go(arr.length - 1)
-  }
-
   /** Returns the first item that is less than or equal to the given item along with the number of
     * elements that come before it.
     *
     * Assumes that the array is sorted in ascending order.
     */
-  private def findLastItem(arr: Array[Int], item: Int) = {
-    @tailrec def go(i: Int, last: Int): (Int, Int) =
-      if (i < 0) (i + 1, last)
-      else if (arr(i) <= item) (i + 1, arr(i))
-      else go(i - 1, arr(i))
-
-    go(arr.length - 1, 0)
-  }
+  private def findLastItem(arr: ArrayBuffer[Int], item: Int) =
+    if (arr.nonEmpty) {
+      arr.search(item) match {
+        case Found(idx) => (idx + 1, arr(idx))
+        case InsertionPoint(idx) if idx == 0 => (idx, arr(idx))
+        case InsertionPoint(idx) => (idx, arr(idx - 1))
+      }
+    } else {
+      (0, 0)
+    }
 }

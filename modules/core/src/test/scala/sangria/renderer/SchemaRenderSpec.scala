@@ -404,6 +404,110 @@ class SchemaRenderSpec
         |""".stripMargin)(after.being(strippedOfCarriageReturns))
     }
 
+    "Print description with nested lists" in {
+      val description =
+        """My description
+          |
+          |- List 1
+          |    - List 1.1
+          |    - List 1.2
+          |- List 2
+          |    - List 1.2
+          |""".stripMargin
+      val foo = InterfaceType(
+        "Foo",
+        description,
+        fields[Unit, Unit](
+          Field(
+            "str",
+            OptionType(StringType),
+            description = Some(description),
+            resolve = _ => "foo")
+        ))
+
+      val bar = ObjectType(
+        "Bar",
+        description,
+        interfaces[Unit, Unit](foo),
+        fields[Unit, Unit](
+          Field(
+            "str",
+            OptionType(StringType),
+            description = Some(description),
+            resolve = _ => "foo")))
+
+      val root = ObjectType(
+        "Root",
+        fields[Unit, Unit](
+          Field("bar", OptionType(bar), description = Some(description), resolve = _ => ())
+        ))
+
+      val schema = Schema(root)
+
+      render(schema) should equal(s"""
+       |schema {
+       |  query: Root
+       |}
+       |
+       |$quotes
+       |My description
+       |
+       |- List 1
+       |    - List 1.1
+       |    - List 1.2
+       |- List 2
+       |    - List 1.2
+       |$quotes
+       |type Bar implements Foo {
+       |  $quotes
+       |  My description
+       |
+       |  - List 1
+       |      - List 1.1
+       |      - List 1.2
+       |  - List 2
+       |      - List 1.2
+       |  $quotes
+       |  str: String
+       |}
+       |
+       |$quotes
+       |My description
+       |
+       |- List 1
+       |    - List 1.1
+       |    - List 1.2
+       |- List 2
+       |    - List 1.2
+       |$quotes
+       |interface Foo {
+       |  $quotes
+       |  My description
+       |
+       |  - List 1
+       |      - List 1.1
+       |      - List 1.2
+       |  - List 2
+       |      - List 1.2
+       |  $quotes
+       |  str: String
+       |}
+       |
+       |type Root {
+       |  $quotes
+       |  My description
+       |
+       |  - List 1
+       |      - List 1.1
+       |      - List 1.2
+       |  - List 2
+       |      - List 1.2
+       |  $quotes
+       |  bar: Bar
+       |}
+       |""".stripMargin)(after.being(strippedOfCarriageReturns))
+    }
+
     "Print Multiple Interface" in {
       val foo = InterfaceType(
         "Foo",
@@ -861,9 +965,8 @@ class SchemaRenderSpec
     }
   }
 
-  "Schema-based Schema Renderer" should {
+  "Schema-based Schema Renderer" should
     behave.like(`default schema renderer`(schema => renderForTest(schema)))
-  }
 
   "Introspection Schema Renderer" should {
     "Print Introspection Schema" in {
@@ -1149,7 +1252,7 @@ class SchemaRenderSpec
           extend interface FooWithFields implements Bar @someDir(arg: 1)@anotherDir{
             "some docs"
             foo(arg: Int = 1@hello): Bar @dir(test:true)
-          } 
+          }
         """
 
       cycleRender(schema) should equal("""

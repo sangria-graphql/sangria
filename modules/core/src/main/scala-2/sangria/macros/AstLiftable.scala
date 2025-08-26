@@ -2,6 +2,7 @@ package sangria.macros
 
 import sangria.ast._
 
+import scala.annotation.nowarn
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox
 
@@ -27,6 +28,7 @@ trait AstLiftable {
     case OperationType.Subscription => q"_root_.sangria.ast.OperationType.Subscription"
   }
 
+  @nowarn("msg=Implicit resolves to enclosing method liftType")
   implicit def liftType[T <: sangria.ast.Type]: Liftable[T] = Liftable {
     case NamedType(n, p) => q"_root_.sangria.ast.NamedType($n, $p)"
     case NotNullType(o, p) => q"_root_.sangria.ast.NotNullType($o, $p)"

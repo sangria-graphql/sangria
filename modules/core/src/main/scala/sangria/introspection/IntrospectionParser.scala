@@ -159,7 +159,7 @@ object IntrospectionParser {
 
   private def parseNamedTypeRef[In: InputUnmarshaller](in: In, path: Vector[String]) =
     IntrospectionNamedTypeRef(
-      mapStringFieldOpt(in, "kind", path).map(TypeKind.fromString).getOrElse(TypeKind.Object),
+      mapStringFieldOpt(in, "kind", path).fold(TypeKind.Object)(TypeKind.fromString),
       mapStringField(in, "name", path))
 
   private def parseTypeRef[In: InputUnmarshaller](

@@ -73,7 +73,7 @@ trait AstSchemaBuilder[Ctx] {
       interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]): Option[InterfaceType[Ctx, Any]]
 
-  @deprecated
+  @deprecated(message = "Use buildInterfaceType with interfaces parameter", since = "4.0")
   def buildInterfaceType(
       origin: MatOrigin,
       definition: ast.InterfaceTypeDefinition,
@@ -89,7 +89,7 @@ trait AstSchemaBuilder[Ctx] {
       interfaces: List[InterfaceType[Ctx, Any]],
       mat: AstSchemaMaterializer[Ctx]): InterfaceType[Ctx, Any]
 
-  @deprecated
+  @deprecated(message = "Use extendInterfaceType with interfaces parameter", since = "4.0")
   def extendInterfaceType(
       origin: MatOrigin,
       existing: InterfaceType[Ctx, _],
