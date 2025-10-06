@@ -250,11 +250,12 @@ private[execution] class FutureResolver[Ctx](
   private def resolveDeferredWithGrouping(deferred: Vector[Future[Vector[Defer]]]) =
     Future.sequence(deferred).map(listOfDef => deferredResolver.groupDeferred(listOfDef.flatten))
 
-  private type Actions = (
-      ErrorRegistry,
-      Option[Vector[(
-          Vector[ast.Field],
-          Option[(Field[Ctx, _], Option[MappedCtxUpdate[Ctx, Any, Any]], LeafAction[Ctx, _])])]])
+  private case class Actions(errorRegistry: ErrorRegistry, actions: Option[Vector[ActionsItem]])
+  private case class ActionsItem(fields: Vector[ast.Field], result: Option[ActionsItemResult])
+  private case class ActionsItemResult(
+      field: Field[Ctx, _],
+      updateCtx: Option[MappedCtxUpdate[Ctx, Any, Any]],
+      action: LeafAction[Ctx, _])
 
   private def resolveSubs[S[_]](
       path: ExecutionPath,
@@ -731,28 +732,46 @@ private[execution] class FutureResolver[Ctx](
       value: Any,
       fields: CollectedFields,
       errorReg: ErrorRegistry,
-      userCtx: Ctx): Actions =
-    fields.fields.foldLeft((errorReg, Some(Vector.empty)): Actions) {
-      case (acc @ (_, None), _) => acc
-      case (acc, CollectedField(_, origField, _)) if tpe.getField(schema, origField.name).isEmpty =>
-        acc
-      case ((errors, Some(acc)), CollectedField(_, origField, Failure(error))) =>
-        errors.add(path.add(origField, tpe), error) -> (if (isOptional(tpe, origField.name))
-                                                          Some(acc :+ (Vector(origField) -> None))
-                                                        else None)
-      case ((errors, Some(acc)), CollectedField(_, origField, Success(fields))) =>
-        resolveField(userCtx, tpe, path.add(origField, tpe), value, errors, fields) match {
-          case StandardFieldResolution(updatedErrors, result, updateCtx) =>
-            updatedErrors -> Some(
-              acc :+ (fields -> Some(
-                (tpe.getField(schema, origField.name).head, updateCtx, result))))
-          case ErrorFieldResolution(updatedErrors) if isOptional(tpe, origField.name) =>
-            updatedErrors -> Some(acc :+ (Vector(origField) -> None))
-          case ErrorFieldResolution(updatedErrors) => updatedErrors -> None
-          case _: StreamFieldResolution[_, _] =>
-            throw new IllegalStateException("IllegalStateException is not supposed to happen here")
+      userCtx: Ctx): Actions = {
+    var errorRegistry = errorReg
+    val actions: VectorBuilder[ActionsItem] = new VectorBuilder
+    fields.fields.foreach { f =>
+      val origField = f.field
+      val origFieldName = origField.name
+      val fieldDefs = tpe.getField(schema, origFieldName)
+      if (fieldDefs.nonEmpty) {
+        f.allFields match {
+          case Failure(error) =>
+            errorRegistry = errorRegistry.add(path.add(origField, tpe), error)
+            if (isOptional(fieldDefs.head.fieldType))
+              actions += ActionsItem(Vector(origField), None)
+            else return Actions(errorRegistry, None) // short-circuit
+
+          case Success(allFields) =>
+            val resolution =
+              resolveField(userCtx, tpe, path.add(origField, tpe), value, errorRegistry, allFields)
+            resolution match {
+              case StandardFieldResolution(updatedErrors, result, updateCtx) =>
+                errorRegistry = updatedErrors
+                actions += ActionsItem(
+                  allFields,
+                  Some(ActionsItemResult(fieldDefs.head, updateCtx, result)))
+              case ErrorFieldResolution(updatedErrors) if isOptional(tpe, origField.name) =>
+                errorRegistry = updatedErrors
+                actions += ActionsItem(Vector(origField), None)
+              case ErrorFieldResolution(updatedErrors) =>
+                errorRegistry = updatedErrors
+                return Actions(errorRegistry, None) // short-circuit
+              case _: StreamFieldResolution[_, _] =>
+                throw new IllegalStateException(
+                  "IllegalStateException is not supposed to happen here")
+            }
+
         }
+      }
     }
+    Actions(errorRegistry, Some(actions.result()))
+  }
 
   private def resolveActionSequenceValues(
       fieldsPath: ExecutionPath,
@@ -818,21 +837,19 @@ private[execution] class FutureResolver[Ctx](
       tpe: ObjectType[Ctx, _],
       actions: Actions,
       userCtx: Ctx,
-      fieldsNamesOrdered: Vector[String]): Resolve = {
-    val (errors, res) = actions
-
-    res match {
-      case None => Result(errors, None)
+      fieldsNamesOrdered: Vector[String]): Resolve =
+    actions.actions match {
+      case None => Result(actions.errorRegistry, None)
       case Some(results) =>
         val complexResBuilder: VectorBuilder[(ast.Field, DeferredResult)] = new VectorBuilder
 
         val resSoFar =
           results.iterator
-            .map { case (astFields, rest) =>
-              val (field, result) = rest match {
-                case None => astFields.head -> Result(ErrorRegistry.empty, None)
-                case Some((f, updateCtx, v)) =>
-                  resolveLeafAction(path, tpe, userCtx, astFields, f, updateCtx)(v)
+            .map { a =>
+              val (field, result) = a.result match {
+                case None => a.fields.head -> Result(ErrorRegistry.empty, None)
+                case Some(r) =>
+                  resolveLeafAction(path, tpe, userCtx, a.fields, r.field, r.updateCtx)(r.action)
               }
               result match {
                 case r: Result => Some((field, r))
@@ -842,7 +859,8 @@ private[execution] class FutureResolver[Ctx](
               }
             }
             .collect { case Some(f) => f }
-            .foldLeft(Result(errors, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
+            .foldLeft(
+              Result(actions.errorRegistry, Some(marshaller.emptyMapNode(fieldsNamesOrdered)))) {
               case (acc, (astField, other)) =>
                 acc.addToMap(
                   other,
@@ -879,7 +897,6 @@ private[execution] class FutureResolver[Ctx](
           DeferredResult(allDeferred, finalValue)
         }
     }
-  }
 
   private def resolveUc(newUc: Option[MappedCtxUpdate[Ctx, Any, Any]], v: Any, userCtx: Ctx) =
     newUc.fold(userCtx)(_.ctxFn(v))

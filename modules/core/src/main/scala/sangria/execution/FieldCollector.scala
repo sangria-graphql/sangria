@@ -257,10 +257,11 @@ class CollectedFieldsBuilder {
     this
   }
 
-  def build = {
-    val builtFields = firstFields.iterator.zipWithIndex.map { case (f, idx) =>
-      CollectedField(names(idx), f, fields(idx).map(_.toVector))
-    }.toVector
+  def build: CollectedFields = {
+    val builtFields: Vector[CollectedField] =
+      firstFields.iterator.zipWithIndex.map { case (f, idx) =>
+        CollectedField(names(idx), f, fields(idx).map(_.toVector))
+      }.toVector
 
     CollectedFields(names.toVector, builtFields)
   }
