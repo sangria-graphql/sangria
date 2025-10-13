@@ -88,7 +88,6 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
             val fields = extractFields(knownMembers, config)
 
             val classFields = fields.map { field =>
-
               @tailrec
               def methodResultType(typeRepr: TypeRepr): TypeRepr = typeRepr match
                 case MethodType(_, _, retType) => methodResultType(retType)
