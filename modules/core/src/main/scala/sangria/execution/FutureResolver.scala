@@ -1755,31 +1755,36 @@ private[execution] class FutureResolver[Ctx](
                   : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareBeforeField[Ctx])] =
                 new VectorBuilder()
 
-              middlewares.foreach {
-                case (mv, m: MiddlewareBeforeField[Ctx]) =>
-                  val beforeFieldResult = m
-                    .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
+              val it = middlewares.iterator
+              while (it.hasNext) {
+                val (mv, middleware) = it.next()
+                middleware match {
+                  case m: MiddlewareBeforeField[Ctx] =>
+                    val beforeFieldResult = m
+                      .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
 
-                  beforeFieldResult.actionOverride.foreach { action =>
-                    beforeAction = Some(action)
-                  }
-                  beforeFieldResult.attachment.foreach { att =>
-                    beforeAttachmentsBuilder += att
-                  }
+                    if (beforeFieldResult.actionOverride.nonEmpty) {
+                      beforeAction = beforeFieldResult.actionOverride
+                    }
+                    beforeFieldResult.attachment match {
+                      case Some(att) => beforeAttachmentsBuilder += att
+                      case None =>
+                    }
 
-                  if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
-                    mAfterBuilder += ((
-                      beforeFieldResult,
-                      mv,
-                      m.asInstanceOf[MiddlewareAfterField[Ctx]]))
-                  }
-                  if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
-                    mErrorBuilder += ((
-                      beforeFieldResult,
-                      mv,
-                      m.asInstanceOf[MiddlewareErrorField[Ctx]]))
-                  }
-                case _ => ()
+                    if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
+                      mAfterBuilder += ((
+                        beforeFieldResult,
+                        mv,
+                        m.asInstanceOf[MiddlewareAfterField[Ctx]]))
+                    }
+                    if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
+                      mErrorBuilder += ((
+                        beforeFieldResult,
+                        mv,
+                        m.asInstanceOf[MiddlewareErrorField[Ctx]]))
+                    }
+                  case _ => ()
+                }
               }
 
               val beforeAttachments = beforeAttachmentsBuilder.result()
