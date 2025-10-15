@@ -71,7 +71,7 @@ private[execution] class FutureResolver[Ctx](
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
     deprecationTracker: Option[DeprecationTracker],
-    middleware: List[(Any, Middleware[Ctx])],
+    middlewares: List[(Any, Middleware[Ctx])],
     maxQueryDepth: Option[Int],
     deferredResolverState: Any,
     preserveOriginalErrors: Boolean,
@@ -83,7 +83,7 @@ private[execution] class FutureResolver[Ctx](
   private val resultResolver =
     new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
   private val toScalarMiddleware =
-    Middleware.composeToScalarMiddleware(middleware.map(_._2), userContext)
+    Middleware.composeToScalarMiddleware(middlewares.map(_._2), userContext)
 
   import Resolver._
   import resultResolver._
@@ -136,7 +136,7 @@ private[execution] class FutureResolver[Ctx](
               userContext,
               res,
               errors,
-              middleware,
+              middlewares,
               validationTiming,
               queryReducerTiming)
           }
@@ -159,7 +159,7 @@ private[execution] class FutureResolver[Ctx](
                 userContext,
                 r,
                 errors,
-                middleware,
+                middlewares,
                 validationTiming,
                 queryReducerTiming)
             case (_, r) => r
@@ -179,7 +179,7 @@ private[execution] class FutureResolver[Ctx](
     case ExecutionScheme.Extended =>
       result
         .map { case ((errors, res), uc) =>
-          ExecutionResult(uc, res, errors, middleware, validationTiming, queryReducerTiming)
+          ExecutionResult(uc, res, errors, middlewares, validationTiming, queryReducerTiming)
         }
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
 
@@ -187,7 +187,7 @@ private[execution] class FutureResolver[Ctx](
       s.subscriptionStream
         .singleFuture(result.map {
           case ((errors, res), uc) if s.extended =>
-            ExecutionResult(uc, res, errors, middleware, validationTiming, queryReducerTiming)
+            ExecutionResult(uc, res, errors, middlewares, validationTiming, queryReducerTiming)
           case ((_, res), _) => res
         })
         .asInstanceOf[scheme.Result[Ctx, marshaller.Node]]
@@ -225,7 +225,7 @@ private[execution] class FutureResolver[Ctx](
 
   private def marshallExtensions: Option[marshaller.Node] = {
     val extensions =
-      middleware.flatMap {
+      middlewares.flatMap {
         case (v, m: MiddlewareExtension[Ctx @unchecked]) =>
           m.afterQueryExtensions(v.asInstanceOf[m.QueryVal], middlewareCtx)
         case _ => Nil
@@ -1755,7 +1755,7 @@ private[execution] class FutureResolver[Ctx](
                   : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareBeforeField[Ctx])] =
                 new VectorBuilder()
 
-              middleware.foreach {
+              middlewares.foreach {
                 case (mv, m: MiddlewareBeforeField[Ctx]) =>
                   val beforeFieldResult = m
                     .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
