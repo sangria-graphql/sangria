@@ -735,7 +735,9 @@ private[execution] class FutureResolver[Ctx](
       userCtx: Ctx): Actions = {
     var errorRegistry = errorReg
     val actions: VectorBuilder[ActionsItem] = new VectorBuilder
-    fields.fields.foreach { f =>
+    val it = fields.fields.iterator
+    while (it.hasNext) {
+      val f = it.next()
       val origField = f.field
       val origFieldName = origField.name
       val fieldDefs = tpe.getField(schema, origFieldName)
@@ -1809,15 +1811,19 @@ private[execution] class FutureResolver[Ctx](
                     .getOrElse(acc)
                 }
 
-              def doErrorMiddleware(error: Throwable): Unit =
-                mError.foreach { case (beforeFieldResult, mv, m) =>
+              def doErrorMiddleware(error: Throwable): Unit = {
+                val it = mError.iterator
+                while (it.hasNext) {
+                  val r = it.next()
+                  val m = r._3
                   m.fieldError(
-                    mv.asInstanceOf[m.QueryVal],
-                    beforeFieldResult.fieldVal.asInstanceOf[m.FieldVal],
+                    r._2.asInstanceOf[m.QueryVal],
+                    r._1.fieldVal.asInstanceOf[m.FieldVal],
                     error,
                     middlewareCtx,
                     updatedCtx)
                 }
+              }
 
               def doAfterMiddlewareWithMap[Val, NewVal](fn: Val => NewVal)(v: Val): NewVal =
                 mAfter.foldLeft(fn(v)) { case (acc, (beforeFieldResult, mv, m)) =>
