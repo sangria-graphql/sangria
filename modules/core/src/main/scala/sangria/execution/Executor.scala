@@ -284,6 +284,9 @@ case class Executor[Ctx, Root](
 
     try {
       val middlewareVal = middleware.map(m => m.beforeQuery(middlewareCtx) -> m)
+      val beforeFieldMiddlewares = middlewareVal.collect {
+        case (v, m: MiddlewareBeforeField[Ctx]) => (v, m)
+      }
       val deferredResolverState = deferredResolver.initialQueryState
 
       val resolver = scheme.resolverBuilder.build[Ctx](
@@ -299,6 +302,7 @@ case class Executor[Ctx, Root](
         sourceMapper,
         deprecationTracker,
         middlewareVal,
+        beforeFieldMiddlewares,
         maxQueryDepth,
         deferredResolverState,
         scheme.extended,
