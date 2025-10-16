@@ -411,7 +411,7 @@ class MiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSupport 
           "s5" -> "deferred success"
         ))
 
-      val capture = res.middlewareVals.head._1.asInstanceOf[Capture]
+      val capture = res.middlewareVals.head.queryVal.asInstanceOf[Capture]
 
       capture.before.toSet should be(
         Set("e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "s1", "s2", "s3", "s4", "s5"))
