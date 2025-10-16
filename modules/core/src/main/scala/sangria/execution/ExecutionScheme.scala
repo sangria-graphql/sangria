@@ -118,6 +118,6 @@ case class ExecutionResult[Ctx, Res](
     ctx: Ctx,
     result: Res,
     errors: Vector[RegisteredError],
-    middlewareVals: List[(Any, Middleware[_])],
+    middlewareVals: List[ApplyedMiddleware[Ctx, Middleware[Ctx]]],
     validationTiming: TimeMeasurement,
     queryReducerTiming: TimeMeasurement)

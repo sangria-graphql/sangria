@@ -283,10 +283,20 @@ case class Executor[Ctx, Root](
       queryReducerTiming)
 
     try {
-      val middlewareVal = middleware.map(m => m.beforeQuery(middlewareCtx) -> m)
-      val beforeFieldMiddlewares = middlewareVal.collect {
-        case (v, m: MiddlewareBeforeField[Ctx]) => (v, m)
-      }
+      val middlewareVal: List[ApplyedMiddleware[Ctx, Middleware[Ctx]]] =
+        middleware.map(m =>
+          new ApplyedMiddleware[Ctx, Middleware[Ctx]](m.beforeQuery(middlewareCtx), m))
+      val beforeFieldMiddlewares: List[ApplyedMiddleware[Ctx, MiddlewareBeforeField[Ctx]]] =
+        middlewareVal.flatMap { applyedMiddleware =>
+          applyedMiddleware.middleware match {
+            case m: MiddlewareBeforeField[Ctx] =>
+              Some(
+                new ApplyedMiddleware[Ctx, MiddlewareBeforeField[Ctx]](
+                  applyedMiddleware.queryVal.asInstanceOf[m.QueryVal],
+                  m))
+            case _ => None
+          }
+        }
       val deferredResolverState = deferredResolver.initialQueryState
 
       val resolver = scheme.resolverBuilder.build[Ctx](
@@ -338,8 +348,9 @@ case class Executor[Ctx, Root](
         }
 
       if (middlewareVal.nonEmpty)
-        scheme.onComplete(result)(middlewareVal.foreach { case (v, m) =>
-          m.afterQuery(v.asInstanceOf[m.QueryVal], middlewareCtx)
+        scheme.onComplete(result)(middlewareVal.foreach { applyedMiddleware =>
+          val m = applyedMiddleware.middleware
+          m.afterQuery(applyedMiddleware.queryVal.asInstanceOf[m.QueryVal], middlewareCtx)
         })
       else result
     } catch {
