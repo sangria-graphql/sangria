@@ -22,6 +22,7 @@ private[execution] trait ResolverBuilder {
       sourceMapper: Option[SourceMapper],
       deprecationTracker: Option[DeprecationTracker],
       middleware: List[(Any, Middleware[Ctx])],
+      beforeFieldMiddlewares: List[(Any, MiddlewareBeforeField[Ctx])],
       maxQueryDepth: Option[Int],
       deferredResolverState: Any,
       preserveOriginalErrors: Boolean,

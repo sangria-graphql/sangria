@@ -28,6 +28,7 @@ private[execution] object FutureResolverBuilder extends ResolverBuilder {
       sourceMapper: Option[SourceMapper],
       deprecationTracker: Option[DeprecationTracker],
       middleware: List[(Any, Middleware[Ctx])],
+      beforeFieldMiddlewares: List[(Any, MiddlewareBeforeField[Ctx])],
       maxQueryDepth: Option[Int],
       deferredResolverState: Any,
       preserveOriginalErrors: Boolean,
@@ -47,6 +48,7 @@ private[execution] object FutureResolverBuilder extends ResolverBuilder {
       sourceMapper,
       deprecationTracker,
       middleware,
+      beforeFieldMiddlewares,
       maxQueryDepth,
       deferredResolverState,
       preserveOriginalErrors,
@@ -72,6 +74,7 @@ private[execution] class FutureResolver[Ctx](
     sourceMapper: Option[SourceMapper],
     deprecationTracker: Option[DeprecationTracker],
     middlewares: List[(Any, Middleware[Ctx])],
+    beforeFieldMiddlewares: List[(Any, MiddlewareBeforeField[Ctx])],
     maxQueryDepth: Option[Int],
     deferredResolverState: Any,
     preserveOriginalErrors: Boolean,
@@ -1757,35 +1760,31 @@ private[execution] class FutureResolver[Ctx](
                   : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareErrorField[Ctx])] =
                 new VectorBuilder()
 
-              val it = middlewares.iterator
+              val it = beforeFieldMiddlewares.iterator
               while (it.hasNext) {
-                val (mv, middleware) = it.next()
-                middleware match {
-                  case m: MiddlewareBeforeField[Ctx] =>
-                    val beforeFieldResult = m
-                      .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
+                val (mv, m) = it.next()
+                val beforeFieldResult = m
+                  .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
 
-                    if (beforeFieldResult.actionOverride.nonEmpty) {
-                      beforeAction = beforeFieldResult.actionOverride
-                    }
-                    beforeFieldResult.attachment match {
-                      case Some(att) => beforeAttachmentsBuilder += att
-                      case None =>
-                    }
+                if (beforeFieldResult.actionOverride.nonEmpty) {
+                  beforeAction = beforeFieldResult.actionOverride
+                }
+                beforeFieldResult.attachment match {
+                  case Some(att) => beforeAttachmentsBuilder += att
+                  case None =>
+                }
 
-                    if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
-                      mAfterBuilder += ((
-                        beforeFieldResult,
-                        mv,
-                        m.asInstanceOf[MiddlewareAfterField[Ctx]]))
-                    }
-                    if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
-                      mErrorBuilder += ((
-                        beforeFieldResult,
-                        mv,
-                        m.asInstanceOf[MiddlewareErrorField[Ctx]]))
-                    }
-                  case _ => ()
+                if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
+                  mAfterBuilder += ((
+                    beforeFieldResult,
+                    mv,
+                    m.asInstanceOf[MiddlewareAfterField[Ctx]]))
+                }
+                if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
+                  mErrorBuilder += ((
+                    beforeFieldResult,
+                    mv,
+                    m.asInstanceOf[MiddlewareErrorField[Ctx]]))
                 }
               }
 
