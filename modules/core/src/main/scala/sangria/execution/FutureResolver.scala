@@ -28,6 +28,7 @@ private[execution] object FutureResolverBuilder extends ResolverBuilder {
       sourceMapper: Option[SourceMapper],
       deprecationTracker: Option[DeprecationTracker],
       middleware: List[(Any, Middleware[Ctx])],
+      beforeFieldMiddlewares: List[(Any, MiddlewareBeforeField[Ctx])],
       maxQueryDepth: Option[Int],
       deferredResolverState: Any,
       preserveOriginalErrors: Boolean,
@@ -47,6 +48,7 @@ private[execution] object FutureResolverBuilder extends ResolverBuilder {
       sourceMapper,
       deprecationTracker,
       middleware,
+      beforeFieldMiddlewares,
       maxQueryDepth,
       deferredResolverState,
       preserveOriginalErrors,
@@ -72,6 +74,7 @@ private[execution] class FutureResolver[Ctx](
     sourceMapper: Option[SourceMapper],
     deprecationTracker: Option[DeprecationTracker],
     middlewares: List[(Any, Middleware[Ctx])],
+    beforeFieldMiddlewares: List[(Any, MiddlewareBeforeField[Ctx])],
     maxQueryDepth: Option[Int],
     deferredResolverState: Any,
     preserveOriginalErrors: Boolean,
@@ -735,7 +738,9 @@ private[execution] class FutureResolver[Ctx](
       userCtx: Ctx): Actions = {
     var errorRegistry = errorReg
     val actions: VectorBuilder[ActionsItem] = new VectorBuilder
-    fields.fields.foreach { f =>
+    val it = fields.fields.iterator
+    while (it.hasNext) {
+      val f = it.next()
       val origField = f.field
       val origFieldName = origField.name
       val fieldDefs = tpe.getField(schema, origFieldName)
@@ -1752,38 +1757,34 @@ private[execution] class FutureResolver[Ctx](
                 new VectorBuilder()
 
               val mErrorBuilder
-                  : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareBeforeField[Ctx])] =
+                  : VectorBuilder[(BeforeFieldResult[Ctx, _], Any, MiddlewareErrorField[Ctx])] =
                 new VectorBuilder()
 
-              val it = middlewares.iterator
+              val it = beforeFieldMiddlewares.iterator
               while (it.hasNext) {
-                val (mv, middleware) = it.next()
-                middleware match {
-                  case m: MiddlewareBeforeField[Ctx] =>
-                    val beforeFieldResult = m
-                      .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
+                val (mv, m) = it.next()
+                val beforeFieldResult = m
+                  .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
 
-                    if (beforeFieldResult.actionOverride.nonEmpty) {
-                      beforeAction = beforeFieldResult.actionOverride
-                    }
-                    beforeFieldResult.attachment match {
-                      case Some(att) => beforeAttachmentsBuilder += att
-                      case None =>
-                    }
+                if (beforeFieldResult.actionOverride.nonEmpty) {
+                  beforeAction = beforeFieldResult.actionOverride
+                }
+                beforeFieldResult.attachment match {
+                  case Some(att) => beforeAttachmentsBuilder += att
+                  case None =>
+                }
 
-                    if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
-                      mAfterBuilder += ((
-                        beforeFieldResult,
-                        mv,
-                        m.asInstanceOf[MiddlewareAfterField[Ctx]]))
-                    }
-                    if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
-                      mErrorBuilder += ((
-                        beforeFieldResult,
-                        mv,
-                        m.asInstanceOf[MiddlewareErrorField[Ctx]]))
-                    }
-                  case _ => ()
+                if (m.isInstanceOf[MiddlewareAfterField[Ctx]]) {
+                  mAfterBuilder += ((
+                    beforeFieldResult,
+                    mv,
+                    m.asInstanceOf[MiddlewareAfterField[Ctx]]))
+                }
+                if (m.isInstanceOf[MiddlewareErrorField[Ctx]]) {
+                  mErrorBuilder += ((
+                    beforeFieldResult,
+                    mv,
+                    m.asInstanceOf[MiddlewareErrorField[Ctx]]))
                 }
               }
 
@@ -1792,47 +1793,47 @@ private[execution] class FutureResolver[Ctx](
                 if (beforeAttachments.nonEmpty) ctx.copy(middlewareAttachments = beforeAttachments)
                 else ctx
 
-              val mAfter = mAfterBuilder.result().reverse
-              val mError = mErrorBuilder.result()
+              val mAfter: Vector[(BeforeFieldResult[Ctx, _], Any, MiddlewareAfterField[Ctx])] =
+                mAfterBuilder.result().reverse
+              val mError: Vector[(BeforeFieldResult[Ctx, _], Any, MiddlewareErrorField[Ctx])] =
+                mErrorBuilder.result()
 
               def doAfterMiddleware[Val](v: Val): Val =
-                mAfter.foldLeft(v) {
-                  case (acc, (BeforeFieldResult(cv, _, _), mv, m: MiddlewareAfterField[Ctx])) =>
-                    m.afterField(
-                      mv.asInstanceOf[m.QueryVal],
-                      cv.asInstanceOf[m.FieldVal],
-                      acc,
-                      middlewareCtx,
-                      updatedCtx)
-                      .asInstanceOf[Option[Val]]
-                      .getOrElse(acc)
-                  case (acc, _) => acc
+                mAfter.foldLeft(v) { case (acc, (beforeFieldResult, mv, m)) =>
+                  m.afterField(
+                    mv.asInstanceOf[m.QueryVal],
+                    beforeFieldResult.fieldVal.asInstanceOf[m.FieldVal],
+                    acc,
+                    middlewareCtx,
+                    updatedCtx)
+                    .asInstanceOf[Option[Val]]
+                    .getOrElse(acc)
                 }
 
-              def doErrorMiddleware(error: Throwable): Unit =
-                mError.foreach {
-                  case (BeforeFieldResult(cv, _, _), mv, m: MiddlewareErrorField[Ctx]) =>
-                    m.fieldError(
-                      mv.asInstanceOf[m.QueryVal],
-                      cv.asInstanceOf[m.FieldVal],
-                      error,
-                      middlewareCtx,
-                      updatedCtx)
-                  case _ => ()
+              def doErrorMiddleware(error: Throwable): Unit = {
+                val it = mError.iterator
+                while (it.hasNext) {
+                  val r = it.next()
+                  val m = r._3
+                  m.fieldError(
+                    r._2.asInstanceOf[m.QueryVal],
+                    r._1.fieldVal.asInstanceOf[m.FieldVal],
+                    error,
+                    middlewareCtx,
+                    updatedCtx)
                 }
+              }
 
               def doAfterMiddlewareWithMap[Val, NewVal](fn: Val => NewVal)(v: Val): NewVal =
-                mAfter.foldLeft(fn(v)) {
-                  case (acc, (BeforeFieldResult(cv, _, _), mv, m: MiddlewareAfterField[Ctx])) =>
-                    m.afterField(
-                      mv.asInstanceOf[m.QueryVal],
-                      cv.asInstanceOf[m.FieldVal],
-                      acc,
-                      middlewareCtx,
-                      updatedCtx)
-                      .asInstanceOf[Option[NewVal]]
-                      .getOrElse(acc)
-                  case (acc, _) => acc
+                mAfter.foldLeft(fn(v)) { case (acc, (beforeFieldResult, mv, m)) =>
+                  m.afterField(
+                    mv.asInstanceOf[m.QueryVal],
+                    beforeFieldResult.fieldVal.asInstanceOf[m.FieldVal],
+                    acc,
+                    middlewareCtx,
+                    updatedCtx)
+                    .asInstanceOf[Option[NewVal]]
+                    .getOrElse(acc)
                 }
 
               try {
