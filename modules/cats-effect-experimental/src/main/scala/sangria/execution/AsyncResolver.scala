@@ -147,6 +147,48 @@ private[execution] class AsyncResolver[Ctx, F[_]: Async](
           super.handleScheme(result, scheme)
       }
 
+    override protected def resolveStandardFieldResolutionSeqInner(
+        path: ExecutionPath,
+        uc: Ctx,
+        tpe: ObjectType[Ctx, _],
+        origField: ast.Field,
+        fields: Vector[ast.Field],
+        result: LeafAction[Ctx, Any],
+        sfield: Field[Ctx, _],
+        fieldPath: ExecutionPath,
+        resolveUc: Any => Ctx,
+        resolveError: Throwable => Throwable,
+        resolveVal: Any => Any): Future[(Resolve, Ctx)] =
+      result match {
+        case a: AsyncValue[Ctx, Any, F] =>
+          val f = asyncToFuture.toFuture[Any](a.value)
+          super.resolveStandardFieldResolutionSeqInner(
+            path,
+            uc,
+            tpe,
+            origField,
+            fields,
+            FutureValue(f),
+            sfield,
+            fieldPath,
+            resolveUc,
+            resolveError,
+            resolveVal)
+        case other =>
+          super.resolveStandardFieldResolutionSeqInner(
+            path,
+            uc,
+            tpe,
+            origField,
+            fields,
+            other,
+            sfield,
+            fieldPath,
+            resolveUc,
+            resolveError,
+            resolveVal)
+      }
+
     private def handleSchemeF(
         result: F[((Vector[RegisteredError], del.marshaller.Node), Ctx)],
         scheme: AsyncExecutionScheme[F]): scheme.Result[Ctx, del.marshaller.Node] =
