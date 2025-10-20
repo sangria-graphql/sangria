@@ -52,6 +52,14 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
       )
       res.unsafeRunSync() must be(expected)
     }
+
+    "allow using IO effect in mutation with IO resolve" in {
+      val query = gql""" mutation q1 { parent } """
+      val res: IO[Json] = Executor.execute(schema, query)
+
+      val expected: Json = Json.obj("data" -> Json.obj("parent" -> Json.fromString("hello")))
+      res.unsafeRunSync() must be(expected)
+    }
   }
 }
 
@@ -65,5 +73,9 @@ object IOExecutionSchemeSpec {
         Field("parent", StringType, resolve = _ => IO("hello"))
       ))
 
-  private val schema = Schema(QueryType)
+  private val Mutation: ObjectType[Unit, Unit] = ObjectType(
+    "Mutation",
+    () => fields[Unit, Unit](Field("parent", StringType, resolve = _ => IO("hello"))))
+
+  private val schema = Schema(QueryType, Some(Mutation))
 }
