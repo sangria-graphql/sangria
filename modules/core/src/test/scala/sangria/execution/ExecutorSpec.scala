@@ -1164,7 +1164,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
       result.errors(0).error.getMessage should be("foo")
 
       result.ctx.complexity should be(247)
-      result.middlewareVals(0)._1 should be(345)
+      result.middlewareVals(0).queryVal should be(345)
     }
 
     "support extended result in mutations" in {
