@@ -91,12 +91,12 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Download target directories (2.12.20)
+      - name: Download target directories (2.12.21)
         uses: actions/download-artifact@v5
         with:
-          name: target-${{ matrix.os }}-2.12.20-${{ matrix.java }}
+          name: target-${{ matrix.os }}-2.12.21-${{ matrix.java }}
 
-      - name: Inflate target directories (2.12.20)
+      - name: Inflate target directories (2.12.21)
         run: |
           tar xf targets.tar
           rm targets.tar
