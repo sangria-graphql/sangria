@@ -214,7 +214,7 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
                   ${ graphQlType.asExprOf[OutputType[t]] },
                   ${ flattenOptionExpr[String](configDescr.orElse(annotationDescr)) },
                   $args,
-                  ${ resolve },
+                  $resolve,
                   Nil,
                   $configTags ++ $annotationTags,
                   ${
@@ -318,7 +318,7 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
     import globalQuotes.reflect._
     Expr.summon[T => Action[Ctx, _]] match
       case Some(conversion) =>
-        '{ $conversion(${ value }) }
+        '{ $conversion($value) }
       case None =>
         reportSummoningErrors(
           Seq(s"Implicit conversion not found: ${TypeRepr.of[T => Action[Ctx, _]].show}"),
@@ -378,7 +378,7 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
                               sangria.schema.OptionInputType(${ fieldType.asExprOf[InputType[i]] }),
                               ${ flattenOptionExpr[String](description) },
                               ${ defaultValue.asExprOf[d] }
-                            )($toInput, ${ fromInput }, ${ argType })
+                            )($toInput, $fromInput, $argType)
                           }
                         case optionTuple =>
                           reportSummoningErrors(
