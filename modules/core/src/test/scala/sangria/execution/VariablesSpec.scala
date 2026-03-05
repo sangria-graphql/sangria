@@ -10,9 +10,9 @@ import InputUnmarshaller.mapVars
 
 import spray.json._
 
-import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 import sangria.util.tag.@@ // Scala 3 issue workaround
@@ -401,12 +401,14 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       }
 
       "using variables" when {
-        val Success(testQuery) =
-          QueryParser.parse("""
+        val testQuery = QueryParser
+          .parse("""
             query q($input: TestInputObject) {
               fieldWithObjectInput(input: $input)
             }
           """)
+          .success
+          .value
 
         "executes with complex input (scala input)" in {
           val args = Map("input" -> Map("a" -> "foo", "b" -> List("bar"), "c" -> "baz"))
@@ -554,11 +556,14 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       "allows nullable inputs to be set to null in a variable" in {
         val args = mapVars("value" -> null)
 
-        val Success(query) = QueryParser.parse("""
+        val query = QueryParser
+          .parse("""
             query SetsNullable($value: String) {
               fieldWithNullableStringInput(input: $value)
             }
           """)
+          .success
+          .value
 
         Executor
           .execute(schema.asInstanceOf[Schema[Unit, Unit]], query, variables = args)
@@ -572,11 +577,14 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
       "allows nullable inputs to be set to a value in a variable" in {
         val args = mapVars("value" -> "a")
 
-        val Success(query) = QueryParser.parse("""
+        val query = QueryParser
+          .parse("""
             query SetsNullable($value: String) {
               fieldWithNullableStringInput(input: $value)
             }
           """)
+          .success
+          .value
 
         Executor
           .execute(schema.asInstanceOf[Schema[Unit, Unit]], query, variables = args)

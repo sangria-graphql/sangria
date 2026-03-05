@@ -9,10 +9,10 @@ import sangria.schema.Schema
 import sangria.validation.{AstNodeLocation, AstNodeViolation, QueryValidator, Violation}
 import spray.json.{JsObject, JsValue}
 
-import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 import sangria.marshalling.sprayJson.SprayJsonInputUnmarshaller
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 
 object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
   def executeTestQuery[T, A: InputUnmarshaller](
@@ -24,7 +24,7 @@ object SimpleGraphQlSupport extends FutureResultSupport with Matchers {
       resolver: DeferredResolver[Any] = DeferredResolver.empty,
       validateQuery: Boolean = true,
       errorsLimit: Option[Int] = None) = {
-    val Success(doc) = QueryParser.parse(query)
+    val doc = QueryParser.parse(query).success.value
 
     val exceptionHandler = ExceptionHandler { case (m, e) =>
       HandledException(e.getMessage)

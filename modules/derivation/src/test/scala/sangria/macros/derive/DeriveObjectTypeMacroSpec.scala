@@ -13,6 +13,7 @@ import scala.concurrent.Future
 import scala.util.{Success, Try}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.OptionValues._
 
 class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   import DeriveMacroTestModel._
@@ -417,8 +418,10 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       intro.queryType.name should be("Article")
 
-      val Some(articleIntro: IntrospectionObjectType) = intro.types.find(_.name == "Article")
-      val Some(commentIntro: IntrospectionObjectType) = intro.types.find(_.name == "Comment")
+      val articleIntro =
+        intro.types.find(_.name == "Article").value.asInstanceOf[IntrospectionObjectType]
+      val commentIntro =
+        intro.types.find(_.name == "Comment").value.asInstanceOf[IntrospectionObjectType]
 
       commentIntro.fields should have size 3
 
@@ -594,7 +597,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       introType.fields should have size 3
 
-      val Some(helloField) = introType.fields.find(_.name == "foo")
+      val helloField = introType.fields.find(_.name == "foo").value
 
       helloField.args should have size 4
 
@@ -634,7 +637,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
           )
         ))
 
-      val Some(optField) = introType.fields.find(_.name == "opt")
+      val optField = introType.fields.find(_.name == "opt").value
 
       optField.args should have size 3
 
@@ -663,7 +666,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
             None)
         ))
 
-      val Some(paramTypeField) = introType.fields.find(_.name == "paramType")
+      val paramTypeField = introType.fields.find(_.name == "paramType").value
 
       paramTypeField.args should have size 2
       paramTypeField.args should be(
@@ -729,7 +732,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
 
       introType.fields should have size 2
 
-      val Some(helloField) = introType.fields.find(_.name == "hello")
+      val helloField = introType.fields.find(_.name == "hello").value
 
       helloField.args should have size 4
 
@@ -769,7 +772,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
           )
         ))
 
-      val Some(optField) = introType.fields.find(_.name == "opt")
+      val optField = introType.fields.find(_.name == "opt").value
 
       optField.args should have size 3
 

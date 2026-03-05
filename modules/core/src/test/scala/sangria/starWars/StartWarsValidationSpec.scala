@@ -4,14 +4,15 @@ import sangria.parser.QueryParser
 import sangria.starWars.TestSchema.StarWarsSchema
 import sangria.util.FutureResultSupport
 import sangria.validation.QueryValidator
-import scala.util.Success
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResultSupport {
   "Basic Queries" should {
     "Validates a complex but valid query" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query NestedQueryWithFragment {
           hero {
             ...NameAndAppearances
@@ -29,19 +30,24 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
           appearsIn
         }
         """)
+        .success
+        .value
 
       QueryValidator.default.validateQuery(StarWarsSchema, query, Map.empty, None) should be(
         Symbol("empty"))
     }
 
     "Notes that non-existent fields are invalid" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query HeroSpaceshipQuery {
           hero {
             favoriteSpaceship
           }
         }
         """)
+        .success
+        .value
 
       QueryValidator.default.validateQuery(
         StarWarsSchema,
@@ -51,11 +57,14 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
     }
 
     "Requires fields on objects" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query HeroNoFieldsQuery {
           hero
         }
         """)
+        .success
+        .value
 
       QueryValidator.default.validateQuery(
         StarWarsSchema,
@@ -65,7 +74,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
     }
 
     "Disallows fields on scalars" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query HeroFieldsOnScalarQuery {
           hero {
             name {
@@ -74,6 +84,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
           }
         }
         """)
+        .success
+        .value
 
       QueryValidator.default.validateQuery(
         StarWarsSchema,
@@ -83,7 +95,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
     }
 
     "Disallows object fields on interfaces" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query DroidFieldOnCharacter {
           hero {
             name
@@ -91,6 +104,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
           }
         }
         """)
+        .success
+        .value
 
       QueryValidator.default.validateQuery(
         StarWarsSchema,
@@ -100,7 +115,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
     }
 
     "Allows object fields in fragments" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query DroidFieldInFragment {
           hero {
             name
@@ -112,13 +128,16 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
           primaryFunction
         }
         """)
+        .success
+        .value
 
       QueryValidator.default.validateQuery(StarWarsSchema, query, Map.empty, None) should be(
         Symbol("empty"))
     }
 
     "Allows object fields in inline fragments" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query DroidFieldInFragment {
           hero {
             name
@@ -128,6 +147,8 @@ class StartWarsValidationSpec extends AnyWordSpec with Matchers with FutureResul
           }
         }
         """)
+        .success
+        .value
 
       QueryValidator.default.validateQuery(StarWarsSchema, query, Map.empty, None) should be(
         Symbol("empty"))

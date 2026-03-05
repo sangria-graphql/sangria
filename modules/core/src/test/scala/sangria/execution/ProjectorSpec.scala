@@ -7,9 +7,10 @@ import sangria.util.FutureResultSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
+import scala.util.Try
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.TryValues._
 import sangria.marshalling.InputUnmarshaller.mapVars
 
 class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
@@ -166,7 +167,8 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   "Projector" should {
     "project all fields except explicitly marked with `NoProjection`" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
           {
             projectAll {
               id
@@ -199,6 +201,8 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             }
           }
         """)
+        .success
+        .value
 
       val ctx = new Ctx
 
@@ -276,7 +280,8 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "handle multiple projected names" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
           query someQuery($withVariable: String!) {
             projectAll {
               id
@@ -303,6 +308,8 @@ class ProjectorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             }
           }
         """)
+        .success
+        .value
 
       val ctx = new Ctx
       val variables = mapVars("withVariable" -> "a")

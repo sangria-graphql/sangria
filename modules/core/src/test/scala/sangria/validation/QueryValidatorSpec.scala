@@ -4,7 +4,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import sangria.parser.QueryParser
 import sangria.schema._
 
-import scala.util.Success
+import org.scalatest.TryValues._
 
 class QueryValidatorSpec extends AnyWordSpec {
   "QueryValidator" when {
@@ -41,7 +41,7 @@ class QueryValidatorSpec extends AnyWordSpec {
         """
 
       "not limit number of errors returned if the limit is not provided" in {
-        val Success(doc) = QueryParser.parse(invalidQuery)
+        val doc = QueryParser.parse(invalidQuery).success.value
         val result = validator.validateQuery(schema, doc, Map.empty, None)
 
         // 10 errors are expected because there are 5 input objects in the list with 2 missing fields each
@@ -50,7 +50,7 @@ class QueryValidatorSpec extends AnyWordSpec {
       "limit number of errors returned if the limit is provided" in {
         val errorsLimit = 5
 
-        val Success(doc) = QueryParser.parse(invalidQuery)
+        val doc = QueryParser.parse(invalidQuery).success.value
         val result = validator.validateQuery(schema, doc, Map.empty, Some(errorsLimit))
 
         assertResult(errorsLimit)(result.length)

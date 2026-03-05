@@ -6,9 +6,9 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.validation.QueryValidator
 
-import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport {
@@ -37,7 +37,7 @@ class DirectivesSpec extends AnyWordSpec with Matchers with FutureResultSupport 
   val data = TestSubject(Some("a"), Some("b"))
 
   def executeTestQuery(query: String) = {
-    val Success(doc) = QueryParser.parse(query)
+    val doc = QueryParser.parse(query).success.value
 
     Executor.execute(schema, doc, root = data, queryValidator = QueryValidator.empty).await
   }
