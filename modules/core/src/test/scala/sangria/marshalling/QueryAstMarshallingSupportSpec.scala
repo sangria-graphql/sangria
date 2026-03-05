@@ -12,8 +12,8 @@ import sangria.macros._
 import sangria.util.FutureResultSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 class QueryAstMarshallingSupportSpec
@@ -40,7 +40,8 @@ class QueryAstMarshallingSupportSpec
       )))
 
     "marshal and unmarshal" in {
-      val Success(query) = QueryParser.parse("""
+      val query = QueryParser
+        .parse("""
         query FetchSomeIDQuery($someId: String!) {
           human(id: $someId) {
             name
@@ -52,6 +53,8 @@ class QueryAstMarshallingSupportSpec
           }
         }
         """)
+        .success
+        .value
 
       val args = graphqlInput"""{someId: "1000"}"""
 

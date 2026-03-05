@@ -17,8 +17,8 @@ import spray.json.{JsObject, JsString, JsValue, JsonReader}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
-import scala.util.Success
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 class EnumInputTypeSpec extends AnyWordSpec with Matchers {
@@ -78,7 +78,7 @@ class EnumInputTypeSpec extends AnyWordSpec with Matchers {
     })
 
   private def runQuery(query: String) = {
-    val Success(queryAst) = QueryParser.parse(query)
+    val queryAst = QueryParser.parse(query).success.value
 
     val fut = sangria.execution.Executor
       .execute(
