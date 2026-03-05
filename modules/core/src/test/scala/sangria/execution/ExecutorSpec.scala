@@ -13,9 +13,10 @@ import sangria.util.SimpleGraphQlSupport.checkContainsErrors
 
 import scala.collection.immutable.Map
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Success
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 import sangria.util.tag.@@ // Scala 3 issue workaround
@@ -301,7 +302,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             parentType: ObjectType[Ctx, Val],
             field: Field[Ctx, Val],
             argumentValuesFn: QueryReducer.ArgumentValuesFn): Acc = {
-          val Success(args) = argumentValuesFn(path, field.arguments, astFields.head.arguments)
+          val args = argumentValuesFn(path, field.arguments, astFields.head.arguments).success.value
           args.argOpt[Int]("size").foreach { picSize =>
             sizeValue = picSize
           }
@@ -367,7 +368,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "respect max depth level" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         query Foo {
           d1: deep {
             deep {
@@ -401,6 +403,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         }
         """)
+        .success
+        .value
 
       val expected = Map(
         "data" -> Map(
@@ -458,7 +462,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     "merge parallel fragments" in {
       val schema = Schema(ParallelFragmentType)
 
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         { a, ...FragOne, ...FragTwo }
 
         fragment FragOne on Type {
@@ -471,6 +476,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           deep { c, deeper: deep { c } }
         }
       """)
+        .success
+        .value
 
       val expected = Map(
         "data" -> Map(
@@ -500,7 +507,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
               OptionType(StringType),
               resolve = ctx => { resolvedCtx = ctx.value.a; ctx.value.a }))))
 
-      val Success(doc) = QueryParser.parse("query Example { a }")
+      val doc = QueryParser.parse("query Example { a }").success.value
 
       Executor.execute(schema, doc, root = Thing(Some("thing"))).await should be(
         Map("data" -> Map("a" -> "thing")))
@@ -528,11 +535,14 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           ))
         ))
 
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         query Example {
           b(numArg: 123, stringArg: "foo")
         }
       """)
+        .success
+        .value
 
       Executor.execute(schema, doc).await
       resolvedArgs should be(Map("numArg" -> Some(123), "stringArg" -> Some("foo")))
@@ -575,7 +585,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             )
           ))
 
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           sync,
              syncError,
@@ -585,6 +596,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
               asyncError
               syncDeferError
         }""")
+        .success
+        .value
 
       val exceptionHandler = ExceptionHandler { case (m, e: IllegalStateException) =>
         HandledException(e.getMessage)
@@ -647,7 +660,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         ObjectType(
           "Type",
           fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))))
-      val Success(doc) = QueryParser.parse("{ a }")
+      val doc = QueryParser.parse("{ a }").success.value
 
       Executor.execute(schema, doc).await should be(Map("data" -> Map("a" -> "b")))
     }
@@ -657,7 +670,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         ObjectType(
           "Type",
           fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))))
-      val Success(doc) = QueryParser.parse("query Example { a }")
+      val doc = QueryParser.parse("query Example { a }").success.value
 
       Executor.execute(schema, doc).await should be(Map("data" -> Map("a" -> "b")))
     }
@@ -667,7 +680,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         ObjectType(
           "Type",
           fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))))
-      val Success(doc) = QueryParser.parse("query Example { a } query OtherExample { a }")
+      val doc = QueryParser.parse("query Example { a } query OtherExample { a }").success.value
 
       val error = intercept[OperationSelectionError](Executor.execute(schema, doc).await)
 
@@ -680,7 +693,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         ObjectType(
           "Type",
           fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))))
-      val Success(doc) = QueryParser.parse("query Example { a }")
+      val doc = QueryParser.parse("query Example { a }").success.value
 
       val error = intercept[OperationSelectionError](
         Executor.execute(schema, doc, operationName = Some("Eggsample")).await)
@@ -701,7 +714,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             fields[Unit, Unit](Field("e", OptionType(StringType), resolve = _ => "f"))))
       )
 
-      val Success(doc) = QueryParser.parse("query Q { a } mutation M { c } subscription S { e }")
+      val doc =
+        QueryParser.parse("query Q { a } mutation M { c } subscription S { e }").success.value
 
       Executor.execute(schema, doc, operationName = Some("Q")).await should be(
         Map("data" -> Map("a" -> "b")))
@@ -844,7 +858,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           "Type",
           fields[Unit, Unit](Field("a", OptionType(StringType), resolve = _ => "b"))))
 
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         query Q {
           a
           ...Frag
@@ -856,6 +871,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           ...Frag
         }
       """)
+        .success
+        .value
 
       Executor
         .execute(schema, doc, operationName = Some("Q"), queryValidator = QueryValidator.empty)
@@ -870,14 +887,15 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
             "M",
             fields[Unit, Unit](Field("c", OptionType(StringType), resolve = _ => "d"))))
       )
-      val Success(doc) = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }")
+      val doc = QueryParser.parse("mutation M { thisIsIllegalDontIncludeMe }").success.value
 
       Executor.execute(schema, doc, queryValidator = QueryValidator.empty).await should be(
         Map("data" -> Map()))
     }
 
     "update context in query operations" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         query Q {
           ctxUpdating {
             ctxColor
@@ -896,6 +914,8 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           }
         }
         """)
+        .success
+        .value
 
       val schema = Schema(DataType)
 
@@ -964,12 +984,15 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "resolve deferred values correctly in presence of errors" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           defFail { color }
           defFutFail { color }
         }
         """)
+        .success
+        .value
 
       val schema = Schema(DataType)
 
@@ -1002,11 +1025,14 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "fails to execute a query containing a type definition" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
           { a }
 
           type Query { foo: String }
         """)
+        .success
+        .value
 
       val schema = Schema(DataType)
 
@@ -1026,7 +1052,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "handles partial values" in {
-      val Success(doc) = QueryParser.parse("{eager, future}")
+      val doc = QueryParser.parse("{eager, future}").success.value
 
       case class MyListError(message: String) extends Exception(message)
 
@@ -1094,7 +1120,7 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "handles Iterables as ListType" in {
-      val Success(doc) = QueryParser.parse("{set}")
+      val doc = QueryParser.parse("{set}").success.value
 
       val QueryType = ObjectType(
         "Query",

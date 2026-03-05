@@ -6,9 +6,9 @@ import sangria.schema._
 import sangria.util.FutureResultSupport
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
@@ -115,7 +115,8 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
 
   "Actions when mapped" should {
     "transform values correctly" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           value
           doubleMap
@@ -129,6 +130,8 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
           ctxUpdate {name}
         }
       """)
+        .success
+        .value
 
       Executor.execute(schema, doc, deferredResolver = new ColorResolver).await should be(
         Map(
@@ -147,12 +150,15 @@ class ActionMapSpec extends AnyWordSpec with Matchers with FutureResultSupport {
     }
 
     "produce partial errors" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           deferredPartialError
           futureDeferredPartialError
         }
       """)
+        .success
+        .value
 
       Executor.execute(schema, doc, deferredResolver = new ColorResolver).await should be(
         Map(

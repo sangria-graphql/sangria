@@ -7,8 +7,8 @@ import sangria.schema._
 import sangria.validation._
 import sangria.util.SimpleGraphQlSupport._
 
-import scala.util.Success
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import sangria.ast.Document
 import sangria.util.tag.@@
 import sangria.marshalling.FromInput.CoercedScalaResult
@@ -370,7 +370,7 @@ trait ValidationSupport extends Matchers {
       expectedErrors: Seq[(String, Seq[Pos])],
       vars: (String, String) = "" -> ""
   ) = {
-    val Success(doc) = QueryParser.parse(query)
+    val doc = QueryParser.parse(query).success.value
 
     val variables = getVariableValues(s, vars)
 
@@ -383,7 +383,7 @@ trait ValidationSupport extends Matchers {
       query: String,
       expectedErrors: List[(String, List[Pos])],
       typeName: String) = {
-    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
+    val doc = QueryParser.parseInputDocumentWithVariables(query).success.value
 
     assertViolations(
       validator(rules)
@@ -422,7 +422,7 @@ trait ValidationSupport extends Matchers {
       query: String,
       vars: (String, String) = "" -> ""
   ) = {
-    val Success(doc) = QueryParser.parse(query)
+    val doc = QueryParser.parse(query).success.value
 
     val variables = getVariableValues(s, vars)
 
@@ -438,7 +438,7 @@ trait ValidationSupport extends Matchers {
       rules: List[ValidationRule],
       query: String,
       typeName: String) = {
-    val Success(doc) = QueryParser.parseInputDocumentWithVariables(query)
+    val doc = QueryParser.parseInputDocumentWithVariables(query).success.value
 
     withClue("Should validate") {
       validator(rules).validateInputDocument(
@@ -495,7 +495,7 @@ trait ValidationSupport extends Matchers {
 
   def expectFailsSDL(initialSchemaSDL: String, sdlUnderTest: String, v: Option[ValidationRule])(
       violationCheck: Violation => Unit): Unit = {
-    val Success(doc) = QueryParser.parse(initialSchemaSDL)
+    val doc = QueryParser.parse(initialSchemaSDL).success.value
 
     expectFailsSDL(doc.merge(Document.emptyStub), sdlUnderTest, v)(violationCheck)
   }
@@ -503,7 +503,7 @@ trait ValidationSupport extends Matchers {
   def expectFailsSDL(initialSchemaDoc: Document, sdlUnderTest: String, v: Option[ValidationRule])(
       violationCheck: Violation => Unit): Unit = {
     val schema = Schema.buildFromAst(initialSchemaDoc)
-    val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
+    val docUnderTest = QueryParser.parse(sdlUnderTest).success.value
     val violations = validator(v.toList).validateQuery(
       schema,
       docUnderTest,
@@ -518,7 +518,7 @@ trait ValidationSupport extends Matchers {
       initialSchemaSDL: String,
       sdlUnderTest: String,
       v: Option[ValidationRule]): Unit = {
-    val Success(doc) = QueryParser.parse(initialSchemaSDL)
+    val doc = QueryParser.parse(initialSchemaSDL).success.value
     expectPassesSDL(doc.merge(Document.emptyStub), sdlUnderTest, v)
   }
   def expectPassesSDL(
@@ -526,7 +526,7 @@ trait ValidationSupport extends Matchers {
       sdlUnderTest: String,
       v: Option[ValidationRule]): Unit = {
     val schema = Schema.buildFromAst(initialSchemaDoc)
-    val Success(docUnderTest) = QueryParser.parse(sdlUnderTest)
+    val docUnderTest = QueryParser.parse(sdlUnderTest).success.value
     val violations = validator(v.toList).validateQuery(
       schema,
       docUnderTest,

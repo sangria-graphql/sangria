@@ -186,7 +186,7 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
                       '{
                         sangria.schema.InputField.createFromMacroWithoutDefault(
                           $fieldName,
-                          ${ graphQlType },
+                          $graphQlType,
                           ${ flattenOptionExpr[String](configDescr.orElse(annotationDescr)) })
                       }
                   }

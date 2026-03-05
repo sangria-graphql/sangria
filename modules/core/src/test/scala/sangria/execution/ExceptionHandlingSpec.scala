@@ -17,6 +17,7 @@ import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.TryValues._
 
 class ExceptionHandlingSpec
     extends AnyWordSpec
@@ -66,7 +67,8 @@ class ExceptionHandlingSpec
   "Exception handling" should {
     "obfuscate unexpected exceptions" in {
       val out = captureStdErr {
-        val Success(doc) = QueryParser.parse("""
+        val doc = QueryParser
+          .parse("""
         {
           success
           tryError
@@ -75,6 +77,8 @@ class ExceptionHandlingSpec
           futureError
         }
         """)
+          .success
+          .value
 
         Executor.execute(schema, doc).await should be(
           Map(
@@ -105,12 +109,15 @@ class ExceptionHandlingSpec
     }
 
     "provide user-defined exception handling mechanism" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           error
           futureError
         }
         """)
+        .success
+        .value
 
       val exceptionHandler = ExceptionHandler { case (m, e: IllegalStateException) =>
         HandledException(e.getMessage)
@@ -133,12 +140,15 @@ class ExceptionHandlingSpec
     }
 
     "provide user-defined exception handling mechanism which allows to provide additional fields" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           error
           futureError
         }
         """)
+        .success
+        .value
 
       val exceptionHandler = ExceptionHandler { case (m, e: IllegalStateException) =>
         HandledException(
@@ -192,13 +202,16 @@ class ExceptionHandlingSpec
     }
 
     "handle violation-based errors" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           nonExistingField
           success(num: "One")
           errorInScalar(email: "foo")
         }
         """)
+        .success
+        .value
 
       val exceptionHandler = ExceptionHandler(onViolation = {
         case (m, BadValueViolation(_, _, Some(v: EmailTypeViolation.type), _, _)) =>
@@ -237,11 +250,14 @@ class ExceptionHandlingSpec
     }
 
     "handle user-facing errors errors" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         query Foo {
           success(num: 1)
         }
         """)
+        .success
+        .value
 
       val exceptionHandler =
         ExceptionHandler(onUserFacingError = { case (m, e: OperationSelectionError) =>
@@ -263,11 +279,14 @@ class ExceptionHandlingSpec
     }
 
     "allow multiple handled errors with ast positions" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         query Foo {
           error
         }
         """.stripCR)
+        .success
+        .value
 
       val exceptionHandler = ExceptionHandler { case (m, e: IllegalStateException) =>
         HandledException.multiple(
