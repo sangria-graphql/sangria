@@ -8,9 +8,9 @@ import sangria.validation.QueryValidator
 import sangria.macros._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues._
 import org.scalatest.wordspec.AnyWordSpec
 
 import sangria.util.tag.@@ // Scala 3 issue workaround
@@ -129,7 +129,8 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
 
   "Execute: Handles execution with a complex schema" should {
     "execute using a query type" in {
-      val Success(doc) = QueryParser.parse("""
+      val doc = QueryParser
+        .parse("""
         {
           feed {
             id,
@@ -162,6 +163,8 @@ class ExecutorSchemaSpec extends AnyWordSpec with Matchers with FutureResultSupp
           notdefined
         }
       """)
+        .success
+        .value
 
       val expected = Map(
         "data" -> Map(
