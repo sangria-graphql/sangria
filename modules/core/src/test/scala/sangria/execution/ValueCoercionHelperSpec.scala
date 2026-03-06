@@ -31,6 +31,10 @@ class ValueCoercionHelperSpec extends AnyWordSpec with Matchers {
       check(opt(IDType), "123.456", None)
     }
 
+    "Float from GraphQL query string literal 144.75999999999999 (parsed to nearest double)" in {
+      check(opt(FloatType), "144.75999999999999", Some(Some(144.75999999999999)))
+    }
+
     val testEnum = EnumType(
       "TestColor",
       values = List(

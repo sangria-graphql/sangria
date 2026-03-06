@@ -98,14 +98,16 @@ package object schema {
       case i: BigInt if !i.isValidDouble => Left(BigDecimalCoercionViolation)
       case i: BigInt => Right(i.doubleValue)
       case d: Double => Right(d)
-      case d: BigDecimal if !d.isDecimalDouble => Left(BigDecimalCoercionViolation)
-      case d: BigDecimal => Right(d.doubleValue)
+      case d: BigDecimal =>
+        val dv = d.doubleValue
+        if (java.lang.Double.isFinite(dv)) Right(dv) else Left(BigDecimalCoercionViolation)
       case _ => Left(FloatCoercionViolation)
     },
     coerceInput = {
       case ast.FloatValue(d, _, _) => Right(d)
-      case ast.BigDecimalValue(d, _, _) if !d.isDecimalDouble => Left(BigDecimalCoercionViolation)
-      case ast.BigDecimalValue(d, _, _) => Right(d.doubleValue)
+      case ast.BigDecimalValue(d, _, _) =>
+        val dv = d.doubleValue
+        if (java.lang.Double.isFinite(dv)) Right(dv) else Left(BigDecimalCoercionViolation)
       case ast.IntValue(i, _, _) => Right(i)
       case ast.BigIntValue(i, _, _) if !i.isValidDouble => Left(BigDecimalCoercionViolation)
       case ast.BigIntValue(i, _, _) => Right(i.doubleValue)
