@@ -522,7 +522,7 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
           """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":"baz","z":"dog"}. Reason: 'z' Field 'z' is not defined in the input type 'TestInputObject'."""
         )
 
-        "parses Float variable 144.75999999999999 to nearest double" in {
+        "parses Float variable with inexact decimal to nearest double" in {
           val testQuery =
             QueryParser.parse("""
               query Q($input: TestInputWithFloat!) {

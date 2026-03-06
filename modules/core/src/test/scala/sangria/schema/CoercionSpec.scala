@@ -30,7 +30,7 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         FloatType.coerceOutput(123.456, Set.empty) should be(123.456)
       }
 
-      "Float preserves decimal literal 144.75999999999999" in {
+      "Float preserves decimal that has no exact double representation" in {
         val v = 144.75999999999999
         FloatType.coerceOutput(v, Set.empty) should be(v)
       }
