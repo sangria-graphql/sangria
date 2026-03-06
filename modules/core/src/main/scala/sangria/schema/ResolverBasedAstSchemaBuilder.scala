@@ -583,9 +583,11 @@ object ResolverBasedAstSchemaBuilder {
           case i: Long => i.toDouble
           case i: BigInt if !i.isValidDouble => invalidType("Float", value)
           case i: BigInt => i.doubleValue
-          case d: Double => d
-          case d: BigDecimal if !d.isDecimalDouble => invalidType("Float", value)
-          case d: BigDecimal => d.doubleValue
+          case d: Double if java.lang.Double.isFinite(d) => d
+          case d: Double => invalidType("Float", value)
+          case d: BigDecimal =>
+            val dv = d.doubleValue
+            if (java.lang.Double.isFinite(dv)) dv else invalidType("Float", value)
           case v: String => safe(v.toDouble, "Float", value)
           case _ => invalidType("Float", value)
         }

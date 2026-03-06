@@ -21,6 +21,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
   @GraphQLDescription("My type!")
   case class TestInputObjAnnotated(
       @GraphQLDescription("my id")
+      @GraphQLDeprecated("No IDs anymore!")
       id: String,
       @GraphQLName("myList")
       list: List[String],
@@ -83,16 +84,16 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
     }
 
     "allow to change name and description with annotations" in {
-      val tpe = deriveObjectType[Unit, TestInputObjAnnotated]()
+      val tpe = deriveInputObjectType[TestInputObjAnnotated]()
 
       tpe.name should be("MyInput")
       tpe.description should be(Some("My type!"))
     }
 
     "prioritize config over annotation for name and description" in {
-      val tpe = deriveObjectType[Unit, TestInputObjAnnotated](
-        ObjectTypeName("Foo"),
-        ObjectTypeDescription("my desc"))
+      val tpe = deriveInputObjectType[TestInputObjAnnotated](
+        InputObjectTypeName("Foo"),
+        InputObjectTypeDescription("my desc"))
 
       tpe.name should be("Foo")
       tpe.description should be(Some("my desc"))
@@ -154,12 +155,13 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       tpe2.fields.map(_.name) should (have(size(2)).and(contain("iD")).and(contain("mYlIsT")))
     }
 
-    "allow to set name and description with config" in {
+    "allow to set name, description deprecationReason with config" in {
       val tpe = deriveInputObjectType[TestInputObj](
         DocumentInputField("id", "the object ID"),
         RenameInputField("id", "identifier"),
         RenameInputField("list", "colors"),
-        DocumentInputField("list", "my colors")
+        DocumentInputField("list", "my colors"),
+        DeprecateInputField("excluded", "bar")
       )
 
       tpe.fields should have size 3
@@ -177,11 +179,12 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val excludedField = tpe.fields.find(_.name == "excluded")
       excludedField shouldNot be(None)
       excludedField.get.description should be(None)
+      excludedField.get.deprecationReason should be(Some("bar"))
       excludedField.get.fieldType should be(
         OptionInputType(ListInputType(OptionInputType(IntType))))
     }
 
-    "allow to set name and description with annotations" in {
+    "allow to set name, description and deprecationReason with annotations" in {
       val tpe = deriveInputObjectType[TestInputObjAnnotated]()
 
       tpe.fields should have size 2
@@ -189,6 +192,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val idField = tpe.fields.find(_.name == "id")
       idField shouldNot be(None)
       idField.get.description should be(Some("my id"))
+      idField.get.deprecationReason should be(Some("No IDs anymore!"))
 
       val myListField = tpe.fields.find(_.name == "myList")
       myListField shouldNot be(None)

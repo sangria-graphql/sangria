@@ -115,6 +115,12 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
               }
               val default = defaultAnnotation.orElse(defaultSig)
 
+              val configDepr = flattenOptionExpr[String](config.collect {
+                case MacroDeprecateField(`name`, reason, _) => reason
+              }.lastOption)
+
+              val annotationDepr = flattenOptionExpr[String](symbolDeprecation(field.annotations))
+
               val fieldName: Expr[String] = {
                 val nonTransformedName = configName.orElse(annotationName).getOrElse(Expr(name))
 
@@ -163,7 +169,9 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
                                         flattenOptionExpr[String](
                                           configDescr.orElse(annotationDescr))
                                       },
-                                      ${ defaultValue.asExprOf[d] })($toInput, $weakInputTypeTags)
+                                      $configDepr.orElse($annotationDepr),
+                                      ${ defaultValue.asExprOf[d] }
+                                    )($toInput, $weakInputTypeTags)
                                   }
                                 case optionTuple =>
                                   reportSummoningErrors(
@@ -187,7 +195,9 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
                         sangria.schema.InputField.createFromMacroWithoutDefault(
                           $fieldName,
                           $graphQlType,
-                          ${ flattenOptionExpr[String](configDescr.orElse(annotationDescr)) })
+                          ${ flattenOptionExpr[String](configDescr.orElse(annotationDescr)) },
+                          $configDepr.orElse($annotationDepr)
+                        )
                       }
                   }
             }
@@ -325,6 +335,9 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
       case expr @ '{ ReplaceInputField.apply($fieldName, $field) } =>
         Right(MacroReplaceField(fieldName.valueOrAbort, field, PositionByExpr(expr)))
 
+      case expr @ '{ DeprecateInputField.apply($fieldName, $deprecationReason) } =>
+        Right(MacroDeprecateField(fieldName.valueOrAbort, deprecationReason, PositionByExpr(expr)))
+
       case expr @ '{ IncludeInputFields.apply(${ Varargs(fields) }: _*) } =>
         Right(MacroIncludeFields(fields.map(_.valueOrAbort).toSet, PositionByExpr(expr)))
 
@@ -372,6 +385,11 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
   private case class MacroReplaceField(
       fieldName: String,
       field: Expr[InputField[_]],
+      pos: PositionPointer)
+      extends MacroSetting
+  private case class MacroDeprecateField(
+      fieldName: String,
+      deprecationReason: Expr[String],
       pos: PositionPointer)
       extends MacroSetting
 
