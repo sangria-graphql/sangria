@@ -30,6 +30,11 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
     )
   )
 
+  val TestInputWithFloat = InputObjectType(
+    "TestInputWithFloat",
+    List(InputField("value", FloatType))
+  )
+
   val TestType = ObjectType(
     "TestType",
     fields[Unit, Unit](
@@ -137,6 +142,12 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
           DefaultValueRenderer.renderCoercedInputValueCompact(
             ctx.arg[Any]("input"),
             ListInputType(StringType))
+      ),
+      Field(
+        "fieldWithFloatInput",
+        OptionType(StringType),
+        arguments = Argument("input", TestInputWithFloat) :: Nil,
+        resolve = ctx => ctx.arg[Any]("input").toString
       )
     )
   )
@@ -510,6 +521,31 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
           """{"input": {"a": "foo", "b": "bar", "c": "baz", "z": "dog"}}""".parseJson,
           """Variable '$input' expected value of type 'TestInputObject' but got: {"a":"foo","b":"bar","c":"baz","z":"dog"}. Reason: 'z' Field 'z' is not defined in the input type 'TestInputObject'."""
         )
+
+        "parses Float variable with inexact decimal to nearest double" in {
+          val testQuery =
+            QueryParser
+              .parse("""
+              query Q($input: TestInputWithFloat!) {
+                fieldWithFloatInput(input: $input)
+              }
+            """)
+              .get
+          val variables = JsObject(
+            "input" -> JsObject("value" -> JsNumber(BigDecimal("144.75999999999999")))
+          )
+          val result = Executor
+            .execute(
+              schema.asInstanceOf[Schema[Unit, Unit]],
+              testQuery,
+              variables = variables: JsValue)
+            .awaitAndRecoverQueryAnalysisScala
+            .asInstanceOf[Map[String, AnyRef]]
+          result.get("errors") should equal(None)
+          val data = result("data").asInstanceOf[Map[String, Any]]
+          val out = data("fieldWithFloatInput").asInstanceOf[String]
+          out should include("144.76") // nearest double string representation
+        }
       }
     }
 
