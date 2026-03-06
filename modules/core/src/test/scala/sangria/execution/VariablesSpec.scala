@@ -524,11 +524,13 @@ class VariablesSpec extends AnyWordSpec with Matchers with GraphQlSupport {
 
         "parses Float variable with inexact decimal to nearest double" in {
           val testQuery =
-            QueryParser.parse("""
+            QueryParser
+              .parse("""
               query Q($input: TestInputWithFloat!) {
                 fieldWithFloatInput(input: $input)
               }
-            """).get
+            """)
+              .get
           val variables = JsObject(
             "input" -> JsObject("value" -> JsNumber(BigDecimal("144.75999999999999")))
           )
