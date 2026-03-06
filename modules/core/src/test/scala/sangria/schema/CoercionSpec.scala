@@ -127,12 +127,12 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         FloatType.coerceInput(BigDecimalValue(BigDecimal("144.75999999999999"))) match {
           case Right(d) => d should be(144.75999999999999 +- 1e-10)
           case Left(v) =>
-            fail(s"BigDecimal(\"144.75999999999999\") coercion MUST succeed, got Left($v)")
+            fail(s"""BigDecimal("144.75999999999999") coercion MUST succeed, got Left($v)""")
         }
         FloatType.coerceInput(FloatValue(144.76)) should be(Right(144.76))
         FloatType.coerceInput(BigDecimalValue(BigDecimal("144.76"))) match {
           case Right(d) => d should be(144.76 +- 1e-10)
-          case Left(v) => fail(s"BigDecimal(\"144.76\") coercion MUST succeed, got Left($v)")
+          case Left(v) => fail(s"""BigDecimal("144.76") coercion MUST succeed, got Left($v)""")
         }
         FloatType.coerceInput(FloatValue(Double.NaN)).exists(_.isNaN) should be(true)
         FloatType
@@ -293,12 +293,12 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         FloatType.coerceUserInput(BigDecimal("144.75999999999999")) match {
           case Right(d) => d should be(144.75999999999999 +- 1e-10)
           case Left(v) =>
-            fail(s"BigDecimal(\"144.75999999999999\") coercion MUST succeed, got Left($v)")
+            fail(s"""BigDecimal("144.75999999999999") coercion MUST succeed, got Left($v)""")
         }
         FloatType.coerceUserInput(144.76) should be(Right(144.76))
         FloatType.coerceUserInput(BigDecimal("144.76")) match {
           case Right(d) => d should be(144.76 +- 1e-10)
-          case Left(v) => fail(s"BigDecimal(\"144.76\") coercion MUST succeed, got Left($v)")
+          case Left(v) => fail(s"""BigDecimal("144.76") coercion MUST succeed, got Left($v)""")
         }
         FloatType.coerceUserInput(Double.NaN).exists(_.isNaN) should be(true)
         FloatType.coerceUserInput(Double.PositiveInfinity).exists(_.isPosInfinity) should be(true)
