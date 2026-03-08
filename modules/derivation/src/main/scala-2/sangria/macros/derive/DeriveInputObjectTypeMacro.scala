@@ -20,7 +20,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
       val validConfig = validatedConfig.collect { case Right(cfg) => cfg }
 
       collectFields(validConfig, targetType) match {
-        case Left(errors) => reportErrors(errors)
+        case Left(`errors`) => reportErrors(errors)
         case Right(fields) =>
           val tpeName = q"${targetType.typeSymbol.name.decodedName.toString}"
 
