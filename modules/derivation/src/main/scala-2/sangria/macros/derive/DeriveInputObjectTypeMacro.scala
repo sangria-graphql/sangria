@@ -83,7 +83,6 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
                 tree
               }.lastOption
 
-              val annotationDepr = symbolDeprecation(field.annotations)
               val configDepr = config
                 .collect { case MacroDeprecateField(`name`, reason, _) => reason }
                 .lastOption
