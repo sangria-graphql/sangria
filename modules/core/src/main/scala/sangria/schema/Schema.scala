@@ -1183,22 +1183,34 @@ object InputField {
       name: String,
       fieldType: InputType[T],
       description: Option[String],
+      deprecationReason: Option[String],
       defaultValue: Default
   )(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
     InputField(
-      name,
-      fieldType,
-      description,
-      Some(defaultValue -> toInput),
-      None,
-      Vector.empty,
-      Vector.empty).asInstanceOf[InputField[res.Res]]
+      name = name,
+      fieldType = fieldType,
+      description = description,
+      defaultValue = Some(defaultValue -> toInput),
+      deprecationReason = deprecationReason,
+      astDirectives = Vector.empty,
+      astNodes = Vector.empty
+    ).asInstanceOf[InputField[res.Res]]
 
   def createFromMacroWithoutDefault[T](
       name: String,
       fieldType: InputType[T],
-      description: Option[String])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
-    InputField(name, fieldType, description, None, None, Vector.empty, Vector.empty)
+      description: Option[String],
+      deprecationReason: Option[String])(implicit
+      res: WithoutInputTypeTags[T]): InputField[res.Res] =
+    InputField(
+      name = name,
+      fieldType = fieldType,
+      description = description,
+      defaultValue = None,
+      deprecationReason = deprecationReason,
+      astDirectives = Vector.empty,
+      astNodes = Vector.empty
+    )
       .asInstanceOf[InputField[res.Res]]
 }
 
