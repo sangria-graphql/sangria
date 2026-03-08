@@ -119,6 +119,8 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
                 case MacroDeprecateField(`name`, reason, _) => reason
               }.lastOption)
 
+              val annotationDepr = flattenOptionExpr[String](symbolDeprecation(field.annotations))
+
               val fieldName: Expr[String] = {
                 val nonTransformedName = configName.orElse(annotationName).getOrElse(Expr(name))
 
@@ -167,8 +169,9 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
                                         flattenOptionExpr[String](
                                           configDescr.orElse(annotationDescr))
                                       },
-                                      $configDepr,
-                                      ${ defaultValue.asExprOf[d] })($toInput, $weakInputTypeTags)
+                                      $configDepr.orElse($annotationDepr),
+                                      ${ defaultValue.asExprOf[d] }
+                                    )($toInput, $weakInputTypeTags)
                                   }
                                 case optionTuple =>
                                   reportSummoningErrors(
@@ -193,7 +196,7 @@ private class DeriveInputObjectTypeMacro(using globalQuotes: Quotes) extends Der
                           $fieldName,
                           $graphQlType,
                           ${ flattenOptionExpr[String](configDescr.orElse(annotationDescr)) },
-                          $configDepr
+                          $configDepr.orElse($annotationDepr)
                         )
                       }
                   }

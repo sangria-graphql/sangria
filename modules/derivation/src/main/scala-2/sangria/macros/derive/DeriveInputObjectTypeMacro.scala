@@ -83,6 +83,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
                 tree
               }.lastOption
 
+              val annotationDepr = symbolDeprecation(field.annotations)
               val configDepr = config
                 .collect { case MacroDeprecateField(`name`, reason, _) => reason }
                 .lastOption
@@ -117,7 +118,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
                       $fieldName,
                       $ft,
                       ${configDescr.orElse(annotationDescr)},
-                      $configDepr,
+                      $configDepr orElse $annotationDepr,
                       $d)
                   """
                 case None =>
@@ -128,7 +129,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
                       $fieldName,
                       ${annotationType.getOrElse(implicitGraphqlType)},
                       ${configDescr.orElse(annotationDescr)},
-                      $configDepr)
+                      $configDepr orElse $annotationDepr)
                   """
 
               }

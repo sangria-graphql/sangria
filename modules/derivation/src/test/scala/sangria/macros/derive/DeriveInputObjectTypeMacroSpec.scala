@@ -21,6 +21,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
   @GraphQLDescription("My type!")
   case class TestInputObjAnnotated(
       @GraphQLDescription("my id")
+      @GraphQLDeprecated("No IDs anymore!")
       id: String,
       @GraphQLName("myList")
       list: List[String],
@@ -183,7 +184,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
         OptionInputType(ListInputType(OptionInputType(IntType))))
     }
 
-    "allow to set name and description with annotations" in {
+    "allow to set name, description and deprecationReason with annotations" in {
       val tpe = deriveInputObjectType[TestInputObjAnnotated]()
 
       tpe.fields should have size 2
@@ -191,6 +192,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val idField = tpe.fields.find(_.name == "id")
       idField shouldNot be(None)
       idField.get.description should be(Some("my id"))
+      idField.get.deprecationReason should be(Some("No IDs anymore!"))
 
       val myListField = tpe.fields.find(_.name == "myList")
       myListField shouldNot be(None)
