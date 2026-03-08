@@ -83,16 +83,16 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
     }
 
     "allow to change name and description with annotations" in {
-      val tpe = deriveObjectType[Unit, TestInputObjAnnotated]()
+      val tpe = deriveInputObjectType[TestInputObjAnnotated]()
 
       tpe.name should be("MyInput")
       tpe.description should be(Some("My type!"))
     }
 
     "prioritize config over annotation for name and description" in {
-      val tpe = deriveObjectType[Unit, TestInputObjAnnotated](
-        ObjectTypeName("Foo"),
-        ObjectTypeDescription("my desc"))
+      val tpe = deriveInputObjectType[TestInputObjAnnotated](
+        InputObjectTypeName("Foo"),
+        InputObjectTypeDescription("my desc"))
 
       tpe.name should be("Foo")
       tpe.description should be(Some("my desc"))
