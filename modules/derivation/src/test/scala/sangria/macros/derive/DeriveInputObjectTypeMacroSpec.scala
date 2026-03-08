@@ -154,12 +154,13 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       tpe2.fields.map(_.name) should (have(size(2)).and(contain("iD")).and(contain("mYlIsT")))
     }
 
-    "allow to set name and description with config" in {
+    "allow to set name, description deprecationReason with config" in {
       val tpe = deriveInputObjectType[TestInputObj](
         DocumentInputField("id", "the object ID"),
         RenameInputField("id", "identifier"),
         RenameInputField("list", "colors"),
-        DocumentInputField("list", "my colors")
+        DocumentInputField("list", "my colors"),
+        DeprecateInputField("excluded", "bar")
       )
 
       tpe.fields should have size 3
@@ -177,6 +178,7 @@ class DeriveInputObjectTypeMacroSpec extends AnyWordSpec with Matchers with Futu
       val excludedField = tpe.fields.find(_.name == "excluded")
       excludedField shouldNot be(None)
       excludedField.get.description should be(None)
+      excludedField.get.deprecationReason should be(Some("bar"))
       excludedField.get.fieldType should be(
         OptionInputType(ListInputType(OptionInputType(IntType))))
     }

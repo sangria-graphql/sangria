@@ -83,6 +83,12 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
                 tree
               }.lastOption
 
+              val annotationDepr = symbolDeprecation(field.annotations)
+              val configDepr = config
+                .collect { case MacroDeprecateField(`name`, reason, _) => reason }
+                .lastOption
+                .getOrElse(q"None")
+
               val defaultAnnotation = symbolDefault(field.annotations)
               val defaultSig = field.defaultValue.map { case (comp, defaultName) =>
                 q"${comp.typeSymbol.name.toTermName}.$defaultName"
@@ -112,6 +118,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
                       $fieldName,
                       $ft,
                       ${configDescr.orElse(annotationDescr)},
+                      $configDepr,
                       $d)
                   """
                 case None =>
@@ -121,7 +128,8 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
                     sangria.schema.InputField.createFromMacroWithoutDefault(
                       $fieldName,
                       ${annotationType.getOrElse(implicitGraphqlType)},
-                      ${configDescr.orElse(annotationDescr)})
+                      ${configDescr.orElse(annotationDescr)},
+                      $configDepr)
                   """
 
               }
@@ -254,6 +262,10 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
         if checkSetting[ReplaceInputField.type](setting) =>
       Right(MacroReplaceField(fieldName, field, tree.pos))
 
+    case tree @ q"$setting.apply(${fieldName: String}, $deprecationReason)"
+        if checkSetting[DeprecateInputField.type](setting) =>
+      Right(MacroDeprecateField(fieldName, q"Some($deprecationReason)", tree.pos))
+
     case tree @ q"$setting.apply(..${fields: List[String]})"
         if checkSetting[IncludeInputFields.type](setting) =>
       Right(MacroIncludeFields(fields.toSet, tree.pos))
@@ -297,5 +309,7 @@ class DeriveInputObjectTypeMacro(context: blackbox.Context)
 
   case class MacroIncludeFields(fieldNames: Set[String], pos: Position) extends MacroSetting
   case class MacroExcludeFields(fieldNames: Set[String], pos: Position) extends MacroSetting
+  case class MacroDeprecateField(fieldName: String, deprecationReason: Tree, pos: Position)
+      extends MacroSetting
   case class MacroTransformFieldNames(transformer: Tree) extends MacroSetting
 }
