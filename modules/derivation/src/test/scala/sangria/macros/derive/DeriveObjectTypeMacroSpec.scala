@@ -39,7 +39,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
   case class Article(
       title: String,
       text: Option[String],
-      tags: Option[Vector[String]],
+      tags: Option[Set[String]],
       comments: Option[Vector[Option[Comment]]],
       fruit: FruitAnnotated = RedAppleAnnotated)
 
@@ -439,6 +439,13 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
       colorField shouldNot be(None)
       colorField.get.name should be("color")
       colorField.get.description should be(None)
+
+      val tagsField = articleIntro.fields.find(_.name == "myTags")
+      tagsField shouldNot be(None)
+      tagsField.get.name should be("myTags")
+      tagsField.get.tpe should be(
+        IntrospectionListTypeRef(
+          IntrospectionNonNullTypeRef(IntrospectionNamedTypeRef(TypeKind.Scalar, "String"))))
 
       val commentsField = articleIntro.fields.find(_.name == "comments")
       commentsField shouldNot be(None)
