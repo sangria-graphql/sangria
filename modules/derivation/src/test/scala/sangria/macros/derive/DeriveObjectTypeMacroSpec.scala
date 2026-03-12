@@ -39,7 +39,7 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
   case class Article(
       title: String,
       text: Option[String],
-      tags: Option[Vector[String]],
+      tags: Option[Set[String]],
       comments: Option[Vector[Option[Comment]]],
       fruit: FruitAnnotated = RedAppleAnnotated)
 
