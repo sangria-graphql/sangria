@@ -261,7 +261,11 @@ lazy val derivation = project
     mimaBinaryIssueFilters ++= Seq(
       // internal method
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.macros.derive.DeriveMacroSupport.unsafeSelectByName")
+        "sangria.macros.derive.DeriveMacroSupport.unsafeSelectByName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.macros.derive.GraphQLOutputTypeLookup.seqLookup"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.macros.derive.GraphQLOutputTypeLookupLowPrio.seqLookup")
     ),
     // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
