@@ -25,7 +25,7 @@ object GraphQLOutputTypeLookup extends GraphQLOutputTypeLookupLowPrio {
 }
 
 trait GraphQLOutputTypeLookupLowPrio {
-  implicit def seqLookup[T: GraphQLOutputTypeLookup, Coll[_] <: Seq[_]]
+  implicit def iterableLookup[T: GraphQLOutputTypeLookup, Coll[_] <: Iterable[_]]
       : GraphQLOutputTypeLookup[Coll[T]] = new GraphQLOutputTypeLookup[Coll[T]] {
     override val graphqlType: OutputType[Coll[T]] =
       ListType(implicitly[GraphQLOutputTypeLookup[T]].graphqlType).asInstanceOf[OutputType[Coll[T]]]

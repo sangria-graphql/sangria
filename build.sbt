@@ -261,7 +261,11 @@ lazy val derivation = project
     mimaBinaryIssueFilters ++= Seq(
       // internal method
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.macros.derive.DeriveMacroSupport.unsafeSelectByName")
+        "sangria.macros.derive.DeriveMacroSupport.unsafeSelectByName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.macros.derive.GraphQLOutputTypeLookup.seqLookup"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.macros.derive.GraphQLOutputTypeLookupLowPrio.seqLookup")
     ),
     // Macros
     libraryDependencies ++= (if (isScala3.value) Seq.empty
@@ -307,7 +311,7 @@ lazy val sangriaTestFS2 = project
   .settings(
     name := "sangria-test-fs2",
     description := "Tests with FS2",
-    libraryDependencies += "co.fs2" %% "fs2-core" % "3.12.2" % Test
+    libraryDependencies += "co.fs2" %% "fs2-core" % "3.13.0" % Test
   )
   .disablePlugins(MimaPlugin)
 
@@ -320,7 +324,7 @@ lazy val sangriaCatsEffectExperimental = project
     name := "sangria-cats-effect-experimental",
     description := "Experimental support for Cats Effect",
     libraryDependencies ++= List(
-      "org.typelevel" %% "cats-effect" % "3.6.3",
+      "org.typelevel" %% "cats-effect" % "3.7.0",
       "org.sangria-graphql" %% "sangria-circe" % "1.3.2" % Test
     )
   )
