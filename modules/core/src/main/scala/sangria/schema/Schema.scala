@@ -1183,6 +1183,22 @@ object InputField {
       name: String,
       fieldType: InputType[T],
       description: Option[String],
+      defaultValue: Default
+  )(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
+    InputField(
+      name = name,
+      fieldType = fieldType,
+      description = description,
+      defaultValue = Some(defaultValue -> toInput),
+      deprecationReason = None,
+      astDirectives = Vector.empty,
+      astNodes = Vector.empty
+    ).asInstanceOf[InputField[res.Res]]
+
+  def createFromMacroWithDefault[T, Default](
+      name: String,
+      fieldType: InputType[T],
+      description: Option[String],
       deprecationReason: Option[String],
       defaultValue: Default
   )(implicit toInput: ToInput[Default, _], res: WithoutInputTypeTags[T]): InputField[res.Res] =
@@ -1195,6 +1211,21 @@ object InputField {
       astDirectives = Vector.empty,
       astNodes = Vector.empty
     ).asInstanceOf[InputField[res.Res]]
+
+  def createFromMacroWithoutDefault[T](
+      name: String,
+      fieldType: InputType[T],
+      description: Option[String])(implicit res: WithoutInputTypeTags[T]): InputField[res.Res] =
+    InputField(
+      name = name,
+      fieldType = fieldType,
+      description = description,
+      defaultValue = None,
+      deprecationReason = None,
+      astDirectives = Vector.empty,
+      astNodes = Vector.empty
+    )
+      .asInstanceOf[InputField[res.Res]]
 
   def createFromMacroWithoutDefault[T](
       name: String,

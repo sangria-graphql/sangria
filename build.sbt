@@ -216,11 +216,7 @@ lazy val core = project
       ProblemFilters.exclude[MissingTypesProblem](
         "sangria.schema.SchemaChange$InputObjectTypeAstDirectiveAdded$"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.schema.InputField.createFromMacroWithoutDefault"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.schema.InputField.createFromMacroWithDefault")
+        "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.apply")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
