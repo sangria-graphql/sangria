@@ -93,6 +93,14 @@ be sure to add `scala`, `graphql` and `sangria` tags, so that other people can e
 For more general, lengthy discussions or pretty much anything else please join us in the 
 [gitter chat](https://gitter.im/sangria-graphql/sangria).
 
+## Testing
+
+Integation testing 
+
+How to run ITs
+
+    `sbt it/test`
+
 ## Contribute
 
 If you like the project and would like to support it or contribute to it, then you are very welcome to do so.

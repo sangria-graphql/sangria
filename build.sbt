@@ -390,3 +390,15 @@ lazy val shellSettings = Seq(
 lazy val noPublishSettings = Seq(
   publish / skip := true
 )
+
+// attempt to create Integration Test for the: [core] project (maybe other?)
+lazy val it = project.in(file("it"))
+  .enablePlugins(PlayScala)
+  .withId("it")
+  .dependsOn(core)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test,
+      "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.2" % Test
+    )
+  )
