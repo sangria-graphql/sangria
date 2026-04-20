@@ -173,16 +173,16 @@ class StarWarsQuerySpec extends AnyWordSpec with Matchers with FutureResultSuppo
         }
         """
 
+      val expectedResult: Map[String, Map[String, Map[String, String]]] = Map(
+        "data" -> Map(
+          "human" -> Map(
+            "name" -> "Luke Skywalker"
+          )
+        )
+      )
       Executor
         .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
-        .await should be(
-        Map(
-          "data" -> Map(
-            "human" -> Map(
-              "name" -> "Luke Skywalker"
-            )
-          )
-        ))
+        .await should be(expectedResult)
     }
 
     "Allows us to create a generic query, then use it to fetch Luke Skywalker using his ID" in {

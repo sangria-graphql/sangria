@@ -26,8 +26,7 @@ class StarWarsQuerySpecISpec extends PlaySpec with Results {
       val controller             = new TestExecutorController(Helpers.stubControllerComponents())
       val result: Future[Result] = controller.index().apply(FakeRequest())
       val bodyText: String       = contentAsString(result)
-      // TODO: use JSON as result ?
-      bodyText mustBe "ok:ListMap(data -> ListMap(hero -> ListMap(name -> R2-D2)))"
+      bodyText mustBe "{\"data\":{\"hero\":{\"name\":\"R2-D2\"}}}"
     }
   }
 
