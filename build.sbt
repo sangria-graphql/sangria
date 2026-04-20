@@ -399,6 +399,6 @@ lazy val it = project.in(file("it"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.20" % Test,
-      "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.2" % Test
+      //"org.scalatestplus.play" %% "scalatestplus-play" % "7.0.2" % Test
     )
   )

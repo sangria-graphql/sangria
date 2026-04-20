@@ -1,32 +1,38 @@
 package query
 
 import controllers.TestExecutorController
-import org.scalatestplus.play.PlaySpec
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.mvc.{Result, Results}
 import play.api.test.Helpers.{contentAsString, defaultAwaitTimeout}
 import play.api.test.{FakeRequest, Helpers}
+import utils.FutureResultSupport
 
 import scala.concurrent.Future
 
 /*
   Similar to the tests we have within => StarWarsQuerySpec but via controller
  */
-class StarWarsQuerySpecISpec extends PlaySpec with Results {
-//  extends AnyFreeSpec
-//    with Matchers
-//    with ScalaFutures
-//    with IntegrationPatience
-//    with GuiceOneAppPerSuite
-//    with FutureResultSupport{
+trait BaseQueryISpec
+    extends AnyWordSpec
+    with ScalaFutures
+    with Matchers
+    with IntegrationPatience
+    with FutureResultSupport
 
-  // TODO: implement test controller which will call executor within
+class StarWarsQuerySpecISpec extends BaseQueryISpec {
 
-  "Evaluate Executor within controller" should {
-    "expect correct response" in {
-      val controller             = new TestExecutorController(Helpers.stubControllerComponents())
-      val result: Future[Result] = controller.index().apply(FakeRequest())
-      val bodyText: String       = contentAsString(result)
-      bodyText mustBe "{\"data\":{\"hero\":{\"name\":\"R2-D2\"}}}"
+  "Evaluate Executor within controller" when {
+    "expect correct response" should {
+      "as json" in {
+        val controller = new TestExecutorController(Helpers.stubControllerComponents())
+        val result: Future[Result] = controller.index().apply(FakeRequest())
+        val resAsString = contentAsString(result)
+        assert(resAsString == "{\"data\":{\"hero\":{\"name\":\"R2-D2\"}}}")
+      }
+
     }
   }
 
