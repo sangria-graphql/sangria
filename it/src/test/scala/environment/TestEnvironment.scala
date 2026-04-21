@@ -1,20 +1,20 @@
 package controllers
 
-import play.api.mvc.{Action, AnyContent, BaseController, ControllerComponents}
 import sangria.execution.Executor
 import sangria.macros.LiteralGraphQLStringContext
 import starWars.TestData.{CharacterRepo, FriendsResolver}
 import starWars.TestSchema.StarWarsSchema
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import play.api.libs.json._
+import spray.json._
+import DefaultJsonProtocol._
 
-class TestExecutorController(val controllerComponents: ControllerComponents)
-    extends BaseController {
+class TestEnvironment {
+
   type ExecutorResult = Map[String, Map[String, Map[String, String]]]
 
-  def index(): Action[AnyContent] = Action.async {
+  def execute(): Future[String] = {
+
     val query = graphql"""
               query HeroNameQuery {
                 hero {
@@ -27,8 +27,10 @@ class TestExecutorController(val controllerComponents: ControllerComponents)
       .execute(StarWarsSchema, query, new CharacterRepo, deferredResolver = new FriendsResolver)
 
     result.map { obj =>
-      val json = Json.toJson(obj.asInstanceOf[ExecutorResult])
-      Ok(json)
+      val jsonObj = obj.asInstanceOf[ExecutorResult].toJson
+      jsonObj.prettyPrint
     }
+
   }
+
 }

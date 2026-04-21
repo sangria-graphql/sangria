@@ -393,12 +393,12 @@ lazy val noPublishSettings = Seq(
 
 // attempt to create Integration Test for the: [core] project (maybe other?)
 lazy val it = project.in(file("it"))
-  .enablePlugins(PlayScala)
   .withId("it")
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(scalacSettings)
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.20" % Test,
-      //"org.scalatestplus.play" %% "scalatestplus-play" % "7.0.2" % Test
+      "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test
     )
   )
