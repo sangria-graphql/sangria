@@ -3,6 +3,7 @@ package sangria.schema
 import java.util.Date
 
 import sangria.ast._
+import sangria.parser.QueryParser
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -28,6 +29,15 @@ class CoercionSpec extends AnyWordSpec with Matchers {
 
       "Float" in {
         FloatType.coerceOutput(123.456, Set.empty) should be(123.456)
+      }
+
+      "Float preserves 0.1 (not losslessly representable as double)" in {
+        FloatType.coerceOutput(0.1, Set.empty) should be(0.1)
+      }
+
+      "Float preserves 144.75999999999999 (not losslessly representable as double)" in {
+        val v = 144.75999999999999
+        FloatType.coerceOutput(v, Set.empty) should be(v)
       }
 
       "Float coerces NaN to null" in {
@@ -113,18 +123,27 @@ class CoercionSpec extends AnyWordSpec with Matchers {
           .isLeft should be(true)
 
         FloatType.coerceInput(FloatValue(12.34)) should be(Right(12.34d))
-        FloatType.coerceInput(FloatValue(Double.NaN)).exists(_.isNaN) should be(true)
-        FloatType
-          .coerceInput(FloatValue(Double.PositiveInfinity))
-          .exists(_.isPosInfinity) should be(true)
-        FloatType
-          .coerceInput(FloatValue(Double.NegativeInfinity))
-          .exists(_.isNegInfinity) should be(true)
+        FloatType.coerceInput(FloatValue(0.1)) should be(Right(0.1))
+        FloatType.coerceInput(BigDecimalValue(BigDecimal("0.1"))) should be(Right(0.1))
+        FloatType.coerceInput(FloatValue(144.75999999999999)) should be(Right(144.75999999999999))
+        FloatType.coerceInput(BigDecimalValue(BigDecimal("144.75999999999999"))) match {
+          case Right(d) => d should be(144.75999999999999)
+          case Left(v) =>
+            fail(s"""BigDecimal("144.75999999999999") coercion MUST succeed, got Left($v)""")
+        }
+        FloatType.coerceInput(BigDecimalValue(BigDecimal("144.76"))) match {
+          case Right(d) => d should be(144.75999999999999)
+          case Left(v) => fail(s"""BigDecimal("144.76") coercion MUST succeed, got Left($v)""")
+        }
+        // Spec §3.5.2: non-finite (NaN, Infinity) must raise request error
+        FloatType.coerceInput(FloatValue(Double.NaN)).isLeft should be(true)
+        FloatType.coerceInput(FloatValue(Double.PositiveInfinity)).isLeft should be(true)
+        FloatType.coerceInput(FloatValue(Double.NegativeInfinity)).isLeft should be(true)
         FloatType.coerceInput(BigDecimalValue(BigDecimal(12.34))) should be(Right(12.34d))
         FloatType
           .coerceInput(
             BigDecimalValue(BigDecimal("367476315476516457632.473854635267452376546732")))
-          .isLeft should be(true)
+          .isRight should be(true)
         FloatType.coerceInput(BooleanValue(true)).isLeft should be(true)
         FloatType.coerceInput(StringValue("123")).isLeft should be(true)
       }
@@ -268,13 +287,26 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         FloatType.coerceUserInput(BigInt("12323443874982374987329749823")).isLeft should be(true)
 
         FloatType.coerceUserInput(12.34) should be(Right(12.34d))
-        FloatType.coerceUserInput(Double.NaN).exists(_.isNaN) should be(true)
-        FloatType.coerceUserInput(Double.PositiveInfinity).exists(_.isPosInfinity) should be(true)
-        FloatType.coerceUserInput(Double.NegativeInfinity).exists(_.isNegInfinity) should be(true)
+        FloatType.coerceUserInput(0.1) should be(Right(0.1))
+        FloatType.coerceUserInput(BigDecimal("0.1")) should be(Right(0.1))
+        FloatType.coerceUserInput(144.75999999999999) should be(Right(144.75999999999999))
+        FloatType.coerceUserInput(BigDecimal("144.75999999999999")) match {
+          case Right(d) => d should be(144.75999999999999)
+          case Left(v) =>
+            fail(s"""BigDecimal("144.75999999999999") coercion MUST succeed, got Left($v)""")
+        }
+        FloatType.coerceUserInput(BigDecimal("144.76")) match {
+          case Right(d) => d should be(144.75999999999999)
+          case Left(v) => fail(s"""BigDecimal("144.76") coercion MUST succeed, got Left($v)""")
+        }
+        // Spec §3.5.2: non-finite (NaN, Infinity) must raise request error
+        FloatType.coerceUserInput(Double.NaN).isLeft should be(true)
+        FloatType.coerceUserInput(Double.PositiveInfinity).isLeft should be(true)
+        FloatType.coerceUserInput(Double.NegativeInfinity).isLeft should be(true)
         FloatType.coerceUserInput(BigDecimal(12.34)) should be(Right(12.34d))
         FloatType
           .coerceUserInput(BigDecimal("367476315476516457632.473854635267452376546732"))
-          .isLeft should be(true)
+          .isRight should be(true)
         FloatType.coerceUserInput(true).isLeft should be(true)
         FloatType.coerceUserInput("123").isLeft should be(true)
         FloatType.coerceUserInput(new Date).isLeft should be(true)
@@ -330,6 +362,44 @@ class CoercionSpec extends AnyWordSpec with Matchers {
         StringType.coerceUserInput("123") should be(Right("123"))
         StringType.coerceUserInput("") should be(Right(""))
       }
+    }
+  }
+
+  "Float decimal identity and BigDecimal precision" when {
+    "144.75999999999999 (Double) equals 144.76 (Double) in Scala" in {
+      (144.75999999999999: Double) should be(144.76)
+    }
+
+    "GraphQL Float: parsing \"144.75999999999999\" and \"144.76\" yields the same Double" in {
+      val ast1 = QueryParser.parseInput("144.75999999999999").get
+      val ast2 = QueryParser.parseInput("144.76").get
+      val r1 = FloatType.coerceInput(ast1)
+      val r2 = FloatType.coerceInput(ast2)
+      r1.isRight should be(true)
+      r2.isRight should be(true)
+      r1 should equal(r2)
+      (r1, r2) should be((Right(144.75999999999999), Right(144.75999999999999)))
+    }
+
+    "BigDecimal preserves exact decimals (144.75999999999999 != 144.76)" in {
+      BigDecimal("144.75999999999999") should not be BigDecimal("144.76")
+      BigDecimal("144.75999999999999").toString should be("144.75999999999999")
+      BigDecimal("144.76").toString should be("144.76")
+    }
+
+    "BigDecimal preserves exact decimal 0.1" in {
+      BigDecimal("0.1").toString should be("0.1")
+    }
+
+    "GraphQL Float \"0.1\" parses to Double (nearest IEEE 754, not exact decimal 0.1)" in {
+      val ast = QueryParser.parseInput("0.1").get
+      val result = FloatType.coerceInput(ast)
+      result should be(Right(0.1))
+      val d = result.toOption.get
+      d should be(0.1)
+      // 0.1 has no exact binary representation; Double holds the nearest IEEE 754 value
+      // (exact decimal 0.1 would require BigDecimal; d is slightly != mathematical 0.1)
+      java.lang.Double.doubleToLongBits(d) should be(java.lang.Double.doubleToLongBits(0.1))
     }
   }
 }
