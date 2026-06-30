@@ -1,12 +1,13 @@
 package sangria.catseffect
 
 import cats.effect.IO
+import cats.effect.kernel.Async
 import cats.effect.unsafe.implicits.global
 import io.circe.Json
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import sangria.execution.Executor
 import sangria.catseffect.execution.IOExecutionScheme._
+import sangria.execution.Executor
 import sangria.macros._
 import sangria.marshalling.circe._
 import sangria.schema._
@@ -16,9 +17,11 @@ import sangria.schema._
 class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
 
   import IOExecutionSchemeSpec._
+
   "IOExecutionScheme" must {
     "allow using IO effect with pure resolve" in {
-      val query = gql"""
+      val query =
+        gql"""
         query q1 {
           ids
         }
@@ -64,14 +67,29 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
 }
 
 object IOExecutionSchemeSpec {
-  import sangria.catseffect.schema.AsyncValue._
+
+  import sangria.catseffect.schema.AsyncResolver._
+
+  private def resolve[F[_]: Async](): F[String] = {
+    import cats.syntax.functor._
+    Async[F].pure(Option("hello")).map {
+      case Some(value) => value
+      case None => throw new Exception("No value")
+    }
+  }
+
   private val QueryType: ObjectType[Unit, Unit] = ObjectType(
     "Query",
     () =>
       fields[Unit, Unit](
         Field("ids", ListType(IntType), resolve = _ => List(1, 2)),
-        Field("parent", StringType, resolve = _ => IO("hello"))
-      ))
+        Field.async(
+          "parent",
+          StringType,
+          resolve = _ => resolve[IO]()
+        )
+      )
+  )
 
   private val Mutation: ObjectType[Unit, Unit] = ObjectType(
     "Mutation",
