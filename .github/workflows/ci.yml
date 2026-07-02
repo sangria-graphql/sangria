@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -44,16 +44,16 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Check binary compatibility
-        run: sbt '++ ${{ matrix.scala }}' mimaReportBinaryIssues
+        run: sbt '++ ${{ matrix.scala }}; mimaReportBinaryIssues'
 
       - name: Check formatting
-        run: sbt '++ ${{ matrix.scala }}' scalafmtCheckAll
+        run: sbt '++ ${{ matrix.scala }}; scalafmtCheckAll'
 
       - name: Check that workflows are up to date
-        run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
+        run: sbt '++ ${{ matrix.scala }}; githubWorkflowCheck'
 
       - name: Build project
-        run: sbt '++ ${{ matrix.scala }}' test
+        run: sbt '++ ${{ matrix.scala }}; test'
 
       - name: Compress target directories
         run: tar cf targets.tar modules/core/target modules/cats-effect-experimental/target modules/parser/target modules/test-monix/target modules/benchmarks/target modules/derivation/target modules/test-fs2/target modules/ast/target target modules/sangria/target project/target
@@ -76,7 +76,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
