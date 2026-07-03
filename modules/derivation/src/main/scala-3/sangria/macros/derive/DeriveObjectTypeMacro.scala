@@ -143,11 +143,6 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
             else
               fieldWithArguments(config, field, ctxType, valType, ctxValType)
 
-          @tailrec
-          def methodResultType(typeRepr: TypeRepr): TypeRepr = typeRepr match
-            case MethodType(_, _, retType) => methodResultType(retType)
-            case retType => retType
-
           // Contextualize the method type with respect to the enclosing type
           val fieldType = methodResultType(field.onType.memberType(field.method).widen)
           val actualFieldType = findActualFieldType(fieldType)
@@ -294,17 +289,15 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
           val method = Select.unique(expr.asTerm, member.method.name)
           val args = argsAst('c).map(_.map(_.asTerm))
           if (member.method.isDefDef)
-            member.method.tree match
-              case d: DefDef =>
-                d.returnTpt.tpe.asType match
-                  case '[t] =>
-                    wrappedInActionConversion[Ctx, t](
-                      args
-                        .foldLeft[Select | Apply](method) { (m, argList) =>
-                          Apply(m, argList)
-                        }
-                        .asExprOf[t]
-                    )
+            methodResultType(member.onType.memberType(member.method).widen).asType match
+              case '[t] =>
+                wrappedInActionConversion[Ctx, t](
+                  args
+                    .foldLeft[Select | Apply](method) { (m, argList) =>
+                      Apply(m, argList)
+                    }
+                    .asExprOf[t]
+                )
           else
             globalQuotes.reflect.Ref(member.method).tpe.widen.asType match {
               case '[t] =>
@@ -313,6 +306,14 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
         }
       }
   }
+
+  @tailrec
+  private def methodResultType(typeRepr: globalQuotes.reflect.TypeRepr)
+      : globalQuotes.reflect.TypeRepr =
+    import globalQuotes.reflect._
+    typeRepr match
+      case MethodType(_, _, retType) => methodResultType(retType)
+      case retType => retType
 
   private def wrappedInActionConversion[Ctx: Type, T: Type](value: Expr[T]) = {
     import globalQuotes.reflect._

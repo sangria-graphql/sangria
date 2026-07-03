@@ -524,6 +524,28 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
         ))
     }
 
+    "derive methods returning a path-dependent effect type" in {
+      class Resource {
+        type F[A] = Future[A]
+
+        class Queries[G[_]](result: G[Int]) {
+          @GraphQLField
+          def value: G[Int] = result
+        }
+
+        val queryType: ObjectType[Unit, Queries[F]] =
+          deriveObjectType[Unit, Queries[F]]()
+        val queries = new Queries[F](Future.successful(42))
+      }
+
+      val resource = new Resource
+      val schema = Schema(resource.queryType)
+      val query = graphql"{ value }"
+
+      Executor.execute(schema, query, root = resource.queries).await should be(
+        Map("data" -> Map("value" -> 42)))
+    }
+
     "derive methods with arguments via annotations" in {
       object MyJsonProtocol extends DefaultJsonProtocol {
         implicit val PetFormat: JsonFormat[Pet] = jsonFormat2(Pet.apply)
