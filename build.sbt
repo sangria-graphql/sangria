@@ -314,7 +314,7 @@ lazy val sangriaTestFS2 = project
 lazy val sangriaCatsEffectExperimental = project
   .in(file("modules/cats-effect-experimental"))
   .withId("sangria-cats-effect-experimental")
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test", derivation)
   .settings(scalacSettings ++ shellSettings)
   .settings(
     name := "sangria-cats-effect-experimental",
