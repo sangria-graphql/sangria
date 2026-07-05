@@ -308,8 +308,8 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
   }
 
   @tailrec
-  private def methodResultType(typeRepr: globalQuotes.reflect.TypeRepr)
-      : globalQuotes.reflect.TypeRepr =
+  private def methodResultType(
+      typeRepr: globalQuotes.reflect.TypeRepr): globalQuotes.reflect.TypeRepr =
     import globalQuotes.reflect._
     typeRepr match
       case MethodType(_, _, retType) => methodResultType(retType)
