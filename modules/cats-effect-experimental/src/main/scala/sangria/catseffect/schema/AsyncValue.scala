@@ -1,6 +1,6 @@
 package sangria.catseffect.schema
 
-import cats.effect.{Async, IO}
+import cats.effect.Async
 import sangria.macros.derive.GraphQLOutputTypeLookup
 import sangria.schema.{LeafAction, OutputType}
 
@@ -25,11 +25,4 @@ trait AsyncValueLowPriority {
 object AsyncValue extends AsyncValueLowPriority {
   implicit def asyncAction[Ctx, Val, F[_]: Async](value: F[Val]): LeafAction[Ctx, Val] =
     AsyncValue(value)
-
-  implicit def ioOutputTypeLookup[A](implicit
-      inner: GraphQLOutputTypeLookup[A]): GraphQLOutputTypeLookup[IO[A]] =
-    new GraphQLOutputTypeLookup[IO[A]] {
-      override val graphqlType: OutputType[IO[A]] =
-        inner.graphqlType.asInstanceOf[OutputType[IO[A]]]
-    }
 }
