@@ -65,6 +65,7 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
 
 object IOExecutionSchemeSpec {
   import sangria.catseffect.schema.AsyncValue._
+
   private val QueryType: ObjectType[Unit, Unit] = ObjectType(
     "Query",
     () =>
