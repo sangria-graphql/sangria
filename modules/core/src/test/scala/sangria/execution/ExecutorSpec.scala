@@ -735,17 +735,18 @@ class ExecutorSpec extends AnyWordSpec with Matchers with FutureResultSupport {
         }
       }
 
-      val schema = Schema(
-        ObjectType(
-          "Type",
-          fields[Unit, Unit](
-            Field("c", OptionType(StringType), resolve = _ => "c"),
-            Field("a", OptionType(StringType), resolve = _ => Future { Thread.sleep(30); "a" }),
-            Field("d", OptionType(StringType), resolve = _ => Future { Thread.sleep(5); "d" }),
-            Field("b", OptionType(IntType), resolve = _ => Sum(1, 2)),
-            Field("e", OptionType(StringType), resolve = _ => "e")
-          )
-        ))
+      val schema =
+        Schema(
+          ObjectType(
+            "Type",
+            fields[Unit, Unit](
+              Field("c", OptionType(StringType), resolve = _ => "c"),
+              Field("a", OptionType(StringType), resolve = _ => Future { Thread.sleep(30); "a" }),
+              Field("d", OptionType(StringType), resolve = _ => Future { Thread.sleep(5); "d" }),
+              Field("b", OptionType(IntType), resolve = _ => Sum(1, 2)),
+              Field("e", OptionType(StringType), resolve = _ => "e")
+            )
+          ))
 
       def keys(res: Any) =
         res.asInstanceOf[Map[String, Any]]("data").asInstanceOf[Map[String, Any]].keys.toList
