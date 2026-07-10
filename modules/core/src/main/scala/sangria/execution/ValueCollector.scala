@@ -8,6 +8,7 @@ import sangria.schema._
 import sangria.util.Cache
 import sangria.validation._
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.VectorBuilder
 import scala.util.{Failure, Success, Try}
 
@@ -24,7 +25,9 @@ class ValueCollector[Ctx, Input](
     new ValueCoercionHelper[Ctx](sourceMapper, deprecationTracker, Some(userContext))
 
   private val argumentCache =
-    Cache.empty[(ExecutionPath.PathCacheKeyReversed, Vector[ast.Argument]), Try[Args]]
+    new ConcurrentHashMap[
+      ExecutionPath.PathCacheKeyReversed,
+      ConcurrentHashMap[Vector[ast.Argument], Try[Args]]]
 
   def getVariableValues(
       definitions: Vector[ast.VariableDefinition],
@@ -106,9 +109,13 @@ class ValueCollector[Ctx, Input](
     if (argumentDefs.isEmpty)
       ValueCollector.emptyArgs
     else
-      argumentCache.getOrElseUpdate(
-        path.cacheKeyReversed -> argumentAsts,
-        getArgumentValues(forAstNode, argumentDefs, argumentAsts, variables))
+      argumentCache
+        .computeIfAbsent(
+          path.cacheKeyReversed,
+          key => new ConcurrentHashMap[Vector[ast.Argument], Try[Args]])
+        .computeIfAbsent(
+          argumentAsts,
+          argumentAsts => getArgumentValues(forAstNode, argumentDefs, argumentAsts, variables))
 
   def getArgumentValues(
       forAstNode: Option[ast.AstNode],
