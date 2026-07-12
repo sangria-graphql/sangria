@@ -196,21 +196,18 @@ class ScalarMiddlewareSpec extends AnyWordSpec with Matchers with FutureResultSu
     }
 
     "applies to valid default values" in {
-      val schema = Schema(
-        ObjectType(
-          "Query",
-          fields[Ctx, Unit](
-            Field(
-              "test",
-              OptionType(EncodedIdType),
-              arguments = IdArgWithValidDefault :: ComplexArgWithValidDefault :: Nil,
-              resolve =
-                _.withArgs(IdArgWithValidDefault, ComplexArgWithValidDefault)((id, complex) =>
-                  id + "-" + complex("userId").asInstanceOf[Option[UserId]].get + "-" + complex(
-                    "name"))
-            )
+      val schema = Schema(ObjectType(
+        "Query",
+        fields[Ctx, Unit](
+          Field(
+            "test",
+            OptionType(EncodedIdType),
+            arguments = IdArgWithValidDefault :: ComplexArgWithValidDefault :: Nil,
+            resolve = _.withArgs(IdArgWithValidDefault, ComplexArgWithValidDefault)((id, complex) =>
+              id + "-" + complex("userId").asInstanceOf[Option[UserId]].get + "-" + complex("name"))
           )
-        ))
+        )
+      ))
 
       val query =
         graphql"""

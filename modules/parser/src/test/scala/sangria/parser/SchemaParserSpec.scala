@@ -1040,25 +1040,26 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
             ObjectTypeDefinition(
               "Hello",
               Vector.empty,
-              Vector(FieldDefinition(
-                "world",
-                NamedType("String", Some(AstLocation(61, 3, 38))),
-                Vector(InputValueDefinition(
-                  "things",
-                  ListType(
-                    NamedType("String", Some(AstLocation(51, 3, 28))),
-                    Some(AstLocation(50, 3, 27))),
-                  None,
+              Vector(
+                FieldDefinition(
+                  "world",
+                  NamedType("String", Some(AstLocation(61, 3, 38))),
+                  Vector(InputValueDefinition(
+                    "things",
+                    ListType(
+                      NamedType("String", Some(AstLocation(51, 3, 28))),
+                      Some(AstLocation(50, 3, 27))),
+                    None,
+                    Vector.empty,
+                    None,
+                    Vector.empty,
+                    Some(AstLocation(42, 3, 19))
+                  )),
                   Vector.empty,
                   None,
                   Vector.empty,
-                  Some(AstLocation(42, 3, 19))
+                  Some(AstLocation(36, 3, 13))
                 )),
-                Vector.empty,
-                None,
-                Vector.empty,
-                Some(AstLocation(36, 3, 13))
-              )),
               Vector.empty,
               None,
               Vector.empty,
@@ -1448,23 +1449,24 @@ class SchemaParserSpec extends AnyWordSpec with Matchers with StringMatchers {
                 NamedType("Hello1", Some(AstLocation(428, 21, 43))),
                 NamedType("World1", Some(AstLocation(437, 21, 52)))),
               Vector.empty,
-              Vector(Directive(
-                "hello1",
-                Vector(Argument(
-                  "ids",
-                  ListValue(
-                    Vector(
-                      BigIntValue(1, Vector.empty, Some(AstLocation(458, 21, 73))),
-                      BigIntValue(2, Vector.empty, Some(AstLocation(461, 21, 76)))),
+              Vector(
+                Directive(
+                  "hello1",
+                  Vector(Argument(
+                    "ids",
+                    ListValue(
+                      Vector(
+                        BigIntValue(1, Vector.empty, Some(AstLocation(458, 21, 73))),
+                        BigIntValue(2, Vector.empty, Some(AstLocation(461, 21, 76)))),
+                      Vector.empty,
+                      Some(AstLocation(457, 21, 72))
+                    ),
                     Vector.empty,
-                    Some(AstLocation(457, 21, 72))
-                  ),
+                    Some(AstLocation(452, 21, 67))
+                  )),
                   Vector.empty,
-                  Some(AstLocation(452, 21, 67))
+                  Some(AstLocation(444, 21, 59))
                 )),
-                Vector.empty,
-                Some(AstLocation(444, 21, 59))
-              )),
               Vector.empty,
               Vector.empty,
               Some(AstLocation(396, 21, 11))
