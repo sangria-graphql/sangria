@@ -125,6 +125,25 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
       res.unsafeRunSync() must be(expected)
     }
 
+    "resolve a list-typed field where each item is independently resolved via its own IO" in {
+      val query =
+        gql"""
+          query q1 {
+            sequencedItems
+          }
+        """
+      val res: IO[Json] = Executor.execute(schema, query)
+
+      val expected: Json = Json.obj(
+        "data" -> Json.obj(
+          "sequencedItems" -> Json.arr(
+            Json.fromString("a"),
+            Json.fromString("b"),
+            Json.fromString("c")))
+      )
+      res.unsafeRunSync() must be(expected)
+    }
+
     "surface a user-facing error raised from an IO resolve function" in {
       val query = gql""" query { boom } """
       val res: IO[Json] = Executor.execute(schema, query)
@@ -182,6 +201,12 @@ object IOExecutionSchemeSpec {
           resolve = c => IO(s"Hello, ${c.arg(NameArg)}!")),
         Field("child", ChildObjectType, resolve = _ => IO(ChildType("child-value"))),
         Field("items", ListType(StringType), resolve = _ => IO(List("a", "b", "c"))),
+        Field(
+          "sequencedItems",
+          ListType(StringType),
+          resolve = _ =>
+            Action.sequence(
+              List(IO("a"), IO("b"), IO("c")).map(v => v: LeafAction[Unit, String]))),
         Field(
           "boom",
           OptionType(StringType),

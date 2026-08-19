@@ -128,10 +128,24 @@ private[execution] class AsyncResolver[Ctx, F[_]: Async](
           val f = asyncToFuture.toFuture[Any](a.value)
           super.resolveFutureValue(path, tpe, userCtx, astFields, field, updateCtx)(FutureValue(f))
 
+        case s: SequenceLeafAction[Ctx, Any] =>
+          val resolved = SequenceLeafAction[Ctx, Any](s.value.map(resolveAsyncValueToFuture))
+          super.resolveStandardLeafAction(path, tpe, userCtx, astFields, field, updateCtx)(resolved)
+
         case action: StandardLeafAction[Ctx, Any] =>
           super.resolveStandardLeafAction(path, tpe, userCtx, astFields, field, updateCtx)(action)
 
         case other => unresolvableLeafAction(path, tpe, astFields, updateCtx)(other)
+      }
+
+    /** [[FutureResolver]] resolves the items of a [[SequenceLeafAction]] itself, without going
+      * through [[resolveLeafAction]], so an [[AsyncValue]] nested inside one is turned into a
+      * [[FutureValue]] here rather than being resolved as part of the sequence.
+      */
+    private def resolveAsyncValueToFuture(action: LeafAction[Ctx, Any]): LeafAction[Ctx, Any] =
+      action match {
+        case a: AsyncValue[Ctx, Any, F] => FutureValue(asyncToFuture.toFuture[Any](a.value))
+        case other => other
       }
 
     override protected def handleScheme(
@@ -169,6 +183,19 @@ private[execution] class AsyncResolver[Ctx, F[_]: Async](
             origField,
             fields,
             FutureValue(f),
+            sfield,
+            fieldPath,
+            resolveUc,
+            resolveError,
+            resolveVal)
+        case s: SequenceLeafAction[Ctx, Any] =>
+          super.resolveStandardFieldResolutionSeqInner(
+            path,
+            uc,
+            tpe,
+            origField,
+            fields,
+            SequenceLeafAction[Ctx, Any](s.value.map(resolveAsyncValueToFuture)),
             sfield,
             fieldPath,
             resolveUc,
