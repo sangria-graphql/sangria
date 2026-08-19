@@ -12,11 +12,14 @@ import sangria.parser.QueryParser
 import sangria.schema._
 import sangria.validation.QueryValidator
 
+import scala.concurrent.ExecutionContext
+
 /** An [[IO]] counterpart of `sangria.execution.DirectivesSpec`, checking that directive handling
   * (`@include`/`@skip`/fragment-definition directives) still works correctly when field resolvers
   * use [[IO]] instead of a plain value.
   */
 class IODirectivesSpec extends AnyWordSpec with Matchers {
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   case class TestSubject(a: Option[String], b: Option[String])
 
