@@ -21,6 +21,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * [[IO]] instead of a plain [[scala.concurrent.Future]].
   */
 class IOFetcherSpec extends AnyWordSpec with Matchers {
+  implicit val ec: ExecutionContext = ExecutionContext.global
+
   case class Product(id: Int, name: String, inCategories: Vector[String])
   case class Category(
       id: String,

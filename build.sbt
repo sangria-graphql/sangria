@@ -216,7 +216,28 @@ lazy val core = project
       ProblemFilters.exclude[MissingTypesProblem](
         "sangria.schema.SchemaChange$InputObjectTypeAstDirectiveAdded$"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.apply")
+        "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.apply"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "sangria.execution.FutureResolver$ErrorFieldResolution"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "sangria.execution.FutureResolver$ErrorFieldResolution$"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "sangria.execution.FutureResolver$FieldResolution"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "sangria.execution.FutureResolver$StandardFieldResolution"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "sangria.execution.FutureResolver$StandardFieldResolution$"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "sangria.execution.FutureResolver$StreamFieldResolution"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "sangria.execution.FutureResolver$StreamFieldResolution$"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem](
+        "sangria.execution.FutureResolver#ChildDeferredContext.resolveResult"),
+      ProblemFilters.exclude[MissingTypesProblem](
+        "sangria.execution.FutureResolver$DeferredResult"),
+      ProblemFilters.exclude[MissingClassProblem]("sangria.execution.FutureResolver$Resolve"),
+      ProblemFilters.exclude[MissingClassProblem]("sangria.execution.FutureResolver$Result"),
+      ProblemFilters.exclude[MissingClassProblem]("sangria.execution.FutureResolver$Result$")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
