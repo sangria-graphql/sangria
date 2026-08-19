@@ -67,8 +67,7 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
       val queryType: ObjectType[Unit, Unit] = ObjectType(
         "Query",
         () =>
-          fields[Unit, Unit](
-            Field("count", IntType, resolve = _ => IO(counter.incrementAndGet()))))
+          fields[Unit, Unit](Field("count", IntType, resolve = _ => IO(counter.incrementAndGet()))))
       val lazySchema = Schema(queryType)
       val query = gql""" query { count } """
 
@@ -77,8 +76,7 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
       val res: IO[Json] = Executor.execute(lazySchema, query)
       counter.get() must be(0)
 
-      res.unsafeRunSync() must be(
-        Json.obj("data" -> Json.obj("count" -> Json.fromInt(1))))
+      res.unsafeRunSync() must be(Json.obj("data" -> Json.obj("count" -> Json.fromInt(1))))
       counter.get() must be(1)
     }
 
@@ -136,10 +134,8 @@ class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
 
       val expected: Json = Json.obj(
         "data" -> Json.obj(
-          "sequencedItems" -> Json.arr(
-            Json.fromString("a"),
-            Json.fromString("b"),
-            Json.fromString("c")))
+          "sequencedItems" -> Json
+            .arr(Json.fromString("a"), Json.fromString("b"), Json.fromString("c")))
       )
       res.unsafeRunSync() must be(expected)
     }
@@ -205,8 +201,7 @@ object IOExecutionSchemeSpec {
           "sequencedItems",
           ListType(StringType),
           resolve = _ =>
-            Action.sequence(
-              List(IO("a"), IO("b"), IO("c")).map(v => v: LeafAction[Unit, String]))),
+            Action.sequence(List(IO("a"), IO("b"), IO("c")).map(v => v: LeafAction[Unit, String]))),
         Field(
           "boom",
           OptionType(StringType),
@@ -215,7 +210,8 @@ object IOExecutionSchemeSpec {
           "explode",
           OptionType(StringType),
           resolve = _ => IO.raiseError(new RuntimeException("should not leak")))
-      ))
+      )
+  )
 
   private val Mutation: ObjectType[Unit, Unit] = ObjectType(
     "Mutation",
