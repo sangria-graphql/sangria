@@ -8,9 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   * Its result is an [[Async]].
   */
-class AsyncExecutionScheme[F[_]: Async](
-    val asyncToFuture: AsyncToFuture[F]
-) extends ExecutionScheme {
+class AsyncExecutionScheme[F[_]: Async] extends ExecutionScheme {
   private val asyncF: Async[F] = Async[F]
 
   override type Result[Ctx, Res] = F[Res]
@@ -25,7 +23,7 @@ class AsyncExecutionScheme[F[_]: Async](
       implicit ec: ExecutionContext): Result[Ctx, Res] =
     asyncF.flatMap(asyncF.fromFuture(asyncF.delay(future)))(resultFn)
 
-  override val resolverBuilder: ResolverBuilder = new AsyncResolverBuilder[F](asyncToFuture)
+  override val resolverBuilder: ResolverBuilder = new AsyncResolverBuilder[F]
 
   override def extended: Boolean = false
 }
