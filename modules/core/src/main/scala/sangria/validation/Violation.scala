@@ -52,7 +52,7 @@ case object BigLongCoercionViolation
 
 case object FloatCoercionViolation extends ValueCoercionViolation("Float or Int value expected")
 case object BigDecimalCoercionViolation
-    extends ValueCoercionViolation("Float or Int value is too big to fit in double")
+    extends ValueCoercionViolation("Value is not a finite Float (IEEE 754 double)")
 
 case object BooleanCoercionViolation extends ValueCoercionViolation("Boolean value expected")
 case object StringCoercionViolation extends ValueCoercionViolation("String value expected")
