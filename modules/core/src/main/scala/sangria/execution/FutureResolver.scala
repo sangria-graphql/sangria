@@ -27,8 +27,8 @@ private[execution] object FutureResolverBuilder extends ResolverBuilder {
       deferredResolver: DeferredResolver[Ctx],
       sourceMapper: Option[SourceMapper],
       deprecationTracker: Option[DeprecationTracker],
-      middleware: List[(Any, Middleware[Ctx])],
-      beforeFieldMiddlewares: List[(Any, MiddlewareBeforeField[Ctx])],
+      middleware: List[ApplyedMiddleware[Ctx, Middleware[Ctx]]],
+      beforeFieldMiddlewares: List[ApplyedMiddleware[Ctx, MiddlewareBeforeField[Ctx]]],
       maxQueryDepth: Option[Int],
       deferredResolverState: Any,
       preserveOriginalErrors: Boolean,
@@ -73,8 +73,8 @@ private[execution] class FutureResolver[Ctx](
     deferredResolver: DeferredResolver[Ctx],
     sourceMapper: Option[SourceMapper],
     deprecationTracker: Option[DeprecationTracker],
-    middlewares: List[(Any, Middleware[Ctx])],
-    beforeFieldMiddlewares: List[(Any, MiddlewareBeforeField[Ctx])],
+    middlewares: List[ApplyedMiddleware[Ctx, Middleware[Ctx]]],
+    beforeFieldMiddlewares: List[ApplyedMiddleware[Ctx, MiddlewareBeforeField[Ctx]]],
     maxQueryDepth: Option[Int],
     deferredResolverState: Any,
     preserveOriginalErrors: Boolean,
@@ -86,7 +86,7 @@ private[execution] class FutureResolver[Ctx](
   private val resultResolver =
     new ResultResolver(marshaller, exceptionHandler, preserveOriginalErrors)
   private val toScalarMiddleware =
-    Middleware.composeToScalarMiddleware(middlewares.map(_._2), userContext)
+    Middleware.composeToScalarMiddleware(middlewares.map(_.middleware), userContext)
 
   import Resolver._
   import resultResolver._
@@ -228,10 +228,14 @@ private[execution] class FutureResolver[Ctx](
 
   private def marshallExtensions: Option[marshaller.Node] = {
     val extensions =
-      middlewares.flatMap {
-        case (v, m: MiddlewareExtension[Ctx @unchecked]) =>
-          m.afterQueryExtensions(v.asInstanceOf[m.QueryVal], middlewareCtx)
-        case _ => Nil
+      middlewares.flatMap { applyedMiddleware =>
+        applyedMiddleware.middleware match {
+          case m: MiddlewareExtension[Ctx @unchecked] =>
+            m.afterQueryExtensions(
+              applyedMiddleware.queryVal.asInstanceOf[m.QueryVal],
+              middlewareCtx)
+          case _ => Nil
+        }
       }
 
     if (extensions.nonEmpty) ResultResolver.marshalExtensions(marshaller, extensions)
@@ -1782,9 +1786,10 @@ private[execution] class FutureResolver[Ctx](
 
               val it = beforeFieldMiddlewares.iterator
               while (it.hasNext) {
-                val (mv, m) = it.next()
-                val beforeFieldResult = m
-                  .beforeField(mv.asInstanceOf[m.QueryVal], middlewareCtx, ctx)
+                val applyedMiddleware = it.next()
+                val m = applyedMiddleware.middleware
+                val mv: m.QueryVal = applyedMiddleware.queryVal.asInstanceOf[m.QueryVal]
+                val beforeFieldResult = m.beforeField(mv, middlewareCtx, ctx)
 
                 if (beforeFieldResult.actionOverride.nonEmpty) {
                   beforeAction = beforeFieldResult.actionOverride
