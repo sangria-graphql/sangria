@@ -4,8 +4,8 @@ import sangria.ast.OperationType
 import sangria.ast.SourceMapper
 import sangria.schema._
 import sangria.ast
-import sangria.util.Cache
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.{ArrayBuffer, Map => MutableMap, Set => MutableSet}
 import scala.util.{Failure, Success, Try}
 
@@ -18,23 +18,30 @@ class FieldCollector[Ctx, Val](
     exceptionHandler: ExceptionHandler) {
 
   private val resultCache =
-    Cache.empty[(ExecutionPath.PathCacheKeyReversed, String), Try[CollectedFields]]
+    new ConcurrentHashMap[
+      ExecutionPath.PathCacheKeyReversed,
+      ConcurrentHashMap[String, Try[CollectedFields]]]
 
   def collectFields(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
-    resultCache.getOrElseUpdate(
-      path.cacheKeyReversed -> tpe.name, {
-        val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
+    resultCache
+      .computeIfAbsent(
+        path.cacheKeyReversed,
+        key => new ConcurrentHashMap[String, Try[CollectedFields]])
+      .computeIfAbsent(
+        tpe.name,
+        name => {
+          val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
 
-        selections.foldLeft(builder) { case (acc, s) =>
-          collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
+          selections.foldLeft(builder) { case (acc, s) =>
+            collectFieldsInternal(tpe, s.selections, MutableSet.empty, acc)
+          }
+
+          builder.map(_.build)
         }
-
-        builder.map(_.build)
-      }
-    )
+      )
 
   private def collectFieldsInternal(
       tpe: ObjectType[Ctx, _],
