@@ -14,7 +14,11 @@ import sangria.marshalling.circe._
 import sangria.schema._
 import sangria.validation.ValueCoercionViolation
 
+import scala.concurrent.ExecutionContext
+
 class IOExecutionSchemeDerivationSpec extends AnyWordSpec with Matchers {
+  implicit val ec: ExecutionContext = ExecutionContext.global
+
   import IOExecutionSchemeDerivationSpec._
 
   "IOExecutionScheme" must {

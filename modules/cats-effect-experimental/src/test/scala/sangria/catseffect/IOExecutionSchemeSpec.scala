@@ -12,9 +12,12 @@ import sangria.macros._
 import sangria.marshalling.circe._
 import sangria.schema._
 
+import scala.concurrent.ExecutionContext
+
 /** The integration with [[cats.effect.IO]] is far from being complete for now.
   */
 class IOExecutionSchemeSpec extends AnyWordSpec with Matchers {
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   import IOExecutionSchemeSpec._
   "IOExecutionScheme" must {
