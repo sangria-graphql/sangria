@@ -14,6 +14,7 @@ ThisBuild / githubWorkflowBuildPreamble ++= List(
 )
 
 // Release
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.zulu("17"))
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
   Seq(RefPredicate.StartsWith(Ref.Tag("v")))

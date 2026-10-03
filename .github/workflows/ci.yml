@@ -24,7 +24,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.21, 2.13.18, 3.3.8]
-        java: [zulu@8]
+        java: [zulu@17]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -32,12 +32,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Java (zulu@8)
-        if: matrix.java == 'zulu@8'
+      - name: Setup Java (zulu@17)
+        if: matrix.java == 'zulu@17'
         uses: actions/setup-java@v6
         with:
           distribution: zulu
-          java-version: 8
+          java-version: 17
           cache: sbt
 
       - name: Setup sbt
@@ -56,7 +56,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}; test'
 
       - name: Compress target directories
-        run: tar cf targets.tar modules/core/target modules/cats-effect-experimental/target modules/parser/target modules/test-monix/target modules/benchmarks/target modules/derivation/target modules/test-fs2/target modules/ast/target target modules/sangria/target project/target
+        run: tar cf targets.tar target/out/jvm project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v7
@@ -72,7 +72,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.18]
-        java: [zulu@8]
+        java: [zulu@17]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -80,12 +80,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Java (zulu@8)
-        if: matrix.java == 'zulu@8'
+      - name: Setup Java (zulu@17)
+        if: matrix.java == 'zulu@17'
         uses: actions/setup-java@v6
         with:
           distribution: zulu
-          java-version: 8
+          java-version: 17
           cache: sbt
 
       - name: Setup sbt
