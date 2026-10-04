@@ -231,7 +231,7 @@ lazy val core = project
       "org.scalatest" %% "scalatest" % "3.2.20" % Test,
       "org.sangria-graphql" %% "sangria-marshalling-testkit" % "1.0.4" % Test,
       "org.sangria-graphql" %% "sangria-spray-json" % "1.0.3" % Test,
-      "org.sangria-graphql" %% "sangria-argonaut" % "1.0.2" % Test,
+      "org.sangria-graphql" %% "sangria-argonaut" % "1.0.3" % Test,
       "org.sangria-graphql" %% "sangria-ion" % "2.0.1" % Test,
       "eu.timepit" %% "refined" % "0.11.4" % Test,
       // CATs
