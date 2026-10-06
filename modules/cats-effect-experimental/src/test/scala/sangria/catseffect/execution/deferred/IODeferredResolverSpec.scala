@@ -16,7 +16,7 @@ import sangria.macros._
 import sangria.marshalling.circe._
 import sangria.schema._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /** An [[IO]] counterpart of `sangria.execution.deferred.DeferredResolverSpec`, checking that
   * [[DeferredResolver]] batching still works when some of the fields are resolved via [[IO]]
@@ -69,7 +69,7 @@ class IODeferredResolverSpec extends AnyWordSpec with Matchers {
           }
         """
 
-      val resolver = exec(query)
+      val (resolver, _) = exec(query)
 
       resolver.callsCount.get must be(6)
       resolver.valueCount.get must be(2157)
@@ -119,7 +119,7 @@ class IODeferredResolverSpec extends AnyWordSpec with Matchers {
           }
         """
 
-      val resolver = exec(query)
+      val (resolver, _) = exec(query)
 
       resolver.callsCount.get must be(16)
       resolver.valueCount.get must be(56)
@@ -159,7 +159,7 @@ class IODeferredResolverSpec extends AnyWordSpec with Matchers {
           }
         """
 
-      val resolver = exec(query)
+      val (resolver, _) = exec(query)
 
       resolver.callsCount.get must be(5)
       resolver.valueCount.get must be(19)
@@ -175,7 +175,7 @@ class IODeferredResolverSpec extends AnyWordSpec with Matchers {
           }
         """
 
-      val json = execJson(query)
+      val (_, json) = exec(query)
 
       (json \\ "data").head must be(
         Json.obj(
@@ -200,7 +200,7 @@ class IODeferredResolverSpec extends AnyWordSpec with Matchers {
           }
         """
 
-      val json = execJson(query)
+      val (_, json) = exec(query)
 
       (json \\ "data").head must be(
         Json.obj(
@@ -218,6 +218,8 @@ class IODeferredResolverSpec extends AnyWordSpec with Matchers {
 }
 
 object IODeferredResolverSpec {
+  private implicit val ec: ExecutionContext = ExecutionContext.global
+
   private case class LoadCategories(ids: Seq[String]) extends Deferred[Seq[String]]
 
   private class MyDeferredResolver extends DeferredResolver[Any] {
@@ -328,7 +330,7 @@ object IODeferredResolverSpec {
 
   private val exceptionHandler = ExceptionHandler { case (_, e) => HandledException(e.getMessage) }
 
-  private def exec(query: ast.Document): MyDeferredResolver = {
+  private def exec(query: ast.Document): (MyDeferredResolver, Json) = {
     val resolver = new MyDeferredResolver
     val result: IO[Json] =
       Executor.execute(
@@ -336,18 +338,7 @@ object IODeferredResolverSpec {
         query,
         deferredResolver = resolver,
         exceptionHandler = exceptionHandler)
-    result.unsafeRunSync()
-    resolver
-  }
-
-  private def execJson(query: ast.Document): Json = {
-    val resolver = new MyDeferredResolver
-    val result: IO[Json] =
-      Executor.execute(
-        schema,
-        query,
-        deferredResolver = resolver,
-        exceptionHandler = exceptionHandler)
-    result.unsafeRunSync()
+    val json = result.unsafeRunSync()
+    (resolver, json)
   }
 }
