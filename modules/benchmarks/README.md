@@ -24,3 +24,5 @@ For a real benchmark:
 ```
 jmh:run
 ```
+
+Run everything and write `RESULTS.md`: `./modules/benchmarks/run-benchmarks.sh` (extra args go to JMH).
