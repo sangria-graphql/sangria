@@ -75,26 +75,38 @@ object RuleBasedQueryValidator {
       : ast.AstNode => Either[Vector[Violation], AstVisitorCommand.Value] =
     _ => notMatchedResult
 
-  // The dispatch only depends on the declared nodes of the visitors, which are the same for every
-  // request, so it is shared.
+  /** The classes of the visitors, compared by reference. */
+  private final class VisitorClasses(val classes: Array[Class[_]]) {
+    override val hashCode: Int = java.util.Arrays.hashCode(classes.asInstanceOf[Array[AnyRef]])
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: VisitorClasses =>
+        java.util.Arrays
+          .equals(classes.asInstanceOf[Array[AnyRef]], other.classes.asInstanceOf[Array[AnyRef]])
+      case _ => false
+    }
+  }
+
+  // The dispatch only depends on the declared nodes of the visitors, which are the same for all the
+  // visitors of a class (see `AstValidatingVisitor.onEnterNodes`), so it is shared by the requests.
   // shortcut: one entry per distinct set of rules, never evicted; fine unless rule sets are
   // generated dynamically
-  private val dispatches = new java.util.concurrent.ConcurrentHashMap[
-    Vector[(Option[Vector[Class[_]]], Option[Vector[Class[_]]])],
-    (Dispatch, Dispatch)]
+  private val dispatches =
+    new java.util.concurrent.ConcurrentHashMap[VisitorClasses, (Dispatch, Dispatch)]
+
+  private val noDispatch = (new Dispatch(Array.empty), new Dispatch(Array.empty)) // by reference
 
   private[validation] def dispatchFor(
       visitors: Array[ValidationRule#AstValidatingVisitor]): (Dispatch, Dispatch) = {
-    val declared = visitors.iterator.map(v => (v.onEnterNodes, v.onLeaveNodes)).toVector
-    dispatches.computeIfAbsent(
-      declared,
-      new java.util.function.Function[
-        Vector[(Option[Vector[Class[_]]], Option[Vector[Class[_]]])],
-        (Dispatch, Dispatch)] {
-        def apply(d: Vector[(Option[Vector[Class[_]]], Option[Vector[Class[_]]])]) =
-          (new Dispatch(d.map(_._1).toArray), new Dispatch(d.map(_._2).toArray))
-      }
-    )
+    val key = new VisitorClasses(visitors.map(_.getClass: Class[_]))
+    val cached = dispatches.getOrDefault(key, noDispatch)
+    if (cached ne noDispatch) cached
+    else {
+      val computed =
+        (new Dispatch(visitors.map(_.onEnterNodes)), new Dispatch(visitors.map(_.onLeaveNodes)))
+      dispatches.putIfAbsent(key, computed)
+      computed
+    }
   }
 
   /** Finds, for a node, the visitors that can match it. `nodes` are the declared node classes of
@@ -104,8 +116,14 @@ object RuleBasedQueryValidator {
     private val cache = new java.util.concurrent.ConcurrentHashMap[Class[_], Array[Int]]
     private val notComputed = new Array[Int](0) // compared by reference
 
-    def visitorsFor(node: ast.AstNode): Array[Int] = {
-      val cls = node.getClass
+    // With so few visitors, looking up the class of a node costs more than matching the visitors
+    private val all: Array[Int] =
+      if (nodes.length <= 2) nodes.indices.toArray else notComputed
+
+    def visitorsFor(node: ast.AstNode): Array[Int] =
+      if (all ne notComputed) all else visitorsForClass(node.getClass)
+
+    private def visitorsForClass(cls: Class[_]): Array[Int] = {
       val cached = cache.getOrDefault(cls, notComputed)
       if (cached ne notComputed) cached
       else {
