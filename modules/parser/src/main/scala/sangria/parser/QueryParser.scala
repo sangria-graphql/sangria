@@ -83,7 +83,7 @@ private[parser] sealed trait Tokens extends StringBuilding with PositionTracking
 
   private[this] def Characters = rule((NormalCharacter | '\\' ~ EscapedChar).*)
 
-  private[this] val QuoteBackslash = CharPredicate("\"\\")
+  private[this] val QuoteBackslash = CharPredicate('"') ++ '\\'
 
   private[this] def EscapedChar = rule {
     QuoteBackslash ~ appendSB() |
@@ -109,7 +109,8 @@ private[parser] sealed trait Ignored extends PositionTracking { this: Parser =>
   /** Whether comments should be parsed into the resulting AST. */
   protected[this] def parseComments: Boolean
 
-  private[this] val WhiteSpace = CharPredicate("\u0009\u0020")
+  // a mask based predicate; a predicate created from a string of several chars binary searches
+  private[this] val WhiteSpace = CharPredicate('\u0009') ++ '\u0020'
 
   protected[this] def CRLF: Rule0 = rule('\u000D' ~ '\u000A')
 
@@ -118,11 +119,11 @@ private[parser] sealed trait Ignored extends PositionTracking { this: Parser =>
   private[this] val UnicodeBOM = CharPredicate('\uFEFF')
 
   protected[this] def Ignored: Rule0 = rule {
-    quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | Comment | ',')
+    quiet(WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | ',' | Comment | UnicodeBOM)
   }
 
   protected[this] def IgnoredNoComment: Rule0 = rule {
-    quiet(UnicodeBOM | WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | ',')
+    quiet(WhiteSpace | (CRLF | LineTerminator) ~ trackNewLine | ',' | UnicodeBOM)
   }
 
   protected[this] def Comments: Rule1[Vector[ast.Comment]] = rule {
