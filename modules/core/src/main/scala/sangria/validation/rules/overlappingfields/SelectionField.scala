@@ -30,8 +30,8 @@ class SelectionField private (
 
 object SelectionField {
 
-  def children(fields: SortedArraySet[SelectionField]): SortedArraySet[SelectionField] =
-    SelectionContainer.children(fields)
+  def children(fields: SortedArraySet[SelectionField], mark: Int): SortedArraySet[SelectionField] =
+    SelectionContainer.children(fields, mark)
 
   /** This gives us a stable order of fields in sets. It is determined by the order of traversal of
     * the query.

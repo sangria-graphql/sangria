@@ -19,6 +19,14 @@ class CachedCheck {
 
   private val cache: util.HashMap[FieldSet, FieldSetCache] = new util.HashMap()
 
+  // Not thread-safe on purpose: a CachedCheck is created per validation run and used sequentially.
+  private var lastMark: Int = 0
+
+  private def nextMark(): Int = {
+    lastMark += 1
+    lastMark
+  }
+
   def checkFieldsInSetCanMerge(
       fields: FieldSet,
       builder: SelectionConflictViolationsBuilder): Unit =
@@ -207,7 +215,7 @@ class CachedCheck {
 
     private def mergeChildSelections(): FieldSetCache =
       if (cacheMergeChildSelections == null) {
-        val result = getCacheLine(SelectionField.children(fields))
+        val result = getCacheLine(SelectionField.children(fields, nextMark()))
         cacheMergeChildSelections = result
         cacheMergeChildSelections
       } else {
