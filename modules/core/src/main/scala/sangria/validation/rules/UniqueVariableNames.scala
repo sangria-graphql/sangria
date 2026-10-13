@@ -15,6 +15,9 @@ class UniqueVariableNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownVariableNames = MutableMap[String, List[AstLocation]]()
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.OperationDefinition], classOf[ast.VariableDefinition]))
+
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition =>
         knownVariableNames.clear()

@@ -18,6 +18,9 @@ import sangria.validation.{
   */
 class FragmentsOnCompositeTypes extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.InlineFragment], classOf[ast.FragmentDefinition]))
+
     override val onEnter: ValidationVisit = {
       case ast.InlineFragment(Some(cond), _, _, _, _, pos) =>
         ctx.typeInfo.tpe match {

@@ -12,6 +12,9 @@ import sangria.validation._
   */
 class ProvidedRequiredArguments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.Field], classOf[ast.Directive]))
+
     override val onLeave: ValidationVisit = {
       case ast.Field(_, name, args, _, _, _, _, pos) =>
         ctx.typeInfo.fieldDef match {

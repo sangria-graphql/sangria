@@ -29,6 +29,15 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
       private val selectionBuilder: SelectionBuilder = new SelectionBuilder
 
+      override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+        Vector(
+          classOf[ast.Field],
+          classOf[ast.FragmentDefinition],
+          classOf[ast.FragmentSpread],
+          classOf[ast.SelectionContainer]))
+      override val onLeaveNodes: Option[Vector[Class[_]]] = Some(
+        Vector(classOf[ast.SelectionContainer], classOf[ast.Document]))
+
       override val onEnter: ValidationVisit = {
         case field: ast.Field =>
           val parentType = ctx.typeInfo.previousParentType

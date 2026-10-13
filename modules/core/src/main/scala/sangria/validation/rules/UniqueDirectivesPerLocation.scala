@@ -16,6 +16,8 @@ class UniqueDirectivesPerLocation extends ValidationRule {
       (n, d.repeatable)
     }
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.WithDirectives]))
+
     override val onEnter: ValidationVisit = {
       // Many different AST nodes may contain directives. Rather than listing
       // them all, just listen for entering any node, and check to see if it

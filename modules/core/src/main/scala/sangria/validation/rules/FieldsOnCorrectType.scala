@@ -14,6 +14,8 @@ import sangria.validation._
   */
 class FieldsOnCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Field]))
+
     override val onEnter: ValidationVisit = { case ast.Field(_, name, _, _, _, _, _, pos) =>
       (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
         case (Some(parent), None) =>

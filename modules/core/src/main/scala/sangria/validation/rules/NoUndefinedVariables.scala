@@ -14,6 +14,11 @@ class NoUndefinedVariables extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val variableNameDefined = MutableSet[String]()
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.OperationDefinition], classOf[ast.VariableDefinition]))
+    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.OperationDefinition]))
+
     override val onEnter: ValidationVisit = {
       case _: ast.OperationDefinition =>
         variableNameDefined.clear()

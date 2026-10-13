@@ -13,6 +13,9 @@ class LoneAnonymousOperation extends ValidationRule {
   override def visitor(ctx: ValidationContext): AstValidatingVisitor = new AstValidatingVisitor {
     var operationCount = 0
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.Document], classOf[ast.OperationDefinition]))
+
     override val onEnter: ValidationVisit = {
       case ast.Document(definitions, _, _, _) =>
         operationCount = definitions.count(_.isInstanceOf[ast.OperationDefinition])

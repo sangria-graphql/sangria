@@ -14,6 +14,9 @@ class UniqueArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownArgNames = MutableSet[String]()
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.Field], classOf[ast.Directive], classOf[ast.Argument]))
+
     override val onEnter: ValidationVisit = {
       case _: ast.Field =>
         knownArgNames.clear()
