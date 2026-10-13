@@ -15,6 +15,10 @@ class InputDocumentNonConflictingVariableInference extends ValidationRule {
     private var inInputDocument = false
     private val usedVariables = new mutable.HashMap[String, (ast.Type, List[AstLocation])]
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.InputDocument], classOf[ast.VariableValue]))
+    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.InputDocument]))
+
     override val onEnter: ValidationVisit = {
       case _: ast.InputDocument =>
         inInputDocument = true

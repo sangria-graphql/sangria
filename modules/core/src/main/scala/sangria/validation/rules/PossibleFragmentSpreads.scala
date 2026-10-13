@@ -14,6 +14,9 @@ import sangria.validation._
   */
 class PossibleFragmentSpreads extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.InlineFragment], classOf[ast.FragmentSpread]))
+
     override val onEnter: ValidationVisit = {
       case f: ast.InlineFragment =>
         val errors = for {

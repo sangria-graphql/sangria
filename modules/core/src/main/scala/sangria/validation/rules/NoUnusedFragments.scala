@@ -16,6 +16,10 @@ class NoUnusedFragments extends ValidationRule {
     val fragmentDefs: ListBuffer[ast.FragmentDefinition] = ListBuffer[ast.FragmentDefinition]()
     val operationDefs: ListBuffer[ast.OperationDefinition] = ListBuffer[ast.OperationDefinition]()
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.OperationDefinition], classOf[ast.FragmentDefinition]))
+    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Document]))
+
     override val onEnter: ValidationVisit = {
       case od: ast.OperationDefinition =>
         operationDefs += od

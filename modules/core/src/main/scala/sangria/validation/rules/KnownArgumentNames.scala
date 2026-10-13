@@ -12,6 +12,8 @@ import sangria.validation._
   */
 class KnownArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Argument]))
+
     override val onEnter: ValidationVisit = { case ast.Argument(name, _, _, pos) =>
       ctx.typeInfo.ancestor(1) match {
         case _: ast.Field =>

@@ -17,6 +17,10 @@ class UniqueInputFieldNames extends ValidationRule {
     val knownNameStack = ValidatorStack.empty[MutableMap[String, Option[AstLocation]]]
     var knownNames = MutableMap[String, Option[AstLocation]]()
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.ObjectValue], classOf[ast.ObjectField]))
+    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.ObjectValue]))
+
     override val onEnter: ValidationVisit = {
       case ast.ObjectValue(_, _, _) =>
         knownNameStack.push(knownNames)

@@ -10,6 +10,9 @@ import sangria.validation._
   */
 class SingleFieldSubscriptions extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.OperationDefinition]))
+
     override val onEnter: ValidationVisit = {
       case od: ast.OperationDefinition
           if od.operationType == OperationType.Subscription && od.selections.size > 1 =>

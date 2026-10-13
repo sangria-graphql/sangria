@@ -12,6 +12,9 @@ import sangria.validation._
   */
 class VariablesAreInputTypes extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.VariableDefinition]))
+
     override val onEnter: ValidationVisit = {
       case ast.VariableDefinition(name, tpe, _, _, _, pos) =>
         ctx.schema.getInputType(tpe) match {

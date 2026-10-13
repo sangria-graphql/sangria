@@ -11,6 +11,8 @@ import sangria.validation._
   */
 class ExecutableDefinitions extends ValidationRule {
   override def visitor(ctx: ValidationContext): AstValidatingVisitor = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Document]))
+
     override val onEnter: ValidationVisit = { case ast.Document(definitions, _, _, _) =>
       val errors =
         definitions.collect {

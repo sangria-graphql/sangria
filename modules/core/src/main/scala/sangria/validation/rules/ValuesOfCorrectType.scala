@@ -15,6 +15,21 @@ import sangria.util.StringUtil
   */
 class ValuesOfCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(
+        classOf[ast.NullValue],
+        classOf[ast.ListValue],
+        classOf[ast.ObjectValue],
+        classOf[ast.ObjectField],
+        classOf[ast.EnumValue],
+        classOf[ast.IntValue],
+        classOf[ast.BigIntValue],
+        classOf[ast.FloatValue],
+        classOf[ast.BigDecimalValue],
+        classOf[ast.StringValue],
+        classOf[ast.BooleanValue]
+      ))
+
     override val onEnter: ValidationVisit = {
       case v: ast.NullValue =>
         ctx.typeInfo.inputType match {

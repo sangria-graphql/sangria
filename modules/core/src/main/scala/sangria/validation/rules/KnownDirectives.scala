@@ -14,6 +14,8 @@ import sangria.validation._
   */
 class KnownDirectives extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Directive]))
+
     override val onEnter: ValidationVisit = { case ast.Directive(name, _, _, pos) =>
       ctx.schema.directivesByName.get(name) match {
         case None =>

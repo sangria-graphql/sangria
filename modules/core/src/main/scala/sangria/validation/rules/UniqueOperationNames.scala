@@ -14,6 +14,9 @@ class UniqueOperationNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownOpNames = MutableSet[String]()
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.OperationDefinition]))
+
     override val onEnter: ValidationVisit = {
       case ast.OperationDefinition(_, Some(name), _, _, _, _, _, pos) =>
         if (knownOpNames contains name)

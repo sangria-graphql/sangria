@@ -13,6 +13,8 @@ import sangria.validation._
   */
 class ScalarLeafs extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Field]))
+
     override val onEnter: ValidationVisit = { case ast.Field(_, name, _, _, sels, _, _, pos) =>
       ctx.typeInfo.tpe match {
         case Some(fieldType) =>

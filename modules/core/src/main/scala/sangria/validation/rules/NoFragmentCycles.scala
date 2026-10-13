@@ -53,6 +53,9 @@ class NoFragmentCycles extends ValidationRule {
       } else Vector.empty
     }
 
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(classOf[ast.FragmentDefinition], classOf[ast.OperationDefinition]))
+
     override val onEnter: ValidationVisit = {
       case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _, _, _, _) =>
         if (visitedFrags.contains(fragmentName)) AstVisitorCommand.RightSkip

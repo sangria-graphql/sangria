@@ -14,6 +14,17 @@ import sangria.validation.rules.KnownTypeNames.SuggestionFunction
 class KnownTypeNames(suggestion: SuggestionFunction = SuggestionFunction.Default)
     extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
+    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
+      Vector(
+        classOf[ast.ObjectTypeDefinition],
+        classOf[ast.InterfaceTypeDefinition],
+        classOf[ast.UnionTypeDefinition],
+        classOf[ast.InputObjectTypeDefinition],
+        classOf[ast.TypeSystemExtensionDefinition],
+        classOf[ast.SchemaDefinition],
+        classOf[ast.NamedType]
+      ))
+
     override val onEnter: ValidationVisit = {
       case _: ast.ObjectTypeDefinition | _: ast.InterfaceTypeDefinition |
           _: ast.UnionTypeDefinition | _: ast.InputObjectTypeDefinition |
