@@ -7,17 +7,21 @@ import sangria.schema.ObjectType
 class ExecutionPath private (
     _path: List[Any],
     cacheKeyPath: List[String],
-    pathSizeWithoutIndexes: Int) {
+    pathSizeWithoutIndexes: Int,
+    // hash of `cacheKeyPath`, maintained incrementally to avoid walking the list on every lookup
+    val cacheKeyHash: Int = 0) {
   lazy val path: Vector[Any] = _path.reverseIterator.toVector
 
   def add(field: ast.Field, parentType: ObjectType[_, _]): ExecutionPath =
     new ExecutionPath(
       field.outputName :: _path,
       parentType.name :: field.outputName :: cacheKeyPath,
-      pathSizeWithoutIndexes = pathSizeWithoutIndexes + 1)
+      pathSizeWithoutIndexes = pathSizeWithoutIndexes + 1,
+      cacheKeyHash = (cacheKeyHash * 31 + field.outputName.hashCode) * 31 + parentType.name.hashCode
+    )
 
   def withIndex(idx: Int): ExecutionPath =
-    new ExecutionPath(idx :: _path, cacheKeyPath, pathSizeWithoutIndexes)
+    new ExecutionPath(idx :: _path, cacheKeyPath, pathSizeWithoutIndexes, cacheKeyHash)
 
   def isEmpty: Boolean = _path.isEmpty
   def nonEmpty: Boolean = _path.nonEmpty

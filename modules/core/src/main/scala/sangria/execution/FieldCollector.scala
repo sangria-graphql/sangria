@@ -17,15 +17,14 @@ class FieldCollector[Ctx, Val](
     valueCollector: ValueCollector[Ctx, _],
     exceptionHandler: ExceptionHandler) {
 
-  private val resultCache =
-    Cache.empty[(ExecutionPath.PathCacheKeyReversed, String), Try[CollectedFields]]
+  private val resultCache = Cache.empty[FieldCollector.CacheKey, Try[CollectedFields]]
 
   def collectFields(
       path: ExecutionPath,
       tpe: ObjectType[Ctx, _],
       selections: Vector[ast.SelectionContainer]): Try[CollectedFields] =
     resultCache.getOrElseUpdate(
-      path.cacheKeyReversed -> tpe.name, {
+      new FieldCollector.CacheKey(path.cacheKeyReversed, tpe.name, path.cacheKeyHash), {
         val builder: Try[CollectedFieldsBuilder] = Success(new CollectedFieldsBuilder)
 
         selections.foldLeft(builder) { case (acc, s) =>
@@ -209,6 +208,33 @@ class FieldCollector[Ctx, Val](
                 conditional.location.toList)))
       case None => Success(true)
     }
+}
+
+object FieldCollector {
+
+  /** Cache key made of the path and the type name, with a precomputed hash. Paths of sibling list
+    * elements only differ in their head, so comparing stops at the first shared tail.
+    */
+  private[execution] final class CacheKey(
+      val path: ExecutionPath.PathCacheKeyReversed,
+      val tpeName: String,
+      pathHash: Int) {
+    override val hashCode: Int = pathHash * 31 + tpeName.hashCode
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: CacheKey =>
+        hashCode == other.hashCode && tpeName == other.tpeName && {
+          var a = path
+          var b = other.path
+          while ((a ne b) && a.nonEmpty && b.nonEmpty && a.head == b.head) {
+            a = a.tail
+            b = b.tail
+          }
+          a eq b
+        }
+      case _ => false
+    }
+  }
 }
 
 case class CollectedFields(namesOrdered: Vector[String], fields: Vector[CollectedField])

@@ -1,8 +1,7 @@
 package sangria.validation
 
 import sangria.ast
-import sangria.ast.AstVisitor
-import sangria.visitor.VisitorCommand.{Continue, Skip}
+import sangria.ast.{AstVisitor, AstVisitorCommand}
 import sangria.schema._
 import sangria.introspection.isIntrospection
 import sangria.marshalling.ToInput
@@ -20,17 +19,31 @@ case class SchemaBasedDocumentAnalyzer(schema: Schema[_, _], document: ast.Docum
 
   def getVariableUsages(astNode: ast.SelectionContainer): List[VariableUsage] =
     variableUsages.getOrElseUpdate(
-      astNode.cacheKeyHash,
-      AstVisitor
-        .visitAstWithState(schema, astNode, ListBuffer[VariableUsage]()) { (typeInfo, usages) =>
-          AstVisitor {
-            case _: ast.VariableDefinition => Skip
-            case vv: ast.VariableValue =>
-              usages += VariableUsage(vv, typeInfo.inputType, typeInfo.defaultValue)
-              Continue
+      astNode.cacheKeyHash, {
+        // The recursive visitor is much cheaper than the generic one. Variable definitions are not
+        // skipped, but they can't contain variable values (default values are constants).
+        val typeInfo = new TypeInfo(schema)
+        val usages = ListBuffer[VariableUsage]()
+
+        AstVisitor.visitAstRecursive(
+          astNode,
+          onEnter = node => {
+            typeInfo.enter(node)
+            node match {
+              case vv: ast.VariableValue =>
+                usages += VariableUsage(vv, typeInfo.inputType, typeInfo.defaultValue)
+              case _ =>
+            }
+            AstVisitorCommand.Continue
+          },
+          onLeave = node => {
+            typeInfo.leave(node)
+            AstVisitorCommand.Continue
           }
-        }
-        .toList
+        )
+
+        usages.toList
+      }
     )
 
   def getRecursiveVariableUsages(operation: ast.OperationDefinition): List[VariableUsage] =

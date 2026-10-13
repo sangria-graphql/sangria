@@ -73,6 +73,15 @@ object SortedArraySet {
     }
 
     private def sortAndRemoveDuplicates(): Unit = {
+      // sets built from already sorted members without duplicates are common
+      var strictlyAscending = true
+      var k = 1
+      while (strictlyAscending && k < members.size()) {
+        strictlyAscending = comparator.compare(members.get(k - 1), members.get(k)) < 0
+        k += 1
+      }
+      if (strictlyAscending) return
+
       members.sort(comparator)
       var into = 0
       var from = 0

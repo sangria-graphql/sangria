@@ -183,9 +183,12 @@ class ResultResolver(
         else originalErrors)
 
     def add(other: ErrorRegistry) =
-      ErrorRegistry(
-        errorList ++ other.errorList,
-        if (preserveOriginalErrors) originalErrors ++ other.originalErrors else originalErrors)
+      if (other.errorList.isEmpty && (!preserveOriginalErrors || other.originalErrors.isEmpty))
+        this
+      else
+        ErrorRegistry(
+          errorList ++ other.errorList,
+          if (preserveOriginalErrors) originalErrors ++ other.originalErrors else originalErrors)
 
     private def createErrorPaths(
         path: ExecutionPath,

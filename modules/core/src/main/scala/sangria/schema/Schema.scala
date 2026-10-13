@@ -204,7 +204,7 @@ sealed trait ObjectLikeType[Ctx, Val]
   lazy val fieldsByName: Map[String, Vector[Field[Ctx, _]]] = fields.groupBy(_.name)
 
   def getField(schema: Schema[_, _], fieldName: String): Vector[Field[Ctx, _]] =
-    if (sangria.introspection.MetaFieldNames contains fieldName)
+    if (fieldName.startsWith("__") && (sangria.introspection.MetaFieldNames contains fieldName))
       if (fieldName == SchemaMetaField.name && name == schema.query.name)
         Vector(SchemaMetaField.asInstanceOf[Field[Ctx, _]])
       else if (fieldName == TypeMetaField.name && name == schema.query.name)

@@ -30,6 +30,9 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
   def parentInputType = inputTypeStack.headOption(1).flatten
   def fieldDef = fieldDefStack.headOption.flatten
   def ancestors: Seq[ast.AstNode] = ancestorStack.toSeq
+
+  /** The n-th ancestor, 0 being the node being visited. Cheaper than `ancestors`. */
+  def ancestor(n: Int): ast.AstNode = ancestorStack.head(n)
   def document = documentStack.headOption
   def defaultValue = defaultValueStack.headOption.flatten
 
@@ -103,8 +106,8 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         inputTypeStack.push(argument.map(_.inputValueType))
       case v: ast.Value =>
         // is the value part of InputValueDefinition?
-        ancestorStack.toSeq.drop(1) match {
-          case Seq(ast.InputValueDefinition(_, valueType, Some(someValue), _, _, _, _), xs @ _*)
+        ancestorStack.headOption(1) match {
+          case Some(ast.InputValueDefinition(_, valueType, Some(someValue), _, _, _, _))
               if v == someValue =>
             inputTypeStack.push(schema.getInputType(valueType))
           case _ => // noop
@@ -196,8 +199,8 @@ class TypeInfo(schema: Schema[_, _], initialType: Option[Type] = None) {
         inputTypeStack.pop()
       case v: ast.Value =>
         // is the value part of InputValueDefinition?
-        ancestorStack.toSeq.drop(1) match {
-          case Seq(ast.InputValueDefinition(_, _, Some(someValue), _, _, _, _), xs @ _*)
+        ancestorStack.headOption(1) match {
+          case Some(ast.InputValueDefinition(_, _, Some(someValue), _, _, _, _))
               if v == someValue =>
             inputTypeStack.pop()
           case _ => // noop

@@ -4,7 +4,6 @@ import sangria.since3_0_0
 
 import java.util.Locale
 import scala.collection.AbstractIterator
-import scala.collection.mutable.ListBuffer
 
 object StringUtil {
   private val camelToUpper = "_*([A-Z][a-z\\d]+)".r
@@ -33,6 +32,8 @@ object StringUtil {
     * options sorted based on their similarity with the input.
     */
   def suggestionList(input: String, options: Seq[String]): Seq[String] = {
+    if (options.isEmpty) return Nil
+
     val inputLength = input.length
     val inputThreshold = math.max(inputLength / 2, 1)
 
@@ -61,25 +62,37 @@ object StringUtil {
     *   distance in number of edits
     */
   def lexicalDistance(a: String, b: String): Int = {
-    val d = for (i <- 0 to a.length) yield ListBuffer.fill(b.length + 1)(i)
+    val aLen = a.length
+    val bLen = b.length
+    val w = bLen + 1
+    val d = new Array[Int]((aLen + 1) * w)
 
-    for (j <- 1 to b.length)
-      d(0)(j) = j
+    var i = 0
+    while (i <= aLen) { d(i * w) = i; i += 1 }
+    var j = 1
+    while (j <= bLen) { d(j) = j; j += 1 }
 
-    for {
-      i <- 1 to a.length
-      j <- 1 to b.length
-    } {
-      val cost = if (a(i - 1) == b(j - 1)) 0 else 1
+    i = 1
+    while (i <= aLen) {
+      val ac = a.charAt(i - 1)
+      j = 1
+      while (j <= bLen) {
+        val bc = b.charAt(j - 1)
+        val cost = if (ac == bc) 0 else 1
+        var v = math.min(
+          math.min(d((i - 1) * w + j) + 1, d(i * w + j - 1) + 1),
+          d((i - 1) * w + j - 1) + cost)
 
-      d(i)(j) = math.min(math.min(d(i - 1)(j) + 1, d(i)(j - 1) + 1), d(i - 1)(j - 1) + cost)
+        if (i > 1 && j > 1 && ac == b.charAt(j - 2) && a.charAt(i - 2) == bc)
+          v = math.min(v, d((i - 2) * w + j - 2) + cost)
 
-      if (i > 1 && j > 1 && a(i - 1) == b(j - 2) && a(i - 2) == b(j - 1)) {
-        d(i)(j) = math.min(d(i)(j), d(i - 2)(j - 2) + cost)
+        d(i * w + j) = v
+        j += 1
       }
+      i += 1
     }
 
-    d(a.length)(b.length)
+    d(aLen * w + bLen)
   }
 
   def escapeBlockString(str: String): String = str.replaceAll("\"\"\"", "\\\\\"\"\"")

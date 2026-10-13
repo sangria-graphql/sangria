@@ -23,6 +23,9 @@ class SelectionField private (
 
   val childSelection: SelectionContainer =
     new SelectionContainer
+
+  // ids are unique per builder, which is cheaper than the identity hash code
+  override def hashCode: Int = id
 }
 
 object SelectionField {
