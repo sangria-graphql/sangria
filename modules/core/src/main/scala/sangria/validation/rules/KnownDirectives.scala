@@ -19,7 +19,7 @@ class KnownDirectives extends ValidationRule {
         case None =>
           Left(Vector(UnknownDirectiveViolation(name, ctx.sourceMapper, pos.toList)))
         case Some(dir) =>
-          getCorrectLocation(ctx.typeInfo.ancestors) match {
+          KnownDirectives.getLocation(ctx.typeInfo.ancestor(1), ctx.typeInfo.ancestor(2)) match {
             case None =>
               Left(Vector(MisplacedDirectiveViolation(name, None, ctx.sourceMapper, pos.toList)))
             case correct @ Some((correctLocation, _)) if !dir.locations.contains(correctLocation) =>
@@ -28,9 +28,6 @@ class KnownDirectives extends ValidationRule {
           }
       }
     }
-
-    def getCorrectLocation(ancestors: Seq[AstNode]): Option[(DirectiveLocation.Value, String)] =
-      KnownDirectives.getLocation(ancestors.drop(1).head, ancestors.drop(2).head)
   }
 }
 

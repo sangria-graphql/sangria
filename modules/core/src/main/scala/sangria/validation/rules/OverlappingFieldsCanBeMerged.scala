@@ -32,7 +32,8 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
       override val onEnter: ValidationVisit = {
         case field: ast.Field =>
           val parentType = ctx.typeInfo.previousParentType
-          val outputType = parentType.flatMap(ctx.typeInfo.getFieldDef(_, field)).map(_.fieldType)
+          // TypeInfo.enter already resolved the field definition of this field
+          val outputType = ctx.typeInfo.fieldDef.map(_.fieldType)
           selectionBuilder.enterField(parentType, field, outputType)
           AstVisitorCommand.RightContinue
 

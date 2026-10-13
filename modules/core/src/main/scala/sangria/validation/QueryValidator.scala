@@ -65,6 +65,17 @@ object QueryValidator {
   val default: RuleBasedQueryValidator = ruleBased(allRules)
 }
 
+object RuleBasedQueryValidator {
+
+  // a distinct instance, compared by reference, that tells a visitor did not match the node
+  private[validation] val notMatchedResult: Either[Vector[Violation], AstVisitorCommand.Value] =
+    Right(AstVisitorCommand.Continue)
+
+  private[validation] val notMatched
+      : ast.AstNode => Either[Vector[Violation], AstVisitorCommand.Value] =
+    _ => notMatchedResult
+}
+
 class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
   def validateQuery(
       schema: Schema[_, _],
@@ -124,33 +135,50 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
       queryAst: ast.AstNode,
       ctx: ValidationContext,
       visitors: List[ValidationRule#AstValidatingVisitor],
-      topLevel: Boolean): Unit = AstVisitor.visitAstRecursive(
-    doc = queryAst,
-    onEnter = node => {
-      ctx.typeInfo.enter(node)
+      topLevel: Boolean): Unit = {
+    val visitorsArray = visitors.toArray
+    val size = visitorsArray.length
 
-      visitors.foreach { visitor =>
-        if (ctx.validVisitor(visitor) && visitor.onEnter.isDefinedAt(node)) {
-          handleResult(ctx, node, visitor, visitor.onEnter(node))
+    AstVisitor.visitAstRecursive(
+      doc = queryAst,
+      onEnter = node => {
+        ctx.typeInfo.enter(node)
+
+        var i = 0
+        while (i < size) {
+          val visitor = visitorsArray(i)
+          if (ctx.validVisitor(visitor)) {
+            // applyOrElse matches the node only once, unlike isDefinedAt followed by apply
+            val result = visitor.onEnter.applyOrElse(node, RuleBasedQueryValidator.notMatched)
+            if (result ne RuleBasedQueryValidator.notMatchedResult)
+              handleResult(ctx, node, visitor, result)
+          }
+          i += 1
         }
-      }
 
-      Continue
-    },
-    onLeave = node => {
-      visitors.foreach { visitor =>
-        if (visitor.onLeave.isDefinedAt(node) && ctx.validVisitor(visitor)) {
-          handleResult(ctx, node, visitor, visitor.onLeave(node))
+        Continue
+      },
+      onLeave = node => {
+        var i = 0
+        while (i < size) {
+          val visitor = visitorsArray(i)
+          if (ctx.validVisitor(visitor)) {
+            val result = visitor.onLeave.applyOrElse(node, RuleBasedQueryValidator.notMatched)
+            if (result ne RuleBasedQueryValidator.notMatchedResult)
+              handleResult(ctx, node, visitor, result)
+          }
+
+          if (ctx.skips.nonEmpty && ctx.skips.get(visitor).exists(_ eq node))
+            ctx.skips.remove(visitor)
+
+          i += 1
         }
 
-        if (ctx.skips.get(visitor).exists(_ eq node))
-          ctx.skips.remove(visitor)
+        ctx.typeInfo.leave(node)
+        Continue
       }
-
-      ctx.typeInfo.leave(node)
-      Continue
-    }
-  )
+    )
+  }
 
   def handleResult(
       ctx: ValidationContext,
@@ -192,7 +220,8 @@ class ValidationContext(
   val skips = MutableMap[ValidationRule#AstValidatingVisitor, ast.AstNode]()
 
   def validVisitor(visitor: ValidationRule#AstValidatingVisitor) =
-    !ignoredVisitors.contains(visitor) && !skips.contains(visitor)
+    (ignoredVisitors.isEmpty || !ignoredVisitors.contains(visitor)) &&
+      (skips.isEmpty || !skips.contains(visitor))
 
   def addViolation(v: Violation) = errorsLimit.fold(errors += v) { limit =>
     if (errors.length >= limit) errors

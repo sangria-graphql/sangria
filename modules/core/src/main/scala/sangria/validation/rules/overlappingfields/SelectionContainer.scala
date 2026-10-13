@@ -5,6 +5,9 @@ import java.util.function.Consumer
 
 class SelectionContainer {
 
+  // cheaper than the identity hash code, which is computed lazily by the JVM
+  override val hashCode: Int = SelectionContainer.nextHash()
+
   // Tracking the state of computeEffectiveSelections
   private var inProgress: Boolean = false
   private var done: Boolean = false
@@ -64,6 +67,10 @@ class SelectionContainer {
 }
 
 object SelectionContainer {
+
+  private val hashCounter = new java.util.concurrent.atomic.AtomicInteger()
+
+  private def nextHash(): Int = hashCounter.incrementAndGet() * 0x9e3779b1
 
   def children(fields: SortedArraySet[SelectionField]): SortedArraySet[SelectionField] = {
     val childSelections = new util.LinkedHashSet[SelectionContainer]()
