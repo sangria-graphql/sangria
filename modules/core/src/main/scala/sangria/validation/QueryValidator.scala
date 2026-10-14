@@ -75,30 +75,44 @@ object RuleBasedQueryValidator {
       : ast.AstNode => Either[Vector[Violation], AstVisitorCommand.Value] =
     _ => notMatchedResult
 
-  /** The classes of the visitors, compared by reference. */
-  private final class VisitorClasses(val classes: Array[Class[_]]) {
-    override val hashCode: Int = java.util.Arrays.hashCode(classes.asInstanceOf[Array[AnyRef]])
+  /** What the dispatch of a set of visitors depends on: their classes and whether their `onEnter`
+    * and `onLeave` are the empty function. A class can have both kinds of visitors, for example
+    * when a rule only validates under some condition, so the classes alone are not enough.
+    */
+  private final class VisitorsKey(val classes: Array[Class[_]], val empty: Array[Boolean]) {
+    override val hashCode: Int =
+      31 * java.util.Arrays.hashCode(classes.asInstanceOf[Array[AnyRef]]) +
+        java.util.Arrays.hashCode(empty)
 
     override def equals(obj: Any): Boolean = obj match {
-      case other: VisitorClasses =>
-        java.util.Arrays
-          .equals(classes.asInstanceOf[Array[AnyRef]], other.classes.asInstanceOf[Array[AnyRef]])
+      case other: VisitorsKey =>
+        java.util.Arrays.equals(
+          classes.asInstanceOf[Array[AnyRef]],
+          other.classes.asInstanceOf[Array[AnyRef]]) && java.util.Arrays.equals(empty, other.empty)
       case _ => false
     }
   }
 
-  // The dispatch only depends on the declared nodes of the visitors, which are the same for all the
-  // visitors of a class (see `AstValidatingVisitor.onEnterNodes`), so it is shared by the requests.
+  // The dispatch only depends on the kinds of nodes the visitors handle. For the visitors of a class
+  // they are the same, except that a visitor can have no `onEnter`/`onLeave` (see `VisitorsKey`);
+  // see `AstValidatingVisitor.onEnterNodes`. So the dispatch is shared by the requests.
   // shortcut: one entry per distinct set of rules, never evicted; fine unless rule sets are
   // generated dynamically
   private val dispatches =
-    new java.util.concurrent.ConcurrentHashMap[VisitorClasses, (Dispatch, Dispatch)]
+    new java.util.concurrent.ConcurrentHashMap[VisitorsKey, (Dispatch, Dispatch)]
 
   private val noDispatch = (new Dispatch(Array.empty), new Dispatch(Array.empty)) // by reference
 
   private[validation] def dispatchFor(
       visitors: Array[ValidationRule#AstValidatingVisitor]): (Dispatch, Dispatch) = {
-    val key = new VisitorClasses(visitors.map(_.getClass: Class[_]))
+    val empty = new Array[Boolean](visitors.length * 2)
+    var i = 0
+    while (i < visitors.length) {
+      empty(2 * i) = visitors(i).onEnter eq PartialFunction.empty
+      empty(2 * i + 1) = visitors(i).onLeave eq PartialFunction.empty
+      i += 1
+    }
+    val key = new VisitorsKey(visitors.map(_.getClass: Class[_]), empty)
     val cached = dispatches.getOrDefault(key, noDispatch)
     if (cached ne noDispatch) cached
     else {
