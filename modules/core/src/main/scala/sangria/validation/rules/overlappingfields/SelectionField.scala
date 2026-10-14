@@ -22,7 +22,7 @@ class SelectionField private (
     new FieldNameAndArguments(astField)
 
   val childSelection: SelectionContainer =
-    new SelectionContainer
+    new SelectionContainer(id)
 
   // ids are unique per builder, which is cheaper than the identity hash code
   override def hashCode: Int = id
