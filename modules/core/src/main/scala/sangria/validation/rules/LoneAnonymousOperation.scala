@@ -13,18 +13,17 @@ class LoneAnonymousOperation extends ValidationRule {
   override def visitor(ctx: ValidationContext): AstValidatingVisitor = new AstValidatingVisitor {
     var operationCount = 0
 
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.Document], classOf[ast.OperationDefinition]))
-
-    override val onEnter: ValidationVisit = {
-      case ast.Document(definitions, _, _, _) =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.Document] { case ast.Document(definitions, _, _, _) =>
         operationCount = definitions.count(_.isInstanceOf[ast.OperationDefinition])
         AstVisitorCommand.RightContinue
-      case op: ast.OperationDefinition =>
+      },
+      on[ast.OperationDefinition] { case op =>
         if (op.name.isEmpty && operationCount > 1)
           Left(Vector(AnonOperationNotAloneViolation(ctx.sourceMapper, op.location.toList)))
         else
           AstVisitorCommand.RightContinue
-    }
+      }
+    )
   }
 }

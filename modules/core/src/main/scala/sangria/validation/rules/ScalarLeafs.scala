@@ -13,32 +13,32 @@ import sangria.validation._
   */
 class ScalarLeafs extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Field]))
-
-    override val onEnter: ValidationVisit = { case ast.Field(_, name, _, _, sels, _, _, pos) =>
-      ctx.typeInfo.tpe match {
-        case Some(fieldType) =>
-          fieldType.namedType match {
-            case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty =>
-              Left(
-                Vector(
-                  NoSubselectionAllowedViolation(
-                    name,
-                    SchemaRenderer.renderTypeName(tpe, true),
-                    ctx.sourceMapper,
-                    pos.toList)))
-            case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty =>
-              Left(
-                Vector(
-                  RequiredSubselectionViolation(
-                    name,
-                    SchemaRenderer.renderTypeName(fieldType, false),
-                    ctx.sourceMapper,
-                    pos.toList)))
-            case _ => AstVisitorCommand.RightContinue
-          }
-        case None => AstVisitorCommand.RightContinue
+    override val onEnter: ValidationVisit = visits(
+      on[ast.Field] { case ast.Field(_, name, _, _, sels, _, _, pos) =>
+        ctx.typeInfo.tpe match {
+          case Some(fieldType) =>
+            fieldType.namedType match {
+              case tpe if tpe.isInstanceOf[LeafType] && sels.nonEmpty =>
+                Left(
+                  Vector(
+                    NoSubselectionAllowedViolation(
+                      name,
+                      SchemaRenderer.renderTypeName(tpe, true),
+                      ctx.sourceMapper,
+                      pos.toList)))
+              case tpe if !tpe.isInstanceOf[LeafType] && sels.isEmpty =>
+                Left(
+                  Vector(
+                    RequiredSubselectionViolation(
+                      name,
+                      SchemaRenderer.renderTypeName(fieldType, false),
+                      ctx.sourceMapper,
+                      pos.toList)))
+              case _ => AstVisitorCommand.RightContinue
+            }
+          case None => AstVisitorCommand.RightContinue
+        }
       }
-    }
+    )
   }
 }

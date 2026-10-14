@@ -12,11 +12,8 @@ import sangria.validation._
   */
 class ProvidedRequiredArguments extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.Field], classOf[ast.Directive]))
-
-    override val onLeave: ValidationVisit = {
-      case ast.Field(_, name, args, _, _, _, _, pos) =>
+    override val onLeave: ValidationVisit = visits(
+      on[ast.Field] { case ast.Field(_, name, args, _, _, _, _, pos) =>
         ctx.typeInfo.fieldDef match {
           case None => AstVisitorCommand.RightContinue
           case Some(fieldDef) =>
@@ -36,8 +33,8 @@ class ProvidedRequiredArguments extends ValidationRule {
 
             if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
         }
-
-      case ast.Directive(name, args, _, pos) =>
+      },
+      on[ast.Directive] { case ast.Directive(name, args, _, pos) =>
         ctx.typeInfo.directive match {
           case None => AstVisitorCommand.RightContinue
           case Some(dirDef) =>
@@ -57,6 +54,7 @@ class ProvidedRequiredArguments extends ValidationRule {
 
             if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
         }
-    }
+      }
+    )
   }
 }

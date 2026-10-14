@@ -18,11 +18,8 @@ import sangria.validation.{
   */
 class FragmentsOnCompositeTypes extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.InlineFragment], classOf[ast.FragmentDefinition]))
-
-    override val onEnter: ValidationVisit = {
-      case ast.InlineFragment(Some(cond), _, _, _, _, pos) =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.InlineFragment] { case ast.InlineFragment(Some(cond), _, _, _, _, pos) =>
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] =>
             Left(
@@ -34,7 +31,8 @@ class FragmentsOnCompositeTypes extends ValidationRule {
           case _ =>
             AstVisitorCommand.RightContinue
         }
-      case ast.FragmentDefinition(name, cond, _, _, _, _, _, pos) =>
+      },
+      on[ast.FragmentDefinition] { case ast.FragmentDefinition(name, cond, _, _, _, _, _, pos) =>
         ctx.typeInfo.tpe match {
           case Some(tpe) if !tpe.isInstanceOf[CompositeType[_]] =>
             Left(
@@ -47,6 +45,7 @@ class FragmentsOnCompositeTypes extends ValidationRule {
           case _ =>
             AstVisitorCommand.RightContinue
         }
-    }
+      }
+    )
   }
 }

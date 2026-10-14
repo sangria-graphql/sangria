@@ -14,29 +14,29 @@ import sangria.validation._
   */
 class FieldsOnCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Field]))
+    override val onEnter: ValidationVisit = visits(
+      on[ast.Field] { case ast.Field(_, name, _, _, _, _, _, pos) =>
+        (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
+          case (Some(parent), None) =>
+            val suggestedTypeNames = collectSuggestedTypes(parent, name)
+            val suggestedFieldNames =
+              if (suggestedTypeNames.nonEmpty) Vector.empty
+              else collectSuggestedFieldNames(ctx.schema, parent, name)
 
-    override val onEnter: ValidationVisit = { case ast.Field(_, name, _, _, _, _, _, pos) =>
-      (ctx.typeInfo.previousParentType, ctx.typeInfo.fieldDef) match {
-        case (Some(parent), None) =>
-          val suggestedTypeNames = collectSuggestedTypes(parent, name)
-          val suggestedFieldNames =
-            if (suggestedTypeNames.nonEmpty) Vector.empty
-            else collectSuggestedFieldNames(ctx.schema, parent, name)
-
-          Left(
-            Vector(
-              UndefinedFieldViolation(
-                name,
-                SchemaRenderer.renderTypeName(parent, topLevel = true),
-                suggestedTypeNames,
-                suggestedFieldNames,
-                ctx.sourceMapper,
-                pos.toList)))
-        case _ =>
-          AstVisitorCommand.RightContinue
+            Left(
+              Vector(
+                UndefinedFieldViolation(
+                  name,
+                  SchemaRenderer.renderTypeName(parent, topLevel = true),
+                  suggestedTypeNames,
+                  suggestedFieldNames,
+                  ctx.sourceMapper,
+                  pos.toList)))
+          case _ =>
+            AstVisitorCommand.RightContinue
+        }
       }
-    }
+    )
 
     def collectSuggestedFieldNames(schema: Schema[_, _], tpe: CompositeType[_], fieldName: String) =
       tpe match {

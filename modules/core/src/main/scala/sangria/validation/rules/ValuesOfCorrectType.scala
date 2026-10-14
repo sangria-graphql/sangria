@@ -15,29 +15,14 @@ import sangria.util.StringUtil
   */
 class ValuesOfCorrectType extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(
-        classOf[ast.NullValue],
-        classOf[ast.ListValue],
-        classOf[ast.ObjectValue],
-        classOf[ast.ObjectField],
-        classOf[ast.EnumValue],
-        classOf[ast.IntValue],
-        classOf[ast.BigIntValue],
-        classOf[ast.FloatValue],
-        classOf[ast.BigDecimalValue],
-        classOf[ast.StringValue],
-        classOf[ast.BooleanValue]
-      ))
-
-    override val onEnter: ValidationVisit = {
-      case v: ast.NullValue =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.NullValue] { case v =>
         ctx.typeInfo.inputType match {
           case Some(tpe) if !tpe.isOptional => badValue(tpe, v)
           case _ => RightContinue
         }
-
-      case v: ast.ListValue =>
+      },
+      on[ast.ListValue] { case v =>
         // Note: TypeInfo will traverse into a list's item type, so look to the parent input type to check if it is a list.
         ctx.typeInfo.parentInputType match {
           case Some(tpe) if !tpe.nonOptionalType.isList =>
@@ -47,8 +32,8 @@ class ValuesOfCorrectType extends ValidationRule {
             }
           case _ => RightContinue
         }
-
-      case v: ast.ObjectValue =>
+      },
+      on[ast.ObjectValue] { case v =>
         ctx.typeInfo.inputType.map(_.namedType) match {
           case Some(tpe: InputObjectType[_]) =>
             val errors =
@@ -77,8 +62,8 @@ class ValuesOfCorrectType extends ValidationRule {
 
           case _ => RightContinue
         }
-
-      case v: ast.ObjectField =>
+      },
+      on[ast.ObjectField] { case v =>
         (ctx.typeInfo.parentInputType.map(_.namedType), ctx.typeInfo.inputType) match {
           case (Some(tpe: InputObjectType[_]), None) =>
             val suggestions = StringUtil.suggestionList(v.name, tpe.fields.map(_.name))
@@ -97,8 +82,8 @@ class ValuesOfCorrectType extends ValidationRule {
 
           case _ => RightContinue
         }
-
-      case v: ast.EnumValue =>
+      },
+      on[ast.EnumValue] { case v =>
         ctx.typeInfo.inputType.map(_.namedType) match {
           case Some(tpe: EnumType[_]) =>
             tpe.coerceInput(v) match {
@@ -108,14 +93,26 @@ class ValuesOfCorrectType extends ValidationRule {
 
           case _ => isValidScalar(v)
         }
-
-      case v: ast.IntValue => isValidScalar(v)
-      case v: ast.BigIntValue => isValidScalar(v)
-      case v: ast.FloatValue => isValidScalar(v)
-      case v: ast.BigDecimalValue => isValidScalar(v)
-      case v: ast.StringValue => isValidScalar(v)
-      case v: ast.BooleanValue => isValidScalar(v)
-    }
+      },
+      on[ast.IntValue] { case v =>
+        isValidScalar(v)
+      },
+      on[ast.BigIntValue] { case v =>
+        isValidScalar(v)
+      },
+      on[ast.FloatValue] { case v =>
+        isValidScalar(v)
+      },
+      on[ast.BigDecimalValue] { case v =>
+        isValidScalar(v)
+      },
+      on[ast.StringValue] { case v =>
+        isValidScalar(v)
+      },
+      on[ast.BooleanValue] { case v =>
+        isValidScalar(v)
+      }
+    )
 
     def badValue(tpe: Type, node: ast.AstNode, violation: Option[Violation] = None) =
       Left(badValueV(SchemaRenderer.renderTypeName(tpe), node, violation))

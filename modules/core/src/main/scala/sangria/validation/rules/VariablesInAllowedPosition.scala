@@ -15,51 +15,49 @@ class VariablesInAllowedPosition extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val varDefs = MutableMap[String, ast.VariableDefinition]()
 
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.OperationDefinition], classOf[ast.VariableDefinition]))
-    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.OperationDefinition]))
-
-    override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case _ =>
         varDefs.clear()
         AstVisitorCommand.RightContinue
-
-      case varDef: ast.VariableDefinition =>
+      },
+      on[ast.VariableDefinition] { case varDef =>
         varDefs(varDef.name) = varDef
         AstVisitorCommand.RightContinue
-    }
-
-    override def onLeave: ValidationVisit = { case operation: ast.OperationDefinition =>
-      val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
-
-      // A var type is allowed if it is the same or more strict (e.g. is
-      // a subtype of) than the expected type. It can be more strict if
-      // the variable type is non-null when the expected type is nullable.
-      // If both are list types, the variable item type can be more strict
-      // than the expected item type (contravariant).
-      val errors = usages.toVector.flatMap { usage =>
-        for {
-          varDef <- varDefs.get(usage.node.name)
-          tpe <- usage.tpe
-          inputTpe <- ctx.schema.getInputType(varDef.tpe)
-          if !allowedVariableUsage(
-            ctx.schema,
-            inputTpe,
-            varDef.defaultValue,
-            tpe,
-            usage.defaultValue)
-        } yield BadVarPositionViolation(
-          usage.node.name,
-          SchemaRenderer.renderTypeName(inputTpe),
-          SchemaRenderer.renderTypeName(tpe),
-          ctx.sourceMapper,
-          varDef.location.toList ++ usage.node.location.toList
-        )
       }
+    )
 
-      if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
-    }
+    override val onLeave: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case operation =>
+        val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
+
+        // A var type is allowed if it is the same or more strict (e.g. is
+        // a subtype of) than the expected type. It can be more strict if
+        // the variable type is non-null when the expected type is nullable.
+        // If both are list types, the variable item type can be more strict
+        // than the expected item type (contravariant).
+        val errors = usages.toVector.flatMap { usage =>
+          for {
+            varDef <- varDefs.get(usage.node.name)
+            tpe <- usage.tpe
+            inputTpe <- ctx.schema.getInputType(varDef.tpe)
+            if !allowedVariableUsage(
+              ctx.schema,
+              inputTpe,
+              varDef.defaultValue,
+              tpe,
+              usage.defaultValue)
+          } yield BadVarPositionViolation(
+            usage.node.name,
+            SchemaRenderer.renderTypeName(inputTpe),
+            SchemaRenderer.renderTypeName(tpe),
+            ctx.sourceMapper,
+            varDef.location.toList ++ usage.node.location.toList
+          )
+        }
+
+        if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
+      }
+    )
 
     /** Returns true if the variable is allowed in the location it was found, which includes
       * considering if default values exist for either the variable or the location at which it is

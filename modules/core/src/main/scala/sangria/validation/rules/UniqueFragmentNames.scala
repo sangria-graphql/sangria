@@ -14,17 +14,20 @@ class UniqueFragmentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownFragmentNames = MutableSet[String]()
 
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.FragmentDefinition]))
-
-    override val onEnter: ValidationVisit = { case fragDef: ast.FragmentDefinition =>
-      if (knownFragmentNames contains fragDef.name)
-        Left(Vector(
-          DuplicateFragmentNameViolation(fragDef.name, ctx.sourceMapper, fragDef.location.toList)))
-      else {
-        knownFragmentNames += fragDef.name
-        AstVisitorCommand.RightContinue
+    override val onEnter: ValidationVisit = visits(
+      on[ast.FragmentDefinition] { case fragDef =>
+        if (knownFragmentNames contains fragDef.name)
+          Left(
+            Vector(
+              DuplicateFragmentNameViolation(
+                fragDef.name,
+                ctx.sourceMapper,
+                fragDef.location.toList)))
+        else {
+          knownFragmentNames += fragDef.name
+          AstVisitorCommand.RightContinue
+        }
       }
-    }
+    )
   }
 }

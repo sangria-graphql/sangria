@@ -15,32 +15,30 @@ class NoUnusedVariables extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val variableDefs = ListBuffer[ast.VariableDefinition]()
 
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.OperationDefinition], classOf[ast.VariableDefinition]))
-    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.OperationDefinition]))
-
-    override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case _ =>
         variableDefs.clear()
         AstVisitorCommand.RightContinue
-
-      case varDef: ast.VariableDefinition =>
+      },
+      on[ast.VariableDefinition] { case varDef =>
         variableDefs += varDef
         AstVisitorCommand.RightContinue
-    }
+      }
+    )
 
-    override def onLeave: ValidationVisit = { case operation: ast.OperationDefinition =>
-      val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
-      val variableNameUsed = usages.map(_.node.name).toSet
+    override val onLeave: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case operation =>
+        val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
+        val variableNameUsed = usages.map(_.node.name).toSet
 
-      val errors = variableDefs
-        .filterNot(vd => variableNameUsed.contains(vd.name))
-        .toVector
-        .map(vd =>
-          UnusedVariableViolation(vd.name, operation.name, ctx.sourceMapper, vd.location.toList))
+        val errors = variableDefs
+          .filterNot(vd => variableNameUsed.contains(vd.name))
+          .toVector
+          .map(vd =>
+            UnusedVariableViolation(vd.name, operation.name, ctx.sourceMapper, vd.location.toList))
 
-      if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
-    }
+        if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
+      }
+    )
   }
 }

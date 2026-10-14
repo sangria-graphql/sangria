@@ -12,16 +12,14 @@ import sangria.validation._
   */
 class KnownArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Argument]))
-
-    override val onEnter: ValidationVisit = { case ast.Argument(name, _, _, pos) =>
-      ctx.typeInfo.ancestor(1) match {
-        case _: ast.Field =>
-          ctx.typeInfo.fieldDef match {
-            case Some(field) if !field.arguments.exists(_.name == name) =>
-              Left(
-                Vector(
-                  UnknownArgViolation(
+    override val onEnter: ValidationVisit = visits(
+      on[ast.Argument] { case ast.Argument(name, _, _, pos) =>
+        ctx.typeInfo.ancestor(1) match {
+          case _: ast.Field =>
+            ctx.typeInfo.fieldDef match {
+              case Some(field) if !field.arguments.exists(_.name == name) =>
+                Left(
+                  Vector(UnknownArgViolation(
                     name,
                     field.name,
                     ctx.typeInfo.previousParentType.fold("")(
@@ -30,28 +28,29 @@ class KnownArgumentNames extends ValidationRule {
                     ctx.sourceMapper,
                     pos.toList
                   )))
-            case _ =>
-              AstVisitorCommand.RightContinue
-          }
+              case _ =>
+                AstVisitorCommand.RightContinue
+            }
 
-        case _: ast.Directive =>
-          ctx.typeInfo.directive match {
-            case Some(dir) if !dir.arguments.exists(_.name == name) =>
-              Left(
-                Vector(
-                  UnknownDirectiveArgViolation(
-                    name,
-                    dir.name,
-                    StringUtil.suggestionList(name, dir.arguments.map(_.name)),
-                    ctx.sourceMapper,
-                    pos.toList)))
-            case _ =>
-              AstVisitorCommand.RightContinue
-          }
+          case _: ast.Directive =>
+            ctx.typeInfo.directive match {
+              case Some(dir) if !dir.arguments.exists(_.name == name) =>
+                Left(
+                  Vector(
+                    UnknownDirectiveArgViolation(
+                      name,
+                      dir.name,
+                      StringUtil.suggestionList(name, dir.arguments.map(_.name)),
+                      ctx.sourceMapper,
+                      pos.toList)))
+              case _ =>
+                AstVisitorCommand.RightContinue
+            }
 
-        case _ =>
-          AstVisitorCommand.RightContinue
+          case _ =>
+            AstVisitorCommand.RightContinue
+        }
       }
-    }
+    )
   }
 }

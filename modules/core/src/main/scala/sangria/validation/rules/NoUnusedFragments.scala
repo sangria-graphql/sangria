@@ -16,33 +16,32 @@ class NoUnusedFragments extends ValidationRule {
     val fragmentDefs: ListBuffer[ast.FragmentDefinition] = ListBuffer[ast.FragmentDefinition]()
     val operationDefs: ListBuffer[ast.OperationDefinition] = ListBuffer[ast.OperationDefinition]()
 
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.OperationDefinition], classOf[ast.FragmentDefinition]))
-    override val onLeaveNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Document]))
-
-    override val onEnter: ValidationVisit = {
-      case od: ast.OperationDefinition =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case od =>
         operationDefs += od
         AstVisitorCommand.RightSkip
-
-      case fd: ast.FragmentDefinition =>
+      },
+      on[ast.FragmentDefinition] { case fd =>
         fragmentDefs += fd
         AstVisitorCommand.RightSkip
-    }
+      }
+    )
 
-    override def onLeave: ValidationVisit = { case _: ast.Document =>
-      val fragmentNameUsed = MutableSet[String]()
+    override val onLeave: ValidationVisit = visits(
+      on[ast.Document] { case _ =>
+        val fragmentNameUsed = MutableSet[String]()
 
-      operationDefs.foreach(operation =>
-        ctx.documentAnalyzer
-          .getRecursivelyReferencedFragments(operation)
-          .foreach(fragment => fragmentNameUsed += fragment.name))
+        operationDefs.foreach(operation =>
+          ctx.documentAnalyzer
+            .getRecursivelyReferencedFragments(operation)
+            .foreach(fragment => fragmentNameUsed += fragment.name))
 
-      val errors = fragmentDefs.toVector
-        .filter(fd => !fragmentNameUsed.contains(fd.name))
-        .map(fd => UnusedFragmentViolation(fd.name, ctx.sourceMapper, fd.location.toList))
+        val errors = fragmentDefs.toVector
+          .filter(fd => !fragmentNameUsed.contains(fd.name))
+          .map(fd => UnusedFragmentViolation(fd.name, ctx.sourceMapper, fd.location.toList))
 
-      if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
-    }
+        if (errors.nonEmpty) Left(errors) else AstVisitorCommand.RightContinue
+      }
+    )
   }
 }

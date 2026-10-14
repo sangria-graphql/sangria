@@ -14,22 +14,24 @@ import sangria.validation._
   */
 class KnownDirectives extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(Vector(classOf[ast.Directive]))
-
-    override val onEnter: ValidationVisit = { case ast.Directive(name, _, _, pos) =>
-      ctx.schema.directivesByName.get(name) match {
-        case None =>
-          Left(Vector(UnknownDirectiveViolation(name, ctx.sourceMapper, pos.toList)))
-        case Some(dir) =>
-          KnownDirectives.getLocation(ctx.typeInfo.ancestor(1), ctx.typeInfo.ancestor(2)) match {
-            case None =>
-              Left(Vector(MisplacedDirectiveViolation(name, None, ctx.sourceMapper, pos.toList)))
-            case correct @ Some((correctLocation, _)) if !dir.locations.contains(correctLocation) =>
-              Left(Vector(MisplacedDirectiveViolation(name, correct, ctx.sourceMapper, pos.toList)))
-            case _ => AstVisitorCommand.RightContinue
-          }
+    override val onEnter: ValidationVisit = visits(
+      on[ast.Directive] { case ast.Directive(name, _, _, pos) =>
+        ctx.schema.directivesByName.get(name) match {
+          case None =>
+            Left(Vector(UnknownDirectiveViolation(name, ctx.sourceMapper, pos.toList)))
+          case Some(dir) =>
+            KnownDirectives.getLocation(ctx.typeInfo.ancestor(1), ctx.typeInfo.ancestor(2)) match {
+              case None =>
+                Left(Vector(MisplacedDirectiveViolation(name, None, ctx.sourceMapper, pos.toList)))
+              case correct @ Some((correctLocation, _))
+                  if !dir.locations.contains(correctLocation) =>
+                Left(
+                  Vector(MisplacedDirectiveViolation(name, correct, ctx.sourceMapper, pos.toList)))
+              case _ => AstVisitorCommand.RightContinue
+            }
+        }
       }
-    }
+    )
   }
 }
 

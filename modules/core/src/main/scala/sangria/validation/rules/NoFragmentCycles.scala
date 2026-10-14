@@ -53,20 +53,20 @@ class NoFragmentCycles extends ValidationRule {
       } else Vector.empty
     }
 
-    override val onEnterNodes: Option[Vector[Class[_]]] = Some(
-      Vector(classOf[ast.FragmentDefinition], classOf[ast.OperationDefinition]))
+    override val onEnter: ValidationVisit = visits(
+      on[ast.FragmentDefinition] {
+        case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _, _, _, _) =>
+          if (visitedFrags.contains(fragmentName)) AstVisitorCommand.RightSkip
+          else {
+            val errors = detectCycleRecursive(fragmentDef)
 
-    override val onEnter: ValidationVisit = {
-      case fragmentDef @ ast.FragmentDefinition(fragmentName, _, _, _, _, _, _, _) =>
-        if (visitedFrags.contains(fragmentName)) AstVisitorCommand.RightSkip
-        else {
-          val errors = detectCycleRecursive(fragmentDef)
-
-          if (errors.nonEmpty) Left(errors)
-          else AstVisitorCommand.RightContinue
-        }
-
-      case _: ast.OperationDefinition => AstVisitorCommand.RightSkip
-    }
+            if (errors.nonEmpty) Left(errors)
+            else AstVisitorCommand.RightContinue
+          }
+      },
+      on[ast.OperationDefinition] { case _ =>
+        AstVisitorCommand.RightSkip
+      }
+    )
   }
 }
