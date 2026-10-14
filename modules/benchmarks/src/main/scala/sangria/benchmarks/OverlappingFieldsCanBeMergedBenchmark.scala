@@ -97,6 +97,12 @@ class OverlappingFieldsCanBeMergedBenchmark {
   def benchmarkDeepAbstractConcrete(bh: Blackhole): Unit =
     bh.consume(doValidate(validator, deepAbstractConcrete))
 
+  /** Runs on all cores to expose contention on state shared between validations. */
+  @Benchmark
+  @Threads(Threads.MAX)
+  def benchmarkNoOverlapFragMultiThreaded(bh: Blackhole): Unit =
+    bh.consume(doValidate(validator, noOverlapFrag))
+
   private def doValidate(validator: QueryValidator, document: Document): Vector[Violation] = {
     val result = validator.validateQuery(schema, document, Map.empty, None)
     require(result.isEmpty)

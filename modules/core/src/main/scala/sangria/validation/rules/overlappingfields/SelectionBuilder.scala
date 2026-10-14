@@ -15,6 +15,15 @@ class SelectionBuilder {
 
   private val fieldBuilder = new SelectionField.Builder()
 
+  // Not thread-safe on purpose: a SelectionBuilder is created per validation run (in the rule's
+  // `visitor`) and the AST is visited sequentially, so no two threads share this counter.
+  private var containerId: Int = 0
+
+  private def newContainer(): SelectionContainer = {
+    containerId += 1
+    new SelectionContainer(containerId)
+  }
+
   private val fragments: util.HashMap[String, SelectionContainer] = new util.HashMap()
 
   private val roots: util.ArrayList[SelectionContainer] = new util.ArrayList()
@@ -41,7 +50,7 @@ class SelectionBuilder {
     stack.push(getOrInitFragment(name))
 
   def enterGenericSelectionContainer(): Unit = {
-    val selectionContainer = new SelectionContainer
+    val selectionContainer = newContainer()
     if (stack.isEmpty) {
       roots.add(selectionContainer)
     } else {
@@ -70,6 +79,6 @@ class SelectionBuilder {
     fragments.computeIfAbsent(
       name,
       new function.Function[String, SelectionContainer] {
-        override def apply(key: String): SelectionContainer = new SelectionContainer
+        override def apply(key: String): SelectionContainer = newContainer()
       })
 }
