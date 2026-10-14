@@ -11,22 +11,24 @@ import sangria.validation._
   */
 class ExecutableDefinitions extends ValidationRule {
   override def visitor(ctx: ValidationContext): AstValidatingVisitor = new AstValidatingVisitor {
-    override val onEnter: ValidationVisit = { case ast.Document(definitions, _, _, _) =>
-      val errors =
-        definitions.collect {
-          case d
-              if !d.isInstanceOf[ast.OperationDefinition] && !d
-                .isInstanceOf[ast.FragmentDefinition] =>
-            NonExecutableDefinitionViolation(
-              definitionName(d),
-              d,
-              ctx.sourceMapper,
-              d.location.toList)
-        }
+    override val onEnter: ValidationVisit = visits(
+      on[ast.Document] { case ast.Document(definitions, _, _, _) =>
+        val errors =
+          definitions.collect {
+            case d
+                if !d.isInstanceOf[ast.OperationDefinition] && !d
+                  .isInstanceOf[ast.FragmentDefinition] =>
+              NonExecutableDefinitionViolation(
+                definitionName(d),
+                d,
+                ctx.sourceMapper,
+                d.location.toList)
+          }
 
-      if (errors.nonEmpty) Left(errors)
-      else AstVisitorCommand.RightContinue
-    }
+        if (errors.nonEmpty) Left(errors)
+        else AstVisitorCommand.RightContinue
+      }
+    )
   }
 
   def definitionName(definition: ast.Definition): String = definition match {

@@ -16,11 +16,11 @@ class UniqueDirectivesPerLocation extends ValidationRule {
       (n, d.repeatable)
     }
 
-    override val onEnter: ValidationVisit = {
+    override val onEnter: ValidationVisit = visits(
       // Many different AST nodes may contain directives. Rather than listing
       // them all, just listen for entering any node, and check to see if it
       // defines any directives.
-      case node: ast.WithDirectives =>
+      on[ast.WithDirectives] { case node =>
         val knownDirectives = MutableMap[String, ast.Directive]()
 
         val errors = node.directives.foldLeft(Vector.empty[Violation]) {
@@ -38,6 +38,7 @@ class UniqueDirectivesPerLocation extends ValidationRule {
 
         if (errors.nonEmpty) Left(errors)
         else AstVisitorCommand.RightContinue
-    }
+      }
+    )
   }
 }

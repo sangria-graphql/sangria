@@ -17,14 +17,14 @@ class UniqueInputFieldNames extends ValidationRule {
     val knownNameStack = ValidatorStack.empty[MutableMap[String, Option[AstLocation]]]
     var knownNames = MutableMap[String, Option[AstLocation]]()
 
-    override val onEnter: ValidationVisit = {
-      case ast.ObjectValue(_, _, _) =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.ObjectValue] { case ast.ObjectValue(_, _, _) =>
         knownNameStack.push(knownNames)
         knownNames = MutableMap[String, Option[AstLocation]]()
 
         AstVisitorCommand.RightContinue
-
-      case ast.ObjectField(name, _, _, pos) =>
+      },
+      on[ast.ObjectField] { case ast.ObjectField(name, _, _, pos) =>
         if (knownNames contains name)
           Left(
             Vector(
@@ -36,12 +36,15 @@ class UniqueInputFieldNames extends ValidationRule {
           knownNames += name -> pos
           AstVisitorCommand.RightContinue
         }
-    }
+      }
+    )
 
-    override def onLeave: ValidationVisit = { case ast.ObjectValue(_, _, _) =>
-      knownNames = knownNameStack.pop()
+    override val onLeave: ValidationVisit = visits(
+      on[ast.ObjectValue] { case ast.ObjectValue(_, _, _) =>
+        knownNames = knownNameStack.pop()
 
-      AstVisitorCommand.RightContinue
-    }
+        AstVisitorCommand.RightContinue
+      }
+    )
   }
 }

@@ -14,8 +14,8 @@ import sangria.validation._
   */
 class PossibleFragmentSpreads extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnter: ValidationVisit = {
-      case f: ast.InlineFragment =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.InlineFragment] { case f =>
         val errors = for {
           tpe <- ctx.typeInfo.tpe
           parent <- ctx.typeInfo.previousParentType
@@ -33,7 +33,8 @@ class PossibleFragmentSpreads extends ValidationRule {
           case Some(errors) if errors.nonEmpty => Left(errors)
           case _ => AstVisitorCommand.RightContinue
         }
-      case fs: ast.FragmentSpread =>
+      },
+      on[ast.FragmentSpread] { case fs =>
         val errors = for {
           tpe <- ctx.typeInfo.tpe
           parent <- ctx.typeInfo.previousParentType
@@ -53,7 +54,8 @@ class PossibleFragmentSpreads extends ValidationRule {
           case Some(errors) if errors.nonEmpty => Left(errors)
           case _ => AstVisitorCommand.RightContinue
         }
-    }
+      }
+    )
 
     def doTypesOverlap(ctx: ValidationContext, type1: Type, type2: Type) = (type1, type2) match {
       case (t1: Named, t2: Named) if t1.name == t2.name => true

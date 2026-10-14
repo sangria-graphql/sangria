@@ -74,6 +74,80 @@ object RuleBasedQueryValidator {
   private[validation] val notMatched
       : ast.AstNode => Either[Vector[Violation], AstVisitorCommand.Value] =
     _ => notMatchedResult
+
+  /** What the dispatch of a set of visitors depends on: their classes and whether their `onEnter`
+    * and `onLeave` are the empty function. A class can have both kinds of visitors, for example
+    * when a rule only validates under some condition, so the classes alone are not enough.
+    */
+  private final class VisitorsKey(val classes: Array[Class[_]], val empty: Array[Boolean]) {
+    override val hashCode: Int =
+      31 * java.util.Arrays.hashCode(classes.asInstanceOf[Array[AnyRef]]) +
+        java.util.Arrays.hashCode(empty)
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: VisitorsKey =>
+        java.util.Arrays.equals(
+          classes.asInstanceOf[Array[AnyRef]],
+          other.classes.asInstanceOf[Array[AnyRef]]) && java.util.Arrays.equals(empty, other.empty)
+      case _ => false
+    }
+  }
+
+  // The dispatch only depends on the kinds of nodes the visitors handle. For the visitors of a class
+  // they are the same, except that a visitor can have no `onEnter`/`onLeave` (see `VisitorsKey`);
+  // see `AstValidatingVisitor.onEnterNodes`. So the dispatch is shared by the requests.
+  // shortcut: one entry per distinct set of rules, never evicted; fine unless rule sets are
+  // generated dynamically
+  private val dispatches =
+    new java.util.concurrent.ConcurrentHashMap[VisitorsKey, (Dispatch, Dispatch)]
+
+  private val noDispatch = (new Dispatch(Array.empty), new Dispatch(Array.empty)) // by reference
+
+  private[validation] def dispatchFor(
+      visitors: Array[ValidationRule#AstValidatingVisitor]): (Dispatch, Dispatch) = {
+    val empty = new Array[Boolean](visitors.length * 2)
+    var i = 0
+    while (i < visitors.length) {
+      empty(2 * i) = visitors(i).onEnter eq PartialFunction.empty
+      empty(2 * i + 1) = visitors(i).onLeave eq PartialFunction.empty
+      i += 1
+    }
+    val key = new VisitorsKey(visitors.map(_.getClass: Class[_]), empty)
+    val cached = dispatches.getOrDefault(key, noDispatch)
+    if (cached ne noDispatch) cached
+    else {
+      val computed =
+        (new Dispatch(visitors.map(_.onEnterNodes)), new Dispatch(visitors.map(_.onLeaveNodes)))
+      dispatches.putIfAbsent(key, computed)
+      computed
+    }
+  }
+
+  /** Finds, for a node, the visitors that can match it. `nodes` are the declared node classes of
+    * each visitor, `None` meaning any node. The result is computed once per class of node.
+    */
+  private[validation] final class Dispatch(nodes: Array[Option[Vector[Class[_]]]]) {
+    private val cache = new java.util.concurrent.ConcurrentHashMap[Class[_], Array[Int]]
+    private val notComputed = new Array[Int](0) // compared by reference
+
+    // With so few visitors, looking up the class of a node costs more than matching the visitors
+    private val all: Array[Int] =
+      if (nodes.length <= 2) nodes.indices.toArray else notComputed
+
+    def visitorsFor(node: ast.AstNode): Array[Int] =
+      if (all ne notComputed) all else visitorsForClass(node.getClass)
+
+    private def visitorsForClass(cls: Class[_]): Array[Int] = {
+      val cached = cache.getOrDefault(cls, notComputed)
+      if (cached ne notComputed) cached
+      else {
+        val result =
+          nodes.indices.filter(i => nodes(i).forall(_.exists(_.isAssignableFrom(cls)))).toArray
+        cache.put(cls, result)
+        result
+      }
+    }
+  }
 }
 
 class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidator {
@@ -137,41 +211,73 @@ class RuleBasedQueryValidator(rules: List[ValidationRule]) extends QueryValidato
       visitors: List[ValidationRule#AstValidatingVisitor],
       topLevel: Boolean): Unit = {
     val visitorsArray = visitors.toArray
-    val size = visitorsArray.length
+    val (enterDispatch, leaveDispatch) = RuleBasedQueryValidator.dispatchFor(visitorsArray)
+
+    // Which visitors are ignored (they broke out) or skipping a node, by index of the visitor.
+    // Arrays are much cheaper than the sets and maps of the context, which hash the visitors.
+    val ignored = new Array[Boolean](visitorsArray.length)
+    val skipping = new Array[Boolean](visitorsArray.length)
+    val skippedNode = new Array[ast.AstNode](visitorsArray.length) // only read while skipping
+    var skippingCount = 0
+
+    def handle(
+        i: Int,
+        node: ast.AstNode,
+        result: Either[Vector[Violation], AstVisitorCommand.Value]): Unit =
+      result match {
+        case Left(violations) => ctx.addViolations(violations)
+        case AstVisitorCommand.RightSkip =>
+          if (!skipping(i)) skippingCount += 1
+          skipping(i) = true
+          skippedNode(i) = node
+        case Right(Break) => ignored(i) = true
+        case _ => // do nothing
+      }
 
     AstVisitor.visitAstRecursive(
       doc = queryAst,
       onEnter = node => {
         ctx.typeInfo.enter(node)
 
-        var i = 0
-        while (i < size) {
-          val visitor = visitorsArray(i)
-          if (ctx.validVisitor(visitor)) {
+        // only the visitors that can match this kind of node
+        val applicable = enterDispatch.visitorsFor(node)
+        var j = 0
+        while (j < applicable.length) {
+          val i = applicable(j)
+          if (!ignored(i) && !skipping(i)) {
             // applyOrElse matches the node only once, unlike isDefinedAt followed by apply
-            val result = visitor.onEnter.applyOrElse(node, RuleBasedQueryValidator.notMatched)
-            if (result ne RuleBasedQueryValidator.notMatchedResult)
-              handleResult(ctx, node, visitor, result)
+            val result =
+              visitorsArray(i).onEnter.applyOrElse(node, RuleBasedQueryValidator.notMatched)
+            if (result ne RuleBasedQueryValidator.notMatchedResult) handle(i, node, result)
           }
-          i += 1
+          j += 1
         }
 
         Continue
       },
       onLeave = node => {
-        var i = 0
-        while (i < size) {
-          val visitor = visitorsArray(i)
-          if (ctx.validVisitor(visitor)) {
-            val result = visitor.onLeave.applyOrElse(node, RuleBasedQueryValidator.notMatched)
-            if (result ne RuleBasedQueryValidator.notMatchedResult)
-              handleResult(ctx, node, visitor, result)
+        val applicable = leaveDispatch.visitorsFor(node)
+        var j = 0
+        while (j < applicable.length) {
+          val i = applicable(j)
+          if (!ignored(i) && !skipping(i)) {
+            val result =
+              visitorsArray(i).onLeave.applyOrElse(node, RuleBasedQueryValidator.notMatched)
+            if (result ne RuleBasedQueryValidator.notMatchedResult) handle(i, node, result)
           }
+          j += 1
+        }
 
-          if (ctx.skips.nonEmpty && ctx.skips.get(visitor).exists(_ eq node))
-            ctx.skips.remove(visitor)
-
-          i += 1
+        // a visitor that skipped this node is active again once the node is left
+        if (skippingCount > 0) {
+          var i = 0
+          while (i < visitorsArray.length) {
+            if (skipping(i) && (skippedNode(i) eq node)) {
+              skipping(i) = false
+              skippingCount -= 1
+            }
+            i += 1
+          }
         }
 
         ctx.typeInfo.leave(node)

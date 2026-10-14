@@ -14,14 +14,18 @@ import sangria.validation.rules.KnownTypeNames.SuggestionFunction
 class KnownTypeNames(suggestion: SuggestionFunction = SuggestionFunction.Default)
     extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnter: ValidationVisit = {
-      case _: ast.ObjectTypeDefinition | _: ast.InterfaceTypeDefinition |
-          _: ast.UnionTypeDefinition | _: ast.InputObjectTypeDefinition |
-          _: ast.TypeSystemExtensionDefinition | _: ast.SchemaDefinition =>
-        // When validating SDL, at the moment schema does not know about these types.
-        // All type names are validated in the schema materializer as new schema is constructed.
-        AstVisitorCommand.RightSkip
-      case ast.NamedType(name, pos) =>
+    // When validating SDL, at the moment schema does not know about these types.
+    // All type names are validated in the schema materializer as new schema is constructed.
+    private val skipDefinition: ValidationVisit = { case _ => AstVisitorCommand.RightSkip }
+
+    override val onEnter: ValidationVisit = visits(
+      on[ast.ObjectTypeDefinition](skipDefinition),
+      on[ast.InterfaceTypeDefinition](skipDefinition),
+      on[ast.UnionTypeDefinition](skipDefinition),
+      on[ast.InputObjectTypeDefinition](skipDefinition),
+      on[ast.TypeSystemExtensionDefinition](skipDefinition),
+      on[ast.SchemaDefinition](skipDefinition),
+      on[ast.NamedType] { case ast.NamedType(name, pos) =>
         if (!ctx.schema.allTypes.contains(name))
           Left(
             Vector(
@@ -32,7 +36,8 @@ class KnownTypeNames(suggestion: SuggestionFunction = SuggestionFunction.Default
                 pos.toList)))
         else
           AstVisitorCommand.RightContinue
-    }
+      }
+    )
   }
 }
 

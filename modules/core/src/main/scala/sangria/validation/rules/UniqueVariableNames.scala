@@ -15,12 +15,12 @@ class UniqueVariableNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownVariableNames = MutableMap[String, List[AstLocation]]()
 
-    override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case _ =>
         knownVariableNames.clear()
         AstVisitorCommand.RightContinue
-
-      case ast.VariableDefinition(name, _, _, _, _, pos) =>
+      },
+      on[ast.VariableDefinition] { case ast.VariableDefinition(name, _, _, _, _, pos) =>
         knownVariableNames.get(name) match {
           case Some(otherPos) =>
             Left(Vector(DuplicateVariableViolation(name, ctx.sourceMapper, otherPos ++ pos.toList)))
@@ -28,6 +28,7 @@ class UniqueVariableNames extends ValidationRule {
             knownVariableNames += name -> pos.toList
             AstVisitorCommand.RightContinue
         }
-    }
+      }
+    )
   }
 }

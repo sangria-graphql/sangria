@@ -14,37 +14,40 @@ class NoUndefinedVariables extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val variableNameDefined = MutableSet[String]()
 
-    override val onEnter: ValidationVisit = {
-      case _: ast.OperationDefinition =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case _ =>
         variableNameDefined.clear()
         AstVisitorCommand.RightContinue
-
-      case varDef: ast.VariableDefinition =>
+      },
+      on[ast.VariableDefinition] { case varDef =>
         variableNameDefined += varDef.name
         AstVisitorCommand.RightContinue
-    }
+      }
+    )
 
-    override def onLeave: ValidationVisit = { case operation: ast.OperationDefinition =>
-      val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
+    override val onLeave: ValidationVisit = visits(
+      on[ast.OperationDefinition] { case operation =>
+        val usages = ctx.documentAnalyzer.getRecursiveVariableUsages(operation)
 
-      val errors =
-        usages.filterNot(vu => variableNameDefined.contains(vu.node.name)).toVector.map { vu =>
-          operation.name match {
-            case Some(opName) =>
-              UndefinedVarByOpViolation(
-                vu.node.name,
-                opName,
-                ctx.sourceMapper,
-                vu.node.location.toList ++ operation.location.toList)
-            case None =>
-              UndefinedVarViolation(
-                vu.node.name,
-                ctx.sourceMapper,
-                vu.node.location.toList ++ operation.location.toList)
+        val errors =
+          usages.filterNot(vu => variableNameDefined.contains(vu.node.name)).toVector.map { vu =>
+            operation.name match {
+              case Some(opName) =>
+                UndefinedVarByOpViolation(
+                  vu.node.name,
+                  opName,
+                  ctx.sourceMapper,
+                  vu.node.location.toList ++ operation.location.toList)
+              case None =>
+                UndefinedVarViolation(
+                  vu.node.name,
+                  ctx.sourceMapper,
+                  vu.node.location.toList ++ operation.location.toList)
+            }
           }
-        }
 
-      if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
-    }
+        if (errors.nonEmpty) Left(errors.distinct) else AstVisitorCommand.RightContinue
+      }
+    )
   }
 }

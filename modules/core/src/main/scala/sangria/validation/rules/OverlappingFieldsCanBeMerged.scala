@@ -29,33 +29,34 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
 
       private val selectionBuilder: SelectionBuilder = new SelectionBuilder
 
-      override val onEnter: ValidationVisit = {
-        case field: ast.Field =>
+      override val onEnter: ValidationVisit = visits(
+        on[ast.Field] { case field =>
           val parentType = ctx.typeInfo.previousParentType
           // TypeInfo.enter already resolved the field definition of this field
           val outputType = ctx.typeInfo.fieldDef.map(_.fieldType)
           selectionBuilder.enterField(parentType, field, outputType)
           AstVisitorCommand.RightContinue
-
-        case fragment: ast.FragmentDefinition =>
+        },
+        on[ast.FragmentDefinition] { case fragment =>
           selectionBuilder.enterFragmentDefinition(fragment.name)
           AstVisitorCommand.RightContinue
-
-        case fragmentSpread: ast.FragmentSpread =>
+        },
+        on[ast.FragmentSpread] { case fragmentSpread =>
           selectionBuilder.spreadFragment(fragmentSpread.name)
           AstVisitorCommand.RightContinue
-
-        case container: ast.SelectionContainer =>
+        },
+        on[ast.SelectionContainer] { case container =>
           selectionBuilder.enterGenericSelectionContainer()
           AstVisitorCommand.RightContinue
-      }
+        }
+      )
 
-      override def onLeave: ValidationVisit = {
-        case _: ast.SelectionContainer =>
+      override val onLeave: ValidationVisit = visits(
+        on[ast.SelectionContainer] { case _ =>
           selectionBuilder.leaveSelectionContainer()
           AstVisitorCommand.RightContinue
-
-        case _: ast.Document =>
+        },
+        on[ast.Document] { case _ =>
           val roots = selectionBuilder.build()
           val violationsBuilder = new SelectionConflictViolationsBuilder(ctx.sourceMapper)
           val check = new CachedCheck
@@ -71,7 +72,8 @@ class OverlappingFieldsCanBeMerged extends ValidationRule {
           } else {
             Left(violations)
           }
-      }
+        }
+      )
     }
 }
 

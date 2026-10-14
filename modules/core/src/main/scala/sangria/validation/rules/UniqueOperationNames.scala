@@ -14,14 +14,16 @@ class UniqueOperationNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownOpNames = MutableSet[String]()
 
-    override val onEnter: ValidationVisit = {
-      case ast.OperationDefinition(_, Some(name), _, _, _, _, _, pos) =>
-        if (knownOpNames contains name)
-          Left(Vector(DuplicateOperationNameViolation(name, ctx.sourceMapper, pos.toList)))
-        else {
-          knownOpNames += name
-          AstVisitorCommand.RightContinue
-        }
-    }
+    override val onEnter: ValidationVisit = visits(
+      on[ast.OperationDefinition] {
+        case ast.OperationDefinition(_, Some(name), _, _, _, _, _, pos) =>
+          if (knownOpNames contains name)
+            Left(Vector(DuplicateOperationNameViolation(name, ctx.sourceMapper, pos.toList)))
+          else {
+            knownOpNames += name
+            AstVisitorCommand.RightContinue
+          }
+      }
+    )
   }
 }

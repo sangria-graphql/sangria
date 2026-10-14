@@ -14,20 +14,23 @@ class UniqueArgumentNames extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
     val knownArgNames = MutableSet[String]()
 
-    override val onEnter: ValidationVisit = {
-      case _: ast.Field =>
+    override val onEnter: ValidationVisit = visits(
+      on[ast.Field] { case _ =>
         knownArgNames.clear()
         AstVisitorCommand.RightContinue
-      case _: ast.Directive =>
+      },
+      on[ast.Directive] { case _ =>
         knownArgNames.clear()
         AstVisitorCommand.RightContinue
-      case ast.Argument(name, _, _, pos) =>
+      },
+      on[ast.Argument] { case ast.Argument(name, _, _, pos) =>
         if (knownArgNames contains name)
           Left(Vector(DuplicateArgNameViolation(name, ctx.sourceMapper, pos.toList)))
         else {
           knownArgNames += name
           AstVisitorCommand.RightContinue
         }
-    }
+      }
+    )
   }
 }

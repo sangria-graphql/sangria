@@ -10,15 +10,17 @@ import sangria.validation._
   */
 class SingleFieldSubscriptions extends ValidationRule {
   override def visitor(ctx: ValidationContext) = new AstValidatingVisitor {
-    override val onEnter: ValidationVisit = {
-      case od: ast.OperationDefinition
-          if od.operationType == OperationType.Subscription && od.selections.size > 1 =>
-        Left(
-          Vector(
-            SubscriptionSingleFieldOnlyViolation(
-              od.name,
-              ctx.sourceMapper,
-              od.selections.tail.flatMap(_.location).toList)))
-    }
+    override val onEnter: ValidationVisit = visits(
+      on[ast.OperationDefinition] {
+        case od: ast.OperationDefinition
+            if od.operationType == OperationType.Subscription && od.selections.size > 1 =>
+          Left(
+            Vector(
+              SubscriptionSingleFieldOnlyViolation(
+                od.name,
+                ctx.sourceMapper,
+                od.selections.tail.flatMap(_.location).toList)))
+      }
+    )
   }
 }

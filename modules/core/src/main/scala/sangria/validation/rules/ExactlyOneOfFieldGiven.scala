@@ -92,9 +92,13 @@ class ExactlyOneOfFieldGiven extends ValidationRule {
     }
 
   override def visitor(ctx: ValidationContext): AstValidatingVisitor = new AstValidatingVisitor {
-    override val onEnter: ValidationVisit = {
-      case node: ast.ObjectValue => visitNode(ctx, ctx.typeInfo.inputType, Left(node))
-      case node: ast.VariableValue => visitNode(ctx, ctx.typeInfo.inputType, Right(node))
-    }
+    override val onEnter: ValidationVisit = visits(
+      on[ast.ObjectValue] { case node =>
+        visitNode(ctx, ctx.typeInfo.inputType, Left(node))
+      },
+      on[ast.VariableValue] { case node =>
+        visitNode(ctx, ctx.typeInfo.inputType, Right(node))
+      }
+    )
   }
 }
