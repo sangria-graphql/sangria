@@ -218,7 +218,12 @@ lazy val core = project
         "sangria.schema.SchemaChange$InputObjectTypeAstDirectiveAdded$"),
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "sangria.schema.SchemaChange#InputObjectTypeAstDirectiveAdded.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("sangria.validation.rules.overlappingfields.SelectionContainer.this")
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.rules.overlappingfields.SelectionContainer.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.rules.overlappingfields.SelectionContainer.children"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "sangria.validation.rules.overlappingfields.SelectionField.children")
     ),
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
     libraryDependencies ++= Seq(
