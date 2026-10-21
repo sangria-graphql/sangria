@@ -32,6 +32,15 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
   @GraphQLDeprecated("Not tasty anymore")
   case object MegaOrangeAnnotated extends FruitAnnotated
 
+  case class Listing(
+      title: String,
+      price: Int,
+      id: String,
+      name: String,
+      author: String,
+      description: String,
+      zone: String,
+      amount: Int)
   case class Comment(
       author: String,
       text: Option[String],
@@ -107,6 +116,11 @@ class DeriveObjectTypeMacroSpec extends AnyWordSpec with Matchers with FutureRes
       val excludedField = fields.find(_.name == "excluded")
       excludedField shouldNot be(None)
       excludedField.get.fieldType should be(IntType)
+    }
+
+    "keep case class fields in declaration order" in {
+      deriveObjectType[Unit, Listing]().fields.map(_.name) should be(
+        List("title", "price", "id", "name", "author", "description", "zone", "amount"))
     }
 
     "validate known field names" in {
