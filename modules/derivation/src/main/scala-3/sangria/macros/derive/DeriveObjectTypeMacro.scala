@@ -426,7 +426,12 @@ class DeriveObjectTypeMacro(using globalQuotes: Quotes) extends DeriveMacroSuppo
     import globalQuotes.reflect._
     given Type[T] = tpe
     val sym = TypeRepr.of[T].typeSymbol
-    (sym.fieldMembers ++ sym.methodMembers).flatMap { m =>
+    // fieldMembers and methodMembers come back in an order that can change between compilations,
+    // so keep case fields in declaration order and sort the rest by name.
+    val caseFields = sym.caseFields
+    val otherMembers =
+      (sym.fieldMembers ++ sym.methodMembers).filterNot(caseFields.contains).sortBy(_.name)
+    (caseFields ++ otherMembers).flatMap { m =>
       val flags = m.flags
       if (flags.is(Flags.CaseAccessor)) {
         Some(
